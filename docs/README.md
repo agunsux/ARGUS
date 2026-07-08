@@ -39,6 +39,7 @@
 | `system_invariants.md` | 10 invariant sistem yang wajib dijamin setiap saat |
 | `argus_architecture_review.md` | Hasil architecture review + final decision: APPROVED FOR ALPHA FIELD PILOT |
 | `architecture_debt_register.md` | Daftar keputusan sementara yang perlu dimigrasi |
+| `alpha_core_trust_loop.md` | State machine specification untuk Wave 1 Alpha |
 
 ---
 

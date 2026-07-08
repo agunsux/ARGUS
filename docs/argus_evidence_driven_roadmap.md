@@ -70,6 +70,8 @@ Seller → Ownership Verification → Listing → Buyer Match
 
 **Evidence target:** [001-Field Observation](../evidence/001-field-observation.md), [007-Usability](../evidence/007-usability.md)
 
+**Implementation spec:** [Core Trust Loop — State Machine](alpha_core_trust_loop.md)
+
 ---
 
 ### Wave 2 — Evidence Automation 🟡
