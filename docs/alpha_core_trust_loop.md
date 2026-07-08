@@ -136,3 +136,4 @@ Setiap lapisan baru dibangun di atas lapisan yang sudah tervalidasi.
 - [Architecture Decision Records](architecture_decision_records.md) — ADR-001, ADR-011
 - [System Invariants](system_invariants.md) — Invariant 1–10
 - [Kill Criteria](kill_criteria.md) — Exit Criteria Alpha
+- [Testing Strategy](testing_strategy.md) — Engineering Gate v0.2 + test levels

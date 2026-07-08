@@ -40,6 +40,7 @@
 | `argus_architecture_review.md` | Hasil architecture review + final decision: APPROVED FOR ALPHA FIELD PILOT |
 | `architecture_debt_register.md` | Daftar keputusan sementara yang perlu dimigrasi |
 | `alpha_core_trust_loop.md` | State machine specification untuk Wave 1 Alpha |
+| `testing_strategy.md` | 4-level testing strategy + Engineering Gate v0.2 |
 
 ---
 
