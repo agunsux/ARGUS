@@ -1,6 +1,6 @@
 # ARGUS Implementation Roadmap (90 Hari Pertama)
 
-Roadmap ini adalah turunan dari "Kitab Suci" (Version 3) yang fokus murni pada eksekusi Layer 1 (Reality) dalam 90 hari ke depan. Tujuannya adalah memproses transaksi tiket nyata, memvalidasi asumsi operasional, dan membuktikan bahwa orang bersedia membayar untuk *Verified Ownership Transfers (VOT)*.
+Roadmap ini adalah turunan dari "Kitab Suci" (Version 3) yang fokus murni pada eksekusi Layer 1 (Reality) dalam 90 hari ke depan. Sesuai *STYLE_GUIDE.md*, antarmuka yang akan kita luncurkan menggunakan **Public Language** agar natural bagi pengguna.
 
 ---
 
@@ -11,10 +11,10 @@ Roadmap ini adalah turunan dari "Kitab Suci" (Version 3) yang fokus murni pada e
 ### Minggu 1-2: Persiapan Etalase & Alur
 - **Tugas Founder:** Menyiapkan akun WhatsApp Business dan rekening korporat ARGUS.
 - **Tugas Engineer:** Merancang *database schema* sederhana (PostgreSQL/Supabase) untuk merepresentasikan *The ARGUS Protocol* (state tiket, entitas). Membuat *Landing Page* statis sederhana yang menjelaskan "Cara Kerja ARGUS".
-- **Tugas Operations:** Menyiapkan Google Forms/Typeform untuk *transfer submission* yang mewajibkan unggah KTP dan Mutasi Rekening.
+- **Tugas Operations:** Menyiapkan Google Forms/Typeform untuk *seller submission* yang mewajibkan unggah KTP dan Mutasi Rekening.
 
 ### Minggu 3-4: Akuisisi Pelanggan Pertama (Manual)
-- **Aksi:** Founder mencari pemilik tiket di platform sosial (Twitter, Telegram) yang kesulitan memindahtangankan tiketnya karena penerima ragu akan keaslian tiket. Tawarkan ARGUS sebagai pihak ketiga (Escrow + Verifikasi) secara gratis (atau diskon *fee*) untuk batch pertama.
+- **Aksi:** Founder mencari penjual tiket (*Seller*) di platform sosial (Twitter, Telegram) yang kesulitan menjual tiketnya karena pembeli (*Buyer*) ragu akan keaslian tiket. Tawarkan ARGUS sebagai pihak ketiga (Escrow + Verifikasi) secara gratis (atau diskon *fee*) untuk batch pertama.
 - **Milestone:** Mendapatkan 10 transaksi pertama secara manual. Mengukur berapa lama waktu yang dihabiskan Operations untuk verifikasi 1 tiket secara manual.
 
 ---
@@ -27,9 +27,9 @@ Roadmap ini adalah turunan dari "Kitab Suci" (Version 3) yang fokus murni pada e
 - **Tugas Engineer:** Membangun MVP *ARGUS Verify Dashboard* (sesuai `argus_mvp_prd.md`). Fokus pada *Evidence Viewer* (menampilkan KTP, PDF, dan Mutasi Rekening secara berdampingan).
 - **Tugas Ops:** Menguji dashboard menggunakan data historis dari transaksi Bulan 1. Memberikan umpan balik jika alurnya lebih lambat dari cara manual.
 
-### Minggu 7-8: Meluncurkan Verified Ticket Transfer Platform v1
-- **Tugas Engineer:** Menghubungkan *Landing Page* statis ke database internal agar tiket yang statusnya `VERIFIED` otomatis tayang di halaman web publik. Membuat tombol "Beli" yang memberikan instruksi transfer rekening unik.
-- **Milestone:** Penerima bisa melihat daftar antrean tiket tervalidasi secara *real-time* tanpa harus bertanya via WA apakah kepemilikan masih bisa dialihkan. Target mencapai **50 VOT**.
+### Minggu 7-8: Membuka Reference Marketplace v1
+- **Tugas Engineer:** Menghubungkan *Landing Page* statis ke database internal agar tiket yang statusnya `VERIFIED` otomatis tayang di halaman web publik. Membuat tombol "Beli Tiket" yang memberikan instruksi transfer rekening unik.
+- **Milestone:** Buyer bisa melihat katalog tiket tervalidasi secara *real-time* tanpa harus bertanya via WA apakah tiket masih tersedia. Target mencapai **50 VOT**.
 
 ---
 
