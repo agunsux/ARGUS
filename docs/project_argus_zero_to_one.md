@@ -1,6 +1,6 @@
-# PROJECT ARGUS — ZERO TO ONE
+# PROJECT ARGUS — ZERO TO ONE (Version 2)
 
-*Membangun Infrastruktur Kepercayaan untuk Perpindahan Kepemilikan Tiket.*
+*Membangun Protokol Kepercayaan untuk Perpindahan Kepemilikan Tiket.*
 
 ## 1. The Constraints (Aturan Main)
 Perusahaan ini tidak memiliki kemewahan startup Silicon Valley. Kita beroperasi di dunia nyata dengan sumber daya sangat terbatas:
@@ -8,77 +8,59 @@ Perusahaan ini tidak memiliki kemewahan startup Silicon Valley. Kita beroperasi 
 - **Modal:** Kurang dari USD 30,000.
 - **Tidak ada:** Tim AI khusus, Departemen Legal, Departemen Marketing, Pendanaan Ventura (VC), Dukungan Pemerintah, Kontrak Enterprise.
 - **Syarat Hidup:** Perusahaan harus bertahan hidup HANYA dari pendapatan pelanggan (Customer Revenue).
-- **Tujuan Akhir (Saat ini):** Product-Market Fit (PMF). Bukan status Unicorn.
+- **North Star Metric:** BUKAN GMV, bukan Revenue, bukan DAU/MAU. Melainkan **Verified Ownership Transfers (VOT)** (Berapa banyak perpindahan kepemilikan tiket yang berhasil diverifikasi).
 
-## 2. Feature Purge (Pembersihan Fitur)
-Setiap fitur dievaluasi dengan kejam: *Bisakah kita membuangnya? Menyederhanakannya? Mengganti software dengan operasi manual? Menundanya hingga 10.000 pengguna?*
+## 2. Paradigma Bisnis: Dari Marketplace Menuju Protocol
+Kamus perusahaan kita melarang keras penggunaan istilah "Marketplace Tiket". Kita membangun **Trust Protocol** dan **Ownership Infrastructure**. 
+- Jika engineer berpikir membuat marketplace, mereka akan sibuk membuat *wishlist*, *promo*, dan *feed*.
+- Karena engineer kita membangun infrastruktur, mereka sibuk menyempurnakan *audit trail, cryptographic proof, evidence chain, ownership state, verification latency*, dan *fraud detection*.
+Marketplace yang kita bangun di awal hanyalah **Reference Implementation** (klien pertama) dari sistem kita sendiri.
 
-- **Fitur 1: Sistem Rekomendasi/Discovery Tiket (AI/Machine Learning)**
-  - *Bisa dibuang?* Ya. Pembeli tahu tiket apa yang mereka cari (misal: "Coldplay Jakarta").
-  - *Keputusan:* **HAPUS.** Pencarian sederhana (teks/filter) sudah cukup.
+## 3. Feature Purge (Pembersihan Fitur)
+Setiap fitur dievaluasi dengan kejam: *Bisakah kita membuangnya? Menyederhanakannya? Mengganti software dengan operasi manual?*
 
-- **Fitur 2: Sistem Chat Internal Pembeli & Penjual**
-  - *Bisa diganti operasi/manual?* Ya.
-  - *Keputusan:* **HAPUS.** Gunakan WhatsApp. Jika butuh mediasi, tim Operations akan bertindak sebagai perantara di grup WA sementara.
+- **Sistem Rekomendasi/Promo:** HAPUS. (Marketplace bukan tujuan utama).
+- **In-App Chat:** HAPUS. (Gunakan WhatsApp untuk mediasi).
+- **Automated Fraud Detection:** TUNDA. (Gunakan manual review oleh Operations di tahap awal).
+- **Digital Wallet:** HAPUS. (Gunakan sistem Escrow langsung antar rekening bank).
+- **Mobile App Native:** TUNDA. (Web-based sudah cukup untuk fase awal).
 
-- **Fitur 3: Automated Fraud Detection System (ARGUS Shield AI)**
-  - *Bisa diganti operasi/manual?* Ya. Di awal, volume transaksi kecil. 1 orang Operations bisa mengecek PDF, invoice, dan KTP secara manual.
-  - *Keputusan:* **TUNDA.** Lakukan *manual review* (Phase 0) sampai volume membuat tim kewalahan.
+## 4. What Survives (Apa yang Tersisa & Mengapa)
+Hanya komponen yang mendukung terciptanya **Trust Graph** historis yang bertahan:
+1. **ARGUS Verify (Manual/Semi-Automated Dashboard):** Untuk validasi tiket *brute-force* oleh Operations di awal.
+2. **Escrow System:** Sistem penahanan dana untuk menjamin rasa aman (Trust) sebelum transfer tervalidasi penuh.
+3. **Reference Marketplace (Web):** Klien pertama (etalase sederhana) agar publik bisa menggunakan protokol kita.
+4. **Historical Trust Graph Database:** Menyimpan data reputasi akun, perangkat, pembayaran, dan pola penipuan. **Inilah moat terbesar kita yang tidak bisa disalin oleh pesaing (Network Effect).**
 
-- **Fitur 4: Digital Wallet / Saldo User In-App**
-  - *Bisa disederhanakan?* Ya. Hindari regulasi *e-money* yang rumit dan butuh tim legal mahal.
-  - *Keputusan:* **HAPUS.** Gunakan sistem *Escrow* per transaksi. Uang masuk ke rekening bank perusahaan (Corporate Account), lalu ditransfer langsung ke rekening penjual setelah pembeli masuk *venue* (manual transfer oleh Founder/Ops).
+## 5. The ARGUS Protocol
+Bukan daftar fitur, melainkan spesifikasi formal siklus hidup kepemilikan tiket. Setiap perpindahan *state* bersifat *immutable*, wajib memiliki *timestamp*, *actor*, *evidence*, *signature*, dan kebijakan *rollback*.
 
-- **Fitur 5: Dynamic Pricing / Bidding System**
-  - *Bisa ditunda?* Ya. Sangat rumit untuk dibangun dan membingungkan pengguna awal.
-  - *Keputusan:* **HAPUS.** Penjual menetapkan harga pas (Fixed Price).
+**State Lifecycle (Siklus Kepemilikan):**
+1. `ISSUED` (Tiket diterbitkan oleh promotor/sistem ticketing asli)
+2. `OWNED` (Tiket dimiliki oleh pembeli pertama secara sah)
+3. `LISTED` (Tiket didaftarkan untuk transfer di jaringan ARGUS)
+4. `RESERVED` (Pembeli baru telah memesan, dana masuk Escrow)
+5. `VERIFIED` (Keabsahan tiket telah diverifikasi oleh sistem/Ops ARGUS)
+6. `TRANSFERRED` (Kepemilikan resmi berpindah tangan, dana siap cair ke penjual)
+7. `REDEEMED` (Tiket sukses digunakan di gerbang masuk venue)
+8. `ARCHIVED` (Siklus hidup tiket selesai tanpa sengketa)
 
-- **Fitur 6: Mobile App (iOS & Android)**
-  - *Bisa disederhanakan?* Ya. Membangun 2 platform native memakan waktu dan biaya.
-  - *Keputusan:* **TUNDA.** Bangun Mobile-Optimized Web App.
+## 6. The ARGUS Standards
+Standar terbuka yang di masa depan dapat diadopsi oleh promotor, venue, dan platform lain (sehingga mereka tidak perlu membangun sistem anti-penipuan sekunder dari nol):
+- **Proof of Identity:** Standar verifikasi identitas pengirim dan penerima yang aman.
+- **Proof of Purchase:** Standar validasi keabsahan mutasi/invoice pembelian awal (Chain of Custody).
+- **Dispute Resolution Standard (ARGUS Resolve):** SLA dan aturan bukti (misal: kewajiban video unboxing/penolakan di gerbang) jika terjadi perselisihan.
 
-## 3. What Survives (Apa yang Tersisa & Mengapa)
+## 7. The ARGUS Ecosystem & Roadmap
+Roadmap kita bukan "Bikin Marketplace -> Cari User -> Bikin API". Kita membalik polanya:
+- **Phase 0: Verification Engine + Operations.** Membuktikan protokol bekerja. Validasi tiket dan escrow dilakukan secara *brute-force* manual oleh Founder & Ops. 
+- **Phase 1: The Reference Marketplace.** Meluncurkan etalase sederhana untuk memfasilitasi transaksi publik secara langsung di atas engine kita.
+- **Phase 2: The ARGUS API.** Membuka protokol (*White-label infrastructure*) agar EO, promotor kecil, dan ticketing platform lain bisa memverifikasi transfer mereka melalui engine kita.
+- **Phase 3: Industry Standard.** ARGUS menjadi standar de-facto keamanan. Entitas lain dengan bangga memasang badge "Verified by ARGUS".
 
-Hanya komponen inti dari **Ticket Transfer Infrastructure** yang bertahan:
+## 8. The Company We Can Actually Build Next Month
+Bulan depan, kita membangun **Sistem Verifikasi & Escrow (API-first)** yang sementara digerakkan secara manual. 
 
-1. **Landing Page & Form Submit Sederhana (Web):**
-   - *Mengapa:* Penjual butuh tempat untuk mendaftarkan tiket, pembeli butuh tempat untuk melihat tiket yang diverifikasi. Ini adalah etalase paling dasar.
-2. **ARGUS Verify (Manual / Semi-Automated):**
-   - *Mengapa:* Ini adalah *core value* kita. Pembeli membayar kita untuk memastikan tiketnya asli. Engineer membangun *internal dashboard* sederhana untuk Operations mengunggah, mengecek *proof of purchase*, dan mengubah status tiket menjadi "Verified".
-3. **Escrow System (Manual Payout):**
-   - *Mengapa:* Tanpa ini, tidak ada rasa aman. Pembeli mentransfer dana ke rekening perusahaan. Uang ditahan. Setelah transaksi selesai dan tidak ada *dispute*, Operations mentransfer uang ke penjual secara manual.
-4. **WhatsApp Business (Komunikasi & Resolusi):**
-   - *Mengapa:* Untuk notifikasi status, resolusi sengketa (ARGUS Resolve versi manual), dan *customer service*. Jauh lebih murah dan cepat dibangun daripada sistem notifikasi dan chat *in-app*.
+Engineer tidak sibuk mendesain UI keranjang belanja; ia memodelkan **The ARGUS Protocol** di database. Founder mencari 50 klien pertama via WhatsApp. Operations menjadi garda terdepan verifikasi tiket (ARGUS Verify manual) untuk memastikan 0% tiket palsu lolos.
 
-## 4. The Roadmap (Membangun ARGUS OS dari Nol)
-
-Kita tidak membangun seluruh ekosistem (Verify, Shield, Score, Ledger, Transfer, Resolve, Insight) hari ini. Kita membangun fondasinya secara bertahap.
-
-### Phase 0: The Flintstone Era (Bulan 1-3)
-- **Produk:** Website sederhana (Katalog statis), Google Forms/Typeform untuk penjual *submit* tiket.
-- **Proses:** Founder/Ops memverifikasi tiket secara manual (memeriksa invoice, KTP, mutasi rekening). Pembeli transfer bank manual. Ops menahan PDF tiket dan baru mengirimkannya via WA/Email saat pembayaran terkonfirmasi.
-- **Fokus:** Membuktikan bahwa orang mau membayar premium (fee) untuk **Infrastruktur Kepercayaan**, bukan sekadar mencari tiket murah.
-
-### Phase 1: ARGUS Verify & Transfer v1 (Bulan 3-6)
-- **Produk:** Web app dengan database tersendiri. Penjual memiliki *dashboard* sederhana untuk *upload* bukti.
-- **Proses:** Engineer membuat *internal dashboard* (cikal bakal ARGUS OS) untuk mempercepat kerja Ops memvalidasi tiket. Payment gateway standar (seperti Xendit/Midtrans) diintegrasikan untuk menerima pembayaran otomatis (namun *payout* tetap manual untuk keamanan).
-
-### Phase 2: ARGUS Resolve (Bulan 6-12)
-- **Produk:** Sistem tiket komplain / Dispute Engine sederhana di dalam aplikasi.
-- **Proses:** Menstandarisasi cara pembeli melaporkan tiket yang bermasalah di gerbang masuk (misal: harus ada video bukti tertolak). *Escrow payout* ditunda otomatis jika ada laporan.
-
-## 5. The Company We Can Actually Build Next Month
-
-Bulan depan, perusahaan kita bukanlah "Marketplace Raksasa".
-
-Bulan depan, perusahaan kita adalah **Layanan Verifikasi & Escrow Transfer Tiket Berbasis Web Sederhana dan Operasional Manual.**
-
-- **Engineer** kita tidak melatih model AI; dia membangun *dashboard* internal agar **Operations** bisa mengecek keabsahan tiket 5x lebih cepat.
-- **Operations** kita tidak mengelola ribuan komplain dari bot; dia memverifikasi 10-50 tiket sehari dengan sangat teliti karena reputasi awal adalah urat nadi perusahaan.
-- **Founder** tidak sibuk *pitching* ke VC; dia berbicara dengan 50 pelanggan pertama di WhatsApp, menjadi penengah jika ada masalah di gerbang *venue*, dan memastikan setiap transfer tiket sukses secara riil.
-
-Kita tidak menjual tiket. 
-
-Kita menagih biaya (fee) atas **Infrastruktur Kepercayaan** yang kita sediakan—yang di masa awal ini digerakkan oleh keringat, ketelitian operasional, dan integritas. 
-
-Di situlah *Zero to One* kita.
+Fokus kita hanya satu: menciptakan **Verified Ownership Transfers (VOT)** pertama kita yang tanpa celah, meletakkan bata pertama untuk infrastruktur kepercayaan puluhan tahun ke depan.
