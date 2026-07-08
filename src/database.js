@@ -106,13 +106,26 @@ async function initializeDatabase() {
   `);
 
   await run(`
+    CREATE TABLE IF NOT EXISTS escrows (
+      id TEXT PRIMARY KEY,
+      transaction_id TEXT NOT NULL,
+      buyer_id TEXT NOT NULL,
+      seller_id TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      status TEXT CHECK(status IN ('PENDING', 'HELD', 'RELEASED', 'REFUNDED', 'DISPUTED')) DEFAULT 'PENDING',
+      payment_proof TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  await run(`
     CREATE TABLE IF NOT EXISTS audit_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       entity_type TEXT NOT NULL,
       entity_id TEXT NOT NULL,
       action TEXT NOT NULL,
       performed_by TEXT REFERENCES users(id),
-      metadata TEXT NOT NULL, -- JSON string
+      metadata TEXT NOT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
   `);
