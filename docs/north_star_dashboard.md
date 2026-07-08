@@ -30,6 +30,47 @@
 
 ---
 
+## North Star Hierarchy
+
+Metrik dibedakan menjadi tiga lapis. Urutan ini menjaga tim tetap fokus pada misi utama sebelum mengejar pertumbuhan.
+
+### Level 1 — Mission Metrics
+
+Ini yang **tidak boleh dikompromikan**. Jika salah satu dari ini merah, tidak ada metrik lain yang relevan.
+
+| Metrik | Target | Alasan |
+| ------ | ------ | ------ |
+| **Successful Entry Rate** | ≥ 99% | Buyer benar-benar masuk venue |
+| **Verified Ownership Rate** | 100% | Setiap tiket memiliki owner yang jelas |
+| **Seller Payment Success Rate** | ≥ 99% | Seller menerima pembayaran tepat waktu |
+
+### Level 2 — Operational Metrics
+
+Mengukur **efisiensi operasi**. Penting untuk skala, tetapi tidak mengorbankan Level 1.
+
+| Metrik | Target |
+| ------ | ------ |
+| Verification Latency | < 5 menit (median) |
+| Manual Intervention Rate | < 10% |
+| Dispute Rate | < 5% |
+| Evidence Completeness | ≥ 98% |
+| Trust Officer Utilization | — |
+
+### Level 3 — Business Metrics
+
+Baru relevan **setelah trust terbukti**. Tidak diukur selama Alpha.
+
+| Metrik |
+| ------ |
+| GMV |
+| Take Rate |
+| CAC |
+| LTV |
+| Repeat Buyers |
+| Repeat Sellers |
+
+---
+
 ## Dashboard Layout
 
 ```

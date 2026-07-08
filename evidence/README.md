@@ -8,20 +8,38 @@
 
 ---
 
+## Evidence Schema
+
+Setiap evidence **wajib** mengikuti format ini agar dapat ditelusuri kembali ke hipotesis dan keputusan yang diambil.
+
+| Field | Deskripsi | Wajib |
+| ----- | --------- | ----- |
+| **ID** | Nomor unik (001–999) | ✅ |
+| **Date** | Tanggal observasi | ✅ |
+| **Event** | Peristiwa yang diamati | ✅ |
+| **Hypothesis** | Asumsi yang ingin divalidasi | ✅ |
+| **Observation** | Temuan lapangan | ✅ |
+| **Evidence Attached** | File pendukung (log, screenshot, video) | ✅ |
+| **Decision** | Keputusan yang diambil berdasarkan evidence | ✅ |
+| **Follow-up ADR** | Nomor ADR jika memicu perubahan arsitektur | ⬜ |
+| **Owner** | Penanggung jawab evidence | ✅ |
+
+---
+
 ## Daftar Evidence
 
-| ID    | Judul                    | Status      | Tanggal | Referensi ADR |
-| ----- | ------------------------ | ----------- | ------- | ------------- |
-| 001   | Field Observation        | 🟡 Planned  | —       | —             |
-| 002   | User Interviews          | 🟡 Planned  | —       | —             |
-| 003   | Dispute Analysis         | 🟡 Planned  | —       | —             |
-| 004   | Fraud Pattern            | 🟡 Planned  | —       | —             |
-| 005   | Performance Benchmark    | 🟡 Planned  | —       | —             |
-| 006   | Load Test                | 🟡 Planned  | —       | —             |
-| 007   | Usability                | 🟡 Planned  | —       | —             |
-| 008   | Promoter Feedback        | 🟡 Planned  | —       | —             |
-| 009   | Venue Feedback           | 🟡 Planned  | —       | —             |
-| 010   | Postmortem               | 🟡 Planned  | —       | —             |
+| ID | Judul | Status | Tanggal | Hypothesis | Decision | Owner | ADR |
+| -- | ----- | ------ | ------- | ---------- | -------- | ----- | --- |
+| 001 | Field Observation | 🟡 Planned | — | — | — | — | — |
+| 002 | User Interviews | 🟡 Planned | — | — | — | — | — |
+| 003 | Dispute Analysis | 🟡 Planned | — | — | — | — | — |
+| 004 | Fraud Pattern | 🟡 Planned | — | — | — | — | — |
+| 005 | Performance Benchmark | 🟡 Planned | — | — | — | — | — |
+| 006 | Load Test | 🟡 Planned | — | — | — | — | — |
+| 007 | Usability | 🟡 Planned | — | — | — | — | — |
+| 008 | Promoter Feedback | 🟡 Planned | — | — | — | — | — |
+| 009 | Venue Feedback | 🟡 Planned | — | — | — | — | — |
+| 010 | Postmortem | 🟡 Planned | — | — | — | — | — |
 
 ---
 
