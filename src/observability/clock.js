@@ -1,46 +1,63 @@
 /**
- * Clock Abstraction — Wave 2.5 Observability
- * 
+ * Clock Abstraction — Phase 3 Operational Foundation
+ *
  * Never call Date.now() directly in domain code.
  * Use clock.now() for deterministic replay and testable time.
+ *
+ * Supports FixedClock (deterministic), SystemClock (real time),
+ * and TestClock (manual control).
  */
-class Clock {
+
+class AbstractClock {
+  now() { throw new Error('Not implemented'); }
+  timestampMs() { throw new Error('Not implemented'); }
+  elapsedSince(timestamp) {
+    const then = new Date(timestamp).getTime();
+    return this.timestampMs() - then;
+  }
+  isExpired(timestamp, durationMs) {
+    return this.elapsedSince(timestamp) > durationMs;
+  }
+}
+
+class SystemClock extends AbstractClock {
+  now() { return new Date().toISOString(); }
+  timestampMs() { return Date.now(); }
+}
+
+class FixedClock extends AbstractClock {
+  constructor(fixedTime) {
+    super();
+    this._fixed = fixedTime || '2026-01-01T00:00:00.000Z';
+  }
+
+  now() { return this._fixed; }
+  timestampMs() { return new Date(this._fixed).getTime(); }
+
+  setTime(time) { this._fixed = time; }
+}
+
+class TestClock extends AbstractClock {
   constructor() {
+    super();
     this._currentTime = null;
     this._ticks = 0;
   }
 
-  /**
-   * Returns the current time as ISO string.
-   * If frozen (for replay/testing), returns the frozen time.
-   */
   now() {
-    if (this._currentTime) {
-      return this._currentTime;
-    }
+    if (this._currentTime) return this._currentTime;
     return new Date().toISOString();
   }
 
-  /**
-   * Returns the current time as timestamp (ms).
-   */
   timestampMs() {
-    if (this._currentTime) {
-      return new Date(this._currentTime).getTime();
-    }
+    if (this._currentTime) return new Date(this._currentTime).getTime();
     return Date.now();
   }
 
-  /**
-   * Freezes time at a specific point (for replay determinism).
-   */
   freeze(time) {
     this._currentTime = time || new Date().toISOString();
   }
 
-  /**
-   * Advances frozen time by milliseconds (for testing timeouts).
-   */
   advance(ms) {
     if (this._currentTime) {
       const current = new Date(this._currentTime).getTime();
@@ -48,30 +65,24 @@ class Clock {
     }
   }
 
-  /**
-   * Releases the frozen time.
-   */
+  tick(ms = 1) {
+    this._ticks++;
+    this.advance(ms);
+  }
+
   unfreeze() {
     this._currentTime = null;
   }
 
-  /**
-   * Returns elapsed ms since a given timestamp.
-   */
-  elapsedSince(timestamp) {
-    const then = new Date(timestamp).getTime();
-    return this.timestampMs() - then;
-  }
+  get ticks() { return this._ticks; }
 
-  /**
-   * Returns true if elapsed time exceeds the given duration in ms.
-   */
-  isExpired(timestamp, durationMs) {
-    return this.elapsedSince(timestamp) > durationMs;
+  reset() {
+    this._currentTime = null;
+    this._ticks = 0;
   }
 }
 
-// Singleton
-const clock = new Clock();
+// Default clock is system clock
+const clock = new SystemClock();
 
-module.exports = { Clock, clock };
+module.exports = { AbstractClock, SystemClock, FixedClock, TestClock, clock };
