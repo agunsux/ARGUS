@@ -1,0 +1,43 @@
+{
+  "id": "fraud-mitigation-policy",
+  "name": "Standard Fraud Mitigation Policy",
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "excessive-risk",
+      "name": "Excessive Risk Block",
+      "action": "BLOCK",
+      "reasonCode": "EXCESSIVE_RISK",
+      "constraints": [
+        {
+          "field": "facts.riskScore",
+          "operator": "GREATER_THAN",
+          "value": 75
+        }
+      ],
+      "evidenceRequirements": {
+        "supportingEvidence": ["kyc_check", "device_fingerprint"],
+        "contradictingEvidence": ["verified_whitelist"],
+        "missingEvidence": []
+      }
+    },
+    {
+      "id": "high-value-review",
+      "name": "High Value Manual Review",
+      "action": "REVIEW",
+      "reasonCode": "HIGH_VALUE_TRANSACTION",
+      "constraints": [
+        {
+          "field": "facts.isHighValue",
+          "operator": "EQUAL",
+          "value": true
+        }
+      ],
+      "evidenceRequirements": {
+        "supportingEvidence": ["bank_statement"],
+        "contradictingEvidence": [],
+        "missingEvidence": ["compliance_override"]
+      }
+    }
+  ]
+}
