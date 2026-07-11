@@ -11,7 +11,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve uploads folder statically for evidence check debugging
-app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
+const uploadsDir = process.env.VERCEL
+  ? '/tmp/uploads'
+  : path.resolve(__dirname, '../uploads');
+app.use('/uploads', express.static(uploadsDir));
 
 // Serve front-end files
 app.use(express.static(path.resolve(__dirname, '../public')));
