@@ -1,10 +1,10 @@
 # ARGUS Performance Benchmark Report — ConcurrentUsers-20
 
-* **Generated At:** 2026-07-11T19:39:20.094Z
+* **Generated At:** 2026-07-11T20:13:03.886Z
 * **Total Transactions Evaluated:** 20
 * **Successful Actions:** 20
 * **Failed Actions:** 0
-* **Overall Throughput:** 6666.67 req/sec
+* **Overall Throughput:** 20000 req/sec
 
 ## Latency Percentiles
 * **P50 (Median):** 0 ms
