@@ -24,7 +24,6 @@
   "dependencies": {
     "express": "^5.2.1",
     "multer": "^2.2.0",
-    "sqlite3": "^6.0.1",
     "uuid": "^9.0.1"
   }
 }
