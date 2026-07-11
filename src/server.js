@@ -25,19 +25,31 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
-// Initialize DB and start listening
-initializeDatabase()
-  .then(() => {
+// Initialize DB
+const dbPromise = initializeDatabase().catch(err => {
+  console.error('Failed to initialize database:', err);
+});
+
+// Ensure database tables are created before handling any request
+app.use(async (req, res, next) => {
+  try {
+    await dbPromise;
+    next();
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Start listener only when running standalone locally
+if (require.main === module && !process.env.VERCEL) {
+  dbPromise.then(() => {
     app.listen(PORT, () => {
       console.log(`==================================================`);
       console.log(`  ARGUS Trust Infrastructure running on port ${PORT}`);
       console.log(`  Database loaded: src/database.js`);
       console.log(`==================================================`);
     });
-  })
-  .catch(err => {
-    console.error('Failed to initialize database on startup:', err);
-    process.exit(1);
   });
+}
 
 module.exports = app;

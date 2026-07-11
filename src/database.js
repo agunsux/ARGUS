@@ -2,7 +2,21 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
-const dbPath = path.resolve(__dirname, 'argus_ledger.db');
+const dbPath = process.env.VERCEL
+  ? path.resolve('/tmp', 'argus_ledger.db')
+  : path.resolve(__dirname, 'argus_ledger.db');
+
+if (process.env.VERCEL) {
+  const templatePath = path.resolve(__dirname, 'argus_ledger.db');
+  if (fs.existsSync(templatePath) && !fs.existsSync(dbPath)) {
+    try {
+      fs.copyFileSync(templatePath, dbPath);
+    } catch (e) {
+      console.error('Failed to copy sqlite template to /tmp:', e);
+    }
+  }
+}
+
 const db = new sqlite3.Database(dbPath);
 
 // Helper to run SQL queries as Promises
