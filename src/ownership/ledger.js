@@ -40,6 +40,44 @@ async function replayTicketState(ticketId) {
         state.status = 'Closed'; state.history.push({ event: 'TransactionClosed', time: ev.created_at }); break;
       case 'ExceptionRaised':
         state.status = 'Exception'; state.history.push({ event: 'ExceptionRaised', reason: m.reason, time: ev.created_at }); break;
+      case 'TicketCreated':
+        state.status = 'Listed';
+        state.history.push({ event: 'TicketCreated', price: m.price, seat_info: m.seat_info, time: ev.created_at });
+        break;
+      case 'OwnershipAssigned':
+        state.currentOwnerId = m.assigned_to;
+        state.status = 'Listed';
+        state.history.push({ event: 'OwnershipAssigned', owner: m.assigned_to, time: ev.created_at });
+        break;
+      case 'TransferRequested':
+        state.status = 'TransferPending';
+        state.history.push({ event: 'TransferRequested', buyer: m.buyer_id, transfer_id: m.transfer_id, time: ev.created_at });
+        break;
+      case 'VerificationPassed':
+        state.status = 'Verified';
+        state.history.push({ event: 'VerificationPassed', time: ev.created_at });
+        break;
+      case 'VerificationFailed':
+        state.status = 'Rejected';
+        state.history.push({ event: 'VerificationFailed', time: ev.created_at });
+        break;
+      case 'SettlementCompleted':
+        state.status = 'Settled';
+        state.history.push({ event: 'SettlementCompleted', time: ev.created_at });
+        break;
+      case 'OwnershipTransferred':
+        state.currentOwnerId = m.new_owner_id;
+        state.status = 'Transferred';
+        state.history.push({ event: 'OwnershipTransferred', owner: m.new_owner_id, time: ev.created_at });
+        break;
+      case 'Redeemed':
+        state.status = 'Redeemed';
+        state.history.push({ event: 'Redeemed', time: ev.created_at });
+        break;
+      case 'Disputed':
+        state.status = 'Disputed';
+        state.history.push({ event: 'Disputed', time: ev.created_at });
+        break;
       default:
         throw new Error(`Unknown event: ${ev.event_type}`);
     }
