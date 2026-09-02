@@ -37,8 +37,21 @@ app.use(express.static(path.resolve(__dirname, '../public')));
 // Mount Trust APIs
 app.use(trustApi);
 
-// Root endpoint for API health check
-app.get('/', (req, res) => {
+// Mount MVP Transaction Trust Loop APIs
+const mvpRouter = require('./api/mvpRouter');
+app.use('/api/mvp', mvpRouter);
+
+// Root and health endpoints for API health check
+app.get('/health', (req, res) => {
+  res.json({
+    service: "ARGUS Trust Infrastructure",
+    status: "healthy",
+    version: "1.0.0",
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api', (req, res) => {
   res.json({
     service: "ARGUS Trust Infrastructure",
     status: "healthy",

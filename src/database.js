@@ -1,69 +1,168 @@
 const path = require('path');
 const fs = require('fs');
 
-// Global in-memory state mimicking SQLite database tables
+// Global in-memory state mimicking database tables
 const state = {
   users: [],
+  seller_profiles: [],
+  venues: [],
   events: [],
+  event_pics: [],
   tickets: [],
-  ticket_events: [],
-  evidence_bundles: [],
-  transfers: [],
+  listings: [],
+  orders: [],
+  payments: [],
   escrows: [],
+  entry_verifications: [],
+  evidence_bundles: [],
+  disputes: [],
+  settlements: [],
+  transfers: [], // kept for backward compatibility
+  ticket_events: [], // kept for backward compatibility
   audit_logs: []
 };
 
-// Seed initial dataset
-state.users.push({ id: 'admin-1', name: 'Trust Officer ARGUS', phone: '081234567890', role: 'admin' });
-state.users.push({ id: 'seller-1', name: 'Budi Santoso (Seller)', phone: '082223334445', role: 'user' });
-state.users.push({ id: 'buyer-1', name: 'Dewi Lestari (Buyer)', phone: '085556667778', role: 'user' });
+let seqId = 1;
+let logId = 1;
 
-state.events.push({
-  id: 'event-coldplay',
-  title: 'Coldplay Music of the Spheres',
-  date: '2026-11-15',
-  venue: 'Gelora Bung Karno',
-  category: 'CAT 1 - West'
-});
+/**
+ * Reset and seed database with initial clean fixtures.
+ */
+function resetDatabase() {
+  state.users = [
+    { id: 'admin-1', name: 'Trust Officer ARGUS', email: 'ops@argus.id', phone: '081234567890', role: 'admin' },
+    { id: 'seller-1', name: 'Budi Santoso', email: 'budi.seller@example.com', phone: '082223334445', role: 'seller' },
+    { id: 'buyer-1', name: 'Dewi Lestari', email: 'dewi.buyer@example.com', phone: '085556667778', role: 'buyer' },
+    { id: 'pic-1', name: 'Agus Hendra (Event PIC)', email: 'agus.pic@argus.id', phone: '081199887766', role: 'pic' }
+  ];
 
-state.tickets.push({
-  id: 'ticket-demo-1',
-  event_id: 'event-coldplay',
-  current_owner_id: 'seller-1',
-  status: 'LISTED',
-  seat_info: 'Row H, Seat 12',
-  price: 1500000
-});
+  state.seller_profiles = [
+    { user_id: 'seller-1', kyc_status: 'VERIFIED', nik_hash: 'hash-ktp-budi-327101', active_listing_limit: 10 }
+  ];
 
-state.ticket_events.push({
-  sequence_id: 1,
-  id: 'evt-seed-1',
-  ticket_id: 'ticket-demo-1',
-  event_type: 'TicketCreated',
-  actor_id: 'seller-1',
-  metadata: JSON.stringify({ seat_info: 'Row H, Seat 12', price: 1500000 })
-});
+  state.venues = [
+    { id: 'venue-gbk', name: 'Gelora Bung Karno (Main Stadium)', city: 'Jakarta', gate_info: 'Pintu 3, 7, 10' },
+    { id: 'venue-singapore', name: 'Singapore National Stadium', city: 'Singapore', gate_info: 'Gate 4, 12' }
+  ];
 
-state.ticket_events.push({
-  sequence_id: 2,
-  id: 'evt-seed-2',
-  ticket_id: 'ticket-demo-1',
-  event_type: 'OwnershipAssigned',
-  actor_id: 'seller-1',
-  metadata: JSON.stringify({ assigned_to: 'seller-1' })
-});
+  state.events = [
+    {
+      id: 'event-coldplay',
+      title: 'Coldplay Music of the Spheres',
+      date: '2026-11-15',
+      venue_id: 'venue-gbk',
+      venue: 'Gelora Bung Karno',
+      category: 'CAT 1 - West'
+    },
+    {
+      id: 'event-gnr',
+      title: 'Guns N Roses: Not In This Lifetime',
+      date: '2026-10-15',
+      venue_id: 'venue-gbk',
+      venue: 'Gelora Bung Karno',
+      category: 'Festival A'
+    }
+  ];
 
-state.audit_logs.push({
-  id: 1,
-  entity_type: 'TICKET',
-  entity_id: 'ticket-demo-1',
-  action: 'CREATED',
-  performed_by: 'seller-1',
-  metadata: JSON.stringify({ reason: 'Initial seed generation' })
-});
+  state.event_pics = [
+    {
+      id: 'pic-assign-coldplay',
+      event_id: 'event-coldplay',
+      venue_id: 'venue-gbk',
+      pic_user_id: 'pic-1',
+      event_date: '2026-11-15',
+      status: 'ACTIVE',
+      contact_phone: '081199887766'
+    }
+  ];
 
-let seqId = 3;
-let logId = 2;
+  state.tickets = [
+    {
+      id: 'ticket-demo-1',
+      event_id: 'event-coldplay',
+      current_owner_id: 'seller-1',
+      status: 'VERIFIED',
+      seat_info: 'Row H, Seat 12',
+      face_value: 1250000,
+      price: 1500000,
+      barcode_hash: 'hash-barcode-demo-1'
+    }
+  ];
+
+  state.listings = [
+    {
+      id: 'list-demo-1',
+      ticket_id: 'ticket-demo-1',
+      seller_id: 'seller-1',
+      event_id: 'event-coldplay',
+      face_value: 1250000,
+      price: 1500000,
+      status: 'ACTIVE',
+      rejection_reason: null,
+      evidence_bundle_id: 'bdl-seed-1',
+      created_at: '2026-07-09T10:00:00Z'
+    }
+  ];
+
+  state.evidence_bundles = [
+    {
+      id: 'bdl-seed-1',
+      ticket_id: 'ticket-demo-1',
+      uploader_id: 'seller-1',
+      bundle_hash: 'hash-bundle-seed-1',
+      files_json: JSON.stringify([
+        { originalname: 'invoice_ticket.pdf', size: 102400, hash: 'hash-pdf-invoice' },
+        { originalname: 'ticket_qr.png', size: 51200, hash: 'hash-png-qr' }
+      ]),
+      uploaded_at: '2026-07-09T09:59:00Z'
+    }
+  ];
+
+  state.orders = [];
+  state.payments = [];
+  state.escrows = [];
+  state.entry_verifications = [];
+  state.disputes = [];
+  state.settlements = [];
+  state.transfers = [];
+  state.ticket_events = [
+    {
+      sequence_id: 1,
+      id: 'evt-seed-1',
+      ticket_id: 'ticket-demo-1',
+      event_type: 'TicketCreated',
+      actor_id: 'seller-1',
+      metadata: JSON.stringify({ seat_info: 'Row H, Seat 12', price: 1500000 }),
+      created_at: '2026-07-09T10:00:00Z'
+    },
+    {
+      sequence_id: 2,
+      id: 'evt-seed-2',
+      ticket_id: 'ticket-demo-1',
+      event_type: 'OwnershipAssigned',
+      actor_id: 'seller-1',
+      metadata: JSON.stringify({ assigned_to: 'seller-1' }),
+      created_at: '2026-07-09T10:00:05Z'
+    }
+  ];
+
+  state.audit_logs = [
+    {
+      id: 1,
+      entity_type: 'TICKET',
+      entity_id: 'ticket-demo-1',
+      action: 'CREATED',
+      performed_by: 'seller-1',
+      metadata: JSON.stringify({ reason: 'Initial seed generation' }),
+      created_at: '2026-07-09T10:00:00Z'
+    }
+  ];
+
+  seqId = 3;
+  logId = 2;
+}
+
+resetDatabase();
 
 // Dummy connection object
 const db = {
@@ -100,7 +199,8 @@ async function run(sql, params = []) {
         current_owner_id,
         status: params[5] || 'LISTED',
         seat_info,
-        price
+        price,
+        barcode_hash: params[6] || `hash-${id}`
       });
     }
     return { lastID: id, changes: 1 };
@@ -119,7 +219,8 @@ async function run(sql, params = []) {
       ticket_id,
       event_type,
       actor_id,
-      metadata
+      metadata,
+      created_at: new Date().toISOString()
     });
     return { lastID: seqId, changes: 1 };
   }
@@ -207,7 +308,8 @@ async function run(sql, params = []) {
       entity_id,
       action,
       performed_by,
-      metadata
+      metadata,
+      created_at: new Date().toISOString()
     });
     return { lastID: logId, changes: 1 };
   }
@@ -237,6 +339,29 @@ async function run(sql, params = []) {
     return { lastID: id, changes: 1 };
   }
 
+  // 11. Escrows table queries
+  if (clean.includes('INSERT INTO escrows')) {
+    const [id, order_id, buyer_id, seller_id, amount, status, payment_proof, created_at] = params;
+    state.escrows.push({
+      id,
+      order_id,
+      buyer_id,
+      seller_id,
+      amount,
+      status,
+      payment_proof,
+      created_at: created_at || new Date().toISOString()
+    });
+    return { lastID: id, changes: 1 };
+  }
+
+  if (clean.includes('UPDATE escrows SET status = ? WHERE id = ?')) {
+    const [status, id] = params;
+    const item = state.escrows.find(e => e.id === id);
+    if (item) item.status = status;
+    return { changes: 1 };
+  }
+
   return { changes: 0 };
 }
 
@@ -261,6 +386,12 @@ async function get(sql, params = []) {
   if (clean.includes('SELECT * FROM transfers WHERE id = ?')) {
     return state.transfers.find(t => t.id === params[0]) || null;
   }
+  if (clean.includes('SELECT * FROM escrows WHERE id = ?')) {
+    return state.escrows.find(e => e.id === params[0]) || null;
+  }
+  if (clean.includes('SELECT * FROM escrows WHERE order_id = ?')) {
+    return state.escrows.find(e => e.order_id === params[0]) || null;
+  }
   if (clean.includes('SELECT * FROM evidence_bundles WHERE ticket_id = ?') && clean.includes('ORDER BY uploaded_at DESC LIMIT 1')) {
     const filtered = state.evidence_bundles.filter(eb => eb.ticket_id === params[0]);
     if (filtered.length === 0) return null;
@@ -271,6 +402,10 @@ async function get(sql, params = []) {
   }
   if (clean.includes('SELECT * FROM evidence_bundles WHERE id = ?')) {
     return state.evidence_bundles.find(eb => eb.id === params[0]) || null;
+  }
+  if (clean.includes('SELECT COUNT(*) as count FROM transfers WHERE status = ?')) {
+    const count = state.transfers.filter(t => t.status === params[0]).length;
+    return { count };
   }
 
   return null;
@@ -293,7 +428,7 @@ async function all(sql, params = []) {
   if (clean.includes('SELECT t.*') && clean.includes('FROM tickets t')) {
     const results = [];
     for (const ticket of state.tickets) {
-      if (['LISTED', 'RESERVED', 'ESCROW_PAID'].includes(ticket.status)) {
+      if (['LISTED', 'RESERVED', 'ESCROW_PAID', 'VERIFIED'].includes(ticket.status)) {
         const event = state.events.find(e => e.id === ticket.event_id) || {};
         const bundle = state.evidence_bundles.find(eb => eb.ticket_id === ticket.id) || {};
         results.push({
@@ -320,16 +455,36 @@ async function all(sql, params = []) {
 }
 
 /**
- * Mock database initialization (already pre-seeded in JS state).
+ * Helper to record immutable audit log
+ */
+async function recordAuditLog(entityType, entityId, action, performedBy, metadata = {}) {
+  const entry = {
+    id: logId++,
+    entity_type: entityType,
+    entity_id: entityId,
+    action,
+    performed_by: performedBy,
+    metadata: typeof metadata === 'string' ? metadata : JSON.stringify(metadata),
+    created_at: new Date().toISOString()
+  };
+  state.audit_logs.push(entry);
+  return entry;
+}
+
+/**
+ * Mock database initialization
  */
 async function initializeDatabase() {
   return Promise.resolve();
 }
 
 module.exports = {
+  state,
+  resetDatabase,
   db,
   run,
   all,
   get,
+  recordAuditLog,
   initializeDatabase
 };
