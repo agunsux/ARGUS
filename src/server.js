@@ -41,8 +41,8 @@ app.use(trustApi);
 const mvpRouter = require('./api/mvpRouter');
 app.use('/api/mvp', mvpRouter);
 
-// Root and health endpoints for API health check
-app.get('/health', (req, res) => {
+// Root and health endpoints for API health check (local + Vercel rewrite)
+app.get('/', (req, res) => {
   res.json({
     service: "ARGUS Trust Infrastructure",
     status: "healthy",
@@ -51,7 +51,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.get('/api', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({
     service: "ARGUS Trust Infrastructure",
     status: "healthy",

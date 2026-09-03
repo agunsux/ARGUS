@@ -3,6 +3,25 @@ const { state, recordAuditLog } = require('../database');
 const { EscrowService } = require('./escrowService');
 
 class EventPicService {
+  static ALLOWED_ENTRY_STATUS = [
+    'CONFIRMED',
+    'INVALID',
+    'DUPLICATE_ENTRY',
+    'NO_SHOW_BUYER',
+    'NO_SHOW_SELLER',
+    'TICKET_PROBLEM',
+    'GATE_REJECTION'
+  ];
+
+  static NEXT_ACTION_MAP = {
+    CONFIRMED: 'RELEASE_SETTLEMENT',
+    INVALID: 'OPEN_DISPUTE_INVESTIGATION',
+    DUPLICATE_ENTRY: 'REJECT_DUPLICATE_HOLD_ESCROW',
+    NO_SHOW_BUYER: 'HOLD_ESCROW_AWAIT_OPS_REVIEW',
+    NO_SHOW_SELLER: 'HOLD_ESCROW_AWAIT_OPS_REVIEW',
+    TICKET_PROBLEM: 'OPEN_DISPUTE_INVESTIGATION',
+    GATE_REJECTION: 'OPEN_DISPUTE_INVESTIGATION'
+  };
   /**
    * Check if PIC is assigned and active for an event (H-1 to H+1 window)
    */
@@ -150,9 +169,15 @@ class EventPicService {
   /**
    * PIC verifies buyer at venue and confirms physical entry through gate
    */
-  static async recordEntryVerification({ picUserId, orderId, gate, notes, status = 'CONFIRMED', currentDateStr = null }) {
+  static async recordEntryVerification({ picUserId, orderId, gate, notes, status = 'CONFIRMED', reason = null, nextAction = null, evidenceBundleId = null, currentDateStr = null }) {
     const order = state.orders.find(o => o.id === orderId);
     if (!order) throw new Error('Order not found');
+
+    if (!this.ALLOWED_ENTRY_STATUS.includes(status)) {
+      const err = new Error(`Invalid entry status: ${status}. Allowed: ${this.ALLOWED_ENTRY_STATUS.join(', ')}`);
+      err.code = 'INVALID_ENTRY_STATUS';
+      throw err;
+    }
 
     const activeCheck = this.isPicActiveForEvent(picUserId, order.event_id, currentDateStr);
     if (!activeCheck.active) {
@@ -178,10 +203,15 @@ class EventPicService {
       order_id: orderId,
       ticket_id: order.ticket_id,
       pic_id: picUserId,
-      status: status, // 'CONFIRMED', 'INVALID', 'DUPLICATE_ENTRY'
+      actor: picUserId,
+      status: status, // CONFIRMED, INVALID, DUPLICATE_ENTRY, NO_SHOW_BUYER, NO_SHOW_SELLER, TICKET_PROBLEM, GATE_REJECTION
       gate: gate || 'Main Gate',
       verified_at: new Date().toISOString(),
-      notes: notes || null
+      timestamp: new Date().toISOString(),
+      notes: notes || null,
+      reason: reason || notes || status,
+      evidence_bundle_id: evidenceBundleId || null,
+      next_action: nextAction || this.NEXT_ACTION_MAP[status] || 'OPS_REVIEW'
     };
     state.entry_verifications.push(verification);
 

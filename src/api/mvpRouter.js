@@ -33,6 +33,54 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // =============================================================================
+// PILOT AUTH HELPERS (Phase 2: no silent defaults, ownership enforced)
+// Caller identity: x-user-id header (preferred) or explicit body/query field.
+// No JWT/new infra — minimal hardening for controlled pilot.
+// =============================================================================
+function getCallerId(req, ...fallbacks) {
+  const headerId = req.header ? req.header('x-user-id') : null;
+  if (headerId) return headerId;
+  for (const f of fallbacks) {
+    if (f) return f;
+  }
+  return null;
+}
+
+function findUser(id) {
+  return state.users.find(u => u.id === id) || null;
+}
+
+function requireAdmin(officerId) {
+  const user = findUser(officerId);
+  if (!user) {
+    const err = new Error('Unauthorized: officer not found');
+    err.code = 'ADMIN_UNAUTHORIZED';
+    err.status = 401;
+    throw err;
+  }
+  if (user.role !== 'admin') {
+    const err = new Error('Forbidden: admin role required');
+    err.code = 'ADMIN_FORBIDDEN';
+    err.status = 403;
+    throw err;
+  }
+  return user;
+}
+
+function mapRouterError(err, defaultStatus = 400) {
+  if (err.code === 'PIC_NOT_ACTIVE' || err.code === 'PIC_UNAUTHORIZED' || err.code === 'UNAUTHORIZED' || err.code === 'ADMIN_FORBIDDEN') {
+    return 403;
+  }
+  if (err.code === 'ADMIN_UNAUTHORIZED') {
+    return 401;
+  }
+  if (err.code === 'DUPLICATE_ENTRY_CONFIRMATION') {
+    return 409;
+  }
+  return err.status || defaultStatus;
+}
+
+// =============================================================================
 // PUBLIC & MARKETPLACE ENDPOINTS
 // =============================================================================
 
@@ -82,7 +130,10 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
     const { sellerId, eventId, seatInfo, faceValue, price, rawBarcode } = req.body;
 
     if (!sellerId || !eventId || !seatInfo || !faceValue || !price || !rawBarcode) {
-      return res.status(400).json({ error: 'Missing required listing fields (sellerId, eventId, seatInfo, faceValue, price, rawBarcode)' });
+      return res.status(400).json({ error: 'Missing required listing fields (sellerId, eventId, seatInfo, faceValue, price, rawBarcode)', code: 'VALIDATION_ERROR' });
+    }
+    if (!findUser(sellerId)) {
+      return res.status(401).json({ error: 'Unknown seller', code: 'AUTH_REQUIRED' });
     }
 
     let evidenceBundleId = null;
@@ -114,10 +165,21 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
 });
 
 /**
- * Get listings for a seller
+ * Get listings for a seller (ownership enforced)
  * GET /api/mvp/seller/:id/listings
  */
 router.get('/seller/:id/listings', (req, res) => {
+  const callerId = getCallerId(req, req.query.requesterId);
+  if (!callerId) {
+    return res.status(401).json({ error: 'requester identity required (x-user-id or ?requesterId)', code: 'AUTH_REQUIRED' });
+  }
+  const caller = findUser(callerId);
+  if (!caller) {
+    return res.status(401).json({ error: 'Unknown requester', code: 'AUTH_REQUIRED' });
+  }
+  if (caller.id !== req.params.id && caller.role !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden: cannot access another seller orders', code: 'FORBIDDEN' });
+  }
   const sellerListings = state.listings.filter(l => l.seller_id === req.params.id);
   res.json({ listings: sellerListings });
 });
@@ -134,7 +196,10 @@ router.post('/buyer/order', async (req, res) => {
   try {
     const { buyerId, listingId } = req.body;
     if (!buyerId || !listingId) {
-      return res.status(400).json({ error: 'buyerId and listingId are required' });
+      return res.status(400).json({ error: 'buyerId and listingId are required', code: 'VALIDATION_ERROR' });
+    }
+    if (!findUser(buyerId)) {
+      return res.status(401).json({ error: 'Unknown buyer', code: 'AUTH_REQUIRED' });
     }
 
     const result = await EscrowService.createOrder({ buyerId, listingId });
@@ -190,10 +255,21 @@ router.post('/buyer/pay', async (req, res) => {
 });
 
 /**
- * Buyer gets active orders
+ * Buyer gets active orders (ownership enforced)
  * GET /api/mvp/buyer/:id/orders
  */
 router.get('/buyer/:id/orders', (req, res) => {
+  const callerId = getCallerId(req, req.query.requesterId);
+  if (!callerId) {
+    return res.status(401).json({ error: 'requester identity required (x-user-id or ?requesterId)', code: 'AUTH_REQUIRED' });
+  }
+  const caller = findUser(callerId);
+  if (!caller) {
+    return res.status(401).json({ error: 'Unknown requester', code: 'AUTH_REQUIRED' });
+  }
+  if (caller.id !== req.params.id && caller.role !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden: cannot access another buyer orders', code: 'FORBIDDEN' });
+  }
   const buyerOrders = state.orders.filter(o => o.buyer_id === req.params.id).map(order => {
     const event = state.events.find(e => e.id === order.event_id) || {};
     const venue = state.venues.find(v => v.id === event.venue_id) || {};
@@ -238,7 +314,7 @@ router.post('/buyer/dispute', async (req, res) => {
       dispute: result.dispute
     });
   } catch (err) {
-    res.status(400).json({ error: err.message, code: err.code });
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
   }
 });
 
@@ -252,11 +328,14 @@ router.post('/buyer/dispute', async (req, res) => {
  */
 router.get('/pic/events/:eventId/dashboard', (req, res) => {
   try {
-    const picUserId = req.query.picUserId || 'pic-1';
+    const picUserId = getCallerId(req, req.query.picUserId);
+    if (!picUserId) {
+      return res.status(401).json({ error: 'picUserId required (x-user-id or ?picUserId). No anonymous PIC access.', code: 'AUTH_REQUIRED' });
+    }
     const dashboard = EventPicService.getPicEventDashboard(picUserId, req.params.eventId);
     res.json(dashboard);
   } catch (err) {
-    res.status(err.code === 'PIC_NOT_ACTIVE' ? 403 : 400).json({ error: err.message, code: err.code });
+    res.status(mapRouterError(err, err.code === 'PIC_NOT_ACTIVE' ? 403 : 400)).json({ error: err.message, code: err.code });
   }
 });
 
@@ -266,9 +345,9 @@ router.get('/pic/events/:eventId/dashboard', (req, res) => {
  */
 router.post('/pic/verify-entry', async (req, res) => {
   try {
-    const { picUserId, orderId, gate, notes, status } = req.body;
+    const { picUserId, orderId, gate, notes, status, reason, nextAction, evidenceBundleId } = req.body;
     if (!picUserId || !orderId) {
-      return res.status(400).json({ error: 'picUserId and orderId are required' });
+      return res.status(400).json({ error: 'picUserId and orderId are required', code: 'VALIDATION_ERROR' });
     }
 
     const verification = await EventPicService.recordEntryVerification({
@@ -276,7 +355,10 @@ router.post('/pic/verify-entry', async (req, res) => {
       orderId,
       gate: gate || 'Pintu Utama',
       notes,
-      status: status || 'CONFIRMED'
+      status: status || 'CONFIRMED',
+      reason,
+      nextAction,
+      evidenceBundleId
     });
 
     res.json({
@@ -285,7 +367,7 @@ router.post('/pic/verify-entry', async (req, res) => {
       verification
     });
   } catch (err) {
-    res.status(400).json({ error: err.message, code: err.code });
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
   }
 });
 
@@ -320,7 +402,7 @@ router.post('/pic/dispute-evidence', upload.any(), async (req, res) => {
       dispute
     });
   } catch (err) {
-    res.status(400).json({ error: err.message, code: err.code });
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
   }
 });
 
@@ -333,6 +415,17 @@ router.post('/pic/dispute-evidence', upload.any(), async (req, res) => {
  * GET /api/mvp/admin/operations
  */
 router.get('/admin/operations', (req, res) => {
+  const callerId = getCallerId(req, req.query.requesterId);
+  if (!callerId) {
+    return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
+  }
+  const caller = findUser(callerId);
+  if (!caller) {
+    return res.status(401).json({ error: 'Unknown requester', code: 'AUTH_REQUIRED' });
+  }
+  if (caller.role !== 'admin' && caller.role !== 'pic') {
+    return res.status(403).json({ error: 'Forbidden: ops console requires admin or pic role', code: 'FORBIDDEN' });
+  }
   const today = new Date().toISOString().split('T')[0];
 
   // Today's events
@@ -428,12 +521,16 @@ router.get('/admin/operations', (req, res) => {
  */
 router.post('/admin/listings/:id/verify', async (req, res) => {
   try {
-    const officerId = req.body.officerId || 'admin-1';
+    const officerId = getCallerId(req, req.body.officerId);
+    if (!officerId) {
+      return res.status(401).json({ error: 'officerId required', code: 'AUTH_REQUIRED' });
+    }
+    requireAdmin(officerId);
     const { approved, reason } = req.body;
     const result = await ListingService.verifyListing(req.params.id, officerId, { approved, reason });
     res.json(result);
   } catch (err) {
-    res.status(400).json({ error: err.message, code: err.code });
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
   }
 });
 
@@ -443,7 +540,11 @@ router.post('/admin/listings/:id/verify', async (req, res) => {
  */
 router.post('/admin/disputes/:id/resolve', async (req, res) => {
   try {
-    const officerId = req.body.officerId || 'admin-1';
+    const officerId = getCallerId(req, req.body.officerId);
+    if (!officerId) {
+      return res.status(401).json({ error: 'officerId required', code: 'AUTH_REQUIRED' });
+    }
+    requireAdmin(officerId);
     const { outcome, decisionReason, decisionNotes } = req.body;
 
     const result = await DisputeService.resolveDispute({
@@ -460,17 +561,22 @@ router.post('/admin/disputes/:id/resolve', async (req, res) => {
       result
     });
   } catch (err) {
-    res.status(400).json({ error: err.message, code: err.code });
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
   }
 });
 
 /**
  * Admin executes settlement payout to seller after verified gate entry
  * POST /api/mvp/admin/settlements/execute
+ * NOTE: SIMULATED / PILOT-ONLY until real payment/escrow provider is integrated.
  */
 router.post('/admin/settlements/execute', async (req, res) => {
   try {
-    const officerId = req.body.officerId || 'admin-1';
+    const officerId = getCallerId(req, req.body.officerId);
+    if (!officerId) {
+      return res.status(401).json({ error: 'officerId required', code: 'AUTH_REQUIRED' });
+    }
+    requireAdmin(officerId);
     const { orderId, sellerId, idempotencyKey, bankAccount } = req.body;
 
     // Release escrow first if not yet released
@@ -489,11 +595,12 @@ router.post('/admin/settlements/execute', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Settlement successfully executed and disbursed to seller.',
-      settlement: result.settlement
+      message: 'Settlement successfully executed and disbursed to seller. [SIMULATED / PILOT-ONLY]',
+      settlement: result.settlement,
+      settlement_mode: 'SIMULATED'
     });
   } catch (err) {
-    res.status(400).json({ error: err.message, code: err.code });
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
   }
 });
 

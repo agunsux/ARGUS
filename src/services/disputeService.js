@@ -81,6 +81,16 @@ class DisputeService {
     const dispute = state.disputes.find(d => d.id === disputeId);
     if (!dispute) throw new Error('Dispute not found');
 
+    // PIC authorization: must be assigned ACTIVE to this event
+    const assignment = state.event_pics.find(
+      ep => ep.pic_user_id === picUserId && ep.event_id === dispute.event_id && ep.status === 'ACTIVE'
+    );
+    if (!assignment) {
+      const err = new Error('Unauthorized: PIC not assigned to this event');
+      err.code = 'PIC_UNAUTHORIZED';
+      throw err;
+    }
+
     dispute.status = DISPUTE_STATUS.DECISION_PENDING;
     dispute.pic_id = picUserId;
     dispute.pic_notes = notes;
