@@ -40,6 +40,7 @@ const upload = multer({ storage: storage });
 const { TransactionChallengeService } = require('../services/transactionChallengeService');
 const { EvidenceStorageService } = require('../verification/evidenceStorage');
 const { RETENTION_CONFIG, purgeExpiredEvidence } = require('../config/retention');
+const { SessionStore } = require('../services/sessionStore');
 
 // =============================================================================
 // PILOT AUTH & SESSIONS (Epic 3.5: real sessions, 4 roles, window enforcement)
@@ -57,7 +58,7 @@ function resolveAuth(req, ...fallbacks) {
   }
 
   if (sessionToken) {
-    const session = state.sessions.find(s => s.session_token === sessionToken && new Date(s.expires_at) > new Date());
+    const session = SessionStore.findSession(sessionToken) || state.sessions.find(s => s.session_token === sessionToken && new Date(s.expires_at) > new Date() && !s.revoked);
     if (session) {
       const user = findUser(session.user_id);
       if (user) {
@@ -68,15 +69,18 @@ function resolveAuth(req, ...fallbacks) {
     }
   }
 
-  // Fallback to x-user-id header or passed parameter for backward compatibility
-  const headerId = req.header ? req.header('x-user-id') : null;
-  const callerId = headerId || fallbacks.find(f => !!f);
-  if (callerId) {
-    const user = findUser(callerId);
-    if (user) {
-      req.user = user;
-      req.role = user.role;
-      return user.id;
+  // Blocker 2: Fallback to x-user-id header or passed parameter ONLY in test mode!
+  // In production (NODE_ENV !== 'test'), reject unauthenticated actor selection / identity spoofing.
+  if (process.env.NODE_ENV === 'test') {
+    const headerId = req.header ? req.header('x-user-id') : null;
+    const callerId = headerId || fallbacks.find(f => !!f);
+    if (callerId) {
+      const user = findUser(callerId);
+      if (user) {
+        req.user = user;
+        req.role = user.role;
+        return user.id;
+      }
     }
   }
 
@@ -139,6 +143,22 @@ function verifyAdminStepUp(req, officerId) {
     throw err;
   }
 
+  // Blocker 3: In production, require ARGUS_ADMIN_PASSWORD and reject default pilot123
+  if (process.env.NODE_ENV !== 'test') {
+    if (!process.env.ARGUS_ADMIN_PASSWORD) {
+      const err = new Error('ARGUS_ADMIN_PASSWORD environment variable is required in production');
+      err.code = 'ADMIN_PASSWORD_NOT_CONFIGURED';
+      err.status = 500;
+      throw err;
+    }
+    if (stepUpPassword === 'pilot123') {
+      const err = new Error('Default pilot password rejected in production');
+      err.code = 'STEP_UP_AUTH_REQUIRED';
+      err.status = 403;
+      throw err;
+    }
+  }
+
   let authenticated = false;
   if (stepUpToken) {
     const tokenRecord = state.step_up_tokens.find(t => t.token === stepUpToken && t.admin_id === officer.id && new Date(t.expires_at) > new Date());
@@ -193,7 +213,13 @@ function mapRouterError(err, defaultStatus = 400) {
     err.code === 'INVALID_CHALLENGE_CODE' ||
     err.code === 'INVALID_CHALLENGE_ACTION' ||
     err.code === 'TICKET_NOT_YET_VERIFIED' ||
-    err.code === 'ORDER_NOT_IN_ESCROW'
+    err.code === 'ORDER_NOT_IN_ESCROW' ||
+    err.code === 'PIC_CANNOT_ISSUE_ENTRY_CHALLENGE' ||
+    err.code === 'PIC_CANNOT_ISSUE_HANDOFF_CHALLENGE' ||
+    err.code === 'BUYER_CANNOT_CONFIRM_ENTRY' ||
+    err.code === 'INVALID_CHALLENGE_ISSUER' ||
+    err.code === 'CONSUMER_ROLE_MISMATCH' ||
+    err.code === 'PIC_CANNOT_CONFIRM_OWN_CHALLENGE'
   ) {
     return 403;
   }
@@ -202,6 +228,9 @@ function mapRouterError(err, defaultStatus = 400) {
   }
   if (err.code === 'DUPLICATE_ENTRY_CONFIRMATION' || err.code === 'CHALLENGE_ALREADY_CONSUMED') {
     return 409;
+  }
+  if (err.code === 'GATE_PHOTO_MANDATORY' || err.code === 'EVIDENCE_PHOTO_MANDATORY') {
+    return 400;
   }
   return err.status || defaultStatus;
 }
@@ -229,19 +258,12 @@ router.post('/auth/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid password', code: 'AUTH_FAILED' });
   }
 
-  const sessionToken = `ses-${uuidv4()}`;
-  const session = {
-    session_token: sessionToken,
-    user_id: user.id,
-    role: user.role,
-    created_at: new Date().toISOString(),
-    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
-  };
+  const session = SessionStore.createSession({ userId: user.id, role: user.role });
   state.sessions.push(session);
 
   res.json({
     success: true,
-    session_token: sessionToken,
+    session_token: session.session_token,
     user: {
       id: user.id,
       name: user.name,
@@ -259,6 +281,7 @@ router.post('/auth/login', (req, res) => {
 router.post('/auth/logout', (req, res) => {
   const token = req.header('authorization')?.replace('Bearer ', '') || req.header('x-session-token') || req.body?.session_token;
   if (token) {
+    SessionStore.revokeSession(token);
     state.sessions = state.sessions.filter(s => s.session_token !== token);
   }
   res.json({ success: true, message: 'Logged out successfully' });
@@ -558,35 +581,49 @@ router.post('/buyer/dispute', async (req, res) => {
 });
 
 /**
- * Buyer confirms entry by submitting code from PIC's app (Dual Confirmation Step 2)
- * POST /api/mvp/buyer/confirm-entry
+ * Buyer generates entry confirmation challenge code to show to PIC at gate (Dual Confirmation Step 1)
+ * POST /api/mvp/buyer/orders/:orderId/entry-challenge
+ * POST /api/mvp/buyer/entry-challenge
  */
-router.post('/buyer/confirm-entry', async (req, res) => {
+router.post(['/buyer/orders/:orderId/entry-challenge', '/buyer/entry-challenge'], async (req, res) => {
   try {
-    const { orderId, buyerId, code } = req.body;
-    if (!orderId || !buyerId || !code) {
-      return res.status(400).json({ error: 'orderId, buyerId, and code are required', code: 'VALIDATION_ERROR' });
+    const orderId = req.params.orderId || req.body?.orderId;
+    const buyerId = getCallerId(req, req.body?.buyerId);
+    if (!buyerId) {
+      return res.status(401).json({ error: 'Buyer auth required', code: 'AUTH_REQUIRED' });
+    }
+    if (!orderId) {
+      return res.status(400).json({ error: 'orderId is required', code: 'VALIDATION_ERROR' });
     }
 
-    const callerId = getCallerId(req, buyerId);
-    if (callerId !== buyerId && req.role !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden: cannot confirm entry for another buyer', code: 'FORBIDDEN' });
-    }
-
-    const result = await EventPicService.completeDualConfirmedEntry({
-      orderId,
+    const result = await EventPicService.generateBuyerEntryChallenge({
       buyerId,
-      handshakeCode: code
+      orderId
     });
 
     res.json({
       success: true,
-      message: 'Dual-confirmation successful. Turnstile admission verified and entry confirmed!',
-      result
+      message: result.message,
+      orderId: result.orderId,
+      challengeCode: result.challengeCode,
+      code: result.challengeCode,
+      expiresAt: result.expiresAt,
+      expires_at: result.expiresAt
     });
   } catch (err) {
     res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
   }
+});
+
+/**
+ * Blocked legacy endpoint: Buyer cannot confirm entry
+ * POST /api/mvp/buyer/confirm-entry
+ */
+router.post('/buyer/confirm-entry', (req, res) => {
+  return res.status(403).json({
+    error: 'Buyer cannot confirm entry. PIC must physically inspect turnstile admission and enter Buyer code (POST /api/mvp/pic/confirm-entry).',
+    code: 'BUYER_CANNOT_CONFIRM_ENTRY'
+  });
 });
 
 // =============================================================================
@@ -678,17 +715,19 @@ router.post('/pic/confirm-handoff', requirePicOperationalWindow, async (req, res
 });
 
 /**
- * PIC inspects gate and uploads mandatory photo evidence -> issues entry code for buyer (Dual Confirmation Step 1)
- * POST /api/mvp/pic/prepare-entry
+ * PIC verifies buyer at turnstile gate and confirms entry using buyer's code (Dual Confirmation Step 2)
+ * Mandatory photo evidence (buyer + ticket at gate)
+ * POST /api/mvp/pic/confirm-entry
  */
-router.post('/pic/prepare-entry', upload.any(), requirePicOperationalWindow, async (req, res) => {
+router.post('/pic/confirm-entry', upload.any(), requirePicOperationalWindow, async (req, res) => {
   try {
-    const { picUserId, orderId, gate, notes } = req.body;
-    if (!picUserId || !orderId) {
-      return res.status(400).json({ error: 'picUserId and orderId are required', code: 'VALIDATION_ERROR' });
+    const picUserId = getCallerId(req, req.body?.picUserId);
+    const { orderId, code, gate, notes } = req.body;
+    if (!picUserId || !orderId || !code) {
+      return res.status(400).json({ error: 'picUserId, orderId, and code are required', code: 'VALIDATION_ERROR' });
     }
 
-    let evidenceBundleId = null;
+    let evidenceBundleId = req.body.evidenceBundleId || null;
     if (req.files && req.files.length > 0) {
       const encryptedFiles = [];
       for (const file of req.files) {
@@ -705,16 +744,17 @@ router.post('/pic/prepare-entry', upload.any(), requirePicOperationalWindow, asy
       }
       const bundle = await createEvidenceBundle(`gate-${orderId}`, picUserId, encryptedFiles);
       evidenceBundleId = bundle.id;
-    } else {
+    } else if (!evidenceBundleId && !req.body.photoFile) {
       return res.status(400).json({
         error: 'Mandatory photo evidence (buyer + ticket at gate) required for ENTRY',
         code: 'GATE_PHOTO_MANDATORY'
       });
     }
 
-    const result = await EventPicService.prepareGateAdmission({
+    const result = await EventPicService.confirmEntryWithCode({
       picUserId,
       orderId,
+      handshakeCode: code,
       gate: gate || 'Pintu Utama',
       notes,
       evidenceBundleId,
@@ -723,15 +763,23 @@ router.post('/pic/prepare-entry', upload.any(), requirePicOperationalWindow, asy
 
     res.json({
       success: true,
-      message: 'Gate admission prepared with photo evidence. Show this 6-digit code to Buyer.',
-      orderId: result.orderId,
-      gate: result.gate,
-      challengeCode: result.challengeCode,
-      expiresAt: result.expiresAt
+      message: 'Dual-confirmation successful. Turnstile admission verified and entry confirmed!',
+      result
     });
   } catch (err) {
     res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
   }
+});
+
+/**
+ * Blocked legacy endpoint: PIC cannot issue entry challenge
+ * POST /api/mvp/pic/prepare-entry
+ */
+router.post('/pic/prepare-entry', (req, res) => {
+  return res.status(403).json({
+    error: 'PIC cannot generate ENTRY_CONFIRMED challenge. The entry challenge must be generated by the Buyer (POST /api/mvp/buyer/orders/:id/entry-challenge).',
+    code: 'PIC_CANNOT_ISSUE_ENTRY_CHALLENGE'
+  });
 });
 
 /**

@@ -132,31 +132,31 @@ async function runRedTeamSuite() {
         photoFile: true
       });
 
-      // PIC prepares gate admission and generates 6-digit challenge
-      const prepRes = await EventPicService.prepareGateAdmission({
-        picUserId: 'pic-1',
-        orderId: order.id,
-        gate: 'Gate 3 Utara',
-        photoFile: true
-      });
-      const code = prepRes.challengeCode;
-      assert.ok(code && code.length === 6, 'Challenge code generated');
-
-      // First use: Buyer submits code -> Success
-      const firstUse = await apiRequest('/api/mvp/buyer/confirm-entry', {
+      // Step 1: BUYER requests entry challenge (displayed on Buyer's phone)
+      const challengeRes = await apiRequest(`/api/mvp/buyer/orders/${order.id}/entry-challenge`, {
         method: 'POST',
         headers: { 'x-user-id': 'buyer-1' },
-        body: { orderId: order.id, buyerId: 'buyer-1', code }
+        body: { buyerId: 'buyer-1' }
       });
-      assert.strictEqual(firstUse.status, 200, 'First confirmation should succeed');
+      assert.strictEqual(challengeRes.status, 200, 'Buyer generates entry challenge');
+      const code = challengeRes.data.code;
+      assert.ok(code && code.length === 6, '6-digit challenge code generated for Buyer');
+
+      // Step 2: PIC at turnstile inputs buyer's code with mandatory photo
+      const firstUse = await apiRequest('/api/mvp/pic/confirm-entry', {
+        method: 'POST',
+        headers: { 'x-user-id': 'pic-1' },
+        body: { picUserId: 'pic-1', orderId: order.id, code, photoFile: true, gate: 'Gate 3 Utara' }
+      });
+      assert.strictEqual(firstUse.status, 200, 'First confirmation by PIC should succeed');
       assert.strictEqual(firstUse.data.success, true);
       assert.strictEqual(order.status, ORDER_STATUS.ENTRY_CONFIRMED);
 
-      // Second use (REPLAY ATTACK): Attacker or buyer resubmits identical code
-      const replayAttempt = await apiRequest('/api/mvp/buyer/confirm-entry', {
+      // Second use (REPLAY ATTACK): Attacker or PIC resubmits identical code
+      const replayAttempt = await apiRequest('/api/mvp/pic/confirm-entry', {
         method: 'POST',
-        headers: { 'x-user-id': 'buyer-1' },
-        body: { orderId: order.id, buyerId: 'buyer-1', code }
+        headers: { 'x-user-id': 'pic-1' },
+        body: { picUserId: 'pic-1', orderId: order.id, code, photoFile: true, gate: 'Gate 3 Utara' }
       });
       assert.strictEqual(replayAttempt.status, 409, 'Replay must be rejected with 409 Conflict');
       assert.strictEqual(replayAttempt.data.code, 'CHALLENGE_ALREADY_CONSUMED');
@@ -172,6 +172,13 @@ async function runRedTeamSuite() {
     await testAsync('Attack 2: Cross-Action Challenge Reuse (HANDOFF_READY code cannot be used for ENTRY_CONFIRMED)', async () => {
       const { order } = await setupPaidOrder();
 
+      // Ticket verification
+      await EventPicService.recordTicketVerification({
+        picUserId: 'pic-1',
+        orderId: order.id,
+        photoFile: true
+      });
+
       // Seller generates challenge for HANDOFF_READY
       const sellerChallenge = await TransactionChallengeService.createChallenge({
         orderId: order.id,
@@ -183,10 +190,10 @@ async function runRedTeamSuite() {
       const handoffCode = sellerChallenge.rawCode;
 
       // Attacker attempts to use this HANDOFF code for ENTRY_CONFIRMED at gate
-      const attackRes = await apiRequest('/api/mvp/buyer/confirm-entry', {
+      const attackRes = await apiRequest('/api/mvp/pic/confirm-entry', {
         method: 'POST',
-        headers: { 'x-user-id': 'buyer-1' },
-        body: { orderId: order.id, buyerId: 'buyer-1', code: handoffCode }
+        headers: { 'x-user-id': 'pic-1' },
+        body: { picUserId: 'pic-1', orderId: order.id, code: handoffCode, photoFile: true }
       });
 
       // Must be rejected: no pending challenge exists for ENTRY_CONFIRMED
@@ -198,7 +205,7 @@ async function runRedTeamSuite() {
     // =========================================================================
     // ATTACK 3: IDOR / CROSS-USER ACCESS
     // =========================================================================
-    await testAsync('Attack 3A: IDOR — Buyer A attempts to confirm Buyer B order', async () => {
+    await testAsync('Attack 3A: IDOR — Buyer A attempts to generate entry challenge for Buyer B order', async () => {
       // Setup Order 1 for buyer-1, Order 2 for buyer-2
       const order1Setup = await setupPaidOrder({ buyerId: 'buyer-1' });
       const order2Setup = await setupPaidOrder({ buyerId: 'buyer-2' });
@@ -210,21 +217,14 @@ async function runRedTeamSuite() {
         photoFile: true
       });
 
-      await EventPicService.prepareGateAdmission({
-        picUserId: 'pic-1',
-        orderId: order2Setup.order.id,
-        gate: 'Gate 2',
-        photoFile: true
-      });
-
-      // Buyer 1 attempts to confirm Buyer 2's entry
-      const idorAttempt = await apiRequest('/api/mvp/buyer/confirm-entry', {
+      // Buyer 1 attempts to generate entry challenge for Buyer 2's order
+      const idorAttempt = await apiRequest(`/api/mvp/buyer/orders/${order2Setup.order.id}/entry-challenge`, {
         method: 'POST',
         headers: { 'x-user-id': 'buyer-1' },
-        body: { orderId: order2Setup.order.id, buyerId: 'buyer-1', code: '123456' }
+        body: { buyerId: 'buyer-1' }
       });
 
-      assert.strictEqual(idorAttempt.status, 403, 'Cross-buyer entry confirmation must return 403');
+      assert.strictEqual(idorAttempt.status, 403, 'Cross-buyer entry challenge generation must return 403');
       assert.strictEqual(idorAttempt.data.code, 'BUYER_MISMATCH');
     });
 
@@ -249,12 +249,12 @@ async function runRedTeamSuite() {
     });
 
     // =========================================================================
-    // ATTACK 4: PIC UNILATERALLY SELF-CONFIRMS ENTRY
+    // ATTACK 4: PIC UNILATERALLY SELF-CONFIRMS ENTRY & DIRECTION GUARDS
     // =========================================================================
-    await testAsync('Attack 4: PIC Self-Confirms Entry (Unilateral confirmation rejected without Buyer handshake)', async () => {
+    await testAsync('Attack 4: PIC Self-Confirms Entry & Direction Guards Enforced', async () => {
       const { order } = await setupPaidOrder();
 
-      // PIC attempts to call verify-entry with CONFIRMED status directly (bypassing buyer)
+      // 4A: PIC attempts to call verify-entry with CONFIRMED status directly (bypassing buyer)
       const unilateralAttempt = await apiRequest('/api/mvp/pic/verify-entry', {
         method: 'POST',
         headers: { 'x-user-id': 'pic-1' },
@@ -265,9 +265,27 @@ async function runRedTeamSuite() {
           status: 'CONFIRMED'
         }
       });
-
       assert.strictEqual(unilateralAttempt.status, 403, 'Unilateral PIC entry confirmation must be blocked');
       assert.strictEqual(unilateralAttempt.data.code, 'DUAL_CONFIRMATION_REQUIRED');
+
+      // 4B: PIC attempts to generate entry challenge directly -> Forbidden
+      const picPrepareAttempt = await apiRequest('/api/mvp/pic/prepare-entry', {
+        method: 'POST',
+        headers: { 'x-user-id': 'pic-1' },
+        body: { picUserId: 'pic-1', orderId: order.id }
+      });
+      assert.strictEqual(picPrepareAttempt.status, 403, 'PIC cannot issue entry challenge');
+      assert.strictEqual(picPrepareAttempt.data.code, 'PIC_CANNOT_ISSUE_ENTRY_CHALLENGE');
+
+      // 4C: Buyer attempts to unilaterally confirm entry -> Forbidden
+      const buyerConfirmAttempt = await apiRequest('/api/mvp/buyer/confirm-entry', {
+        method: 'POST',
+        headers: { 'x-user-id': 'buyer-1' },
+        body: { orderId: order.id, buyerId: 'buyer-1', code: '123456' }
+      });
+      assert.strictEqual(buyerConfirmAttempt.status, 403, 'Buyer cannot confirm entry directly');
+      assert.strictEqual(buyerConfirmAttempt.data.code, 'BUYER_CANNOT_CONFIRM_ENTRY');
+
       assert.notStrictEqual(order.status, ORDER_STATUS.ENTRY_CONFIRMED);
     });
 
@@ -433,13 +451,11 @@ async function runRedTeamSuite() {
       // Order is in PAID_ESCROWED, but ticket has NOT been verified yet (order.ticket_verified is falsy)
       assert.ok(!order.ticket_verified);
 
-      // Attacker attempts to jump directly to gate admission preparation
+      // Subcase 8A: Service method throws TICKET_NOT_YET_VERIFIED
       try {
-        await EventPicService.prepareGateAdmission({
-          picUserId: 'pic-1',
-          orderId: order.id,
-          gate: 'Gate 3',
-          photoFile: true
+        await EventPicService.generateBuyerEntryChallenge({
+          buyerId: 'buyer-1',
+          orderId: order.id
         });
         assert.fail('Should have rejected state jump without prior ticket verification');
       } catch (err) {
@@ -447,13 +463,23 @@ async function runRedTeamSuite() {
         assert.ok(err.message.includes('State jump rejected'));
       }
 
-      // Also verify via HTTP router
-      const httpJumpAttempt = await apiRequest('/api/mvp/pic/prepare-entry', {
+      // Subcase 8B: HTTP Buyer challenge endpoint returns 403 TICKET_NOT_YET_VERIFIED
+      const buyerJumpAttempt = await apiRequest(`/api/mvp/buyer/orders/${order.id}/entry-challenge`, {
+        method: 'POST',
+        headers: { 'x-user-id': 'buyer-1' },
+        body: { buyerId: 'buyer-1' }
+      });
+      assert.strictEqual(buyerJumpAttempt.status, 403);
+      assert.strictEqual(buyerJumpAttempt.data.code, 'TICKET_NOT_YET_VERIFIED');
+
+      // Subcase 8C: HTTP PIC confirm-entry returns 403 TICKET_NOT_YET_VERIFIED
+      const picJumpAttempt = await apiRequest('/api/mvp/pic/confirm-entry', {
         method: 'POST',
         headers: { 'x-user-id': 'pic-1' },
-        body: { picUserId: 'pic-1', orderId: order.id, gate: 'Gate 3' }
+        body: { picUserId: 'pic-1', orderId: order.id, code: '123456', photoFile: true }
       });
-      assert.strictEqual(httpJumpAttempt.ok, false);
+      assert.strictEqual(picJumpAttempt.status, 403);
+      assert.strictEqual(picJumpAttempt.data.code, 'TICKET_NOT_YET_VERIFIED');
       assert.notStrictEqual(order.status, ORDER_STATUS.ENTRY_CONFIRMED);
     });
 
@@ -563,6 +589,187 @@ async function runRedTeamSuite() {
       // Verify no duplicate escrow records created in DB
       const escrowsAfter = state.escrows.filter(e => e.order_id === order.id);
       assert.strictEqual(escrowsAfter.length, 1, 'Escrow record count must remain exactly 1');
+    });
+
+    // =========================================================================
+    // ATTACK 11: PRODUCTION IDENTITY SPOOFING REJECTION
+    // =========================================================================
+    await testAsync('Attack 11: Production Mode Rejects x-user-id Spoofing Without Session', async () => {
+      const prevEnv = process.env.NODE_ENV;
+      try {
+        process.env.NODE_ENV = 'production';
+
+        // Attacker attempts to access protected endpoint using x-user-id header in production
+        const spoofAttempt = await apiRequest('/api/mvp/auth/me', {
+          method: 'GET',
+          headers: { 'x-user-id': 'buyer-1' }
+        });
+
+        assert.strictEqual(spoofAttempt.status, 401, 'x-user-id must be rejected in production with 401');
+        assert.strictEqual(spoofAttempt.data.code, 'AUTH_REQUIRED');
+      } finally {
+        process.env.NODE_ENV = prevEnv;
+      }
+    });
+
+    // =========================================================================
+    // ATTACK 12: PRODUCTION HARDCODED CREDENTIAL REJECTION
+    // =========================================================================
+    await testAsync('Attack 12: Production Mode Rejects pilot123 Default Password', async () => {
+      // 1. Setup order while in test environment
+      const { order } = await setupPaidOrder();
+      await EventPicService.recordTicketVerification({
+        picUserId: 'pic-1',
+        orderId: order.id,
+        photoFile: true,
+        currentDateStr: '2026-11-15'
+      });
+
+      const prevEnv = process.env.NODE_ENV;
+      const prevPass = process.env.ARGUS_ADMIN_PASSWORD;
+      try {
+        process.env.NODE_ENV = 'production';
+        process.env.ARGUS_ADMIN_PASSWORD = 'super-secret-production-admin-pass-2026';
+
+        const adminUser = state.users.find(u => u.id === 'admin-1');
+        const prevAdminPass = adminUser.password;
+        adminUser.password = process.env.ARGUS_ADMIN_PASSWORD;
+
+        // Subcase 12A: Attacker attempts to login as admin with default 'pilot123' password in production
+        const loginDefaultAttempt = await apiRequest('/api/mvp/auth/login', {
+          method: 'POST',
+          body: { usernameOrId: 'admin-1', password: 'pilot123' }
+        });
+        assert.strictEqual(loginDefaultAttempt.status, 401, 'Default pilot123 login must be rejected in production');
+        assert.strictEqual(loginDefaultAttempt.data.code, 'AUTH_FAILED');
+
+        // Subcase 12B: Login with production password succeeds
+        const adminSession = await apiRequest('/api/mvp/auth/login', {
+          method: 'POST',
+          body: { usernameOrId: 'admin-1', password: 'super-secret-production-admin-pass-2026' }
+        });
+        assert.strictEqual(adminSession.status, 200);
+        assert.ok(adminSession.data.session_token);
+
+        // Subcase 12C: Attacker attempts step-up action using default 'pilot123' password -> Rejected
+        const defaultPassAttempt = await apiRequest('/api/mvp/admin/settlements/execute', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${adminSession.data.session_token}`
+          },
+          body: {
+            officerId: 'admin-1',
+            orderId: order.id,
+            sellerId: order.seller_id,
+            stepUpPassword: 'pilot123', // Attempting default pilot password!
+            reason: 'Administrative override for valid delivery'
+          }
+        });
+
+        assert.strictEqual(defaultPassAttempt.status, 403, 'Default password must be rejected with 403 in production');
+        assert.strictEqual(defaultPassAttempt.data.code, 'STEP_UP_AUTH_REQUIRED');
+
+        adminUser.password = prevAdminPass;
+      } finally {
+        process.env.NODE_ENV = prevEnv;
+        if (prevPass) {
+          process.env.ARGUS_ADMIN_PASSWORD = prevPass;
+        } else {
+          delete process.env.ARGUS_ADMIN_PASSWORD;
+        }
+      }
+    });
+
+    // =========================================================================
+    // ATTACK 13: SESSION STORE RESTART PERSISTENCE
+    // =========================================================================
+    await testAsync('Attack 13: Session Store Survives Server / Memory Restarts', async () => {
+      const { SessionStore } = require('./src/services/sessionStore');
+      
+      // Create a persistent session
+      const created = SessionStore.createSession({ userId: 'pic-1', role: 'pic' });
+      assert.ok(created.session_token);
+
+      // Simulate process crash / in-memory state wipe
+      state.sessions = [];
+
+      // Verify that SessionStore retrieves the session from disk (data/sessions.json)
+      const found = SessionStore.findSession(created.session_token);
+      assert.ok(found, 'Session must survive memory wipe');
+      assert.strictEqual(found.user_id, 'pic-1');
+      assert.strictEqual(found.role, 'pic');
+
+      // Test session revocation
+      const revoked = SessionStore.revokeSession(created.session_token);
+      assert.strictEqual(revoked, true);
+      const afterRevoke = SessionStore.findSession(created.session_token);
+      assert.strictEqual(afterRevoke, null, 'Revoked session must not be active');
+    });
+
+    // =========================================================================
+    // ATTACK 14: MANDATORY GATE PHOTO EVIDENCE AT TURNSTILE
+    // =========================================================================
+    await testAsync('Attack 14: Mandatory Gate Photo Enforced for Entry Confirmation', async () => {
+      const { order } = await setupPaidOrder();
+
+      // Ticket verification
+      await EventPicService.recordTicketVerification({ picUserId: 'pic-1', orderId: order.id, photoFile: true });
+
+      // Buyer generates entry code
+      const challengeRes = await apiRequest(`/api/mvp/buyer/orders/${order.id}/entry-challenge`, {
+        method: 'POST',
+        headers: { 'x-user-id': 'buyer-1' },
+        body: { buyerId: 'buyer-1' }
+      });
+      const code = challengeRes.data.code;
+
+      // PIC attempts confirm-entry WITHOUT photo (photoFile: false, no evidenceBundleId)
+      const noPhotoAttempt = await apiRequest('/api/mvp/pic/confirm-entry', {
+        method: 'POST',
+        headers: { 'x-user-id': 'pic-1' },
+        body: {
+          picUserId: 'pic-1',
+          orderId: order.id,
+          code,
+          gate: 'Gate 1'
+          // no files and no evidenceBundleId
+        }
+      });
+
+      assert.strictEqual(noPhotoAttempt.status, 400, 'Entry confirmation without photo must return 400');
+      assert.strictEqual(noPhotoAttempt.data.code, 'GATE_PHOTO_MANDATORY');
+      assert.notStrictEqual(order.status, ORDER_STATUS.ENTRY_CONFIRMED);
+    });
+
+    // =========================================================================
+    // ATTACK 15: PRODUCTION EVIDENCE ENCRYPTION KEY ENFORCEMENT
+    // =========================================================================
+    await testAsync('Attack 15: Production Evidence Encryption Key Required', async () => {
+      const prevEnv = process.env.NODE_ENV;
+      const prevKey = process.env.ARGUS_EVIDENCE_ENCRYPTION_KEY;
+      try {
+        process.env.NODE_ENV = 'production';
+        delete process.env.ARGUS_EVIDENCE_ENCRYPTION_KEY;
+
+        const dummyData = Buffer.from('TEST_DATA');
+        const testPath = path.resolve(__dirname, `test_enc_${uuidv4()}.enc`);
+
+        try {
+          EvidenceStorageService.encryptAndStore(dummyData, testPath);
+          assert.fail('Should have failed due to missing encryption key in production');
+        } catch (err) {
+          assert.strictEqual(err.code, 'ENCRYPTION_KEY_NOT_CONFIGURED');
+        } finally {
+          if (fs.existsSync(testPath)) fs.unlinkSync(testPath);
+        }
+      } finally {
+        process.env.NODE_ENV = prevEnv;
+        if (prevKey) {
+          process.env.ARGUS_EVIDENCE_ENCRYPTION_KEY = prevKey;
+        } else {
+          delete process.env.ARGUS_EVIDENCE_ENCRYPTION_KEY;
+        }
+      }
     });
 
     console.log(`\n=======================`);

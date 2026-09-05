@@ -437,8 +437,8 @@
 
             ${o.entry_status !== 'CONFIRMED' && o.status !== 'DISPUTED' ? `
               <div style="display: flex; gap: 8px; margin-top: 10px;">
-                <button class="btn btn-sm btn-success" style="flex: 1;" onclick="confirmBuyerEntryModal('${o.id}')">
-                  <i class="fa-solid fa-key"></i> Input Kode Masuk PIC
+                <button class="btn btn-sm btn-success" style="flex: 1;" onclick="generateBuyerEntryModal('${o.id}')">
+                  <i class="fa-solid fa-qrcode"></i> Tampilkan Kode Masuk Gate
                 </button>
                 <button class="btn btn-outline btn-danger btn-sm" style="flex: 1;" onclick="reportDispute('${o.id}')">
                   <i class="fa-solid fa-triangle-exclamation"></i> Lapor Masalah Gate
@@ -453,23 +453,20 @@
     }
   }
 
-  async function confirmBuyerEntryModal(orderId) {
-    const code = prompt('Masukkan 6-digit kode verifikasi turnstile yang ditampilkan oleh PIC:');
-    if (!code) return;
-
+  async function generateBuyerEntryModal(orderId) {
     try {
-      const res = await fetch('/api/mvp/buyer/confirm-entry', {
+      const res = await fetch(`/api/mvp/buyer/orders/${orderId}/entry-challenge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': 'buyer-1' },
-        body: JSON.stringify({ buyerId: 'buyer-1', orderId, code })
+        body: JSON.stringify({ buyerId: 'buyer-1' })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
-      alert('🎉 ENTRY TERVERIFIKASI!\nSelamat menikmati konser! Escrow ARGUS kini siap dicairkan ke seller.');
+      alert(`🎫 KODE MASUK TURNSTILE ARGUS:\n\n[ ${data.code} ]\n\n(Tunjukkan kode 6-digit ini ke PIC ARGUS di depan gate turnstile. PIC akan mengambil foto verifikasi gate dan mengonfirmasi masuk ke venue).\nMasa berlaku: 5 menit.`);
       loadData();
     } catch (e) {
-      alert('Gagal verifikasi entry: ' + e.message);
+      alert('Gagal membuat kode masuk: ' + e.message);
     }
   }
 
@@ -604,8 +601,8 @@
                 <button class="btn btn-sm btn-outline" style="font-size: 11px;" onclick="confirmPicHandoffModal('${o.order_id}')">
                   <i class="fa-solid fa-handshake"></i> Input Kode Handoff
                 </button>
-                <button class="btn btn-sm btn-success" style="font-size: 11px;" onclick="preparePicGateAdmission('${o.order_id}')">
-                  <i class="fa-solid fa-camera"></i> Foto Gate & Kode Buyer
+                <button class="btn btn-sm btn-success" style="font-size: 11px;" onclick="confirmPicEntryModal('${o.order_id}')">
+                  <i class="fa-solid fa-camera"></i> Foto Gate & Verifikasi Masuk
                 </button>
               </div>
             ` : '<span style="color: #34d399; font-size: 12px;"><i class="fa-solid fa-circle-check"></i> Masuk (Dual Verified)</span>'}
@@ -617,7 +614,9 @@
     }
   }
 
-  async function preparePicGateAdmission(orderId) {
+  async function confirmPicEntryModal(orderId) {
+    const code = prompt('Masukkan 6-digit kode masuk yang tampil di layar HP Buyer:');
+    if (!code) return;
     const gate = prompt('Nama Pintu / Gate turnstile:', 'Gate 3 Utara GBK');
     if (!gate) return;
     const notes = prompt('Catatan inspeksi fisik tiket & KTP buyer:', 'Fisik tiket dan KTP buyer cocok di turnstile');
@@ -627,12 +626,13 @@
       const formData = new FormData();
       formData.append('picUserId', 'pic-1');
       formData.append('orderId', orderId);
+      formData.append('code', code.trim());
       formData.append('gate', gate);
       formData.append('notes', notes);
       const blob = new Blob(['sample-gate-turnstile-photo-data'], { type: 'image/jpeg' });
       formData.append('file', blob, 'gate-photo.jpg');
 
-      const res = await fetch('/api/mvp/pic/prepare-entry', {
+      const res = await fetch('/api/mvp/pic/confirm-entry', {
         method: 'POST',
         headers: { 'x-user-id': 'pic-1' },
         body: formData
@@ -640,7 +640,7 @@
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
-      alert(`📸 FOTO GATE TERENKRIPSI!\n\nKODE VERIFIKASI BUYER: [ ${data.challengeCode} ]\n\n(Tunjukkan kode 6-digit ini ke Buyer untuk dimasukkan di HP Buyer. Masa berlaku 5 menit).`);
+      alert('🎉 ENTRY TERVERIFIKASI!\nBuyer berhasil masuk gate turnstile. Status order diupdate ke ENTRY_CONFIRMED. Escrow ARGUS siap dicairkan ke Seller.');
       loadData();
     } catch (e) {
       alert('Gagal: ' + e.message);

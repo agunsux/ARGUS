@@ -4,11 +4,20 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { state, recordAuditLog } = require('../database');
 
-// AES-256-GCM Key (32 bytes). Defaults to secure pilot key if env not provided
-const MASTER_KEY_HEX = process.env.ARGUS_EVIDENCE_ENCRYPTION_KEY || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-const MASTER_KEY = Buffer.from(MASTER_KEY_HEX, 'hex');
+function getMasterKey() {
+  const envKey = process.env.ARGUS_EVIDENCE_ENCRYPTION_KEY;
+  if (!envKey) {
+    if (process.env.NODE_ENV !== 'test') {
+      const err = new Error('ARGUS_EVIDENCE_ENCRYPTION_KEY environment variable is required in production');
+      err.code = 'ENCRYPTION_KEY_NOT_CONFIGURED';
+      throw err;
+    }
+    return Buffer.from('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'hex');
+  }
+  return Buffer.from(envKey, 'hex');
+}
 
-const SIGNED_URL_SECRET = process.env.ARGUS_SIGNED_URL_SECRET || 'pilot-argus-evidence-secret-2026';
+const SIGNED_URL_SECRET = process.env.ARGUS_SIGNED_URL_SECRET || (process.env.NODE_ENV === 'test' ? 'pilot-argus-evidence-secret-2026' : null);
 const SIGNED_URL_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 class EvidenceStorageService {
@@ -17,8 +26,9 @@ class EvidenceStorageService {
    * Output format: IV (12 bytes) + AuthTag (16 bytes) + EncryptedData
    */
   static encryptAndStore(fileBuffer, destPath) {
+    const masterKey = getMasterKey();
     const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv('aes-256-gcm', MASTER_KEY, iv);
+    const cipher = crypto.createCipheriv('aes-256-gcm', masterKey, iv);
     
     const encrypted = Buffer.concat([cipher.update(fileBuffer), cipher.final()]);
     const tag = cipher.getAuthTag();
@@ -50,7 +60,8 @@ class EvidenceStorageService {
     const tag = payload.subarray(12, 28);
     const encryptedData = payload.subarray(28);
 
-    const decipher = crypto.createDecipheriv('aes-256-gcm', MASTER_KEY, iv);
+    const masterKey = getMasterKey();
+    const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
     decipher.setAuthTag(tag);
 
     const decrypted = Buffer.concat([decipher.update(encryptedData), decipher.final()]);

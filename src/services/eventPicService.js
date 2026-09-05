@@ -379,37 +379,43 @@ class EventPicService {
   }
 
   /**
-   * Dual Confirmation Step 1 (ENTRY_CONFIRMED):
-   * PIC prepares gate admission with mandatory photo evidence.
-   * Generates 6-digit challenge displayed on PIC's screen for buyer to enter.
+   * Dual Confirmation (ENTRY_CONFIRMED) - STEP 1 (BUYER):
+   * Buyer generates a 6-digit entry challenge on their device to present to the PIC at the turnstile gate.
+   * Cross-Party Invariant: BUYER generates -> PIC confirms. PIC CANNOT issue entry challenge!
    */
-  static async prepareGateAdmission({ picUserId, orderId, gate = 'Main Gate', notes = null, evidenceBundleId = null, photoFile = null, currentDateStr = null }) {
+  static async generateBuyerEntryChallenge({ buyerId, orderId }) {
     const order = state.orders.find(o => o.id === orderId);
-    if (!order) throw new Error('Order not found');
+    if (!order) {
+      const err = new Error('Order not found');
+      err.code = 'ORDER_NOT_FOUND';
+      throw err;
+    }
 
-    const activeCheck = this.isPicActiveForEvent(picUserId, order.event_id, currentDateStr);
-    if (!activeCheck.active) {
-      const err = new Error(`Unauthorized: ${activeCheck.reason}`);
-      err.code = 'PIC_UNAUTHORIZED';
+    if (order.buyer_id !== buyerId) {
+      const err = new Error('Forbidden: buyer ID mismatch for this order');
+      err.code = 'BUYER_MISMATCH';
+      err.status = 403;
       throw err;
     }
 
     if (order.status !== 'PAID_ESCROWED') {
       const err = new Error(`Cannot admit order with status '${order.status}'. Order must be PAID_ESCROWED.`);
       err.code = 'ORDER_NOT_IN_ESCROW';
+      err.status = 403;
       throw err;
     }
 
     if (!order.ticket_verified && order.operational_stage !== 'TICKET_VERIFIED' && order.operational_stage !== 'HANDOFF_READY') {
       const err = new Error('State jump rejected: Ticket must be verified (TICKET_VERIFIED) before gate admission can be attempted');
       err.code = 'TICKET_NOT_YET_VERIFIED';
+      err.status = 403;
       throw err;
     }
 
-    // Mandatory photo evidence check at entry gate
-    if (!evidenceBundleId && !photoFile) {
-      const err = new Error('Mandatory photo evidence (buyer + ticket at gate) required for ENTRY');
-      err.code = 'GATE_PHOTO_MANDATORY';
+    if (order.status === 'ENTRY_CONFIRMED') {
+      const err = new Error('Entry already confirmed for this order');
+      err.code = 'DUPLICATE_ENTRY_CONFIRMATION';
+      err.status = 409;
       throw err;
     }
 
@@ -418,84 +424,97 @@ class EventPicService {
       orderId: order.id,
       eventId: order.event_id,
       actionType: 'ENTRY_CONFIRMED',
-      expectedActorRole: 'buyer',
-      expectedActorId: order.buyer_id
+      issuingActorRole: 'buyer',
+      issuingActorId: buyerId,
+      confirmingActorRole: 'pic'
     });
 
-    order.gate_admission_prepared = {
-      picUserId,
-      gate,
-      notes,
-      evidenceBundleId,
-      challengeId: challenge.challengeId,
-      preparedAt: new Date().toISOString()
-    };
     order.operational_stage = 'ADMISSION_ATTEMPTED';
 
-    await recordAuditLog('ENTRY_VERIFICATION', order.id, 'GATE_ADMISSION_PREPARED', picUserId, {
-      gate,
-      notes,
+    await recordAuditLog('ORDER_OPERATIONAL_STAGE', order.id, 'ADMISSION_ATTEMPTED', buyerId, {
       challenge_id: challenge.challengeId,
-      evidence_bundle_id: evidenceBundleId
+      expires_at: challenge.expiresAt
     });
 
     return {
       success: true,
       orderId: order.id,
-      gate,
       challengeCode: challenge.rawCode,
-      expiresAt: challenge.expiresAt
+      expiresAt: challenge.expiresAt,
+      message: 'Show this 6-digit code to the ARGUS Event PIC at the turnstile gate'
     };
   }
 
   /**
-   * Dual Confirmation Step 2 (ENTRY_CONFIRMED):
-   * Buyer independently enters the code displayed on PIC's screen into Buyer's device.
-   * Only when BOTH PIC photo preparation and Buyer code verify does state advance.
+   * Dual Confirmation (ENTRY_CONFIRMED) - STEP 2 (PIC):
+   * PIC enters the 6-digit code displayed on BUYER's screen, accompanied by mandatory turnstile gate photo evidence.
    */
-  static async completeDualConfirmedEntry({ orderId, buyerId, handshakeCode, currentDateStr = null }) {
+  static async confirmEntryWithCode({ picUserId, orderId, handshakeCode, gate = 'Main Gate', notes = null, evidenceBundleId = null, photoFile = null, currentDateStr = null }) {
     const order = state.orders.find(o => o.id === orderId);
-    if (!order) throw new Error('Order not found');
-
-    if (order.buyer_id !== buyerId) {
-      const err = new Error('Forbidden: buyer ID mismatch for this order');
-      err.code = 'BUYER_MISMATCH';
+    if (!order) {
+      const err = new Error('Order not found');
+      err.code = 'ORDER_NOT_FOUND';
       throw err;
     }
 
+    const activeCheck = this.isPicActiveForEvent(picUserId, order.event_id, currentDateStr);
+    if (!activeCheck.active) {
+      const err = new Error(`Unauthorized: ${activeCheck.reason}`);
+      err.code = 'PIC_UNAUTHORIZED';
+      err.status = 403;
+      throw err;
+    }
+
+    // State jump guard: Ticket must be verified before entry can be confirmed
+    if (!order.ticket_verified && order.operational_stage !== 'TICKET_VERIFIED' && order.operational_stage !== 'ADMISSION_ATTEMPTED' && order.operational_stage !== 'HANDOFF_READY') {
+      const err = new Error('State jump rejected: Ticket must be verified (TICKET_VERIFIED) before entry can be confirmed');
+      err.code = 'TICKET_NOT_YET_VERIFIED';
+      err.status = 403;
+      throw err;
+    }
+
+    // Mandatory photo evidence check at entry gate
+    if (!evidenceBundleId && !photoFile) {
+      const err = new Error('Mandatory photo evidence (buyer + ticket at gate) required for ENTRY');
+      err.code = 'GATE_PHOTO_MANDATORY';
+      err.status = 400;
+      throw err;
+    }
+
+    // Verify and consume the buyer-issued challenge as PIC (detects replay with CHALLENGE_ALREADY_CONSUMED)
     const { TransactionChallengeService } = require('./transactionChallengeService');
     await TransactionChallengeService.verifyAndConsumeChallenge({
       orderId: order.id,
       actionType: 'ENTRY_CONFIRMED',
       providedCode: handshakeCode,
-      consumingActorId: buyerId,
-      consumingActorRole: 'buyer'
+      consumingActorId: picUserId,
+      consumingActorRole: 'pic'
     });
 
     if (order.status === 'ENTRY_CONFIRMED') {
       const err = new Error('Entry already confirmed for this order');
       err.code = 'DUPLICATE_ENTRY_CONFIRMATION';
+      err.status = 409;
       throw err;
     }
 
-    if (!order.gate_admission_prepared) {
-      const err = new Error('PIC must first physically inspect gate and capture evidence before buyer confirmation');
-      err.code = 'PIC_GATE_PREPARATION_REQUIRED';
+    if (order.status !== 'PAID_ESCROWED') {
+      const err = new Error(`Cannot admit order with status '${order.status}'. Order must be PAID_ESCROWED.`);
+      err.code = 'ORDER_NOT_IN_ESCROW';
+      err.status = 403;
       throw err;
     }
 
-    const prep = order.gate_admission_prepared;
     const verification = await this.recordEntryVerification({
-      picUserId: prep.picUserId,
+      picUserId,
       orderId: order.id,
-      gate: prep.gate,
-      notes: prep.notes ? `${prep.notes} (Dual confirmed with buyer handshake)` : 'Dual confirmed with buyer handshake',
+      gate: gate || 'Pintu Utama',
+      notes: notes ? `${notes} (Dual confirmed with buyer entry code)` : 'Dual confirmed with buyer entry code',
       status: 'CONFIRMED',
-      evidenceBundleId: prep.evidenceBundleId,
+      evidenceBundleId,
       currentDateStr
     });
 
-    order.gate_admission_prepared = null;
     order.dual_confirmed = true;
     order.operational_stage = 'ENTRY_CONFIRMED';
 
@@ -506,6 +525,26 @@ class EventPicService {
       verification,
       dualConfirmed: true
     };
+  }
+
+  /**
+   * Blocked legacy method: PIC cannot issue entry challenge!
+   */
+  static async prepareGateAdmission() {
+    const err = new Error('PIC cannot generate ENTRY_CONFIRMED challenge. The entry challenge must be generated by the Buyer.');
+    err.code = 'PIC_CANNOT_ISSUE_ENTRY_CHALLENGE';
+    err.status = 403;
+    throw err;
+  }
+
+  /**
+   * Blocked legacy method: Buyer cannot unilaterally confirm entry!
+   */
+  static async completeDualConfirmedEntry() {
+    const err = new Error('Buyer cannot confirm entry. PIC must verify turnstile admission and enter Buyer code.');
+    err.code = 'BUYER_CANNOT_CONFIRM_ENTRY';
+    err.status = 403;
+    throw err;
   }
 
   /**

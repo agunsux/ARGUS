@@ -43,3 +43,4 @@ yarn-error.log*
 # Encrypted test data and stray CLI logs
 *.enc
 0.26.0*
+data/

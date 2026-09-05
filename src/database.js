@@ -33,17 +33,22 @@ let logId = 1;
  * Reset and seed database with initial clean fixtures.
  */
 function resetDatabase() {
+  const { SessionStore } = require('./services/sessionStore');
+  SessionStore.reset();
   state.sessions = [];
   state.transaction_challenges = [];
   state.evidence_access_logs = [];
   state.step_up_tokens = [];
 
+  const isTest = process.env.NODE_ENV === 'test';
+  const defaultTestPass = isTest ? 'pilot123' : null;
+
   state.users = [
-    { id: 'admin-1', name: 'Trust Officer ARGUS', email: 'ops@argus.id', phone: '081234567890', role: 'admin', password: 'pilot123' },
-    { id: 'seller-1', name: 'Budi Santoso', email: 'budi.seller@example.com', phone: '082223334445', role: 'seller', password: 'pilot123' },
-    { id: 'buyer-1', name: 'Dewi Lestari', email: 'dewi.buyer@example.com', phone: '085556667778', role: 'buyer', password: 'pilot123' },
-    { id: 'buyer-2', name: 'Rina Wijaya', email: 'rina.buyer@example.com', phone: '085556667779', role: 'buyer', password: 'pilot123' },
-    { id: 'pic-1', name: 'Agus Hendra (Event PIC)', email: 'agus.pic@argus.id', phone: '081199887766', role: 'pic', password: 'pilot123' }
+    { id: 'admin-1', name: 'Trust Officer ARGUS', email: 'ops@argus.id', phone: '081234567890', role: 'admin', password: defaultTestPass || process.env.ARGUS_ADMIN_PASSWORD || null },
+    { id: 'seller-1', name: 'Budi Santoso', email: 'budi.seller@example.com', phone: '082223334445', role: 'seller', password: defaultTestPass || process.env.ARGUS_SELLER_PASSWORD || null },
+    { id: 'buyer-1', name: 'Dewi Lestari', email: 'dewi.buyer@example.com', phone: '085556667778', role: 'buyer', password: defaultTestPass || process.env.ARGUS_BUYER_PASSWORD || null },
+    { id: 'buyer-2', name: 'Rina Wijaya', email: 'rina.buyer@example.com', phone: '085556667779', role: 'buyer', password: defaultTestPass || process.env.ARGUS_BUYER2_PASSWORD || null },
+    { id: 'pic-1', name: 'Agus Hendra (Event PIC)', email: 'agus.pic@argus.id', phone: '081199887766', role: 'pic', password: defaultTestPass || process.env.ARGUS_PIC_PASSWORD || null }
   ];
 
   state.seller_profiles = [
