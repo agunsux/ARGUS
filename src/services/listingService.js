@@ -19,6 +19,7 @@ class ListingService {
    */
   static hashBarcode(rawBarcode) {
     return crypto.createHash('sha256').update(rawBarcode.trim()).digest('hex');
+    return crypto.createHash('sha256').update(rawBarcode.trim().toUpperCase()).digest('hex');
   }
 
   /**

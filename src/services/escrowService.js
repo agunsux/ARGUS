@@ -26,7 +26,7 @@ class EscrowService {
   /**
    * Calculate transparent fee breakdown
    */
-  static calculatePricing(ticketPrice, feePercentage = 0.10) {
+  static calculatePricing(ticketPrice, feePercentage = parseFloat(process.env.ARGUS_FEE_RATE || '0.10')) {
     const price = parseInt(ticketPrice);
     const platformFee = Math.round(price * feePercentage);
     const totalAmount = price + platformFee;

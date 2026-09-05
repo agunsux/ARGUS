@@ -436,15 +436,40 @@
             </div>
 
             ${o.entry_status !== 'CONFIRMED' && o.status !== 'DISPUTED' ? `
-              <button class="btn btn-outline btn-danger btn-sm" style="margin-top: 10px; width: 100%;" onclick="reportDispute('${o.id}')">
-                <i class="fa-solid fa-triangle-exclamation"></i> Lapor Masalah / Tiket Invalid di Gate
-              </button>
+              <div style="display: flex; gap: 8px; margin-top: 10px;">
+                <button class="btn btn-sm btn-success" style="flex: 1;" onclick="confirmBuyerEntryModal('${o.id}')">
+                  <i class="fa-solid fa-key"></i> Input Kode Masuk PIC
+                </button>
+                <button class="btn btn-outline btn-danger btn-sm" style="flex: 1;" onclick="reportDispute('${o.id}')">
+                  <i class="fa-solid fa-triangle-exclamation"></i> Lapor Masalah Gate
+                </button>
+              </div>
             ` : ''}
           </div>
         `;
       }).join('');
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  async function confirmBuyerEntryModal(orderId) {
+    const code = prompt('Masukkan 6-digit kode verifikasi turnstile yang ditampilkan oleh PIC:');
+    if (!code) return;
+
+    try {
+      const res = await fetch('/api/mvp/buyer/confirm-entry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': 'buyer-1' },
+        body: JSON.stringify({ buyerId: 'buyer-1', orderId, code })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      alert('🎉 ENTRY TERVERIFIKASI!\nSelamat menikmati konser! Escrow ARGUS kini siap dicairkan ke seller.');
+      loadData();
+    } catch (e) {
+      alert('Gagal verifikasi entry: ' + e.message);
     }
   }
 
@@ -518,15 +543,38 @@
           <div>
             <strong>${l.seat_info}</strong>
             <p style="font-size: 12px; color: var(--text-muted);">Harga Jual: ${formatIDR(l.price)} (Face Value: ${formatIDR(l.face_value)})</p>
+            ${l.order_id ? `<p style="font-size: 11px; color: #60a5fa; margin-top: 2px;">Order ID: ${l.order_id.substring(0, 12)}...</p>` : ''}
             ${l.rejection_reason ? `<p style="font-size: 11px; color: var(--danger); margin-top: 2px;">Alasan: ${l.rejection_reason}</p>` : ''}
           </div>
-          <div>
-            <span class="badge ${l.status === 'ACTIVE' ? 'badge-success' : (l.status === 'REJECTED' ? 'badge-danger' : 'badge-warning')}">${l.status}</span>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+            <span class="badge ${l.status === 'ACTIVE' ? 'badge-success' : (l.status === 'REJECTED' ? 'badge-danger' : (l.status === 'SOLD' ? 'badge-info' : 'badge-warning'))}">${l.status}</span>
+            ${l.order_id && l.status === 'SOLD' ? `
+              <button class="btn btn-sm btn-outline" style="font-size: 11px;" onclick="requestSellerHandoffModal('${l.order_id}')">
+                <i class="fa-solid fa-key"></i> Kode Handoff PIC
+              </button>
+            ` : ''}
           </div>
         </div>
       `).join('');
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  async function requestSellerHandoffModal(orderId) {
+    try {
+      const res = await fetch(`/api/mvp/seller/orders/${orderId}/handoff-challenge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': 'seller-1' },
+        body: JSON.stringify({ sellerId: 'seller-1' })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      alert(`🤝 KODE SERAH TERIMA TIKET (HANDOFF):\n\n[ ${data.code} ]\n\nTunjukkan 6-digit ini kepada PIC ARGUS saat Anda menyerahkan tiket fisik di venue. Masa berlaku: 5 menit.`);
+      loadData();
+    } catch (e) {
+      alert('Gagal generate kode handoff: ' + e.message);
     }
   }
 
@@ -552,10 +600,15 @@
           <td><span class="badge ${o.entry_status === 'CONFIRMED' ? 'badge-success' : 'badge-warning'}">${o.entry_status}</span></td>
           <td>
             ${o.entry_status !== 'CONFIRMED' ? `
-              <button class="btn btn-sm btn-success" onclick="confirmPicEntry('${o.order_id}')">
-                <i class="fa-solid fa-check"></i> Konfirmasi Masuk
-              </button>
-            ` : '<span style="color: #34d399; font-size: 12px;"><i class="fa-solid fa-circle-check"></i> Sudah Masuk</span>'}
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <button class="btn btn-sm btn-outline" style="font-size: 11px;" onclick="confirmPicHandoffModal('${o.order_id}')">
+                  <i class="fa-solid fa-handshake"></i> Input Kode Handoff
+                </button>
+                <button class="btn btn-sm btn-success" style="font-size: 11px;" onclick="preparePicGateAdmission('${o.order_id}')">
+                  <i class="fa-solid fa-camera"></i> Foto Gate & Kode Buyer
+                </button>
+              </div>
+            ` : '<span style="color: #34d399; font-size: 12px;"><i class="fa-solid fa-circle-check"></i> Masuk (Dual Verified)</span>'}
           </td>
         </tr>
       `).join('');
@@ -564,25 +617,50 @@
     }
   }
 
-  async function confirmPicEntry(orderId) {
-    if (!confirm('Pastikan buyer memegang tiket fisik/e-tiket yang sah dan telah didampingi melewati gate pemeriksaan barcode.\n\nKonfirmasi entry?')) return;
+  async function preparePicGateAdmission(orderId) {
+    const gate = prompt('Nama Pintu / Gate turnstile:', 'Gate 3 Utara GBK');
+    if (!gate) return;
+    const notes = prompt('Catatan inspeksi fisik tiket & KTP buyer:', 'Fisik tiket dan KTP buyer cocok di turnstile');
+    if (!notes) return;
 
     try {
-      const res = await fetch('/api/mvp/pic/verify-entry', {
+      const formData = new FormData();
+      formData.append('picUserId', 'pic-1');
+      formData.append('orderId', orderId);
+      formData.append('gate', gate);
+      formData.append('notes', notes);
+      const blob = new Blob(['sample-gate-turnstile-photo-data'], { type: 'image/jpeg' });
+      formData.append('file', blob, 'gate-photo.jpg');
+
+      const res = await fetch('/api/mvp/pic/prepare-entry', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          picUserId: 'pic-1',
-          orderId,
-          gate: 'Gate 3 Utara GBK',
-          notes: 'Fisik dan barcode valid. Buyer masuk tanpa kendala.',
-          status: 'CONFIRMED'
-        })
+        headers: { 'x-user-id': 'pic-1' },
+        body: formData
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
-      alert('✅ Entry Berhasil Dikonfirmasi!\nSistem ARGUS telah membuka kunci settlement untuk seller.');
+      alert(`📸 FOTO GATE TERENKRIPSI!\n\nKODE VERIFIKASI BUYER: [ ${data.challengeCode} ]\n\n(Tunjukkan kode 6-digit ini ke Buyer untuk dimasukkan di HP Buyer. Masa berlaku 5 menit).`);
+      loadData();
+    } catch (e) {
+      alert('Gagal: ' + e.message);
+    }
+  }
+
+  async function confirmPicHandoffModal(orderId) {
+    const code = prompt('Masukkan 6-digit kode handoff yang tampil di layar HP Seller:');
+    if (!code) return;
+
+    try {
+      const res = await fetch('/api/mvp/pic/confirm-handoff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': 'pic-1' },
+        body: JSON.stringify({ picUserId: 'pic-1', orderId, code })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      alert('✅ Handoff Terverifikasi!\nTiket fisik berpindah tangan ke buyer.');
       loadData();
     } catch (e) {
       alert('Gagal: ' + e.message);
@@ -696,19 +774,31 @@
   }
 
   async function resolveDisputeAdmin(disputeId, outcome) {
-    const reason = prompt(`Masukkan catatan audit untuk putusan [${outcome}]:`, outcome === 'REFUND_BUYER' ? 'Bukti scanner gate menunjukkan tiket palsu/invalid.' : 'Bukti lapangan menunjukkan tiket sah.');
-    if (!reason) return;
+    const password = prompt('Konfirmasi Password Admin (Step-Up Auth):', 'pilot123');
+    if (!password) return;
+    const defaultReason = outcome === 'REFUND_BUYER' ? 'Bukti scanner gate menunjukkan tiket palsu/invalid.' : 'Bukti lapangan menunjukkan tiket sah dan buyer masuk gate.';
+    const reason = prompt(`Masukkan catatan audit untuk putusan [${outcome}] (min. 10 karakter):`, defaultReason);
+    if (!reason || reason.trim().length < 10) {
+      alert('Alasan putusan wajib diisi minimal 10 karakter.');
+      return;
+    }
 
     try {
       const res = await fetch(`/api/mvp/admin/disputes/${disputeId}/resolve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ outcome, decisionReason: reason })
+        headers: { 'Content-Type': 'application/json', 'x-user-id': 'admin-1' },
+        body: JSON.stringify({
+          officerId: 'admin-1',
+          outcome,
+          decisionReason: reason,
+          stepUpPassword: password,
+          reason: reason
+        })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
-      alert(`✅ Dispute Selesai diputuskan: ${outcome}`);
+      alert(`✅ Dispute Selesai diputuskan: ${outcome} [Step-Up Terverifikasi]`);
       loadData();
     } catch (e) {
       alert('Gagal: ' + e.message);
@@ -716,16 +806,30 @@
   }
 
   async function executeSettlementAdmin(orderId, sellerId) {
+    const password = prompt('Konfirmasi Password Admin (Step-Up Auth):', 'pilot123');
+    if (!password) return;
+    const reason = prompt('Alasan pencairan dana (min. 10 karakter):', 'Tiket valid dan buyer telah terverifikasi masuk turnstile GBK');
+    if (!reason || reason.trim().length < 10) {
+      alert('Alasan pencairan wajib diisi minimal 10 karakter.');
+      return;
+    }
+
     try {
       const res = await fetch('/api/mvp/admin/settlements/execute', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, sellerId })
+        headers: { 'Content-Type': 'application/json', 'x-user-id': 'admin-1' },
+        body: JSON.stringify({
+          officerId: 'admin-1',
+          orderId,
+          sellerId,
+          stepUpPassword: password,
+          reason: reason
+        })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
-      alert('✅ Dana berhasil dicairkan ke rekening seller!');
+      alert('✅ Dana berhasil dicairkan ke rekening seller! [Step-Up Terverifikasi]');
       loadData();
     } catch (e) {
       alert('Gagal: ' + e.message);

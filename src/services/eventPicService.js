@@ -140,6 +140,8 @@ class EventPicService {
         seller_phone: seller.phone,
         escrow_status: escrow.status,
         entry_status: verification ? verification.status : 'PENDING_ENTRY',
+        operational_stage: order.operational_stage || (verification ? verification.status : 'ASSIGNED'),
+        ticket_verified: !!order.ticket_verified,
         gate: verification ? verification.gate : null,
         verified_at: verification ? verification.verified_at : null
       };
@@ -154,7 +156,8 @@ class EventPicService {
         venue_id: venue.id,
         venue_name: venue.name,
         venue_city: venue.city,
-        gate_info: venue.gate_info
+        gate_info: venue.gate_info,
+        admission_protocol: event.admission_protocol || null
       },
       stats: {
         total_orders: ordersDetails.length,
@@ -224,15 +227,326 @@ class EventPicService {
 
     if (status === 'CONFIRMED') {
       order.status = 'ENTRY_CONFIRMED';
+      order.operational_stage = 'ENTRY_CONFIRMED';
       ticket.status = 'REDEEMED';
 
       const escrow = state.escrows.find(e => e.order_id === orderId);
       if (escrow && escrow.status === 'ESCROWED') {
         escrow.status = 'RELEASE_PENDING';
       }
+    } else {
+      order.operational_stage = status;
     }
 
     return verification;
+  }
+
+  static OPERATIONAL_STAGES = [
+    'ASSIGNED',
+    'CONTACTED',
+    'MEETUP_CONFIRMED',
+    'HANDOFF_READY',
+    'TICKET_VERIFIED',
+    'AT_VENUE',
+    'ADMISSION_ATTEMPTED',
+    'ENTRY_CONFIRMED',
+    'BUYER_NO_SHOW',
+    'SELLER_NO_SHOW',
+    'TICKET_PROBLEM',
+    'GATE_REJECTION',
+    'DISPUTE_OPEN'
+  ];
+
+  /**
+   * Separate Ticket Verification from Entry Confirmation:
+   * TICKET_VERIFIED means ticket/handoff passed verification.
+   * ENTRY_CONFIRMED means buyer gained admission to venue.
+   * TICKET_VERIFIED does NOT release escrow!
+   */
+  static async recordTicketVerification({ picUserId, orderId, notes = null, evidenceBundleId = null, photoFile = null, requirePhoto = false, currentDateStr = null }) {
+    const order = state.orders.find(o => o.id === orderId);
+    if (!order) throw new Error('Order not found');
+
+    if (requirePhoto && !evidenceBundleId && !photoFile) {
+      const err = new Error('Mandatory photo evidence required for TICKET_VERIFIED');
+      err.code = 'EVIDENCE_PHOTO_MANDATORY';
+      throw err;
+    }
+
+    const activeCheck = this.isPicActiveForEvent(picUserId, order.event_id, currentDateStr);
+    if (!activeCheck.active) {
+      const err = new Error(`Unauthorized: ${activeCheck.reason}`);
+      err.code = 'PIC_UNAUTHORIZED';
+      throw err;
+    }
+
+    const ticket = state.tickets.find(t => t.id === order.ticket_id);
+    if (!ticket) throw new Error('Ticket not found');
+
+    order.operational_stage = 'TICKET_VERIFIED';
+    order.ticket_verified = true;
+    order.ticket_verified_at = new Date().toISOString();
+    order.ticket_verified_by = picUserId;
+    ticket.status = 'VERIFIED_AT_VENUE';
+
+    // Verify Invariant: Escrow MUST NOT be released on ticket verification alone!
+    const escrow = state.escrows.find(e => e.order_id === orderId);
+    if (escrow && (escrow.status === 'RELEASED' || escrow.status === 'RELEASE_PENDING')) {
+      throw new Error('Fatal invariant breach: escrow released before entry confirmation');
+    }
+
+    await recordAuditLog('TICKET_VERIFICATION', orderId, 'TICKET_VERIFIED', picUserId, {
+      order_id: orderId,
+      ticket_id: order.ticket_id,
+      notes: notes || 'Ticket handoff verified by PIC at meetup point',
+      evidence_bundle_id: evidenceBundleId
+    });
+
+    return {
+      success: true,
+      order_id: orderId,
+      ticket_id: order.ticket_id,
+      stage: 'TICKET_VERIFIED',
+      ticket_verified: true,
+      escrow_status: escrow ? escrow.status : null,
+      notes
+    };
+  }
+
+  /**
+   * PIC updates operational stage for an order through the event lifecycle
+   */
+  static async updateOperationalStage({ picUserId, orderId, stage, notes = null, reason = null, evidenceBundleId = null, currentDateStr = null }) {
+    const order = state.orders.find(o => o.id === orderId);
+    if (!order) throw new Error('Order not found');
+
+    if (!this.OPERATIONAL_STAGES.includes(stage)) {
+      const err = new Error(`Invalid operational stage: ${stage}. Allowed: ${this.OPERATIONAL_STAGES.join(', ')}`);
+      err.code = 'INVALID_OPERATIONAL_STAGE';
+      throw err;
+    }
+
+    const activeCheck = this.isPicActiveForEvent(picUserId, order.event_id, currentDateStr);
+    if (!activeCheck.active) {
+      const err = new Error(`Unauthorized: ${activeCheck.reason}`);
+      err.code = 'PIC_UNAUTHORIZED';
+      throw err;
+    }
+
+    const previousStage = order.operational_stage || 'ASSIGNED';
+
+    if (stage === 'TICKET_VERIFIED') {
+      return await this.recordTicketVerification({ picUserId, orderId, notes, evidenceBundleId, currentDateStr });
+    }
+
+    if (stage === 'ENTRY_CONFIRMED') {
+      const entryRes = await this.recordEntryVerification({ picUserId, orderId, notes, status: 'CONFIRMED', currentDateStr });
+      order.operational_stage = 'ENTRY_CONFIRMED';
+      return entryRes;
+    }
+
+    // Exception stages
+    if (['BUYER_NO_SHOW', 'SELLER_NO_SHOW', 'TICKET_PROBLEM', 'GATE_REJECTION'].includes(stage)) {
+      const entryRes = await this.recordEntryVerification({
+        picUserId,
+        orderId,
+        notes: notes || reason || stage,
+        status: stage,
+        reason: reason || notes,
+        evidenceBundleId,
+        currentDateStr
+      });
+      order.operational_stage = stage;
+      return entryRes;
+    }
+
+    // Progression stages: CONTACTED, MEETUP_CONFIRMED, HANDOFF_READY, AT_VENUE, ADMISSION_ATTEMPTED
+    order.operational_stage = stage;
+    await recordAuditLog('ORDER_OPERATIONAL_STAGE', orderId, stage, picUserId, {
+      order_id: orderId,
+      previous_stage: previousStage,
+      new_stage: stage,
+      notes
+    });
+
+    return {
+      success: true,
+      order_id: orderId,
+      previous_stage: previousStage,
+      operational_stage: stage,
+      notes
+    };
+  }
+
+  /**
+   * Dual Confirmation Step 1 (ENTRY_CONFIRMED):
+   * PIC prepares gate admission with mandatory photo evidence.
+   * Generates 6-digit challenge displayed on PIC's screen for buyer to enter.
+   */
+  static async prepareGateAdmission({ picUserId, orderId, gate = 'Main Gate', notes = null, evidenceBundleId = null, photoFile = null, currentDateStr = null }) {
+    const order = state.orders.find(o => o.id === orderId);
+    if (!order) throw new Error('Order not found');
+
+    const activeCheck = this.isPicActiveForEvent(picUserId, order.event_id, currentDateStr);
+    if (!activeCheck.active) {
+      const err = new Error(`Unauthorized: ${activeCheck.reason}`);
+      err.code = 'PIC_UNAUTHORIZED';
+      throw err;
+    }
+
+    if (order.status !== 'PAID_ESCROWED') {
+      const err = new Error(`Cannot admit order with status '${order.status}'. Order must be PAID_ESCROWED.`);
+      err.code = 'ORDER_NOT_IN_ESCROW';
+      throw err;
+    }
+
+    if (!order.ticket_verified && order.operational_stage !== 'TICKET_VERIFIED' && order.operational_stage !== 'HANDOFF_READY') {
+      const err = new Error('State jump rejected: Ticket must be verified (TICKET_VERIFIED) before gate admission can be attempted');
+      err.code = 'TICKET_NOT_YET_VERIFIED';
+      throw err;
+    }
+
+    // Mandatory photo evidence check at entry gate
+    if (!evidenceBundleId && !photoFile) {
+      const err = new Error('Mandatory photo evidence (buyer + ticket at gate) required for ENTRY');
+      err.code = 'GATE_PHOTO_MANDATORY';
+      throw err;
+    }
+
+    const { TransactionChallengeService } = require('./transactionChallengeService');
+    const challenge = await TransactionChallengeService.createChallenge({
+      orderId: order.id,
+      eventId: order.event_id,
+      actionType: 'ENTRY_CONFIRMED',
+      expectedActorRole: 'buyer',
+      expectedActorId: order.buyer_id
+    });
+
+    order.gate_admission_prepared = {
+      picUserId,
+      gate,
+      notes,
+      evidenceBundleId,
+      challengeId: challenge.challengeId,
+      preparedAt: new Date().toISOString()
+    };
+    order.operational_stage = 'ADMISSION_ATTEMPTED';
+
+    await recordAuditLog('ENTRY_VERIFICATION', order.id, 'GATE_ADMISSION_PREPARED', picUserId, {
+      gate,
+      notes,
+      challenge_id: challenge.challengeId,
+      evidence_bundle_id: evidenceBundleId
+    });
+
+    return {
+      success: true,
+      orderId: order.id,
+      gate,
+      challengeCode: challenge.rawCode,
+      expiresAt: challenge.expiresAt
+    };
+  }
+
+  /**
+   * Dual Confirmation Step 2 (ENTRY_CONFIRMED):
+   * Buyer independently enters the code displayed on PIC's screen into Buyer's device.
+   * Only when BOTH PIC photo preparation and Buyer code verify does state advance.
+   */
+  static async completeDualConfirmedEntry({ orderId, buyerId, handshakeCode, currentDateStr = null }) {
+    const order = state.orders.find(o => o.id === orderId);
+    if (!order) throw new Error('Order not found');
+
+    if (order.buyer_id !== buyerId) {
+      const err = new Error('Forbidden: buyer ID mismatch for this order');
+      err.code = 'BUYER_MISMATCH';
+      throw err;
+    }
+
+    const { TransactionChallengeService } = require('./transactionChallengeService');
+    await TransactionChallengeService.verifyAndConsumeChallenge({
+      orderId: order.id,
+      actionType: 'ENTRY_CONFIRMED',
+      providedCode: handshakeCode,
+      consumingActorId: buyerId,
+      consumingActorRole: 'buyer'
+    });
+
+    if (order.status === 'ENTRY_CONFIRMED') {
+      const err = new Error('Entry already confirmed for this order');
+      err.code = 'DUPLICATE_ENTRY_CONFIRMATION';
+      throw err;
+    }
+
+    if (!order.gate_admission_prepared) {
+      const err = new Error('PIC must first physically inspect gate and capture evidence before buyer confirmation');
+      err.code = 'PIC_GATE_PREPARATION_REQUIRED';
+      throw err;
+    }
+
+    const prep = order.gate_admission_prepared;
+    const verification = await this.recordEntryVerification({
+      picUserId: prep.picUserId,
+      orderId: order.id,
+      gate: prep.gate,
+      notes: prep.notes ? `${prep.notes} (Dual confirmed with buyer handshake)` : 'Dual confirmed with buyer handshake',
+      status: 'CONFIRMED',
+      evidenceBundleId: prep.evidenceBundleId,
+      currentDateStr
+    });
+
+    order.gate_admission_prepared = null;
+    order.dual_confirmed = true;
+    order.operational_stage = 'ENTRY_CONFIRMED';
+
+    return {
+      success: true,
+      orderId: order.id,
+      status: 'ENTRY_CONFIRMED',
+      verification,
+      dualConfirmed: true
+    };
+  }
+
+  /**
+   * Dual Confirmation (HANDOFF_READY):
+   * PIC enters the 6-digit code displayed on SELLER's device.
+   */
+  static async confirmHandoffWithCode({ picUserId, orderId, handshakeCode, currentDateStr = null }) {
+    const order = state.orders.find(o => o.id === orderId);
+    if (!order) throw new Error('Order not found');
+
+    const activeCheck = this.isPicActiveForEvent(picUserId, order.event_id, currentDateStr);
+    if (!activeCheck.active) {
+      const err = new Error(`Unauthorized: ${activeCheck.reason}`);
+      err.code = 'PIC_UNAUTHORIZED';
+      throw err;
+    }
+
+    const { TransactionChallengeService } = require('./transactionChallengeService');
+    await TransactionChallengeService.verifyAndConsumeChallenge({
+      orderId: order.id,
+      actionType: 'HANDOFF_READY',
+      providedCode: handshakeCode,
+      consumingActorId: picUserId,
+      consumingActorRole: 'pic'
+    });
+
+    order.operational_stage = 'HANDOFF_READY';
+    order.handoff_confirmed_at = new Date().toISOString();
+    order.handoff_confirmed_by = picUserId;
+
+    await recordAuditLog('ORDER_OPERATIONAL_STAGE', orderId, 'HANDOFF_READY', picUserId, {
+      order_id: orderId,
+      handoff_confirmed: true
+    });
+
+    return {
+      success: true,
+      orderId: order.id,
+      stage: 'HANDOFF_READY',
+      dualConfirmed: true
+    };
   }
 }
 

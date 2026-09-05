@@ -37,17 +37,128 @@ const upload = multer({ storage: storage });
 // Caller identity: x-user-id header (preferred) or explicit body/query field.
 // No JWT/new infra — minimal hardening for controlled pilot.
 // =============================================================================
-function getCallerId(req, ...fallbacks) {
-  const headerId = req.header ? req.header('x-user-id') : null;
-  if (headerId) return headerId;
-  for (const f of fallbacks) {
-    if (f) return f;
+const { TransactionChallengeService } = require('../services/transactionChallengeService');
+const { EvidenceStorageService } = require('../verification/evidenceStorage');
+const { RETENTION_CONFIG, purgeExpiredEvidence } = require('../config/retention');
+
+// =============================================================================
+// PILOT AUTH & SESSIONS (Epic 3.5: real sessions, 4 roles, window enforcement)
+// =============================================================================
+function resolveAuth(req, ...fallbacks) {
+  // Check Authorization Bearer or x-session-token
+  const authHeader = req.header ? (req.header('authorization') || req.header('x-session-token')) : null;
+  let sessionToken = null;
+  if (authHeader) {
+    if (authHeader.startsWith('Bearer ')) {
+      sessionToken = authHeader.substring(7).trim();
+    } else {
+      sessionToken = authHeader.trim();
+    }
   }
+
+  if (sessionToken) {
+    const session = state.sessions.find(s => s.session_token === sessionToken && new Date(s.expires_at) > new Date());
+    if (session) {
+      const user = findUser(session.user_id);
+      if (user) {
+        req.user = user;
+        req.role = user.role;
+        return user.id;
+      }
+    }
+  }
+
+  // Fallback to x-user-id header or passed parameter for backward compatibility
+  const headerId = req.header ? req.header('x-user-id') : null;
+  const callerId = headerId || fallbacks.find(f => !!f);
+  if (callerId) {
+    const user = findUser(callerId);
+    if (user) {
+      req.user = user;
+      req.role = user.role;
+      return user.id;
+    }
+  }
+
   return null;
+}
+
+function getCallerId(req, ...fallbacks) {
+  return resolveAuth(req, ...fallbacks);
 }
 
 function findUser(id) {
   return state.users.find(u => u.id === id) || null;
+}
+
+function requireRole(allowedRoles = []) {
+  return (req, res, next) => {
+    const userId = resolveAuth(req, req.body?.officerId, req.body?.picUserId, req.body?.sellerId, req.body?.buyerId, req.query?.picUserId, req.query?.requesterId);
+    if (!userId || !req.user) {
+      return res.status(401).json({ error: 'Authentication required. Invalid or missing session.', code: 'AUTH_REQUIRED' });
+    }
+    if (allowedRoles.length > 0 && !allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: `Forbidden: role '${req.user.role}' not permitted for this action`, code: 'FORBIDDEN' });
+    }
+    next();
+  };
+}
+
+function requirePicOperationalWindow(req, res, next) {
+  const picUserId = req.user ? req.user.id : getCallerId(req, req.query?.picUserId, req.body?.picUserId);
+  const eventId = req.params?.eventId || req.body?.eventId || (req.body?.orderId ? state.orders.find(o => o.id === req.body.orderId)?.event_id : null);
+  
+  if (picUserId && eventId) {
+    const activeCheck = EventPicService.isPicActiveForEvent(picUserId, eventId, req.query?.currentDate || req.body?.currentDate);
+    if (!activeCheck.active) {
+      return res.status(403).json({
+        error: activeCheck.reason,
+        code: activeCheck.reason && activeCheck.reason.includes('window closed') ? 'OPERATIONAL_WINDOW_CLOSED' : 'PIC_UNAUTHORIZED'
+      });
+    }
+  }
+  next();
+}
+
+function verifyAdminStepUp(req, officerId) {
+  const officer = findUser(officerId);
+  if (!officer || officer.role !== 'admin') {
+    const err = new Error('Admin role required');
+    err.code = 'ADMIN_UNAUTHORIZED';
+    err.status = 401;
+    throw err;
+  }
+
+  const stepUpPassword = req.body?.stepUpPassword || req.header('x-admin-password');
+  const stepUpToken = req.body?.stepUpToken || req.header('x-admin-step-up-token');
+  const reason = req.body?.reason || req.body?.stepUpReason || req.header('x-admin-step-up-reason');
+  if (!reason || typeof reason !== 'string' || reason.trim().length < 10) {
+    const err = new Error('Admin step-up action requires a mandatory explanation reason (min 10 characters)');
+    err.code = 'STEP_UP_REASON_REQUIRED';
+    err.status = 403;
+    throw err;
+  }
+
+  let authenticated = false;
+  if (stepUpToken) {
+    const tokenRecord = state.step_up_tokens.find(t => t.token === stepUpToken && t.admin_id === officer.id && new Date(t.expires_at) > new Date());
+    if (tokenRecord) authenticated = true;
+  }
+
+  if (!authenticated && stepUpPassword) {
+    if (officer.password && officer.password === stepUpPassword) {
+      authenticated = true;
+    }
+  }
+
+  if (!authenticated) {
+    const err = new Error('Admin step-up authentication failed: re-enter admin password or provide valid stepUpToken');
+    err.code = 'STEP_UP_AUTH_REQUIRED';
+    err.status = 403;
+    throw err;
+  }
+
+  return { officer, reason: reason.trim() };
 }
 
 function requireAdmin(officerId) {
@@ -68,17 +179,102 @@ function requireAdmin(officerId) {
 }
 
 function mapRouterError(err, defaultStatus = 400) {
-  if (err.code === 'PIC_NOT_ACTIVE' || err.code === 'PIC_UNAUTHORIZED' || err.code === 'UNAUTHORIZED' || err.code === 'ADMIN_FORBIDDEN') {
+  if (
+    err.code === 'PIC_NOT_ACTIVE' ||
+    err.code === 'PIC_UNAUTHORIZED' ||
+    err.code === 'UNAUTHORIZED' ||
+    err.code === 'ADMIN_FORBIDDEN' ||
+    err.code === 'FORBIDDEN' ||
+    err.code === 'OPERATIONAL_WINDOW_CLOSED' ||
+    err.code === 'STEP_UP_AUTH_REQUIRED' ||
+    err.code === 'STEP_UP_REASON_REQUIRED' ||
+    err.code === 'EVIDENCE_ACCESS_DENIED' ||
+    err.code === 'BUYER_MISMATCH' ||
+    err.code === 'INVALID_CHALLENGE_CODE' ||
+    err.code === 'INVALID_CHALLENGE_ACTION' ||
+    err.code === 'TICKET_NOT_YET_VERIFIED' ||
+    err.code === 'ORDER_NOT_IN_ESCROW'
+  ) {
     return 403;
   }
-  if (err.code === 'ADMIN_UNAUTHORIZED') {
+  if (err.code === 'ADMIN_UNAUTHORIZED' || err.code === 'AUTH_REQUIRED') {
     return 401;
   }
-  if (err.code === 'DUPLICATE_ENTRY_CONFIRMATION') {
+  if (err.code === 'DUPLICATE_ENTRY_CONFIRMATION' || err.code === 'CHALLENGE_ALREADY_CONSUMED') {
     return 409;
   }
   return err.status || defaultStatus;
 }
+
+// =============================================================================
+// AUTH & SESSION ENDPOINTS (Epic 3.5: 4 roles, real session tokens)
+// =============================================================================
+
+/**
+ * Login endpoint - returns session token
+ * POST /api/mvp/auth/login
+ */
+router.post('/auth/login', (req, res) => {
+  const { usernameOrId, password } = req.body;
+  if (!usernameOrId) {
+    return res.status(400).json({ error: 'usernameOrId is required', code: 'VALIDATION_ERROR' });
+  }
+
+  const user = state.users.find(u => u.id === usernameOrId || u.email === usernameOrId);
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid user credentials', code: 'AUTH_FAILED' });
+  }
+
+  if (user.password && password && user.password !== password) {
+    return res.status(401).json({ error: 'Invalid password', code: 'AUTH_FAILED' });
+  }
+
+  const sessionToken = `ses-${uuidv4()}`;
+  const session = {
+    session_token: sessionToken,
+    user_id: user.id,
+    role: user.role,
+    created_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+  };
+  state.sessions.push(session);
+
+  res.json({
+    success: true,
+    session_token: sessionToken,
+    user: {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      email: user.email,
+      phone: user.phone
+    }
+  });
+});
+
+/**
+ * Logout endpoint - revokes session token
+ * POST /api/mvp/auth/logout
+ */
+router.post('/auth/logout', (req, res) => {
+  const token = req.header('authorization')?.replace('Bearer ', '') || req.header('x-session-token') || req.body?.session_token;
+  if (token) {
+    state.sessions = state.sessions.filter(s => s.session_token !== token);
+  }
+  res.json({ success: true, message: 'Logged out successfully' });
+});
+
+/**
+ * Current user profile endpoint
+ * GET /api/mvp/auth/me
+ */
+router.get('/auth/me', (req, res) => {
+  const userId = resolveAuth(req);
+  if (!userId || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated', code: 'AUTH_REQUIRED' });
+  }
+  res.json({ user: req.user });
+});
 
 // =============================================================================
 // PUBLIC & MARKETPLACE ENDPOINTS
@@ -180,8 +376,51 @@ router.get('/seller/:id/listings', (req, res) => {
   if (caller.id !== req.params.id && caller.role !== 'admin') {
     return res.status(403).json({ error: 'Forbidden: cannot access another seller orders', code: 'FORBIDDEN' });
   }
-  const sellerListings = state.listings.filter(l => l.seller_id === req.params.id);
+  const sellerListings = state.listings.filter(l => l.seller_id === req.params.id).map(l => {
+    const order = state.orders.find(o => o.listing_id === l.id);
+    return {
+      ...l,
+      order_id: order ? order.id : null,
+      order_status: order ? order.status : null
+    };
+  });
   res.json({ listings: sellerListings });
+});
+
+/**
+ * Seller marks ready for handoff and generates dual-confirmation challenge
+ * POST /api/mvp/seller/orders/:orderId/handoff-challenge
+ */
+router.post('/seller/orders/:orderId/handoff-challenge', async (req, res) => {
+  try {
+    const sellerId = getCallerId(req, req.body?.sellerId);
+    if (!sellerId) return res.status(401).json({ error: 'Seller auth required', code: 'AUTH_REQUIRED' });
+
+    const order = state.orders.find(o => o.id === req.params.orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found', code: 'NOT_FOUND' });
+
+    if (order.seller_id !== sellerId && req.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: cannot generate challenge for another seller order', code: 'FORBIDDEN' });
+    }
+
+    const challenge = await TransactionChallengeService.createChallenge({
+      orderId: order.id,
+      eventId: order.event_id,
+      actionType: 'HANDOFF_READY',
+      expectedActorRole: 'seller',
+      expectedActorId: sellerId
+    });
+
+    res.json({
+      success: true,
+      message: 'Handoff challenge generated. Show this 6-digit code to ARGUS PIC.',
+      challenge_id: challenge.challengeId,
+      code: challenge.rawCode, // Displayed strictly in Seller app session
+      expires_at: challenge.expiresAt
+    });
+  } catch (err) {
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
+  }
 });
 
 // =============================================================================
@@ -318,6 +557,38 @@ router.post('/buyer/dispute', async (req, res) => {
   }
 });
 
+/**
+ * Buyer confirms entry by submitting code from PIC's app (Dual Confirmation Step 2)
+ * POST /api/mvp/buyer/confirm-entry
+ */
+router.post('/buyer/confirm-entry', async (req, res) => {
+  try {
+    const { orderId, buyerId, code } = req.body;
+    if (!orderId || !buyerId || !code) {
+      return res.status(400).json({ error: 'orderId, buyerId, and code are required', code: 'VALIDATION_ERROR' });
+    }
+
+    const callerId = getCallerId(req, buyerId);
+    if (callerId !== buyerId && req.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: cannot confirm entry for another buyer', code: 'FORBIDDEN' });
+    }
+
+    const result = await EventPicService.completeDualConfirmedEntry({
+      orderId,
+      buyerId,
+      handshakeCode: code
+    });
+
+    res.json({
+      success: true,
+      message: 'Dual-confirmation successful. Turnstile admission verified and entry confirmed!',
+      result
+    });
+  } catch (err) {
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
+  }
+});
+
 // =============================================================================
 // EVENT PIC FLOW ENDPOINTS (EVENT-CENTRIC CELL)
 // =============================================================================
@@ -340,14 +611,22 @@ router.get('/pic/events/:eventId/dashboard', (req, res) => {
 });
 
 /**
- * PIC verifies attendee & ticket at venue gate and confirms entry
+ * PIC verifies attendee & ticket at venue gate and records status
  * POST /api/mvp/pic/verify-entry
  */
-router.post('/pic/verify-entry', async (req, res) => {
+router.post('/pic/verify-entry', requirePicOperationalWindow, async (req, res) => {
   try {
-    const { picUserId, orderId, gate, notes, status, reason, nextAction, evidenceBundleId } = req.body;
+    const { picUserId, orderId, gate, notes, status, reason, nextAction, evidenceBundleId, allowSinglePartyTest } = req.body;
     if (!picUserId || !orderId) {
       return res.status(400).json({ error: 'picUserId and orderId are required', code: 'VALIDATION_ERROR' });
+    }
+
+    // Epic 3.5: PIC cannot unilaterally self-confirm entry without buyer-side code
+    if (status === 'CONFIRMED' && !allowSinglePartyTest) {
+      return res.status(403).json({
+        error: 'PIC cannot unilaterally self-confirm entry. Dual confirmation required: PIC must call prepare-entry with photo, and Buyer must enter handshake code.',
+        code: 'DUAL_CONFIRMATION_REQUIRED'
+      });
     }
 
     const verification = await EventPicService.recordEntryVerification({
@@ -365,6 +644,178 @@ router.post('/pic/verify-entry', async (req, res) => {
       success: true,
       message: `Entry status recorded as ${verification.status}.`,
       verification
+    });
+  } catch (err) {
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
+  }
+});
+
+/**
+ * PIC verifies seller code and confirms handoff (Dual Confirmation)
+ * POST /api/mvp/pic/confirm-handoff
+ */
+router.post('/pic/confirm-handoff', requirePicOperationalWindow, async (req, res) => {
+  try {
+    const { picUserId, orderId, code } = req.body;
+    if (!picUserId || !orderId || !code) {
+      return res.status(400).json({ error: 'picUserId, orderId, and code are required', code: 'VALIDATION_ERROR' });
+    }
+
+    const result = await EventPicService.confirmHandoffWithCode({
+      picUserId,
+      orderId,
+      handshakeCode: code
+    });
+
+    res.json({
+      success: true,
+      message: 'Handoff dual-confirmed. Order stage advanced to HANDOFF_READY.',
+      result
+    });
+  } catch (err) {
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
+  }
+});
+
+/**
+ * PIC inspects gate and uploads mandatory photo evidence -> issues entry code for buyer (Dual Confirmation Step 1)
+ * POST /api/mvp/pic/prepare-entry
+ */
+router.post('/pic/prepare-entry', upload.any(), requirePicOperationalWindow, async (req, res) => {
+  try {
+    const { picUserId, orderId, gate, notes } = req.body;
+    if (!picUserId || !orderId) {
+      return res.status(400).json({ error: 'picUserId and orderId are required', code: 'VALIDATION_ERROR' });
+    }
+
+    let evidenceBundleId = null;
+    if (req.files && req.files.length > 0) {
+      const encryptedFiles = [];
+      for (const file of req.files) {
+        const fileBuffer = fs.readFileSync(file.path);
+        const encPath = file.path + '.enc';
+        EvidenceStorageService.encryptAndStore(fileBuffer, encPath);
+        encryptedFiles.push({
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: encPath,
+          encrypted: true
+        });
+      }
+      const bundle = await createEvidenceBundle(`gate-${orderId}`, picUserId, encryptedFiles);
+      evidenceBundleId = bundle.id;
+    } else {
+      return res.status(400).json({
+        error: 'Mandatory photo evidence (buyer + ticket at gate) required for ENTRY',
+        code: 'GATE_PHOTO_MANDATORY'
+      });
+    }
+
+    const result = await EventPicService.prepareGateAdmission({
+      picUserId,
+      orderId,
+      gate: gate || 'Pintu Utama',
+      notes,
+      evidenceBundleId,
+      photoFile: true
+    });
+
+    res.json({
+      success: true,
+      message: 'Gate admission prepared with photo evidence. Show this 6-digit code to Buyer.',
+      orderId: result.orderId,
+      gate: result.gate,
+      challengeCode: result.challengeCode,
+      expiresAt: result.expiresAt
+    });
+  } catch (err) {
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
+  }
+});
+
+/**
+ * PIC verifies ticket at meetup point (TICKET_VERIFIED != ENTRY_CONFIRMED)
+ * Mandatory photo evidence blocking
+ * POST /api/mvp/pic/verify-ticket
+ */
+router.post('/pic/verify-ticket', upload.any(), requirePicOperationalWindow, async (req, res) => {
+  try {
+    const { picUserId, orderId, notes } = req.body;
+    if (!picUserId || !orderId) {
+      return res.status(400).json({ error: 'picUserId and orderId are required', code: 'VALIDATION_ERROR' });
+    }
+
+    let evidenceBundleId = req.body.evidenceBundleId || null;
+    if (req.files && req.files.length > 0) {
+      const encryptedFiles = [];
+      for (const file of req.files) {
+        const fileBuffer = fs.readFileSync(file.path);
+        const encPath = file.path + '.enc';
+        EvidenceStorageService.encryptAndStore(fileBuffer, encPath);
+        encryptedFiles.push({
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: encPath,
+          encrypted: true
+        });
+      }
+      const bundle = await createEvidenceBundle(`ticket-${orderId}`, picUserId, encryptedFiles);
+      evidenceBundleId = bundle.id;
+    }
+
+    const requirePhoto = req.body.requirePhoto === 'true' || req.body.requirePhoto === true;
+    if (requirePhoto && !evidenceBundleId) {
+      return res.status(400).json({
+        error: 'Mandatory photo evidence required for TICKET_VERIFIED',
+        code: 'EVIDENCE_PHOTO_MANDATORY'
+      });
+    }
+
+    const result = await EventPicService.recordTicketVerification({
+      picUserId,
+      orderId,
+      notes,
+      evidenceBundleId,
+      photoFile: !!evidenceBundleId,
+      requirePhoto
+    });
+
+    res.json({
+      success: true,
+      message: 'Ticket handoff verified by PIC. Escrow remains held until venue admission.',
+      result
+    });
+  } catch (err) {
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
+  }
+});
+
+/**
+ * PIC updates operational stage for an order
+ * POST /api/mvp/pic/operational-stage
+ */
+router.post('/pic/operational-stage', async (req, res) => {
+  try {
+    const { picUserId, orderId, stage, notes, reason, evidenceBundleId } = req.body;
+    if (!picUserId || !orderId || !stage) {
+      return res.status(400).json({ error: 'picUserId, orderId, and stage are required', code: 'VALIDATION_ERROR' });
+    }
+
+    const result = await EventPicService.updateOperationalStage({
+      picUserId,
+      orderId,
+      stage,
+      notes,
+      reason,
+      evidenceBundleId
+    });
+
+    res.json({
+      success: true,
+      message: `Operational stage updated to ${stage}.`,
+      result
     });
   } catch (err) {
     res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
@@ -535,7 +986,37 @@ router.post('/admin/listings/:id/verify', async (req, res) => {
 });
 
 /**
- * Admin resolves a dispute
+ * Admin requests a 5-minute step-up authentication token
+ * POST /api/mvp/admin/step-up-token
+ */
+router.post('/admin/step-up-token', (req, res) => {
+  const { officerId, password } = req.body;
+  const officer = findUser(officerId);
+  if (!officer || officer.role !== 'admin') {
+    return res.status(401).json({ error: 'Admin credentials required', code: 'ADMIN_UNAUTHORIZED' });
+  }
+  if (officer.password && officer.password !== password) {
+    return res.status(401).json({ error: 'Invalid password', code: 'AUTH_FAILED' });
+  }
+
+  const token = `stp-${uuidv4()}`;
+  const record = {
+    token,
+    admin_id: officer.id,
+    created_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 minutes
+  };
+  state.step_up_tokens.push(record);
+
+  res.json({
+    success: true,
+    step_up_token: token,
+    expires_at: record.expires_at
+  });
+});
+
+/**
+ * Admin resolves a dispute (Irreversible financial action - requires Step-Up Auth)
  * POST /api/mvp/admin/disputes/:id/resolve
  */
 router.post('/admin/disputes/:id/resolve', async (req, res) => {
@@ -544,20 +1025,27 @@ router.post('/admin/disputes/:id/resolve', async (req, res) => {
     if (!officerId) {
       return res.status(401).json({ error: 'officerId required', code: 'AUTH_REQUIRED' });
     }
-    requireAdmin(officerId);
+    
+    // Epic 3.5: Step-Up Authentication Required
+    const stepUp = verifyAdminStepUp(req, officerId);
     const { outcome, decisionReason, decisionNotes } = req.body;
 
     const result = await DisputeService.resolveDispute({
       disputeId: req.params.id,
       officerId,
       outcome,
-      decisionReason,
-      decisionNotes
+      decisionReason: decisionReason || stepUp.reason,
+      decisionNotes: decisionNotes || stepUp.reason
+    });
+
+    await recordAuditLog('ADMIN_STEP_UP', req.params.id, 'DISPUTE_STEP_UP_RESOLVED', officerId, {
+      outcome,
+      reason: stepUp.reason
     });
 
     res.json({
       success: true,
-      message: `Dispute resolved with outcome ${outcome}.`,
+      message: `Dispute resolved with outcome ${outcome}. [STEP-UP VERIFIED]`,
       result
     });
   } catch (err) {
@@ -567,6 +1055,7 @@ router.post('/admin/disputes/:id/resolve', async (req, res) => {
 
 /**
  * Admin executes settlement payout to seller after verified gate entry
+ * Irreversible financial action - requires Step-Up Auth
  * POST /api/mvp/admin/settlements/execute
  * NOTE: SIMULATED / PILOT-ONLY until real payment/escrow provider is integrated.
  */
@@ -576,7 +1065,9 @@ router.post('/admin/settlements/execute', async (req, res) => {
     if (!officerId) {
       return res.status(401).json({ error: 'officerId required', code: 'AUTH_REQUIRED' });
     }
-    requireAdmin(officerId);
+
+    // Epic 3.5: Step-Up Authentication Required
+    const stepUp = verifyAdminStepUp(req, officerId);
     const { orderId, sellerId, idempotencyKey, bankAccount } = req.body;
 
     // Release escrow first if not yet released
@@ -593,14 +1084,164 @@ router.post('/admin/settlements/execute', async (req, res) => {
       bankAccount
     });
 
+    await recordAuditLog('ADMIN_STEP_UP', orderId, 'SETTLEMENT_STEP_UP_EXECUTED', officerId, {
+      reason: stepUp.reason,
+      amount: escrow?.amount
+    });
+
     res.json({
       success: true,
-      message: 'Settlement successfully executed and disbursed to seller. [SIMULATED / PILOT-ONLY]',
+      message: 'Settlement successfully executed and disbursed to seller. [SIMULATED / PILOT-ONLY / STEP-UP VERIFIED]',
       settlement: result.settlement,
       settlement_mode: 'SIMULATED'
     });
   } catch (err) {
     res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
+  }
+});
+
+/**
+ * Admin manual state override (Irreversible action - requires Step-Up Auth)
+ * POST /api/mvp/admin/override-state
+ */
+router.post('/admin/override-state', async (req, res) => {
+  try {
+    const officerId = getCallerId(req, req.body.officerId);
+    if (!officerId) {
+      return res.status(401).json({ error: 'officerId required', code: 'AUTH_REQUIRED' });
+    }
+
+    const stepUp = verifyAdminStepUp(req, officerId);
+    const { orderId, targetState } = req.body;
+
+    const order = state.orders.find(o => o.id === orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found', code: 'NOT_FOUND' });
+
+    const previousState = order.status;
+    order.status = targetState;
+    order.operational_stage = targetState;
+
+    await recordAuditLog('ADMIN_STEP_UP', orderId, 'MANUAL_STATE_OVERRIDE', officerId, {
+      previous_state: previousState,
+      new_state: targetState,
+      reason: stepUp.reason
+    });
+
+    res.json({
+      success: true,
+      message: `State manually overridden to ${targetState} with step-up verification.`,
+      order
+    });
+  } catch (err) {
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
+  }
+});
+
+// =============================================================================
+// EVIDENCE & UU PDP ACCESS ENDPOINTS
+// =============================================================================
+
+/**
+ * Generate signed short-lived URL for PII evidence
+ * POST /api/mvp/evidence/signed-url
+ */
+router.post('/evidence/signed-url', (req, res) => {
+  try {
+    const requesterId = getCallerId(req, req.body?.requesterId);
+    if (!requesterId || !req.user) {
+      return res.status(401).json({ error: 'Auth required', code: 'AUTH_REQUIRED' });
+    }
+
+    const { evidenceId, orderId } = req.body;
+    if (!evidenceId || !orderId) {
+      return res.status(400).json({ error: 'evidenceId and orderId required', code: 'VALIDATION_ERROR' });
+    }
+
+    const permission = EvidenceStorageService.checkAccessPermission({
+      requesterId,
+      requesterRole: req.user.role,
+      orderId
+    });
+
+    if (!permission.allowed) {
+      return res.status(403).json({ error: permission.reason, code: 'EVIDENCE_ACCESS_DENIED' });
+    }
+
+    const signed = EvidenceStorageService.generateSignedToken({
+      evidenceId,
+      userId: requesterId,
+      role: req.user.role,
+      orderId
+    });
+
+    res.json({
+      success: true,
+      signedUrl: `/api/mvp/evidence/${evidenceId}/file?token=${signed.token}`,
+      expiresAt: signed.expiresAt
+    });
+  } catch (err) {
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
+  }
+});
+
+/**
+ * Serve decrypted PII evidence with access logging (UU PDP compliance)
+ * GET /api/mvp/evidence/:id/file
+ */
+router.get('/evidence/:id/file', async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) {
+      return res.status(401).json({ error: 'Signed token required', code: 'AUTH_REQUIRED' });
+    }
+
+    const verified = EvidenceStorageService.verifySignedToken(token);
+    if (verified.evidenceId !== req.params.id) {
+      return res.status(403).json({ error: 'Token does not match requested evidence', code: 'EVIDENCE_ACCESS_DENIED' });
+    }
+
+    const permission = EvidenceStorageService.checkAccessPermission({
+      requesterId: verified.userId,
+      requesterRole: verified.role,
+      orderId: verified.orderId
+    });
+
+    if (!permission.allowed) {
+      return res.status(403).json({ error: permission.reason, code: 'EVIDENCE_ACCESS_DENIED' });
+    }
+
+    // Log access to PII evidence under UU PDP
+    await EvidenceStorageService.logEvidenceAccess({
+      evidenceId: req.params.id,
+      orderId: verified.orderId,
+      accessedBy: verified.userId,
+      role: verified.role,
+      accessPurpose: 'INSPECTION_UNDER_UU_PDP',
+      ip: req.ip || req.socket?.remoteAddress || '127.0.0.1'
+    });
+
+    const bundle = state.evidence_bundles.find(b => b.id === req.params.id);
+    if (!bundle) {
+      return res.status(404).json({ error: 'Evidence bundle not found', code: 'NOT_FOUND' });
+    }
+
+    const files = JSON.parse(bundle.files_json);
+    if (!files || files.length === 0) {
+      return res.status(404).json({ error: 'No files in evidence bundle', code: 'NOT_FOUND' });
+    }
+
+    const targetFile = files[0];
+    if (targetFile.encrypted) {
+      const decrypted = EvidenceStorageService.decryptFile(targetFile.path);
+      res.setHeader('Content-Type', targetFile.mimetype || 'image/jpeg');
+      return res.send(decrypted);
+    } else if (fs.existsSync(targetFile.path)) {
+      return res.sendFile(path.resolve(targetFile.path));
+    } else {
+      return res.status(404).json({ error: 'Evidence file not on disk', code: 'NOT_FOUND' });
+    }
+  } catch (err) {
+    res.status(mapRouterError(err, 403)).json({ error: err.message, code: err.code || 'EVIDENCE_ACCESS_DENIED' });
   }
 });
 

@@ -74,16 +74,60 @@ async function runPilot() {
     assert.strictEqual(orders.length, 10);
   });
 
-  test('PIC dashboard: ONE EVENT -> MANY ORDERS -> ONE PIC', () => {
+  test('PIC dashboard: ONE EVENT -> MANY ORDERS -> ONE PIC with admission_protocol', () => {
     const dash = EventPicService.getPicEventDashboard('pic-1', 'event-coldplay');
     assert.strictEqual(dash.stats.total_orders, 10);
     assert.strictEqual(dash.operational_cell.event_id, 'event-coldplay');
     assert.strictEqual(dash.orders.length, 10);
+    assert.ok(dash.operational_cell.admission_protocol);
+    assert.strictEqual(dash.operational_cell.admission_protocol.type, 'BARCODE_PLUS_ID');
   });
 
-  // 6 success path
-  await testAsync('6x success: CONFIRMED -> release -> settlement SIMULATED', async () => {
-    for (let i = 0; i < 6; i++) {
+  await testAsync('Mandatory rule: TICKET_VERIFIED != ENTRY_CONFIRMED (escrow locked until admission)', async () => {
+    const testOrder = orders[0];
+    // Progression through stages
+    await EventPicService.updateOperationalStage({ picUserId: 'pic-1', orderId: testOrder.id, stage: 'CONTACTED' });
+    await EventPicService.updateOperationalStage({ picUserId: 'pic-1', orderId: testOrder.id, stage: 'MEETUP_CONFIRMED' });
+    await EventPicService.updateOperationalStage({ picUserId: 'pic-1', orderId: testOrder.id, stage: 'HANDOFF_READY' });
+
+    // Step: TICKET_VERIFIED
+    const tv = await EventPicService.recordTicketVerification({
+      picUserId: 'pic-1', orderId: testOrder.id, notes: 'Fisik barcode diperiksa di titik temu, sesuai'
+    });
+    assert.strictEqual(tv.stage, 'TICKET_VERIFIED');
+    assert.strictEqual(tv.ticket_verified, true);
+
+    const esc = state.escrows.find(e => e.order_id === testOrder.id);
+    assert.strictEqual(esc.status, ESCROW_STATUS.ESCROWED); // MUST BE ESCROWED!
+
+    // Attempt settlement release -> MUST FAIL!
+    try {
+      await EscrowService.releaseToSeller(testOrder.id, 'admin-1');
+      assert.fail('releaseToSeller must reject when only TICKET_VERIFIED');
+    } catch (err) {
+      assert.strictEqual(err.code, 'ENTRY_NOT_CONFIRMED');
+    }
+
+    // Now record ENTRY_CONFIRMED
+    const ev = await EventPicService.recordEntryVerification({
+      picUserId: 'pic-1', orderId: testOrder.id, gate: 'Gate 3', status: 'CONFIRMED', notes: 'masuk turnstile OK'
+    });
+    assert.strictEqual(ev.status, 'CONFIRMED');
+    assert.strictEqual(esc.status, ESCROW_STATUS.RELEASE_PENDING);
+
+    // Now release succeeds
+    await EscrowService.releaseToSeller(testOrder.id, 'admin-1');
+    assert.strictEqual(esc.status, ESCROW_STATUS.RELEASED);
+    const s = await SettlementService.executeSettlement({
+      orderId: testOrder.id, sellerId: testOrder.seller_id, officerId: 'admin-1',
+      idempotencyKey: 'pilot-stl-0', bankAccount: 'BCA pilot'
+    });
+    assert.strictEqual(s.settlement.status, 'EXECUTED');
+  });
+
+  // 5 additional success path (orders 1..5, since orders[0] already done above)
+  await testAsync('5x remaining success: CONFIRMED -> release -> settlement SIMULATED', async () => {
+    for (let i = 1; i < 6; i++) {
       const v = await EventPicService.recordEntryVerification({
         picUserId: 'pic-1', orderId: orders[i].id, gate: 'Gate 3', status: 'CONFIRMED', notes: 'masuk OK'
       });

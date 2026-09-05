@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "test": "node test_mvp_transaction_loop.js && node test_mvp_dispute_loop.js && node test_mvp_security.js && node test_pilot_multi_order_10.js && node test_flow.js"
+    "test": "node test_mvp_transaction_loop.js && node test_mvp_dispute_loop.js && node test_mvp_security.js && node test_pilot_multi_order_10.js && node test_flow.js && node test_epic35_redteam.js"
   },
   "repository": {
     "type": "git",

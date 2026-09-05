@@ -19,7 +19,11 @@ const state = {
   settlements: [],
   transfers: [], // kept for backward compatibility
   ticket_events: [], // kept for backward compatibility
-  audit_logs: []
+  audit_logs: [],
+  sessions: [],
+  transaction_challenges: [],
+  evidence_access_logs: [],
+  step_up_tokens: []
 };
 
 let seqId = 1;
@@ -29,11 +33,17 @@ let logId = 1;
  * Reset and seed database with initial clean fixtures.
  */
 function resetDatabase() {
+  state.sessions = [];
+  state.transaction_challenges = [];
+  state.evidence_access_logs = [];
+  state.step_up_tokens = [];
+
   state.users = [
-    { id: 'admin-1', name: 'Trust Officer ARGUS', email: 'ops@argus.id', phone: '081234567890', role: 'admin' },
-    { id: 'seller-1', name: 'Budi Santoso', email: 'budi.seller@example.com', phone: '082223334445', role: 'seller' },
-    { id: 'buyer-1', name: 'Dewi Lestari', email: 'dewi.buyer@example.com', phone: '085556667778', role: 'buyer' },
-    { id: 'pic-1', name: 'Agus Hendra (Event PIC)', email: 'agus.pic@argus.id', phone: '081199887766', role: 'pic' }
+    { id: 'admin-1', name: 'Trust Officer ARGUS', email: 'ops@argus.id', phone: '081234567890', role: 'admin', password: 'pilot123' },
+    { id: 'seller-1', name: 'Budi Santoso', email: 'budi.seller@example.com', phone: '082223334445', role: 'seller', password: 'pilot123' },
+    { id: 'buyer-1', name: 'Dewi Lestari', email: 'dewi.buyer@example.com', phone: '085556667778', role: 'buyer', password: 'pilot123' },
+    { id: 'buyer-2', name: 'Rina Wijaya', email: 'rina.buyer@example.com', phone: '085556667779', role: 'buyer', password: 'pilot123' },
+    { id: 'pic-1', name: 'Agus Hendra (Event PIC)', email: 'agus.pic@argus.id', phone: '081199887766', role: 'pic', password: 'pilot123' }
   ];
 
   state.seller_profiles = [
@@ -52,7 +62,14 @@ function resetDatabase() {
       date: '2026-11-15',
       venue_id: 'venue-gbk',
       venue: 'Gelora Bung Karno',
-      category: 'CAT 1 - West'
+      category: 'CAT 1 - West',
+      admission_protocol: {
+        type: 'BARCODE_PLUS_ID',
+        description: 'Scan QR/Barcode di turnstile resmi promotor + random ID check oleh venue security',
+        required_items: ['E-Voucher PDF / QR Code resmi', 'KTP Asli / Passport'],
+        handoff_type: 'DIGITAL_TRANSFER',
+        venue_gate_authority: 'Promoter & Venue Security (ARGUS acts as verification intermediary)'
+      }
     },
     {
       id: 'event-gnr',
@@ -60,7 +77,14 @@ function resetDatabase() {
       date: '2026-10-15',
       venue_id: 'venue-gbk',
       venue: 'Gelora Bung Karno',
-      category: 'Festival A'
+      category: 'Festival A',
+      admission_protocol: {
+        type: 'PHYSICAL_WRISTBAND',
+        description: 'Penukaran e-voucher menjadi wristband RFID di redemption booth sebelum antrean gate',
+        required_items: ['Bukti Pembelian / Surat Kuasa', 'KTP Fisik'],
+        handoff_type: 'PHYSICAL_WRISTBAND',
+        venue_gate_authority: 'Promoter & Venue Security (ARGUS acts as verification intermediary)'
+      }
     }
   ];
 
