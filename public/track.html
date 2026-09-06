@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARGUS — Pelacakan Transaksi &amp; Audit Trail Real-Time</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand">
+        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <div class="brand-title">ARGUS</div>
+          <span class="brand-subtitle">Verified Ticket Transfer</span>
+        </div>
+      </a>
+
+      <nav class="main-nav">
+        <a href="/" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
+        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Buat Transfer Tiket</a>
+        <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container" style="max-width: 860px;">
+
+    <!-- Tracker Search Header -->
+    <div style="margin-bottom: 24px; text-align: center;">
+      <div class="hero-pill"><i class="fa-solid fa-magnifying-glass"></i> AUDIT TRAIL PUBLIK AMAN PII</div>
+      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Lacak Status Transaksi &amp; Verifikasi Gerbang</h1>
+      <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px; max-width: 600px; margin-left: auto; margin-right: auto;">
+        Setiap perubahan status tiket diverifikasi secara kriptografis dan dicatat secara permanen di audit trail ARGUS.
+      </p>
+
+      <!-- Input Bar -->
+      <div class="tracker-box" style="margin-top: 24px;">
+        <input 
+          type="text" 
+          id="trackInput" 
+          class="tracker-input mono" 
+          placeholder="Masukkan ID Pesanan (ord-...) atau ID Listing (list-...)"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <button id="trackBtn" class="btn" onclick="executeTrack()">
+          <i class="fa-solid fa-magnifying-glass"></i> Periksa Status
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="trackLoading" style="display: none; text-align: center; padding: 40px 20px;">
+      <i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--cyan); margin-bottom: 12px;"></i>
+      <div style="font-size: 14px; color: var(--text-muted);">Memverifikasi ID dengan database ledger ARGUS...</div>
+    </div>
+
+    <!-- Error / Not Found State -->
+    <div id="trackNotFound" class="card" style="display: none; text-align: center; padding: 40px 20px;">
+      <i class="fa-solid fa-circle-xmark" style="font-size: 40px; color: var(--danger); margin-bottom: 14px;"></i>
+      <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Transaksi Tidak Ditemukan</h3>
+      <p id="trackNotFoundText" style="font-size: 14px; color: var(--text-muted); max-width: 500px; margin: 0 auto 20px;">
+        ID yang dimasukkan tidak cocok dengan transaksi atau listing tiket mana pun yang tercatat di server.
+      </p>
+      <div style="font-size: 12px; color: var(--text-dim);">
+        Pastikan format ID diawali dengan <code class="mono" style="color: var(--cyan);">ord-</code> atau <code class="mono" style="color: var(--cyan);">list-</code>.
+      </div>
+    </div>
+
+    <!-- Tracking Result Display -->
+    <div id="trackResult" style="display: none;">
+
+      <!-- Header Summary Card -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+          <div>
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+              <span id="transTypeBadge" class="badge badge-info">ORDER</span>
+              <span id="transStatusBadge" class="badge badge-warning">-</span>
+            </div>
+            <h2 id="transEventTitle" style="font-size: 20px; font-weight: 800; color: #fff;">-</h2>
+            <div id="transEventMeta" style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">-</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">ID Transaksi Ledger:</div>
+            <code id="transIdText" class="mono" style="font-size: 14px; color: var(--cyan); font-weight: 700;">-</code>
+            <div id="transDateText" style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">-</div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border); padding-top: 14px;">
+          <div class="grid-3" style="font-size: 13px;">
+            <div>
+              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;">Posisi / Kursi:</div>
+              <strong id="transSeatText" style="color: #fff;">-</strong>
+            </div>
+            <div>
+              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;">Total Transaksi:</div>
+              <strong id="transPriceText" class="mono" style="color: var(--cyan);">-</strong>
+            </div>
+            <div>
+              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;">Protokol Masuk Venue:</div>
+              <span id="transProtocolText" class="badge badge-slate">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lifecycle Progress Timeline Card -->
+      <div class="card">
+        <h3 class="card-title"><i class="fa-solid fa-timeline"></i> Riwayat Verifikasi Siklus Transaksi</h3>
+        
+        <div id="timelineContainer" class="timeline">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Safety & Protection Dossier Card -->
+      <div class="card">
+        <h3 class="card-title"><i class="fa-solid fa-shield-halved"></i> Parameter Jaminan Keamanan Transaksi</h3>
+        <div class="grid-2" style="font-size: 13px;">
+          <div style="padding: 10px; background: #090d16; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">
+              <i class="fa-solid fa-fingerprint" style="color: var(--cyan);"></i> Barcode Anti-Duplikasi
+            </div>
+            <div style="color: var(--text-muted); font-size: 12px;">
+              Hash SHA-256 tersimpan di database ARGUS. Sistem memblokir secara otomatis jika nomor barcode tiket yang sama didaftarkan oleh pihak lain.
+            </div>
+          </div>
+
+          <div style="padding: 10px; background: #090d16; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">
+              <i class="fa-solid fa-vault" style="color: var(--warning);"></i> Status Rekening Penampungan
+            </div>
+            <div id="escrowProtectionText" style="color: var(--text-muted); font-size: 12px;">
+              Dana pembeli ditahan di sistem penampungan transaksi internal ARGUS hingga pembeli terverifikasi masuk ke dalam venue.
+            </div>
+          </div>
+
+          <div style="padding: 10px; background: #090d16; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">
+              <i class="fa-solid fa-user-shield" style="color: var(--success);"></i> Kehadiran PIC di Venue
+            </div>
+            <div id="picStatusText" style="color: var(--text-muted); font-size: 12px;">
+              Petugas Event PIC ARGUS bersiaga di pintu masuk acara untuk melakukan verifikasi fisik dan otentikasi dual-handshake OTP.
+            </div>
+          </div>
+
+          <div style="padding: 10px; background: #090d16; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">
+              <i class="fa-solid fa-gavel" style="color: var(--cyan);"></i> Perlindungan Konsumen &amp; UU PDP
+            </div>
+            <div style="color: var(--text-muted); font-size: 12px;">
+              Data pribadi (NIK, telepon) dilindungi sesuai UU PDP No. 27/2022. Dokumen bukti dienkripsi AES-256 dengan retensi otomatis 90 hari setelah penyelesaian.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div>
+        <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">ARGUS Trust Infrastructure</div>
+        <div>Verified Ticket Transfer &copy; 2026. Public PII-Safe Transaction Auditing.</div>
+      </div>
+      <div class="footer-links">
+        <a href="/terms">Ketentuan Transaksi</a>
+        <a href="/privacy">Kebijakan Privasi</a>
+        <a href="/health">Status API</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function getIdFromUrl() {
+      // Check path /track/:id
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      if (pathParts.length >= 2 && pathParts[0] === 'track') {
+        return pathParts[1];
+      }
+      // Check query param ?id=...
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('id');
+    }
+
+    function executeTrack() {
+      const input = document.getElementById('trackInput');
+      const val = (input.value || '').trim();
+      if (!val) {
+        alert('Harap masukkan ID transaksi atau listing.');
+        return;
+      }
+      // Push state to clean URL or reload
+      const newUrl = `/track?id=${encodeURIComponent(val)}`;
+      window.history.pushState({}, '', newUrl);
+      fetchTrackingData(val);
+    }
+
+    // Allow Enter key on input
+    document.getElementById('trackInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') executeTrack();
+    });
+
+    async function fetchTrackingData(id) {
+      const loadingEl = document.getElementById('trackLoading');
+      const notFoundEl = document.getElementById('trackNotFound');
+      const resultEl = document.getElementById('trackResult');
+
+      loadingEl.style.display = 'block';
+      notFoundEl.style.display = 'none';
+      resultEl.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/mvp/track/${encodeURIComponent(id)}`);
+        if (!res.ok) {
+          throw new Error('ID Transaksi tidak ditemukan dalam sistem ledger.');
+        }
+
+        const data = await res.json();
+        loadingEl.style.display = 'none';
+
+        if (!data.success || !data.transaction) {
+          throw new Error('Format data transaksi tidak valid dari server.');
+        }
+
+        renderTracking(data.transaction);
+        resultEl.style.display = 'block';
+
+      } catch (err) {
+        loadingEl.style.display = 'none';
+        notFoundEl.style.display = 'block';
+        document.getElementById('trackNotFoundText').innerText = 
+          `ID "${id}" tidak ditemukan dalam ledger ARGUS. Periksa kembali ID yang Anda masukkan.`;
+      }
+    }
+
+    function renderTracking(tx) {
+      document.getElementById('transIdText').innerText = tx.id;
+      document.getElementById('transTypeBadge').innerText = tx.type;
+      
+      const statusBadge = document.getElementById('transStatusBadge');
+      statusBadge.innerText = tx.status;
+      if (tx.status === 'ACTIVE' || tx.status === 'SETTLED' || tx.status === 'ENTRY_CONFIRMED') {
+        statusBadge.className = 'badge badge-success';
+      } else if (tx.status === 'DISPUTED' || tx.status === 'REJECTED' || tx.status === 'CANCELLED') {
+        statusBadge.className = 'badge badge-danger';
+      } else {
+        statusBadge.className = 'badge badge-warning';
+      }
+
+      // Event meta
+      const ev = tx.event || {};
+      document.getElementById('transEventTitle').innerText = ev.title || 'Event Terdaftar';
+      document.getElementById('transEventMeta').innerText = 
+        `${ev.date || '-'} • ${ev.venue || '-'}, ${ev.city || 'Jakarta'}`;
+
+      document.getElementById('transSeatText').innerText = tx.seat_info || '-';
+      
+      const priceVal = tx.total_amount || tx.price || 0;
+      document.getElementById('transPriceText').innerText = 'Rp ' + Number(priceVal).toLocaleString('id-ID');
+
+      document.getElementById('transProtocolText').innerText = ev.admission_protocol || 'QR_SCAN_ONLY';
+      document.getElementById('transDateText').innerText = tx.created_at ? new Date(tx.created_at).toLocaleString('id-ID') : '-';
+
+      // Build real lifecycle timeline
+      const timelineEl = document.getElementById('timelineContainer');
+      if (tx.type === 'ORDER') {
+        renderOrderTimeline(tx, timelineEl);
+      } else {
+        renderListingTimeline(tx, timelineEl);
+      }
+    }
+
+    function renderOrderTimeline(tx, container) {
+      const isPaid = tx.status === 'PAID' || tx.status === 'ESCROW_LOCKED' || tx.status === 'ENTRY_CONFIRMED' || tx.status === 'SETTLED';
+      const isEntry = tx.status === 'ENTRY_CONFIRMED' || tx.status === 'SETTLED';
+      const isSettled = tx.status === 'SETTLED';
+      const isDispute = tx.status === 'DISPUTED' || tx.status === 'REFUNDED';
+
+      let html = `
+        <div class="timeline-step completed">
+          <div class="timeline-marker"><i class="fa-solid fa-check"></i></div>
+          <div class="timeline-title">Pesanan Dibuat di Ledger ARGUS</div>
+          <div class="timeline-desc">Tiket dikunci dari marketplace dan terikat pada pembeli.</div>
+        </div>
+
+        <div class="timeline-step ${isPaid ? 'completed' : 'current'}">
+          <div class="timeline-marker">${isPaid ? '<i class="fa-solid fa-check"></i>' : '2'}</div>
+          <div class="timeline-title">Dana Diamankan di Rekening Penampungan Internal</div>
+          <div class="timeline-desc">Status Penampungan: <strong>${tx.escrow_status || (isPaid ? 'HELD' : 'PENDING')}</strong>. Dana terlindungi dan tidak dapat dicairkan penjual sebelum verifikasi venue.</div>
+        </div>
+
+        <div class="timeline-step ${isEntry ? 'completed' : (isPaid && !isDispute ? 'current' : '')}">
+          <div class="timeline-marker">${isEntry ? '<i class="fa-solid fa-check"></i>' : '3'}</div>
+          <div class="timeline-title">Verifikasi Pintu Masuk di Venue oleh Event PIC</div>
+          <div class="timeline-desc">Status Masuk: <strong>${tx.entry_status || 'MENUNGGU HARI ACARA'}</strong>. Verifikasi tatap muka dan kode sandi OTP 6-digit di gerbang venue.</div>
+        </div>
+      `;
+
+      if (isDispute) {
+        html += `
+          <div class="timeline-step current" style="border-left-color: var(--danger);">
+            <div class="timeline-marker" style="background: #dc2626; border-color: #f87171; color: #fff;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="timeline-title" style="color: #f87171;">Protokol Sengketa Tiket Aktif (${tx.status})</div>
+            <div class="timeline-desc">Laporan sengketa gerbang sedang diinvestigasi oleh Event PIC dan Tim Resolusi ARGUS.</div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="timeline-step ${isSettled ? 'completed' : ''}">
+            <div class="timeline-marker">${isSettled ? '<i class="fa-solid fa-check"></i>' : '4'}</div>
+            <div class="timeline-title">Pencairan Dana ke Penjual (Settlement)</div>
+            <div class="timeline-desc">Dana hanya dicairkan kepada penjual setelah verifikasi masuk sukses tercatat di ledger audit.</div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function renderListingTimeline(tx, container) {
+      const isVerified = tx.status === 'ACTIVE' || tx.status === 'RESERVED' || tx.status === 'SOLD';
+      const isSold = tx.status === 'SOLD';
+      const isReserved = tx.status === 'RESERVED' || isSold;
+
+      let html = `
+        <div class="timeline-step completed">
+          <div class="timeline-marker"><i class="fa-solid fa-check"></i></div>
+          <div class="timeline-title">Pengajuan Tiket oleh Penjual</div>
+          <div class="timeline-desc">Barcode dan bukti kepemilikan di-hash menggunakan SHA-256.</div>
+        </div>
+
+        <div class="timeline-step ${isVerified ? 'completed' : 'current'}">
+          <div class="timeline-marker">${isVerified ? '<i class="fa-solid fa-check"></i>' : '2'}</div>
+          <div class="timeline-title">Kurasi &amp; Verifikasi Keaslian Tiket</div>
+          <div class="timeline-desc">Pemeriksaan integritas tiket oleh Tim Kurator ARGUS. Status saat ini: <strong>${tx.status}</strong>.</div>
+        </div>
+
+        <div class="timeline-step ${isReserved ? 'completed' : ''}">
+          <div class="timeline-marker">${isReserved ? '<i class="fa-solid fa-check"></i>' : '3'}</div>
+          <div class="timeline-title">Reservasi oleh Calon Pembeli</div>
+          <div class="timeline-desc">Tiket dikunci untuk transaksi pembeli dan menunggu proses pembayaran rekening penampungan.</div>
+        </div>
+
+        <div class="timeline-step ${isSold ? 'completed' : ''}">
+          <div class="timeline-marker">${isSold ? '<i class="fa-solid fa-check"></i>' : '4'}</div>
+          <div class="timeline-title">Tiket Terjual — Menunggu Hari Acara</div>
+          <div class="timeline-desc">Dana diamankan di penampungan hingga serah terima fisik/gate verification selesai.</div>
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // Initialize on page load
+    const initialId = getIdFromUrl();
+    if (initialId) {
+      document.getElementById('trackInput').value = initialId;
+      fetchTrackingData(initialId);
+    }
+  </script>
+</body>
+</html>

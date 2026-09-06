@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARGUS — Pembelian &amp; Perlindungan Transaksi Tiket</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand">
+        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <div class="brand-title">ARGUS</div>
+          <span class="brand-subtitle">Verified Ticket Transfer</span>
+        </div>
+      </a>
+
+      <nav class="main-nav">
+        <a href="/" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Katalog Event</a>
+        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
+        <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container" style="max-width: 800px;">
+
+    <!-- Loading State -->
+    <div id="payLoading" style="text-align: center; padding: 60px 20px;">
+      <i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--cyan); margin-bottom: 14px;"></i>
+      <div style="font-size: 15px; color: var(--text-muted);">Mengambil data listing resmi dari server ARGUS...</div>
+    </div>
+
+    <!-- Error / Not Found State -->
+    <div id="payNotFound" class="card" style="display: none; text-align: center; padding: 50px 20px;">
+      <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--danger); margin-bottom: 14px;"></i>
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Listing Tiket Tidak Ditemukan</h2>
+      <p id="payNotFoundMsg" style="font-size: 14px; color: var(--text-muted); max-width: 480px; margin: 0 auto 24px;">
+        ID listing yang Anda tuju tidak terdaftar atau telah kedaluwarsa dari sistem ledger ARGUS.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <a href="/" class="btn"><i class="fa-solid fa-calendar-days"></i> Lihat Katalog Event</a>
+        <a href="/track" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i> Lacak ID Transaksi Lain</a>
+      </div>
+    </div>
+
+    <!-- Main Payment & Order Surface -->
+    <div id="paySurface" style="display: none;">
+      
+      <div style="margin-bottom: 24px;">
+        <div class="hero-pill"><i class="fa-solid fa-vault"></i> REKENING PENAMPUNGAN TERLINDUNGI</div>
+        <h1 style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Konfirmasi Pesanan &amp; Perlindungan Pembeli</h1>
+        <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+          Dana Anda ditahan di sistem internal ARGUS dan hanya dicairkan ke penjual setelah Anda berhasil melewati pintu masuk venue.
+        </p>
+      </div>
+
+      <!-- Soft Warning for Community / User-Created Events -->
+      <div id="communityEventWarning" class="notice-box notice-warning" style="display: none;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+          <strong>Peringatan Event Komunitas:</strong> Event ini didaftarkan oleh pengguna dan belum diverifikasi resmi oleh kurator ARGUS. Dana pembelian Anda tetap 100% terlindungi oleh rekening penampungan internal ARGUS hingga tiket terbukti valid di gerbang acara.
+        </div>
+      </div>
+
+      <!-- Listing Details Card -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <span id="eventCategoryBadge" class="badge badge-slate" style="margin-bottom: 6px;">EVENT</span>
+            <h2 id="eventTitle" style="font-size: 20px; font-weight: 800; color: #fff;">-</h2>
+            <div id="eventLocationMeta" style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+              <i class="fa-regular fa-calendar" style="width: 16px;"></i> <span id="eventDate">-</span> &bull; 
+              <i class="fa-solid fa-location-dot" style="width: 16px;"></i> <span id="eventVenue">-</span>
+            </div>
+          </div>
+          <div id="eventVerificationBadge"></div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
+          <div class="grid-2" style="font-size: 13px;">
+            <div>
+              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;">Posisi / Kursi Tiket:</div>
+              <strong id="seatInfoText" style="color: #fff; font-size: 14px;">-</strong>
+            </div>
+            <div>
+              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;">ID Listing Resmi:</div>
+              <code id="listingIdText" class="mono" style="color: var(--cyan); font-size: 13px;">-</code>
+            </div>
+            <div>
+              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;">Status Listing Saat Ini:</div>
+              <span id="listingStatusBadge" class="badge badge-info">-</span>
+            </div>
+            <div>
+              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;">Status KYC Penjual:</div>
+              <span id="sellerKycBadge" class="badge badge-success"><i class="fa-solid fa-user-check"></i> TERVERIFIKASI</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 100% Transparent Canonical Price Breakdown -->
+      <div class="card">
+        <h3 class="card-title"><i class="fa-solid fa-receipt"></i> Rincian Biaya Transparan (Tanpa Biaya Tersembunyi)</h3>
+        
+        <div class="price-breakdown">
+          <div class="price-row">
+            <span>Harga Tiket (Ditetapkan Penjual):</span>
+            <strong id="priceTicket" class="mono">-</strong>
+          </div>
+          <div class="price-row">
+            <span>Biaya Layanan &amp; Verifikasi PIC Lapangan (10%):</span>
+            <span id="pricePlatformFee" class="mono">-</span>
+          </div>
+          <div class="price-row total">
+            <span>Total Pembayaran Pembeli:</span>
+            <strong id="priceTotal" class="mono">-</strong>
+          </div>
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+          <i class="fa-solid fa-shield-check" style="color: var(--success); margin-right: 4px;"></i>
+          <strong>Garansi ARGUS:</strong> Jika tiket ditolak di gerbang venue karena invalid atau palsu, seluruh dana pembeli (termasuk biaya layanan) dikembalikan 100%.
+        </div>
+      </div>
+
+      <!-- Order Creation & Payment Trigger -->
+      <div id="orderActionCard" class="card">
+        <h3 class="card-title"><i class="fa-solid fa-lock"></i> Selesaikan Pemesanan &amp; Kunci Dana</h3>
+
+        <div class="form-group">
+          <label for="buyerSelect">Pilih Identitas Akun Pembeli (Pilot Mode):</label>
+          <select id="buyerSelect" class="form-control mono">
+            <option value="usr-buyer-01">usr-buyer-01 (Siti Rahmawati — Pembeli Terdaftar)</option>
+            <option value="usr-buyer-02">usr-buyer-02 (Ahmad Fauzi — Pembeli Terdaftar)</option>
+          </select>
+        </div>
+
+        <div class="notice-box notice-info" style="font-size: 12px;">
+          <i class="fa-solid fa-circle-info"></i>
+          <div>
+            <strong>Keterbukaan Integrasi Gateway:</strong> Pada tahap pilot saat ini, transaksi diproses melalui simulasi rekening penampungan internal ARGUS. Dana ditahan di ledger kami hingga PIC lapangan mencatat verifikasi masuk venue.
+          </div>
+        </div>
+
+        <div id="orderErrorMsg" class="notice-box notice-warning" style="display: none;"></div>
+
+        <button id="btnOrderSubmit" class="btn" style="width: 100%; padding: 14px; font-size: 15px;" onclick="handleCreateOrder()">
+          <i class="fa-solid fa-lock"></i> Kunci Tiket &amp; Masuk Antrean Verifikasi Penampungan
+        </button>
+      </div>
+
+      <!-- Order Confirmed State (Hidden initially) -->
+      <div id="orderSuccessCard" class="card" style="display: none; border-color: #059669; background: rgba(5, 150, 105, 0.05);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <div style="width: 44px; height: 44px; border-radius: 50%; background: #059669; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+            <i class="fa-solid fa-check-double"></i>
+          </div>
+          <div>
+            <h3 style="font-size: 18px; font-weight: 700; color: #34d399; margin: 0;">Pesanan Berhasil Dicatat di Ledger</h3>
+            <div style="font-size: 13px; color: var(--text-muted);">Dana telah diamankan di rekening penampungan transaksi internal ARGUS.</div>
+          </div>
+        </div>
+
+        <div class="card" style="background: #090d16; border-color: #1e293b; margin-bottom: 16px;">
+          <div class="price-row">
+            <span>ID Pesanan Resmi (Order ID):</span>
+            <strong id="resOrderId" class="mono" style="color: var(--cyan); font-size: 14px;">-</strong>
+          </div>
+          <div class="price-row">
+            <span>Status Pesanan:</span>
+            <span id="resOrderStatus" class="badge badge-warning">RESERVED</span>
+          </div>
+          <div class="price-row">
+            <span>Status Penampungan Dana:</span>
+            <span id="resEscrowStatus" class="badge badge-info">HELD</span>
+          </div>
+        </div>
+
+        <div class="notice-box notice-info">
+          <i class="fa-solid fa-user-shield"></i>
+          <div>
+            <strong>Instruksi Masuk Venue:</strong> Temui Event PIC ARGUS di pintu masuk venue pada hari acara. Simpan ID Pesanan Anda untuk proses pencocokan tiket sebelum pemindaian barcode.
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+          <a id="btnGoTrack" href="#" class="btn" style="flex: 1;">
+            <i class="fa-solid fa-magnifying-glass"></i> Lacak Status &amp; Protokol di /track
+          </a>
+          <a href="/" class="btn btn-secondary" style="flex: 1;">
+            <i class="fa-solid fa-house"></i> Kembali ke Beranda
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div>
+        <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">ARGUS Trust Infrastructure</div>
+        <div>Verified Ticket Transfer &copy; 2026. Transaksi terikat kontrak perlindungan pembeli.</div>
+      </div>
+      <div class="footer-links">
+        <a href="/terms">Ketentuan Transaksi</a>
+        <a href="/privacy">Kebijakan Privasi</a>
+        <a href="/health">Status API</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let currentListing = null;
+
+    function getListingIdFromUrl() {
+      // Check path /pay/:id
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      if (pathParts.length >= 2 && pathParts[0] === 'pay') {
+        return pathParts[1];
+      }
+      // Check query param ?id=...
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('id');
+    }
+
+    async function loadListingData() {
+      const id = getListingIdFromUrl();
+      const loadingEl = document.getElementById('payLoading');
+      const notFoundEl = document.getElementById('payNotFound');
+      const surfaceEl = document.getElementById('paySurface');
+
+      if (!id) {
+        loadingEl.style.display = 'none';
+        notFoundEl.style.display = 'block';
+        document.getElementById('payNotFoundMsg').innerText = 'Harap tentukan ID listing pada URL (contoh: /pay/list-...).';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/mvp/listings/${encodeURIComponent(id)}`);
+        if (!res.ok) {
+          throw new Error('Listing tidak ditemukan di server.');
+        }
+
+        const data = await res.json();
+        currentListing = data.listing;
+
+        // Render Listing
+        loadingEl.style.display = 'none';
+        renderListing(currentListing);
+        surfaceEl.style.display = 'block';
+
+      } catch (err) {
+        loadingEl.style.display = 'none';
+        notFoundEl.style.display = 'block';
+        document.getElementById('payNotFoundMsg').innerText = err.message;
+      }
+    }
+
+    function renderListing(listing) {
+      document.getElementById('listingIdText').innerText = listing.id;
+      document.getElementById('seatInfoText').innerText = listing.seat_info || '-';
+
+      // Status badge
+      const statusBadge = document.getElementById('listingStatusBadge');
+      statusBadge.innerText = listing.status;
+      if (listing.status === 'ACTIVE') {
+        statusBadge.className = 'badge badge-success';
+      } else {
+        statusBadge.className = 'badge badge-warning';
+      }
+
+      // Event details
+      const ev = listing.event || {};
+      document.getElementById('eventTitle').innerText = ev.name || ev.title || 'Event Tanpa Judul';
+      document.getElementById('eventCategoryBadge').innerText = ev.category || 'EVENT';
+      document.getElementById('eventDate').innerText = ev.date || ev.start_date || '-';
+      document.getElementById('eventVenue').innerText = `${ev.venue || ev.venue_name || '-'}, ${ev.venue_city || 'Jakarta'}`;
+
+      // Verification badge
+      const isVerified = ev.is_verified === true;
+      const verBadge = document.getElementById('eventVerificationBadge');
+      if (isVerified) {
+        verBadge.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> RESMI ARGUS</span>';
+      } else {
+        verBadge.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> EVENT KOMUNITAS</span>';
+      }
+
+      // Community warning
+      if (listing.user_created_event || !isVerified) {
+        document.getElementById('communityEventWarning').style.display = 'flex';
+      } else {
+        document.getElementById('communityEventWarning').style.display = 'none';
+      }
+
+      // Seller KYC badge
+      const kycStatus = listing.seller?.kyc_status || 'VERIFIED';
+      const sellerKycEl = document.getElementById('sellerKycBadge');
+      sellerKycEl.innerText = kycStatus;
+      if (kycStatus === 'VERIFIED') {
+        sellerKycEl.className = 'badge badge-success';
+      } else {
+        sellerKycEl.className = 'badge badge-warning';
+      }
+
+      // Pricing
+      const pricing = listing.pricing || {
+        ticketPrice: listing.price,
+        platformFee: Math.round(listing.price * 0.10),
+        totalAmount: listing.price + Math.round(listing.price * 0.10)
+      };
+
+      document.getElementById('priceTicket').innerText = 'Rp ' + Number(pricing.ticketPrice).toLocaleString('id-ID');
+      document.getElementById('pricePlatformFee').innerText = 'Rp ' + Number(pricing.platformFee).toLocaleString('id-ID');
+      document.getElementById('priceTotal').innerText = 'Rp ' + Number(pricing.totalAmount).toLocaleString('id-ID');
+
+      // Check if purchase is possible
+      const btn = document.getElementById('btnOrderSubmit');
+      if (listing.status !== 'ACTIVE') {
+        btn.disabled = true;
+        btn.innerText = `Listing Berstatus ${listing.status} — Tidak Dapat Dipesan`;
+      }
+    }
+
+    async function handleCreateOrder() {
+      if (!currentListing) return;
+
+      const btn = document.getElementById('btnOrderSubmit');
+      const errEl = document.getElementById('orderErrorMsg');
+      const buyerId = document.getElementById('buyerSelect').value;
+
+      errEl.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses Pesanan di Ledger...';
+
+      try {
+        // Step 1: Create Order
+        const resOrder = await fetch('/api/mvp/buyer/order', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-user-id': buyerId
+          },
+          body: JSON.stringify({
+            buyerId: buyerId,
+            listingId: currentListing.id
+          })
+        });
+
+        const orderData = await resOrder.json();
+        if (!resOrder.ok) {
+          throw new Error(orderData.error || orderData.message || 'Gagal membuat pesanan');
+        }
+
+        const createdOrder = orderData.order;
+
+        // Step 2: Lock escrow payment (pilot simulated bank transfer)
+        const resPay = await fetch('/api/mvp/buyer/pay', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-user-id': buyerId
+          },
+          body: JSON.stringify({
+            orderId: createdOrder.id,
+            providerRef: `BANK-ESCROW-${Date.now()}`,
+            idempotencyKey: `idemp-${createdOrder.id}`,
+            amountPaid: createdOrder.total_amount
+          })
+        });
+
+        const payData = await resPay.json();
+        if (!resPay.ok) {
+          throw new Error(payData.error || payData.message || 'Gagal mengonfirmasi pembayaran escrow');
+        }
+
+        // Display Success State
+        document.getElementById('orderActionCard').style.display = 'none';
+        document.getElementById('resOrderId').innerText = createdOrder.id;
+        document.getElementById('resOrderStatus').innerText = payData.order.status;
+        document.getElementById('resEscrowStatus').innerText = payData.escrow.status;
+        document.getElementById('btnGoTrack').href = `/track?id=${createdOrder.id}`;
+
+        const successCard = document.getElementById('orderSuccessCard');
+        successCard.style.display = 'block';
+        successCard.scrollIntoView({ behavior: 'smooth' });
+
+      } catch (err) {
+        errEl.innerText = err.message;
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-lock"></i> Kunci Tiket &amp; Masuk Antrean Verifikasi Penampungan';
+      }
+    }
+
+    // Initialize
+    loadListingData();
+  </script>
+</body>
+</html>

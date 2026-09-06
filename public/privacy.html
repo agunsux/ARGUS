@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARGUS — Kebijakan Privasi &amp; Kepatuhan UU PDP</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand">
+        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <div class="brand-title">ARGUS</div>
+          <span class="brand-subtitle">Verified Ticket Transfer</span>
+        </div>
+      </a>
+
+      <nav class="main-nav">
+        <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Beranda</a>
+        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
+        <a href="/terms" class="nav-link"><i class="fa-solid fa-file-contract"></i> Ketentuan Layanan</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container" style="max-width: 840px;">
+    
+    <div style="margin-bottom: 30px;">
+      <div class="hero-pill"><i class="fa-solid fa-user-shield"></i> KEPATUHAN UU NO. 27/2022</div>
+      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Kebijakan Privasi &amp; Perlindungan Data Pribadi</h1>
+      <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;">
+        Komitmen ARGUS dalam menjaga kerahasiaan identitas dan data sensitif pengguna sesuai regulasi Republik Indonesia.
+      </p>
+    </div>
+
+    <div class="card" style="line-height: 1.7; font-size: 14px;">
+      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">1. Prinsip Minimalisasi Pengumpulan Data</h3>
+      <p style="color: var(--text-muted); margin-bottom: 16px;">
+        ARGUS hanya mengumpulkan data pribadi yang mutlak diperlukan untuk pencegahan penipuan tiket sekunder dan pembuktian sah serah terima tiket di lokasi acara. Kami tidak mengumpulkan data untuk keperluan periklanan pihak ketiga.
+      </p>
+
+      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">2. Enkripsi Dokumen &amp; Foto Verifikasi (AES-256-GCM)</h3>
+      <p style="color: var(--text-muted); margin-bottom: 16px;">
+        Seluruh berkas bukti pembelian tiket (e-voucher PDF) dan foto dokumentasi gerbang yang diambil oleh Event PIC dienkripsi menggunakan standar militer AES-256-GCM sebelum disimpan di media penyimpanan server. Akses terhadap dokumen terenkripsi hanya dibuka saat terjadi investigasi sengketa resmi oleh petugas berwenang.
+      </p>
+
+      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">3. Kebijakan Retensi Otomatis 90 Hari (Purge Policy)</h3>
+      <p style="color: var(--text-muted); margin-bottom: 16px;">
+        Sesuai standar operasional kami (UU PDP Pasal 43), seluruh berkas bukti transaksi dan foto identitas akan dihapus secara permanen dari server setelah 90 hari terhitung sejak status transaksi mencapai penyelesaian akhir (<code class="mono" style="color: var(--cyan);">SETTLED</code> atau <code class="mono" style="color: var(--cyan);">REFUNDED</code>).
+      </p>
+
+      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">4. Hashing Barcode SHA-256 &amp; Masking Informasi Publik</h3>
+      <p style="color: var(--text-muted); margin-bottom: 16px;">
+        Nomor barcode atau kode QR tiket tidak pernah ditampilkan secara terbuka di antarmuka web. Sistem hanya menyimpan nilai hash SHA-256 untuk memvalidasi keunikan. Pada halaman pelacakan publik (<code class="mono" style="color: var(--cyan);">/track/:id</code>), seluruh data PII (Nomor Induk Kependudukan, nomor telepon, dan identitas asli) disaring dan tidak diteruskan ke browser pengguna.
+      </p>
+
+      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">5. Hak Pemilik Data Pribadi</h3>
+      <p style="color: var(--text-muted); margin-bottom: 0;">
+        Pengguna berhak untuk meminta salinan data pribadi yang tersimpan, mengajukan koreksi data yang tidak akurat, atau meminta penghapusan akun setelah seluruh kewajiban transaksi tiket selesai. Hubungi Tim Perlindungan Data ARGUS melalui saluran resmi kami untuk permohonan terkait data pribadi.
+      </p>
+    </div>
+
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div>
+        <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">ARGUS Trust Infrastructure</div>
+        <div>Verified Ticket Transfer &copy; 2026. UU PDP No. 27/2022 Compliant.</div>
+      </div>
+      <div class="footer-links">
+        <a href="/terms">Ketentuan Transaksi</a>
+        <a href="/privacy">Kebijakan Privasi</a>
+        <a href="/health">Status API</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

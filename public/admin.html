@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARGUS — Console Operasional Internal</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand">
+        <div class="brand-badge" style="background: linear-gradient(135deg, #475569, #1e293b);"><i class="fa-solid fa-lock"></i></div>
+        <div>
+          <div class="brand-title">ARGUS <span style="font-size: 12px; color: var(--cyan); font-weight: 600;">OPS CONSOLE</span></div>
+          <span class="brand-subtitle">Console Pengawasan Transaksi &amp; Event</span>
+        </div>
+      </a>
+
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div id="authStatus" style="font-size: 12px; color: var(--text-muted); display: none;">
+          <span class="badge badge-success"><i class="fa-solid fa-user-check"></i> <span id="authUserName">Trust Officer</span></span>
+        </div>
+        <button id="btnLogout" class="btn btn-secondary btn-sm" style="display: none;" onclick="handleLogout()">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
+        </button>
+        <a href="/" class="nav-link btn-sm"><i class="fa-solid fa-house"></i> Beranda Publik</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+
+    <!-- Login Surface (Shown when unauthenticated) -->
+    <div id="loginCard" class="card" style="max-width: 440px; margin: 60px auto; padding: 30px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: #1e293b; color: var(--cyan); display: inline-flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 12px;">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h2 style="font-size: 18px; font-weight: 700;">Masuk ke Console Operasional</h2>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+          Akses terbatas untuk tim operasi, kurator tiket, dan Person in Charge (PIC) ARGUS.
+        </p>
+      </div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="loginUser">ID Pengguna / Username *</label>
+          <input type="text" id="loginUser" class="form-control mono" value="admin-1" required>
+          <span style="font-size: 11px; color: var(--text-dim);">Akun Admin Pilot: admin-1</span>
+        </div>
+
+        <div class="form-group">
+          <label for="loginPass">Kata Sandi (Opsional di Mode Pilot)</label>
+          <input type="password" id="loginPass" class="form-control mono" placeholder="pilot123">
+        </div>
+
+        <div id="loginError" class="notice-box notice-warning" style="display: none;"></div>
+
+        <button type="submit" id="btnLoginSubmit" class="btn" style="width: 100%; margin-top: 8px;">
+          <i class="fa-solid fa-key"></i> Buka Console Operasional
+        </button>
+      </form>
+    </div>
+
+    <!-- Authenticated Ops Console Surface -->
+    <div id="opsSurface" style="display: none;">
+      
+      <!-- Metrics Bar -->
+      <div class="grid-4" style="margin-bottom: 24px;">
+        <div class="card" style="padding: 16px; margin-bottom: 0;">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Event Terdaftar</div>
+          <div id="metricEvents" style="font-size: 26px; font-weight: 800; color: #fff; margin-top: 4px;">-</div>
+          <div style="font-size: 11px; color: var(--cyan); margin-top: 2px;">Katalog s/d Des 2026</div>
+        </div>
+
+        <div class="card" style="padding: 16px; margin-bottom: 0;">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Antrean Verifikasi Listing</div>
+          <div id="metricPendingListings" style="font-size: 26px; font-weight: 800; color: var(--warning); margin-top: 4px;">-</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Menunggu kurasi tiket</div>
+        </div>
+
+        <div class="card" style="padding: 16px; margin-bottom: 0;">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Dana Tertahan Penampungan</div>
+          <div id="metricEscrowTotal" style="font-size: 20px; font-weight: 800; color: #34d399; margin-top: 6px;" class="mono">-</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Terkunci hingga scan gate</div>
+        </div>
+
+        <div class="card" style="padding: 16px; margin-bottom: 0;">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Sengketa Gerbang Terbuka</div>
+          <div id="metricDisputes" style="font-size: 26px; font-weight: 800; color: var(--danger); margin-top: 4px;">-</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Butuh keputusan admin</div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="pill-group" style="margin-bottom: 20px;">
+        <button class="pill-btn active" onclick="switchOpsTab('events', this)">
+          <i class="fa-solid fa-calendar-days"></i> Manajemen Katalog Event
+        </button>
+        <button class="pill-btn" onclick="switchOpsTab('listings', this)">
+          <i class="fa-solid fa-ticket"></i> Antrean Verifikasi Tiket (<span id="tabCountListings">0</span>)
+        </button>
+        <button class="pill-btn" onclick="switchOpsTab('settlements', this)">
+          <i class="fa-solid fa-hand-holding-dollar"></i> Antrean Pencairan Dana (<span id="tabCountSettlements">0</span>)
+        </button>
+        <button class="pill-btn" onclick="switchOpsTab('disputes', this)">
+          <i class="fa-solid fa-scale-balanced"></i> Sengketa &amp; Investigasi (<span id="tabCountDisputes">0</span>)
+        </button>
+      </div>
+
+      <!-- Notification Toast Box -->
+      <div id="opsToast" class="notice-box notice-success" style="display: none; margin-bottom: 20px;"></div>
+
+      <!-- TAB 1: Events Management (Epic 3.6) -->
+      <div id="tabEvents" class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Daftar Seluruh Event Sistem (Seeded &amp; Komunitas)</h3>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Admin dapat menyetujui, mengedit, atau membatalkan event yang didaftarkan pengguna.</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminEvents()">
+            <i class="fa-solid fa-rotate"></i> Muat Ulang
+          </button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID Event</th>
+                <th>Nama Acara &amp; Kategori</th>
+                <th>Kota &amp; Venue</th>
+                <th>Tanggal</th>
+                <th>Sumber</th>
+                <th>Status Verifikasi</th>
+                <th>Aksi Admin</th>
+              </tr>
+            </thead>
+            <tbody id="eventsTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">Memuat event...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: Listings Verification Queue -->
+      <div id="tabListings" class="card" style="display: none;">
+        <div style="margin-bottom: 16px;">
+          <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Antrean Kurasi &amp; Verifikasi Tiket Masuk</h3>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Pemeriksaan barcode dan dokumen kepemilikan sebelum tiket tayang secara aktif.</div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID Listing</th>
+                <th>Event Terikat</th>
+                <th>Penjual</th>
+                <th>Kursi / Posisi</th>
+                <th>Harga Jual</th>
+                <th>Aksi Kurasi</th>
+              </tr>
+            </thead>
+            <tbody id="listingsTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">Tidak ada antrean verifikasi listing aktif.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3: Settlements Queue -->
+      <div id="tabSettlements" class="card" style="display: none;">
+        <div style="margin-bottom: 16px;">
+          <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Antrean Pencairan Dana (Settlement Payout)</h3>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Hanya tiket yang terbukti sukses melewati turnstile gerbang venue (<code class="mono">ENTRY_CONFIRMED</code>) yang muncul di sini.</div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID Pesanan</th>
+                <th>Penjual</th>
+                <th>Nominal Bersih</th>
+                <th>Status Gerbang</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="settlementsTableBody">
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">Tidak ada pesanan yang menunggu pencairan.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 4: Disputes Queue -->
+      <div id="tabDisputes" class="card" style="display: none;">
+        <div style="margin-bottom: 16px;">
+          <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Sengketa Tiket di Lokasi Acara (Dispute Resolution)</h3>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Keputusan finansial permanen (Refund Pembeli / Rilis ke Penjual) berdasarkan bukti lapangan PIC.</div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID Sengketa</th>
+                <th>Event</th>
+                <th>Pembeli</th>
+                <th>Penjual</th>
+                <th>Alasan</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="disputesTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">Tidak ada sengketa aktif saat ini.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div>
+        <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">ARGUS Operational Console</div>
+        <div>Akses terproteksi &amp; teraudit secara permanen di database ledger.</div>
+      </div>
+      <div class="footer-links">
+        <a href="/terms">Ketentuan Transaksi</a>
+        <a href="/privacy">Kebijakan Privasi</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let currentAdmin = null;
+    let sessionToken = null;
+
+    // Check existing session
+    const savedToken = sessionStorage.getItem('argus_admin_token');
+    const savedAdminId = sessionStorage.getItem('argus_admin_id');
+    if (savedToken && savedAdminId) {
+      sessionToken = savedToken;
+      currentAdmin = { id: savedAdminId, name: 'Trust Officer ARGUS' };
+      showOpsConsole();
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const userVal = document.getElementById('loginUser').value.trim();
+      const passVal = document.getElementById('loginPass').value.trim();
+      const errEl = document.getElementById('loginError');
+      const btn = document.getElementById('btnLoginSubmit');
+
+      errEl.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memvalidasi Sesi...';
+
+      try {
+        const res = await fetch('/api/mvp/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            usernameOrId: userVal,
+            password: passVal || undefined
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Autentikasi gagal');
+        }
+
+        if (data.user.role !== 'admin' && data.user.role !== 'pic') {
+          throw new Error('Akses ditolak: Akun Anda tidak memiliki hak akses Console Internal.');
+        }
+
+        currentAdmin = data.user;
+        sessionToken = data.session_token;
+        sessionStorage.setItem('argus_admin_token', sessionToken);
+        sessionStorage.setItem('argus_admin_id', currentAdmin.id);
+
+        showOpsConsole();
+
+      } catch (err) {
+        errEl.innerText = err.message;
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-key"></i> Buka Console Operasional';
+      }
+    }
+
+    function showOpsConsole() {
+      document.getElementById('loginCard').style.display = 'none';
+      document.getElementById('opsSurface').style.display = 'block';
+      document.getElementById('authStatus').style.display = 'inline-flex';
+      document.getElementById('authUserName').innerText = currentAdmin.name || currentAdmin.id;
+      document.getElementById('btnLogout').style.display = 'inline-flex';
+
+      loadOpsMetrics();
+      loadAdminEvents();
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem('argus_admin_token');
+      sessionStorage.removeItem('argus_admin_id');
+      window.location.reload();
+    }
+
+    function switchOpsTab(tab, btn) {
+      document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      document.getElementById('tabEvents').style.display = tab === 'events' ? 'block' : 'none';
+      document.getElementById('tabListings').style.display = tab === 'listings' ? 'block' : 'none';
+      document.getElementById('tabSettlements').style.display = tab === 'settlements' ? 'block' : 'none';
+      document.getElementById('tabDisputes').style.display = tab === 'disputes' ? 'block' : 'none';
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('opsToast');
+      toast.innerText = msg;
+      toast.style.display = 'flex';
+      setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+
+    async function loadOpsMetrics() {
+      try {
+        const res = await fetch(`/api/mvp/admin/operations?requesterId=${encodeURIComponent(currentAdmin.id)}`, {
+          headers: {
+            'x-user-id': currentAdmin.id,
+            'Authorization': `Bearer ${sessionToken}`
+          }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const m = data.metrics || {};
+
+        document.getElementById('metricEvents').innerText = m.todays_events_count || 0;
+        document.getElementById('metricPendingListings').innerText = m.pending_verifications_count || 0;
+        document.getElementById('tabCountListings').innerText = m.pending_verifications_count || 0;
+        document.getElementById('metricEscrowTotal').innerText = 'Rp ' + Number(m.escrow_holding_total || 0).toLocaleString('id-ID');
+        document.getElementById('metricDisputes').innerText = m.open_disputes_count || 0;
+        document.getElementById('tabCountDisputes').innerText = m.open_disputes_count || 0;
+        document.getElementById('tabCountSettlements').innerText = m.pending_settlements_count || 0;
+
+        renderQueues(data.queues || {});
+      } catch (e) {
+        console.error('Failed to load ops metrics', e);
+      }
+    }
+
+    async function loadAdminEvents() {
+      const tbody = document.getElementById('eventsTableBody');
+      try {
+        const res = await fetch(`/api/mvp/admin/events?officerId=${encodeURIComponent(currentAdmin.id)}`, {
+          headers: {
+            'x-user-id': currentAdmin.id,
+            'Authorization': `Bearer ${sessionToken}`
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal memuat event');
+
+        const events = data.events || [];
+        if (events.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">Tidak ada event di sistem.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = events.map(ev => {
+          const isVer = ev.is_verified === true;
+          const isCancelled = ev.status === 'DIBATALKAN';
+          
+          return `
+            <tr>
+              <td><code class="mono" style="font-size: 11px; color: var(--cyan);">${ev.id}</code></td>
+              <td>
+                <div style="font-weight: 700; color: #fff;">${escapeHtml(ev.name || ev.title)}</div>
+                <span class="badge badge-slate">${ev.category || 'EVENT'}</span>
+              </td>
+              <td>${escapeHtml(ev.venue_city)} &bull; <span style="color: var(--text-dim);">${escapeHtml(ev.venue_name || ev.venue)}</span></td>
+              <td class="mono" style="font-size: 12px;">${ev.start_date || ev.date}</td>
+              <td><span class="badge ${ev.source === 'SEED' ? 'badge-info' : 'badge-slate'}">${ev.source}</span></td>
+              <td>
+                ${isCancelled 
+                  ? '<span class="badge badge-danger">DIBATALKAN</span>'
+                  : (isVer 
+                    ? '<span class="badge badge-success"><i class="fa-solid fa-check"></i> RESMI ARGUS</span>' 
+                    : '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> UNVERIFIED</span>')
+                }
+              </td>
+              <td>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  ${!isCancelled ? `
+                    <button class="btn btn-sm ${isVer ? 'btn-secondary' : 'btn-success'}" onclick="toggleEventVerify('${ev.id}', ${!isVer})">
+                      ${isVer ? 'Cabut Verifikasi' : '<i class="fa-solid fa-check"></i> Verifikasi'}
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="cancelEventPrompt('${ev.id}')">
+                      <i class="fa-solid fa-ban"></i>
+                    </button>
+                  ` : '<span style="font-size: 11px; color: var(--text-dim);">Telah dibatalkan</span>'}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 20px;">${err.message}</td></tr>`;
+      }
+    }
+
+    async function toggleEventVerify(eventId, shouldVerify) {
+      try {
+        const res = await fetch(`/api/mvp/admin/events/${eventId}/verify`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': currentAdmin.id,
+            'Authorization': `Bearer ${sessionToken}`
+          },
+          body: JSON.stringify({
+            officerId: currentAdmin.id,
+            is_verified: shouldVerify,
+            reason: shouldVerify ? 'Diverifikasi melalui ops console' : 'Pencabutan verifikasi event'
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal mengubah status verifikasi event');
+        showToast(data.message || 'Status event berhasil diperbarui.');
+        loadAdminEvents();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function cancelEventPrompt(eventId) {
+      const reason = prompt('Masukkan alasan pembatalan event ini (min 5 karakter):');
+      if (!reason || reason.trim().length < 5) return;
+
+      try {
+        const res = await fetch(`/api/mvp/admin/events/${eventId}/cancel`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': currentAdmin.id,
+            'Authorization': `Bearer ${sessionToken}`
+          },
+          body: JSON.stringify({
+            officerId: currentAdmin.id,
+            reason: reason.trim()
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal membatalkan event');
+        showToast('Event berhasil dibatalkan dari sistem.');
+        loadAdminEvents();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    function renderQueues(queues) {
+      // Pending listings
+      const listTbody = document.getElementById('listingsTableBody');
+      const pLists = queues.pendingVerifications || [];
+      if (pLists.length === 0) {
+        listTbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">Tidak ada listing menunggu kurasi.</td></tr>';
+      } else {
+        listTbody.innerHTML = pLists.map(l => `
+          <tr>
+            <td><code class="mono" style="color: var(--cyan);">${l.id}</code></td>
+            <td><strong>${escapeHtml(l.event_title)}</strong></td>
+            <td>${escapeHtml(l.seller_name || l.seller_id)}</td>
+            <td>${escapeHtml(l.seat_info)}</td>
+            <td class="mono">Rp ${Number(l.price).toLocaleString('id-ID')}</td>
+            <td>
+              <button class="btn btn-sm btn-success" onclick="verifyListing('${l.id}', true)">
+                <i class="fa-solid fa-check"></i> Setujui
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="verifyListing('${l.id}', false)">
+                <i class="fa-solid fa-xmark"></i> Tolak
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // Settlements
+      const settTbody = document.getElementById('settlementsTableBody');
+      const pSett = queues.pendingSettlements || [];
+      if (pSett.length === 0) {
+        settTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">Tidak ada pesanan menunggu pencairan.</td></tr>';
+      } else {
+        settTbody.innerHTML = pSett.map(s => `
+          <tr>
+            <td><code class="mono" style="color: var(--cyan);">${s.order_id}</code></td>
+            <td>${escapeHtml(s.seller_name || s.seller_id)}</td>
+            <td class="mono">Rp ${Number(s.amount).toLocaleString('id-ID')}</td>
+            <td><span class="badge badge-success">ENTRY CONFIRMED</span></td>
+            <td><span class="badge badge-info">SIMULATED READY</span></td>
+          </tr>
+        `).join('');
+      }
+
+      // Disputes
+      const dispTbody = document.getElementById('disputesTableBody');
+      const pDisp = queues.openDisputes || [];
+      if (pDisp.length === 0) {
+        dispTbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">Tidak ada sengketa gerbang aktif saat ini.</td></tr>';
+      } else {
+        dispTbody.innerHTML = pDisp.map(d => `
+          <tr>
+            <td><code class="mono" style="color: var(--danger);">${d.id}</code></td>
+            <td><strong>${escapeHtml(d.event_title)}</strong></td>
+            <td>${escapeHtml(d.buyer_name || d.buyer_id)}</td>
+            <td>${escapeHtml(d.seller_name || d.seller_id)}</td>
+            <td>${escapeHtml(d.reason || '-')}</td>
+            <td><span class="badge badge-warning">${d.status}</span></td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    async function verifyListing(id, approved) {
+      try {
+        const res = await fetch(`/api/mvp/admin/listings/${id}/verify`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': currentAdmin.id,
+            'Authorization': `Bearer ${sessionToken}`
+          },
+          body: JSON.stringify({
+            officerId: currentAdmin.id,
+            approved: approved,
+            reason: approved ? 'Disetujui oleh kurator ARGUS' : 'Barcode tidak lolos validasi'
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal memproses verifikasi listing');
+        showToast(`Listing ${id} berhasil ${approved ? 'disetujui' : 'ditolak'}.`);
+        loadOpsMetrics();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.innerText = str;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

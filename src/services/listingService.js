@@ -89,6 +89,8 @@ class ListingService {
     state.tickets.push(ticket);
 
     // 5. Create Listing entity
+    const isUserCreatedEvent = event.source === 'USER_CREATED';
+    const isEventUnverified = !event.is_verified;
     const listingId = `list-${uuidv4()}`;
     const listing = {
       id: listingId,
@@ -101,6 +103,8 @@ class ListingService {
       status: LISTING_STATUS.PENDING_VERIFICATION,
       rejection_reason: null,
       evidence_bundle_id: evidenceBundleId || null,
+      user_created_event: isUserCreatedEvent,
+      event_verification_warning: isEventUnverified ? 'Event dibuat oleh pengguna – belum diverifikasi resmi' : null,
       created_at: new Date().toISOString()
     };
     state.listings.push(listing);
@@ -159,7 +163,7 @@ class ListingService {
         reason
       });
 
-      return { success: true, status: LISTING_STATUS.REJECTED, listing, reason };
+      return { success: true, status: LISTING_STATUS.REJECTED, listing };
     }
   }
 
@@ -173,6 +177,8 @@ class ListingService {
         const event = state.events.find(e => e.id === listing.event_id) || {};
         const venue = state.venues.find(v => v.id === event.venue_id) || {};
         const seller = state.users.find(u => u.id === listing.seller_id) || {};
+        const isUserCreatedEvent = event.source === 'USER_CREATED';
+        const isEventUnverified = !event.is_verified;
         return {
           id: listing.id,
           ticket_id: listing.ticket_id,
@@ -182,10 +188,13 @@ class ListingService {
           seller_id: listing.seller_id,
           seller_name: seller.name,
           event_id: listing.event_id,
-          event_title: event.title,
-          event_date: event.date,
-          venue_name: venue.name,
-          venue_city: venue.city,
+          event_title: event.title || event.name,
+          event_date: event.date || event.start_date,
+          venue_name: venue.name || event.venue_name || event.venue,
+          venue_city: venue.city || event.venue_city || 'Jakarta',
+          user_created_event: isUserCreatedEvent,
+          is_event_verified: !isEventUnverified,
+          event_verification_warning: isEventUnverified ? 'Event dibuat oleh pengguna – belum diverifikasi resmi' : null,
           created_at: listing.created_at
         };
       });

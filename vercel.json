@@ -1,6 +1,11 @@
 {
   "name": "argus-trust-infrastructure",
   "version": 2,
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "public/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",

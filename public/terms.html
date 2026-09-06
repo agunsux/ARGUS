@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARGUS — Ketentuan Layanan &amp; Protokol Transaksi</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand">
+        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <div class="brand-title">ARGUS</div>
+          <span class="brand-subtitle">Verified Ticket Transfer</span>
+        </div>
+      </a>
+
+      <nav class="main-nav">
+        <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Beranda</a>
+        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
+        <a href="/privacy" class="nav-link"><i class="fa-solid fa-user-shield"></i> Kebijakan Privasi</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container" style="max-width: 840px;">
+    
+    <div style="margin-bottom: 30px;">
+      <div class="hero-pill"><i class="fa-solid fa-file-contract"></i> KONTRAK HUKUM OPERASIONAL</div>
+      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Ketentuan Layanan &amp; Protokol Perlindungan Transaksi</h1>
+      <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;">
+        Terakhir diperbarui: September 2026. Berlaku untuk seluruh transaksi transfer tiket sekunder di platform ARGUS.
+      </p>
+    </div>
+
+    <div class="notice-box notice-info" style="margin-bottom: 24px;">
+      <i class="fa-solid fa-circle-info"></i>
+      <div>
+        <strong>Kedudukan Hukum ARGUS:</strong> ARGUS adalah penyedia infrastruktur verifikasi tiket dan rekening penampungan transaksi independen. ARGUS bukan promotor resmi acara, bukan agen tiket utama, dan tidak memiliki afiliasi komersial langsung dengan pihak promotor konser/pertunjukan.
+      </div>
+    </div>
+
+    <div class="card" style="line-height: 1.7; font-size: 14px;">
+      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">1. Prinsip Dasar Transfer Tiket Terverifikasi</h3>
+      <p style="color: var(--text-muted); margin-bottom: 16px;">
+        Setiap tiket yang ditawarkan di ARGUS wajib terikat pada identitas event yang nyata dan terdaftar di database kami. Penjual diwajibkan melewati verifikasi identitas (KYC) dan memasukkan nomor barcode/serial yang akan di-hash secara kriptografis menggunakan algoritma SHA-256 untuk mencegah penjualan ganda.
+      </p>
+
+      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">2. Mekanisme Rekening Penampungan Transaksi Internal (Escrow)</h3>
+      <p style="color: var(--text-muted); margin-bottom: 16px;">
+        Seluruh dana yang dibayarkan oleh pembeli akan diamankan di sistem penampungan transaksi internal ARGUS. Penjual <strong>TIDAK PERNAH</strong> menerima pembayaran sebelum acara berlangsung. Dana tetap terkunci secara sistem hingga pembeli terkonfirmasi berhasil memasuki area venue acara.
+      </p>
+
+      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">3. Syarat Mutlak Pencairan Dana (Condition Precedent)</h3>
+      <p style="color: var(--text-muted); margin-bottom: 16px;">
+        Pencairan dana ke rekening penjual hanya dapat dieksekusi apabila terpenuhi salah satu dari kondisi berikut yang tercatat dalam audit trail ledger:
+      </p>
+      <ul style="color: var(--text-muted); margin-left: 20px; margin-bottom: 16px;">
+        <li>Petugas Event PIC ARGUS di lapangan mengonfirmasi bahwa pembeli telah sukses melewati pintu masuk turnstile (<code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code>) dengan dokumentasi foto gerbang; ATAU</li>
+        <li>Batas waktu acara telah berakhir dan pembeli tidak mengajukan sengketa gerbang valid dalam jendela waktu operasional (operational window) yang ditentukan.</li>
+      </ul>
+
+      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">4. Protokol Sengketa Tiket di Lokasi Acara (Dispute Protocol)</h3>
+      <p style="color: var(--text-muted); margin-bottom: 16px;">
+        Apabila tiket yang dibeli ditolak oleh pemindai promotor di gerbang venue (misalnya barcode telah digunakan sebelumnya, tiket palsu, atau nomor seri tidak valid):
+      </p>
+      <ul style="color: var(--text-muted); margin-left: 20px; margin-bottom: 16px;">
+        <li>Pembeli dapat segera melapor kepada Event PIC ARGUS yang bersiaga di lokasi atau melalui menu lapor sengketa;</li>
+        <li>Event PIC akan melakukan investigasi langsung di pintu gerbang dan mencatat dokumentasi penolakan;</li>
+        <li>Jika terbukti tiket tidak dapat digunakan karena kesalahan penjual, Tim Resolusi ARGUS akan merilis keputusan <code class="mono" style="color: #34d399;">REFUND_BUYER</code>, dan seluruh dana (termasuk biaya layanan) akan dikembalikan 100% ke pembeli.</li>
+      </ul>
+
+      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">5. Sanksi Penjualan Tiket Ganda / Palsu</h3>
+      <p style="color: var(--text-muted); margin-bottom: 0;">
+        Penjual yang terbukti mendaftarkan tiket palsu atau menjual ulang barcode yang sama akan diblokir secara permanen dari ekosistem ARGUS, NIK penjual masuk dalam daftar hitam, dan ARGUS berhak meneruskan bukti ke pihak berwajib atas dugaan tindak pidana penipuan.
+      </p>
+    </div>
+
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div>
+        <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">ARGUS Trust Infrastructure</div>
+        <div>Verified Ticket Transfer &copy; 2026. All rights reserved.</div>
+      </div>
+      <div class="footer-links">
+        <a href="/terms">Ketentuan Transaksi</a>
+        <a href="/privacy">Kebijakan Privasi</a>
+        <a href="/health">Status API</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

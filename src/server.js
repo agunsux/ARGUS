@@ -41,8 +41,22 @@ app.use(trustApi);
 const mvpRouter = require('./api/mvpRouter');
 app.use('/api/mvp', mvpRouter);
 
+// Explicit Institutional Frontend Page Delivery
+const publicDir = path.resolve(__dirname, '../public');
+app.get('/create', (req, res) => res.sendFile(path.join(publicDir, 'create.html')));
+app.get('/pay/:id', (req, res) => res.sendFile(path.join(publicDir, 'pay.html')));
+app.get('/pay', (req, res) => res.sendFile(path.join(publicDir, 'pay.html')));
+app.get('/track/:id', (req, res) => res.sendFile(path.join(publicDir, 'track.html')));
+app.get('/track', (req, res) => res.sendFile(path.join(publicDir, 'track.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(publicDir, 'admin.html')));
+app.get('/terms', (req, res) => res.sendFile(path.join(publicDir, 'terms.html')));
+app.get('/privacy', (req, res) => res.sendFile(path.join(publicDir, 'privacy.html')));
+
 // Root and health endpoints for API health check (local + Vercel rewrite)
-app.get('/', (req, res) => {
+app.get('/', (req, res, next) => {
+  if (req.accepts('html')) {
+    return res.sendFile(path.join(publicDir, 'index.html'));
+  }
   res.json({
     service: "ARGUS Trust Infrastructure",
     status: "healthy",

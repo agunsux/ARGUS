@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARGUS — Buat Transfer Tiket Terverifikasi</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand">
+        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <div class="brand-title">ARGUS</div>
+          <span class="brand-subtitle">Verified Ticket Transfer</span>
+        </div>
+      </a>
+
+      <nav class="main-nav">
+        <a href="/" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Kembali ke Beranda</a>
+        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
+        <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container" style="max-width: 800px;">
+    
+    <div style="margin-bottom: 24px;">
+      <div class="hero-pill"><i class="fa-solid fa-ticket"></i> REGISTRASI PENJUALAN TIKET</div>
+      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Daftarkan Tiket untuk Transfer Terverifikasi</h1>
+      <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;">
+        Setiap penawaran tiket wajib terikat pada event nyata dan melalui tahapan verifikasi barcode anti-duplikasi sebelum dapat dibeli.
+      </p>
+    </div>
+
+    <!-- Success Result Box (Hidden by default) -->
+    <div id="successCard" class="card" style="display: none; border-color: #059669; background: rgba(5, 150, 105, 0.05);">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: #059669; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <div>
+          <h3 style="font-size: 18px; font-weight: 700; color: #34d399; margin-bottom: 2px;">Listing Berhasil Dibuat di Server ARGUS</h3>
+          <div style="font-size: 13px; color: var(--text-muted);">Data transaksi telah dicatat ke dalam database ledger kami.</div>
+        </div>
+      </div>
+
+      <div class="card" style="background: #090d16; border-color: #1e293b; margin-bottom: 16px;">
+        <div class="price-row">
+          <span>ID Listing Resmi:</span>
+          <strong id="resListingId" class="mono" style="color: var(--cyan); font-size: 14px;">-</strong>
+        </div>
+        <div class="price-row">
+          <span>Status Sistem Saat Ini:</span>
+          <span id="resListingStatus" class="badge badge-warning">PENDING_VERIFICATION</span>
+        </div>
+        <div class="price-row">
+          <span>Event Terikat:</span>
+          <span id="resListingEvent">-</span>
+        </div>
+        <div class="price-row">
+          <span>Harga Tiket:</span>
+          <span id="resListingPrice">-</span>
+        </div>
+      </div>
+
+      <div id="resUserEventWarning" class="notice-box notice-warning" style="display: none;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+          <strong>Catatan Event Komunitas:</strong> Event ini didaftarkan oleh pengguna dan belum diverifikasi resmi oleh ARGUS. Listing ini akan diberi tanda peringatan kepada calon pembeli.
+        </div>
+      </div>
+
+      <div class="notice-box notice-info">
+        <i class="fa-solid fa-circle-info"></i>
+        <div>
+          <strong>Langkah Selanjutnya:</strong> Tim kurasi ARGUS akan memvalidasi keaslian barcode tiket. Setelah status berubah menjadi <code class="mono">ACTIVE</code>, tiket siap dibeli oleh pembeli menggunakan tautan pembayaran terlindungi.
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px;">
+        <a id="btnViewPay" href="#" class="btn" style="flex: 1;">
+          <i class="fa-solid fa-link"></i> Buka Halaman Pembeli (/pay)
+        </a>
+        <a id="btnViewTrack" href="#" class="btn btn-secondary" style="flex: 1;">
+          <i class="fa-solid fa-magnifying-glass"></i> Lacak Status Transaksi (/track)
+        </a>
+        <button class="btn btn-outline" onclick="resetForm()">
+          <i class="fa-solid fa-plus"></i> Daftarkan Tiket Lain
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Creation Form Card -->
+    <div id="formCard" class="card">
+      <form id="listingForm" onsubmit="handleCreateListing(event)">
+        
+        <!-- Section 1: Event Binding -->
+        <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <label style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;">
+              1. Pilih Event yang Sesuai *
+            </label>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleNewEventDrawer()">
+              <i class="fa-solid fa-plus"></i> Event Belum Ada? Daftarkan Event Baru
+            </button>
+          </div>
+
+          <div class="form-group">
+            <select id="eventSelect" class="form-control" required onchange="handleEventSelected()">
+              <option value="">-- Memuat daftar event dari server... --</option>
+            </select>
+          </div>
+
+          <!-- Event Details Preview Box -->
+          <div id="eventPreviewBox" class="card" style="display: none; background: #090d16; padding: 14px; margin-top: 10px; margin-bottom: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div id="prevEventName" style="font-weight: 700; color: #fff; font-size: 14px;">-</div>
+                <div id="prevEventMeta" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">-</div>
+              </div>
+              <div id="prevEventBadge"></div>
+            </div>
+            <div id="prevEventWarning" class="notice-box notice-warning" style="display: none; margin-top: 10px; margin-bottom: 0; padding: 8px 12px; font-size: 12px;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span>Event ini didaftarkan oleh komunitas dan belum diverifikasi resmi oleh tim ARGUS.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Ticket Information -->
+        <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+          <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
+            2. Detail Kursi &amp; Tiket
+          </div>
+
+          <div class="form-group">
+            <label for="seatInfo">Kategori / Baris / Nomor Kursi *</label>
+            <input 
+              type="text" 
+              id="seatInfo" 
+              class="form-control" 
+              placeholder="Contoh: CAT 1 VIP, Row B, Seat 14 atau Festival GA Pintu A" 
+              required
+            >
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="faceValue">Harga Resmi Asli (Rp) *</label>
+              <input 
+                type="number" 
+                id="faceValue" 
+                class="form-control mono" 
+                placeholder="Contoh: 1500000" 
+                min="10000" 
+                required
+              >
+              <span style="font-size: 11px; color: var(--text-dim);">Harga nominal pada tiket promotor</span>
+            </div>
+
+            <div class="form-group">
+              <label for="sellingPrice">Harga Jual Anda (Rp) *</label>
+              <input 
+                type="number" 
+                id="sellingPrice" 
+                class="form-control mono" 
+                placeholder="Contoh: 1500000" 
+                min="10000" 
+                required
+                oninput="calculateFeePreview()"
+              >
+              <span style="font-size: 11px; color: var(--text-dim);">Nominal bersih yang Anda terima jika tiket valid</span>
+            </div>
+          </div>
+
+          <!-- Canonical Price Calculation Preview -->
+          <div class="price-breakdown">
+            <div style="font-weight: 700; font-size: 12px; margin-bottom: 8px; color: var(--cyan); text-transform: uppercase;">
+              <i class="fa-solid fa-calculator"></i> Kalkulasi Transparan Sistem (Sesuai Backend)
+            </div>
+            <div class="price-row">
+              <span>Nominal Bersih Penjual:</span>
+              <span id="calcSellerAmount" class="mono">Rp 0</span>
+            </div>
+            <div class="price-row">
+              <span>Biaya Layanan &amp; Verifikasi PIC ARGUS (10%):</span>
+              <span id="calcFeeAmount" class="mono">Rp 0</span>
+            </div>
+            <div class="price-row total">
+              <span>Total yang Dibayar Pembeli di Halaman Checkout:</span>
+              <span id="calcTotalAmount" class="mono">Rp 0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Anti-Duplicate Security -->
+        <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+          <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
+            3. Barcode &amp; Protokol Keamanan
+          </div>
+
+          <div class="form-group">
+            <label for="barcode">Nomor Barcode / Serial / Kode Unik Tiket *</label>
+            <input 
+              type="text" 
+              id="barcode" 
+              class="form-control mono" 
+              placeholder="Masukkan kode unik barcode / e-voucher Anda" 
+              required
+            >
+            <span style="font-size: 11px; color: var(--text-dim);">
+              <i class="fa-solid fa-lock"></i> Barcode akan otomatis di-hash dengan kriptografi SHA-256 pada server untuk mencegah penjualan berulang.
+            </span>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="admissionProtocol">Metode Masuk Venue (Protokol Masuk)</label>
+              <select id="admissionProtocol" class="form-control">
+                <option value="QR_SCAN_ONLY">Pemindaian QR / E-Voucher Digital</option>
+                <option value="WRISTBAND_PICKUP">Penukaran Wristband / Gelang Fisik</option>
+                <option value="IDENTITY_CHECK">Pemeriksaan Identitas NIK + E-Tiket</option>
+                <option value="GATE_ESCORT">Pendampingan Langsung oleh PIC di Gerbang</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="evidenceFile">Bukti Pembelian / PDF Tiket (Opsional)</label>
+              <input type="file" id="evidenceFile" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+              <span style="font-size: 11px; color: var(--text-dim);">Dokumen dienkripsi AES-256 (UU PDP No. 27/2022)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Operational Seller Credentials -->
+        <div style="margin-bottom: 24px;">
+          <div class="form-group">
+            <label for="sellerId">Identitas Akun Penjual Terverifikasi (Pilot Mode)</label>
+            <select id="sellerId" class="form-control mono">
+              <option value="usr-seller-01">usr-seller-01 (Budi Santoso — KYC NIK Terverifikasi)</option>
+              <option value="usr-seller-02">usr-seller-02 (Dewi Lestari — KYC NIK Terverifikasi)</option>
+              <option value="usr-seller-unverified">usr-seller-unverified (Akun Belum Verifikasi NIK - Uji Tolak)</option>
+            </select>
+            <span style="font-size: 11px; color: var(--text-dim);">
+              Sistem ARGUS mewajibkan status seller verified sebelum listing dapat dibuat.
+            </span>
+          </div>
+        </div>
+
+        <!-- Submit Button & Real Server Feedback -->
+        <div id="formError" class="notice-box notice-warning" style="display: none;"></div>
+
+        <button type="submit" id="btnSubmitListing" class="btn" style="width: 100%; padding: 14px; font-size: 15px;">
+          <i class="fa-solid fa-shield-check"></i> Daftarkan Tiket ke Ledger ARGUS
+        </button>
+      </form>
+    </div>
+
+    <!-- Drawer / Modal for Creating User-Generated Event -->
+    <div id="newEventDrawer" class="card" style="display: none; border-color: var(--cyan); margin-top: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 18px; font-weight: 700; color: var(--cyan); margin: 0;">
+          <i class="fa-solid fa-calendar-plus"></i> Daftarkan Event Baru ke Sistem
+        </h3>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleNewEventDrawer()">
+          <i class="fa-solid fa-xmark"></i> Tutup
+        </button>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Event baru akan tersimpan di database ARGUS dengan status <strong>USER_CREATED</strong>. Listing yang dibuat pada event ini akan memiliki status awal unverified hingga dikurasi oleh admin.
+      </p>
+
+      <form id="newEventForm" onsubmit="handleCreateNewEvent(event)">
+        <div class="form-group">
+          <label for="newEvName">Nama Lengkap Event *</label>
+          <input type="text" id="newEvName" class="form-control" placeholder="Contoh: Java Jazz Festival 2026" required>
+        </div>
+
+        <div class="form-group">
+          <label for="newEvArtists">Artis / Penampil (Opsional)</label>
+          <input type="text" id="newEvArtists" class="form-control" placeholder="Contoh: Laufey, Jacob Collier, Maliq & D'Essentials">
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="newEvVenue">Nama Venue / Gedung Acara *</label>
+            <input type="text" id="newEvVenue" class="form-control" placeholder="Contoh: JIExpo Kemayoran" required>
+          </div>
+
+          <div class="form-group">
+            <label for="newEvCity">Kota Lokasi *</label>
+            <select id="newEvCity" class="form-control" required>
+              <option value="Jakarta">Jakarta</option>
+              <option value="Bandung">Bandung</option>
+              <option value="Surabaya">Surabaya</option>
+              <option value="Bali">Bali</option>
+              <option value="Tangerang">Tangerang</option>
+              <option value="Yogyakarta">Yogyakarta</option>
+              <option value="Semarang">Semarang</option>
+              <option value="Medan">Medan</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="newEvStartDate">Tanggal Mulai Acara *</label>
+            <input type="date" id="newEvStartDate" class="form-control" required min="2026-01-01" max="2026-12-31">
+          </div>
+
+          <div class="form-group">
+            <label for="newEvCategory">Kategori Acara *</label>
+            <select id="newEvCategory" class="form-control" required>
+              <option value="KONSER">Konser Musik</option>
+              <option value="STANDUP">Stand-up Comedy</option>
+              <option value="FESTIVAL">Festival Musik</option>
+              <option value="OLAHRAGA">Olahraga</option>
+              <option value="TEATER">Teater Seni</option>
+              <option value="LAINNYA">Lainnya</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="newEvLink">Tautan Resmi Promotor (Opsional)</label>
+          <input type="url" id="newEvLink" class="form-control" placeholder="https://promotor-resmi.com/event">
+        </div>
+
+        <div id="newEventError" class="notice-box notice-warning" style="display: none;"></div>
+
+        <button type="submit" id="btnSubmitNewEvent" class="btn" style="width: 100%;">
+          <i class="fa-solid fa-plus"></i> Simpan Event Baru &amp; Lanjutkan Buat Listing
+        </button>
+      </form>
+    </div>
+
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div>
+        <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">ARGUS Trust Infrastructure</div>
+        <div>Verified Ticket Transfer &copy; 2026. Data dienkripsi sesuai UU PDP No. 27/2022.</div>
+      </div>
+      <div class="footer-links">
+        <a href="/terms">Ketentuan Transaksi</a>
+        <a href="/privacy">Kebijakan Privasi</a>
+        <a href="/admin">Console Internal</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let eventsList = [];
+    const urlParams = new URLSearchParams(window.location.search);
+    const preselectedEventId = urlParams.get('eventId');
+    const autoOpenNewEvent = urlParams.get('action') === 'newEvent';
+
+    // Fetch real events from server
+    async function initEvents() {
+      const select = document.getElementById('eventSelect');
+      try {
+        const res = await fetch('/api/mvp/events');
+        const data = await res.json();
+        eventsList = data.events || [];
+
+        select.innerHTML = '<option value="">-- Pilih Event Resmi atau Terdaftar --</option>' + 
+          eventsList.map(ev => {
+            const isVerified = ev.is_verified ? '✓ RESMI' : '⚠ KOMUNITAS';
+            return `<option value="${ev.id}">${escapeHtml(ev.name)} (${ev.venue_city}, ${ev.start_date}) [${isVerified}]</option>`;
+          }).join('');
+
+        if (preselectedEventId) {
+          select.value = preselectedEventId;
+          handleEventSelected();
+        }
+
+        if (autoOpenNewEvent) {
+          toggleNewEventDrawer(true);
+        }
+      } catch (e) {
+        select.innerHTML = '<option value="">Gagal memuat event dari server</option>';
+      }
+    }
+
+    function handleEventSelected() {
+      const select = document.getElementById('eventSelect');
+      const box = document.getElementById('eventPreviewBox');
+      const warning = document.getElementById('prevEventWarning');
+      const ev = eventsList.find(e => e.id === select.value);
+
+      if (!ev) {
+        box.style.display = 'none';
+        return;
+      }
+
+      document.getElementById('prevEventName').innerText = ev.name;
+      document.getElementById('prevEventMeta').innerText = `${ev.category || 'EVENT'} • ${ev.venue_name}, ${ev.venue_city} • ${ev.start_date}`;
+      
+      const badge = document.getElementById('prevEventBadge');
+      if (ev.is_verified) {
+        badge.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> RESMI ARGUS</span>';
+        warning.style.display = 'none';
+      } else {
+        badge.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> EVENT KOMUNITAS</span>';
+        warning.style.display = 'flex';
+      }
+
+      box.style.display = 'block';
+    }
+
+    function toggleNewEventDrawer(forceOpen) {
+      const drawer = document.getElementById('newEventDrawer');
+      if (forceOpen === true) {
+        drawer.style.display = 'block';
+        drawer.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        drawer.style.display = drawer.style.display === 'none' ? 'block' : 'none';
+        if (drawer.style.display === 'block') {
+          drawer.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    }
+
+    function calculateFeePreview() {
+      const price = parseFloat(document.getElementById('sellingPrice').value) || 0;
+      const fee = Math.round(price * 0.10);
+      const total = price + fee;
+
+      document.getElementById('calcSellerAmount').innerText = 'Rp ' + price.toLocaleString('id-ID');
+      document.getElementById('calcFeeAmount').innerText = 'Rp ' + fee.toLocaleString('id-ID');
+      document.getElementById('calcTotalAmount').innerText = 'Rp ' + total.toLocaleString('id-ID');
+    }
+
+    async function handleCreateNewEvent(e) {
+      e.preventDefault();
+      const errEl = document.getElementById('newEventError');
+      const btn = document.getElementById('btnSubmitNewEvent');
+      errEl.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan Event ke Server...';
+
+      const payload = {
+        name: document.getElementById('newEvName').value.trim(),
+        artists: document.getElementById('newEvArtists').value.trim() || undefined,
+        venue_name: document.getElementById('newEvVenue').value.trim(),
+        venue_city: document.getElementById('newEvCity').value,
+        start_date: document.getElementById('newEvStartDate').value,
+        category: document.getElementById('newEvCategory').value,
+        official_link: document.getElementById('newEvLink').value.trim() || undefined
+      };
+
+      try {
+        const res = await fetch('/api/mvp/events', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-user-id': document.getElementById('sellerId').value
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || data.error || 'Gagal membuat event baru');
+        }
+
+        // Add to local events list and set as selected
+        eventsList.unshift(data.event);
+        const select = document.getElementById('eventSelect');
+        const opt = document.createElement('option');
+        opt.value = data.event.id;
+        opt.innerText = `${data.event.name} (${data.event.venue_city}, ${data.event.start_date}) [⚠ KOMUNITAS]`;
+        select.prepend(opt);
+        select.value = data.event.id;
+        handleEventSelected();
+
+        toggleNewEventDrawer(false);
+        document.getElementById('newEventForm').reset();
+        document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+
+      } catch (err) {
+        errEl.innerText = err.message;
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-plus"></i> Simpan Event Baru &amp; Lanjutkan Buat Listing';
+      }
+    }
+
+    async function handleCreateListing(e) {
+      e.preventDefault();
+      const errEl = document.getElementById('formError');
+      const btn = document.getElementById('btnSubmitListing');
+      errEl.style.display = 'none';
+
+      const eventId = document.getElementById('eventSelect').value;
+      if (!eventId) {
+        errEl.innerText = 'Pilih event terlebih dahulu.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghubungi Server ARGUS...';
+
+      const sellerId = document.getElementById('sellerId').value;
+      const formData = new FormData();
+      formData.append('eventId', eventId);
+      formData.append('seatInfo', document.getElementById('seatInfo').value.trim());
+      formData.append('faceValue', document.getElementById('faceValue').value);
+      formData.append('sellingPrice', document.getElementById('sellingPrice').value);
+      formData.append('barcode', document.getElementById('barcode').value.trim());
+      formData.append('admissionProtocol', document.getElementById('admissionProtocol').value);
+
+      const fileInput = document.getElementById('evidenceFile');
+      if (fileInput.files.length > 0) {
+        formData.append('evidence', fileInput.files[0]);
+      }
+
+      try {
+        const res = await fetch('/api/mvp/seller/listing', {
+          method: 'POST',
+          headers: {
+            'x-user-id': sellerId
+          },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || data.error || 'Gagal membuat listing di server');
+        }
+
+        // Show real response
+        const listing = data.listing;
+        document.getElementById('formCard').style.display = 'none';
+        
+        document.getElementById('resListingId').innerText = listing.id;
+        document.getElementById('resListingStatus').innerText = listing.status;
+        
+        const selEvent = eventsList.find(ev => ev.id === listing.event_id);
+        document.getElementById('resListingEvent').innerText = selEvent ? selEvent.name : listing.event_id;
+        document.getElementById('resListingPrice').innerText = 'Rp ' + Number(listing.selling_price).toLocaleString('id-ID');
+
+        if (listing.user_created_event) {
+          document.getElementById('resUserEventWarning').style.display = 'flex';
+        } else {
+          document.getElementById('resUserEventWarning').style.display = 'none';
+        }
+
+        document.getElementById('btnViewPay').href = `/pay/${listing.id}`;
+        document.getElementById('btnViewTrack').href = `/track?id=${listing.id}`;
+
+        const successCard = document.getElementById('successCard');
+        successCard.style.display = 'block';
+        successCard.scrollIntoView({ behavior: 'smooth' });
+
+      } catch (err) {
+        errEl.innerText = err.message;
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-shield-check"></i> Daftarkan Tiket ke Ledger ARGUS';
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('listingForm').reset();
+      document.getElementById('formCard').style.display = 'block';
+      document.getElementById('successCard').style.display = 'none';
+      document.getElementById('eventPreviewBox').style.display = 'none';
+      calculateFeePreview();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.innerText = str;
+      return div.innerHTML;
+    }
+
+    // Initialize
+    initEvents();
+  </script>
+</body>
+</html>

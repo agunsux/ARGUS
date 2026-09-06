@@ -304,21 +304,205 @@ router.get('/auth/me', (req, res) => {
 // =============================================================================
 
 /**
- * List all events
+ * Search & Browse events with filters (Epic 3.6)
  * GET /api/mvp/events
  */
 router.get('/events', (req, res) => {
-  const eventsWithVenues = state.events.map(event => {
+  const { q, city, category, source, verified, startDate, endDate } = req.query;
+
+  let filtered = state.events.filter(event => {
+    // Soft-deleted / cancelled filter: allow status filter or exclude DIBATALKAN unless explicitly queried
+    if (req.query.status) {
+      if (event.status !== req.query.status) return false;
+    } else {
+      if (event.status === 'DIBATALKAN') return false;
+    }
+
+    // Keyword search 'q' (matches name, title, artists, venue_name, venue, city)
+    if (q && q.trim()) {
+      const term = q.toLowerCase().trim();
+      const name = (event.name || event.title || '').toLowerCase();
+      const venue = (event.venue_name || event.venue || '').toLowerCase();
+      const vCity = (event.venue_city || '').toLowerCase();
+      const artists = Array.isArray(event.artists) ? event.artists.join(' ').toLowerCase() : (event.artists || '').toLowerCase();
+      if (!name.includes(term) && !venue.includes(term) && !vCity.includes(term) && !artists.includes(term)) {
+        return false;
+      }
+    }
+
+    // City filter
+    if (city && city.trim()) {
+      const cTerm = city.toLowerCase().trim();
+      const vCity = (event.venue_city || '').toLowerCase();
+      if (!vCity.includes(cTerm)) return false;
+    }
+
+    // Category filter (KONSER, STANDUP, FESTIVAL, OLAHRAGA, TEATER, LAINNYA)
+    if (category && category.trim()) {
+      if ((event.category || '').toUpperCase() !== category.toUpperCase().trim()) return false;
+    }
+
+    // Source filter (SEED, USER_CREATED)
+    if (source && source.trim()) {
+      if ((event.source || '').toUpperCase() !== source.toUpperCase().trim()) return false;
+    }
+
+    // Verified filter
+    if (verified !== undefined && verified !== '') {
+      const isVerif = verified === 'true';
+      if (!!event.is_verified !== isVerif) return false;
+    }
+
+    // Date range filter
+    const eDate = event.start_date || event.date;
+    if (startDate && eDate && eDate < startDate) return false;
+    if (endDate && eDate && eDate > endDate) return false;
+
+    return true;
+  });
+
+  // Sort upcoming events first (ascending by start_date)
+  filtered.sort((a, b) => {
+    const dateA = a.start_date || a.date || '9999-99-99';
+    const dateB = b.start_date || b.date || '9999-99-99';
+    return dateA.localeCompare(dateB);
+  });
+
+  const eventsWithMetadata = filtered.map(event => {
     const venue = state.venues.find(v => v.id === event.venue_id) || {};
     const pic = state.event_pics.find(ep => ep.event_id === event.id && ep.status === 'ACTIVE');
+    const activeListings = state.listings.filter(l => l.event_id === event.id && l.status === 'ACTIVE');
+    const minPrice = activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null;
+
     return {
       ...event,
+      name: event.name || event.title,
+      title: event.title || event.name,
+      start_date: event.start_date || event.date,
+      date: event.date || event.start_date,
+      venue_name: event.venue_name || event.venue || venue.name,
+      venue: event.venue || event.venue_name || venue.name,
+      venue_city: event.venue_city || venue.city || 'Jakarta',
       venue_details: venue,
       pic_assigned: !!pic,
-      pic_contact: pic ? pic.contact_phone : null
+      pic_contact: pic ? pic.contact_phone : null,
+      active_listings_count: activeListings.length,
+      min_price: minPrice
     };
   });
-  res.json({ events: eventsWithVenues });
+
+  res.json({ events: eventsWithMetadata, total: eventsWithMetadata.length });
+});
+
+/**
+ * User-created event (Epic 3.6)
+ * POST /api/mvp/events
+ */
+router.post('/events', (req, res) => {
+  try {
+    const callerId = getCallerId(req, req.body?.sellerId, req.body?.userId);
+    if (!callerId) {
+      return res.status(401).json({ error: 'Authentication required to register a new event.', code: 'AUTH_REQUIRED' });
+    }
+
+    const { name, venue_name, venue_city, start_date, end_date, category, artists, admission_protocol, official_link, poster_url } = req.body;
+
+    // Validation
+    if (!name || typeof name !== 'string' || name.trim().length < 3) {
+      return res.status(400).json({ error: 'Event name is required (min 3 characters)', code: 'VALIDATION_ERROR' });
+    }
+    if (!venue_name || typeof venue_name !== 'string' || venue_name.trim().length < 2) {
+      return res.status(400).json({ error: 'Venue name is required', code: 'VALIDATION_ERROR' });
+    }
+    if (!venue_city || typeof venue_city !== 'string' || venue_city.trim().length < 2) {
+      return res.status(400).json({ error: 'Venue city is required', code: 'VALIDATION_ERROR' });
+    }
+    if (!start_date || !/^\d{4}-\d{2}-\d{2}$/.test(start_date.trim())) {
+      return res.status(400).json({ error: 'Valid start_date (YYYY-MM-DD) is required', code: 'VALIDATION_ERROR' });
+    }
+
+    const ALLOWED_CATEGORIES = ['KONSER', 'STANDUP', 'FESTIVAL', 'OLAHRAGA', 'TEATER', 'LAINNYA'];
+    const catUpper = (category || 'KONSER').toUpperCase().trim();
+    if (!ALLOWED_CATEGORIES.includes(catUpper)) {
+      return res.status(400).json({
+        error: `Invalid category '${category}'. Allowed: ${ALLOWED_CATEGORIES.join(', ')}`,
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    // Uniqueness check: prevent duplicate event (same name + venue + date)
+    const normKey = `${name.toLowerCase().trim()}::${venue_name.toLowerCase().trim()}::${start_date.trim()}`;
+    const duplicate = state.events.find(e => {
+      const eName = (e.name || e.title || '').toLowerCase().trim();
+      const eVenue = (e.venue_name || e.venue || '').toLowerCase().trim();
+      const eDate = (e.start_date || e.date || '').trim();
+      return `${eName}::${eVenue}::${eDate}` === normKey;
+    });
+
+    if (duplicate) {
+      return res.status(409).json({
+        error: 'Event dengan nama, venue, dan tanggal yang sama sudah terdaftar di sistem ARGUS.',
+        code: 'DUPLICATE_EVENT',
+        existing_event_id: duplicate.id
+      });
+    }
+
+    // Parse artists
+    let artistList = [];
+    if (Array.isArray(artists)) {
+      artistList = artists.map(a => String(a).trim()).filter(Boolean);
+    } else if (typeof artists === 'string' && artists.trim()) {
+      artistList = artists.split(',').map(a => a.trim()).filter(Boolean);
+    }
+
+    const eventId = `event-usr-${uuidv4().substring(0, 8)}`;
+    const newEvent = {
+      id: eventId,
+      name: name.trim(),
+      title: name.trim(),
+      artists: artistList,
+      date: start_date.trim(),
+      start_date: start_date.trim(),
+      end_date: end_date ? end_date.trim() : null,
+      venue_id: null,
+      venue: venue_name.trim(),
+      venue_name: venue_name.trim(),
+      venue_city: venue_city.trim(),
+      category: catUpper,
+      admission_protocol: admission_protocol || {
+        type: 'BARCODE_PLUS_ID',
+        description: 'Pemeriksaan tiket resmi dan identitas di venue acara oleh PIC ARGUS',
+        required_items: ['E-Ticket / Tiket Fisik Resmi', 'KTP Asli / Identitas Diri'],
+        handoff_type: 'DIGITAL_TRANSFER',
+        venue_gate_authority: 'Promotor / Penyelenggara Acara'
+      },
+      status: 'UPCOMING',
+      source: 'USER_CREATED',
+      created_by_user_id: callerId,
+      is_verified: false,
+      official_link: official_link ? official_link.trim() : null,
+      poster_url: poster_url ? poster_url.trim() : null,
+      created_at: new Date().toISOString()
+    };
+
+    state.events.push(newEvent);
+
+    recordAuditLog('EVENT', eventId, 'USER_CREATED', callerId, {
+      name: newEvent.name,
+      venue_name: newEvent.venue_name,
+      venue_city: newEvent.venue_city,
+      start_date: newEvent.start_date,
+      category: newEvent.category
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Event berhasil didaftarkan oleh komunitas.',
+      event: newEvent
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message, code: 'INTERNAL_ERROR' });
+  }
 });
 
 /**
@@ -334,6 +518,169 @@ router.get('/listings', (req, res) => {
     pricing: EscrowService.calculatePricing(l.price)
   }));
   res.json({ listings: listingsWithPricing });
+});
+
+/**
+ * Get single listing by ID with transparent pricing and verified event data
+ * GET /api/mvp/listings/:id
+ */
+router.get('/listings/:id', (req, res) => {
+  const listing = state.listings.find(l => l.id === req.params.id);
+  if (!listing) {
+    return res.status(404).json({ error: 'Listing not found', code: 'NOT_FOUND' });
+  }
+
+  const ticket = state.tickets.find(t => t.id === listing.ticket_id) || {};
+  const event = state.events.find(e => e.id === listing.event_id) || {};
+  const venue = state.venues.find(v => v.id === event.venue_id) || {};
+  const sellerProfile = state.seller_profiles.find(sp => sp.user_id === listing.seller_id) || {};
+
+  res.json({
+    listing: {
+      id: listing.id,
+      status: listing.status,
+      seat_info: listing.seat_info,
+      face_value: listing.face_value,
+      price: listing.price,
+      pricing: EscrowService.calculatePricing(listing.price),
+      created_at: listing.created_at,
+      rejection_reason: listing.rejection_reason,
+      user_created_event: listing.user_created_event || false,
+      event_verification_warning: listing.event_verification_warning || null,
+      event: {
+        id: event.id,
+        name: event.name || event.title,
+        title: event.title || event.name,
+        date: event.date || event.start_date,
+        start_date: event.start_date || event.date,
+        category: event.category,
+        venue: venue.name || event.venue || event.venue_name,
+        venue_name: event.venue_name || venue.name || event.venue,
+        venue_city: venue.city || event.venue_city || 'Jakarta',
+        admission_protocol: event.admission_protocol || null,
+        is_verified: event.is_verified !== undefined ? event.is_verified : true,
+        source: event.source || 'SEED'
+      },
+      seller: {
+        id: listing.seller_id,
+        kyc_status: sellerProfile.kyc_status || 'UNVERIFIED'
+      }
+    }
+  });
+});
+
+/**
+ * Public PII-safe transaction tracker
+ * GET /api/mvp/track/:id
+ */
+router.get('/track/:id', (req, res) => {
+  const paramId = req.params.id;
+
+  // 1. Check if ID matches an Order
+  const order = state.orders.find(o => o.id === paramId);
+  if (order) {
+    const ticket = state.tickets.find(t => t.id === order.ticket_id) || {};
+    const event = state.events.find(e => e.id === order.event_id) || {};
+    const venue = state.venues.find(v => v.id === event.venue_id) || {};
+    const escrow = state.escrows.find(e => e.order_id === order.id) || {};
+    const verification = state.entry_verifications.find(ev => ev.order_id === order.id) || null;
+    const picAssign = state.event_pics.find(ep => ep.event_id === order.event_id && ep.status === 'ACTIVE');
+
+    return res.json({
+      success: true,
+      transaction: {
+        id: order.id,
+        type: 'ORDER',
+        status: order.status,
+        operational_stage: order.operational_stage || (verification ? verification.status : 'PENDING_ADMISSION'),
+        ticket_price: order.ticket_price,
+        platform_fee: order.platform_fee,
+        total_amount: order.total_amount,
+        created_at: order.created_at,
+        escrow_status: escrow.status || 'UNKNOWN',
+        entry_status: verification ? verification.status : 'PENDING_ENTRY',
+        event: {
+          title: event.title,
+          date: event.date,
+          venue: venue.name || event.venue,
+          city: venue.city || 'Jakarta',
+          gate_info: venue.gate_info || 'Main Gate',
+          admission_protocol: event.admission_protocol || null
+        },
+        seat_info: ticket.seat_info || order.seat_info,
+        pic_assigned: !!picAssign,
+        pic_contact: picAssign ? picAssign.contact_phone : null
+      }
+    });
+  }
+
+  // 2. Check if ID matches a Listing
+  const listing = state.listings.find(l => l.id === paramId);
+  if (listing) {
+    const ticket = state.tickets.find(t => t.id === listing.ticket_id) || {};
+    const event = state.events.find(e => e.id === listing.event_id) || {};
+    const venue = state.venues.find(v => v.id === event.venue_id) || {};
+    const sellerProfile = state.seller_profiles.find(sp => sp.user_id === listing.seller_id) || {};
+
+    return res.json({
+      success: true,
+      transaction: {
+        id: listing.id,
+        type: 'LISTING',
+        status: listing.status,
+        seat_info: listing.seat_info,
+        face_value: listing.face_value,
+        price: listing.price,
+        pricing: EscrowService.calculatePricing(listing.price),
+        created_at: listing.created_at,
+        rejection_reason: listing.rejection_reason || null,
+        event: {
+          title: event.title,
+          date: event.date,
+          venue: venue.name || event.venue,
+          city: venue.city || 'Jakarta',
+          admission_protocol: event.admission_protocol || null
+        },
+        seller_verified: sellerProfile.kyc_status === 'VERIFIED'
+      }
+    });
+  }
+
+  // 3. Not found
+  return res.status(404).json({
+    success: false,
+    error: 'Transaction or listing not found',
+    code: 'NOT_FOUND'
+  });
+});
+
+/**
+ * Get single order details
+ * GET /api/mvp/orders/:id
+ */
+router.get('/orders/:id', (req, res) => {
+  const order = state.orders.find(o => o.id === req.params.id);
+  if (!order) {
+    return res.status(404).json({ error: 'Order not found', code: 'NOT_FOUND' });
+  }
+
+  const ticket = state.tickets.find(t => t.id === order.ticket_id) || {};
+  const event = state.events.find(e => e.id === order.event_id) || {};
+  const venue = state.venues.find(v => v.id === event.venue_id) || {};
+  const escrow = state.escrows.find(e => e.order_id === order.id) || {};
+  const verification = state.entry_verifications.find(ev => ev.order_id === order.id) || null;
+
+  res.json({
+    order: {
+      ...order,
+      seat_info: ticket.seat_info,
+      event_title: event.title,
+      event_date: event.date,
+      venue_name: venue.name || event.venue,
+      escrow_status: escrow.status,
+      entry_status: verification ? verification.status : 'PENDING_ENTRY'
+    }
+  });
 });
 
 // =============================================================================
@@ -1182,6 +1529,144 @@ router.post('/admin/override-state', async (req, res) => {
     });
   } catch (err) {
     res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
+  }
+});
+
+/**
+ * Admin: List all events with management metadata (Epic 3.6)
+ * GET /api/mvp/admin/events
+ */
+router.get('/admin/events', (req, res) => {
+  const callerId = getCallerId(req, req.query?.requesterId, req.query?.officerId);
+  if (!callerId) {
+    return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
+  }
+  const caller = findUser(callerId);
+  if (!caller || caller.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin role required', code: 'FORBIDDEN' });
+  }
+
+  const events = state.events.map(e => {
+    const activeListings = state.listings.filter(l => l.event_id === e.id);
+    return {
+      ...e,
+      active_listings_count: activeListings.filter(l => l.status === 'ACTIVE').length,
+      total_listings_count: activeListings.length
+    };
+  });
+
+  res.json({ success: true, events, total: events.length });
+});
+
+/**
+ * Admin: Toggle event verification status (Epic 3.6)
+ * POST /api/mvp/admin/events/:id/verify
+ */
+router.post('/admin/events/:id/verify', async (req, res) => {
+  try {
+    const officerId = getCallerId(req, req.body?.officerId);
+    if (!officerId) {
+      return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
+    }
+    const officer = findUser(officerId);
+    if (!officer || officer.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin role required', code: 'FORBIDDEN' });
+    }
+
+    const event = state.events.find(e => e.id === req.params.id);
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found', code: 'NOT_FOUND' });
+    }
+
+    const isVerified = req.body.is_verified !== undefined ? Boolean(req.body.is_verified) : true;
+    event.is_verified = isVerified;
+
+    await recordAuditLog('EVENT', event.id, isVerified ? 'EVENT_VERIFIED' : 'EVENT_UNVERIFIED', officerId, {
+      event_name: event.name || event.title,
+      is_verified: isVerified,
+      reason: req.body.reason || null
+    });
+
+    res.json({
+      success: true,
+      message: `Event '${event.name || event.title}' verification updated to ${isVerified}.`,
+      event
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Admin: Edit event details (Epic 3.6)
+ * PATCH /api/mvp/admin/events/:id
+ */
+router.patch('/admin/events/:id', async (req, res) => {
+  try {
+    const officerId = getCallerId(req, req.body?.officerId);
+    if (!officerId) {
+      return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
+    }
+    const officer = findUser(officerId);
+    if (!officer || officer.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin role required', code: 'FORBIDDEN' });
+    }
+
+    const event = state.events.find(e => e.id === req.params.id);
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found', code: 'NOT_FOUND' });
+    }
+
+    const { name, venue_name, venue_city, start_date, end_date, category, status, official_link, poster_url } = req.body;
+    if (name) { event.name = name.trim(); event.title = name.trim(); }
+    if (venue_name) { event.venue_name = venue_name.trim(); event.venue = venue_name.trim(); }
+    if (venue_city) { event.venue_city = venue_city.trim(); }
+    if (start_date) { event.start_date = start_date.trim(); event.date = start_date.trim(); }
+    if (end_date !== undefined) { event.end_date = end_date ? end_date.trim() : null; }
+    if (category) { event.category = category.toUpperCase().trim(); }
+    if (status) { event.status = status.toUpperCase().trim(); }
+    if (official_link !== undefined) { event.official_link = official_link; }
+    if (poster_url !== undefined) { event.poster_url = poster_url; }
+
+    await recordAuditLog('EVENT', event.id, 'EVENT_UPDATED', officerId, {
+      updated_fields: Object.keys(req.body)
+    });
+
+    res.json({ success: true, event });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Admin: Cancel event / soft-delete (Epic 3.6)
+ * POST /api/mvp/admin/events/:id/cancel
+ */
+router.post('/admin/events/:id/cancel', async (req, res) => {
+  try {
+    const officerId = getCallerId(req, req.body?.officerId);
+    if (!officerId) {
+      return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
+    }
+    const officer = findUser(officerId);
+    if (!officer || officer.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin role required', code: 'FORBIDDEN' });
+    }
+
+    const event = state.events.find(e => e.id === req.params.id);
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found', code: 'NOT_FOUND' });
+    }
+
+    event.status = 'DIBATALKAN';
+
+    await recordAuditLog('EVENT', event.id, 'EVENT_CANCELLED', officerId, {
+      reason: req.body.reason || 'Admin cancellation'
+    });
+
+    res.json({ success: true, message: `Event '${event.name || event.title}' telah dibatalkan.`, event });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
