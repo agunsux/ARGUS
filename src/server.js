@@ -32,7 +32,8 @@ const uploadsDir = process.env.VERCEL
 app.use('/uploads', express.static(uploadsDir));
 
 // Serve front-end files
-app.use(express.static(path.resolve(__dirname, '../public')));
+const sendFileOpts = { dotfiles: 'allow' };
+app.use(express.static(path.resolve(__dirname, '../public'), sendFileOpts));
 
 // Mount Trust APIs
 app.use(trustApi);
@@ -48,20 +49,21 @@ app.use('/api/mvp', offerRouter);
 
 // Explicit Institutional Frontend Page Delivery
 const publicDir = path.resolve(__dirname, '../public');
-app.get('/create', (req, res) => res.sendFile(path.join(publicDir, 'create.html')));
-app.get('/pay/:id', (req, res) => res.sendFile(path.join(publicDir, 'pay.html')));
-app.get('/pay', (req, res) => res.sendFile(path.join(publicDir, 'pay.html')));
-app.get('/offers', (req, res) => res.sendFile(path.join(publicDir, 'offers.html')));
-app.get('/track/:id', (req, res) => res.sendFile(path.join(publicDir, 'track.html')));
-app.get('/track', (req, res) => res.sendFile(path.join(publicDir, 'track.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(publicDir, 'admin.html')));
-app.get('/terms', (req, res) => res.sendFile(path.join(publicDir, 'terms.html')));
-app.get('/privacy', (req, res) => res.sendFile(path.join(publicDir, 'privacy.html')));
+app.get('/create', (req, res) => res.sendFile(path.join(publicDir, 'create.html'), sendFileOpts));
+app.get('/pay/:id', (req, res) => res.sendFile(path.join(publicDir, 'pay.html'), sendFileOpts));
+app.get('/pay', (req, res) => res.sendFile(path.join(publicDir, 'pay.html'), sendFileOpts));
+app.get('/offers', (req, res) => res.sendFile(path.join(publicDir, 'offers.html'), sendFileOpts));
+app.get('/track/:id', (req, res) => res.sendFile(path.join(publicDir, 'track.html'), sendFileOpts));
+app.get('/track', (req, res) => res.sendFile(path.join(publicDir, 'track.html'), sendFileOpts));
+app.get('/admin', (req, res) => res.sendFile(path.join(publicDir, 'admin.html'), sendFileOpts));
+app.get('/terms', (req, res) => res.sendFile(path.join(publicDir, 'terms.html'), sendFileOpts));
+app.get('/privacy', (req, res) => res.sendFile(path.join(publicDir, 'privacy.html'), sendFileOpts));
+app.get('/baton', (req, res) => res.sendFile(path.join(publicDir, 'baton.html'), sendFileOpts));
 
 // Root and health endpoints for API health check (local + Vercel rewrite)
 app.get('/', (req, res, next) => {
   if (req.accepts('html')) {
-    return res.sendFile(path.join(publicDir, 'index.html'));
+    return res.sendFile(path.join(publicDir, 'index.html'), sendFileOpts);
   }
   res.json({
     service: "ARGUS Trust Infrastructure",

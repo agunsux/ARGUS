@@ -1,0 +1,1512 @@
+import React, { useState, useEffect, createContext, useContext } from 'react';
+
+// ============================================================================
+// BATON — Trust Infrastructure for Live Events
+// Complete, Responsive, High-Conversion Homepage (Stripe/Linear Aesthetic)
+// Featuring Dual "Jual Beli" (Buy Tickets & Sell Ticket) Action Pairs
+// ============================================================================
+
+// --- 1. ICONS (Pixel-Perfect Lucide SVG Equivalents, Zero External Dependency) ---
+const ShieldIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
+const LockIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+const UserIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const UserCheckIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <polyline points="16 11 18 13 22 9" />
+  </svg>
+);
+
+const TicketIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+    <path d="M13 5v2" />
+    <path d="M13 17v2" />
+    <path d="M13 11v2" />
+  </svg>
+);
+
+const SearchIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+const ArrowRightIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <line x1="5" y1="12" x2="19" y2="12" />
+    <polyline points="12 5 19 12 12 19" />
+  </svg>
+);
+
+const SunIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <circle cx="12" cy="12" r="5" />
+    <line x1="12" y1="1" x2="12" y2="3" />
+    <line x1="12" y1="21" x2="12" y2="23" />
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+    <line x1="1" y1="12" x2="3" y2="12" />
+    <line x1="21" y1="12" x2="23" y2="12" />
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+  </svg>
+);
+
+const MoonIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+);
+
+const CheckCircleIcon = ({ className = "w-5 h-5", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
+);
+
+const MapPinIcon = ({ className = "w-4 h-4", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+);
+
+const CalendarIcon = ({ className = "w-4 h-4", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
+const MenuIcon = ({ className = "w-6 h-6", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
+const XIcon = ({ className = "w-6 h-6", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
+const SparklesIcon = ({ className = "w-4 h-4", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="1.75" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+  </svg>
+);
+
+const ArrowUpRightIcon = ({ className = "w-4 h-4", ...props }) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <line x1="7" y1="17" x2="17" y2="7" />
+    <polyline points="7 7 17 7 17 17" />
+  </svg>
+);
+
+// --- 2. BILINGUAL DICTIONARY ---
+const TRANSLATIONS = {
+  id: {
+    nav: {
+      events: "Event",
+      howItWorks: "Cara Kerja",
+      antiScam: "Anti-Scam",
+      buyTickets: "Beli Tiket",
+      sellTicket: "Jual Tiket",
+      login: "Masuk",
+      trackOrder: "Lacak Pesanan",
+      menuAria: "Buka menu navigasi"
+    },
+    hero: {
+      taglinePre: "Kami ada di ",
+      taglineHighlight: "gate.",
+      subheadline: "Uang Anda kami tahan hingga agen kami mengonfirmasi Anda masuk. Tidak ada tiket, tidak ada pembayaran. Simpel.",
+      ctaPrimary: "Beli Tiket",
+      ctaSecondary: "Jual Tiket",
+      trustAntiGhost: "100% Anti Tiket Ghaib",
+      trustEscrow: "Escrow Protection",
+      trustPhysical: "Verifikasi Fisik"
+    },
+    tracker: {
+      label: "Lacak Transaksi Anda Langsung",
+      placeholder: "Masukkan ID Order atau Listing (e.g., BAT-88219)...",
+      button: "Lacak",
+      mockBadge: "DEMO CEPAT",
+      sampleHint: "Klik untuk uji sampel:",
+      foundTitle: "Status Transaksi Terkini",
+      orderLabel: "ID Pesanan",
+      eventLabel: "Event & Gate",
+      escrowLabel: "Status Escrow",
+      escrowDetail: "DANA TERKUNCI AMAN (Rp 1.850.000)",
+      agentLabel: "Agen PIC Lapangan",
+      agentDetail: "Bagus Setiawan (Gate 3A - Terkoneksi)",
+      nextStep: "Menunggu Anda di lokasi untuk verifikasi fisik & pemindaian turnstile."
+    },
+    howItWorks: {
+      tag: "Protokol Kepercayaan",
+      title: "Cara Kerja Baton",
+      subtitle: "Arsitektur keamanan 3 tahap: dana tidak pernah berpindah sebelum Anda melangkah melewati pintu gerbang acara.",
+      steps: [
+        {
+          num: "01",
+          title: "Beli & Kunci",
+          desc: "Pilih tiket. Uang Anda masuk ke rekening penampungan (escrow). Penjual belum menerima apa-apa.",
+          accent: "amber",
+          metric: "100% Dana Aman di Escrow"
+        },
+        {
+          num: "02",
+          title: "Ketemu di Gate",
+          desc: "Di hari-H, agen BATON (PIC) menunggu di venue. Kami verifikasi tiket dan identitas Anda secara fisik.",
+          accent: "amber",
+          metric: "Pendampingan Lapangan Nyata"
+        },
+        {
+          num: "03",
+          title: "Masuk & Cair",
+          desc: "Begitu Anda melewati turnstile, uang langsung dicairkan ke penjual. Jika gagal masuk, 100% refund.",
+          accent: "emerald",
+          metric: "Garansi Turnstile / 100% Refund"
+        }
+      ]
+    },
+    events: {
+      tag: "Katalog Terverifikasi",
+      title: "Event Mendatang",
+      subtitle: "Tiket sekunder resmi dengan pendampingan verifikator fisik BATON di lokasi gerbang masuk.",
+      ticketsAvailable: "Tiket Tersedia",
+      startingAt: "Mulai dari",
+      viewAll: "Lihat Semua Event",
+      buyAction: "Lihat Tiket"
+    },
+    manifesto: {
+      badge: "KOMITMEN PERLINDUNGAN KONSUMEN",
+      h2: "Berhenti khawatir tentang tiket ghaib.",
+      body: "OJK dan kepolisian terus memperingatkan tentang penipuan tiket online. Marketplace global tidak punya orang di lokasi. BATON berbeda. Kami tidak hanya menghubungkan penjual dan pembeli; kami menempatkan manusia tepercaya di setiap gate untuk memastikan Anda masuk.",
+      stats: [
+        { label: "Insiden Tiket Ghaib", value: "0%" },
+        { label: "Garansi Refund Turnstile", value: "100%" },
+        { label: "Rerata Waktu Temu PIC di Gate", value: "< 3 Menit" }
+      ],
+      compliance: "Sepenuhnya tunduk pada UU Perlindungan Data Pribadi (UU PDP No. 27/2022) & Standar Keamanan Finansial."
+    },
+    actionSection: {
+      tag: "Pasar Tiket Sekunder Terpercaya",
+      title: "Jual Beli Tiket Resmi Tanpa Resiko",
+      subtitle: "Satu protokol ganda yang melindungi pembeli dari tiket palsu dan melindungi penjual dari sengketa curang.",
+      buyerCard: {
+        badge: "UNTUK PEMBELI",
+        badgeColor: "text-emerald-400 bg-emerald-950/40 border-emerald-500/30",
+        heading: "Tiket Sold Out? Masuk Venue dengan 100% Rasa Aman.",
+        desc: "Dana Anda tertahan aman di escrow penampungan hingga turnstile terbuka. Didampingi verifikator fisik BATON langsung di depan gate. Jika tiket gagal atau ditolak, dana kembali 100% otomatis.",
+        cta: "Cari & Beli Tiket",
+        metric: "100% Garansi Turnstile"
+      },
+      sellerCard: {
+        badge: "UNTUK PENJUAL",
+        badgeColor: "text-amber-400 bg-amber-950/40 border-amber-500/30",
+        heading: "Batal Nonton? Cairkan Tiket Tanpa Tuduhan Penipuan.",
+        desc: "Agen BATON memvalidasi tiket Anda bersama pembeli di gerbang masuk. Begitu pembeli lolos scan turnstile, dana langsung cair ke rekening Anda tanpa potongan tersembunyi atau chargeback palsu.",
+        cta: "Mulai Jual Tiket",
+        metric: "Pencairan Instan di Gate"
+      }
+    },
+    footer: {
+      brandDesc: "BATON — Trust infrastructure for live events.",
+      colProduct: "Produk",
+      colCompany: "Perusahaan",
+      colLegal: "Legal & Regulasi",
+      productLinks: ["Beli Tiket", "Jual Tiket", "Lacak Pesanan", "Protokol Escrow"],
+      companyLinks: ["Tentang BATON", "Menjadi Agen PIC", "Media & Kontak", "Laporan Transparansi"],
+      legalLinks: ["Syarat & Ketentuan", "Kebijakan Privasi", "Kepatuhan UU PDP", "Sanksi Calo Ghaib"],
+      copyright: "© 2026 PT Baton Infrastruktur Kepercayaan. Hak cipta dilindungi undang-undang.",
+      systemOperational: "Semua Sistem Lapangan Operasional"
+    }
+  },
+  en: {
+    nav: {
+      events: "Events",
+      howItWorks: "How it Works",
+      antiScam: "Anti-Scam",
+      buyTickets: "Buy Tickets",
+      sellTicket: "Sell Ticket",
+      login: "Login",
+      trackOrder: "Track Order",
+      menuAria: "Toggle navigation menu"
+    },
+    hero: {
+      taglinePre: "We'll be at the ",
+      taglineHighlight: "gate.",
+      subheadline: "Your money is held until our agent confirms your entry. No ticket, no payment. Simple.",
+      ctaPrimary: "Buy Tickets",
+      ctaSecondary: "Sell Ticket",
+      trustAntiGhost: "Anti Ghost Tickets",
+      trustEscrow: "Escrow Protection",
+      trustPhysical: "Physical Verification"
+    },
+    tracker: {
+      label: "Track Your Transaction Live",
+      placeholder: "Enter Order or Listing ID (e.g., BAT-88219)...",
+      button: "Track",
+      mockBadge: "INSTANT DEMO",
+      sampleHint: "Click a sample ID:",
+      foundTitle: "Live Transaction Status",
+      orderLabel: "Order ID",
+      eventLabel: "Event & Gate",
+      escrowLabel: "Escrow Status",
+      escrowDetail: "FUNDS SECURELY HELD (IDR 1,850,000)",
+      agentLabel: "On-Site PIC Agent",
+      agentDetail: "Bagus Setiawan (Gate 3A - Connected)",
+      nextStep: "Awaiting your arrival at venue for physical verification & turnstile admission."
+    },
+    howItWorks: {
+      tag: "Trust Protocol",
+      title: "How Baton Works",
+      subtitle: "A 3-stage security architecture: money never changes hands until you step past the venue turnstile.",
+      steps: [
+        {
+          num: "01",
+          title: "Buy & Lock",
+          desc: "Choose a ticket. Your money goes into escrow. The seller receives nothing yet.",
+          accent: "amber",
+          metric: "100% Funds Escrowed"
+        },
+        {
+          num: "02",
+          title: "Meet at Gate",
+          desc: "On event day, a BATON agent (PIC) waits at the venue. We physically verify your ticket and ID.",
+          accent: "amber",
+          metric: "Live Human Assistance"
+        },
+        {
+          num: "03",
+          title: "Walk In & Release",
+          desc: "Once you pass the turnstile, funds are released to the seller. If entry fails, 100% refund.",
+          accent: "emerald",
+          metric: "Turnstile Guaranteed / 100% Refund"
+        }
+      ]
+    },
+    events: {
+      tag: "Verified Catalog",
+      title: "Upcoming Events",
+      subtitle: "Authentic secondary tickets paired with on-site BATON physical agents at every venue gate.",
+      ticketsAvailable: "Tickets Available",
+      startingAt: "Starting at",
+      viewAll: "View All Events",
+      buyAction: "View Tickets"
+    },
+    manifesto: {
+      badge: "CONSUMER PROTECTION MANDATE",
+      h2: "Stop worrying about ghost tickets.",
+      body: "Regulators constantly warn about online ticket scams. Global marketplaces don't have people on the ground. BATON is different. We don't just connect buyers and sellers; we place trusted humans at every gate to ensure you get in.",
+      stats: [
+        { label: "Ghost Ticket Rate", value: "0%" },
+        { label: "Turnstile Refund Guarantee", value: "100%" },
+        { label: "Avg Gate Meetup Wait", value: "< 3 Mins" }
+      ],
+      compliance: "Fully compliant with Indonesian Personal Data Protection (UU PDP No. 27/2022) & secure escrow standards."
+    },
+    actionSection: {
+      tag: "Trusted Secondary Marketplace",
+      title: "Buy & Sell Tickets with Zero Risk",
+      subtitle: "A dual turnstile protocol protecting buyers from fraudulent tickets and sellers from unfair disputes.",
+      buyerCard: {
+        badge: "FOR BUYERS",
+        badgeColor: "text-emerald-400 bg-emerald-950/40 border-emerald-500/30",
+        heading: "Sold Out Event? Enter the Venue with 100% Peace of Mind.",
+        desc: "Your money stays safe in escrow until the turnstile gate opens. Accompanied by on-site BATON physical agents. If entry fails, 100% automated refund.",
+        cta: "Browse & Buy Tickets",
+        metric: "100% Turnstile Guarantee"
+      },
+      sellerCard: {
+        badge: "FOR SELLERS",
+        badgeColor: "text-amber-400 bg-amber-950/40 border-amber-500/30",
+        heading: "Can’t Attend? Cash In Your Ticket Without Fraud Accusations.",
+        desc: "BATON field agents validate your ticket with the buyer right at the gate. As soon as the buyer steps in, payout is instantly released to your bank account with zero chargeback risk.",
+        cta: "Start Selling Tickets",
+        metric: "Instant Gate Payout"
+      }
+    },
+    footer: {
+      brandDesc: "BATON — Trust infrastructure for live events.",
+      colProduct: "Product",
+      colCompany: "Company",
+      colLegal: "Legal & Compliance",
+      productLinks: ["Buy Tickets", "Sell Tickets", "Track Order", "Escrow Protocol"],
+      companyLinks: ["About BATON", "Become a PIC Agent", "Press & Media", "Transparency Report"],
+      legalLinks: ["Terms of Service", "Privacy Policy", "UU PDP Compliance", "Anti-Scalping Rules"],
+      copyright: "© 2026 PT Baton Infrastruktur Kepercayaan. All rights reserved.",
+      systemOperational: "All On-Site Gate Systems Operational"
+    }
+  }
+};
+
+// --- 3. MOCK REALISTIC EVENT DATA (Indonesian Context) ---
+const MOCK_EVENTS = [
+  {
+    id: "evt-coldplay",
+    title: "Coldplay — Music of the Spheres (Special Encore)",
+    date: "15 NOV 2026",
+    category: "STADIUM CONCERT",
+    venue: "Gelora Bung Karno (GBK)",
+    city: "Jakarta Pusat",
+    ticketsAvailable: 14,
+    priceIdr: 1750000,
+    priceEn: "IDR 1,750,000",
+    gradient: "from-zinc-800 to-zinc-900",
+    badgeColor: "border-emerald-500/30 text-emerald-400 bg-emerald-950/40"
+  },
+  {
+    id: "evt-twice",
+    title: "TWICE 6th World Tour: Ready To Be Jakarta",
+    date: "08 DES 2026",
+    category: "K-POP STADIUM",
+    venue: "Indonesia Arena, Senayan",
+    city: "Jakarta Selatan",
+    ticketsAvailable: 8,
+    priceIdr: 2200000,
+    priceEn: "IDR 2,200,000",
+    gradient: "from-zinc-800 to-zinc-900",
+    badgeColor: "border-amber-500/30 text-amber-400 bg-amber-950/40"
+  },
+  {
+    id: "evt-dwp",
+    title: "Djakarta Warehouse Project (DWP) 2026",
+    date: "12-14 DES 2026",
+    category: "ELECTRONIC MUSIC",
+    venue: "JIExpo Kemayoran",
+    city: "Jakarta Utara",
+    ticketsAvailable: 23,
+    priceIdr: 1450000,
+    priceEn: "IDR 1,450,000",
+    gradient: "from-zinc-800 to-zinc-900",
+    badgeColor: "border-emerald-500/30 text-emerald-400 bg-emerald-950/40"
+  },
+  {
+    id: "evt-raditya",
+    title: "Raditya Dika: Cerita Cintaku Tour Final",
+    date: "20 DES 2026",
+    category: "THEATRE STANDUP",
+    venue: "Ciputra Artpreneur",
+    city: "Jakarta Selatan",
+    ticketsAvailable: 5,
+    priceIdr: 450000,
+    priceEn: "IDR 450,000",
+    gradient: "from-zinc-800 to-zinc-900",
+    badgeColor: "border-amber-500/30 text-amber-400 bg-amber-950/40"
+  }
+];
+
+// --- 4. THEME & LANGUAGE CONTEXT ---
+const AppContext = createContext({
+  theme: 'dark',
+  toggleTheme: () => {},
+  lang: 'id',
+  toggleLang: () => {},
+  t: TRANSLATIONS.id
+});
+
+export const useApp = () => useContext(AppContext);
+
+// --- 5. MAIN BATON HOMEPAGE COMPONENT ---
+export default function BatonHomepage() {
+  // Theme state: dark mode is DEFAULT
+  const [theme, setTheme] = useState('dark');
+  // Language state: Indonesian (ID) is DEFAULT
+  const [lang, setLang] = useState('id');
+  
+  // Interactive Tracker state
+  const [trackQuery, setTrackQuery] = useState('');
+  const [trackResult, setTrackResult] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  // Mobile Navigation state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Sync theme with HTML document
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else {
+      root.classList.remove('dark');
+      root.classList.add('light');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const toggleLang = (target) => {
+    if (target) setLang(target);
+    else setLang(prev => (prev === 'id' ? 'en' : 'id'));
+  };
+
+  const t = TRANSLATIONS[lang] || TRANSLATIONS.id;
+
+  // Handle Track Query
+  const handleTrack = (e) => {
+    if (e) e.preventDefault();
+    if (!trackQuery.trim()) {
+      setTrackQuery('BAT-88219');
+    }
+    setIsSearching(true);
+    setTimeout(() => {
+      setIsSearching(false);
+      setTrackResult({
+        id: trackQuery.trim() || 'BAT-88219',
+        event: 'Coldplay — Music of the Spheres (GBK Jakarta)',
+        gate: 'Gate 3A — Turnstile Utara',
+        amount: 'Rp 1.850.000',
+        escrowStatus: 'ESCROW_LOCKED_SECURE',
+        agent: 'Bagus S. (ID: AGT-042)',
+        step: 'AGENT_AT_GATE'
+      });
+    }, 450);
+  };
+
+  return (
+    <AppContext.Provider value={{ theme, toggleTheme, lang, toggleLang, t }}>
+      <div 
+        className={`min-h-screen font-sans transition-colors duration-300 antialiased ${
+          theme === 'dark' 
+            ? 'bg-[#09090b] text-zinc-100 selection:bg-emerald-500 selection:text-black' 
+            : 'bg-[#fafafa] text-zinc-900 selection:bg-emerald-400 selection:text-black'
+        }`}
+      >
+        {/* SEO Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FinancialService",
+              "name": "BATON Trust Infrastructure",
+              "alternateName": "BATON Marketplace Tiket Sekunder Terverifikasi Jual Beli",
+              "url": "https://argus-trust-infrastructure.vercel.app/baton",
+              "description": "Secondary ticket marketplace with physical on-site verification, human gate agents, and escrow protection under Indonesian Law.",
+              "serviceType": "Ticket Escrow & Gate Admission Verification",
+              "areaServed": "Indonesia"
+            })
+          }}
+        />
+
+        {/* Ambient Top Spotlight (Dark Mode Only) */}
+        {theme === 'dark' && (
+          <div 
+            className="pointer-events-none fixed inset-x-0 top-0 h-[580px] overflow-hidden -z-10"
+            aria-hidden="true"
+          >
+            <div className="absolute left-1/2 -top-[240px] -translate-x-1/2 w-[920px] h-[520px] bg-gradient-to-b from-emerald-500/10 via-amber-500/5 to-transparent blur-[120px] rounded-full" />
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* 1. NAVBAR */}
+        {/* =================================================================== */}
+        <header 
+          className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-colors ${
+            theme === 'dark'
+              ? 'bg-[#09090b]/85 border-zinc-800/80'
+              : 'bg-white/85 border-zinc-200/90 shadow-sm'
+          }`}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            {/* Brand Logo */}
+            <a 
+              href="#hero" 
+              className="group flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-lg"
+              aria-label="BATON Homepage"
+            >
+              <span className="font-extrabold text-2xl tracking-tighter transition-transform group-hover:scale-[1.02]">
+                BATON
+              </span>
+              <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_#fbbf24]" />
+            </a>
+
+            {/* Desktop Navigation Links — Events, How it Works, Anti-Scam, and Side-by-Side "Beli Tiket" & "Jual Tiket" */}
+            <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+              <a 
+                href="#events" 
+                className={`transition-colors ${theme === 'dark' ? 'text-zinc-400 hover:text-zinc-100' : 'text-zinc-600 hover:text-zinc-950'}`}
+              >
+                {t.nav.events}
+              </a>
+              <a 
+                href="#how-it-works" 
+                className={`transition-colors ${theme === 'dark' ? 'text-zinc-400 hover:text-zinc-100' : 'text-zinc-600 hover:text-zinc-950'}`}
+              >
+                {t.nav.howItWorks}
+              </a>
+              <a 
+                href="#manifesto" 
+                className={`transition-colors ${theme === 'dark' ? 'text-zinc-400 hover:text-zinc-100' : 'text-zinc-600 hover:text-zinc-950'}`}
+              >
+                {t.nav.antiScam}
+              </a>
+
+              {/* Jual Beli Side-by-Side Nav Cluster */}
+              <div className="flex items-center gap-2 pl-3 border-l border-zinc-800/80">
+                <a 
+                  href="#buy-sell" 
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                    theme === 'dark' 
+                      ? 'border-emerald-500/30 text-emerald-400 bg-emerald-950/30 hover:bg-emerald-950/60 hover:border-emerald-400' 
+                      : 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-400 shadow-sm'
+                  }`}
+                >
+                  <TicketIcon className="w-3.5 h-3.5" />
+                  <span>{t.nav.buyTickets}</span>
+                </a>
+                <a 
+                  href="#sell" 
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 border ${
+                    theme === 'dark' 
+                      ? 'border-amber-500/30 text-amber-400 bg-amber-950/30 hover:bg-amber-950/60 hover:border-amber-400' 
+                      : 'border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:border-amber-400 shadow-sm'
+                  }`}
+                >
+                  <span>{t.nav.sellTicket}</span>
+                </a>
+              </div>
+            </nav>
+
+            {/* Right Side Actions */}
+            <div className="hidden md:flex items-center gap-3">
+              {/* Language Switcher Pill */}
+              <div 
+                className={`flex items-center p-0.5 rounded-full border text-xs font-semibold ${
+                  theme === 'dark' ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
+                }`}
+                role="group"
+                aria-label="Language selection"
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleLang('id')}
+                  className={`px-2.5 py-1 rounded-full transition-all ${
+                    lang === 'id'
+                      ? (theme === 'dark' ? 'bg-zinc-800 text-emerald-400 shadow-sm' : 'bg-white text-emerald-700 shadow-sm')
+                      : (theme === 'dark' ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-900')
+                  }`}
+                  aria-pressed={lang === 'id'}
+                >
+                  ID
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleLang('en')}
+                  className={`px-2.5 py-1 rounded-full transition-all ${
+                    lang === 'en'
+                      ? (theme === 'dark' ? 'bg-zinc-800 text-emerald-400 shadow-sm' : 'bg-white text-emerald-700 shadow-sm')
+                      : (theme === 'dark' ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-900')
+                  }`}
+                  aria-pressed={lang === 'en'}
+                >
+                  EN
+                </button>
+              </div>
+
+              {/* Theme Toggle Button */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className={`p-2 rounded-xl border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+                  theme === 'dark'
+                    ? 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-zinc-100 hover:border-zinc-700'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:text-zinc-950 hover:border-zinc-300 shadow-sm'
+                }`}
+                aria-label={theme === 'dark' ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {theme === 'dark' ? <SunIcon className="w-4 h-4 text-amber-400" /> : <MoonIcon className="w-4 h-4 text-zinc-700" />}
+              </button>
+
+              {/* Login Ghost Button */}
+              <button
+                type="button"
+                onClick={() => alert(lang === 'id' ? "Portal masuk aman via OTP seluler aktif." : "Secure login portal active via mobile OTP.")}
+                className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                  theme === 'dark'
+                    ? 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-900'
+                    : 'text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100'
+                }`}
+              >
+                {t.nav.login}
+              </button>
+
+              {/* Track Order Primary Button */}
+              <a
+                href="#tracker"
+                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5 ${
+                  theme === 'dark'
+                    ? 'bg-emerald-400 hover:bg-emerald-300 text-zinc-950 shadow-emerald-500/10 hover:shadow-emerald-500/20'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                }`}
+              >
+                <SearchIcon className="w-3.5 h-3.5" />
+                <span>{t.nav.trackOrder}</span>
+              </a>
+            </div>
+
+            {/* Mobile Hamburger Button */}
+            <div className="flex items-center gap-2 md:hidden">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className={`p-2 rounded-lg border ${
+                  theme === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-300' : 'bg-white border-zinc-200 text-zinc-700'
+                }`}
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <SunIcon className="w-4 h-4 text-amber-400" /> : <MoonIcon className="w-4 h-4" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className={`p-2 rounded-lg border transition-colors ${
+                  theme === 'dark'
+                    ? 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:text-black'
+                }`}
+                aria-label={t.nav.menuAria}
+                aria-expanded={mobileMenuOpen}
+              >
+                {mobileMenuOpen ? <XIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Drawer Menu */}
+          {mobileMenuOpen && (
+            <div 
+              className={`md:hidden px-4 pt-3 pb-6 border-b transition-all space-y-4 ${
+                theme === 'dark' ? 'bg-[#09090b] border-zinc-800' : 'bg-white border-zinc-200 shadow-lg'
+              }`}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-800/40">
+                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Language / Bahasa</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleLang('id')}
+                    className={`px-3 py-1 rounded-md text-xs font-bold ${
+                      lang === 'id' ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-300'
+                    }`}
+                  >
+                    ID
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleLang('en')}
+                    className={`px-3 py-1 rounded-md text-xs font-bold ${
+                      lang === 'en' ? 'bg-emerald-500 text-black' : 'bg-zinc-800 text-zinc-300'
+                    }`}
+                  >
+                    EN
+                  </button>
+                </div>
+              </div>
+
+              {/* Jual Beli Quick Action in Mobile Menu */}
+              <div className="grid grid-cols-2 gap-2 pt-1 pb-2">
+                <a
+                  href="#events"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`py-2.5 px-3 rounded-xl text-center text-xs font-bold flex items-center justify-center gap-1.5 border ${
+                    theme === 'dark'
+                      ? 'border-emerald-500/40 text-emerald-400 bg-emerald-950/30'
+                      : 'border-emerald-200 text-emerald-800 bg-emerald-50'
+                  }`}
+                >
+                  <TicketIcon className="w-3.5 h-3.5" />
+                  <span>{t.nav.buyTickets}</span>
+                </a>
+                <a
+                  href="#sell"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`py-2.5 px-3 rounded-xl text-center text-xs font-bold flex items-center justify-center gap-1.5 border ${
+                    theme === 'dark'
+                      ? 'border-amber-500/40 text-amber-400 bg-amber-950/30'
+                      : 'border-amber-200 text-amber-800 bg-amber-50'
+                  }`}
+                >
+                  <span>{t.nav.sellTicket}</span>
+                </a>
+              </div>
+
+              <div className="grid gap-2">
+                <a
+                  href="#events"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg text-base font-medium hover:bg-zinc-800/30"
+                >
+                  {t.nav.events}
+                </a>
+                <a
+                  href="#how-it-works"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg text-base font-medium hover:bg-zinc-800/30"
+                >
+                  {t.nav.howItWorks}
+                </a>
+                <a
+                  href="#manifesto"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg text-base font-medium hover:bg-zinc-800/30"
+                >
+                  {t.nav.antiScam}
+                </a>
+              </div>
+
+              <div className="pt-2 grid gap-2">
+                <a
+                  href="#tracker"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`w-full py-3 rounded-xl text-center text-sm font-bold flex items-center justify-center gap-2 ${
+                    theme === 'dark' ? 'bg-emerald-400 text-black' : 'bg-emerald-600 text-white'
+                  }`}
+                >
+                  <SearchIcon className="w-4 h-4" />
+                  {t.nav.trackOrder}
+                </a>
+              </div>
+            </div>
+          )}
+        </header>
+
+        <main id="hero">
+          {/* ================================================================= */}
+          {/* 2. HERO SECTION */}
+          {/* ================================================================= */}
+          <section className="relative pt-16 sm:pt-24 lg:pt-32 pb-20 sm:pb-28 overflow-hidden">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              
+              {/* Badge Announcement */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide border mb-8 transition-transform hover:scale-105 cursor-pointer backdrop-blur-md">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className={theme === 'dark' ? 'text-zinc-300' : 'text-zinc-700'}>
+                  {lang === 'id' ? 'Protokol Verifikasi Fisik Gerbang Pertama di Indonesia' : 'Indonesia’s First On-Site Turnstile Gate Verification'}
+                </span>
+                <ArrowUpRightIcon className="w-3.5 h-3.5 text-zinc-400" />
+              </div>
+
+              {/* H1 (Hero Tagline) */}
+              <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-[1.04] max-w-5xl mb-6">
+                <span>{t.hero.taglinePre}</span>
+                <span 
+                  className={`relative inline-block font-extrabold ${
+                    theme === 'dark'
+                      ? 'text-emerald-400 drop-shadow-[0_0_35px_rgba(52,211,153,0.3)]'
+                      : 'text-emerald-600'
+                  }`}
+                >
+                  {t.hero.taglineHighlight}
+                  {/* Subtle clean highlight underline */}
+                  <span className="absolute left-0 bottom-1 sm:bottom-2 w-full h-[6px] sm:h-[10px] bg-emerald-500/20 -z-10 rounded-sm" />
+                </span>
+              </h1>
+
+              {/* Sub-headline */}
+              <p 
+                className={`text-lg sm:text-xl font-normal leading-relaxed max-w-2xl mb-10 ${
+                  theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'
+                }`}
+              >
+                {t.hero.subheadline}
+              </p>
+
+              {/* Action Buttons (CTAs) — Side-by-Side "Beli Tiket" & "Jual Tiket" */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-14">
+                <a
+                  href="#events"
+                  className={`px-8 py-4 text-base font-bold rounded-xl transition-all shadow-xl text-center flex items-center justify-center gap-2.5 ${
+                    theme === 'dark'
+                      ? 'bg-emerald-400 hover:bg-emerald-300 text-zinc-950 shadow-emerald-500/20 hover:shadow-emerald-500/30'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30'
+                  }`}
+                >
+                  <TicketIcon className="w-5 h-5" />
+                  <span>{t.hero.ctaPrimary}</span>
+                  <ArrowRightIcon className="w-4 h-4" />
+                </a>
+
+                <a
+                  href="#sell"
+                  className={`px-8 py-4 text-base font-semibold rounded-xl border transition-all text-center flex items-center justify-center gap-2 ${
+                    theme === 'dark'
+                      ? 'border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/80 text-zinc-200 hover:border-zinc-700'
+                      : 'border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-800 hover:border-zinc-400 shadow-sm'
+                  }`}
+                >
+                  <span>{t.hero.ctaSecondary}</span>
+                </a>
+              </div>
+
+              {/* Trust Indicators (Inline Below CTAs) */}
+              <div 
+                className={`pt-6 border-t flex flex-wrap items-center gap-6 sm:gap-10 text-xs sm:text-sm font-medium ${
+                  theme === 'dark' ? 'border-zinc-800/80 text-zinc-400' : 'border-zinc-200 text-zinc-600'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-emerald-500/10 text-emerald-400">
+                    <ShieldIcon className="w-4 h-4" />
+                  </div>
+                  <span>{t.hero.trustAntiGhost}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-emerald-500/10 text-emerald-400">
+                    <LockIcon className="w-4 h-4" />
+                  </div>
+                  <span>{t.hero.trustEscrow}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-500/10 text-amber-400">
+                    <UserIcon className="w-4 h-4" />
+                  </div>
+                  <span>{t.hero.trustPhysical}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ================================================================= */}
+          {/* 3. TRACK YOUR TRANSACTION WIDGET (Floating Overlapping) */}
+          {/* ================================================================= */}
+          <section id="tracker" className="relative -mt-8 sm:-mt-12 z-20 max-w-5xl mx-auto px-4 sm:px-6">
+            <div 
+              className={`p-4 sm:p-6 rounded-2xl border transition-all ${
+                theme === 'dark'
+                  ? 'bg-zinc-900/95 border-zinc-800 shadow-[0_20px_60px_rgba(0,0,0,0.65)] backdrop-blur-2xl'
+                  : 'bg-white border-zinc-200 shadow-[0_15px_40px_rgba(0,0,0,0.08)]'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <h2 className="text-xs sm:text-sm font-semibold tracking-wide uppercase text-zinc-400">
+                    {t.tracker.label}
+                  </h2>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800/60 text-zinc-400 border border-zinc-700/50">
+                  {t.tracker.mockBadge}
+                </span>
+              </div>
+
+              {/* Search Bar Form */}
+              <form onSubmit={handleTrack} className="flex flex-col sm:flex-row items-stretch gap-3">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400">
+                    <SearchIcon className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={trackQuery}
+                    onChange={(e) => setTrackQuery(e.target.value)}
+                    placeholder={t.tracker.placeholder}
+                    className={`w-full pl-11 pr-4 py-3.5 text-sm sm:text-base font-mono rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-emerald-400 ${
+                      theme === 'dark'
+                        ? 'bg-zinc-950 border-zinc-800 text-zinc-100 placeholder-zinc-500'
+                        : 'bg-zinc-50 border-zinc-300 text-zinc-900 placeholder-zinc-400'
+                    }`}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSearching}
+                  className={`px-8 py-3.5 text-sm sm:text-base font-bold rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap ${
+                    theme === 'dark'
+                      ? 'bg-emerald-400 hover:bg-emerald-300 text-zinc-950 disabled:opacity-50'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50'
+                  }`}
+                >
+                  {isSearching ? (
+                    <span className="inline-block w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>{t.tracker.button}</span>
+                      <ArrowRightIcon className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Sample ID Pill Suggestions */}
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+                <span className="text-zinc-500">{t.tracker.sampleHint}</span>
+                {['BAT-88219', 'BAT-40192', 'ORD-GBK-1102'].map((sample) => (
+                  <button
+                    key={sample}
+                    type="button"
+                    onClick={() => {
+                      setTrackQuery(sample);
+                      setTimeout(() => handleTrack(), 50);
+                    }}
+                    className={`font-mono px-2 py-0.5 rounded border transition-colors ${
+                      theme === 'dark'
+                        ? 'bg-zinc-950 border-zinc-800 hover:border-emerald-500/50 hover:text-emerald-400'
+                        : 'bg-zinc-100 border-zinc-200 hover:border-emerald-600 hover:text-emerald-700'
+                    }`}
+                  >
+                    {sample}
+                  </button>
+                ))}
+              </div>
+
+              {/* Dynamic Search Result Card */}
+              {trackResult && (
+                <div 
+                  className={`mt-5 p-4 sm:p-5 rounded-xl border transition-all animate-fadeIn ${
+                    theme === 'dark'
+                      ? 'bg-zinc-950 border-zinc-800/90'
+                      : 'bg-emerald-50/50 border-emerald-200/80'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-zinc-800/40">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="font-mono text-sm font-bold text-emerald-400">
+                        {trackResult.id}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+                        {trackResult.escrowStatus}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono text-zinc-400">
+                      Sync: Gate Realtime (Turnstile Connected)
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                    <div>
+                      <span className="block text-zinc-500 mb-1">{t.tracker.eventLabel}</span>
+                      <span className="font-semibold text-zinc-200">{trackResult.event}</span>
+                      <span className="block text-emerald-400 font-mono mt-0.5">{trackResult.gate}</span>
+                    </div>
+                    <div>
+                      <span className="block text-zinc-500 mb-1">{t.tracker.escrowLabel}</span>
+                      <span className="font-semibold text-emerald-400">{t.tracker.escrowDetail}</span>
+                      <span className="block text-zinc-400 mt-0.5">Penjual: 0 IDR hingga Anda lolos scan</span>
+                    </div>
+                    <div>
+                      <span className="block text-zinc-500 mb-1">{t.tracker.agentLabel}</span>
+                      <span className="font-semibold text-amber-400 flex items-center gap-1">
+                        <UserCheckIcon className="w-3.5 h-3.5" />
+                        {t.tracker.agentDetail}
+                      </span>
+                      <span className="block text-zinc-400 mt-0.5">{t.tracker.nextStep}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* ================================================================= */}
+          {/* 4. HOW IT WORKS (THE "BATON" HANDOFF) */}
+          {/* ================================================================= */}
+          <section id="how-it-works" className="py-24 sm:py-32 relative">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              
+              {/* Header */}
+              <div className="max-w-3xl mb-16 sm:mb-20">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider text-amber-400 bg-amber-950/30 border border-amber-500/20 mb-3">
+                  <SparklesIcon className="w-3.5 h-3.5" />
+                  <span>{t.howItWorks.tag}</span>
+                </div>
+                <h2 className="text-3xl sm:text-5xl font-black tracking-tight mb-4">
+                  {t.howItWorks.title}
+                </h2>
+                <p className={`text-base sm:text-lg ${theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                  {t.howItWorks.subtitle}
+                </p>
+              </div>
+
+              {/* 3-Step Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 relative">
+                {t.howItWorks.steps.map((step, idx) => (
+                  <div
+                    key={step.num}
+                    className={`relative p-8 rounded-2xl border transition-all duration-300 hover:translate-y-[-4px] ${
+                      theme === 'dark'
+                        ? 'bg-[#18181b] border-zinc-800 hover:border-zinc-700 shadow-xl'
+                        : 'bg-white border-zinc-200 hover:border-zinc-300 shadow-md'
+                    }`}
+                  >
+                    {/* Top Step Number & Badge */}
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold tracking-widest text-zinc-500">
+                          TAHAP
+                        </span>
+                        <span className="text-xl font-mono font-black text-amber-400">
+                          {step.num}
+                        </span>
+                      </div>
+                      <div 
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+                          step.accent === 'emerald'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                        }`}
+                      >
+                        {idx === 0 && <LockIcon className="w-5 h-5" />}
+                        {idx === 1 && <UserCheckIcon className="w-5 h-5" />}
+                        {idx === 2 && <CheckCircleIcon className="w-5 h-5" />}
+                      </div>
+                    </div>
+
+                    {/* Step Title */}
+                    <h3 className="text-xl sm:text-2xl font-bold tracking-tight mb-3">
+                      {step.title}
+                    </h3>
+
+                    {/* Step Description */}
+                    <p className={`text-sm sm:text-base leading-relaxed mb-6 ${theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                      {step.desc}
+                    </p>
+
+                    {/* Invariant Pillar Badge */}
+                    <div className="pt-4 border-t border-zinc-800/50 flex items-center gap-2 text-xs font-mono text-zinc-400">
+                      <span className={`w-2 h-2 rounded-full ${step.accent === 'emerald' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                      <span>{step.metric}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ================================================================= */}
+          {/* 5. LIVE EVENTS FEED (GRID) */}
+          {/* ================================================================= */}
+          <section id="events" className="py-20 sm:py-28 relative border-t border-zinc-800/40">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              
+              <div className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 mb-3">
+                    <CheckCircleIcon className="w-3.5 h-3.5" />
+                    <span>{t.events.tag}</span>
+                  </div>
+                  <h2 className="text-3xl sm:text-5xl font-black tracking-tight mb-2">
+                    {t.events.title}
+                  </h2>
+                  <p className={`text-sm sm:text-base ${theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                    {t.events.subtitle}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => alert(lang === 'id' ? "Menampilkan 18 event terverifikasi aktif." : "Loading 18 active verified events.")}
+                  className={`self-start md:self-auto text-sm font-semibold flex items-center gap-1.5 transition-colors ${
+                    theme === 'dark' ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-600 hover:text-emerald-700'
+                  }`}
+                >
+                  <span>{t.events.viewAll}</span>
+                  <ArrowRightIcon className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* 4 Mock Event Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {MOCK_EVENTS.map((event) => (
+                  <article
+                    key={event.id}
+                    className={`group flex flex-col justify-between p-6 rounded-2xl border transition-all duration-300 hover:translate-y-[-4px] ${
+                      theme === 'dark'
+                        ? 'bg-[#18181b] border-zinc-800 hover:border-zinc-700 shadow-xl'
+                        : 'bg-white border-zinc-200 hover:border-zinc-300 shadow-md'
+                    }`}
+                  >
+                    <div>
+                      {/* Top Badges */}
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        <span className="flex items-center gap-1.5 font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-zinc-800/80 text-zinc-300 border border-zinc-700/60">
+                          <CalendarIcon className="w-3.5 h-3.5 text-amber-400" />
+                          {event.date}
+                        </span>
+                        <span className={`text-[10px] font-mono tracking-wider uppercase px-2 py-0.5 rounded-full border ${event.badgeColor}`}>
+                          {event.category}
+                        </span>
+                      </div>
+
+                      {/* Event Title */}
+                      <h3 className="text-lg font-bold tracking-tight mb-2 line-clamp-2 group-hover:text-emerald-400 transition-colors">
+                        {event.title}
+                      </h3>
+
+                      {/* Venue & City */}
+                      <div className="flex items-start gap-1.5 text-xs text-zinc-400 mb-6">
+                        <MapPinIcon className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
+                        <span>{event.venue}, {event.city}</span>
+                      </div>
+                    </div>
+
+                    {/* Bottom Metadata & Buy Trigger */}
+                    <div className="pt-4 border-t border-zinc-800/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-mono text-amber-400 font-semibold">
+                          {event.ticketsAvailable} {t.events.ticketsAvailable}
+                        </span>
+                        <span className="text-[11px] text-zinc-500 uppercase">
+                          Escrow PIC
+                        </span>
+                      </div>
+
+                      <div className="flex items-baseline justify-between">
+                        <div>
+                          <span className="block text-[10px] text-zinc-500 uppercase">
+                            {t.events.startingAt}
+                          </span>
+                          <span className="text-base font-bold font-mono text-emerald-400">
+                            {lang === 'id' ? `Rp ${event.priceIdr.toLocaleString('id-ID')}` : event.priceEn}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => alert(lang === 'id' ? `Membuka listing terverifikasi untuk: ${event.title}` : `Opening verified listings for: ${event.title}`)}
+                          className={`p-2 rounded-xl transition-all ${
+                            theme === 'dark'
+                              ? 'bg-zinc-800 group-hover:bg-emerald-400 text-zinc-300 group-hover:text-black'
+                              : 'bg-zinc-100 group-hover:bg-emerald-600 text-zinc-700 group-hover:text-white'
+                          }`}
+                          aria-label={`Buy ticket for ${event.title}`}
+                        >
+                          <ArrowRightIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ================================================================= */}
+          {/* 6. THE "ANTI-SCAM" MANIFESTO (Always Dark for Maximum Impact) */}
+          {/* ================================================================= */}
+          <section id="manifesto" className="py-24 sm:py-32 bg-[#09090b] text-white border-y border-zinc-800 relative overflow-hidden">
+            {/* Background Subtle Gradient Grid */}
+            <div 
+              className="absolute inset-0 opacity-20 pointer-events-none"
+              style={{
+                backgroundImage: 'radial-gradient(#27272a 1px, transparent 1px)',
+                backgroundSize: '24px 24px'
+              }}
+              aria-hidden="true"
+            />
+
+            <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:text-left">
+              
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono tracking-widest text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 mb-6">
+                <ShieldIcon className="w-3.5 h-3.5" />
+                <span>{t.manifesto.badge}</span>
+              </div>
+
+              {/* H2 */}
+              <h2 className="text-4xl sm:text-6xl font-black tracking-tight text-white mb-6 leading-tight">
+                {t.manifesto.h2}
+              </h2>
+
+              {/* Body */}
+              <p className="text-lg sm:text-xl text-zinc-300 leading-relaxed max-w-3xl mb-12 font-normal">
+                {t.manifesto.body}
+              </p>
+
+              {/* High-Contrast Impact Statistics */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-zinc-800 mb-10">
+                {t.manifesto.stats.map((stat, i) => (
+                  <div key={i} className="p-6 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+                    <span className="block text-4xl sm:text-5xl font-mono font-extrabold text-emerald-400 mb-2">
+                      {stat.value}
+                    </span>
+                    <span className="text-sm font-medium text-zinc-400">
+                      {stat.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Regulatory Notice */}
+              <div className="flex items-center gap-2 text-xs text-zinc-400">
+                <CheckCircleIcon className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{t.manifesto.compliance}</span>
+              </div>
+            </div>
+          </section>
+
+          {/* ================================================================= */}
+          {/* DUAL "JUAL BELI" SECTION: BUY TICKETS & SELL TICKETS SIDE-BY-SIDE */}
+          {/* ================================================================= */}
+          <section id="buy-sell" className="py-20 sm:py-28 max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="text-center max-w-3xl mx-auto mb-14">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 mb-3">
+                <SparklesIcon className="w-3.5 h-3.5" />
+                <span>{t.actionSection.tag}</span>
+              </div>
+              <h2 className="text-3xl sm:text-5xl font-black tracking-tight mb-3">
+                {t.actionSection.title}
+              </h2>
+              <p className={`text-base sm:text-lg ${theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                {t.actionSection.subtitle}
+              </p>
+            </div>
+
+            {/* 2-Column Side-by-Side Dual Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              
+              {/* CARD 1: BUY TICKETS (BELI TIKET) */}
+              <div 
+                id="buy"
+                className={`relative flex flex-col justify-between p-8 sm:p-10 rounded-3xl border transition-all duration-300 hover:translate-y-[-4px] ${
+                  theme === 'dark'
+                    ? 'bg-[#18181b] border-zinc-800 hover:border-emerald-500/50 shadow-2xl'
+                    : 'bg-white border-zinc-200 hover:border-emerald-500/60 shadow-xl'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-6">
+                    <span className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1 rounded-full border ${t.actionSection.buyerCard.badgeColor}`}>
+                      {t.actionSection.buyerCard.badge}
+                    </span>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <TicketIcon className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-4 text-emerald-400">
+                    {t.actionSection.buyerCard.heading}
+                  </h3>
+
+                  <p className={`text-sm sm:text-base leading-relaxed mb-8 ${theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                    {t.actionSection.buyerCard.desc}
+                  </p>
+                </div>
+
+                <div>
+                  <div className="pt-4 pb-6 border-t border-zinc-800/60 flex items-center gap-2 text-xs font-mono text-zinc-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span>{t.actionSection.buyerCard.metric}</span>
+                  </div>
+
+                  <a
+                    href="#events"
+                    className={`w-full py-4 text-base font-bold rounded-xl transition-all shadow-lg text-center flex items-center justify-center gap-2 ${
+                      theme === 'dark'
+                        ? 'bg-emerald-400 hover:bg-emerald-300 text-zinc-950 shadow-emerald-500/15'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/25'
+                    }`}
+                  >
+                    <TicketIcon className="w-4 h-4" />
+                    <span>{t.actionSection.buyerCard.cta}</span>
+                    <ArrowRightIcon className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+
+              {/* CARD 2: SELL TICKETS (JUAL TIKET) */}
+              <div 
+                id="sell"
+                className={`relative flex flex-col justify-between p-8 sm:p-10 rounded-3xl border transition-all duration-300 hover:translate-y-[-4px] ${
+                  theme === 'dark'
+                    ? 'bg-[#18181b] border-zinc-800 hover:border-amber-500/50 shadow-2xl'
+                    : 'bg-white border-zinc-200 hover:border-amber-500/60 shadow-xl'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-6">
+                    <span className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1 rounded-full border ${t.actionSection.sellerCard.badgeColor}`}>
+                      {t.actionSection.sellerCard.badge}
+                    </span>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      <UserCheckIcon className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-4 text-amber-400">
+                    {t.actionSection.sellerCard.heading}
+                  </h3>
+
+                  <p className={`text-sm sm:text-base leading-relaxed mb-8 ${theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                    {t.actionSection.sellerCard.desc}
+                  </p>
+                </div>
+
+                <div>
+                  <div className="pt-4 pb-6 border-t border-zinc-800/60 flex items-center gap-2 text-xs font-mono text-zinc-400">
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    <span>{t.actionSection.sellerCard.metric}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => alert(lang === 'id' ? "Membuka alur registrasi & upload tiket terverifikasi." : "Opening verified ticket listing flow.")}
+                    className={`w-full py-4 text-base font-bold rounded-xl transition-all border text-center flex items-center justify-center gap-2 ${
+                      theme === 'dark'
+                        ? 'border-amber-500/50 bg-amber-950/20 hover:bg-amber-950/40 text-amber-300'
+                        : 'border-amber-400 bg-amber-50 hover:bg-amber-100 text-amber-900 shadow-sm'
+                    }`}
+                  >
+                    <span>{t.actionSection.sellerCard.cta}</span>
+                    <ArrowRightIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </section>
+        </main>
+
+        {/* =================================================================== */}
+        {/* 7. FOOTER */}
+        {/* =================================================================== */}
+        <footer 
+          className={`border-t pt-16 pb-12 transition-colors ${
+            theme === 'dark' ? 'bg-[#09090b] border-zinc-800/80 text-zinc-400' : 'bg-white border-zinc-200 text-zinc-600'
+          }`}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            {/* Top Brand Statement */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between pb-12 border-b border-zinc-800/60 gap-4">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="font-extrabold text-xl tracking-tight text-white dark:text-white text-zinc-900">
+                    BATON
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                </div>
+                <p className="text-sm font-medium tracking-tight">
+                  {t.footer.brandDesc}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-mono text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>{t.footer.systemOperational}</span>
+              </div>
+            </div>
+
+            {/* Link Columns */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-8 py-12">
+              <div>
+                <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-300 dark:text-zinc-300 font-semibold mb-4">
+                  {t.footer.colProduct}
+                </h3>
+                <ul className="space-y-2.5 text-sm">
+                  {t.footer.productLinks.map((link, i) => (
+                    <li key={i}>
+                      <a href="#events" className="hover:text-emerald-400 transition-colors">
+                        {link}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-300 dark:text-zinc-300 font-semibold mb-4">
+                  {t.footer.colCompany}
+                </h3>
+                <ul className="space-y-2.5 text-sm">
+                  {t.footer.companyLinks.map((link, i) => (
+                    <li key={i}>
+                      <a href="#manifesto" className="hover:text-emerald-400 transition-colors">
+                        {link}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="col-span-2 md:col-span-1">
+                <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-300 dark:text-zinc-300 font-semibold mb-4">
+                  {t.footer.colLegal}
+                </h3>
+                <ul className="space-y-2.5 text-sm">
+                  {t.footer.legalLinks.map((link, i) => (
+                    <li key={i}>
+                      <a href="#manifesto" className="hover:text-emerald-400 transition-colors">
+                        {link}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Bottom Copyright & Socials */}
+            <div className="pt-8 border-t border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+              <span>{t.footer.copyright}</span>
+
+              <div className="flex items-center gap-6">
+                <a 
+                  href="https://x.com" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="hover:text-emerald-400 transition-colors"
+                  aria-label="Follow BATON on X"
+                >
+                  <span className="font-mono font-bold">X (Twitter)</span>
+                </a>
+                <a 
+                  href="https://instagram.com" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="hover:text-emerald-400 transition-colors"
+                  aria-label="Follow BATON on Instagram"
+                >
+                  <span className="font-mono font-bold">Instagram</span>
+                </a>
+                <a 
+                  href="https://tiktok.com" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="hover:text-emerald-400 transition-colors"
+                  aria-label="Follow BATON on TikTok"
+                >
+                  <span className="font-mono font-bold">TikTok</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </AppContext.Provider>
+  );
+}
