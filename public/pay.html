@@ -22,6 +22,7 @@
 
       <nav class="main-nav">
         <a href="/" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Katalog Event</a>
+        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> Tawaran Harga</a>
         <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
         <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
       </nav>
@@ -151,9 +152,14 @@
 
         <div id="orderErrorMsg" class="notice-box notice-warning" style="display: none;"></div>
 
-        <button id="btnOrderSubmit" class="btn" style="width: 100%; padding: 14px; font-size: 15px;" onclick="handleCreateOrder()">
-          <i class="fa-solid fa-lock"></i> Kunci Tiket &amp; Masuk Antrean Verifikasi Penampungan
-        </button>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px;">
+          <button id="btnOrderSubmit" class="btn" style="flex: 1; min-width: 220px; padding: 14px; font-size: 14px;" onclick="handleCreateOrder()">
+            <i class="fa-solid fa-lock"></i> Beli Langsung (Harga Normal)
+          </button>
+          <button id="btnOpenOfferModal" class="btn btn-secondary" style="flex: 1; min-width: 220px; padding: 14px; font-size: 14px; border-color: #3b82f6; color: #60a5fa;" onclick="openOfferModal()">
+            <i class="fa-solid fa-handshake"></i> Ajukan Tawaran Harga
+          </button>
+        </div>
       </div>
 
       <!-- Order Confirmed State (Hidden initially) -->
@@ -200,6 +206,69 @@
         </div>
       </div>
 
+    <!-- Modal Ajukan Tawaran (Epic 4.0) -->
+    <div id="offerModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+      <div class="card" style="max-width: 520px; width: 100%; border-color: #3b82f6; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); margin: 0; position: relative; background: #0f172a;">
+        <button onclick="closeOfferModal()" style="position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="hero-pill" style="margin-bottom: 12px;"><i class="fa-solid fa-handshake"></i> TAWAR HARGA RESMI</div>
+        <h2 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 6px;">Ajukan Tawaran Harga Tiket</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+          Tawaran terikat aturan ketat ARGUS. Minimal 50% dari harga listing dan harus di bawah harga normal.
+        </p>
+
+        <div class="notice-box notice-warning" style="font-size: 12px; margin-bottom: 16px; background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3);">
+          <i class="fa-solid fa-shield-halved" style="color: #fbbf24;"></i>
+          <div>
+            <strong>Aturan Transaksi Tanpa Chat:</strong> ARGUS meniadakan fitur pesan/chat bebas. Penjual hanya akan menerima nominal harga yang Anda tawarkan dan memilih <strong>Terima</strong> atau <strong>Tolak</strong>.
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label for="offerAmountInput" style="font-size: 13px; font-weight: 600; color: #fff; display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span>Nominal Tawaran (Rp):</span>
+            <span id="offerRangeHint" style="font-size: 11px; color: var(--cyan);">Min 50% &bull; Maks &lt; Harga Normal</span>
+          </label>
+          <div style="position: relative;">
+            <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-weight: 700; font-size: 14px;">Rp</span>
+            <input type="number" id="offerAmountInput" class="form-control mono" style="padding-left: 42px; font-size: 16px; font-weight: 700; color: #fff; width: 100%;" placeholder="Contoh: 1200000" oninput="updateOfferCalculations()">
+          </div>
+        </div>
+
+        <!-- Real-time calculation preview -->
+        <div class="card" style="background: #090d16; border-color: #1e293b; padding: 14px; margin-bottom: 16px;">
+          <div class="price-row" style="font-size: 12px; margin-bottom: 6px; display: flex; justify-content: space-between;">
+            <span style="color: var(--text-muted);">Harga Listing Normal:</span>
+            <strong id="calcOriginalPrice" class="mono">-</strong>
+          </div>
+          <div class="price-row" style="font-size: 12px; margin-bottom: 6px; display: flex; justify-content: space-between;">
+            <span style="color: var(--text-muted);">Nominal Tawaran Anda:</span>
+            <strong id="calcOfferAmount" class="mono" style="color: #60a5fa;">-</strong>
+          </div>
+          <div class="price-row" style="font-size: 12px; margin-bottom: 6px; display: flex; justify-content: space-between;">
+            <span style="color: var(--text-muted);">Biaya Layanan ARGUS (10%):</span>
+            <span id="calcPlatformFee" class="mono">-</span>
+          </div>
+          <div class="price-row total" style="font-size: 14px; border-top: 1px solid #1e293b; padding-top: 8px; margin-top: 8px; display: flex; justify-content: space-between;">
+            <span style="font-weight: 700;">Total Pembayaran Pembeli:</span>
+            <strong id="calcTotalPayment" class="mono" style="color: #34d399;">-</strong>
+          </div>
+          <div id="calcSavingsRow" style="display: none; margin-top: 8px; font-size: 12px; color: #34d399; text-align: right;">
+            <i class="fa-solid fa-tag"></i> Hemat: <strong id="calcSavingsText">-</strong>
+          </div>
+        </div>
+
+        <div id="offerModalError" class="notice-box notice-warning" style="display: none; font-size: 12px; margin-bottom: 14px;"></div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button class="btn btn-secondary" onclick="closeOfferModal()">Batal</button>
+          <button id="btnSubmitOffer" class="btn" onclick="submitOffer()" style="background: #2563eb;">
+            <i class="fa-solid fa-paper-plane"></i> Kirim Tawaran Resmi
+          </button>
+        </div>
+      </div>
     </div>
 
   </main>
@@ -400,6 +469,117 @@
         errEl.style.display = 'block';
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-lock"></i> Kunci Tiket &amp; Masuk Antrean Verifikasi Penampungan';
+      }
+    }
+
+    function openOfferModal() {
+      if (!currentListing) return;
+      const modal = document.getElementById('offerModal');
+      const errEl = document.getElementById('offerModalError');
+      errEl.style.display = 'none';
+
+      const minAllowed = Math.round(currentListing.price * 0.5);
+      const maxAllowed = currentListing.price - 1;
+
+      document.getElementById('offerRangeHint').innerText = 
+        `Min Rp ${minAllowed.toLocaleString('id-ID')} • Maks Rp ${maxAllowed.toLocaleString('id-ID')}`;
+      document.getElementById('calcOriginalPrice').innerText = `Rp ${currentListing.price.toLocaleString('id-ID')}`;
+      
+      const defaultOffer = Math.round(currentListing.price * 0.8 / 10000) * 10000;
+      document.getElementById('offerAmountInput').value = defaultOffer;
+      updateOfferCalculations();
+
+      modal.style.display = 'flex';
+    }
+
+    function closeOfferModal() {
+      document.getElementById('offerModal').style.display = 'none';
+    }
+
+    function updateOfferCalculations() {
+      if (!currentListing) return;
+      const val = parseInt(document.getElementById('offerAmountInput').value, 10);
+      const errEl = document.getElementById('offerModalError');
+      const savingsRow = document.getElementById('calcSavingsRow');
+
+      if (isNaN(val) || val <= 0) {
+        document.getElementById('calcOfferAmount').innerText = '-';
+        document.getElementById('calcPlatformFee').innerText = '-';
+        document.getElementById('calcTotalPayment').innerText = '-';
+        savingsRow.style.display = 'none';
+        return;
+      }
+
+      const platformFee = Math.round(val * 0.10);
+      const total = val + platformFee;
+      const minAllowed = Math.round(currentListing.price * 0.5);
+
+      document.getElementById('calcOfferAmount').innerText = `Rp ${val.toLocaleString('id-ID')}`;
+      document.getElementById('calcPlatformFee').innerText = `Rp ${platformFee.toLocaleString('id-ID')}`;
+      document.getElementById('calcTotalPayment').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+
+      if (val < minAllowed) {
+        errEl.innerText = `Tawaran minimal adalah Rp ${minAllowed.toLocaleString('id-ID')} (50% harga listing).`;
+        errEl.style.display = 'block';
+        savingsRow.style.display = 'none';
+      } else if (val >= currentListing.price) {
+        errEl.innerText = `Tawaran harus di bawah harga normal (Rp ${currentListing.price.toLocaleString('id-ID')}). Untuk harga normal silakan gunakan tombol Beli Langsung.`;
+        errEl.style.display = 'block';
+        savingsRow.style.display = 'none';
+      } else {
+        errEl.style.display = 'none';
+        const savings = currentListing.price - val;
+        const pct = Math.round((savings / currentListing.price) * 100);
+        document.getElementById('calcSavingsText').innerText = `Rp ${savings.toLocaleString('id-ID')} (${pct}% lebih murah)`;
+        savingsRow.style.display = 'block';
+      }
+    }
+
+    async function submitOffer() {
+      if (!currentListing) return;
+      const errEl = document.getElementById('offerModalError');
+      const btn = document.getElementById('btnSubmitOffer');
+      const buyerId = document.getElementById('buyerSelect').value;
+      const amount = parseInt(document.getElementById('offerAmountInput').value, 10);
+
+      errEl.style.display = 'none';
+
+      if (isNaN(amount) || amount <= 0) {
+        errEl.innerText = 'Masukkan nominal tawaran yang valid.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Tawaran...';
+
+      try {
+        const res = await fetch(`/api/listings/${currentListing.id}/offers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': buyerId
+          },
+          body: JSON.stringify({
+            offer_amount: amount,
+            buyerId: buyerId
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal mengajukan tawaran.');
+        }
+
+        // Offer submitted successfully!
+        closeOfferModal();
+        alert(`Tawaran resmi Rp ${amount.toLocaleString('id-ID')} berhasil diajukan ke penjual! Pantau statusnya di halaman Tawaran Saya.`);
+        window.location.href = '/offers';
+      } catch (err) {
+        errEl.innerText = err.message;
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Kirim Tawaran Resmi';
       }
     }
 

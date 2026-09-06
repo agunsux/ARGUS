@@ -41,11 +41,17 @@ app.use(trustApi);
 const mvpRouter = require('./api/mvpRouter');
 app.use('/api/mvp', mvpRouter);
 
+// Mount Epic 4.0 Structured Offer APIs
+const offerRouter = require('./api/offerRouter');
+app.use('/api', offerRouter);
+app.use('/api/mvp', offerRouter);
+
 // Explicit Institutional Frontend Page Delivery
 const publicDir = path.resolve(__dirname, '../public');
 app.get('/create', (req, res) => res.sendFile(path.join(publicDir, 'create.html')));
 app.get('/pay/:id', (req, res) => res.sendFile(path.join(publicDir, 'pay.html')));
 app.get('/pay', (req, res) => res.sendFile(path.join(publicDir, 'pay.html')));
+app.get('/offers', (req, res) => res.sendFile(path.join(publicDir, 'offers.html')));
 app.get('/track/:id', (req, res) => res.sendFile(path.join(publicDir, 'track.html')));
 app.get('/track', (req, res) => res.sendFile(path.join(publicDir, 'track.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(publicDir, 'admin.html')));
@@ -82,6 +88,8 @@ app.use((err, req, res, next) => {
 
 // Start listener only when running standalone locally
 if (require.main === module && !process.env.VERCEL) {
+  const { startOfferExpiryJob } = require('./jobs/offerExpiryJob');
+  startOfferExpiryJob();
   dbPromise.then(() => {
     app.listen(PORT, () => {
       console.log(`==================================================`);

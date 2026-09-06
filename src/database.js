@@ -23,11 +23,15 @@ const state = {
   sessions: [],
   transaction_challenges: [],
   evidence_access_logs: [],
-  step_up_tokens: []
+  step_up_tokens: [],
+  offers: [],
+  offer_audit_logs: [],
+  notifications: []
 };
 
 let seqId = 1;
 let logId = 1;
+let offerAuditLogId = 1;
 
 /**
  * Reset and seed database with initial clean fixtures.
@@ -653,8 +657,13 @@ function resetDatabase() {
     }
   ];
 
+  state.offers = [];
+  state.offer_audit_logs = [];
+  state.notifications = [];
+
   seqId = 3;
   logId = 2;
+  offerAuditLogId = 1;
 }
 
 resetDatabase();
@@ -678,6 +687,11 @@ async function run(sql, params = []) {
   // Enforce ADR-011: Prevent UPDATE/DELETE on ticket_events
   if (clean.toUpperCase().includes('UPDATE TICKET_EVENTS') || clean.toUpperCase().includes('DELETE FROM TICKET_EVENTS')) {
     throw new Error('Updates on ticket_events are prohibited by ADR-011 / Invariant 10');
+  }
+
+  // Enforce Epic 4.0: Prevent UPDATE/DELETE on offer_audit_logs
+  if (clean.toUpperCase().includes('UPDATE OFFER_AUDIT_LOGS') || clean.toUpperCase().includes('DELETE FROM OFFER_AUDIT_LOGS')) {
+    throw new Error('Updates on offer_audit_logs are prohibited by Epic 4.0 specification (append-only audit log)');
   }
 
   // 1. INSERT INTO tickets
@@ -980,6 +994,25 @@ async function recordAuditLog(entityType, entityId, action, performedBy, metadat
 }
 
 /**
+ * Helper to record immutable offer audit log (Epic 4.0)
+ */
+async function recordOfferAuditLog({ offerId, actorId, actorRole, fromStatus, toStatus, ipAddress = '127.0.0.1', metadata = {} }) {
+  const entry = {
+    id: `oal-${offerAuditLogId++}`,
+    offer_id: offerId,
+    actor_id: actorId,
+    actor_role: actorRole,
+    from_status: fromStatus,
+    to_status: toStatus,
+    ip_address: ipAddress,
+    metadata: typeof metadata === 'string' ? metadata : JSON.stringify(metadata),
+    created_at: new Date().toISOString()
+  };
+  state.offer_audit_logs.push(entry);
+  return entry;
+}
+
+/**
  * Mock database initialization
  */
 async function initializeDatabase() {
@@ -994,5 +1027,6 @@ module.exports = {
   all,
   get,
   recordAuditLog,
+  recordOfferAuditLog,
   initializeDatabase
 };

@@ -42,7 +42,7 @@ class EscrowService {
   /**
    * Buyer creates an order on a verified active listing
    */
-  static async createOrder({ buyerId, listingId }) {
+  static async createOrder({ buyerId, listingId, customAmount = null, paymentDeadlineHours = 2 }) {
     const buyer = state.users.find(u => u.id === buyerId);
     if (!buyer) {
       const err = new Error('Buyer not found');
@@ -63,11 +63,14 @@ class EscrowService {
       throw err;
     }
 
-    const pricing = this.calculatePricing(listing.price);
+    const effectivePrice = (customAmount !== null && customAmount !== undefined) ? parseInt(customAmount, 10) : listing.price;
+    const pricing = this.calculatePricing(effectivePrice);
     const orderId = `ord-${uuidv4()}`;
 
     // Reserve listing immediately
     listing.status = LISTING_STATUS.RESERVED;
+
+    const paymentDeadline = new Date(Date.now() + paymentDeadlineHours * 60 * 60 * 1000).toISOString();
 
     const order = {
       id: orderId,
@@ -80,6 +83,8 @@ class EscrowService {
       platform_fee: pricing.platformFee,
       total_amount: pricing.totalAmount,
       status: ORDER_STATUS.PENDING_PAYMENT,
+      payment_deadline: paymentDeadline,
+      expires_at: paymentDeadline,
       created_at: new Date().toISOString()
     };
     state.orders.push(order);
@@ -103,13 +108,48 @@ class EscrowService {
 
     await recordAuditLog('ORDER', orderId, 'CREATED', buyerId, {
       listing_id: listingId,
-      pricing
+      pricing,
+      custom_amount: customAmount ? pricing.ticketPrice : null
     });
 
     await recordAuditLog('ESCROW', escrowId, 'CREATED', buyerId, {
       order_id: orderId,
       status: ESCROW_STATUS.PENDING_PAYMENT
     });
+
+    // If listing bought at full price (not negotiated offer), auto-supersede any pending offers
+    if (!customAmount && state.offers && state.offers.length > 0) {
+      const competingOffers = state.offers.filter(o => o.listing_id === listingId && o.status === 'PENDING');
+      for (const comp of competingOffers) {
+        comp.status = 'SUPERSEDED';
+        comp.superseded_at = new Date().toISOString();
+        if (state.offer_audit_logs) {
+          state.offer_audit_logs.push({
+            id: `oal-${state.offer_audit_logs.length + 1}`,
+            offer_id: comp.id,
+            actor_id: 'SYSTEM',
+            actor_role: 'SYSTEM',
+            from_status: 'PENDING',
+            to_status: 'SUPERSEDED',
+            ip_address: '127.0.0.1',
+            metadata: JSON.stringify({ reason: 'Listing purchased at full price', order_id: orderId }),
+            created_at: new Date().toISOString()
+          });
+        }
+        if (state.notifications) {
+          state.notifications.push({
+            id: `notif-${uuidv4()}`,
+            user_id: comp.buyer_id,
+            title: 'Tawaran Dibatalkan',
+            message: 'Listing telah terjual ke pembeli lain dengan harga normal. Tawaran Anda dibatalkan.',
+            type: 'OFFER_SUPERSEDED',
+            metadata: { offer_id: comp.id, listing_id: listingId },
+            is_read: false,
+            created_at: new Date().toISOString()
+          });
+        }
+      }
+    }
 
     return { order, escrow, pricing };
   }

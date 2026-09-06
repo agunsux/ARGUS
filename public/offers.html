@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARGUS — Sistem Tawaran Harga (Negotiation System)</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .tab-bar {
+      display: flex;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover {
+      color: #fff;
+    }
+    .tab-btn.active {
+      color: var(--cyan);
+      border-bottom-color: var(--cyan);
+    }
+    .offer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+    .offer-card:hover {
+      border-color: #334155;
+    }
+    .countdown-pill {
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand">
+        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <div class="brand-title">ARGUS</div>
+          <span class="brand-subtitle">Verified Ticket Transfer</span>
+        </div>
+      </a>
+
+      <nav class="main-nav">
+        <a href="/" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Katalog Event</a>
+        <a href="/offers" class="nav-link active"><i class="fa-solid fa-handshake"></i> Tawaran Harga</a>
+        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
+        <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container" style="max-width: 960px;">
+
+    <!-- Hero Header -->
+    <div style="margin-bottom: 24px;">
+      <div class="hero-pill"><i class="fa-solid fa-scale-balanced"></i> SISTEM TAWAR-MENAWAR STRUKTUR (EPIC 4.0)</div>
+      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #fff;">Manajemen Tawaran Harga Tiket</h1>
+      <p style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">
+        Sistem penawaran terikat tanpa obrolan bebas. Semua nominal terikat escrow internal dan dicairkan pasca-verifikasi PIC turnstile.
+      </p>
+    </div>
+
+    <!-- Pilot User Switcher -->
+    <div class="card" style="padding: 14px 20px; margin-bottom: 24px; background: rgba(30, 41, 59, 0.5); border-color: #334155; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-user-gear" style="color: var(--cyan); font-size: 18px;"></i>
+        <div>
+          <strong style="font-size: 13px; color: #fff;">Pilih Identitas Akun (Demo Mode):</strong>
+          <div style="font-size: 11px; color: var(--text-muted);">Ganti pengguna untuk mensimulasikan perspektif pembeli vs penjual</div>
+        </div>
+      </div>
+      <div>
+        <select id="userSelector" class="form-control mono" style="padding: 8px 12px; font-size: 13px; width: 280px;" onchange="handleUserChange()">
+          <option value="buyer-1">Dewi Lestari (buyer-1) — Pembeli 1</option>
+          <option value="buyer-2">Rina Wijaya (buyer-2) — Pembeli 2</option>
+          <option value="seller-1">Budi Santoso (seller-1) — Penjual Terverifikasi</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Notification Feed Banner -->
+    <div id="notifBanner" style="display: none; margin-bottom: 20px;">
+      <div class="notice-box notice-info" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-bell"></i>
+          <span id="notifText">-</span>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="dismissNotif()">Tutup</button>
+      </div>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <button id="tabBuyer" class="tab-btn active" onclick="switchTab('buyer')">
+        <i class="fa-solid fa-bag-shopping"></i> Tawaran Saya (Pembeli)
+        <span id="buyerCountBadge" class="badge badge-slate">0</span>
+      </button>
+      <button id="tabSeller" class="tab-btn" onclick="switchTab('seller')">
+        <i class="fa-solid fa-inbox"></i> Kotak Tawaran Masuk (Penjual)
+        <span id="sellerCountBadge" class="badge badge-warning" style="display: none;">0</span>
+      </button>
+    </div>
+
+    <!-- Sort & Filter Bar for Seller -->
+    <div id="sellerControls" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+      <div style="font-size: 13px; color: var(--text-muted);">
+        Menampilkan tawaran masuk untuk semua listing aktif Anda:
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button id="sortHighestBtn" class="btn btn-sm" onclick="setSellerSort('HIGHEST')">
+          <i class="fa-solid fa-arrow-down-wide-short"></i> Nominal Tertinggi
+        </button>
+        <button id="sortLatestBtn" class="btn btn-secondary btn-sm" onclick="setSellerSort('LATEST')">
+          <i class="fa-solid fa-clock"></i> Waktu Terbaru
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="offersLoading" style="text-align: center; padding: 50px 20px;">
+      <i class="fa-solid fa-spinner fa-spin" style="font-size: 28px; color: var(--cyan); margin-bottom: 12px;"></i>
+      <div style="font-size: 14px; color: var(--text-muted);">Mengambil daftar tawaran resmi dari database ARGUS...</div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="offersEmpty" class="card" style="display: none; text-align: center; padding: 50px 20px;">
+      <i class="fa-solid fa-handshake-slash" style="font-size: 36px; color: var(--text-dim); margin-bottom: 12px;"></i>
+      <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px;">Belum Ada Tawaran</h3>
+      <p id="emptyMsg" style="font-size: 13px; color: var(--text-muted); max-width: 420px; margin: 0 auto 16px;">
+        Anda belum memiliki penawaran aktif. Kunjungi katalog tiket untuk mengajukan tawaran terstruktur.
+      </p>
+      <a href="/" class="btn btn-sm"><i class="fa-solid fa-magnifying-glass"></i> Jelajahi Event &amp; Tiket</a>
+    </div>
+
+    <!-- Offers List Container -->
+    <div id="offersList"></div>
+
+  </main>
+
+  <!-- Accept Modal Confirmation (Seller) -->
+  <div id="acceptModal" class="modal-overlay">
+    <div class="card" style="max-width: 480px; width: 100%; border-color: var(--success); box-shadow: 0 25px 50px rgba(0,0,0,0.8); margin: 0; background: #0f172a;">
+      <div class="hero-pill" style="margin-bottom: 12px; background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);">
+        <i class="fa-solid fa-check"></i> KONFIRMASI PENERIMAAN TAWARAN
+      </div>
+      <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;">Terima Tawaran Pembeli?</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6;">
+        Anda akan menerima tawaran senilai <strong id="acceptAmountText" style="color: #34d399;">Rp -</strong>.
+      </p>
+
+      <div class="notice-box notice-warning" style="font-size: 12px; margin-bottom: 16px;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+          <strong>Konsekuensi Penjualan:</strong> Listing tiket Anda akan di-<em>reserve</em> khusus untuk pembeli ini dengan batas waktu bayar 2 jam. <strong>Semua tawaran lain untuk listing ini otomatis dibatalkan (SUPERSEDED).</strong>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="closeAcceptModal()">Batal</button>
+        <button id="btnConfirmAccept" class="btn btn-success" onclick="confirmAcceptOffer()">
+          <i class="fa-solid fa-check"></i> Ya, Terima Tawaran Ini
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Decline Modal with Strict Enum Reasons (Seller) -->
+  <div id="declineModal" class="modal-overlay">
+    <div class="card" style="max-width: 480px; width: 100%; border-color: var(--danger); box-shadow: 0 25px 50px rgba(0,0,0,0.8); margin: 0; background: #0f172a;">
+      <div class="hero-pill" style="margin-bottom: 12px; background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
+        <i class="fa-solid fa-xmark"></i> TOLAK TAWARAN RESMI
+      </div>
+      <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;">Pilih Alasan Penolakan</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Sesuai regulasi ARGUS, penolakan tawaran wajib menggunakan alasan terstandarisasi tanpa teks bebas:
+      </p>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label for="declineReasonSelect" style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 6px; display: block;">
+          Alasan Penolakan (Enum Resmi):
+        </label>
+        <select id="declineReasonSelect" class="form-control" style="width: 100%; padding: 10px 12px; font-size: 13px;">
+          <option value="PRICE_TOO_LOW">Harga terlalu rendah</option>
+          <option value="CHANGED_MIND_NOT_SELLING">Berubah pikiran / tidak jadi jual</option>
+          <option value="PREFER_ANOTHER_BUYER">Memilih pembeli lain</option>
+          <option value="LISTING_WILL_BE_UPDATED">Listing akan diperbarui / diedit</option>
+          <option value="OTHER">Lainnya</option>
+        </select>
+      </div>
+
+      <div class="notice-box notice-info" style="font-size: 11px; margin-bottom: 16px;">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <div>
+          Pembeli akan dikenakan masa tunggu (cooldown) 6 jam pada listing ini sebelum dapat mengajukan tawaran baru.
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="closeDeclineModal()">Batal</button>
+        <button id="btnConfirmDecline" class="btn btn-danger" onclick="confirmDeclineOffer()">
+          <i class="fa-solid fa-ban"></i> Konfirmasi Tolak
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Site Footer -->
+  <footer class="site-footer" style="margin-top: auto;">
+    <div class="footer-container">
+      <div>
+        <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">ARGUS Trust Infrastructure</div>
+        <div>Verified Ticket Transfer &copy; 2026. Transaksi terikat kontrak perlindungan pembeli.</div>
+      </div>
+      <div class="footer-links">
+        <a href="/terms">Ketentuan Transaksi</a>
+        <a href="/privacy">Kebijakan Privasi</a>
+        <a href="/health">Status API</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let activeRole = 'buyer';
+    let currentUserId = 'buyer-1';
+    let sellerSort = 'HIGHEST';
+    let pendingActionOfferId = null;
+
+    function handleUserChange() {
+      currentUserId = document.getElementById('userSelector').value;
+      if (currentUserId === 'seller-1' && activeRole !== 'seller') {
+        switchTab('seller');
+      } else if (currentUserId.startsWith('buyer') && activeRole !== 'buyer') {
+        switchTab('buyer');
+      } else {
+        fetchOffers();
+      }
+      fetchNotifications();
+    }
+
+    function switchTab(role) {
+      activeRole = role;
+      document.getElementById('tabBuyer').className = `tab-btn ${role === 'buyer' ? 'active' : ''}`;
+      document.getElementById('tabSeller').className = `tab-btn ${role === 'seller' ? 'active' : ''}`;
+      document.getElementById('sellerControls').style.display = role === 'seller' ? 'flex' : 'none';
+      fetchOffers();
+    }
+
+    function setSellerSort(mode) {
+      sellerSort = mode;
+      document.getElementById('sortHighestBtn').className = `btn btn-sm ${mode === 'HIGHEST' ? '' : 'btn-secondary'}`;
+      document.getElementById('sortLatestBtn').className = `btn btn-sm ${mode === 'LATEST' ? '' : 'btn-secondary'}`;
+      fetchOffers();
+    }
+
+    async function fetchOffers() {
+      const loadingEl = document.getElementById('offersLoading');
+      const emptyEl = document.getElementById('offersEmpty');
+      const listEl = document.getElementById('offersList');
+
+      loadingEl.style.display = 'block';
+      emptyEl.style.display = 'none';
+      listEl.innerHTML = '';
+
+      try {
+        const res = await fetch(`/api/offers/mine?role=${activeRole}`, {
+          headers: {
+            'x-user-id': currentUserId
+          }
+        });
+
+        const data = await res.json();
+        loadingEl.style.display = 'none';
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal mengambil data tawaran');
+        }
+
+        let offers = data.offers || [];
+
+        // Update counter badges
+        if (activeRole === 'buyer') {
+          document.getElementById('buyerCountBadge').innerText = offers.length;
+        } else {
+          document.getElementById('sellerCountBadge').innerText = offers.length;
+          document.getElementById('sellerCountBadge').style.display = offers.length > 0 ? 'inline-flex' : 'none';
+        }
+
+        if (offers.length === 0) {
+          emptyEl.style.display = 'block';
+          document.getElementById('emptyMsg').innerText = activeRole === 'buyer'
+            ? 'Anda belum pernah mengajukan tawaran tiket. Kunjungi katalog tiket untuk mengajukan tawaran.'
+            : 'Belum ada tawaran masuk untuk listing tiket Anda.';
+          return;
+        }
+
+        // Apply seller sorting if seller
+        if (activeRole === 'seller') {
+          if (sellerSort === 'HIGHEST') {
+            offers.sort((a, b) => b.offer_amount - a.offer_amount);
+          } else {
+            offers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          }
+        } else {
+          offers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+
+        // Render Cards
+        listEl.innerHTML = offers.map(o => renderOfferCard(o)).join('');
+
+      } catch (err) {
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        document.getElementById('emptyMsg').innerText = `Error: ${err.message}`;
+      }
+    }
+
+    function renderStatusBadge(status) {
+      switch (status) {
+        case 'PENDING':
+          return '<span class="badge badge-warning"><i class="fa-solid fa-clock"></i> PENDING</span>';
+        case 'ACCEPTED':
+          return '<span class="badge badge-success"><i class="fa-solid fa-check-double"></i> DITERIMA</span>';
+        case 'DECLINED':
+          return '<span class="badge badge-danger"><i class="fa-solid fa-ban"></i> DITOLAK</span>';
+        case 'EXPIRED':
+          return '<span class="badge badge-slate"><i class="fa-solid fa-hourglass-end"></i> KEDALUWARSA</span>';
+        case 'WITHDRAWN':
+          return '<span class="badge badge-slate"><i class="fa-solid fa-arrow-rotate-left"></i> DITARIK</span>';
+        case 'SUPERSEDED':
+          return '<span class="badge badge-info"><i class="fa-solid fa-arrows-split-up-and-left"></i> DIBATALKAN (SUPERSEDED)</span>';
+        default:
+          return `<span class="badge badge-slate">${status}</span>`;
+      }
+    }
+
+    function calculateTtlText(expiresAt) {
+      const diff = new Date(expiresAt).getTime() - Date.now();
+      if (diff <= 0) return 'Kedaluwarsa';
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      return `${hours}j ${mins}m`;
+    }
+
+    function renderOfferCard(offer) {
+      const discountPct = Math.round(((offer.original_price - offer.offer_amount) / offer.original_price) * 100);
+      const isPending = offer.status === 'PENDING';
+      const isAccepted = offer.status === 'ACCEPTED';
+      const isDeclined = offer.status === 'DECLINED';
+      const isSuperseded = offer.status === 'SUPERSEDED';
+
+      if (activeRole === 'buyer') {
+        return `
+          <div class="offer-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h3 style="font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 4px;">
+                  ${offer.event_title || 'Tiket Event'}
+                </h3>
+                <div style="font-size: 12px; color: var(--text-muted);">
+                  <i class="fa-solid fa-couch"></i> ${offer.seat_info || 'General Admission'} &bull; ID Listing: <code class="mono" style="color: var(--cyan);">${offer.listing_id}</code>
+                </div>
+              </div>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                ${renderStatusBadge(offer.status)}
+                ${isPending ? `<span class="countdown-pill"><i class="fa-solid fa-hourglass-half"></i> Sisa ${calculateTtlText(offer.expires_at)}</span>` : ''}
+              </div>
+            </div>
+
+            <div style="background: #090d16; border: 1px solid #1e293b; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+              <div class="grid-2" style="font-size: 13px;">
+                <div>
+                  <span style="color: var(--text-dim); font-size: 11px;">Harga Normal Listing:</span>
+                  <div class="mono" style="color: var(--text-muted);">Rp ${offer.original_price.toLocaleString('id-ID')}</div>
+                </div>
+                <div>
+                  <span style="color: var(--text-dim); font-size: 11px;">Tawaran Anda (${discountPct}% diskon):</span>
+                  <strong class="mono" style="color: #60a5fa; font-size: 15px;">Rp ${offer.offer_amount.toLocaleString('id-ID')}</strong>
+                </div>
+              </div>
+            </div>
+
+            ${isAccepted ? `
+              <div class="notice-box notice-info" style="font-size: 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.3);">
+                <i class="fa-solid fa-circle-check" style="color: #34d399;"></i>
+                <div>
+                  <strong>Tawaran Anda Telah Diterima Penjual!</strong> Silakan selesaikan pembayaran escrow dalam 2 jam untuk mengunci tiket ini sebelum masa reservasi habis.
+                </div>
+              </div>
+              <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <a href="/pay/${offer.listing_id}" class="btn btn-success btn-sm">
+                  <i class="fa-solid fa-credit-card"></i> Bayar Sekarang (Harga Negosiasi)
+                </a>
+              </div>
+            ` : ''}
+
+            ${isDeclined ? `
+              <div class="notice-box notice-warning" style="font-size: 12px; margin-bottom: 8px;">
+                <i class="fa-solid fa-circle-xmark"></i>
+                <div>
+                  <strong>Tawaran Ditolak Penjual:</strong> Alasan: <em>"${offer.decline_reason_label || offer.decline_reason}"</em>. Cooldown 6 jam berlaku pada listing ini sebelum dapat menawar ulang.
+                </div>
+              </div>
+            ` : ''}
+
+            ${isSuperseded ? `
+              <div class="notice-box notice-info" style="font-size: 12px; margin-bottom: 8px;">
+                <i class="fa-solid fa-circle-info"></i>
+                <div>
+                  Tiket telah terjual ke pembeli lain. Tawaran Anda otomatis dibatalkan tanpa penalti.
+                </div>
+              </div>
+            ` : ''}
+
+            ${isPending ? `
+              <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button class="btn btn-outline btn-sm" onclick="withdrawOffer('${offer.id}')">
+                  <i class="fa-solid fa-arrow-rotate-left"></i> Tarik Tawaran
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      // activeRole === 'seller'
+      return `
+        <div class="offer-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 4px;">
+                ${offer.event_title || 'Tiket Event'}
+              </h3>
+              <div style="font-size: 12px; color: var(--text-muted);">
+                <i class="fa-solid fa-couch"></i> ${offer.seat_info || 'General Admission'} &bull; Pembeli: <strong style="color: #fff;"><i class="fa-solid fa-user-secret"></i> ${offer.buyer?.masked_name || 'Pembeli Terverifikasi'}</strong>
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              ${renderStatusBadge(offer.status)}
+              ${isPending ? `<span class="countdown-pill"><i class="fa-solid fa-hourglass-half"></i> Sisa ${calculateTtlText(offer.expires_at)}</span>` : ''}
+            </div>
+          </div>
+
+          <div style="background: #090d16; border: 1px solid #1e293b; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+            <div class="grid-2" style="font-size: 13px;">
+              <div>
+                <span style="color: var(--text-dim); font-size: 11px;">Harga Listing Anda:</span>
+                <div class="mono" style="color: var(--text-muted);">Rp ${offer.original_price.toLocaleString('id-ID')}</div>
+              </div>
+              <div>
+                <span style="color: var(--text-dim); font-size: 11px;">Nominal Ditawarkan (${discountPct}% diskon):</span>
+                <strong class="mono" style="color: #34d399; font-size: 16px;">Rp ${offer.offer_amount.toLocaleString('id-ID')}</strong>
+              </div>
+            </div>
+          </div>
+
+          ${isPending ? `
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+              <button class="btn btn-danger btn-sm" onclick="openDeclineModal('${offer.id}')">
+                <i class="fa-solid fa-xmark"></i> Tolak Tawaran
+              </button>
+              <button class="btn btn-success btn-sm" onclick="openAcceptModal('${offer.id}', ${offer.offer_amount})">
+                <i class="fa-solid fa-check"></i> Terima Tawaran (Rp ${offer.offer_amount.toLocaleString('id-ID')})
+              </button>
+            </div>
+          ` : `
+            <div style="font-size: 12px; color: var(--text-dim); text-align: right;">
+              Status: ${offer.status} &bull; Diproses pada: ${new Date(offer.decided_at || offer.created_at).toLocaleString('id-ID')}
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    // Modal Handlers
+    function openAcceptModal(offerId, amount) {
+      pendingActionOfferId = offerId;
+      document.getElementById('acceptAmountText').innerText = `Rp ${amount.toLocaleString('id-ID')}`;
+      document.getElementById('acceptModal').style.display = 'flex';
+    }
+
+    function closeAcceptModal() {
+      document.getElementById('acceptModal').style.display = 'none';
+      pendingActionOfferId = null;
+    }
+
+    async function confirmAcceptOffer() {
+      if (!pendingActionOfferId) return;
+      const btn = document.getElementById('btnConfirmAccept');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses Penerimaan...';
+
+      try {
+        const res = await fetch(`/api/offers/${pendingActionOfferId}/accept`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': currentUserId
+          }
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal menerima tawaran');
+        }
+
+        closeAcceptModal();
+        alert('Tawaran berhasil diterima! Listing telah di-reserve untuk pembeli dan tawaran lain telah dibatalkan.');
+        fetchOffers();
+      } catch (err) {
+        alert(`Gagal: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Ya, Terima Tawaran Ini';
+      }
+    }
+
+    function openDeclineModal(offerId) {
+      pendingActionOfferId = offerId;
+      document.getElementById('declineModal').style.display = 'flex';
+    }
+
+    function closeDeclineModal() {
+      document.getElementById('declineModal').style.display = 'none';
+      pendingActionOfferId = null;
+    }
+
+    async function confirmDeclineOffer() {
+      if (!pendingActionOfferId) return;
+      const reason = document.getElementById('declineReasonSelect').value;
+      const btn = document.getElementById('btnConfirmDecline');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses Penolakan...';
+
+      try {
+        const res = await fetch(`/api/offers/${pendingActionOfferId}/decline`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': currentUserId
+          },
+          body: JSON.stringify({
+            decline_reason: reason
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal menolak tawaran');
+        }
+
+        closeDeclineModal();
+        alert('Tawaran berhasil ditolak.');
+        fetchOffers();
+      } catch (err) {
+        alert(`Gagal: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-ban"></i> Konfirmasi Tolak';
+      }
+    }
+
+    async function withdrawOffer(offerId) {
+      if (!confirm('Apakah Anda yakin ingin menarik tawaran ini?')) return;
+
+      try {
+        const res = await fetch(`/api/offers/${offerId}/withdraw`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': currentUserId
+          }
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal menarik tawaran');
+        }
+
+        alert('Tawaran berhasil ditarik.');
+        fetchOffers();
+      } catch (err) {
+        alert(`Gagal menarik tawaran: ${err.message}`);
+      }
+    }
+
+    async function fetchNotifications() {
+      try {
+        const res = await fetch('/api/notifications/mine', {
+          headers: { 'x-user-id': currentUserId }
+        });
+        const data = await res.json();
+        const unread = (data.notifications || []).filter(n => !n.is_read);
+        if (unread.length > 0) {
+          document.getElementById('notifText').innerText = unread[0].message;
+          document.getElementById('notifBanner').style.display = 'block';
+        } else {
+          document.getElementById('notifBanner').style.display = 'none';
+        }
+      } catch (e) {
+        // quiet ignore in UI polling
+      }
+    }
+
+    function dismissNotif() {
+      document.getElementById('notifBanner').style.display = 'none';
+    }
+
+    // Auto-refresh every 15s
+    setInterval(() => {
+      fetchOffers();
+      fetchNotifications();
+    }, 15000);
+
+    // Initial load
+    fetchOffers();
+    fetchNotifications();
+  </script>
+</body>
+</html>
