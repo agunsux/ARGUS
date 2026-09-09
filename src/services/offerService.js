@@ -9,7 +9,8 @@ const OFFER_STATUS = {
   DECLINED: 'DECLINED',
   EXPIRED: 'EXPIRED',
   WITHDRAWN: 'WITHDRAWN',
-  SUPERSEDED: 'SUPERSEDED'
+  SUPERSEDED: 'SUPERSEDED',
+  COUNTERED: 'COUNTERED'
 };
 
 const DECLINE_REASONS = {
@@ -464,6 +465,194 @@ class OfferService {
     });
 
     return offer;
+  }
+
+  /**
+   * Seller makes a counter-offer to the buyer's pending offer
+   */
+  static async counterOffer({ offerId, sellerId, counterAmount, message = null, note = null, ipAddress = '127.0.0.1' }) {
+    // 1. Strict anti-chat enforcement: Reject free-text messages/notes
+    if ((message && typeof message === 'string' && message.trim().length > 0) ||
+        (note && typeof note === 'string' && note.trim().length > 0)) {
+      const err = new Error('ARGUS strictly prohibits free-text chat or messages in counter-offers. Only structured price counter-offers are supported.');
+      err.code = 'FREE_TEXT_NOT_ALLOWED';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const offer = state.offers.find(o => o.id === offerId);
+    if (!offer) {
+      const err = new Error('Offer not found');
+      err.code = 'OFFER_NOT_FOUND';
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (offer.seller_id !== sellerId) {
+      const err = new Error('Forbidden: Only the seller of this listing can make a counter-offer');
+      err.code = 'UNAUTHORIZED_ACTION';
+      err.statusCode = 403;
+      throw err;
+    }
+
+    if (offer.status !== OFFER_STATUS.PENDING) {
+      const err = new Error(`Cannot counter offer: status is ${offer.status}`);
+      err.code = 'OFFER_NOT_PENDING';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const listing = state.listings.find(l => l.id === offer.listing_id);
+    if (!listing || listing.status !== LISTING_STATUS.ACTIVE) {
+      const err = new Error('Listing is no longer active');
+      err.code = 'LISTING_NOT_ACTIVE';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const parsedAmount = parseInt(counterAmount, 10);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      const err = new Error('Counter offer amount must be a valid positive integer');
+      err.code = 'INVALID_COUNTER_AMOUNT';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (parsedAmount <= offer.offer_amount) {
+      const err = new Error(`Counter-offer must be higher than the buyer's original offer (Rp ${offer.offer_amount.toLocaleString('id-ID')})`);
+      err.code = 'COUNTER_AMOUNT_TOO_LOW';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (parsedAmount > listing.price) {
+      const err = new Error(`Counter-offer cannot exceed original listing price (Rp ${listing.price.toLocaleString('id-ID')})`);
+      err.code = 'COUNTER_AMOUNT_EXCEEDS_LISTING';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    offer.status = OFFER_STATUS.COUNTERED;
+    offer.counter_amount = parsedAmount;
+    offer.countered_at = new Date().toISOString();
+
+    // Audit Log
+    await recordOfferAuditLog({
+      offerId: offer.id,
+      actorId: sellerId,
+      actorRole: 'SELLER',
+      fromStatus: OFFER_STATUS.PENDING,
+      toStatus: OFFER_STATUS.COUNTERED,
+      ipAddress,
+      metadata: {
+        original_offer_amount: offer.offer_amount,
+        counter_amount: parsedAmount
+      }
+    });
+
+    // Notify Buyer
+    state.notifications.push({
+      id: `notif-${uuidv4()}`,
+      user_id: offer.buyer_id,
+      title: 'Penjual Mengajukan Penawaran Balik',
+      message: `Penjual mengajukan tawaran balik Rp ${parsedAmount.toLocaleString('id-ID')} untuk tiket ini.`,
+      type: 'OFFER_COUNTERED',
+      metadata: { offer_id: offer.id, counter_amount: parsedAmount },
+      is_read: false,
+      created_at: new Date().toISOString()
+    });
+
+    return offer;
+  }
+
+  /**
+   * Buyer accepts seller's counter-offer
+   */
+  static async acceptCounterOffer({ offerId, buyerId, ipAddress = '127.0.0.1' }) {
+    const offer = state.offers.find(o => o.id === offerId);
+    if (!offer) {
+      const err = new Error('Offer not found');
+      err.code = 'OFFER_NOT_FOUND';
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (offer.buyer_id !== buyerId) {
+      const err = new Error('Forbidden: Only the buyer can accept the counter-offer');
+      err.code = 'UNAUTHORIZED_ACTION';
+      err.statusCode = 403;
+      throw err;
+    }
+
+    if (offer.status !== OFFER_STATUS.COUNTERED) {
+      const err = new Error(`Cannot accept counter-offer: status is ${offer.status}`);
+      err.code = 'OFFER_NOT_COUNTERED';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const releaseLock = await listingMutex.acquire(offer.listing_id);
+    try {
+      const listing = state.listings.find(l => l.id === offer.listing_id);
+      if (!listing || listing.status !== LISTING_STATUS.ACTIVE) {
+        const err = new Error('Listing is no longer active');
+        err.code = 'LISTING_NOT_ACTIVE';
+        err.statusCode = 409;
+        throw err;
+      }
+
+      offer.status = OFFER_STATUS.ACCEPTED;
+      offer.decided_at = new Date().toISOString();
+
+      const agreedAmount = offer.counter_amount || offer.offer_amount;
+      const { order, escrow, pricing } = await EscrowService.createOrder({
+        buyerId: offer.buyer_id,
+        listingId: offer.listing_id,
+        customAmount: agreedAmount,
+        paymentDeadlineHours: 2
+      });
+
+      // Supersede other pending/countered offers
+      const otherOffers = state.offers.filter(o =>
+        o.listing_id === offer.listing_id &&
+        o.id !== offer.id &&
+        (o.status === OFFER_STATUS.PENDING || o.status === OFFER_STATUS.COUNTERED)
+      );
+
+      for (const other of otherOffers) {
+        other.status = OFFER_STATUS.SUPERSEDED;
+        other.superseded_at = new Date().toISOString();
+      }
+
+      await recordOfferAuditLog({
+        offerId: offer.id,
+        actorId: buyerId,
+        actorRole: 'BUYER',
+        fromStatus: OFFER_STATUS.COUNTERED,
+        toStatus: OFFER_STATUS.ACCEPTED,
+        ipAddress,
+        metadata: {
+          order_id: order.id,
+          agreed_amount: agreedAmount,
+          total_amount: pricing.totalAmount
+        }
+      });
+
+      state.notifications.push({
+        id: `notif-${uuidv4()}`,
+        user_id: offer.seller_id,
+        title: 'Tawaran Balik Anda Diterima!',
+        message: `Pembeli menerima tawaran balik Rp ${agreedAmount.toLocaleString('id-ID')}. Pesanan sedang menunggu pembayaran.`,
+        type: 'COUNTER_OFFER_ACCEPTED',
+        metadata: { offer_id: offer.id, order_id: order.id },
+        is_read: false,
+        created_at: new Date().toISOString()
+      });
+
+      return { offer, order, escrow, pricing };
+    } finally {
+      releaseLock();
+    }
   }
 
   /**

@@ -329,6 +329,10 @@
         renderListing(currentListing);
         surfaceEl.style.display = 'block';
 
+        if (new URLSearchParams(window.location.search).get('action') === 'offer') {
+          setTimeout(openOfferModal, 150);
+        }
+
       } catch (err) {
         loadingEl.style.display = 'none';
         notFoundEl.style.display = 'block';

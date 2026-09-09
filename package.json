@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "test": "node test_mvp_transaction_loop.js && node test_mvp_dispute_loop.js && node test_mvp_security.js && node test_pilot_multi_order_10.js && node test_flow.js && node test_epic35_redteam.js && node test_epic36_events.js && node test_epic40_offers.js"
+    "test": "node test_mvp_transaction_loop.js && node test_mvp_dispute_loop.js && node test_mvp_security.js && node test_pilot_multi_order_10.js && node test_flow.js && node test_epic35_redteam.js && node test_epic36_events.js && node test_epic40_offers.js && node test_marketplace_alignment.js"
   },
   "repository": {
     "type": "git",
@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/agunsux/CALO#readme",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "express": "^5.2.1",
     "multer": "^2.2.0",
     "uuid": "^9.0.1"

@@ -33,6 +33,30 @@ let seqId = 1;
 let logId = 1;
 let offerAuditLogId = 1;
 
+const bcrypt = require('bcryptjs');
+
+// Pre-computed bcrypt cost 12 hash for 'pilot123'
+const PILOT123_HASH = '$2b$12$4S3malXpyvpXvygwPeNE1.Yc6W2iP9APUve9Gi1EqG3Jt39bDUZS.';
+
+function hashPassword(password) {
+  if (!password) return null;
+  if (typeof password === 'string' && (password.startsWith('$2a$') || password.startsWith('$2b$'))) {
+    return password;
+  }
+  return bcrypt.hashSync(password, 12);
+}
+
+function verifyPassword(candidate, storedHash) {
+  if (!candidate || !storedHash) return false;
+  if (typeof storedHash === 'string' && (storedHash.startsWith('$2a$') || storedHash.startsWith('$2b$'))) {
+    return bcrypt.compareSync(candidate, storedHash);
+  }
+  if (candidate === storedHash) {
+    return true;
+  }
+  return false;
+}
+
 /**
  * Reset and seed database with initial clean fixtures.
  */
@@ -46,13 +70,14 @@ function resetDatabase() {
 
   const isTest = process.env.NODE_ENV === 'test';
   const defaultTestPass = isTest ? 'pilot123' : null;
+  const defaultPassHash = isTest ? PILOT123_HASH : null;
 
   state.users = [
-    { id: 'admin-1', name: 'Trust Officer ARGUS', email: 'ops@argus.id', phone: '081234567890', role: 'admin', password: defaultTestPass || process.env.ARGUS_ADMIN_PASSWORD || null },
-    { id: 'seller-1', name: 'Budi Santoso', email: 'budi.seller@example.com', phone: '082223334445', role: 'seller', password: defaultTestPass || process.env.ARGUS_SELLER_PASSWORD || null },
-    { id: 'buyer-1', name: 'Dewi Lestari', email: 'dewi.buyer@example.com', phone: '085556667778', role: 'buyer', password: defaultTestPass || process.env.ARGUS_BUYER_PASSWORD || null },
-    { id: 'buyer-2', name: 'Rina Wijaya', email: 'rina.buyer@example.com', phone: '085556667779', role: 'buyer', password: defaultTestPass || process.env.ARGUS_BUYER2_PASSWORD || null },
-    { id: 'pic-1', name: 'Agus Hendra (Event PIC)', email: 'agus.pic@argus.id', phone: '081199887766', role: 'pic', password: defaultTestPass || process.env.ARGUS_PIC_PASSWORD || null }
+    { id: 'admin-1', name: 'Trust Officer ARGUS', email: 'ops@argus.id', phone: '081234567890', role: 'admin', password: process.env.ARGUS_ADMIN_PASSWORD ? hashPassword(process.env.ARGUS_ADMIN_PASSWORD) : defaultPassHash },
+    { id: 'seller-1', name: 'Budi Santoso', email: 'budi.seller@example.com', phone: '082223334445', role: 'seller', password: process.env.ARGUS_SELLER_PASSWORD ? hashPassword(process.env.ARGUS_SELLER_PASSWORD) : defaultPassHash },
+    { id: 'buyer-1', name: 'Dewi Lestari', email: 'dewi.buyer@example.com', phone: '085556667778', role: 'buyer', password: process.env.ARGUS_BUYER_PASSWORD ? hashPassword(process.env.ARGUS_BUYER_PASSWORD) : defaultPassHash },
+    { id: 'buyer-2', name: 'Rina Wijaya', email: 'rina.buyer@example.com', phone: '085556667779', role: 'buyer', password: process.env.ARGUS_BUYER2_PASSWORD ? hashPassword(process.env.ARGUS_BUYER2_PASSWORD) : defaultPassHash },
+    { id: 'pic-1', name: 'Agus Hendra (Event PIC)', email: 'agus.pic@argus.id', phone: '081199887766', role: 'pic', password: process.env.ARGUS_PIC_PASSWORD ? hashPassword(process.env.ARGUS_PIC_PASSWORD) : defaultPassHash }
   ];
 
   state.seller_profiles = [
@@ -1028,5 +1053,7 @@ module.exports = {
   get,
   recordAuditLog,
   recordOfferAuditLog,
-  initializeDatabase
+  initializeDatabase,
+  hashPassword,
+  verifyPassword
 };

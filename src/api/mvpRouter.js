@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
-const { state, recordAuditLog } = require('../database');
+const { state, recordAuditLog, verifyPassword } = require('../database');
 const { ListingService, LISTING_STATUS } = require('../services/listingService');
 const { EscrowService, ESCROW_STATUS, ORDER_STATUS } = require('../services/escrowService');
 const { EventPicService } = require('../services/eventPicService');
@@ -166,7 +166,7 @@ function verifyAdminStepUp(req, officerId) {
   }
 
   if (!authenticated && stepUpPassword) {
-    if (officer.password && officer.password === stepUpPassword) {
+    if (officer.password && verifyPassword(stepUpPassword, officer.password)) {
       authenticated = true;
     }
   }
@@ -254,7 +254,7 @@ router.post('/auth/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid user credentials', code: 'AUTH_FAILED' });
   }
 
-  if (user.password && password && user.password !== password) {
+  if (user.password && password && !verifyPassword(password, user.password)) {
     return res.status(401).json({ error: 'Invalid password', code: 'AUTH_FAILED' });
   }
 
@@ -513,10 +513,15 @@ router.get('/listings', (req, res) => {
   const { eventId } = req.query;
   const listings = ListingService.getActiveListings(eventId);
   // Add transparent pricing calculation to each listing
-  const listingsWithPricing = listings.map(l => ({
-    ...l,
-    pricing: EscrowService.calculatePricing(l.price)
-  }));
+  const listingsWithPricing = listings.map(l => {
+    const pricing = EscrowService.calculatePricing(l.price);
+    return {
+      ...l,
+      pricing,
+      seller_asking_price: l.price,
+      buyer_total_price: pricing.totalAmount
+    };
+  });
   res.json({ listings: listingsWithPricing });
 });
 

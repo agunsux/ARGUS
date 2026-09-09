@@ -7,7 +7,7 @@ const { SessionStore } = require('../services/sessionStore');
 /**
  * Authentication resolver supporting sessions and test mode headers
  */
-function resolveUser(req, ...fallbacks) {
+function resolveUser(req) {
   const authHeader = req.header ? (req.header('authorization') || req.header('x-session-token')) : null;
   let sessionToken = null;
   if (authHeader) {
@@ -30,12 +30,11 @@ function resolveUser(req, ...fallbacks) {
     }
   }
 
-  // Fallback in test mode or local pilot test
+  // Fallback in test mode only for legacy backward-compatibility with test suite
   if (process.env.NODE_ENV === 'test') {
     const headerId = req.header ? req.header('x-user-id') : null;
-    const callerId = headerId || fallbacks.find(f => !!f);
-    if (callerId) {
-      const user = state.users.find(u => u.id === callerId);
+    if (headerId) {
+      const user = state.users.find(u => u.id === headerId);
       if (user) {
         req.user = user;
         req.role = user.role;
@@ -44,6 +43,8 @@ function resolveUser(req, ...fallbacks) {
     }
   }
 
+  req.user = null;
+  req.role = null;
   return null;
 }
 
@@ -51,7 +52,7 @@ function resolveUser(req, ...fallbacks) {
  * Middleware requiring authentication
  */
 function requireAuth(req, res, next) {
-  const user = resolveUser(req, req.body?.buyerId, req.body?.sellerId, req.body?.userId, req.query?.userId);
+  const user = resolveUser(req);
   if (!user) {
     return res.status(401).json({
       error: 'Authentication required. Please log in.',
@@ -176,6 +177,69 @@ router.post('/offers/:offerId/decline', requireAuth, async (req, res) => {
     res.status(status).json({
       error: err.message,
       code: err.code || 'OFFER_DECLINE_FAILED'
+    });
+  }
+});
+
+/**
+ * POST /offers/:offerId/counter
+ * Seller submits counter-offer
+ */
+router.post('/offers/:offerId/counter', requireAuth, async (req, res) => {
+  const offerId = req.params.offerId;
+  const sellerId = req.user.id;
+  const { counter_amount, counterAmount, message, note } = req.body;
+  const amount = counter_amount !== undefined ? counter_amount : counterAmount;
+
+  try {
+    const offer = await OfferService.counterOffer({
+      offerId,
+      sellerId,
+      counterAmount: amount,
+      message,
+      note,
+      ipAddress: req.ip || '127.0.0.1'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Tawaran balik berhasil dikirim ke pembeli.',
+      offer
+    });
+  } catch (err) {
+    const status = err.statusCode || 400;
+    res.status(status).json({
+      error: err.message,
+      code: err.code || 'OFFER_COUNTER_FAILED'
+    });
+  }
+});
+
+/**
+ * POST /offers/:offerId/accept-counter
+ * Buyer accepts counter-offer -> creates order
+ */
+router.post('/offers/:offerId/accept-counter', requireAuth, async (req, res) => {
+  const offerId = req.params.offerId;
+  const buyerId = req.user.id;
+
+  try {
+    const result = await OfferService.acceptCounterOffer({
+      offerId,
+      buyerId,
+      ipAddress: req.ip || '127.0.0.1'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Tawaran balik disetujui! Silakan selesaikan pembayaran.',
+      ...result
+    });
+  } catch (err) {
+    const status = err.statusCode || 400;
+    res.status(status).json({
+      error: err.message,
+      code: err.code || 'OFFER_ACCEPT_COUNTER_FAILED'
     });
   }
 });

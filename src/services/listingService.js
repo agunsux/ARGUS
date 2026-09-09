@@ -179,12 +179,21 @@ class ListingService {
         const seller = state.users.find(u => u.id === listing.seller_id) || {};
         const isUserCreatedEvent = event.source === 'USER_CREATED';
         const isEventUnverified = !event.is_verified;
+        const picAssign = state.event_pics?.find(ep => ep.event_id === listing.event_id && ep.status === 'ACTIVE');
+        const category = listing.category || (listing.seat_info ? listing.seat_info.split(/[-–,]/)[0].trim() : 'GENERAL');
+
         return {
           id: listing.id,
           ticket_id: listing.ticket_id,
           seat_info: listing.seat_info,
+          ticket_category: category,
           face_value: listing.face_value,
           price: listing.price,
+          seller_asking_price: listing.price,
+          verification_status: listing.status === 'ACTIVE' ? 'VERIFIED' : listing.status,
+          pic_available: !!picAssign,
+          pic_support_available: !!picAssign,
+          pic_contact: picAssign ? picAssign.contact_phone : null,
           seller_id: listing.seller_id,
           seller_name: seller.name,
           event_id: listing.event_id,

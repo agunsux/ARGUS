@@ -85,6 +85,43 @@
       </div>
     </div>
 
+    <!-- Marketplace Ticket Listings Section (Canonical Marketplace Model) -->
+    <section id="marketplace" style="margin-top: 40px; margin-bottom: 50px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
+        <div>
+          <div class="hero-pill" style="margin-bottom: 8px;"><i class="fa-solid fa-ticket"></i> MARKETPLACE TIKET TERVERIFIKASI</div>
+          <h2 style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">Tiket Terverifikasi Siap Transaksi</h2>
+          <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+            Setiap tiket dilindungi anti-duplikasi barcode, dana tertahan di rekening bersama (escrow iPaymu), dan verifikasi fisik Event PIC di venue.
+          </p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <a href="/create" class="btn btn-sm"><i class="fa-solid fa-plus-circle"></i> Jual Tiket Anda</a>
+        </div>
+      </div>
+
+      <!-- Listings Loading Indicator -->
+      <div id="listingsLoading" style="text-align: center; padding: 30px; color: var(--text-muted);">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 8px; color: var(--cyan);"></i>
+        <div>Memuat listing tiket resmi dari marketplace...</div>
+      </div>
+
+      <!-- Listings Empty State -->
+      <div id="listingsEmpty" class="card" style="display: none; text-align: center; padding: 40px 20px;">
+        <i class="fa-solid fa-ticket-simple" style="font-size: 36px; color: var(--text-dim); margin-bottom: 12px;"></i>
+        <h3 style="font-size: 16px; margin-bottom: 8px;">Belum Ada Tiket Terverifikasi yang Aktif</h3>
+        <p style="font-size: 13px; color: var(--text-muted); max-width: 480px; margin: 0 auto 16px;">
+          Punya tiket yang ingin dipindahtangankan secara aman? Daftarkan tiket Anda untuk diverifikasi oleh Trust Officer ARGUS.
+        </p>
+        <a href="/create" class="btn btn-sm"><i class="fa-solid fa-plus"></i> Daftarkan Penjualan Tiket</a>
+      </div>
+
+      <!-- Listings Grid / Carousel -->
+      <div id="listingsGrid" class="grid-3" style="display: none;">
+        <!-- Dynamically rendered via Javascript -->
+      </div>
+    </section>
+
     <!-- Event Catalog Section -->
     <section id="events" style="margin-top: 50px;">
       <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
@@ -378,7 +415,114 @@
       return div.innerHTML;
     }
 
-    // Load initial events
+    async function loadListings() {
+      const loadingEl = document.getElementById('listingsLoading');
+      const gridEl = document.getElementById('listingsGrid');
+      const emptyEl = document.getElementById('listingsEmpty');
+
+      try {
+        const res = await fetch('/api/mvp/listings');
+        if (!res.ok) throw new Error('Gagal mengambil data listing tiket');
+        const data = await res.json();
+
+        loadingEl.style.display = 'none';
+
+        if (!data.listings || data.listings.length === 0) {
+          emptyEl.style.display = 'block';
+          return;
+        }
+
+        gridEl.innerHTML = data.listings.map(l => {
+          const faceValue = l.face_value ? `Rp ${l.face_value.toLocaleString('id-ID')}` : '-';
+          const askingPrice = (l.seller_asking_price || l.price) ? `Rp ${(l.seller_asking_price || l.price).toLocaleString('id-ID')}` : '-';
+          const buyerTotal = (l.buyer_total_price || (l.pricing && l.pricing.totalAmount)) 
+            ? `Rp ${(l.buyer_total_price || l.pricing.totalAmount).toLocaleString('id-ID')}`
+            : askingPrice;
+
+          const picBadge = l.pic_available
+            ? `<span class="badge badge-success" title="Personel PIC ARGUS siap menyambut di venue"><i class="fa-solid fa-user-shield"></i> PIC Venue Siaga</span>`
+            : `<span class="badge badge-info" title="PIC ARGUS akan ditugaskan sesuai jadwal turnstile"><i class="fa-solid fa-shield-check"></i> Dukungan Venue</span>`;
+
+          const verifBadge = `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> TERVERIFIKASI</span>`;
+
+          return `
+            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; border-color: rgba(6, 182, 212, 0.3); background: rgba(15, 23, 42, 0.85);">
+              <div>
+                <!-- Header Tags: Category & Verification -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 6px;">
+                  <span class="badge badge-cyan" style="font-weight: 700;">${escapeHtml(l.ticket_category || 'TIKET')}</span>
+                  <div style="display: flex; gap: 4px;">
+                    ${verifBadge}
+                  </div>
+                </div>
+
+                <!-- Event Title -->
+                <h3 style="font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 8px; line-height: 1.3;">
+                  ${escapeHtml(l.event_title || 'Tiket Acara')}
+                </h3>
+
+                <!-- Date & Venue -->
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">
+                  <i class="fa-regular fa-calendar" style="width: 16px; color: var(--cyan);"></i> ${escapeHtml(l.event_date || '-')}
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+                  <i class="fa-solid fa-location-dot" style="width: 16px; color: var(--cyan);"></i> ${escapeHtml(l.venue_name || '-')}, ${escapeHtml(l.venue_city || 'Jakarta')}
+                </div>
+
+                <!-- Seat / Location Meta -->
+                <div style="background: rgba(30, 41, 59, 0.7); border-radius: 6px; padding: 8px 10px; margin-bottom: 14px; font-size: 12px;">
+                  <div style="color: var(--text-dim); font-size: 10px; text-transform: uppercase; font-weight: 600;">Posisi Kursi / Kategori:</div>
+                  <div style="color: #fff; font-weight: 700; margin-top: 2px;">${escapeHtml(l.seat_info || '-')}</div>
+                </div>
+
+                <!-- PIC Support Telemetry Badge -->
+                <div style="margin-bottom: 14px;">
+                  ${picBadge}
+                </div>
+              </div>
+
+              <!-- Price Breakdown & Actions -->
+              <div>
+                <div class="price-breakdown" style="padding: 10px 12px; margin-bottom: 14px; font-size: 12px;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="color: var(--text-muted);">Harga Asli (Face Value):</span>
+                    <span class="mono" style="color: var(--text-muted); text-decoration: line-through;">${faceValue}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="color: var(--text-muted);">Harga Penjual:</span>
+                    <span class="mono" style="color: #fff; font-weight: 600;">${askingPrice}</span>
+                  </div>
+                  <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px; margin-top: 6px; display: flex; justify-content: space-between; align-items: baseline;">
+                    <span style="font-weight: 700; color: #fff;">Total Pembeli (All-in):</span>
+                    <strong class="mono" style="color: var(--cyan); font-size: 15px;">${buyerTotal}</strong>
+                  </div>
+                </div>
+
+                <!-- Core Marketplace CTAs: Buy Now & Make Offer -->
+                <div style="display: flex; gap: 8px;">
+                  <a href="/pay?id=${encodeURIComponent(l.id)}" class="btn btn-sm" style="flex: 1; text-align: center;">
+                    <i class="fa-solid fa-bolt"></i> Beli Langsung
+                  </a>
+                  <a href="/pay?id=${encodeURIComponent(l.id)}&action=offer" class="btn btn-secondary btn-sm" style="flex: 1; text-align: center;">
+                    <i class="fa-solid fa-handshake"></i> Tawar Harga
+                  </a>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        gridEl.style.display = 'grid';
+
+      } catch (err) {
+        console.error(err);
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+      }
+    }
+
+    // Load initial listings and events
+    loadListings();
     loadEvents();
   </script>
 </body>
