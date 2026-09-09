@@ -22,6 +22,82 @@
   --radius-lg: 14px;
 }
 
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-hover: #f1f5f9;
+  --border: #e2e8f0;
+  --border-focus: #2563eb;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #64748b;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-glow: rgba(37, 99, 235, 0.12);
+  --cyan: #0284c7;
+  --success: #059669;
+  --success-bg: rgba(5, 150, 105, 0.1);
+  --warning: #d97706;
+  --warning-bg: rgba(217, 119, 6, 0.1);
+  --danger: #dc2626;
+  --danger-bg: rgba(220, 38, 38, 0.1);
+}
+
+[data-theme="light"] .site-header {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .site-footer {
+  background: #f1f5f9 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  color: #475569;
+}
+
+[data-theme="light"] .card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .hero h1 {
+  color: #0f172a;
+}
+
+[data-theme="light"] .footer-col h4,
+[data-theme="light"] .footer-business div {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .footer-address div {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .form-control {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .btn-secondary {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .btn-secondary:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+[data-theme="light"] .price-breakdown {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .notice-box {
+  background: #f8fafc;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

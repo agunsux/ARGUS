@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ARGUS — Buat Transfer Tiket Terverifikasi</title>
+  <title>Tikum — Buat Transfer Tiket Terverifikasi | by Shinerva</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -15,8 +15,8 @@
       <a href="/" class="brand">
         <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
-          <div class="brand-title">ARGUS</div>
-          <span class="brand-subtitle">Verified Ticket Transfer</span>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Verified Ticket Marketplace</span>
         </div>
       </a>
 
@@ -24,6 +24,8 @@
         <a href="/" class="nav-link"><i class="fa-solid fa-arrow-left"></i> Kembali ke Beranda</a>
         <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
         <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
+        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleLang()" style="padding: 4px 10px; font-size: 11px;" title="Switch Language"><i class="fa-solid fa-globe"></i> <span id="langLabel">EN</span></button>
+        <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleTheme()" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
   </header>
@@ -46,7 +48,7 @@
           <i class="fa-solid fa-check"></i>
         </div>
         <div>
-          <h3 style="font-size: 18px; font-weight: 700; color: #34d399; margin-bottom: 2px;">Listing Berhasil Dibuat di Server ARGUS</h3>
+          <h3 style="font-size: 18px; font-weight: 700; color: #34d399; margin-bottom: 2px;">Listing Berhasil Dibuat di Server Tikum</h3>
           <div style="font-size: 13px; color: var(--text-muted);">Data transaksi telah dicatat ke dalam database ledger kami.</div>
         </div>
       </div>
@@ -73,14 +75,14 @@
       <div id="resUserEventWarning" class="notice-box notice-warning" style="display: none;">
         <i class="fa-solid fa-triangle-exclamation"></i>
         <div>
-          <strong>Catatan Event Komunitas:</strong> Event ini didaftarkan oleh pengguna dan belum diverifikasi resmi oleh ARGUS. Listing ini akan diberi tanda peringatan kepada calon pembeli.
+          <strong>Catatan Event Komunitas:</strong> Event ini didaftarkan oleh pengguna dan belum diverifikasi resmi oleh kurator Tikum. Listing ini akan diberi tanda peringatan kepada calon pembeli.
         </div>
       </div>
 
       <div class="notice-box notice-info">
         <i class="fa-solid fa-circle-info"></i>
         <div>
-          <strong>Langkah Selanjutnya:</strong> Tim kurasi ARGUS akan memvalidasi keaslian barcode tiket. Setelah status berubah menjadi <code class="mono">ACTIVE</code>, tiket siap dibeli oleh pembeli menggunakan tautan pembayaran terlindungi.
+          <strong>Langkah Selanjutnya:</strong> Tim kurasi Tikum (didukung ARGUS Trust Engine) akan memvalidasi keaslian barcode tiket. Setelah status berubah menjadi <code class="mono">ACTIVE</code>, tiket siap dibeli oleh pembeli menggunakan tautan pembayaran terlindungi.
         </div>
       </div>
 
@@ -129,7 +131,7 @@
             </div>
             <div id="prevEventWarning" class="notice-box notice-warning" style="display: none; margin-top: 10px; margin-bottom: 0; padding: 8px 12px; font-size: 12px;">
               <i class="fa-solid fa-triangle-exclamation"></i>
-              <span>Event ini didaftarkan oleh komunitas dan belum diverifikasi resmi oleh tim ARGUS.</span>
+              <span>Event ini didaftarkan oleh komunitas dan belum diverifikasi resmi oleh tim kurasi Tikum.</span>
             </div>
           </div>
         </div>
@@ -190,7 +192,7 @@
               <span id="calcSellerAmount" class="mono">Rp 0</span>
             </div>
             <div class="price-row">
-              <span>Biaya Layanan &amp; Verifikasi PIC ARGUS (10%):</span>
+              <span>Biaya Layanan &amp; Verifikasi PIC Lapangan (10%):</span>
               <span id="calcFeeAmount" class="mono">Rp 0</span>
             </div>
             <div class="price-row total">
@@ -249,7 +251,7 @@
               <option value="usr-seller-unverified">usr-seller-unverified (Akun Belum Verifikasi NIK - Uji Tolak)</option>
             </select>
             <span style="font-size: 11px; color: var(--text-dim);">
-              Sistem ARGUS mewajibkan status seller verified sebelum listing dapat dibuat.
+              Sistem Tikum mewajibkan status seller verified sebelum listing dapat dibuat.
             </span>
           </div>
         </div>
@@ -258,7 +260,7 @@
         <div id="formError" class="notice-box notice-warning" style="display: none;"></div>
 
         <button type="submit" id="btnSubmitListing" class="btn" style="width: 100%; padding: 14px; font-size: 15px;">
-          <i class="fa-solid fa-shield-check"></i> Daftarkan Tiket ke Ledger ARGUS
+          <i class="fa-solid fa-shield-check"></i> Daftarkan Tiket ke Tikum
         </button>
       </form>
     </div>
@@ -275,7 +277,7 @@
       </div>
 
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-        Event baru akan tersimpan di database ARGUS dengan status <strong>USER_CREATED</strong>. Listing yang dibuat pada event ini akan memiliki status awal unverified hingga dikurasi oleh admin.
+        Event baru akan tersimpan di database Tikum dengan status <strong>USER_CREATED</strong>. Listing yang dibuat pada event ini akan memiliki status awal unverified hingga dikurasi oleh tim kami.
       </p>
 
       <form id="newEventForm" onsubmit="handleCreateNewEvent(event)">
@@ -350,10 +352,10 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> ARGUS — SHINERVA HQ
+          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> Tikum — by Shinerva
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Infrastruktur transfer tiket sekunder terverifikasi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+          Verified Ticket Marketplace by Shinerva. Didukung oleh ARGUS Trust Engine dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
         </p>
         <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
@@ -390,7 +392,7 @@
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
-      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang.
+      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. Powered by ARGUS Trust Engine.
     </div>
   </footer>
 
@@ -443,7 +445,7 @@
       
       const badge = document.getElementById('prevEventBadge');
       if (ev.is_verified) {
-        badge.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> RESMI ARGUS</span>';
+        badge.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> RESMI TERVERIFIKASI</span>';
         warning.style.display = 'none';
       } else {
         badge.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> EVENT KOMUNITAS</span>';
@@ -546,7 +548,7 @@
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghubungi Server ARGUS...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghubungi Server Tikum...';
 
       const sellerId = document.getElementById('sellerId').value;
       const formData = new FormData();
@@ -605,7 +607,7 @@
         errEl.style.display = 'block';
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-shield-check"></i> Daftarkan Tiket ke Ledger ARGUS';
+        btn.innerHTML = '<i class="fa-solid fa-shield-check"></i> Daftarkan Tiket ke Tikum';
       }
     }
 
@@ -628,5 +630,6 @@
     // Initialize
     initEvents();
   </script>
+  <script src="/js/i18n.js"></script>
 </body>
 </html>

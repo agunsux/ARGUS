@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ARGUS — Pembelian &amp; Perlindungan Transaksi Tiket</title>
+  <title>Tikum — Pembelian &amp; Perlindungan Transaksi Tiket | by Shinerva</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -15,8 +15,8 @@
       <a href="/" class="brand">
         <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
-          <div class="brand-title">ARGUS</div>
-          <span class="brand-subtitle">Verified Ticket Transfer</span>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Verified Ticket Marketplace</span>
         </div>
       </a>
 
@@ -25,6 +25,8 @@
         <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> Tawaran Harga</a>
         <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
         <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
+        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleLang()" style="padding: 4px 10px; font-size: 11px;" title="Switch Language"><i class="fa-solid fa-globe"></i> <span id="langLabel">EN</span></button>
+        <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleTheme()" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
   </header>
@@ -35,7 +37,7 @@
     <!-- Loading State -->
     <div id="payLoading" style="text-align: center; padding: 60px 20px;">
       <i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: var(--cyan); margin-bottom: 14px;"></i>
-      <div style="font-size: 15px; color: var(--text-muted);">Mengambil data listing resmi dari server ARGUS...</div>
+      <div style="font-size: 15px; color: var(--text-muted);">Mengambil data listing resmi dari server Tikum...</div>
     </div>
 
     <!-- Error / Not Found State -->
@@ -43,7 +45,7 @@
       <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--danger); margin-bottom: 14px;"></i>
       <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Listing Tiket Tidak Ditemukan</h2>
       <p id="payNotFoundMsg" style="font-size: 14px; color: var(--text-muted); max-width: 480px; margin: 0 auto 24px;">
-        ID listing yang Anda tuju tidak terdaftar atau telah kedaluwarsa dari sistem ledger ARGUS.
+        ID listing yang Anda tuju tidak terdaftar atau telah kedaluwarsa dari sistem ledger Tikum.
       </p>
       <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
         <a href="/" class="btn"><i class="fa-solid fa-calendar-days"></i> Lihat Katalog Event</a>
@@ -58,7 +60,7 @@
         <div class="hero-pill"><i class="fa-solid fa-vault"></i> REKENING PENAMPUNGAN TERLINDUNGI</div>
         <h1 style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Konfirmasi Pesanan &amp; Perlindungan Pembeli</h1>
         <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
-          Dana Anda ditahan di sistem internal ARGUS dan hanya dicairkan ke penjual setelah Anda berhasil melewati pintu masuk venue.
+          Dana Anda ditahan di sistem internal Tikum (didukung oleh ARGUS Trust Engine) dan hanya dicairkan ke penjual setelah Anda berhasil melewati pintu masuk venue.
         </p>
       </div>
 
@@ -66,7 +68,7 @@
       <div id="communityEventWarning" class="notice-box notice-warning" style="display: none;">
         <i class="fa-solid fa-triangle-exclamation"></i>
         <div>
-          <strong>Peringatan Event Komunitas:</strong> Event ini didaftarkan oleh pengguna dan belum diverifikasi resmi oleh kurator ARGUS. Dana pembelian Anda tetap 100% terlindungi oleh rekening penampungan internal ARGUS hingga tiket terbukti valid di gerbang acara.
+          <strong>Peringatan Event Komunitas:</strong> Event ini didaftarkan oleh pengguna dan belum diverifikasi resmi oleh kurator Tikum. Dana pembelian Anda tetap terlindungi oleh rekening penampungan internal Tikum hingga tiket terbukti valid di gerbang acara.
         </div>
       </div>
 
@@ -127,7 +129,7 @@
 
         <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
           <i class="fa-solid fa-shield-check" style="color: var(--success); margin-right: 4px;"></i>
-          <strong>Garansi ARGUS:</strong> Jika tiket ditolak di gerbang venue karena invalid atau palsu, seluruh dana pembeli (termasuk biaya layanan) dikembalikan 100%.
+          <strong>Garansi Tikum:</strong> Kebijakan pengembalian dana Tikum sesuai ketentuan Refund Policy dan status transaksi yang berlaku.
         </div>
       </div>
 
@@ -146,7 +148,7 @@
         <div class="notice-box notice-info" style="font-size: 12px;">
           <i class="fa-solid fa-circle-info"></i>
           <div>
-            <strong>Keterbukaan Integrasi Gateway:</strong> Pada tahap pilot saat ini, transaksi diproses melalui simulasi rekening penampungan internal ARGUS. Dana ditahan di ledger kami hingga PIC lapangan mencatat verifikasi masuk venue.
+            <strong>Keterbukaan Integrasi Gateway:</strong> Pada tahap pilot saat ini, transaksi diproses melalui simulasi rekening penampungan internal Tikum yang ditenagai oleh ARGUS Trust Engine. Dana ditahan di ledger kami hingga PIC lapangan mencatat verifikasi masuk venue.
           </div>
         </div>
 
@@ -624,5 +626,6 @@
     // Initialize
     loadListingData();
   </script>
+  <script src="/js/i18n.js"></script>
 </body>
 </html>

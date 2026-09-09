@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ARGUS — Pelacakan Transaksi &amp; Audit Trail Real-Time</title>
+  <title>Tikum — Pelacakan Transaksi &amp; Audit Trail Real-Time | Powered by ARGUS Trust Engine</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -15,15 +15,19 @@
       <a href="/" class="brand">
         <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
-          <div class="brand-title">ARGUS</div>
-          <span class="brand-subtitle">Verified Ticket Transfer</span>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Verified Ticket Marketplace</span>
         </div>
       </a>
 
       <nav class="main-nav">
         <a href="/" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Buat Transfer Tiket</a>
+        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Jual Tiket</a>
         <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
+        <div class="nav-controls" style="display: inline-flex; gap: 8px; margin-left: 12px; align-items: center;">
+          <button id="btnLangToggle" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px; font-weight: 700;">EN</button>
+          <button id="btnThemeToggle" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px;" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon"></i></button>
+        </div>
       </nav>
     </div>
   </header>
@@ -36,7 +40,7 @@
       <div class="hero-pill"><i class="fa-solid fa-magnifying-glass"></i> AUDIT TRAIL PUBLIK AMAN PII</div>
       <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Lacak Status Transaksi &amp; Verifikasi Gerbang</h1>
       <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px; max-width: 600px; margin-left: auto; margin-right: auto;">
-        Setiap perubahan status tiket diverifikasi secara kriptografis dan dicatat secara permanen di audit trail ARGUS.
+        Setiap perubahan status tiket diverifikasi secara kriptografis dan dicatat secara permanen di audit trail Tikum (powered by ARGUS Trust Engine).
       </p>
 
       <!-- Input Bar -->
@@ -58,7 +62,7 @@
     <!-- Loading State -->
     <div id="trackLoading" style="display: none; text-align: center; padding: 40px 20px;">
       <i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--cyan); margin-bottom: 12px;"></i>
-      <div style="font-size: 14px; color: var(--text-muted);">Memverifikasi ID dengan database ledger ARGUS...</div>
+      <div style="font-size: 14px; color: var(--text-muted);">Memverifikasi ID dengan database ledger ARGUS Trust Engine...</div>
     </div>
 
     <!-- Error / Not Found State -->
@@ -130,7 +134,7 @@
               <i class="fa-solid fa-fingerprint" style="color: var(--cyan);"></i> Barcode Anti-Duplikasi
             </div>
             <div style="color: var(--text-muted); font-size: 12px;">
-              Hash SHA-256 tersimpan di database ARGUS. Sistem memblokir secara otomatis jika nomor barcode tiket yang sama didaftarkan oleh pihak lain.
+              Hash SHA-256 tersimpan di database ARGUS Trust Engine. Sistem memblokir secara otomatis jika nomor barcode tiket yang sama didaftarkan oleh pihak lain.
             </div>
           </div>
 
@@ -139,7 +143,7 @@
               <i class="fa-solid fa-vault" style="color: var(--warning);"></i> Status Rekening Penampungan
             </div>
             <div id="escrowProtectionText" style="color: var(--text-muted); font-size: 12px;">
-              Dana pembeli ditahan di sistem penampungan transaksi internal ARGUS hingga pembeli terverifikasi masuk ke dalam venue.
+              Dana pembeli ditahan di rekening penampungan transaksi internal Tikum (ARGUS Escrow) hingga pembeli terverifikasi masuk ke dalam venue.
             </div>
           </div>
 
@@ -172,10 +176,10 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> ARGUS — SHINERVA HQ
+          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> Tikum — by Shinerva
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Infrastruktur transfer tiket sekunder terverifikasi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+          Verified Ticket Marketplace by Shinerva. Didukung oleh ARGUS Trust Engine dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
         </p>
         <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
@@ -212,9 +216,11 @@
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
-      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang.
+      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. Powered by ARGUS Trust Engine.
     </div>
   </footer>
+
+  <script src="/js/i18n.js"></script>
 
   <script>
     function getIdFromUrl() {
@@ -325,7 +331,7 @@
       let html = `
         <div class="timeline-step completed">
           <div class="timeline-marker"><i class="fa-solid fa-check"></i></div>
-          <div class="timeline-title">Pesanan Dibuat di Ledger ARGUS</div>
+          <div class="timeline-title">Pesanan Dibuat di Tikum (ARGUS Trust Engine)</div>
           <div class="timeline-desc">Tiket dikunci dari marketplace dan terikat pada pembeli.</div>
         </div>
 
@@ -347,7 +353,7 @@
           <div class="timeline-step current" style="border-left-color: var(--danger);">
             <div class="timeline-marker" style="background: #dc2626; border-color: #f87171; color: #fff;"><i class="fa-solid fa-triangle-exclamation"></i></div>
             <div class="timeline-title" style="color: #f87171;">Protokol Sengketa Tiket Aktif (${tx.status})</div>
-            <div class="timeline-desc">Laporan sengketa gerbang sedang diinvestigasi oleh Event PIC dan Tim Resolusi ARGUS.</div>
+            <div class="timeline-desc">Laporan sengketa gerbang sedang diinvestigasi oleh Event PIC dan Tim Resolusi Tikum / ARGUS Trust Engine.</div>
           </div>
         `;
       } else {
@@ -378,7 +384,7 @@
         <div class="timeline-step ${isVerified ? 'completed' : 'current'}">
           <div class="timeline-marker">${isVerified ? '<i class="fa-solid fa-check"></i>' : '2'}</div>
           <div class="timeline-title">Kurasi &amp; Verifikasi Keaslian Tiket</div>
-          <div class="timeline-desc">Pemeriksaan integritas tiket oleh Tim Kurator ARGUS. Status saat ini: <strong>${tx.status}</strong>.</div>
+          <div class="timeline-desc">Pemeriksaan integritas tiket oleh Tim Kurator ARGUS Trust Engine. Status saat ini: <strong>${tx.status}</strong>.</div>
         </div>
 
         <div class="timeline-step ${isReserved ? 'completed' : ''}">

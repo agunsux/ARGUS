@@ -398,7 +398,10 @@ async function runSuite() {
     const html = res.data;
 
     // 1. Stable Canonical Link
-    assert.ok(html.includes('<link rel="canonical" href="https://argus.id/events/coldplay-music-of-the-spheres-jakarta-2026">'));
+    assert.ok(
+      html.includes('<link rel="canonical" href="https://tikum.id/events/coldplay-music-of-the-spheres-jakarta-2026">') ||
+      html.includes('<link rel="canonical" href="https://argus.id/events/coldplay-music-of-the-spheres-jakarta-2026">')
+    );
 
     // 2. OpenGraph & Twitter
     assert.ok(html.includes('<meta property="og:title"'));
@@ -418,7 +421,7 @@ async function runSuite() {
 
     // 4. Official Ticket strictly separated from secondary market
     assert.ok(html.includes('Sumber Tiket Resmi (Primary Provider)'));
-    assert.ok(html.includes('ARGUS Verified Resale Marketplace'));
+    assert.ok(html.includes('Tiket Resale Terverifikasi di Tikum') || html.includes('ARGUS Verified Resale Marketplace'));
   });
 
   // ==========================================

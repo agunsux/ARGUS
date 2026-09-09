@@ -1,11 +1,26 @@
 /**
- * ARGUS Canonical Business Profile & Official Contact Configuration
- * 
+ * Tikum Canonical Brand & Business Profile Configuration
+ *
+ * BRAND ARCHITECTURE:
+ * SHINERVA (Parent Company)
+ *    ↓
+ * TIKUM (Consumer Brand — Verified Ticket Marketplace)
+ *    ↓
+ * ARGUS Trust Engine (Internal Trust, Security & Operations Infrastructure)
+ *
  * CANONICAL SOURCE OF TRUTH for iPaymu Compliance & Public Trust Pages.
- * All public-facing components, footers, legal pages, and APIs MUST consume this data.
  */
 
 const businessProfile = {
+  brandName: 'Tikum',
+  brandTagline: 'Verified Ticket Marketplace',
+  brandSlogan: 'Tiket terverifikasi. Transaksi terlindungi.',
+  parentCompany: 'Shinerva',
+  parentEntity: 'SHINERVA HQ',
+  engineName: 'ARGUS Trust Engine',
+  canonicalRelationship: 'Tikum — Verified Ticket Marketplace by Shinerva',
+
+  // Official Business Entity for iPaymu compliance
   name: 'SHINERVA HQ',
   email: 'agunsux@gmail.com',
   phone: '081299927378',
@@ -34,13 +49,13 @@ const businessProfile = {
 function renderFooterHtml() {
   return `
   <footer class="site-footer" style="background: rgba(10, 15, 29, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 48px 24px 32px; margin-top: 60px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-    <div class="footer-container" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 32px;">
+    <div class="footer-container" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 40px;">
       <div class="footer-col footer-business">
-        <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: #06b6d4;"></i> ARGUS — ${businessProfile.name}
+        <div style="font-weight: 800; font-size: 16px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-shield-halved" style="color: #06b6d4;"></i> Tikum — by Shinerva
         </div>
         <p style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Infrastruktur transfer tiket sekunder terverifikasi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+          Marketplace tiket sekunder terverifikasi. Transaksi aman dengan rekening penampungan internal (escrow) dan pendampingan fisik di gerbang venue. Infrastruktur keamanan dan penjaminan ditenagai oleh <strong>ARGUS Trust Engine</strong>.
         </p>
         <div class="footer-address" style="color: #94a3b8; font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
@@ -52,7 +67,7 @@ function renderFooterHtml() {
       </div>
 
       <div class="footer-col footer-contact-col">
-        <div style="font-weight: 700; color: #fff; margin-bottom: 8px; font-size: 14px;">Kontak Resmi</div>
+        <div style="font-weight: 700; color: #fff; margin-bottom: 12px; font-size: 14px;">Kontak Resmi</div>
         <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
           <div>
             <span style="color: #64748b;">Email:</span>
@@ -66,7 +81,7 @@ function renderFooterHtml() {
       </div>
 
       <div class="footer-col footer-links-col">
-        <div style="font-weight: 700; color: #fff; margin-bottom: 8px; font-size: 14px;">Layanan &amp; Legalitas</div>
+        <div style="font-weight: 700; color: #fff; margin-bottom: 12px; font-size: 14px;">Layanan &amp; Legalitas</div>
         <div class="footer-links" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
           <a href="${businessProfile.legalLinks.faq}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-circle-question"></i> FAQ / Pertanyaan Umum</a>
           <a href="${businessProfile.legalLinks.terms}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-file-contract"></i> Syarat &amp; Ketentuan</a>
@@ -77,7 +92,7 @@ function renderFooterHtml() {
       </div>
     </div>
     <div style="max-width: 1200px; margin: 32px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: #64748b;">
-      &copy; 2026 ${businessProfile.name}. Seluruh hak cipta dilindungi undang-undang.
+      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. Powered by ARGUS Trust Engine.
     </div>
   </footer>
   `;

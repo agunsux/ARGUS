@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ARGUS — Verified Ticket Transfer Infrastructure</title>
+  <title>Tikum — Verified Ticket Marketplace by Shinerva</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -15,8 +15,8 @@
       <a href="/" class="brand">
         <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
-          <div class="brand-title">ARGUS</div>
-          <span class="brand-subtitle">Verified Ticket Transfer</span>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Verified Ticket Marketplace</span>
         </div>
       </a>
 
@@ -26,6 +26,8 @@
         <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Buat Transfer Tiket</a>
         <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
         <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
+        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleLang()" style="padding: 4px 10px; font-size: 11px;" title="Switch Language"><i class="fa-solid fa-globe"></i> <span id="langLabel">EN</span></button>
+        <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleTheme()" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
   </header>
@@ -38,9 +40,9 @@
       <div class="hero-pill">
         <i class="fa-solid fa-shield-check"></i> TRUST LAYER TRANSFER TIKET INDONESIA
       </div>
-      <h1>Infrastruktur Transfer Tiket Terverifikasi dengan Perlindungan Fisik di Venue</h1>
+      <h1>Marketplace Tiket Terverifikasi dengan Perlindungan Fisik di Venue</h1>
       <p>
-        Bukan marketplace spekulatif. ARGUS melindungi pembeli dan penjual dengan dana tertahan di rekening penampungan internal hingga tiket terbukti valid dan pembeli sukses memasuki venue bersama Event PIC lapangan kami.
+        Bukan marketplace spekulatif. Tikum melindungi pembeli dan penjual dengan dana tertahan di rekening penampungan internal yang ditenagai oleh ARGUS Trust Engine hingga tiket terbukti valid dan pembeli sukses memasuki venue bersama Event PIC lapangan kami.
       </p>
 
       <!-- Quick Tracker Box -->
@@ -75,12 +77,12 @@
         <div>
           <div style="color: var(--warning); font-size: 20px; margin-bottom: 6px;"><i class="fa-solid fa-vault"></i></div>
           <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Perlindungan Rekening Penampungan</div>
-          <div style="font-size: 12px; color: var(--text-muted);">Dana pembeli diamankan di sistem ARGUS hingga gerbang masuk venue dilewati secara sah.</div>
+          <div style="font-size: 12px; color: var(--text-muted);">Dana pembeli diamankan di sistem Tikum hingga gerbang masuk venue dilewati secara sah.</div>
         </div>
         <div>
           <div style="color: var(--success); font-size: 20px; margin-bottom: 6px;"><i class="fa-solid fa-user-shield"></i></div>
           <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Verifikasi Lapangan di Venue</div>
-          <div style="font-size: 12px; color: var(--text-muted);">Event PIC ARGUS bersiaga di gerbang venue dengan dual-handshake OTP dan bukti fisik.</div>
+          <div style="font-size: 12px; color: var(--text-muted);">Event PIC Tikum bersiaga di gerbang venue dengan dual-handshake OTP dan bukti fisik.</div>
         </div>
       </div>
     </div>
@@ -111,7 +113,7 @@
         <i class="fa-solid fa-ticket-simple" style="font-size: 36px; color: var(--text-dim); margin-bottom: 12px;"></i>
         <h3 style="font-size: 16px; margin-bottom: 8px;">Belum Ada Tiket Terverifikasi yang Aktif</h3>
         <p style="font-size: 13px; color: var(--text-muted); max-width: 480px; margin: 0 auto 16px;">
-          Punya tiket yang ingin dipindahtangankan secara aman? Daftarkan tiket Anda untuk diverifikasi oleh Trust Officer ARGUS.
+          Punya tiket yang ingin dipindahtangankan secara aman? Daftarkan tiket Anda untuk diverifikasi oleh Trust Officer Tikum.
         </p>
         <a href="/create" class="btn btn-sm"><i class="fa-solid fa-plus"></i> Daftarkan Penjualan Tiket</a>
       </div>
@@ -175,7 +177,7 @@
       <!-- Events Loading Indicator -->
       <div id="eventsLoading" style="text-align: center; padding: 40px; color: var(--text-muted);">
         <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px; color: var(--cyan);"></i>
-        <div>Memuat katalog event resmi dari database ARGUS...</div>
+        <div>Memuat katalog event resmi dari database Tikum...</div>
       </div>
 
       <!-- Events Empty State -->
@@ -198,9 +200,9 @@
     <section id="protocol" style="margin-top: 70px;">
       <div style="text-align: center; max-width: 720px; margin: 0 auto 30px;">
         <div class="hero-pill"><i class="fa-solid fa-code-branch"></i> PROTOKOL RESMI</div>
-        <h2 style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Bagaimana ARGUS Menjamin Transaksi</h2>
+        <h2 style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Bagaimana Tikum Menjamin Transaksi</h2>
         <p style="font-size: 14px; color: var(--text-muted);">
-          Arsitektur 4 lapis yang membongkar praktik penipuan tiket sekunder tanpa mengorbankan privasi.
+          Arsitektur 4 lapis yang ditenagai oleh ARGUS Trust Engine untuk membongkar praktik penipuan tiket sekunder tanpa mengorbankan privasi.
         </p>
       </div>
 
@@ -211,7 +213,7 @@
             Verifikasi Penjual &amp; Barcode Hashing
           </div>
           <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
-            Setiap penjual melewati verifikasi NIK dan batas listing aktif. Barcode dan nomor seri tiket di-hash menggunakan algoritma SHA-256 pada level database. Jika barcode yang sama didaftarkan oleh penjual lain, sistem menolak secara instan untuk mencegah duplikasi.
+            Setiap penjual melewati verifikasi identitas dan batas listing aktif. Barcode dan nomor seri tiket di-hash menggunakan algoritma SHA-256 pada level database. Jika barcode yang sama didaftarkan oleh penjual lain, sistem menolak secara instan untuk mencegah duplikasi.
           </p>
         </div>
 
@@ -221,7 +223,7 @@
             Rekening Penampungan Transaksi Internal
           </div>
           <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
-            Saat pembeli menyelesaikan pembayaran, dana diamankan di rekening penampungan transaksi internal ARGUS. Penjual TIDAK menerima pembayaran di muka. Dana tetap terkunci secara kriptografis hingga tiket berhasil dipindai dan diverifikasi di venue.
+            Saat pembeli menyelesaikan pembayaran, dana diamankan di rekening penampungan transaksi internal Tikum. Penjual TIDAK menerima pembayaran di muka. Dana tetap terkunci secara kriptografis hingga tiket berhasil dipindai dan diverifikasi di venue.
           </p>
         </div>
 
@@ -231,7 +233,7 @@
             Kehadiran Fisik Event PIC di Lokasi Venue
           </div>
           <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
-            ARGUS menugaskan Person in Charge (Event PIC) terlatih di setiap venue konser/acara. PIC melakukan proses serah terima tiket (jika fisik/wristband) atau mendampingi pembeli saat pemindaian e-voucher dengan verifikasi kode sandi unik 6-digit dual-handshake.
+            Tikum menugaskan Person in Charge (Event PIC) terlatih di setiap venue konser/acara. PIC melakukan proses serah terima tiket (jika fisik/wristband) atau mendampingi pembeli saat pemindaian e-voucher dengan verifikasi kode sandi unik 6-digit dual-handshake.
           </p>
         </div>
 
@@ -241,7 +243,7 @@
             Pencairan Dana Berbasis Bukti Nyata Turnstile
           </div>
           <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
-            Dana hanya dicairkan kepada penjual setelah Event PIC mengonfirmasi status <code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code> lengkap dengan dokumentasi foto gerbang. Jika tiket ditolak di turnstile promotor, dana pembeli dikembalikan 100% via protokol sengketa kami.
+            Dana hanya dicairkan kepada penjual setelah Event PIC mengonfirmasi status <code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code> lengkap dengan dokumentasi foto gerbang. Kebijakan pengembalian dana Tikum sesuai ketentuan Refund Policy dan status transaksi yang berlaku via protokol sengketa kami.
           </p>
         </div>
       </div>
@@ -251,8 +253,8 @@
     <div class="notice-box notice-info" style="margin-top: 40px;">
       <i class="fa-solid fa-circle-info"></i>
       <div>
-        <strong>Pernyataan Keterbukaan Sistem (Pilot Infrastructure Phase):</strong><br>
-        ARGUS adalah penyedia trust layer verifikasi tiket independen. ARGUS tidak berafiliasi dengan promotor acara resmi. Verifikasi tiket di gerbang venue dilakukan oleh personel lapangan Event PIC ARGUS secara langsung, bukan melalui integrasi API turnstile promotor otomatis yang belum dibuka untuk pihak ketiga.
+        <strong>Pernyataan Keterbukaan Sistem:</strong><br>
+        Tikum adalah marketplace tiket terverifikasi oleh Shinerva dengan verifikasi yang ditenagai oleh ARGUS Trust Engine. Tikum tidak berafiliasi dengan promotor acara resmi. Verifikasi tiket di gerbang venue dilakukan oleh personel lapangan Event PIC Tikum secara langsung, bukan melalui integrasi API turnstile promotor otomatis yang belum dibuka untuk pihak ketiga.
       </div>
     </div>
 
@@ -263,10 +265,10 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> ARGUS — SHINERVA HQ
+          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> Tikum — by Shinerva
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Infrastruktur transfer tiket sekunder terverifikasi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+          Verified Ticket Marketplace by Shinerva. Didukung oleh ARGUS Trust Engine dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
         </p>
         <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
@@ -303,7 +305,7 @@
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
-      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang.
+      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. Powered by ARGUS Trust Engine.
     </div>
   </footer>
 
@@ -558,5 +560,6 @@
     loadListings();
     loadEvents();
   </script>
+  <script src="/js/i18n.js"></script>
 </body>
 </html>

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Syarat &amp; Ketentuan Layanan — ARGUS | SHINERVA HQ</title>
-  <meta name="description" content="Syarat dan Ketentuan Layanan resmi ARGUS (SHINERVA HQ). Mengatur hak dan kewajiban pembeli, penjual, rekening penampungan internal (escrow), dan verifikasi tiket.">
+  <title>Syarat &amp; Ketentuan Layanan — Tikum | by Shinerva</title>
+  <meta name="description" content="Syarat dan Ketentuan Layanan resmi Tikum (SHINERVA HQ). Mengatur hak dan kewajiban pembeli, penjual, rekening penampungan internal (escrow) yang didukung oleh ARGUS Trust Engine, dan verifikasi tiket.">
   <link rel="canonical" href="https://argus.id/terms">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
@@ -24,17 +24,20 @@
       <a href="/" class="brand">
         <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
-          <div class="brand-title">ARGUS</div>
-          <span class="brand-subtitle">Verified Ticket Transfer</span>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Verified Ticket Marketplace</span>
         </div>
       </a>
 
       <nav class="main-nav">
         <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Beranda</a>
-        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
+        <a href="/#events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
         <a href="/faq" class="nav-link"><i class="fa-solid fa-circle-question"></i> FAQ</a>
         <a href="/terms" class="nav-link active"><i class="fa-solid fa-file-contract"></i> Syarat &amp; Ketentuan</a>
+        <a href="/refund-policy" class="nav-link"><i class="fa-solid fa-rotate-left"></i> Refund</a>
         <a href="/contact" class="nav-link"><i class="fa-solid fa-address-book"></i> Kontak</a>
+        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleLang()" style="padding: 4px 10px; font-size: 11px;" title="Switch Language"><i class="fa-solid fa-globe"></i> <span id="langLabel">EN</span></button>
+        <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleTheme()" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
   </header>
@@ -44,16 +47,16 @@
     
     <div style="margin-bottom: 30px;">
       <div class="hero-pill"><i class="fa-solid fa-scale-balanced"></i> KONTRAK OPERASIONAL RESMI</div>
-      <h1 style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin: 12px 0;">Syarat &amp; Ketentuan Layanan ARGUS</h1>
+      <h1 style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin: 12px 0;">Syarat &amp; Ketentuan Layanan Tikum</h1>
       <p style="font-size: 14px; color: var(--text-muted);">
-        Terakhir diperbarui: September 2026. Diterbitkan oleh <strong>SHINERVA HQ</strong> sebagai entitas pengelola platform ARGUS.
+        Terakhir diperbarui: September 2026. Diterbitkan oleh <strong>SHINERVA HQ</strong> sebagai entitas pengelola platform Tikum.
       </p>
     </div>
 
     <div class="notice-box notice-info" style="margin-bottom: 24px;">
       <i class="fa-solid fa-circle-info"></i>
       <div>
-        <strong>Pernyataan Kedudukan Hukum:</strong> ARGUS adalah platform teknologi infrastruktur penjaminan transfer tiket sekunder independen. ARGUS bukan promotor penyelenggara acara, bukan agen tiket utama (primary ticketing agent), dan tidak terafiliasi secara komersial dengan pihak promotor mana pun.
+        <strong>Pernyataan Kedudukan Hukum:</strong> Tikum adalah platform teknologi marketplace tiket terverifikasi oleh Shinerva dengan verifikasi yang ditenagai oleh ARGUS Trust Engine. Tikum bukan promotor penyelenggara acara, bukan agen tiket utama (primary ticketing agent), dan tidak terafiliasi secara komersial dengan pihak promotor mana pun.
       </div>
     </div>
 
@@ -63,7 +66,7 @@
       <div class="terms-section">
         <h2>1. Pendahuluan</h2>
         <p>
-          Selamat datang di ARGUS. Syarat dan Ketentuan Layanan ini ("Ketentuan") mengatur akses dan penggunaan Anda terhadap situs web, platform, antarmuka pemrograman aplikasi (API), serta layanan operasional lapangan yang disediakan oleh SHINERVA HQ ("ARGUS", "kami", atau "pengelola"). Dengan mengakses atau menggunakan ARGUS, Anda menyatakan telah membaca, memahami, dan menyetujui untuk terikat oleh Ketentuan ini.
+          Selamat datang di Tikum. Syarat dan Ketentuan Layanan ini ("Ketentuan") mengatur akses dan penggunaan Anda terhadap situs web, platform, antarmuka pemrograman aplikasi (API), serta layanan operasional lapangan yang disediakan oleh SHINERVA HQ ("Tikum", "kami", atau "pengelola"). Dengan mengakses atau menggunakan Tikum, Anda menyatakan telah membaca, memahami, dan menyetujui untuk terikat oleh Ketentuan ini.
         </p>
       </div>
 
@@ -71,21 +74,22 @@
       <div class="terms-section">
         <h2>2. Definisi</h2>
         <ul>
-          <li><strong>Platform:</strong> Seluruh sistem web dan infrastruktur digital ARGUS.</li>
+          <li><strong>Platform:</strong> Seluruh sistem web dan antarmuka pasar Tikum yang beroperasi di bawah naungan Shinerva.</li>
           <li><strong>Pembeli:</strong> Pengguna terdaftar yang melakukan pemesanan dan pembayaran tiket sekunder.</li>
           <li><strong>Penjual:</strong> Pengguna terverifikasi (KYC) yang mendaftarkan tiket sekunder miliknya untuk dipindahtangankan.</li>
-          <li><strong>Listing:</strong> Penawaran penjualan tiket terverifikasi yang didaftarkan di katalog pasar.</li>
+          <li><strong>Listing:</strong> Penawaran penjualan tiket terverifikasi yang didaftarkan di katalog pasar Tikum.</li>
           <li><strong>Rekening Penampungan (Escrow):</strong> Sistem penahanan dana transaksi internal melalui mitra berizin resmi (iPaymu) di mana dana pembeli dikunci hingga pintu masuk venue dilewati secara sah.</li>
-          <li><strong>Event PIC:</strong> Petugas lapangan (Person In Charge) resmi ARGUS yang bersiaga di venue acara.</li>
+          <li><strong>Event PIC:</strong> Petugas lapangan (Person In Charge) resmi Tikum yang bersiaga di venue acara.</li>
+          <li><strong>ARGUS Trust Engine:</strong> Mesin internal verifikasi identitas, tiket, anti-fraud, escrow, dan bukti lapangan yang mengamankan transaksi Tikum.</li>
           <li><strong>Sengketa (Dispute):</strong> Klaim yang diajukan oleh pembeli apabila terjadi kegagalan tiket di gerbang venue.</li>
         </ul>
       </div>
 
-      <!-- 3. Peran ARGUS -->
+      <!-- 3. Peran Tikum -->
       <div class="terms-section">
-        <h2>3. Peran ARGUS sebagai Platform Kepercayaan</h2>
+        <h2>3. Peran Tikum sebagai Platform Kepercayaan &amp; Marketplace Terverifikasi</h2>
         <p>
-          ARGUS bertindak sebagai perantara netral yang menyediakan infrastruktur kepercayaan (trust infrastructure). ARGUS tidak memiliki kepemilikan atas tiket yang diperjualbelikan, melainkan memverifikasi keunikan barcode tiket, memfasilitasi rekonsiliasi escrow, dan mendampingi verifikasi fisik di gerbang venue.
+          Tikum bertindak sebagai perantara netral yang menyediakan marketplace tiket terverifikasi yang didukung oleh ARGUS Trust Engine. Tikum tidak memiliki kepemilikan atas tiket yang diperjualbelikan, melainkan memverifikasi keunikan barcode tiket, memfasilitasi rekonsiliasi escrow, dan menugaskan petugas lapangan di venue.
         </p>
       </div>
 
@@ -93,7 +97,7 @@
       <div class="terms-section">
         <h2>4. Kelayakan Pengguna</h2>
         <p>
-          Untuk menggunakan layanan ARGUS, Anda wajib berusia minimal 17 (tujuh belas) tahun atau telah cakap secara hukum menurut perundang-undangan Republik Indonesia, serta mampu memberikan data identitas yang akurat dan sah.
+          Untuk menggunakan layanan Tikum, Anda wajib berusia minimal 17 (tujuh belas) tahun atau telah cakap secara hukum menurut perundang-undangan Republik Indonesia, serta mampu memberikan data identitas yang akurat dan sah.
         </p>
       </div>
 
@@ -101,7 +105,7 @@
       <div class="terms-section">
         <h2>5. Tanggung Jawab Akun</h2>
         <p>
-          Pengguna bertanggung jawab penuh atas kerahasiaan kredensial sesi, tautan pembayaran, dan kode verifikasi OTP yang diterbitkan oleh ARGUS. Segala aktivitas yang terjadi melalui akun atau tautan transaksi Anda merupakan tanggung jawab hukum Anda pribadi.
+          Pengguna bertanggung jawab penuh atas kerahasiaan kredensial sesi, tautan pembayaran, dan kode verifikasi OTP yang diterbitkan oleh Tikum. Segala aktivitas yang terjadi melalui akun atau tautan transaksi Anda merupakan tanggung jawab hukum Anda pribadi.
         </p>
       </div>
 
@@ -109,7 +113,7 @@
       <div class="terms-section">
         <h2>6. Tanggung Jawab Pembeli</h2>
         <p>
-          Pembeli berkewajiban untuk menyelesaikan pembayaran pesanan sesuai batas waktu (TTL), membawa kartu identitas asli (KTP/Paspor) yang sesuai ke lokasi acara, menemui Event PIC ARGUS pada waktu dan pintu gerbang yang telah ditentukan, serta menaati seluruh tata tertib yang berlaku di venue acara.
+          Pembeli berkewajiban untuk menyelesaikan pembayaran pesanan sesuai batas waktu (TTL), membawa kartu identitas asli (KTP/Paspor) yang sesuai ke lokasi acara, menemui Event PIC Tikum pada waktu dan pintu gerbang yang telah ditentukan, serta menaati seluruh tata tertib yang berlaku di venue acara.
         </p>
       </div>
 
@@ -125,7 +129,7 @@
       <div class="terms-section">
         <h2>8. Aturan Listing Tiket &amp; Anti-Duplikasi</h2>
         <p>
-          Setiap barcode tiket yang didaftarkan akan di-hash secara kriptografis menggunakan algoritma SHA-256. Sistem ARGUS secara otomatis menolak pendaftaran barcode yang telah terdaftar sebelumnya untuk event yang sama demi mencegah penjualan ganda (anti-duplicate barcode invariant).
+          Setiap barcode tiket yang didaftarkan akan di-hash secara kriptografis menggunakan algoritma SHA-256. Sistem Tikum (didukung oleh ARGUS Trust Engine) secara otomatis menolak pendaftaran barcode yang telah terdaftar sebelumnya untuk event yang sama demi mencegah penjualan ganda (anti-duplicate barcode invariant).
         </p>
       </div>
 
@@ -133,7 +137,7 @@
       <div class="terms-section">
         <h2>9. Verifikasi Tiket &amp; Dokumen Bukti</h2>
         <p>
-          Sebelum listing tiket disetujui tampil secara publik, Trust Officer ARGUS melakukan peninjauan terhadap berkas bukti e-voucher PDF, invoice pembelian awal, dan kesesuaian kategori kursi. Tiket yang tidak memenuhi kriteria keaslian akan ditolak.
+          Sebelum listing tiket disetujui tampil secara publik, Trust Officer Tikum melakukan peninjauan terhadap berkas bukti e-voucher PDF, invoice pembelian awal, dan kesesuaian kategori kursi. Tiket yang tidak memenuhi kriteria keaslian akan ditolak.
         </p>
       </div>
 
@@ -141,7 +145,7 @@
       <div class="terms-section">
         <h2>10. Penetapan Harga Transparan</h2>
         <p>
-          Harga tiket ditentukan secara bebas oleh penjual. ARGUS menerapkan kebijakan transparansi harga penuh: rincian harga tiket dan biaya layanan platform (<code class="mono">platform_fee</code>) ditampilkan di awal sebelum pembayaran tanpa biaya terselubung saat checkout.
+          Harga tiket ditentukan secara bebas oleh penjual. Tikum menerapkan kebijakan transparansi harga penuh: rincian harga tiket dan biaya layanan platform (<code class="mono">platform_fee</code>) ditampilkan di awal sebelum pembayaran tanpa biaya terselubung saat checkout.
         </p>
       </div>
 
@@ -149,7 +153,7 @@
       <div class="terms-section">
         <h2>11. Mekanisme Penawaran Terstruktur (Make Offer)</h2>
         <p>
-          Pembeli dapat mengajukan penawaran harga melalui sistem terstruktur ARGUS dalam rentang 50% hingga 150% dari harga listing. Penjual dapat menerima atau mengajukan penawaran balik (counter-offer). Penerimaan penawaran mengunci listing secara atomik untuk mencegah perebutan tiket ganda.
+          Pembeli dapat mengajukan penawaran harga melalui sistem terstruktur Tikum dalam rentang 50% hingga 150% dari harga listing. Penjual dapat menerima atau mengajukan penawaran balik (counter-offer). Penerimaan penawaran mengunci listing secara atomik untuk mencegah perebutan tiket ganda.
         </p>
       </div>
 
@@ -157,7 +161,7 @@
       <div class="terms-section">
         <h2>12. Pembayaran &amp; Rekening Bersama (Escrow)</h2>
         <p>
-          Seluruh pembayaran transaksi tiket di ARGUS wajib disetorkan ke rekening penampungan internal (escrow) melalui payment gateway resmi berizin <strong>iPaymu</strong>. Pembayaran di luar sistem resmi ARGUS tidak dilindungi oleh jaminan keselamatan dan garansi dana platform.
+          Seluruh pembayaran transaksi tiket di Tikum wajib disetorkan ke rekening penampungan internal (escrow) melalui payment gateway resmi berizin <strong>iPaymu</strong>. Pembayaran di luar sistem resmi Tikum tidak dilindungi oleh jaminan keselamatan dan garansi dana platform.
         </p>
       </div>
 
@@ -189,7 +193,7 @@
       <div class="terms-section">
         <h2>16. Penyelesaian Sengketa di Lokasi Venue</h2>
         <p>
-          Apabila tiket ditolak oleh turnstile scanner di gerbang acara, pembeli wajib segera melaporkan kendala kepada Event PIC di lokasi sebelum jam penutupan gerbang. Bukti foto investigasi gerbang akan menjadi dasar penerbitan putusan sengketa oleh Tim Resolusi ARGUS.
+          Apabila tiket ditolak oleh turnstile scanner di gerbang acara, pembeli wajib segera melaporkan kendala kepada Event PIC di lokasi sebelum jam penutupan gerbang. Bukti foto investigasi gerbang akan menjadi dasar penerbitan putusan sengketa oleh Tim Resolusi Tikum (didukung oleh ARGUS Trust Engine).
         </p>
       </div>
 
@@ -197,7 +201,7 @@
       <div class="terms-section">
         <h2>17. Pembatalan &amp; Penundaan Acara</h2>
         <p>
-          Jika promotor resmi membatalkan acara secara permanen, seluruh dana escrow yang tertahan akan dikembalikan 100% kepada pembeli. Jika acara ditunda, tiket tetap sah berlaku untuk tanggal penjadwalan ulang yang ditetapkan promotor.
+          Jika promotor resmi membatalkan acara secara permanen, pengembalian dana diproses sesuai ketentuan Refund Policy dan status transaksi yang berlaku. Jika acara ditunda, tiket tetap sah berlaku untuk tanggal penjadwalan ulang yang ditetapkan promotor.
         </p>
       </div>
 
@@ -205,7 +209,7 @@
       <div class="terms-section">
         <h2>18. Larangan Penipuan &amp; Aktivitas Ilegal</h2>
         <p>
-          Dilarang keras mendaftarkan tiket palsu, membagikan barcode yang sama kepada pihak lain di luar ARGUS, memanipulasi bukti dokumen e-voucher, atau melakukan serangan siber terhadap sistem ARGUS. Pelanggaran akan diproses melalui jalur hukum pidana.
+          Dilarang keras mendaftarkan tiket palsu, membagikan barcode yang sama kepada pihak lain di luar Tikum, memanipulasi bukti dokumen e-voucher, atau melakukan serangan siber terhadap sistem Tikum. Pelanggaran akan diproses melalui jalur hukum pidana.
         </p>
       </div>
 
@@ -213,7 +217,7 @@
       <div class="terms-section">
         <h2>19. Hak Platform &amp; Pemblokiran Akun</h2>
         <p>
-          ARGUS berhak membatalkan transaksi yang terindikasi mencurigakan, membekukan saldo sengketa, memblokir akun pengguna yang melanggar, serta memasukkan nomor identitas (NIK) pelanggar ke dalam daftar hitam permanen.
+          Tikum berhak membatalkan transaksi yang terindikasi mencurigakan, membekukan saldo sengketa, memblokir akun pengguna yang melanggar, serta memasukkan nomor identitas pelanggar ke dalam daftar hitam permanen.
         </p>
       </div>
 
@@ -221,7 +225,7 @@
       <div class="terms-section">
         <h2>20. Batasan Tanggung Jawab</h2>
         <p>
-          ARGUS tidak bertanggung jawab atas kerugian tidak langsung yang diakibatkan oleh keterlambatan kehadiran pembeli di lokasi acara, gangguan cuaca ekstrem di venue, pembatalan penerbangan/transportasi pribadi pembeli, atau tindakan sepihak dari pihak kepolisian/keamanan venue.
+          Tikum tidak bertanggung jawab atas kerugian tidak langsung yang diakibatkan oleh keterlambatan kehadiran pembeli di lokasi acara, gangguan cuaca ekstrem di venue, pembatalan penerbangan/transportasi pribadi pembeli, atau tindakan sepihak dari pihak kepolisian/keamanan venue.
         </p>
       </div>
 
@@ -229,7 +233,7 @@
       <div class="terms-section">
         <h2>21. Rujukan Kebijakan Privasi &amp; UU PDP</h2>
         <p>
-          Pengelolaan, penyimpanan, dan penghapusan data pribadi pengguna tunduk pada <a href="/privacy" style="color: var(--cyan);">Kebijakan Privasi ARGUS</a> yang disusun sesuai dengan Undang-Undang Republik Indonesia Nomor 27 Tahun 2022 tentang Perlindungan Data Pribadi (UU PDP).
+          Pengelolaan, penyimpanan, dan penghapusan data pribadi pengguna tunduk pada <a href="/privacy" style="color: var(--cyan);">Kebijakan Privasi Tikum</a> yang disusun sesuai dengan Undang-Undang Republik Indonesia Nomor 27 Tahun 2022 tentang Perlindungan Data Pribadi (UU PDP).
         </p>
       </div>
 
@@ -237,7 +241,7 @@
       <div class="terms-section">
         <h2>22. Perubahan Ketentuan Layanan</h2>
         <p>
-          ARGUS berhak mengubah atau memperbarui Ketentuan ini dari waktu ke waktu. Setiap perubahan akan diberitahukan melalui pembaruan tanggal di bagian atas halaman ini. Penggunaan berkelanjutan atas layanan kami merupakan persetujuan Anda terhadap ketentuan yang diperbarui.
+          Tikum berhak mengubah atau memperbarui Ketentuan ini dari waktu ke waktu. Setiap perubahan akan diberitahukan melalui pembaruan tanggal di bagian atas halaman ini. Penggunaan berkelanjutan atas layanan kami merupakan persetujuan Anda terhadap ketentuan yang diperbarui.
         </p>
       </div>
 
@@ -263,10 +267,10 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> ARGUS — SHINERVA HQ
+          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> Tikum — by Shinerva
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Infrastruktur transfer tiket sekunder terverifikasi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+          Verified Ticket Marketplace by Shinerva. Didukung oleh ARGUS Trust Engine dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
         </p>
         <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
@@ -303,9 +307,10 @@
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
-      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang.
+      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. Powered by ARGUS Trust Engine.
     </div>
   </footer>
 
+  <script src="/js/i18n.js"></script>
 </body>
 </html>

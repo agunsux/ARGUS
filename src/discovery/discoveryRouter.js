@@ -49,7 +49,7 @@ router.get('/events/:slug', (req, res, next) => {
     const legacy = (state.events || []).find(e => e.id === slug || e.slug === slug);
     if (!legacy) {
       return res.status(404).send(`<!DOCTYPE html>
-        <html><head><title>Event Not Found — ARGUS</title></head>
+        <html><head><title>Event Not Found — Tikum</title></head>
         <body style="font-family:sans-serif; background:#0f172a; color:#fff; text-align:center; padding:50px;">
           <h2>Event Tidak Ditemukan</h2>
           <p>Event yang Anda cari tidak terdaftar atau telah dipindahkan.</p>
@@ -142,9 +142,9 @@ router.get('/events', (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Katalog Event Indonesia — Temukan Jadwal Konser, Olahraga &amp; Tiket Terverifikasi | ARGUS</title>
-  <meta name="description" content="Eksplorasi seluruh event musik, festival, sepak bola, basket, dan pertunjukan di Jakarta, Bandung, Surabaya, dan Bali. Dapatkan informasi tiket resmi dan transfer tiket terverifikasi.">
-  <link rel="canonical" href="https://argus.id/events">
+  <title>Katalog Event Indonesia — Temukan Jadwal Konser, Olahraga &amp; Tiket Terverifikasi | Tikum</title>
+  <meta name="description" content="Eksplorasi seluruh event musik, festival, sepak bola, basket, dan pertunjukan di Jakarta, Bandung, Surabaya, dan Bali. Dapatkan informasi tiket resmi dan transfer tiket terverifikasi di Tikum.">
+  <link rel="canonical" href="https://tikum.id/events">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -154,8 +154,8 @@ router.get('/events', (req, res) => {
       <a href="/" class="brand">
         <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
-          <div class="brand-title">ARGUS</div>
-          <span class="brand-subtitle">Event Discovery &amp; Verified Transfer</span>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Event Discovery &amp; Verified Marketplace</span>
         </div>
       </a>
       <nav class="main-nav">
@@ -163,6 +163,10 @@ router.get('/events', (req, res) => {
         <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> Tawaran Tiket</a>
         <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Jual Tiket</a>
         <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Status</a>
+        <div class="nav-controls" style="display: inline-flex; gap: 8px; margin-left: 12px; align-items: center;">
+          <button id="btnLangToggle" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px; font-weight: 700;">EN</button>
+          <button id="btnThemeToggle" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px;" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon"></i></button>
+        </div>
       </nav>
     </div>
   </header>
@@ -204,6 +208,7 @@ router.get('/events', (req, res) => {
   </main>
 
   ${renderFooterHtml()}
+  <script src="/js/i18n.js"></script>
 </body>
 </html>`;
 

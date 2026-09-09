@@ -82,13 +82,13 @@ class EventSEOService {
       });
     }
 
-    // If ARGUS verified resale listings exist, list them as secondary market offers
+    // If Tikum verified resale listings exist, list them as secondary market offers
     if (activeListings && activeListings.length > 0) {
       const minPrice = Math.min(...activeListings.map(l => l.price));
       offers.push({
         '@type': 'AggregateOffer',
-        'name': 'ARGUS Verified Resale Inventory',
-        'url': `https://argus.id/events/${event.slug}`,
+        'name': 'Tikum Verified Resale Inventory (Powered by ARGUS)',
+        'url': `https://tikum.id/events/${event.slug}`,
         'priceCurrency': 'IDR',
         'lowPrice': minPrice,
         'offerCount': activeListings.length,
@@ -108,9 +108,9 @@ class EventSEOService {
    */
   static renderEventPageHtml(event, activeListings = [], relatedEvents = []) {
     const jsonLd = JSON.stringify(this.buildStructuredData(event, activeListings));
-    const title = `${event.canonical_name} — Jadwal, Lokasi, Tiket Resmi & Resale Terverifikasi | ARGUS`;
-    const metaDesc = `Informasi lengkap ${event.canonical_name} di ${event.venue_name}, ${event.city} tanggal ${event.start_date || event.date}. Cek ketersediaan tiket resmi dan perlindungan transfer tiket resale aman ARGUS.`;
-    const canonicalUrl = `https://argus.id/events/${event.slug}`;
+    const title = `${event.canonical_name} — Jadwal, Lokasi, Tiket Resmi & Resale Terverifikasi | Tikum`;
+    const metaDesc = `Informasi lengkap ${event.canonical_name} di ${event.venue_name}, ${event.city} tanggal ${event.start_date || event.date}. Cek ketersediaan tiket resmi dan perlindungan transfer tiket resale aman Tikum (powered by ARGUS Trust Engine).`;
+    const canonicalUrl = `https://tikum.id/events/${event.slug}`;
 
     const dateFormatted = event.start_date || event.date || 'TBA';
     const city = event.city || event.venue_city || 'Jakarta';
@@ -190,7 +190,7 @@ class EventSEOService {
             <i class="fa-solid fa-circle-info"></i>
             <div>
               <strong>Kanal Tiket Resmi Belum Terdaftar</strong>
-              <div class="text-muted">ARGUS sedang memverifikasi kanal penjualan tiket resmi dengan promotor terkait.</div>
+              <div class="text-muted">Tikum sedang memverifikasi kanal penjualan tiket resmi dengan promotor terkait.</div>
             </div>
           </div>
         </div>
@@ -231,7 +231,7 @@ class EventSEOService {
   <meta property="og:title" content="${title}">
   <meta property="og:description" content="${metaDesc}">
   <meta property="og:url" content="${canonicalUrl}">
-  <meta property="og:site_name" content="ARGUS">
+  <meta property="og:site_name" content="Tikum">
   
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
@@ -270,8 +270,8 @@ class EventSEOService {
       <a href="/" class="brand">
         <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
-          <div class="brand-title">ARGUS</div>
-          <span class="brand-subtitle">Verified Ticket Transfer</span>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Verified Ticket Marketplace</span>
         </div>
       </a>
       <nav class="main-nav">
@@ -279,6 +279,10 @@ class EventSEOService {
         <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> Tawaran Tiket</a>
         <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Jual Tiket</a>
         <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Status</a>
+        <div class="nav-controls" style="display: inline-flex; gap: 8px; margin-left: 12px; align-items: center;">
+          <button id="btnLangToggle" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px; font-weight: 700;">EN</button>
+          <button id="btnThemeToggle" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px;" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon"></i></button>
+        </div>
       </nav>
     </div>
   </header>
@@ -294,7 +298,7 @@ class EventSEOService {
     <article class="event-hero">
       <div class="badge-row">
         <span class="badge badge-primary">${category}</span>
-        ${isVerified ? `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Terverifikasi ARGUS (${confidence}%)</span>` : `<span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Dalam Verifikasi (${confidence}%)</span>`}
+        ${isVerified ? `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Terverifikasi Tikum &amp; ARGUS Trust Engine (${confidence}%)</span>` : `<span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Dalam Verifikasi (${confidence}%)</span>`}
       </div>
 
       <h1 style="font-size: 28px; font-weight: 800; margin: 12px 0;">${event.canonical_name}</h1>
@@ -314,15 +318,15 @@ class EventSEOService {
       ${officialTicketHtml}
     </section>
 
-    <!-- Section 2: ARGUS Secondary Resale Market -->
+    <!-- Section 2: Tikum Secondary Resale Market -->
     <section style="margin-top: 30px;">
-      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-shield-halved"></i> ARGUS Verified Resale Marketplace</h2>
+      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-shield-halved"></i> Tiket Resale Terverifikasi di Tikum</h2>
       ${resaleHtml}
     </section>
 
     <!-- Admission & Trust Protocol -->
     <section class="card" style="background: #0f172a; border-color: #1e293b; padding: 20px; margin-top: 30px;">
-      <h3 style="font-size: 16px; margin-bottom: 8px;"><i class="fa-solid fa-user-shield"></i> Protokol Verifikasi Gerbang ARGUS</h3>
+      <h3 style="font-size: 16px; margin-bottom: 8px;"><i class="fa-solid fa-user-shield"></i> Protokol Verifikasi Gerbang (ARGUS Trust Engine)</h3>
       <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
         Tipe Tiket: <strong>${event.admission_protocol?.type || 'BARCODE_PLUS_ID'}</strong>. 
         ${event.admission_protocol?.description || 'Verifikasi tiket digital dan fisik di gate acara bersama Event PIC ARGUS.'}
@@ -334,6 +338,8 @@ class EventSEOService {
   </main>
 
   ${renderFooterHtml()}
+
+  <script src="/js/i18n.js"></script>
 
   <script>
     async function handleDemandSubmit(e, eventId) {

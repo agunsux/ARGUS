@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FAQ &amp; Pusat Bantuan Transaksi — ARGUS | SHINERVA HQ</title>
-  <meta name="description" content="Pertanyaan umum seputar verifikasi tiket, escrow, perlindungan pembeli dan penjual, refund policy, dan peran Event PIC di ARGUS (SHINERVA HQ).">
+  <title>FAQ &amp; Pusat Bantuan Transaksi — Tikum | by Shinerva</title>
+  <meta name="description" content="Pertanyaan umum seputar verifikasi tiket, escrow, perlindungan pembeli dan penjual, refund policy, dan peran Event PIC di Tikum (SHINERVA HQ).">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <style>
@@ -76,17 +76,20 @@
       <a href="/" class="brand">
         <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
-          <div class="brand-title">ARGUS</div>
-          <span class="brand-subtitle">Verified Ticket Transfer</span>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Verified Ticket Marketplace</span>
         </div>
       </a>
 
       <nav class="main-nav">
         <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Beranda</a>
+        <a href="/#events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
         <a href="/faq" class="nav-link active"><i class="fa-solid fa-circle-question"></i> FAQ</a>
         <a href="/terms" class="nav-link"><i class="fa-solid fa-file-contract"></i> Ketentuan</a>
         <a href="/refund-policy" class="nav-link"><i class="fa-solid fa-rotate-left"></i> Refund</a>
         <a href="/contact" class="nav-link"><i class="fa-solid fa-address-book"></i> Kontak</a>
+        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleLang()" style="padding: 4px 10px; font-size: 11px;" title="Switch Language"><i class="fa-solid fa-globe"></i> <span id="langLabel">EN</span></button>
+        <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleTheme()" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
   </header>
@@ -98,7 +101,7 @@
       <div class="hero-pill"><i class="fa-solid fa-circle-question"></i> PUSAT BANTUAN &amp; INFORMASI RESMI</div>
       <h1 style="font-size: 30px; font-weight: 800; letter-spacing: -0.5px; margin-top: 10px;">Pertanyaan yang Sering Diajukan (FAQ)</h1>
       <p style="font-size: 15px; color: var(--text-muted); max-width: 650px; margin: 0 auto;">
-        Pelajari bagaimana ARGUS melindungi pembeli dan penjual tiket melalui teknologi anti-duplikasi, rekening penampungan internal (escrow), dan kehadiran fisik Event PIC di venue acara.
+        Pelajari bagaimana Tikum melindungi pembeli dan penjual tiket melalui teknologi anti-duplikasi, rekening penampungan internal (escrow) yang didukung oleh ARGUS Trust Engine, dan kehadiran fisik Event PIC di venue acara.
       </p>
     </div>
 
@@ -107,37 +110,37 @@
       <div class="faq-category-title"><i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> 1. Informasi Umum (General)</div>
       
       <div class="faq-item">
-        <div class="faq-question">Apa itu ARGUS?</div>
+        <div class="faq-question">Apa itu Tikum?</div>
         <div class="faq-answer">
-          ARGUS adalah <strong>infrastruktur transfer tiket sekunder terverifikasi</strong> independen yang dirancang untuk mengeliminasi penipuan calo dan tiket palsu di Indonesia. ARGUS menghubungkan pembeli dan penjual secara adil dengan mengamankan dana pembayaran di rekening penampungan internal (escrow) dan menempatkan petugas fisik (Event PIC) di lokasi gerbang acara.
+          Tikum adalah <strong>marketplace tiket terverifikasi</strong> oleh Shinerva yang didukung oleh ARGUS Trust Engine untuk mengeliminasi penipuan calo dan tiket palsu di Indonesia. Tikum menghubungkan pembeli dan penjual secara adil dengan mengamankan dana pembayaran di rekening penampungan internal (escrow) dan menempatkan petugas fisik (Event PIC) di lokasi gerbang acara.
         </div>
       </div>
 
       <div class="faq-item">
-        <div class="faq-question">Bagaimana ARGUS bekerja?</div>
+        <div class="faq-question">Bagaimana Tikum bekerja?</div>
         <div class="faq-answer">
-          ARGUS bekerja melalui 5 tahapan proteksi terpadu:
+          Tikum bekerja melalui 5 tahapan proteksi terpadu:
           <ol style="margin-top: 6px; padding-left: 20px;">
             <li><strong>Listing &amp; Hashing:</strong> Penjual mendaftarkan tiket; nomor barcode di-hash SHA-256 dan diverifikasi agar tidak terjadi duplikasi ganda.</li>
             <li><strong>Verifikasi Dokumen:</strong> Petugas Trust Officer memeriksa bukti invoice/e-voucher resmi sebelum tiket dipublikasikan.</li>
             <li><strong>Pembayaran Escrow:</strong> Pembeli membayar via saluran resmi iPaymu; dana 100% terkunci aman di rekening penampungan.</li>
-            <li><strong>Verifikasi di Gate Acara:</strong> Pada hari H, Event PIC ARGUS mendampingi pembeli di gerbang masuk venue untuk memverifikasi tiket dan melewati scanner turnstile.</li>
+            <li><strong>Verifikasi di Gate Acara:</strong> Pada hari H, Event PIC Tikum mendampingi pembeli di gerbang masuk venue untuk memverifikasi tiket dan melewati scanner turnstile.</li>
             <li><strong>Penyelesaian Transaksi:</strong> Dana baru dicairkan ke penjual setelah pembeli terkonfirmasi sukses memasuki area acara (<code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code>).</li>
           </ol>
         </div>
       </div>
 
       <div class="faq-item">
-        <div class="faq-question">Apakah ARGUS adalah penjual tiket resmi?</div>
+        <div class="faq-question">Apakah Tikum adalah penjual tiket resmi?</div>
         <div class="faq-answer">
-          <strong>Bukan.</strong> ARGUS bukan promotor acara dan bukan penjual tiket resmi primer (primary ticketing platform). ARGUS adalah platform teknologi dan infrastruktur pihak ketiga yang memfasilitasi pemindahtanganan tiket sekunder antar-penggemar (fan-to-fan) secara aman, sah, dan terverifikasi.
+          <strong>Bukan.</strong> Tikum bukan promotor acara dan bukan penjual tiket resmi primer (primary ticketing platform). Tikum adalah platform teknologi marketplace tiket sekunder antar-penggemar (fan-to-fan) yang aman, sah, dan terverifikasi oleh ARGUS Trust Engine.
         </div>
       </div>
 
       <div class="faq-item">
         <div class="faq-question">Apa yang dimaksud tiket resale terverifikasi?</div>
         <div class="faq-answer">
-          Tiket resale terverifikasi adalah tiket sekunder yang bukti invoice/e-voucher resminya telah diperiksa keabsahannya oleh tim operasional ARGUS, barcodenya terdaftar tunggal dalam basis data anti-duplikasi, dan transaksinya dilindungi oleh jaminan pengembalian dana 100% jika tiket bermasalah saat digunakan di gerbang masuk.
+          Tiket resale terverifikasi adalah tiket sekunder yang bukti invoice/e-voucher resminya telah diperiksa keabsahannya oleh tim operasional Tikum, barcodenya terdaftar tunggal dalam basis data anti-duplikasi, dan transaksinya dilindungi oleh jaminan pengembalian dana sesuai ketentuan Refund Policy jika tiket bermasalah saat digunakan di gerbang masuk.
         </div>
       </div>
     </section>
@@ -149,7 +152,7 @@
       <div class="faq-item">
         <div class="faq-question">Bagaimana cara membeli tiket?</div>
         <div class="faq-answer">
-          Pilih acara yang ingin Anda tonton di katalog event ARGUS, temukan kategori tiket yang sesuai, lalu pilih metode transaksi: langsung beli dengan <strong>Buy Now</strong> atau tawar harga melalui <strong>Make Offer</strong>. Lakukan pembayaran melalui transfer bank (Virtual Account) atau e-wallet yang diproses melalui payment gateway resmi berizin (iPaymu).
+          Pilih acara yang ingin Anda tonton di katalog event Tikum, temukan kategori tiket yang sesuai, lalu pilih metode transaksi: langsung beli dengan <strong>Buy Now</strong> atau tawar harga melalui <strong>Make Offer</strong>. Lakukan pembayaran melalui transfer bank (Virtual Account) atau e-wallet yang diproses melalui payment gateway resmi berizin (iPaymu).
         </div>
       </div>
 
@@ -170,7 +173,7 @@
       <div class="faq-item">
         <div class="faq-question">Apa yang terjadi setelah pembayaran?</div>
         <div class="faq-answer">
-          Setelah pembayaran terkonfirmasi, dana Anda diamankan di sistem escrow internal kami. Anda akan menerima Nomor Pesanan (<code class="mono" style="color: var(--cyan);">ord-...</code>) dan dapat memantau status transaksi di halaman <a href="/track" style="color: var(--cyan); text-decoration: none;">/track</a>. Penjual tidak dapat menarik uang Anda sebelum Anda sukses memasuki venue pada hari acara.
+          Setelah pembayaran terkonfirmasi, dana Anda diamankan di rekening penampungan internal kami yang ditenagai oleh ARGUS Trust Engine. Anda akan menerima Nomor Pesanan (<code class="mono" style="color: var(--cyan);">ord-...</code>) dan dapat memantau status transaksi di halaman <a href="/track" style="color: var(--cyan); text-decoration: none;">/track</a>. Penjual tidak dapat menarik uang Anda sebelum Anda sukses memasuki venue pada hari acara.
         </div>
       </div>
     </section>
@@ -189,14 +192,14 @@
       <div class="faq-item">
         <div class="faq-question">Bagaimana proses verifikasi seller?</div>
         <div class="faq-answer">
-          Demi memberantas tiket fiktif, setiap penjual wajib menyelesaikan verifikasi identitas (KYC NIK). Data identitas dienkripsi dan di-hash secara aman sesuai ketentuan Undang-Undang Perlindungan Data Pribadi (UU PDP No. 27/2022). Penjual yang belum terverifikasi tidak diizinkan membuat listing atau menerima penawaran.
+          Demi memberantas tiket fiktif, setiap penjual wajib menyelesaikan verifikasi identitas (KYC). Data identitas dienkripsi dan di-hash secara aman sesuai ketentuan Undang-Undang Perlindungan Data Pribadi (UU PDP No. 27/2022). Penjual yang belum terverifikasi tidak diizinkan membuat listing atau menerima penawaran.
         </div>
       </div>
 
       <div class="faq-item">
         <div class="faq-question">Kapan seller menerima settlement?</div>
         <div class="faq-answer">
-          Sesuai aturan keamanan tanpa kompromi ARGUS, <strong>dana penjualan HANYA dicairkan ke rekening bank penjual setelah pembeli terkonfirmasi sukses memasuki venue acara</strong> melalui verifikasi Event PIC (<code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code>) atau lewatnya jendela waktu acara tanpa adanya sengketa tiket.
+          Sesuai aturan keamanan tanpa kompromi Tikum, <strong>dana penjualan HANYA dicairkan ke rekening bank penjual setelah pembeli terkonfirmasi sukses memasuki venue acara</strong> melalui verifikasi Event PIC (<code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code>) atau lewatnya jendela waktu acara tanpa adanya sengketa tiket.
         </div>
       </div>
     </section>
@@ -206,23 +209,23 @@
       <div class="faq-category-title"><i class="fa-solid fa-user-shield" style="color: #10b981;"></i> 4. Keamanan &amp; Perlindungan di Venue (Safety)</div>
       
       <div class="faq-item">
-        <div class="faq-question">Bagaimana ARGUS melindungi buyer?</div>
+        <div class="faq-question">Bagaimana Tikum melindungi buyer?</div>
         <div class="faq-answer">
-          ARGUS melindungi pembeli melalui tiga lapis pengamanan: (1) Dana pembeli tidak pernah diberikan ke penjual sebelum acara sukses dimasuki, (2) Barcode tiket dienkripsi dan di-hash SHA-256 untuk memblokir tiket ganda/kloningan, dan (3) Didampingi petugas fisik di gerbang masuk venue untuk memastikan turnstile terbuka.
+          Tikum melindungi pembeli melalui tiga lapis pengamanan: (1) Dana pembeli tidak pernah diberikan ke penjual sebelum acara sukses dimasuki, (2) Barcode tiket dienkripsi dan di-hash SHA-256 untuk memblokir tiket ganda/kloningan, dan (3) Didampingi petugas fisik di gerbang masuk venue untuk memastikan turnstile terbuka.
         </div>
       </div>
 
       <div class="faq-item">
         <div class="faq-question">Apa fungsi PIC venue?</div>
         <div class="faq-answer">
-          Event PIC (Person In Charge) adalah personel operasional resmi ARGUS yang bertugas di gerbang masuk venue pada hari pelaksanaan acara. Event PIC bertugas mendampingi serah terima fisik (seperti penukaran wristband gelang), memvalidasi kelancaran pemindaian turnstile tiket, serta segera mengumpulkan bukti investigasi jika terjadi kendala pada barcode tiket.
+          Event PIC (Person In Charge) adalah personel operasional resmi Tikum yang bertugas di gerbang masuk venue pada hari pelaksanaan acara. Event PIC bertugas mendampingi serah terima fisik (seperti penukaran wristband gelang), memvalidasi kelancaran pemindaian turnstile tiket, serta segera mengumpulkan bukti investigasi jika terjadi kendala pada barcode tiket.
         </div>
       </div>
 
       <div class="faq-item">
         <div class="faq-question">Apa yang terjadi jika ada masalah dengan tiket?</div>
         <div class="faq-answer">
-          Jika tiket ditolak di gerbang acara atau barcode dinyatakan invalid oleh turnstile, segera laporkan ke Event PIC ARGUS di lokasi atau ajukan sengketa di halaman <a href="/track" style="color: var(--cyan); text-decoration: none;">/track</a>. Petugas kami akan memverifikasi laporan di lokasi dan menahan dana di escrow. Jika tiket terbukti cacat/palsu, dana pembeli dikembalikan 100%.
+          Jika tiket ditolak di gerbang acara atau barcode dinyatakan invalid oleh turnstile, segera laporkan ke Event PIC Tikum di lokasi atau ajukan sengketa di halaman <a href="/track" style="color: var(--cyan); text-decoration: none;">/track</a>. Petugas kami akan memverifikasi laporan di lokasi dan menahan dana di escrow. Kebijakan pengembalian dana Tikum sesuai ketentuan Refund Policy dan status transaksi yang berlaku.
         </div>
       </div>
     </section>
@@ -234,21 +237,21 @@
       <div class="faq-item">
         <div class="faq-question">Kapan refund dapat diberikan?</div>
         <div class="faq-answer">
-          Pengembalian dana (100% refund) dapat diberikan dalam kondisi: (1) Tiket terbukti ditolak oleh scanner gerbang venue acara, (2) Penjual gagal menyerahkan tiket fisik/wristband pada batas waktu yang disepakati, (3) Data kursi/kategori tiket yang diterima berbeda secara material dengan kesepakatan listing, atau (4) Acara dibatalkan secara resmi oleh pihak promotor penyelenggara.
+          Kebijakan pengembalian dana Tikum sesuai ketentuan Refund Policy dan status transaksi yang berlaku dalam kondisi: (1) Tiket terbukti ditolak oleh scanner gerbang venue acara, (2) Penjual gagal menyerahkan tiket fisik/wristband pada batas waktu yang disepakati, (3) Data kursi/kategori tiket yang diterima berbeda secara material dengan kesepakatan listing, atau (4) Acara dibatalkan secara resmi oleh pihak promotor penyelenggara.
         </div>
       </div>
 
       <div class="faq-item">
         <div class="faq-question">Bagaimana jika event dibatalkan?</div>
         <div class="faq-answer">
-          Jika suatu acara dibatalkan resmi oleh promotor penyelenggara sebelum tiket digunakan, seluruh transaksi tiket sekunder yang masih tertahan di rekening penampungan internal ARGUS akan dibatalkan, dan dana pembeli akan dikembalikan penuh (100% refund).
+          Jika suatu acara dibatalkan resmi oleh promotor penyelenggara sebelum tiket digunakan, seluruh transaksi tiket sekunder yang masih tertahan di rekening penampungan internal Tikum akan dibatalkan, dan pengembalian dana diproses sesuai ketentuan Refund Policy.
         </div>
       </div>
 
       <div class="faq-item">
         <div class="faq-question">Bagaimana jika seller gagal memenuhi transaksi?</div>
         <div class="faq-answer">
-          Jika penjual tidak mengirimkan tiket, mangkir dari janji temu fisik di gerbang venue (seller no-show), atau memberikan tiket yang tidak dapat digunakan, transaksi dinyatakan gagal. Dana pembeli di escrow akan dikembalikan 100%, dan akun penjual akan dikenakan sanksi penangguhan (blacklist) permanen.
+          Jika penjual tidak mengirimkan tiket, mangkir dari janji temu fisik di gerbang venue (seller no-show), atau memberikan tiket yang tidak dapat digunakan, transaksi dinyatakan gagal. Pengembalian dana diproses sesuai ketentuan Refund Policy, dan akun penjual akan dikenakan sanksi penangguhan (blacklist) permanen.
         </div>
       </div>
     </section>
@@ -258,24 +261,24 @@
       <div class="faq-category-title"><i class="fa-solid fa-compass" style="color: #38bdf8;"></i> 6. Katalog Penemuan Event (Event Discovery)</div>
       
       <div class="faq-item">
-        <div class="faq-question">Dari mana informasi event ARGUS berasal?</div>
+        <div class="faq-question">Dari mana informasi event Tikum berasal?</div>
         <div class="faq-answer">
-          Informasi event di ARGUS dihimpun secara transparan dari berbagai saluran resmi, termasuk pengumuman promotor resmi (Tier 1), situs pengelola venue, federasi olahraga nasional, serta mitra platform tiket terdaftar seperti tiket.com, LOKET, dan GOERS.
+          Informasi event di Tikum dihimpun secara transparan dari berbagai saluran resmi, termasuk pengumuman promotor resmi (Tier 1), situs pengelola venue, federasi olahraga nasional, serta mitra platform tiket terdaftar seperti tiket.com, LOKET, dan GOERS.
         </div>
       </div>
 
       <div class="faq-item">
         <div class="faq-question">Apakah semua event sudah terverifikasi?</div>
         <div class="faq-answer">
-          Setiap event yang tayang di katalog ARGUS melalui proses normalisasi data dan verifikasi oleh tim Trust Officer kami. Status verifikasi (Verified Event) menandakan bahwa jadwal acara, lokasi venue, serta protokol masuk resmi telah divalidasi kebenarannya.
+          Setiap event yang tayang di katalog Tikum melalui proses normalisasi data dan verifikasi oleh tim Trust Officer kami. Status verifikasi (Verified Event) menandakan bahwa jadwal acara, lokasi venue, serta protokol masuk resmi telah divalidasi kebenarannya.
         </div>
       </div>
 
       <div class="faq-item">
         <div class="faq-question">Apa perbedaan official ticket dan resale ticket?</div>
         <div class="faq-answer">
-          <strong>Official Ticket (Tiket Primer):</strong> Tiket yang dijual langsung oleh promotor acara melalui loket resmi mereka. ARGUS menyediakan tautan langsung ke kanal resmi tersebut.<br>
-          <strong>Resale Ticket (Tiket Sekunder):</strong> Tiket yang dijual kembali oleh penggemar terverifikasi melalui pasar ARGUS karena berhalangan hadir, yang transaksinya dilindungi oleh rekening penampungan escrow dan Event PIC kami.
+          <strong>Official Ticket (Tiket Primer):</strong> Tiket yang dijual langsung oleh promotor acara melalui loket resmi mereka. Tikum menyediakan tautan langsung ke kanal resmi tersebut.<br>
+          <strong>Resale Ticket (Tiket Sekunder):</strong> Tiket yang dijual kembali oleh penggemar terverifikasi melalui marketplace Tikum karena berhalangan hadir, yang transaksinya dilindungi oleh rekening penampungan escrow dan Event PIC kami.
         </div>
       </div>
     </section>
@@ -300,10 +303,10 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> ARGUS — SHINERVA HQ
+          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> Tikum — by Shinerva
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Infrastruktur transfer tiket sekunder terverifikasi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+          Verified Ticket Marketplace by Shinerva. Didukung oleh ARGUS Trust Engine dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
         </p>
         <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
@@ -340,7 +343,7 @@
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
-      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang.
+      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. Powered by ARGUS Trust Engine.
     </div>
   </footer>
 
@@ -353,5 +356,6 @@
     });
   </script>
 
+  <script src="/js/i18n.js"></script>
 </body>
 </html>

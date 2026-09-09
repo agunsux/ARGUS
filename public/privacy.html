@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ARGUS — Kebijakan Privasi &amp; Kepatuhan UU PDP</title>
+  <title>Tikum — Kebijakan Privasi &amp; Kepatuhan UU PDP | by Shinerva</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -15,15 +15,20 @@
       <a href="/" class="brand">
         <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
-          <div class="brand-title">ARGUS</div>
-          <span class="brand-subtitle">Verified Ticket Transfer</span>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Verified Ticket Marketplace</span>
         </div>
       </a>
 
       <nav class="main-nav">
         <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Beranda</a>
-        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
-        <a href="/terms" class="nav-link"><i class="fa-solid fa-file-contract"></i> Ketentuan Layanan</a>
+        <a href="/#events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
+        <a href="/faq" class="nav-link"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+        <a href="/terms" class="nav-link"><i class="fa-solid fa-file-contract"></i> Ketentuan</a>
+        <a href="/refund-policy" class="nav-link"><i class="fa-solid fa-rotate-left"></i> Refund</a>
+        <a href="/contact" class="nav-link"><i class="fa-solid fa-address-book"></i> Kontak</a>
+        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleLang()" style="padding: 4px 10px; font-size: 11px;" title="Switch Language"><i class="fa-solid fa-globe"></i> <span id="langLabel">EN</span></button>
+        <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleTheme()" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
   </header>
@@ -35,14 +40,14 @@
       <div class="hero-pill"><i class="fa-solid fa-user-shield"></i> KEPATUHAN UU NO. 27/2022</div>
       <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Kebijakan Privasi &amp; Perlindungan Data Pribadi</h1>
       <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;">
-        Komitmen ARGUS dalam menjaga kerahasiaan identitas dan data sensitif pengguna sesuai regulasi Republik Indonesia.
+        Komitmen Tikum dalam menjaga kerahasiaan identitas dan data sensitif pengguna sesuai regulasi Republik Indonesia dengan sistem keamanan yang ditenagai oleh ARGUS Trust Engine.
       </p>
     </div>
 
     <div class="card" style="line-height: 1.7; font-size: 14px;">
       <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">1. Prinsip Minimalisasi Pengumpulan Data</h3>
       <p style="color: var(--text-muted); margin-bottom: 16px;">
-        ARGUS hanya mengumpulkan data pribadi yang mutlak diperlukan untuk pencegahan penipuan tiket sekunder dan pembuktian sah serah terima tiket di lokasi acara. Kami tidak mengumpulkan data untuk keperluan periklanan pihak ketiga.
+        Tikum hanya mengumpulkan data pribadi yang mutlak diperlukan untuk pencegahan penipuan tiket sekunder dan pembuktian sah serah terima tiket di lokasi acara yang diproses melalui sistem pengamanan ARGUS Trust Engine. Kami tidak mengumpulkan data untuk keperluan periklanan pihak ketiga.
       </p>
 
       <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">2. Enkripsi Dokumen &amp; Foto Verifikasi (AES-256-GCM)</h3>
@@ -57,7 +62,7 @@
 
       <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">4. Hashing Barcode SHA-256 &amp; Masking Informasi Publik</h3>
       <p style="color: var(--text-muted); margin-bottom: 16px;">
-        Nomor barcode atau kode QR tiket tidak pernah ditampilkan secara terbuka di antarmuka web. Sistem hanya menyimpan nilai hash SHA-256 untuk memvalidasi keunikan. Pada halaman pelacakan publik (<code class="mono" style="color: var(--cyan);">/track/:id</code>), seluruh data PII (Nomor Induk Kependudukan, nomor telepon, dan identitas asli) disaring dan tidak diteruskan ke browser pengguna.
+        Nomor barcode atau kode QR tiket tidak pernah ditampilkan secara terbuka di antarmuka web. Sistem hanya menyimpan nilai hash SHA-256 untuk memvalidasi keunikan. Pada halaman pelacakan publik (<code class="mono" style="color: var(--cyan);">/track/:id</code>), seluruh data PII disaring dan tidak diteruskan ke browser pengguna.
       </p>
 
       <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">5. Hak Pemilik Data Pribadi</h3>
@@ -73,10 +78,10 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> ARGUS — SHINERVA HQ
+          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> Tikum — by Shinerva
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Infrastruktur transfer tiket sekunder terverifikasi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+          Verified Ticket Marketplace by Shinerva. Didukung oleh ARGUS Trust Engine dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
         </p>
         <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
@@ -113,9 +118,10 @@
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
-      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang.
+      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. Powered by ARGUS Trust Engine.
     </div>
   </footer>
 
+  <script src="/js/i18n.js"></script>
 </body>
 </html>
