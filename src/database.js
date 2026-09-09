@@ -686,6 +686,21 @@ function resetDatabase() {
   state.offer_audit_logs = [];
   state.notifications = [];
 
+  try {
+    const { canonicalRegistry } = require('./discovery/CanonicalEventRegistry');
+    const { sourceRegistry } = require('./discovery/SourceRegistry');
+    const { ingestionPipeline } = require('./discovery/EventIngestionPipeline');
+    const { demandCapture } = require('./discovery/DemandCaptureService');
+    canonicalRegistry.reset();
+    sourceRegistry.reset();
+    ingestionPipeline.reset();
+    demandCapture.reset();
+    canonicalRegistry.importLegacyEvents(state.events);
+    canonicalRegistry.syncToState(state.events);
+  } catch (e) {
+    // In case discovery module is loaded during initial require bootstrap
+  }
+
   seqId = 3;
   logId = 2;
   offerAuditLogId = 1;

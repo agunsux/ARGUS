@@ -3,9 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ARGUS — Ketentuan Layanan &amp; Protokol Transaksi</title>
+  <title>Syarat &amp; Ketentuan Layanan — ARGUS | SHINERVA HQ</title>
+  <meta name="description" content="Syarat dan Ketentuan Layanan resmi ARGUS (SHINERVA HQ). Mengatur hak dan kewajiban pembeli, penjual, rekening penampungan internal (escrow), dan verifikasi tiket.">
+  <link rel="canonical" href="https://argus.id/terms">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .terms-section { margin-bottom: 24px; }
+    .terms-section h2 { font-size: 16px; color: #fff; margin-bottom: 8px; font-weight: 700; }
+    .terms-section p, .terms-section li { color: var(--text-muted); font-size: 13.5px; line-height: 1.7; }
+    .terms-section ul, .terms-section ol { margin-left: 20px; margin-top: 6px; }
+    .terms-section strong { color: #e2e8f0; }
+  </style>
 </head>
 <body>
 
@@ -22,80 +31,279 @@
 
       <nav class="main-nav">
         <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Beranda</a>
-        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
-        <a href="/privacy" class="nav-link"><i class="fa-solid fa-user-shield"></i> Kebijakan Privasi</a>
+        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
+        <a href="/faq" class="nav-link"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+        <a href="/terms" class="nav-link active"><i class="fa-solid fa-file-contract"></i> Syarat &amp; Ketentuan</a>
+        <a href="/contact" class="nav-link"><i class="fa-solid fa-address-book"></i> Kontak</a>
       </nav>
     </div>
   </header>
 
   <!-- Main Container -->
-  <main class="container" style="max-width: 840px;">
+  <main class="container" style="max-width: 880px; padding-top: 40px; padding-bottom: 60px;">
     
     <div style="margin-bottom: 30px;">
-      <div class="hero-pill"><i class="fa-solid fa-file-contract"></i> KONTRAK HUKUM OPERASIONAL</div>
-      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Ketentuan Layanan &amp; Protokol Perlindungan Transaksi</h1>
-      <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;">
-        Terakhir diperbarui: September 2026. Berlaku untuk seluruh transaksi transfer tiket sekunder di platform ARGUS.
+      <div class="hero-pill"><i class="fa-solid fa-scale-balanced"></i> KONTRAK OPERASIONAL RESMI</div>
+      <h1 style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin: 12px 0;">Syarat &amp; Ketentuan Layanan ARGUS</h1>
+      <p style="font-size: 14px; color: var(--text-muted);">
+        Terakhir diperbarui: September 2026. Diterbitkan oleh <strong>SHINERVA HQ</strong> sebagai entitas pengelola platform ARGUS.
       </p>
     </div>
 
     <div class="notice-box notice-info" style="margin-bottom: 24px;">
       <i class="fa-solid fa-circle-info"></i>
       <div>
-        <strong>Kedudukan Hukum ARGUS:</strong> ARGUS adalah penyedia infrastruktur verifikasi tiket dan rekening penampungan transaksi independen. ARGUS bukan promotor resmi acara, bukan agen tiket utama, dan tidak memiliki afiliasi komersial langsung dengan pihak promotor konser/pertunjukan.
+        <strong>Pernyataan Kedudukan Hukum:</strong> ARGUS adalah platform teknologi infrastruktur penjaminan transfer tiket sekunder independen. ARGUS bukan promotor penyelenggara acara, bukan agen tiket utama (primary ticketing agent), dan tidak terafiliasi secara komersial dengan pihak promotor mana pun.
       </div>
     </div>
 
-    <div class="card" style="line-height: 1.7; font-size: 14px;">
-      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">1. Prinsip Dasar Transfer Tiket Terverifikasi</h3>
-      <p style="color: var(--text-muted); margin-bottom: 16px;">
-        Setiap tiket yang ditawarkan di ARGUS wajib terikat pada identitas event yang nyata dan terdaftar di database kami. Penjual diwajibkan melewati verifikasi identitas (KYC) dan memasukkan nomor barcode/serial yang akan di-hash secara kriptografis menggunakan algoritma SHA-256 untuk mencegah penjualan ganda.
-      </p>
+    <div class="card" style="padding: 30px; background: #0c1220; border-color: var(--border);">
+      
+      <!-- 1. Pendahuluan -->
+      <div class="terms-section">
+        <h2>1. Pendahuluan</h2>
+        <p>
+          Selamat datang di ARGUS. Syarat dan Ketentuan Layanan ini ("Ketentuan") mengatur akses dan penggunaan Anda terhadap situs web, platform, antarmuka pemrograman aplikasi (API), serta layanan operasional lapangan yang disediakan oleh SHINERVA HQ ("ARGUS", "kami", atau "pengelola"). Dengan mengakses atau menggunakan ARGUS, Anda menyatakan telah membaca, memahami, dan menyetujui untuk terikat oleh Ketentuan ini.
+        </p>
+      </div>
 
-      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">2. Mekanisme Rekening Penampungan Transaksi Internal (Escrow)</h3>
-      <p style="color: var(--text-muted); margin-bottom: 16px;">
-        Seluruh dana yang dibayarkan oleh pembeli akan diamankan di sistem penampungan transaksi internal ARGUS. Penjual <strong>TIDAK PERNAH</strong> menerima pembayaran sebelum acara berlangsung. Dana tetap terkunci secara sistem hingga pembeli terkonfirmasi berhasil memasuki area venue acara.
-      </p>
+      <!-- 2. Definisi -->
+      <div class="terms-section">
+        <h2>2. Definisi</h2>
+        <ul>
+          <li><strong>Platform:</strong> Seluruh sistem web dan infrastruktur digital ARGUS.</li>
+          <li><strong>Pembeli:</strong> Pengguna terdaftar yang melakukan pemesanan dan pembayaran tiket sekunder.</li>
+          <li><strong>Penjual:</strong> Pengguna terverifikasi (KYC) yang mendaftarkan tiket sekunder miliknya untuk dipindahtangankan.</li>
+          <li><strong>Listing:</strong> Penawaran penjualan tiket terverifikasi yang didaftarkan di katalog pasar.</li>
+          <li><strong>Rekening Penampungan (Escrow):</strong> Sistem penahanan dana transaksi internal melalui mitra berizin resmi (iPaymu) di mana dana pembeli dikunci hingga pintu masuk venue dilewati secara sah.</li>
+          <li><strong>Event PIC:</strong> Petugas lapangan (Person In Charge) resmi ARGUS yang bersiaga di venue acara.</li>
+          <li><strong>Sengketa (Dispute):</strong> Klaim yang diajukan oleh pembeli apabila terjadi kegagalan tiket di gerbang venue.</li>
+        </ul>
+      </div>
 
-      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">3. Syarat Mutlak Pencairan Dana (Condition Precedent)</h3>
-      <p style="color: var(--text-muted); margin-bottom: 16px;">
-        Pencairan dana ke rekening penjual hanya dapat dieksekusi apabila terpenuhi salah satu dari kondisi berikut yang tercatat dalam audit trail ledger:
-      </p>
-      <ul style="color: var(--text-muted); margin-left: 20px; margin-bottom: 16px;">
-        <li>Petugas Event PIC ARGUS di lapangan mengonfirmasi bahwa pembeli telah sukses melewati pintu masuk turnstile (<code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code>) dengan dokumentasi foto gerbang; ATAU</li>
-        <li>Batas waktu acara telah berakhir dan pembeli tidak mengajukan sengketa gerbang valid dalam jendela waktu operasional (operational window) yang ditentukan.</li>
-      </ul>
+      <!-- 3. Peran ARGUS -->
+      <div class="terms-section">
+        <h2>3. Peran ARGUS sebagai Platform Kepercayaan</h2>
+        <p>
+          ARGUS bertindak sebagai perantara netral yang menyediakan infrastruktur kepercayaan (trust infrastructure). ARGUS tidak memiliki kepemilikan atas tiket yang diperjualbelikan, melainkan memverifikasi keunikan barcode tiket, memfasilitasi rekonsiliasi escrow, dan mendampingi verifikasi fisik di gerbang venue.
+        </p>
+      </div>
 
-      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">4. Protokol Sengketa Tiket di Lokasi Acara (Dispute Protocol)</h3>
-      <p style="color: var(--text-muted); margin-bottom: 16px;">
-        Apabila tiket yang dibeli ditolak oleh pemindai promotor di gerbang venue (misalnya barcode telah digunakan sebelumnya, tiket palsu, atau nomor seri tidak valid):
-      </p>
-      <ul style="color: var(--text-muted); margin-left: 20px; margin-bottom: 16px;">
-        <li>Pembeli dapat segera melapor kepada Event PIC ARGUS yang bersiaga di lokasi atau melalui menu lapor sengketa;</li>
-        <li>Event PIC akan melakukan investigasi langsung di pintu gerbang dan mencatat dokumentasi penolakan;</li>
-        <li>Jika terbukti tiket tidak dapat digunakan karena kesalahan penjual, Tim Resolusi ARGUS akan merilis keputusan <code class="mono" style="color: #34d399;">REFUND_BUYER</code>, dan seluruh dana (termasuk biaya layanan) akan dikembalikan 100% ke pembeli.</li>
-      </ul>
+      <!-- 4. Kelayakan Pengguna -->
+      <div class="terms-section">
+        <h2>4. Kelayakan Pengguna</h2>
+        <p>
+          Untuk menggunakan layanan ARGUS, Anda wajib berusia minimal 17 (tujuh belas) tahun atau telah cakap secara hukum menurut perundang-undangan Republik Indonesia, serta mampu memberikan data identitas yang akurat dan sah.
+        </p>
+      </div>
 
-      <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">5. Sanksi Penjualan Tiket Ganda / Palsu</h3>
-      <p style="color: var(--text-muted); margin-bottom: 0;">
-        Penjual yang terbukti mendaftarkan tiket palsu atau menjual ulang barcode yang sama akan diblokir secara permanen dari ekosistem ARGUS, NIK penjual masuk dalam daftar hitam, dan ARGUS berhak meneruskan bukti ke pihak berwajib atas dugaan tindak pidana penipuan.
-      </p>
+      <!-- 5. Tanggung Jawab Akun -->
+      <div class="terms-section">
+        <h2>5. Tanggung Jawab Akun</h2>
+        <p>
+          Pengguna bertanggung jawab penuh atas kerahasiaan kredensial sesi, tautan pembayaran, dan kode verifikasi OTP yang diterbitkan oleh ARGUS. Segala aktivitas yang terjadi melalui akun atau tautan transaksi Anda merupakan tanggung jawab hukum Anda pribadi.
+        </p>
+      </div>
+
+      <!-- 6. Tanggung Jawab Pembeli -->
+      <div class="terms-section">
+        <h2>6. Tanggung Jawab Pembeli</h2>
+        <p>
+          Pembeli berkewajiban untuk menyelesaikan pembayaran pesanan sesuai batas waktu (TTL), membawa kartu identitas asli (KTP/Paspor) yang sesuai ke lokasi acara, menemui Event PIC ARGUS pada waktu dan pintu gerbang yang telah ditentukan, serta menaati seluruh tata tertib yang berlaku di venue acara.
+        </p>
+      </div>
+
+      <!-- 7. Tanggung Jawab Penjual -->
+      <div class="terms-section">
+        <h2>7. Tanggung Jawab Penjual</h2>
+        <p>
+          Penjual menjamin bahwa tiket yang didaftarkan adalah tiket asli yang diperoleh secara sah dari kanal resmi promotor, bukan hasil peretasan atau duplikasi, bebas dari sengketa pihak ketiga, dan penjual berkewajiban menyerahkan surat kuasa resmi dan/atau wristband fisik tepat waktu.
+        </p>
+      </div>
+
+      <!-- 8. Aturan Listing Tiket -->
+      <div class="terms-section">
+        <h2>8. Aturan Listing Tiket &amp; Anti-Duplikasi</h2>
+        <p>
+          Setiap barcode tiket yang didaftarkan akan di-hash secara kriptografis menggunakan algoritma SHA-256. Sistem ARGUS secara otomatis menolak pendaftaran barcode yang telah terdaftar sebelumnya untuk event yang sama demi mencegah penjualan ganda (anti-duplicate barcode invariant).
+        </p>
+      </div>
+
+      <!-- 9. Verifikasi Tiket -->
+      <div class="terms-section">
+        <h2>9. Verifikasi Tiket &amp; Dokumen Bukti</h2>
+        <p>
+          Sebelum listing tiket disetujui tampil secara publik, Trust Officer ARGUS melakukan peninjauan terhadap berkas bukti e-voucher PDF, invoice pembelian awal, dan kesesuaian kategori kursi. Tiket yang tidak memenuhi kriteria keaslian akan ditolak.
+        </p>
+      </div>
+
+      <!-- 10. Penetapan Harga & Biaya Layanan -->
+      <div class="terms-section">
+        <h2>10. Penetapan Harga Transparan</h2>
+        <p>
+          Harga tiket ditentukan secara bebas oleh penjual. ARGUS menerapkan kebijakan transparansi harga penuh: rincian harga tiket dan biaya layanan platform (<code class="mono">platform_fee</code>) ditampilkan di awal sebelum pembayaran tanpa biaya terselubung saat checkout.
+        </p>
+      </div>
+
+      <!-- 11. Penawaran (Offers) -->
+      <div class="terms-section">
+        <h2>11. Mekanisme Penawaran Terstruktur (Make Offer)</h2>
+        <p>
+          Pembeli dapat mengajukan penawaran harga melalui sistem terstruktur ARGUS dalam rentang 50% hingga 150% dari harga listing. Penjual dapat menerima atau mengajukan penawaran balik (counter-offer). Penerimaan penawaran mengunci listing secara atomik untuk mencegah perebutan tiket ganda.
+        </p>
+      </div>
+
+      <!-- 12. Pembayaran Escrow via iPaymu -->
+      <div class="terms-section">
+        <h2>12. Pembayaran &amp; Rekening Bersama (Escrow)</h2>
+        <p>
+          Seluruh pembayaran transaksi tiket di ARGUS wajib disetorkan ke rekening penampungan internal (escrow) melalui payment gateway resmi berizin <strong>iPaymu</strong>. Pembayaran di luar sistem resmi ARGUS tidak dilindungi oleh jaminan keselamatan dan garansi dana platform.
+        </p>
+      </div>
+
+      <!-- 13. Siklus Pesanan -->
+      <div class="terms-section">
+        <h2>13. Siklus Pesanan (Order Lifecycle)</h2>
+        <p>
+          Pesanan mengikuti mesin status mutlak: <code class="mono">PENDING_PAYMENT</code> &rarr; <code class="mono">PAID</code> (Dana terkunci di Escrow) &rarr; <code class="mono">ENTRY_CONFIRMED</code> (Verifikasi gerbang oleh Event PIC) &rarr; <code class="mono">SETTLED</code> (Pencairan dana ke Penjual).
+        </p>
+      </div>
+
+      <!-- 14. Pembatalan Pesanan -->
+      <div class="terms-section">
+        <h2>14. Pembatalan Pesanan</h2>
+        <p>
+          Pesanan yang belum dibayar dalam batas waktu pembayaran (TTL) akan dibatalkan secara otomatis oleh sistem. Pesanan yang telah dibayar tidak dapat dibatalkan sepihak oleh pembeli kecuali terjadi wanprestasi oleh penjual atau pembatalan acara resmi.
+        </p>
+      </div>
+
+      <!-- 15. Pengembalian Dana -->
+      <div class="terms-section">
+        <h2>15. Pengembalian Dana (Refund)</h2>
+        <p>
+          Ketentuan mengenai syarat, alur, dan tata cara pengembalian dana diatur secara terperinci dalam <a href="/refund-policy" style="color: var(--cyan);">Kebijakan Pengembalian Dana (Refund Policy)</a> yang merupakan bagian integral dan tidak terpisahkan dari Ketentuan ini.
+        </p>
+      </div>
+
+      <!-- 16. Penyelesaian Sengketa -->
+      <div class="terms-section">
+        <h2>16. Penyelesaian Sengketa di Lokasi Venue</h2>
+        <p>
+          Apabila tiket ditolak oleh turnstile scanner di gerbang acara, pembeli wajib segera melaporkan kendala kepada Event PIC di lokasi sebelum jam penutupan gerbang. Bukti foto investigasi gerbang akan menjadi dasar penerbitan putusan sengketa oleh Tim Resolusi ARGUS.
+        </p>
+      </div>
+
+      <!-- 17. Pembatalan / Penundaan Event -->
+      <div class="terms-section">
+        <h2>17. Pembatalan &amp; Penundaan Acara</h2>
+        <p>
+          Jika promotor resmi membatalkan acara secara permanen, seluruh dana escrow yang tertahan akan dikembalikan 100% kepada pembeli. Jika acara ditunda, tiket tetap sah berlaku untuk tanggal penjadwalan ulang yang ditetapkan promotor.
+        </p>
+      </div>
+
+      <!-- 18. Larangan Penipuan & Aktivitas Ilegal -->
+      <div class="terms-section">
+        <h2>18. Larangan Penipuan &amp; Aktivitas Ilegal</h2>
+        <p>
+          Dilarang keras mendaftarkan tiket palsu, membagikan barcode yang sama kepada pihak lain di luar ARGUS, memanipulasi bukti dokumen e-voucher, atau melakukan serangan siber terhadap sistem ARGUS. Pelanggaran akan diproses melalui jalur hukum pidana.
+        </p>
+      </div>
+
+      <!-- 19. Hak Platform -->
+      <div class="terms-section">
+        <h2>19. Hak Platform &amp; Pemblokiran Akun</h2>
+        <p>
+          ARGUS berhak membatalkan transaksi yang terindikasi mencurigakan, membekukan saldo sengketa, memblokir akun pengguna yang melanggar, serta memasukkan nomor identitas (NIK) pelanggar ke dalam daftar hitam permanen.
+        </p>
+      </div>
+
+      <!-- 20. Batasan Tanggung Jawab -->
+      <div class="terms-section">
+        <h2>20. Batasan Tanggung Jawab</h2>
+        <p>
+          ARGUS tidak bertanggung jawab atas kerugian tidak langsung yang diakibatkan oleh keterlambatan kehadiran pembeli di lokasi acara, gangguan cuaca ekstrem di venue, pembatalan penerbangan/transportasi pribadi pembeli, atau tindakan sepihak dari pihak kepolisian/keamanan venue.
+        </p>
+      </div>
+
+      <!-- 21. Rujukan Kebijakan Privasi -->
+      <div class="terms-section">
+        <h2>21. Rujukan Kebijakan Privasi &amp; UU PDP</h2>
+        <p>
+          Pengelolaan, penyimpanan, dan penghapusan data pribadi pengguna tunduk pada <a href="/privacy" style="color: var(--cyan);">Kebijakan Privasi ARGUS</a> yang disusun sesuai dengan Undang-Undang Republik Indonesia Nomor 27 Tahun 2022 tentang Perlindungan Data Pribadi (UU PDP).
+        </p>
+      </div>
+
+      <!-- 22. Perubahan Ketentuan Layanan -->
+      <div class="terms-section">
+        <h2>22. Perubahan Ketentuan Layanan</h2>
+        <p>
+          ARGUS berhak mengubah atau memperbarui Ketentuan ini dari waktu ke waktu. Setiap perubahan akan diberitahukan melalui pembaruan tanggal di bagian atas halaman ini. Penggunaan berkelanjutan atas layanan kami merupakan persetujuan Anda terhadap ketentuan yang diperbarui.
+        </p>
+      </div>
+
+      <!-- 23. Kontak Resmi -->
+      <div class="terms-section" style="margin-bottom: 0;">
+        <h2>23. Kontak Resmi Pengelola</h2>
+        <p>
+          Untuk korespondensi resmi, pertanyaan hukum, atau verifikasi kepatuhan transaksi:
+          <br><br>
+          <strong>SHINERVA HQ</strong><br>
+          Email: <a href="mailto:agunsux@gmail.com" style="color: var(--cyan); text-decoration: none;">agunsux@gmail.com</a><br>
+          WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none;">081299927378</a><br>
+          Alamat: SHINERVA HQ, Jl. Pasirluyu No. 79, Bandung 40254, Indonesia
+        </p>
+      </div>
+
     </div>
 
   </main>
 
-  <!-- Site Footer -->
+  <!-- Site Footer (iPaymu Compliance & Trust Verification) -->
   <footer class="site-footer">
     <div class="footer-container">
-      <div>
-        <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">ARGUS Trust Infrastructure</div>
-        <div>Verified Ticket Transfer &copy; 2026. All rights reserved.</div>
+      <div class="footer-col footer-business">
+        <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> ARGUS — SHINERVA HQ
+        </div>
+        <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
+          Infrastruktur transfer tiket sekunder terverifikasi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+        </p>
+        <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
+          <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
+          <div>SHINERVA HQ</div>
+          <div>Jl. Pasirluyu No. 79</div>
+          <div>Bandung 40254</div>
+          <div>Indonesia</div>
+        </div>
       </div>
-      <div class="footer-links">
-        <a href="/terms">Ketentuan Transaksi</a>
-        <a href="/privacy">Kebijakan Privasi</a>
-        <a href="/health">Status API</a>
+
+      <div class="footer-col footer-contact-col">
+        <div style="font-weight: 700; color: #fff; margin-bottom: 8px; font-size: 14px;">Kontak Resmi</div>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+          <div>
+            <span style="color: var(--text-dim);">Email:</span>
+            <a href="mailto:agunsux@gmail.com" style="color: var(--cyan); text-decoration: none; margin-left: 6px;">agunsux@gmail.com</a>
+          </div>
+          <div>
+            <span style="color: var(--text-dim);">WhatsApp:</span>
+            <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none; margin-left: 6px;"><i class="fa-brands fa-whatsapp"></i> 081299927378</a>
+          </div>
+        </div>
       </div>
+
+      <div class="footer-col footer-links-col">
+        <div style="font-weight: 700; color: #fff; margin-bottom: 8px; font-size: 14px;">Layanan &amp; Legalitas</div>
+        <div class="footer-links" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+          <a href="/faq"><i class="fa-solid fa-circle-question"></i> FAQ / Pertanyaan Umum</a>
+          <a href="/terms"><i class="fa-solid fa-file-contract"></i> Syarat &amp; Ketentuan</a>
+          <a href="/refund-policy"><i class="fa-solid fa-rotate-left"></i> Kebijakan Pengembalian Dana (Refund)</a>
+          <a href="/contact"><i class="fa-solid fa-address-book"></i> Kontak Kami</a>
+          <a href="/privacy"><i class="fa-solid fa-user-shield"></i> Kebijakan Privasi (UU PDP)</a>
+        </div>
+      </div>
+    </div>
+    <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
+      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang.
     </div>
   </footer>
 

@@ -308,7 +308,7 @@
           productLinks: ["Beli Tiket", "Jual Tiket", "Lacak Pesanan", "Protokol Escrow"],
           companyLinks: ["Tentang BATON", "Menjadi Agen PIC", "Media & Kontak", "Laporan Transparansi"],
           legalLinks: ["Syarat & Ketentuan", "Kebijakan Privasi", "Kepatuhan UU PDP", "Sanksi Calo Ghaib"],
-          copyright: "© 2026 PT Baton Infrastruktur Kepercayaan. Hak cipta dilindungi undang-undang.",
+          copyright: "© 2026 SHINERVA HQ. Hak cipta dilindungi undang-undang.",
           systemOperational: "Semua Sistem Lapangan Operasional"
         }
       },
@@ -425,7 +425,7 @@
           productLinks: ["Buy Tickets", "Sell Tickets", "Track Order", "Escrow Protocol"],
           companyLinks: ["About BATON", "Become a PIC Agent", "Press & Media", "Transparency Report"],
           legalLinks: ["Terms of Service", "Privacy Policy", "UU PDP Compliance", "Anti-Scalping Rules"],
-          copyright: "© 2026 PT Baton Infrastruktur Kepercayaan. All rights reserved.",
+          copyright: "© 2026 SHINERVA HQ. All rights reserved.",
           systemOperational: "All On-Site Gate Systems Operational"
         }
       }
@@ -1456,15 +1456,20 @@
                   <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-300 dark:text-zinc-300 font-semibold mb-4">
                     {t.footer.colLegal}
                   </h3>
-                  <ul className="space-y-2.5 text-sm">
-                    {t.footer.legalLinks.map((link, i) => (
-                      <li key={i}>
-                        <a href="#manifesto" className="hover:text-emerald-400 transition-colors">
-                          {link}
-                        </a>
-                      </li>
-                    ))}
+                  <ul className="space-y-2 text-xs">
+                    <li><a href="/faq" className="hover:text-emerald-400 transition-colors">FAQ</a></li>
+                    <li><a href="/terms" className="hover:text-emerald-400 transition-colors">Syarat &amp; Ketentuan</a></li>
+                    <li><a href="/refund-policy" className="hover:text-emerald-400 transition-colors">Refund Policy</a></li>
+                    <li><a href="/contact" className="hover:text-emerald-400 transition-colors">Kontak</a></li>
+                    <li><a href="/privacy" className="hover:text-emerald-400 transition-colors">Kebijakan Privasi</a></li>
                   </ul>
+                  <div className="mt-4 pt-3 border-t border-zinc-800 text-xs text-zinc-400 leading-relaxed">
+                    <div className="font-semibold text-zinc-300">SHINERVA HQ</div>
+                    <div>Jl. Pasirluyu No. 79</div>
+                    <div>Bandung 40254, Indonesia</div>
+                    <div>Email: <a href="mailto:agunsux@gmail.com" className="text-emerald-400">agunsux@gmail.com</a></div>
+                    <div>WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" className="text-emerald-400">081299927378</a></div>
+                  </div>
                 </div>
               </div>
 
