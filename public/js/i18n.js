@@ -2,7 +2,6 @@
  * Tikum — Client-Side Localization (i18n) & Theme Controller
  * 
  * BRAND: Tikum — Verified Ticket Marketplace by Shinerva
- * ENGINE: Powered by ARGUS Trust Engine
  * 
  * Standards:
  * - Default Language: Indonesian ('id')
@@ -19,7 +18,7 @@
         byline: 'by Shinerva',
         tagline: 'Verified Ticket Marketplace',
         slogan: 'Tiket terverifikasi. Transaksi terlindungi.',
-        engineNote: 'Infrastruktur keamanan & penjaminan ditenagai oleh ARGUS Trust Engine.',
+        engineNote: 'Infrastruktur keamanan & penjaminan resmi oleh Shinerva.',
         copyright: '© 2026 Tikum — A Shinerva Company. Seluruh hak cipta dilindungi undang-undang.'
       },
       nav: {
@@ -79,8 +78,8 @@
         networkError: 'Koneksi jaringan terputus. Periksa sambungan internet Anda.'
       },
       footer: {
-        businessTitle: 'Tikum — by Shinerva',
-        businessDesc: 'Marketplace tiket sekunder terverifikasi. Transaksi aman dengan rekening penampungan internal (escrow) dan pendampingan fisik di gerbang venue. Infrastruktur keamanan dan penjaminan ditenagai oleh ARGUS Trust Engine.',
+        businessTitle: 'TIKUM — by SHINERVA',
+        businessDesc: 'Marketplace tiket sekunder terverifikasi. Transaksi aman dengan rekening penampungan internal (escrow) dan pendampingan fisik di gerbang venue.',
         contactTitle: 'Kontak Resmi',
         legalTitle: 'Layanan & Legalitas',
         emailLabel: 'Email:',
@@ -94,7 +93,7 @@
         byline: 'by Shinerva',
         tagline: 'Verified Ticket Marketplace',
         slogan: 'Verified tickets. Real people. Real protection.',
-        engineNote: 'Trust & security infrastructure powered by ARGUS Trust Engine.',
+        engineNote: 'Trust & security infrastructure operated by Shinerva.',
         copyright: '© 2026 Tikum — A Shinerva Company. All rights reserved.'
       },
       nav: {
@@ -154,8 +153,8 @@
         networkError: 'Network disconnected. Please check your internet connection.'
       },
       footer: {
-        businessTitle: 'Tikum — by Shinerva',
-        businessDesc: 'Verified secondary ticket marketplace. Safe transactions backed by an internal escrow lock and real on-site assistance at venue turnstiles. Trust and security infrastructure powered by ARGUS Trust Engine.',
+        businessTitle: 'TIKUM — by SHINERVA',
+        businessDesc: 'Verified secondary ticket marketplace. Safe transactions backed by an internal escrow lock and real on-site assistance at venue turnstiles.',
         contactTitle: 'Official Contact',
         legalTitle: 'Services & Legal',
         emailLabel: 'Email:',

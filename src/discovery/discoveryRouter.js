@@ -144,7 +144,7 @@ router.get('/events', (req, res) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Katalog Event Indonesia — Temukan Jadwal Konser, Olahraga &amp; Tiket Terverifikasi | Tikum</title>
   <meta name="description" content="Eksplorasi seluruh event musik, festival, sepak bola, basket, dan pertunjukan di Jakarta, Bandung, Surabaya, dan Bali. Dapatkan informasi tiket resmi dan transfer tiket terverifikasi di Tikum.">
-  <link rel="canonical" href="https://tikum.id/events">
+  <link rel="canonical" href="https://tikum.app/events">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>

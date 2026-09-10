@@ -399,8 +399,7 @@ async function runSuite() {
 
     // 1. Stable Canonical Link
     assert.ok(
-      html.includes('<link rel="canonical" href="https://tikum.id/events/coldplay-music-of-the-spheres-jakarta-2026">') ||
-      html.includes('<link rel="canonical" href="https://argus.id/events/coldplay-music-of-the-spheres-jakarta-2026">')
+      html.includes('<link rel="canonical" href="https://tikum.app/events/coldplay-music-of-the-spheres-jakarta-2026">')
     );
 
     // 2. OpenGraph & Twitter

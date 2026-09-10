@@ -3,7 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tikum — Pelacakan Transaksi &amp; Audit Trail Real-Time | Powered by ARGUS Trust Engine</title>
+  <title>Tikum — Pelacakan Transaksi &amp; Audit Trail Real-Time | by Shinerva</title>
+  <meta name="description" content="Pelacakan status transaksi tiket, verifikasi turnstile venue, dan audit trail real-time di Tikum (SHINERVA HQ).">
+  <link rel="canonical" href="https://tikum.app/track">
+
+  <!-- OpenGraph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Tikum — Pelacakan Transaksi &amp; Audit Trail Real-Time | by Shinerva">
+  <meta property="og:description" content="Pelacakan status transaksi tiket, verifikasi turnstile venue, dan audit trail real-time di Tikum.">
+  <meta property="og:url" content="https://tikum.app/track">
+  <meta property="og:site_name" content="TIKUM">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tikum — Pelacakan Transaksi &amp; Audit Trail Real-Time | by Shinerva">
+  <meta name="twitter:description" content="Pelacakan status transaksi tiket, verifikasi turnstile venue, dan audit trail real-time di Tikum.">
+
+  <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -40,7 +56,7 @@
       <div class="hero-pill"><i class="fa-solid fa-magnifying-glass"></i> AUDIT TRAIL PUBLIK AMAN PII</div>
       <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Lacak Status Transaksi &amp; Verifikasi Gerbang</h1>
       <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px; max-width: 600px; margin-left: auto; margin-right: auto;">
-        Setiap perubahan status tiket diverifikasi secara kriptografis dan dicatat secara permanen di audit trail Tikum (powered by ARGUS Trust Engine).
+        Setiap perubahan status tiket diverifikasi secara kriptografis dan dicatat secara permanen di audit trail Tikum.
       </p>
 
       <!-- Input Bar -->
@@ -62,7 +78,7 @@
     <!-- Loading State -->
     <div id="trackLoading" style="display: none; text-align: center; padding: 40px 20px;">
       <i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--cyan); margin-bottom: 12px;"></i>
-      <div style="font-size: 14px; color: var(--text-muted);">Memverifikasi ID dengan database ledger ARGUS Trust Engine...</div>
+      <div style="font-size: 14px; color: var(--text-muted);">Memverifikasi ID dengan database audit ledger Tikum...</div>
     </div>
 
     <!-- Error / Not Found State -->
@@ -134,7 +150,7 @@
               <i class="fa-solid fa-fingerprint" style="color: var(--cyan);"></i> Barcode Anti-Duplikasi
             </div>
             <div style="color: var(--text-muted); font-size: 12px;">
-              Hash SHA-256 tersimpan di database ARGUS Trust Engine. Sistem memblokir secara otomatis jika nomor barcode tiket yang sama didaftarkan oleh pihak lain.
+              Hash SHA-256 tersimpan aman di database Tikum. Sistem memblokir secara otomatis jika nomor barcode tiket yang sama didaftarkan oleh pihak lain.
             </div>
           </div>
 
@@ -143,7 +159,7 @@
               <i class="fa-solid fa-vault" style="color: var(--warning);"></i> Status Rekening Penampungan
             </div>
             <div id="escrowProtectionText" style="color: var(--text-muted); font-size: 12px;">
-              Dana pembeli ditahan di rekening penampungan transaksi internal Tikum (ARGUS Escrow) hingga pembeli terverifikasi masuk ke dalam venue.
+              Dana pembeli ditahan di rekening penampungan transaksi internal Tikum (escrow) hingga pembeli terverifikasi masuk ke dalam venue.
             </div>
           </div>
 
@@ -152,7 +168,7 @@
               <i class="fa-solid fa-user-shield" style="color: var(--success);"></i> Kehadiran PIC di Venue
             </div>
             <div id="picStatusText" style="color: var(--text-muted); font-size: 12px;">
-              Petugas Event PIC ARGUS bersiaga di pintu masuk acara untuk melakukan verifikasi fisik dan otentikasi dual-handshake OTP.
+              Petugas TIKUM PIC bersiaga di pintu masuk acara untuk melakukan verifikasi fisik dan otentikasi dual-handshake OTP.
             </div>
           </div>
 
@@ -176,10 +192,10 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> Tikum — by Shinerva
+          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> TIKUM — by SHINERVA
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Verified Ticket Marketplace by Shinerva. Didukung oleh ARGUS Trust Engine dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+          Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
         </p>
         <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
@@ -216,7 +232,7 @@
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
-      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. Powered by ARGUS Trust Engine.
+      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. TIKUM — by SHINERVA.
     </div>
   </footer>
 
@@ -281,7 +297,7 @@
         loadingEl.style.display = 'none';
         notFoundEl.style.display = 'block';
         document.getElementById('trackNotFoundText').innerText = 
-          `ID "${id}" tidak ditemukan dalam ledger ARGUS. Periksa kembali ID yang Anda masukkan.`;
+          `ID "${id}" tidak ditemukan dalam sistem Tikum. Periksa kembali ID yang Anda masukkan.`;
       }
     }
 
@@ -331,7 +347,7 @@
       let html = `
         <div class="timeline-step completed">
           <div class="timeline-marker"><i class="fa-solid fa-check"></i></div>
-          <div class="timeline-title">Pesanan Dibuat di Tikum (ARGUS Trust Engine)</div>
+          <div class="timeline-title">Pesanan Dibuat di Tikum</div>
           <div class="timeline-desc">Tiket dikunci dari marketplace dan terikat pada pembeli.</div>
         </div>
 
@@ -353,7 +369,7 @@
           <div class="timeline-step current" style="border-left-color: var(--danger);">
             <div class="timeline-marker" style="background: #dc2626; border-color: #f87171; color: #fff;"><i class="fa-solid fa-triangle-exclamation"></i></div>
             <div class="timeline-title" style="color: #f87171;">Protokol Sengketa Tiket Aktif (${tx.status})</div>
-            <div class="timeline-desc">Laporan sengketa gerbang sedang diinvestigasi oleh Event PIC dan Tim Resolusi Tikum / ARGUS Trust Engine.</div>
+            <div class="timeline-desc">Laporan sengketa gerbang sedang diinvestigasi oleh TIKUM PIC dan Tim Resolusi Tikum.</div>
           </div>
         `;
       } else {
@@ -384,7 +400,7 @@
         <div class="timeline-step ${isVerified ? 'completed' : 'current'}">
           <div class="timeline-marker">${isVerified ? '<i class="fa-solid fa-check"></i>' : '2'}</div>
           <div class="timeline-title">Kurasi &amp; Verifikasi Keaslian Tiket</div>
-          <div class="timeline-desc">Pemeriksaan integritas tiket oleh Tim Kurator ARGUS Trust Engine. Status saat ini: <strong>${tx.status}</strong>.</div>
+          <div class="timeline-desc">Pemeriksaan integritas tiket oleh Tim Verifikasi Tikum. Status saat ini: <strong>${tx.status}</strong>.</div>
         </div>
 
         <div class="timeline-step ${isReserved ? 'completed' : ''}">

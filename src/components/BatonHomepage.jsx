@@ -511,7 +511,7 @@ export default function BatonHomepage() {
               "@type": "FinancialService",
               "name": "BATON Trust Infrastructure",
               "alternateName": "BATON Marketplace Tiket Sekunder Terverifikasi Jual Beli",
-              "url": "https://argus-trust-infrastructure.vercel.app/baton",
+              "url": "https://tikum.app",
               "description": "Secondary ticket marketplace with physical on-site verification, human gate agents, and escrow protection under Indonesian Law.",
               "serviceType": "Ticket Escrow & Gate Admission Verification",
               "areaServed": "Indonesia"

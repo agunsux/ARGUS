@@ -1,0 +1,18 @@
+{
+  "name": "TIKUM — Verified Ticket Marketplace",
+  "short_name": "TIKUM",
+  "description": "Marketplace tiket sekunder terverifikasi di Indonesia dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.",
+  "start_url": "https://tikum.app/",
+  "scope": "https://tikum.app/",
+  "display": "standalone",
+  "background_color": "#0b101b",
+  "theme_color": "#06b6d4",
+  "categories": ["shopping", "entertainment", "lifestyle"],
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

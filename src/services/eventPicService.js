@@ -441,7 +441,7 @@ class EventPicService {
       orderId: order.id,
       challengeCode: challenge.rawCode,
       expiresAt: challenge.expiresAt,
-      message: 'Show this 6-digit code to the ARGUS Event PIC at the turnstile gate'
+      message: 'Show this 6-digit code to the TIKUM PIC at the turnstile gate'
     };
   }
 

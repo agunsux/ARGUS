@@ -1,0 +1,505 @@
+{
+  "runId": "P0-SMOKE-1788979024817",
+  "timestamp": "2026-09-09T18:37:04.817Z",
+  "targetUrl": "https://argus-trust-infrastructure.vercel.app",
+  "phases": {
+    "stage_0_health": {
+      "success": true,
+      "status": 200,
+      "headers": {
+        "age": "0",
+        "cache-control": "public, max-age=0, must-revalidate",
+        "content-length": "116",
+        "content-type": "application/json; charset=utf-8",
+        "date": "Wed, 09 Sep 2026 18:37:04 GMT",
+        "etag": "W/\"74-1eNyyt+fnJP2iulLAxbmy0L+dFY\"",
+        "server": "Vercel",
+        "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+        "x-powered-by": "Express",
+        "x-vercel-cache": "MISS",
+        "x-vercel-id": "sin1::iad1::cj7n6-1788979024151-71066132273a"
+      },
+      "data": {
+        "service": "ARGUS Trust Infrastructure",
+        "status": "healthy",
+        "version": "1.0.0",
+        "timestamp": "2026-09-09T18:37:04.393Z"
+      },
+      "durationMs": 537
+    },
+    "phase_a_seller_auth": {
+      "login": {
+        "success": true,
+        "status": 200,
+        "headers": {
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-length": "195",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Wed, 09 Sep 2026 18:37:04 GMT",
+          "etag": "W/\"c3-aN9ynzK4cxb1lQh8zYX1TQMzDyM\"",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+          "x-powered-by": "Express",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "sin1::iad1::jzwk8-1788979024591-28d77cd82fff"
+        },
+        "data": {
+          "success": true,
+          "session_token": "ses-14440da2-d9bb-4484-8f8e-f77c58e5b388",
+          "user": {
+            "id": "seller-1",
+            "name": "Budi Santoso",
+            "role": "seller",
+            "email": "budi.seller@example.com",
+            "phone": "082223334445"
+          }
+        },
+        "durationMs": 324
+      },
+      "me": {
+        "success": true,
+        "status": 200,
+        "headers": {
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-length": "137",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Wed, 09 Sep 2026 18:37:04 GMT",
+          "etag": "W/\"89-pjk0gCqSnYK6RDlnYGoNmfE5f/o\"",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+          "x-powered-by": "Express",
+          "x-vercel-cache": "BYPASS",
+          "x-vercel-id": "sin1::iad1::sq7pk-1788979024856-542a9c24a4f9"
+        },
+        "data": {
+          "user": {
+            "id": "seller-1",
+            "name": "Budi Santoso",
+            "email": "budi.seller@example.com",
+            "phone": "082223334445",
+            "role": "seller",
+            "password": null
+          }
+        },
+        "durationMs": 282
+      }
+    },
+    "phase_b_create_listing_1": {
+      "success": true,
+      "status": 201,
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "content-length": "841",
+        "content-type": "application/json; charset=utf-8",
+        "date": "Wed, 09 Sep 2026 18:37:05 GMT",
+        "etag": "W/\"349-mYDKvi5Wkwjt3Xv2yJqSo4MqIlE\"",
+        "server": "Vercel",
+        "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+        "x-powered-by": "Express",
+        "x-vercel-cache": "MISS",
+        "x-vercel-id": "sin1::iad1::sdwjp-1788979025139-fefd69ddd27d"
+      },
+      "data": {
+        "success": true,
+        "message": "Listing created and submitted for verification.",
+        "listing": {
+          "id": "list-b42c3f9b-f2b6-4adb-93cb-862dfaaf7d86",
+          "ticket_id": "tkt-85c17b2a-e84f-4644-8471-c6399f904833",
+          "seller_id": "seller-1",
+          "event_id": "event-pestapora-2026",
+          "face_value": 750000,
+          "price": 850000,
+          "seat_info": "P0-SMOKE-SEAT-P0-SMOKE-1788979024817",
+          "status": "PENDING_VERIFICATION",
+          "rejection_reason": null,
+          "evidence_bundle_id": null,
+          "user_created_event": false,
+          "event_verification_warning": null,
+          "created_at": "2026-09-09T18:37:05.268Z"
+        },
+        "ticket": {
+          "id": "tkt-85c17b2a-e84f-4644-8471-c6399f904833",
+          "event_id": "event-pestapora-2026",
+          "current_owner_id": "seller-1",
+          "status": "PENDING_VERIFICATION",
+          "seat_info": "P0-SMOKE-SEAT-P0-SMOKE-1788979024817",
+          "face_value": 750000,
+          "price": 850000,
+          "barcode_hash": "cc14d5e5de20cb087fe25a0f9a3c858c7aa2c3a0542d8e596396787f6aa42fcf"
+        }
+      },
+      "durationMs": 269
+    },
+    "admin_verify_listing_1": {
+      "success": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "content-length": "462",
+        "content-type": "application/json; charset=utf-8",
+        "date": "Wed, 09 Sep 2026 18:37:06 GMT",
+        "etag": "W/\"1ce-F7YS7aixecWUOn+CfHK4TFcLA30\"",
+        "server": "Vercel",
+        "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+        "x-powered-by": "Express",
+        "x-vercel-cache": "MISS",
+        "x-vercel-id": "sin1::iad1::z6ssg-1788979025998-bc8d94d0f352"
+      },
+      "data": {
+        "success": true,
+        "status": "ACTIVE",
+        "listing": {
+          "id": "list-b42c3f9b-f2b6-4adb-93cb-862dfaaf7d86",
+          "ticket_id": "tkt-85c17b2a-e84f-4644-8471-c6399f904833",
+          "seller_id": "seller-1",
+          "event_id": "event-pestapora-2026",
+          "face_value": 750000,
+          "price": 850000,
+          "seat_info": "P0-SMOKE-SEAT-P0-SMOKE-1788979024817",
+          "status": "ACTIVE",
+          "rejection_reason": null,
+          "evidence_bundle_id": null,
+          "user_created_event": false,
+          "event_verification_warning": null,
+          "created_at": "2026-09-09T18:37:05.268Z"
+        }
+      },
+      "durationMs": 274
+    },
+    "phase_c_buyer_discovery": {
+      "login": {
+        "success": true,
+        "status": 200,
+        "headers": {
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-length": "192",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Wed, 09 Sep 2026 18:37:06 GMT",
+          "etag": "W/\"c0-6EeU10s8LLAJm3sA3/QSWOjyIdU\"",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+          "x-powered-by": "Express",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "sin1::iad1::5qc86-1788979026289-f8737bc4107b"
+        },
+        "data": {
+          "success": true,
+          "session_token": "ses-76f7dbde-4937-474b-8af5-1044f10c0a04",
+          "user": {
+            "id": "buyer-1",
+            "name": "Dewi Lestari",
+            "role": "buyer",
+            "email": "dewi.buyer@example.com",
+            "phone": "085556667778"
+          }
+        },
+        "durationMs": 272
+      },
+      "me": {
+        "success": true,
+        "status": 200,
+        "headers": {
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-length": "134",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Wed, 09 Sep 2026 18:37:06 GMT",
+          "etag": "W/\"86-KMbQedBv1yamWAC5Is3wsPhuhc4\"",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+          "x-powered-by": "Express",
+          "x-vercel-cache": "BYPASS",
+          "x-vercel-id": "sin1::iad1::prh9s-1788979026553-a45af5f64355"
+        },
+        "data": {
+          "user": {
+            "id": "buyer-1",
+            "name": "Dewi Lestari",
+            "email": "dewi.buyer@example.com",
+            "phone": "085556667778",
+            "role": "buyer",
+            "password": null
+          }
+        },
+        "durationMs": 282
+      },
+      "feed": {
+        "success": true,
+        "status": 200,
+        "headers": {
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-encoding": "br",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Wed, 09 Sep 2026 18:37:06 GMT",
+          "etag": "W/\"62d-43uilz+IWZk6SiwryB3Prsu5rzc\"",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+          "transfer-encoding": "chunked",
+          "x-powered-by": "Express",
+          "x-vercel-cache": "BYPASS",
+          "x-vercel-id": "sin1::iad1::h99c9-1788979026834-782ad314075a"
+        },
+        "data": {
+          "listings": [
+            {
+              "id": "list-demo-1",
+              "ticket_id": "ticket-demo-1",
+              "ticket_category": "GENERAL",
+              "face_value": 1250000,
+              "price": 1500000,
+              "seller_asking_price": 1500000,
+              "verification_status": "VERIFIED",
+              "pic_available": true,
+              "pic_support_available": true,
+              "pic_contact": "081199887766",
+              "seller_id": "seller-1",
+              "seller_name": "Budi Santoso",
+              "event_id": "event-coldplay",
+              "event_title": "Coldplay Music of the Spheres",
+              "event_date": "2026-11-15",
+              "venue_name": "Gelora Bung Karno (Main Stadium)",
+              "venue_city": "Jakarta",
+              "user_created_event": false,
+              "is_event_verified": true,
+              "event_verification_warning": null,
+              "created_at": "2026-07-09T10:00:00Z",
+              "pricing": {
+                "ticketPrice": 1500000,
+                "platformFee": 150000,
+                "feePercentage": 0.1,
+                "totalAmount": 1650000,
+                "currency": "IDR"
+              },
+              "buyer_total_price": 1650000
+            },
+            {
+              "id": "list-b42c3f9b-f2b6-4adb-93cb-862dfaaf7d86",
+              "ticket_id": "tkt-85c17b2a-e84f-4644-8471-c6399f904833",
+              "seat_info": "P0-SMOKE-SEAT-P0-SMOKE-1788979024817",
+              "ticket_category": "P0",
+              "face_value": 750000,
+              "price": 850000,
+              "seller_asking_price": 850000,
+              "verification_status": "VERIFIED",
+              "pic_available": false,
+              "pic_support_available": false,
+              "pic_contact": null,
+              "seller_id": "seller-1",
+              "seller_name": "Budi Santoso",
+              "event_id": "event-pestapora-2026",
+              "event_title": "Pestapora 2026",
+              "event_date": "2026-09-25",
+              "venue_name": "Gambir Expo / JIExpo Kemayoran",
+              "venue_city": "Jakarta",
+              "user_created_event": false,
+              "is_event_verified": true,
+              "event_verification_warning": null,
+              "created_at": "2026-09-09T18:37:05.268Z",
+              "pricing": {
+                "ticketPrice": 850000,
+                "platformFee": 85000,
+                "feePercentage": 0.1,
+                "totalAmount": 935000,
+                "currency": "IDR"
+              },
+              "buyer_total_price": 935000
+            }
+          ]
+        },
+        "durationMs": 291
+      }
+    },
+    "phase_d_buy_now": {
+      "success": true,
+      "status": 201,
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "content-length": "977",
+        "content-type": "application/json; charset=utf-8",
+        "date": "Wed, 09 Sep 2026 18:37:07 GMT",
+        "etag": "W/\"3d1-2ypGhm4rlvusHeFZZTNskoAqiH8\"",
+        "server": "Vercel",
+        "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+        "x-powered-by": "Express",
+        "x-vercel-cache": "MISS",
+        "x-vercel-id": "sin1::iad1::kzcr6-1788979027131-1f61fe11808b"
+      },
+      "data": {
+        "success": true,
+        "message": "Order created. Payment required to lock escrow.",
+        "order": {
+          "id": "ord-989a27ef-7c73-4dc6-a98d-c737c8388c6e",
+          "buyer_id": "buyer-1",
+          "listing_id": "list-b42c3f9b-f2b6-4adb-93cb-862dfaaf7d86",
+          "seller_id": "seller-1",
+          "ticket_id": "tkt-85c17b2a-e84f-4644-8471-c6399f904833",
+          "event_id": "event-pestapora-2026",
+          "ticket_price": 850000,
+          "platform_fee": 85000,
+          "total_amount": 935000,
+          "status": "PENDING_PAYMENT",
+          "payment_deadline": "2026-09-09T20:37:07.255Z",
+          "expires_at": "2026-09-09T20:37:07.255Z",
+          "created_at": "2026-09-09T18:37:07.256Z"
+        },
+        "escrow": {
+          "id": "esc-50d8d154-17dd-4a6a-994e-8b32be439059",
+          "order_id": "ord-989a27ef-7c73-4dc6-a98d-c737c8388c6e",
+          "buyer_id": "buyer-1",
+          "seller_id": "seller-1",
+          "amount": 850000,
+          "total_paid": 935000,
+          "status": "PENDING_PAYMENT",
+          "provider_escrow_id": null,
+          "created_at": "2026-09-09T18:37:07.256Z",
+          "released_at": null,
+          "refunded_at": null
+        },
+        "pricing": {
+          "ticketPrice": 850000,
+          "platformFee": 85000,
+          "feePercentage": 0.1,
+          "totalAmount": 935000,
+          "currency": "IDR"
+        }
+      },
+      "durationMs": 289
+    },
+    "phase_e_create_offer": {
+      "success": false,
+      "status": 400,
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "content-length": "113",
+        "content-type": "application/json; charset=utf-8",
+        "date": "Wed, 09 Sep 2026 18:37:08 GMT",
+        "etag": "W/\"71-TeJk2D7O16bSVB7BjITcGfTFPmA\"",
+        "server": "Vercel",
+        "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+        "x-powered-by": "Express",
+        "x-vercel-cache": "MISS",
+        "x-vercel-id": "sin1::iad1::ns86t-1788979027961-6cd99511c682"
+      },
+      "data": {
+        "error": "Offer amount must be a positive integer",
+        "code": "INVALID_OFFER_AMOUNT",
+        "remainingCooldownMinutes": null
+      },
+      "durationMs": 284
+    },
+    "illegal_accept_own_offer": null,
+    "phase_e_seller_counter": null,
+    "phase_e_accept_counter_order": null,
+    "webhook_probes": {
+      "probe1": 404,
+      "probe2": 404,
+      "probe3": 404
+    },
+    "phase_f_buyer_pay": {
+      "success": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "content-encoding": "br",
+        "content-type": "application/json; charset=utf-8",
+        "date": "Wed, 09 Sep 2026 18:37:09 GMT",
+        "etag": "W/\"426-OOI4cBHb7ANXW3sUbY073ru/09o\"",
+        "server": "Vercel",
+        "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+        "transfer-encoding": "chunked",
+        "x-powered-by": "Express",
+        "x-vercel-cache": "MISS",
+        "x-vercel-id": "sin1::iad1::bx7l5-1788979029115-781dbcf8aaf4"
+      },
+      "data": {
+        "success": true,
+        "message": "Payment received. Funds securely locked in Escrow.",
+        "order": {
+          "id": "ord-989a27ef-7c73-4dc6-a98d-c737c8388c6e",
+          "buyer_id": "buyer-1",
+          "listing_id": "list-b42c3f9b-f2b6-4adb-93cb-862dfaaf7d86",
+          "seller_id": "seller-1",
+          "ticket_id": "tkt-85c17b2a-e84f-4644-8471-c6399f904833",
+          "event_id": "event-pestapora-2026",
+          "ticket_price": 850000,
+          "platform_fee": 85000,
+          "total_amount": 935000,
+          "status": "PAID_ESCROWED",
+          "payment_deadline": "2026-09-09T20:37:07.255Z",
+          "expires_at": "2026-09-09T20:37:07.255Z",
+          "created_at": "2026-09-09T18:37:07.256Z"
+        },
+        "escrow": {
+          "id": "esc-50d8d154-17dd-4a6a-994e-8b32be439059",
+          "order_id": "ord-989a27ef-7c73-4dc6-a98d-c737c8388c6e",
+          "buyer_id": "buyer-1",
+          "seller_id": "seller-1",
+          "amount": 850000,
+          "total_paid": 935000,
+          "status": "ESCROWED",
+          "provider_escrow_id": "prov-esc-IPAYMU-SIM-1788979029942",
+          "created_at": "2026-09-09T18:37:07.256Z",
+          "released_at": null,
+          "refunded_at": null
+        },
+        "pic_instructions": {
+          "pic_contact": "ARGUS Ops Hot-line",
+          "instructions": "Temui PIC ARGUS di gate venue sebelum masuk. Tunjukkan nomor pesanan Anda untuk verifikasi fisik."
+        }
+      },
+      "durationMs": 267
+    },
+    "phase_h_pic_verify": {
+      "success": false,
+      "status": 403,
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "content-length": "68",
+        "content-type": "application/json; charset=utf-8",
+        "date": "Wed, 09 Sep 2026 18:37:09 GMT",
+        "etag": "W/\"44-6L8tpG0gOWfFFoMNgtoHoV8IUR0\"",
+        "server": "Vercel",
+        "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+        "x-powered-by": "Express",
+        "x-vercel-cache": "MISS",
+        "x-vercel-id": "sin1::iad1::77qjc-1788979029655-3385b66146c2"
+      },
+      "data": {
+        "error": "PIC not assigned to this event",
+        "code": "PIC_UNAUTHORIZED"
+      },
+      "durationMs": 267
+    },
+    "phase_i_settlement": {
+      "success": false,
+      "status": 500,
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "content-length": "118",
+        "content-type": "application/json; charset=utf-8",
+        "date": "Wed, 09 Sep 2026 18:37:10 GMT",
+        "etag": "W/\"76-PXZOEAaJu+/boSplIrEY7Cd+YYo\"",
+        "server": "Vercel",
+        "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+        "x-powered-by": "Express",
+        "x-vercel-cache": "MISS",
+        "x-vercel-id": "sin1::iad1::jkw49-1788979029933-657fa4a890b3"
+      },
+      "data": {
+        "error": "ARGUS_ADMIN_PASSWORD environment variable is required in production",
+        "code": "ADMIN_PASSWORD_NOT_CONFIGURED"
+      },
+      "durationMs": 284
+    },
+    "phase_j_dispute": null,
+    "phase_k_security": {
+      "unauthListing": 201,
+      "spoofHeader": 401,
+      "buyerSettle": 401,
+      "sellerPay": 200
+    },
+    "phase_l_persistence": {
+      "sessionCheck": 200,
+      "orderCheck": 200
+    }
+  }
+}

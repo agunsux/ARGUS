@@ -87,8 +87,8 @@ class EventSEOService {
       const minPrice = Math.min(...activeListings.map(l => l.price));
       offers.push({
         '@type': 'AggregateOffer',
-        'name': 'Tikum Verified Resale Inventory (Powered by ARGUS)',
-        'url': `https://tikum.id/events/${event.slug}`,
+        'name': 'Tikum Verified Resale Inventory',
+        'url': `https://tikum.app/events/${event.slug}`,
         'priceCurrency': 'IDR',
         'lowPrice': minPrice,
         'offerCount': activeListings.length,
@@ -109,8 +109,8 @@ class EventSEOService {
   static renderEventPageHtml(event, activeListings = [], relatedEvents = []) {
     const jsonLd = JSON.stringify(this.buildStructuredData(event, activeListings));
     const title = `${event.canonical_name} — Jadwal, Lokasi, Tiket Resmi & Resale Terverifikasi | Tikum`;
-    const metaDesc = `Informasi lengkap ${event.canonical_name} di ${event.venue_name}, ${event.city} tanggal ${event.start_date || event.date}. Cek ketersediaan tiket resmi dan perlindungan transfer tiket resale aman Tikum (powered by ARGUS Trust Engine).`;
-    const canonicalUrl = `https://tikum.id/events/${event.slug}`;
+    const metaDesc = `Informasi lengkap ${event.canonical_name} di ${event.venue_name}, ${event.city} tanggal ${event.start_date || event.date}. Cek ketersediaan tiket resmi dan perlindungan transfer tiket resale aman Tikum.`;
+    const canonicalUrl = `https://tikum.app/events/${event.slug}`;
 
     const dateFormatted = event.start_date || event.date || 'TBA';
     const city = event.city || event.venue_city || 'Jakarta';
@@ -298,7 +298,7 @@ class EventSEOService {
     <article class="event-hero">
       <div class="badge-row">
         <span class="badge badge-primary">${category}</span>
-        ${isVerified ? `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Terverifikasi Tikum &amp; ARGUS Trust Engine (${confidence}%)</span>` : `<span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Dalam Verifikasi (${confidence}%)</span>`}
+        ${isVerified ? `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Terverifikasi Tikum (${confidence}%)</span>` : `<span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Dalam Verifikasi (${confidence}%)</span>`}
       </div>
 
       <h1 style="font-size: 28px; font-weight: 800; margin: 12px 0;">${event.canonical_name}</h1>
@@ -326,10 +326,10 @@ class EventSEOService {
 
     <!-- Admission & Trust Protocol -->
     <section class="card" style="background: #0f172a; border-color: #1e293b; padding: 20px; margin-top: 30px;">
-      <h3 style="font-size: 16px; margin-bottom: 8px;"><i class="fa-solid fa-user-shield"></i> Protokol Verifikasi Gerbang (ARGUS Trust Engine)</h3>
+      <h3 style="font-size: 16px; margin-bottom: 8px;"><i class="fa-solid fa-user-shield"></i> Protokol Verifikasi Gerbang (TIKUM PIC)</h3>
       <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
         Tipe Tiket: <strong>${event.admission_protocol?.type || 'BARCODE_PLUS_ID'}</strong>. 
-        ${event.admission_protocol?.description || 'Verifikasi tiket digital dan fisik di gate acara bersama Event PIC ARGUS.'}
+        ${event.admission_protocol?.description || 'Verifikasi tiket digital dan fisik di gate acara bersama Event PIC Tikum.'}
       </p>
     </section>
 

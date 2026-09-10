@@ -98,7 +98,7 @@ class IPaymuProvider extends PaymentProvider {
     if (requiresEscrow && !this.isEscrowSupported(channel)) {
       const err = new Error(
         `Metode pembayaran '${channel}' tidak mendukung penahanan rekening bersama (escrow) iPaymu. ` +
-        `ARGUS mewajibkan metode pembayaran ber-escrow (Virtual Account atau QRIS Escrow) demi keamanan transaksi.`
+        `Tikum mewajibkan metode pembayaran ber-escrow (Virtual Account atau QRIS Escrow) demi keamanan transaksi.`
       );
       err.code = 'ESCROW_CHANNEL_UNSUPPORTED';
       err.statusCode = 400;
@@ -125,7 +125,7 @@ class IPaymuProvider extends PaymentProvider {
         qrString: channelMeta && channelMeta.type === 'QRIS' ? `00020101021226...MOCK_QRIS_${orderId}` : null,
         expiredAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() // 2 hours window
       },
-      instructions: `Lakukan pembayaran ke ${channelMeta?.name || channel} sebesar Rp ${amount.toLocaleString('id-ID')}. Dana akan dikunci di Rekening Penampungan ARGUS (iPaymu Escrow) hingga verifikasi gate selesai.`
+      instructions: `Lakukan pembayaran ke ${channelMeta?.name || channel} sebesar Rp ${amount.toLocaleString('id-ID')}. Dana akan dikunci di Rekening Penampungan Tikum (Escrow) hingga verifikasi gate selesai.`
     };
   }
 

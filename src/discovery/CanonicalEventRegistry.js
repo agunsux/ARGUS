@@ -67,7 +67,7 @@ class CanonicalEventRegistry {
       slug: slug,
       event_type: eventType,
       category: eventData.category || eventType, // compatibility
-      description: eventData.description || `${normTitle} diselenggarakan di ${venueNorm.venue_name}, ${venueNorm.city}. Dapatkan informasi resmi dan tiket terverifikasi di ARGUS.`,
+      description: eventData.description || `${normTitle} diselenggarakan di ${venueNorm.venue_name}, ${venueNorm.city}. Dapatkan informasi resmi dan tiket terverifikasi di Tikum.`,
       start_datetime: dtNorm.start_datetime,
       start_date: dtNorm.date,
       date: dtNorm.date, // compatibility
@@ -91,7 +91,7 @@ class CanonicalEventRegistry {
       official_ticketing_provider: eventData.official_ticketing_provider || null,
       admission_protocol: eventData.admission_protocol || {
         type: 'BARCODE_PLUS_ID',
-        description: 'Pemeriksaan tiket resmi promotor dan verifikasi identitas di venue acara oleh PIC ARGUS',
+        description: 'Pemeriksaan tiket resmi promotor dan verifikasi identitas di venue acara oleh Event PIC Tikum',
         required_items: ['E-Ticket / QR Code resmi', 'KTP / Identitas Asli'],
         handoff_type: 'DIGITAL_TRANSFER',
         venue_gate_authority: 'Promoter & Venue Security'

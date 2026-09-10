@@ -148,7 +148,7 @@ router.post('/tickets/:id/reserve', async (req, res) => {
       success: true,
       transferId,
       totalToPay: price + uniqueCode,
-      instructions: `Please transfer exactly IDR ${price + uniqueCode} to ARGUS Escrow Bank Account.`
+      instructions: `Please transfer exactly IDR ${price + uniqueCode} to Tikum Escrow Bank Account.`
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

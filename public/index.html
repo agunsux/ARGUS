@@ -4,6 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tikum — Verified Ticket Marketplace by Shinerva</title>
+  <meta name="description" content="TIKUM adalah marketplace tiket sekunder terverifikasi di Indonesia. Transaksi aman dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.">
+  <link rel="canonical" href="https://tikum.app/">
+
+  <!-- OpenGraph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="TIKUM — Verified Ticket Marketplace by Shinerva">
+  <meta property="og:description" content="Marketplace tiket sekunder terverifikasi di Indonesia. Transaksi aman dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.">
+  <meta property="og:url" content="https://tikum.app/">
+  <meta property="og:site_name" content="TIKUM">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TIKUM — Verified Ticket Marketplace by Shinerva">
+  <meta name="twitter:description" content="Marketplace tiket sekunder terverifikasi di Indonesia.">
+
+  <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -42,7 +58,7 @@
       </div>
       <h1>Marketplace Tiket Terverifikasi dengan Perlindungan Fisik di Venue</h1>
       <p>
-        Bukan marketplace spekulatif. Tikum melindungi pembeli dan penjual dengan dana tertahan di rekening penampungan internal yang ditenagai oleh ARGUS Trust Engine hingga tiket terbukti valid dan pembeli sukses memasuki venue bersama Event PIC lapangan kami.
+        Bukan marketplace spekulatif. Tikum melindungi pembeli dan penjual dengan dana tertahan di rekening penampungan internal (escrow) hingga tiket terbukti valid dan pembeli sukses memasuki venue bersama Event PIC lapangan kami.
       </p>
 
       <!-- Quick Tracker Box -->
@@ -202,7 +218,7 @@
         <div class="hero-pill"><i class="fa-solid fa-code-branch"></i> PROTOKOL RESMI</div>
         <h2 style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Bagaimana Tikum Menjamin Transaksi</h2>
         <p style="font-size: 14px; color: var(--text-muted);">
-          Arsitektur 4 lapis yang ditenagai oleh ARGUS Trust Engine untuk membongkar praktik penipuan tiket sekunder tanpa mengorbankan privasi.
+          Arsitektur 4 lapis yang dirancang untuk membongkar praktik penipuan tiket sekunder tanpa mengorbankan privasi.
         </p>
       </div>
 
@@ -254,7 +270,7 @@
       <i class="fa-solid fa-circle-info"></i>
       <div>
         <strong>Pernyataan Keterbukaan Sistem:</strong><br>
-        Tikum adalah marketplace tiket terverifikasi oleh Shinerva dengan verifikasi yang ditenagai oleh ARGUS Trust Engine. Tikum tidak berafiliasi dengan promotor acara resmi. Verifikasi tiket di gerbang venue dilakukan oleh personel lapangan Event PIC Tikum secara langsung, bukan melalui integrasi API turnstile promotor otomatis yang belum dibuka untuk pihak ketiga.
+        Tikum adalah marketplace tiket terverifikasi oleh Shinerva. Tikum tidak berafiliasi dengan promotor acara resmi. Verifikasi tiket di gerbang venue dilakukan oleh personel lapangan Event PIC Tikum secara langsung, bukan melalui integrasi API turnstile promotor otomatis yang belum dibuka untuk pihak ketiga.
       </div>
     </div>
 
@@ -265,10 +281,10 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> Tikum — by Shinerva
+          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> TIKUM — by SHINERVA
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Verified Ticket Marketplace by Shinerva. Didukung oleh ARGUS Trust Engine dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+          Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
         </p>
         <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
@@ -305,7 +321,7 @@
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
-      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. Powered by ARGUS Trust Engine.
+      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. TIKUM — by SHINERVA.
     </div>
   </footer>
 
@@ -373,7 +389,7 @@
           const isUserCreated = event.source === 'USER_CREATED';
           
           const badgeHtml = isVerified 
-            ? `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> RESMI ARGUS</span>`
+            ? `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> TERVERIFIKASI TIKUM</span>`
             : `<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> EVENT KOMUNITAS</span>`;
 
           const priceHtml = event.min_price 
@@ -439,7 +455,7 @@
         loadingEl.style.display = 'none';
         emptyEl.style.display = 'block';
         emptyEl.querySelector('h3').innerText = 'Gagal Memuat Katalog';
-        emptyEl.querySelector('p').innerText = 'Terjadi kendala jaringan saat menghubungi server ARGUS. Silakan muat ulang halaman.';
+        emptyEl.querySelector('p').innerText = 'Terjadi kendala jaringan saat menghubungi server Tikum. Silakan muat ulang halaman.';
       }
     }
 
@@ -475,8 +491,8 @@
             : askingPrice;
 
           const picBadge = l.pic_available
-            ? `<span class="badge badge-success" title="Personel PIC ARGUS siap menyambut di venue"><i class="fa-solid fa-user-shield"></i> PIC Venue Siaga</span>`
-            : `<span class="badge badge-info" title="PIC ARGUS akan ditugaskan sesuai jadwal turnstile"><i class="fa-solid fa-shield-check"></i> Dukungan Venue</span>`;
+            ? `<span class="badge badge-success" title="Personel TIKUM PIC siap menyambut di venue"><i class="fa-solid fa-user-shield"></i> PIC Venue Siaga</span>`
+            : `<span class="badge badge-info" title="TIKUM PIC akan ditugaskan sesuai jadwal turnstile"><i class="fa-solid fa-shield-check"></i> Dukungan Venue</span>`;
 
           const verifBadge = `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> TERVERIFIKASI</span>`;
 

@@ -19,6 +19,9 @@ const businessProfile = {
   parentEntity: 'SHINERVA HQ',
   engineName: 'ARGUS Trust Engine',
   canonicalRelationship: 'Tikum — Verified Ticket Marketplace by Shinerva',
+  primaryDomain: 'tikum.app',
+  canonicalDomain: 'https://tikum.app',
+  canonicalOrigin: 'https://tikum.app',
 
   // Official Business Entity for iPaymu compliance
   name: 'SHINERVA HQ',
@@ -52,10 +55,10 @@ function renderFooterHtml() {
     <div class="footer-container" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 40px;">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 16px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: #06b6d4;"></i> Tikum — by Shinerva
+          <i class="fa-solid fa-shield-halved" style="color: #06b6d4;"></i> TIKUM — by SHINERVA
         </div>
         <p style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Marketplace tiket sekunder terverifikasi. Transaksi aman dengan rekening penampungan internal (escrow) dan pendampingan fisik di gerbang venue. Infrastruktur keamanan dan penjaminan ditenagai oleh <strong>ARGUS Trust Engine</strong>.
+          Marketplace tiket sekunder terverifikasi. Transaksi aman dengan rekening penampungan internal (escrow) dan pendampingan fisik di gerbang venue.
         </p>
         <div class="footer-address" style="color: #94a3b8; font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
@@ -92,7 +95,7 @@ function renderFooterHtml() {
       </div>
     </div>
     <div style="max-width: 1200px; margin: 32px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: #64748b;">
-      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. Powered by ARGUS Trust Engine.
+      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. TIKUM — by SHINERVA.
     </div>
   </footer>
   `;

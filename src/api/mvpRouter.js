@@ -441,7 +441,7 @@ router.post('/events', (req, res) => {
 
     if (duplicate) {
       return res.status(409).json({
-        error: 'Event dengan nama, venue, dan tanggal yang sama sudah terdaftar di sistem ARGUS.',
+        error: 'Event dengan nama, venue, dan tanggal yang sama sudah terdaftar di sistem Tikum.',
         code: 'DUPLICATE_EVENT',
         existing_event_id: duplicate.id
       });
@@ -471,7 +471,7 @@ router.post('/events', (req, res) => {
       category: catUpper,
       admission_protocol: admission_protocol || {
         type: 'BARCODE_PLUS_ID',
-        description: 'Pemeriksaan tiket resmi dan identitas di venue acara oleh PIC ARGUS',
+        description: 'Pemeriksaan tiket resmi dan identitas di venue acara oleh TIKUM PIC',
         required_items: ['E-Ticket / Tiket Fisik Resmi', 'KTP Asli / Identitas Diri'],
         handoff_type: 'DIGITAL_TRANSFER',
         venue_gate_authority: 'Promotor / Penyelenggara Acara'
@@ -788,7 +788,7 @@ router.post('/seller/orders/:orderId/handoff-challenge', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Handoff challenge generated. Show this 6-digit code to ARGUS PIC.',
+      message: 'Handoff challenge generated. Show this 6-digit code to TIKUM PIC.',
       challenge_id: challenge.challengeId,
       code: challenge.rawCode, // Displayed strictly in Seller app session
       expires_at: challenge.expiresAt
@@ -857,10 +857,10 @@ router.post('/buyer/pay', async (req, res) => {
       order: result.order,
       escrow: result.escrow,
       pic_instructions: {
-        pic_contact: picAssign ? picAssign.contact_phone : 'ARGUS Ops Hot-line',
+        pic_contact: picAssign ? picAssign.contact_phone : 'TIKUM Ops Hotline',
         venue: venue.name,
         gate_info: venue.gate_info,
-        instructions: 'Temui PIC ARGUS di gate venue sebelum masuk. Tunjukkan nomor pesanan Anda untuk verifikasi fisik.'
+        instructions: 'Temui TIKUM PIC di gate venue sebelum masuk. Tunjukkan nomor pesanan Anda untuk verifikasi fisik.'
       }
     });
   } catch (err) {

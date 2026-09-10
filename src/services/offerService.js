@@ -62,7 +62,7 @@ class OfferService {
     // 1. Strict anti-chat enforcement: Reject free-text messages/notes
     if ((message && typeof message === 'string' && message.trim().length > 0) ||
         (note && typeof note === 'string' && note.trim().length > 0)) {
-      const err = new Error('ARGUS strictly prohibits free-text chat or messages in offers. Only structured offers are supported.');
+      const err = new Error('Tikum strictly prohibits free-text chat or messages in offers. Only structured offers are supported.');
       err.code = 'FREE_TEXT_NOT_ALLOWED';
       err.statusCode = 400;
       throw err;
@@ -474,7 +474,7 @@ class OfferService {
     // 1. Strict anti-chat enforcement: Reject free-text messages/notes
     if ((message && typeof message === 'string' && message.trim().length > 0) ||
         (note && typeof note === 'string' && note.trim().length > 0)) {
-      const err = new Error('ARGUS strictly prohibits free-text chat or messages in counter-offers. Only structured price counter-offers are supported.');
+      const err = new Error('Tikum strictly prohibits free-text chat or messages in counter-offers. Only structured price counter-offers are supported.');
       err.code = 'FREE_TEXT_NOT_ALLOWED';
       err.statusCode = 400;
       throw err;
