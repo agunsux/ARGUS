@@ -8,7 +8,7 @@
 const https = require('https');
 const assert = require('assert');
 
-const PROD_BASE = 'https://argus-trust-infrastructure.vercel.app';
+const PROD_BASE = process.env.PROD_URL || process.env.BASE_URL || 'https://tikum.app';
 
 function get(path) {
   return new Promise((resolve, reject) => {

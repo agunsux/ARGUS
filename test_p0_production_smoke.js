@@ -6,7 +6,7 @@
  * No mocks. No fake success.
  */
 
-const PROD_BASE = 'https://argus-trust-infrastructure.vercel.app';
+const PROD_BASE = process.env.PROD_URL || process.env.BASE_URL || 'https://tikum.app';
 const TEST_TIMESTAMP = new Date().toISOString();
 const RUN_ID = `P0-SMOKE-${Date.now()}`;
 

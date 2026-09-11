@@ -6,6 +6,19 @@
       "includeFiles": "public/**"
     }
   },
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "argus-trust-infrastructure.vercel.app"
+        }
+      ],
+      "destination": "https://tikum.app/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

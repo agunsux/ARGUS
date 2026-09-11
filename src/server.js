@@ -31,6 +31,23 @@ const uploadsDir = process.env.VERCEL
   : path.resolve(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadsDir));
 
+// Canonical Host Enforcement: Redirect legacy public Vercel hostnames to https://tikum.app
+const LEGACY_PUBLIC_HOSTS = new Set([
+  'argus-trust-infrastructure.vercel.app',
+  'argus-trust-infrastructure-shinerva.vercel.app',
+  'argus-trust-infrastructure-git-main-shinerva.vercel.app'
+]);
+
+app.use((req, res, next) => {
+  const rawHost = req.headers['x-forwarded-host'] || req.headers.host || '';
+  const host = rawHost.split(':')[0].toLowerCase();
+  if (LEGACY_PUBLIC_HOSTS.has(host)) {
+    const targetUrl = `https://tikum.app${req.originalUrl || req.url || '/'}`;
+    return res.redirect(301, targetUrl);
+  }
+  next();
+});
+
 // Serve front-end files
 const sendFileOpts = { dotfiles: 'allow' };
 app.use(express.static(path.resolve(__dirname, '../public'), sendFileOpts));
