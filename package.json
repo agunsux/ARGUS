@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "test": "node test_mvp_transaction_loop.js && node test_mvp_dispute_loop.js && node test_mvp_security.js && node test_pilot_multi_order_10.js && node test_flow.js && node test_epic35_redteam.js && node test_epic36_events.js && node test_epic40_offers.js && node test_marketplace_alignment.js && node test_epic_event_discovery.js && node test_apmi_promoters.js && node test_promoter_registry.js && node test_promoter_csv_import.js && node test_ipaymu_compliance.js && node test_brand_boundary.js && node test_canonical_domain.js"
+    "test": "node test_mvp_transaction_loop.js && node test_mvp_dispute_loop.js && node test_mvp_security.js && node test_pilot_multi_order_10.js && node test_flow.js && node test_epic35_redteam.js && node test_epic36_events.js && node test_epic40_offers.js && node test_marketplace_alignment.js && node test_epic_event_discovery.js && node test_apmi_promoters.js && node test_promoter_registry.js && node test_promoter_csv_import.js && node test_ipaymu_compliance.js && node test_brand_boundary.js && node test_canonical_domain.js && node test_email_service.js"
   },
   "repository": {
     "type": "git",

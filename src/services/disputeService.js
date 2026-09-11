@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { state, recordAuditLog } = require('../database');
 const { EscrowService, ESCROW_STATUS } = require('./escrowService');
+const { emailService } = require('./emailService');
 
 const DISPUTE_STATUS = {
   OPEN: 'OPEN',
@@ -70,6 +71,12 @@ class DisputeService {
       reason: dispute.reason,
       pic_id: picId
     });
+
+    // Non-blocking secondary effect: Dispute opened email
+    const buyer = state.users.find(u => u.id === buyerId);
+    const seller = state.users.find(u => u.id === order.seller_id);
+    const pic = picId ? state.users.find(u => u.id === picId) : null;
+    emailService.sendDisputeOpenedEmail({ dispute, order, buyer, seller, pic });
 
     return { dispute, alreadyOpen: false };
   }
@@ -184,6 +191,17 @@ class DisputeService {
       outcome,
       decisionReason,
       resolved_at: dispute.resolved_at
+    });
+
+    // Non-blocking secondary effect: Dispute resolved email
+    const resolvedBuyer = state.users.find(u => u.id === dispute.buyer_id);
+    const resolvedSeller = state.users.find(u => u.id === dispute.seller_id);
+    emailService.sendDisputeResolvedEmail({
+      dispute,
+      outcome,
+      decisionNotes: dispute.decision_notes,
+      buyer: resolvedBuyer,
+      seller: resolvedSeller
     });
 
     return { dispute, escrow, order };

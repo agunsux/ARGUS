@@ -30,6 +30,12 @@ const businessProfile = {
   whatsappNumber: '081299927378',
   whatsappUrl: 'https://wa.me/6281299927378',
   emailUrl: 'mailto:agunsux@gmail.com',
+
+  // Official Business & Transactional Email Routing Identities (Cloudflare Email Routing)
+  supportEmail: 'support@tikum.app',
+  helloEmail: 'hello@tikum.app',
+  adminEmail: 'admin@tikum.app',
+  picEmail: 'pic@tikum.app',
   address: {
     entity: 'SHINERVA HQ',
     street: 'Jl. Pasirluyu No. 79',

@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { state, recordAuditLog } = require('../database');
 const { LISTING_STATUS } = require('./listingService');
+const { emailService } = require('./emailService');
 
 const ESCROW_STATUS = {
   PENDING_PAYMENT: 'PENDING_PAYMENT',
@@ -151,6 +152,13 @@ class EscrowService {
       }
     }
 
+    // Non-blocking secondary effect: Order created email
+    const event = state.events.find(e => e.id === order.event_id);
+    const ticket = state.tickets.find(t => t.id === order.ticket_id);
+    emailService.sendOrderCreatedEmail({ order, buyer, ticket, event, pricing }).catch(err => {
+      console.warn('[EscrowService:OrderCreatedEmail] Secondary effect error:', err.message);
+    });
+
     return { order, escrow, pricing };
   }
 
@@ -228,6 +236,12 @@ class EscrowService {
       amount_held: escrow.amount,
       provider_escrow_id: escrow.provider_escrow_id
     });
+
+    // Non-blocking secondary effect: Payment successful email (funds locked in Escrow)
+    const buyer = state.users.find(u => u.id === order.buyer_id);
+    const seller = state.users.find(u => u.id === order.seller_id);
+    const event = state.events.find(e => e.id === order.event_id);
+    emailService.sendPaymentSuccessfulEmail({ order, payment, buyer, seller, event });
 
     return { payment, order, escrow, idempotent: false };
   }

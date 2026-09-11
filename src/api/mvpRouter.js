@@ -12,6 +12,7 @@ const { EventPicService } = require('../services/eventPicService');
 const { DisputeService, DISPUTE_STATUS, DISPUTE_OUTCOME } = require('../services/disputeService');
 const { SettlementService } = require('../services/settlementService');
 const { createEvidenceBundle } = require('../verification/evidence');
+const { emailService } = require('../services/emailService');
 
 // Multer for evidence uploads
 const uploadsDir = process.env.VERCEL
@@ -1353,7 +1354,8 @@ router.get('/admin/operations', (req, res) => {
       active_orders_count: activeOrders.length,
       escrow_holding_total: escrowHolding,
       pending_settlements_count: pendingSettlements.length,
-      open_disputes_count: openDisputes.length
+      open_disputes_count: openDisputes.length,
+      email_infrastructure: emailService.getTelemetry()
     },
     queues: {
       todaysEvents,
@@ -1364,6 +1366,95 @@ router.get('/admin/operations', (req, res) => {
       openDisputes
     }
   });
+});
+
+/**
+ * Admin / Operations Email Infrastructure Status
+ * GET /api/mvp/admin/email-status
+ */
+router.get('/admin/email-status', (req, res) => {
+  const callerId = getCallerId(req, req.query.requesterId);
+  if (!callerId) {
+    return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
+  }
+  const caller = findUser(callerId);
+  if (!caller || (caller.role !== 'admin' && caller.role !== 'pic')) {
+    return res.status(403).json({ error: 'Forbidden: requires admin or pic role', code: 'FORBIDDEN' });
+  }
+  res.json({ success: true, email: emailService.getTelemetry() });
+});
+
+// In-memory rate limiting map for admin test emails (max 3 per 5 minutes per officer)
+const adminTestRateLimits = new Map();
+const ALLOWED_TEST_RECIPIENTS = new Set([
+  'agunsux@gmail.com',
+  'admin@tikum.app',
+  'support@tikum.app',
+  'hello@tikum.app',
+  'pic@tikum.app'
+]);
+
+/**
+ * Admin Live Diagnostic Email Test
+ * POST /api/mvp/admin/email-test
+ * Strictly admin-only, rate-limited, audit-logged, restricted recipient
+ */
+router.post('/admin/email-test', async (req, res) => {
+  try {
+    const officerId = getCallerId(req, req.body?.officerId);
+    if (!officerId) {
+      return res.status(401).json({ error: 'officerId required', code: 'AUTH_REQUIRED' });
+    }
+    const officer = requireAdmin(officerId);
+
+    // Rate Limiting (max 3 per 5 minutes)
+    const now = Date.now();
+    const windowMs = 5 * 60 * 1000;
+    let timestamps = (adminTestRateLimits.get(officerId) || []).filter(t => now - t < windowMs);
+    if (timestamps.length >= 3) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded: maximum 3 email test dispatches per 5 minutes per admin',
+        code: 'RATE_LIMIT_EXCEEDED'
+      });
+    }
+    timestamps.push(now);
+    adminTestRateLimits.set(officerId, timestamps);
+
+    // Recipient validation: strictly restricted to verified business addresses or officer email
+    const requestedRecipient = req.body?.recipient ? req.body.recipient.trim().toLowerCase() : 'agunsux@gmail.com';
+    const officerEmail = (officer.email || '').toLowerCase();
+    if (!ALLOWED_TEST_RECIPIENTS.has(requestedRecipient) && requestedRecipient !== officerEmail) {
+      return res.status(400).json({
+        error: 'Invalid test recipient: recipient must be a verified business routing address or your officer account email',
+        code: 'INVALID_RECIPIENT'
+      });
+    }
+
+    // Audit log test attempt
+    await recordAuditLog('ADMIN', officerId, 'EMAIL_TEST_TRIGGERED', officerId, {
+      recipient: requestedRecipient,
+      timestamp: new Date().toISOString()
+    });
+
+    emailService.lastTestTimestamp = new Date().toISOString();
+
+    const dispatchResult = await emailService.sendEmail({
+      to: requestedRecipient,
+      template: 'ADMIN_TEST',
+      replyTo: 'admin@tikum.app',
+      idempotencyKey: `admin-test:${officerId}:${now}`,
+      data: { adminId: officer.id }
+    });
+
+    res.json({
+      success: dispatchResult.success,
+      message: dispatchResult.success ? 'Diagnostic test email processed successfully' : 'Diagnostic test email not delivered',
+      details: dispatchResult,
+      telemetry: emailService.getTelemetry()
+    });
+  } catch (err) {
+    res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
+  }
 });
 
 /**

@@ -2,6 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 const { state, recordOfferAuditLog } = require('../database');
 const { LISTING_STATUS } = require('./listingService');
 const { EscrowService } = require('./escrowService');
+const { emailService } = require('./emailService');
 
 const OFFER_STATUS = {
   PENDING: 'PENDING',
@@ -243,6 +244,12 @@ class OfferService {
       created_at: new Date().toISOString()
     });
 
+    // Non-blocking secondary effect: Offer received email
+    const seller = state.users.find(u => u.id === listing.seller_id);
+    emailService.sendOfferReceivedEmail({ offer, seller, listing, event }).catch(err => {
+      console.warn('[OfferService:OfferReceivedEmail] Secondary effect error:', err.message);
+    });
+
     return offer;
   }
 
@@ -390,6 +397,17 @@ class OfferService {
         created_at: new Date().toISOString()
       });
 
+      // Non-blocking secondary effect: Offer accepted email
+      const winningBuyer = state.users.find(u => u.id === offer.buyer_id);
+      const event = state.events.find(e => e.id === listing.event_id);
+      emailService.sendOfferAcceptedEmail({
+        offer: { ...offer, price: offer.offer_amount, order_id: order.id },
+        buyer: winningBuyer,
+        event
+      }).catch(err => {
+        console.warn('[OfferService:OfferAcceptedEmail] Secondary effect error:', err.message);
+      });
+
       return {
         offer,
         order,
@@ -462,6 +480,18 @@ class OfferService {
       metadata: { offer_id: offer.id, decline_reason: declineReason },
       is_read: false,
       created_at: new Date().toISOString()
+    });
+
+    // Non-blocking secondary effect: Offer declined email
+    const declinedBuyer = state.users.find(u => u.id === offer.buyer_id);
+    const declinedListing = state.listings.find(l => l.id === offer.listing_id);
+    const declinedEvent = declinedListing ? state.events.find(e => e.id === declinedListing.event_id) : null;
+    emailService.sendOfferRejectedEmail({
+      offer: { ...offer, price: offer.offer_amount },
+      buyer: declinedBuyer,
+      event: declinedEvent
+    }).catch(err => {
+      console.warn('[OfferService:OfferRejectedEmail] Secondary effect error:', err.message);
     });
 
     return offer;
@@ -560,6 +590,19 @@ class OfferService {
       metadata: { offer_id: offer.id, counter_amount: parsedAmount },
       is_read: false,
       created_at: new Date().toISOString()
+    });
+
+    // Non-blocking secondary effect: Counter offer email
+    const counterBuyer = state.users.find(u => u.id === offer.buyer_id);
+    const counterListing = state.listings.find(l => l.id === offer.listing_id);
+    const counterEvent = counterListing ? state.events.find(e => e.id === counterListing.event_id) : null;
+    emailService.sendCounterOfferEmail({
+      offer,
+      buyer: counterBuyer,
+      counterPrice: parsedAmount,
+      event: counterEvent
+    }).catch(err => {
+      console.warn('[OfferService:CounterOfferEmail] Secondary effect error:', err.message);
     });
 
     return offer;
