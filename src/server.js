@@ -6,6 +6,22 @@ const trustApi = require('./public/trust_api');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Admin CSV promoter import accepts larger JSON payloads (CSV up to 2 MB).
+// Scoped parser must run BEFORE the default 100kb json parser so it wins.
+const csvJsonParser = express.json({ limit: '3mb' });
+app.use('/api/discovery/promoters/import', (req, res, next) => {
+  csvJsonParser(req, res, (err) => {
+    if (err) {
+      const tooLarge = err.type === 'entity.too.large';
+      return res.status(tooLarge ? 413 : (err.status || err.statusCode || 400)).json({
+        error: tooLarge ? 'CSV payload exceeds the maximum allowed size' : 'Invalid JSON request body',
+        code: tooLarge ? 'FILE_TOO_LARGE' : 'INVALID_BODY'
+      });
+    }
+    next();
+  });
+});
+
 // Configure body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

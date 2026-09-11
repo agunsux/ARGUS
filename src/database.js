@@ -26,7 +26,8 @@ const state = {
   step_up_tokens: [],
   offers: [],
   offer_audit_logs: [],
-  notifications: []
+  notifications: [],
+  promoter_imports: [] // Admin CSV promoter import history (source of record: PromoterDiscoveryRegistry)
 };
 
 let seqId = 1;
@@ -685,6 +686,7 @@ function resetDatabase() {
   state.offers = [];
   state.offer_audit_logs = [];
   state.notifications = [];
+  state.promoter_imports = [];
 
   try {
     const { canonicalRegistry } = require('./discovery/CanonicalEventRegistry');

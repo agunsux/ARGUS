@@ -111,6 +111,9 @@
         <button class="pill-btn" onclick="switchOpsTab('disputes', this)">
           <i class="fa-solid fa-scale-balanced"></i> Sengketa &amp; Investigasi (<span id="tabCountDisputes">0</span>)
         </button>
+        <button class="pill-btn" onclick="switchOpsTab('promoters', this)">
+          <i class="fa-solid fa-user-check"></i> Promoter Import &amp; Registry (<span id="tabCountPromoters">0</span>)
+        </button>
       </div>
 
       <!-- Notification Toast Box -->
@@ -227,6 +230,150 @@
             <tbody id="disputesTableBody">
               <tr>
                 <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">Tidak ada sengketa aktif saat ini.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 5: Promoter CSV Import & Discovery Registry (Admin workflow) -->
+      <div id="tabPromoters" class="card" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Promoter CSV Import &amp; Discovery Registry</h3>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              Unggah CSV promotor &rarr; Validasi &amp; Pratinjau &rarr; Konfirmasi Impor. Registry promotor tetap menjadi sumber kebenaran; CSV tidak pernah langsung membuat promotor terverifikasi.
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="loadPromoterConsole()">
+            <i class="fa-solid fa-rotate"></i> Muat Ulang
+          </button>
+        </div>
+
+        <div id="promoterToast" class="notice-box notice-success" style="display: none; margin-bottom: 16px;"></div>
+
+        <!-- Import wizard -->
+        <div style="border: 1px solid rgba(148,163,184,0.2); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-weight: 700; color: #fff; font-size: 14px; margin-bottom: 12px;"><i class="fa-solid fa-file-csv"></i> Unggah &rarr; Validasi/Pratinjau &rarr; Konfirmasi</div>
+          <div class="form-group">
+            <label for="promoterCsvFile">File CSV Promotor (.csv, maks 2 MB)</label>
+            <input type="file" id="promoterCsvFile" class="form-control" accept=".csv,text/csv">
+          </div>
+          <div class="form-group">
+            <label for="promoterCsvLabel">Nama / Label File (opsional)</label>
+            <input type="text" id="promoterCsvLabel" class="form-control mono" placeholder="TIKUM_PROMOTER_IG_MASTER_SEED.csv">
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn" onclick="previewPromoterCsv()"><i class="fa-solid fa-magnifying-glass-chart"></i> Validasi &amp; Pratinjau</button>
+            <button class="btn btn-success" id="btnConfirmPromoterImport" style="display: none;" onclick="confirmPromoterImport()"><i class="fa-solid fa-cloud-arrow-up"></i> Konfirmasi Impor</button>
+            <button class="btn btn-secondary" onclick="downloadPromoterTemplate()"><i class="fa-solid fa-download"></i> Unduh Template CSV</button>
+          </div>
+          <div id="promoterValidationErrors" class="notice-box notice-warning" style="display: none; margin-top: 12px;"></div>
+          <div id="promoterPreviewBox" style="display: none; margin-top: 16px;">
+            <div id="promoterPreviewSummary" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;"></div>
+            <div style="overflow-x: auto; max-height: 340px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Baris</th>
+                    <th>Nama Promotor</th>
+                    <th>Instagram</th>
+                    <th>Kategori</th>
+                    <th>Aksi Pra-Impor</th>
+                    <th>Catatan</th>
+                  </tr>
+                </thead>
+                <tbody id="promoterPreviewBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="promoterReportBox" style="display: none; margin-bottom: 20px;"></div>
+
+        <div style="margin-bottom: 20px;">
+          <h4 style="font-size: 14px; font-weight: 700; color: #fff; margin: 0 0 8px;">Riwayat Impor (Audit)</h4>
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Import ID</th>
+                  <th>Nama File</th>
+                  <th>Waktu</th>
+                  <th>Admin</th>
+                  <th>Total</th>
+                  <th>Sukses</th>
+                  <th>Error</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="promoterHistoryBody">
+                <tr>
+                  <td colspan="8" style="text-align: center; padding: 16px; color: var(--text-muted);">Memuat riwayat...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+          <h4 style="font-size: 14px; font-weight: 700; color: #fff; margin: 0;">Registry Promotor</h4>
+          <div id="promoterRegistryCount" style="font-size: 12px; color: var(--text-muted);"></div>
+        </div>
+        <div class="pill-group" style="margin-bottom: 12px; flex-wrap: wrap;">
+          <button class="pill-btn active" onclick="loadPromoterRegistry('ALL', this)">ALL</button>
+          <button class="pill-btn" onclick="loadPromoterRegistry('DISCOVERED', this)">DISCOVERED</button>
+          <button class="pill-btn" onclick="loadPromoterRegistry('IDENTITY_MATCHED', this)">IDENTITY_MATCHED</button>
+          <button class="pill-btn" onclick="loadPromoterRegistry('VERIFIED', this)">VERIFIED</button>
+          <button class="pill-btn" onclick="loadPromoterRegistry('REJECTED', this)">REJECTED</button>
+          <button class="pill-btn" onclick="loadPromoterRegistry('INACTIVE', this)">INACTIVE</button>
+          <button class="pill-btn" onclick="loadPromoterRegistry('APMI', this)">APMI</button>
+          <button class="pill-btn" onclick="loadPromoterRegistry('NON-APMI', this)">NON-APMI</button>
+          <button class="pill-btn" onclick="loadPromoterRegistry('POSSIBLE_DUPLICATE', this)">POSSIBLE_DUPLICATE</button>
+        </div>
+        <div style="overflow-x: auto; margin-bottom: 24px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Promotor</th>
+                <th>Instagram</th>
+                <th>Website</th>
+                <th>Kota</th>
+                <th>Kategori</th>
+                <th>APMI</th>
+                <th>Verifikasi</th>
+                <th>Authority</th>
+                <th>Terakhir Verifikasi</th>
+                <th>Diperbarui</th>
+                <th>Event Mendatang</th>
+              </tr>
+            </thead>
+            <tbody id="promoterRegistryBody">
+              <tr>
+                <td colspan="11" style="text-align: center; padding: 16px; color: var(--text-muted);">Memuat registry...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <h4 style="font-size: 14px; font-weight: 700; color: #fff; margin: 0;">Antrean Verifikasi (Bulk Review)</h4>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">DISCOVERED / IDENTITY_MATCHED / POSSIBLE_DUPLICATE. Verifikasi tidak pernah dilakukan otomatis hanya karena jumlah follower atau branding Instagram.</div>
+        </div>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Promotor</th>
+                <th>Status</th>
+                <th>APMI</th>
+                <th>Bukti / Sumber</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="promoterQueueBody">
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 16px; color: var(--text-muted);">Tidak ada antrean verifikasi.</td>
               </tr>
             </tbody>
           </table>
@@ -370,6 +517,11 @@
       document.getElementById('tabListings').style.display = tab === 'listings' ? 'block' : 'none';
       document.getElementById('tabSettlements').style.display = tab === 'settlements' ? 'block' : 'none';
       document.getElementById('tabDisputes').style.display = tab === 'disputes' ? 'block' : 'none';
+      document.getElementById('tabPromoters').style.display = tab === 'promoters' ? 'block' : 'none';
+
+      if (tab === 'promoters') {
+        loadPromoterConsole();
+      }
     }
 
     function showToast(msg) {
@@ -603,6 +755,295 @@
       } catch (e) {
         alert(e.message);
       }
+    }
+
+    // =========================================================================
+    // PROMOTER CSV IMPORT & DISCOVERY REGISTRY (Admin workflow)
+    // =========================================================================
+    let promoterCsvContent = null;
+    let promoterPreviewId = null;
+    let promoterFileName = null;
+    let promoterRegistryFilter = 'ALL';
+
+    const PROMOTER_ACTION_LABEL = {
+      IMPORTED: 'IMPOR BARU',
+      UPDATED: 'UPDATE',
+      UNCHANGED: 'TIDAK BERUBAH',
+      POSSIBLE_DUPLICATE: 'KEMUNGKINAN DUPLIKAT',
+      VALIDATION_ERROR: 'ERROR VALIDASI'
+    };
+
+    function showPromoterToast(msg, isError) {
+      const toast = document.getElementById('promoterToast');
+      toast.className = 'notice-box ' + (isError ? 'notice-warning' : 'notice-success');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 5000);
+    }
+
+    function promoterAuthHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        'x-user-id': currentAdmin ? currentAdmin.id : 'admin-1',
+        'Authorization': `Bearer ${sessionToken}`
+      };
+    }
+
+    async function loadPromoterConsole() {
+      await Promise.all([
+        loadPromoterRegistry(promoterRegistryFilter),
+        loadVerificationQueue(),
+        loadPromoterHistory()
+      ]);
+    }
+
+    async function loadPromoterHistory() {
+      const tbody = document.getElementById('promoterHistoryBody');
+      try {
+        const res = await fetch('/api/discovery/promoters/import/history', { headers: promoterAuthHeaders() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal memuat riwayat impor');
+        const imports = data.imports || [];
+        if (imports.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 16px; color: var(--text-muted);">Belum ada riwayat impor.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = imports.map(i => `
+          <tr>
+            <td><code class="mono" style="color: var(--cyan);">${escapeHtml(i.import_id)}</code></td>
+            <td>${escapeHtml(i.filename)}</td>
+            <td>${escapeHtml(new Date(i.imported_at).toLocaleString('id-ID'))}</td>
+            <td>${escapeHtml(i.admin_id)}</td>
+            <td class="mono">${i.row_count}</td>
+            <td class="mono" style="color:#34d399;">${i.success_count}</td>
+            <td class="mono" style="color:var(--danger);">${i.error_count}</td>
+            <td><span class="badge badge-success">${escapeHtml(i.status)}</span></td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 16px; color: var(--danger);">${escapeHtml(e.message)}</td></tr>`;
+      }
+    }
+
+    async function previewPromoterCsv() {
+      const fileInput = document.getElementById('promoterCsvFile');
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) { alert('Pilih file CSV terlebih dahulu.'); return; }
+      if (file.size > 2 * 1024 * 1024) { alert('File CSV melebihi batas 2 MB.'); return; }
+
+      promoterFileName = (document.getElementById('promoterCsvLabel').value || '').trim() || file.name;
+      promoterCsvContent = await file.text();
+      promoterPreviewId = null;
+
+      try {
+        const res = await fetch('/api/discovery/promoters/import/preview', {
+          method: 'POST',
+          headers: promoterAuthHeaders(),
+          body: JSON.stringify({ csv_content: promoterCsvContent, filename: promoterFileName })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Validasi gagal');
+        promoterPreviewId = data.preview_id;
+        renderPromoterPreview(data);
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    function renderPromoterPreview(data) {
+      const summary = data.summary || {};
+      document.getElementById('promoterPreviewBox').style.display = 'block';
+
+      const keys = ['TOTAL_ROWS', 'IMPORTED', 'UPDATED', 'UNCHANGED', 'DUPLICATES', 'POSSIBLE_DUPLICATES', 'VALIDATION_ERRORS', 'APMI_MATCHES', 'ALREADY_VERIFIED', 'NEW_DISCOVERED'];
+      document.getElementById('promoterPreviewSummary').innerHTML =
+        keys.map(k => `<span class="badge badge-info">${k}: ${summary[k] || 0}</span>`).join('');
+
+      const errBox = document.getElementById('promoterValidationErrors');
+      if ((data.structure_errors || []).length > 0) {
+        errBox.style.display = 'block';
+        errBox.innerHTML = '<strong>Struktur CSV tidak valid:</strong><br>' + data.structure_errors.map(escapeHtml).join('<br>');
+      } else {
+        errBox.style.display = 'none';
+      }
+
+      const tbody = document.getElementById('promoterPreviewBody');
+      const rows = data.rows || [];
+      if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 16px; color: var(--text-muted);">Tidak ada baris data.</td></tr>';
+      } else {
+        tbody.innerHTML = rows.map(r => {
+          const cls = r.action === 'VALIDATION_ERROR' ? 'badge-danger'
+            : r.action === 'IMPORTED' ? 'badge-success'
+              : r.action === 'POSSIBLE_DUPLICATE' ? 'badge-warning'
+                : 'badge-info';
+          const notes = (r.errors && r.errors.length) ? r.errors.join('; ')
+            : (r.possible_matches && r.possible_matches.length) ? r.possible_matches.map(m => m.reason).join('; ')
+              : (r.changes && r.changes.length) ? 'Perubahan: ' + r.changes.join(', ')
+                : (r.match_reason || '-');
+          return `<tr>
+            <td class="mono">${r.row_number}</td>
+            <td><strong>${escapeHtml(r.canonical_name || '-')}</strong></td>
+            <td>${escapeHtml(r.instagram_handle || '-')}</td>
+            <td>${escapeHtml(r.category || '-')}</td>
+            <td><span class="badge ${cls}">${PROMOTER_ACTION_LABEL[r.action] || escapeHtml(r.action)}</span></td>
+            <td style="font-size: 12px; color: var(--text-muted);">${escapeHtml(notes)}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      document.getElementById('btnConfirmPromoterImport').style.display = 'inline-flex';
+      showPromoterToast('Pratinjau selesai. Periksa hasil sebelum menekan Konfirmasi Impor.', false);
+    }
+
+    async function confirmPromoterImport() {
+      if (!promoterCsvContent) { alert('Lakukan Validasi & Pratinjau terlebih dahulu.'); return; }
+      const btn = document.getElementById('btnConfirmPromoterImport');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/discovery/promoters/import/confirm', {
+          method: 'POST',
+          headers: promoterAuthHeaders(),
+          body: JSON.stringify({
+            csv_content: promoterCsvContent,
+            preview_id: promoterPreviewId,
+            filename: promoterFileName
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Impor gagal');
+        renderPromoterReport(data);
+        showPromoterToast('Impor dikonfirmasi. Registry promotor diperbarui (bukan dibuat ulang).', false);
+        await loadPromoterConsole();
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function renderPromoterReport(report) {
+      const box = document.getElementById('promoterReportBox');
+      box.style.display = 'block';
+      const keys = ['TOTAL_ROWS', 'IMPORTED', 'UPDATED', 'UNCHANGED', 'DUPLICATES', 'POSSIBLE_DUPLICATES', 'VALIDATION_ERRORS', 'APMI_MATCHES', 'ALREADY_VERIFIED', 'NEW_DISCOVERED'];
+      box.innerHTML = `
+        <div style="border: 1px solid rgba(52,211,153,0.35); border-radius: 12px; padding: 16px;">
+          <div style="font-weight: 700; color: #34d399; margin-bottom: 8px;"><i class="fa-solid fa-circle-check"></i> Laporan Impor — ${escapeHtml(report.import_id)}</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+            ${keys.map(k => `<span class="badge badge-info">${k}: ${report[k] || 0}</span>`).join('')}
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted);">
+            File: ${escapeHtml(report.filename)} &bull; Admin: ${escapeHtml(report.admin_id)} &bull; Waktu: ${escapeHtml(new Date(report.imported_at).toLocaleString('id-ID'))}
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadPromoterRegistry(status, btn) {
+      promoterRegistryFilter = status || 'ALL';
+      if (btn) {
+        document.querySelectorAll('#tabPromoters .pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+
+      const tbody = document.getElementById('promoterRegistryBody');
+      try {
+        const res = await fetch(`/api/discovery/promoters/admin/registry?status=${encodeURIComponent(promoterRegistryFilter)}`, { headers: promoterAuthHeaders() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal memuat registry');
+
+        const promoters = data.promoters || [];
+        document.getElementById('promoterRegistryCount').innerText = `${promoters.length} promotor`;
+        if (promoters.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; padding: 16px; color: var(--text-muted);">Tidak ada promotor pada filter ini.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = promoters.map(p => `
+          <tr>
+            <td><strong>${escapeHtml(p.canonical_name)}</strong><div style="font-size: 11px; color: var(--text-dim);" class="mono">${escapeHtml(p.promoter_id)}</div></td>
+            <td>${p.instagram_url ? `<a href="${escapeHtml(p.instagram_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(p.instagram_handle || '-')}</a>` : escapeHtml(p.instagram_handle || '-')}</td>
+            <td>${p.website_url ? `<a href="${escapeHtml(p.website_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(p.website_url)}</a>` : '-'}</td>
+            <td>${escapeHtml(p.city || '-')}</td>
+            <td>${escapeHtml(p.category || '-')}</td>
+            <td>${p.apmi_member ? '<span class="badge badge-success">APMI</span>' : '<span class="badge badge-info">NON-APMI</span>'}</td>
+            <td><span class="badge ${p.verification_status === 'VERIFIED_OFFICIAL_PROMOTER_ACCOUNT' ? 'badge-success' : 'badge-warning'}">${escapeHtml(p.verification_status)}</span>${p.possible_duplicates_count ? ` <span class="badge badge-danger">DUP ${p.possible_duplicates_count}</span>` : ''}</td>
+            <td>${escapeHtml(p.authority_level || '-')}</td>
+            <td style="font-size: 12px;">${p.last_verified_at ? escapeHtml(new Date(p.last_verified_at).toLocaleDateString('id-ID')) : '-'}</td>
+            <td style="font-size: 12px;">${p.updated_at ? escapeHtml(new Date(p.updated_at).toLocaleDateString('id-ID')) : '-'}</td>
+            <td class="mono">${p.upcoming_events_count || 0}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 16px; color: var(--danger);">${escapeHtml(e.message)}</td></tr>`;
+      }
+    }
+
+    async function loadVerificationQueue() {
+      const tbody = document.getElementById('promoterQueueBody');
+      try {
+        const res = await fetch('/api/discovery/promoters/verification-queue', { headers: promoterAuthHeaders() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal memuat antrean verifikasi');
+
+        const queue = data.queue || [];
+        document.getElementById('tabCountPromoters').innerText = queue.length;
+        if (queue.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 16px; color: var(--text-muted);">Tidak ada antrean verifikasi.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = queue.map(q => {
+          const evidence = (q.evidence || []).map(ev => ev.source_url
+            ? `<a href="${escapeHtml(ev.source_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(ev.source)}</a>`
+            : escapeHtml(ev.source)).join(', ');
+          const dup = (q.possible_duplicates || []).map(d => escapeHtml(d.reason)).join('; ');
+          return `<tr>
+            <td><strong>${escapeHtml(q.canonical_name)}</strong><div style="font-size: 11px; color: var(--text-dim);">${escapeHtml(q.instagram_handle || '-')}</div></td>
+            <td><span class="badge badge-warning">${escapeHtml(q.queue_bucket)}</span></td>
+            <td>${q.apmi_member ? '<span class="badge badge-success">APMI</span>' : '-'}</td>
+            <td style="font-size: 12px;">${evidence || '-'}${dup ? `<div style="color: var(--warning);">${dup}</div>` : ''}</td>
+            <td>
+              <button class="btn btn-sm btn-success" onclick="verifyPromoterAction('${q.promoter_id}', true)"><i class="fa-solid fa-check"></i> Verifikasi</button>
+              <button class="btn btn-sm btn-danger" onclick="verifyPromoterAction('${q.promoter_id}', false)"><i class="fa-solid fa-xmark"></i> Tolak</button>
+            </td>
+          </tr>`;
+        }).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 16px; color: var(--danger);">${escapeHtml(e.message)}</td></tr>`;
+      }
+    }
+
+    async function verifyPromoterAction(promoterId, approve) {
+      const reason = approve
+        ? prompt('Bukti verifikasi (mis. backlink website resmi / dokumen korporat):', 'Verifikasi identitas promotor melalui website resmi dan penelusuran dokumentasi')
+        : prompt('Alasan penolakan (mis. akun fan, parody, scalper):', 'Bukan akun promotor resmi');
+      if (!reason || reason.trim().length < 5) return;
+
+      try {
+        const endpoint = approve ? 'verify' : 'reject';
+        const res = await fetch(`/api/discovery/promoters/${encodeURIComponent(promoterId)}/${endpoint}`, {
+          method: 'POST',
+          headers: promoterAuthHeaders(),
+          body: JSON.stringify({ evidence: reason.trim(), reason: reason.trim() })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Aksi verifikasi gagal');
+        showPromoterToast(approve ? 'Promotor diverifikasi. Sumber Tier S terdaftar otomatis.' : 'Promotor ditolak.', false);
+        await loadPromoterConsole();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    function downloadPromoterTemplate() {
+      const csv = 'promoter_name,instagram_handle,instagram_url,website_url,city,category,notes\n' +
+        'Antarasuara,@antara.suara,https://www.instagram.com/antara.suara/,https://antarasuara.com,Jakarta,CONCERT,Penyelenggara tur konser nasional\n';
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'PROMOTER_IMPORT_TEMPLATE.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
     }
 
     function escapeHtml(str) {

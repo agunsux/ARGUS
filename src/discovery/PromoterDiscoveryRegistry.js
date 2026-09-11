@@ -443,6 +443,363 @@ class PromoterDiscoveryRegistry {
     return target;
   }
 
+  // ==========================================================================
+  // CSV IMPORT WORKFLOW PRIMITIVES (identity resolution + non-destructive upsert)
+  // ==========================================================================
+
+  /**
+   * Derives a canonical website domain (hostname only, no protocol/www/path).
+   * Returns null for empty values. Instagram domains are excluded by callers
+   * because they are identity handles, not corporate website identity.
+   */
+  _canonicalDomain(url) {
+    if (!url || typeof url !== 'string') return null;
+    let u = url.trim().toLowerCase();
+    u = u.replace(/^https?:\/\//, '').replace(/^www\./, '');
+    u = u.split('/')[0].split('?')[0].split('#')[0];
+    return u || null;
+  }
+
+  /**
+   * Deterministic APMI cross-reference (exact slug, exact name, or exact handle).
+   * Read-only: does not mutate registry state.
+   */
+  matchApmiMember(candidateData = {}) {
+    const name = candidateData.canonical_name || candidateData.promoter_name || candidateData.name;
+    const slug = candidateData.slug || this._generateSlug(name);
+    const members = apmiPromoterRegistry.getAllMembers();
+
+    if (slug) {
+      const bySlug = members.find(m => m.slug === slug);
+      if (bySlug) return bySlug;
+    }
+    if (name) {
+      const cleanName = String(name).toLowerCase().trim();
+      const byName = members.find(m => (m.name || '').toLowerCase().trim() === cleanName);
+      if (byName) return byName;
+    }
+    const cleanH = this._cleanHandle(candidateData.instagram_handle || candidateData.handle);
+    if (cleanH) {
+      const byHandle = members.find(m => this._cleanHandle(this._extractHandle(m)) === cleanH);
+      if (byHandle) return byHandle;
+    }
+    return null;
+  }
+
+  /**
+   * Deterministic identity resolution for an incoming candidate.
+   * Priority (per TIKUM CSV import policy):
+   *   1. promoter_id (if supplied)
+   *   2. normalized Instagram handle
+   *   3. canonical website domain
+   *   4. deterministic promoter identity (slug) match
+   * Returns { promoter, match_type, reason } or null. Never merges fuzzy names.
+   */
+  resolveIdentity(candidateData = {}) {
+    // 1. promoter_id if supplied
+    if (candidateData.promoter_id) {
+      const byId = this.getPromoterById(candidateData.promoter_id);
+      if (byId) {
+        return { promoter: byId, match_type: 'PROMOTER_ID', reason: `promoter_id match: ${candidateData.promoter_id}` };
+      }
+    }
+
+    // 2. normalized Instagram handle
+    const cleanH = this._cleanHandle(candidateData.instagram_handle || candidateData.handle);
+    if (cleanH && this.handleMap.has(cleanH)) {
+      return {
+        promoter: this.promoters.get(this.handleMap.get(cleanH)),
+        match_type: 'INSTAGRAM_HANDLE',
+        reason: `Normalized Instagram handle match: @${cleanH}`
+      };
+    }
+
+    // 3. canonical website domain (ignore instagram domains)
+    const domain = this._canonicalDomain(candidateData.website_url);
+    if (domain && !domain.endsWith('instagram.com')) {
+      for (const p of this.promoters.values()) {
+        const pd = this._canonicalDomain(p.website_url);
+        if (pd && pd === domain) {
+          return { promoter: p, match_type: 'WEBSITE_DOMAIN', reason: `Canonical website domain match: ${domain}` };
+        }
+      }
+    }
+
+    // 4. deterministic promoter slug / identity match
+    const name = candidateData.canonical_name || candidateData.promoter_name || candidateData.name;
+    const slug = candidateData.slug || this._generateSlug(name);
+    if (slug && this.slugMap.has(slug)) {
+      return {
+        promoter: this.promoters.get(this.slugMap.get(slug)),
+        match_type: 'SLUG',
+        reason: `Deterministic promoter identity match: ${slug}`
+      };
+    }
+
+    return null;
+  }
+
+  _normalizedNameTokens(name) {
+    return String(name || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(t => t.length > 1);
+  }
+
+  /**
+   * Token-Jaccard name similarity. Deterministic, no external dependencies.
+   */
+  _nameSimilarity(a, b) {
+    const rawA = String(a || '').toLowerCase().trim();
+    const rawB = String(b || '').toLowerCase().trim();
+    if (!rawA || !rawB) return 0;
+    if (rawA === rawB) return 1;
+
+    const ta = new Set(this._normalizedNameTokens(rawA));
+    const tb = new Set(this._normalizedNameTokens(rawB));
+    if (ta.size === 0 || tb.size === 0) return 0;
+
+    let intersection = 0;
+    for (const t of ta) if (tb.has(t)) intersection++;
+    const union = new Set([...ta, ...tb]).size;
+    return union === 0 ? 0 : intersection / union;
+  }
+
+  /**
+   * Fuzzy name proximity → POSSIBLE_DUPLICATE review only. Never auto-merges.
+   */
+  findPossibleDuplicates(candidateData = {}, threshold = 0.6) {
+    const name = candidateData.canonical_name || candidateData.promoter_name || candidateData.name;
+    if (!name) return [];
+
+    const results = [];
+    for (const p of this.promoters.values()) {
+      const score = this._nameSimilarity(name, p.canonical_name);
+      if (score >= threshold) {
+        results.push({
+          promoter_id: p.promoter_id,
+          canonical_name: p.canonical_name,
+          verification_status: p.verification_status,
+          similarity: Number(score.toFixed(3)),
+          reason: `Possible duplicate: name similarity ${(score * 100).toFixed(0)}% with "${p.canonical_name}"`
+        });
+      }
+    }
+    return results.sort((a, b) => b.similarity - a.similarity);
+  }
+
+  /**
+   * Non-destructive merge of CSV row data into an existing promoter record.
+   * CRITICAL: NEVER downgrades an already-verified promoter. Only fills missing
+   * fields and appends provenance when meaningful changes occur.
+   */
+  _mergeNonDestructive(target, candidateData, match) {
+    const now = new Date().toISOString();
+    const VERIFIED = PROMOTER_STATUS.VERIFIED_OFFICIAL_PROMOTER_ACCOUNT;
+    const wasVerified = target.verification_status === VERIFIED;
+    const changes = [];
+
+    const fill = (field, incoming) => {
+      if (incoming === undefined || incoming === null || incoming === '') return;
+      if (!target[field]) {
+        target[field] = incoming;
+        changes.push(field);
+      }
+    };
+
+    fill('website_url', candidateData.website_url);
+    fill('city', candidateData.city);
+    fill('category', candidateData.category);
+    fill('instagram_url', candidateData.instagram_url);
+    fill('legal_name', candidateData.legal_name);
+    fill('province', candidateData.province);
+
+    // Append newly discovered official social URL (never remove existing ones)
+    const cleanH = this._cleanHandle(candidateData.instagram_handle || candidateData.handle);
+    const socialUrl = candidateData.instagram_url || (cleanH ? `https://www.instagram.com/${cleanH}/` : null);
+    if (socialUrl && !(target.official_social_urls || []).includes(socialUrl)) {
+      target.official_social_urls = [...(target.official_social_urls || []), socialUrl];
+      changes.push('official_social_urls');
+    }
+
+    // APMI cross-reference: only ever upgrades to true, never downgrades
+    if (!target.apmi_member) {
+      const apmiMatch = this.matchApmiMember({
+        canonical_name: target.canonical_name,
+        instagram_handle: candidateData.instagram_handle || target.instagram_handle,
+        promoter_id: target.promoter_id
+      });
+      if (apmiMatch || candidateData.apmi_member === true) {
+        target.apmi_member = true;
+        target.apmi_member_source = 'src-assoc-apmi';
+        changes.push('apmi_member');
+      }
+    }
+
+    // Record non-destructive CSV provenance only when something meaningfully changed
+    if (changes.length > 0) {
+      target.provenance_records = target.provenance_records || [];
+      target.provenance_records.push({
+        source: 'CSV_IMPORT',
+        source_url: candidateData.website_url || candidateData.instagram_url || null,
+        claim: `Admin CSV import refresh (${match.match_type})`,
+        authority_scope: 'PROMOTER_IDENTITY',
+        confidence: 'MEDIUM',
+        evidence: candidateData.notes || match.reason,
+        retrieved_at: now
+      });
+    }
+
+    // CRITICAL: preserve verification state — never downgrade a verified promoter
+    if (wasVerified) {
+      target.last_verified_at = target.last_verified_at || target.account_verified_at || now;
+    }
+    target.updated_at = now;
+
+    return {
+      action: changes.length > 0 ? 'UPDATED' : 'UNCHANGED',
+      status: target.verification_status,
+      promoter: target,
+      changes,
+      match_type: match.match_type,
+      match_reason: match.reason,
+      already_verified: wasVerified,
+      verification_preserved: wasVerified,
+      apmi_member: !!target.apmi_member
+    };
+  }
+
+  /**
+   * Idempotent, non-destructive upsert used by the admin CSV import workflow.
+   * - Deterministic identity match → merge non-destructively (UPDATED/UNCHANGED)
+   * - Fuzzy name proximity       → flag as POSSIBLE_DUPLICATE (no auto-merge)
+   * - Genuinely new              → create as DISCOVERED (never auto-verified,
+   *                                except when the existing APMI registry
+   *                                deterministically establishes membership)
+   */
+  upsertPromoter(candidateData = {}) {
+    const canonicalName = candidateData.canonical_name || candidateData.promoter_name || candidateData.name;
+    if (!canonicalName || !String(canonicalName).trim()) {
+      return { action: 'INVALID', validation_error: true, reason: 'Promoter name is required' };
+    }
+
+    const match = this.resolveIdentity(candidateData);
+    if (match) {
+      return this._mergeNonDestructive(match.promoter, candidateData, match);
+    }
+
+    const possible = this.findPossibleDuplicates(candidateData);
+    if (possible.length > 0) {
+      const target = this.getPromoterById(possible[0].promoter_id);
+      const now = new Date().toISOString();
+      target.duplicate_candidates = target.duplicate_candidates || [];
+      const normalizedName = String(canonicalName).toLowerCase().trim();
+      const alreadyFlagged = target.duplicate_candidates.some(
+        d => (d.incoming_candidate?.canonical_name || '').toLowerCase().trim() === normalizedName
+      );
+      if (!alreadyFlagged) {
+        target.duplicate_candidates.push({
+          incoming_candidate: {
+            canonical_name: canonicalName,
+            instagram_handle: candidateData.instagram_handle || null,
+            website_url: candidateData.website_url || null,
+            city: candidateData.city || null
+          },
+          reason: possible[0].reason,
+          flagged_at: now,
+          status: 'POSSIBLE_DUPLICATE',
+          match_type: 'FUZZY_NAME'
+        });
+        target.updated_at = now;
+      }
+      return {
+        action: 'POSSIBLE_DUPLICATE_FLAGGED',
+        status: 'POSSIBLE_DUPLICATE',
+        existing_promoter: target,
+        possible_matches: possible,
+        already_flagged: alreadyFlagged
+      };
+    }
+
+    // Brand-new promoter: normal creation path (APMI deterministic match may verify)
+    return this.registerCandidate(candidateData);
+  }
+
+  /**
+   * Admin registry view query supporting TIKUM filter tokens.
+   * Tokens: ALL | DISCOVERED | IDENTITY_MATCHED | VERIFIED | REJECTED | INACTIVE | APMI | NON-APMI | POSSIBLE_DUPLICATE
+   */
+  queryPromoters(filter = {}) {
+    let list = Array.from(this.promoters.values());
+    const token = String(filter.status || filter.verification_status || 'ALL').toUpperCase();
+
+    if (token && token !== 'ALL') {
+      if (token === 'VERIFIED' || token === 'VERIFIED_OFFICIAL_PROMOTER_ACCOUNT') {
+        list = list.filter(p => p.verification_status === PROMOTER_STATUS.VERIFIED_OFFICIAL_PROMOTER_ACCOUNT);
+      } else if (token === 'APMI') {
+        list = list.filter(p => p.apmi_member === true);
+      } else if (token === 'NON-APMI') {
+        list = list.filter(p => p.apmi_member !== true);
+      } else if (token === 'POSSIBLE_DUPLICATE') {
+        list = list.filter(p => (p.duplicate_candidates || []).length > 0);
+      } else {
+        list = list.filter(p => p.verification_status === token);
+      }
+    }
+
+    if (filter.category) {
+      list = list.filter(p => p.category && p.category.toUpperCase() === String(filter.category).toUpperCase());
+    }
+    if (filter.city) {
+      list = list.filter(p => p.city && p.city.toLowerCase() === String(filter.city).toLowerCase());
+    }
+
+    return list;
+  }
+
+  /**
+   * Bulk verification queue: promoters awaiting action, with evidence/source links
+   * the admin needs in order to verify or reject. Never auto-verifies.
+   */
+  getVerificationQueue() {
+    const queue = [];
+    for (const p of this.promoters.values()) {
+      const isPending =
+        p.verification_status === PROMOTER_STATUS.DISCOVERED ||
+        p.verification_status === PROMOTER_STATUS.IDENTITY_MATCHED ||
+        p.verification_status === PROMOTER_STATUS.PARTIALLY_VERIFIED;
+      const duplicates = (p.duplicate_candidates || []);
+      if (!isPending && duplicates.length === 0) continue;
+
+      queue.push({
+        promoter_id: p.promoter_id,
+        canonical_name: p.canonical_name,
+        instagram_handle: p.instagram_handle,
+        instagram_url: p.instagram_url,
+        website_url: p.website_url,
+        city: p.city,
+        category: p.category,
+        apmi_member: !!p.apmi_member,
+        verification_status: p.verification_status,
+        authority_level: p.authority_level,
+        queue_bucket: duplicates.length > 0 ? 'POSSIBLE_DUPLICATE' : p.verification_status,
+        evidence: (p.provenance_records || []).map(r => ({
+          source: r.source,
+          source_url: r.source_url || null,
+          claim: r.claim,
+          confidence: r.confidence || null
+        })),
+        possible_duplicates: duplicates.map(d => ({
+          reason: d.reason,
+          flagged_at: d.flagged_at,
+          incoming_candidate: d.incoming_candidate
+        }))
+      });
+    }
+    return queue;
+  }
+
   getPromoterById(id) {
     return this.promoters.get(id) || null;
   }

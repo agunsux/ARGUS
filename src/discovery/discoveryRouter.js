@@ -8,7 +8,9 @@
  */
 
 const express = require('express');
+const multer = require('multer');
 const router = express.Router();
+const { SessionStore } = require('../services/sessionStore');
 const { canonicalRegistry } = require('./CanonicalEventRegistry');
 const { ingestionPipeline } = require('./EventIngestionPipeline');
 const { sourceRegistry } = require('./SourceRegistry');
@@ -18,10 +20,85 @@ const { EventSEOService } = require('./EventSEOService');
 const { ListingService } = require('../services/listingService');
 const { apmiPromoterRegistry } = require('./ApmiPromoterRegistry');
 const { promoterRegistry, PROMOTER_STATUS, PROMOTER_AUTHORITY } = require('./PromoterDiscoveryRegistry');
-const { PromoterImportService } = require('./PromoterImportService');
+const { PromoterImportService, MAX_CSV_BYTES } = require('./PromoterImportService');
 const { discoverySignalService, SIGNAL_STATUS } = require('./EventDiscoverySignalService');
 const { state, recordAuditLog } = require('../database');
 const { renderFooterHtml } = require('../config/businessProfile');
+
+// ==========================================
+// PROMOTER IMPORT ADMIN GUARD & CSV UPLOAD
+// Admin-only surface for the promoter registry workflow (never public).
+// ==========================================
+
+function resolveDiscoveryActor(req) {
+  const authHeader = req.header ? (req.header('authorization') || req.header('x-session-token')) : null;
+  let token = null;
+  if (authHeader) {
+    token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader.trim();
+  }
+
+  if (token) {
+    const session = SessionStore.findSession(token) ||
+      (state.sessions || []).find(s => s.session_token === token && new Date(s.expires_at) > new Date() && !s.revoked);
+    if (session) {
+      const user = (state.users || []).find(u => u.id === session.user_id);
+      if (user) return user;
+    }
+  }
+
+  // Test mode only: allow x-user-id / explicit admin_id actor selection (no production spoofing)
+  if (process.env.NODE_ENV === 'test') {
+    const candidateId = (req.header ? req.header('x-user-id') : null) || req.body?.admin_id || req.body?.officerId;
+    if (candidateId) {
+      const user = (state.users || []).find(u => u.id === candidateId);
+      if (user) return user;
+    }
+  }
+
+  return null;
+}
+
+function requireDiscoveryAdmin(req, res, next) {
+  const user = resolveDiscoveryActor(req);
+  if (!user) {
+    return res.status(401).json({ error: 'Authentication required for promoter registry management', code: 'AUTH_REQUIRED' });
+  }
+  if (user.role !== 'admin') {
+    return res.status(403).json({ error: `Forbidden: role '${user.role}' cannot manage the promoter registry`, code: 'ADMIN_FORBIDDEN' });
+  }
+  req.adminUser = user;
+  next();
+}
+
+const csvUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_CSV_BYTES, files: 1 },
+  fileFilter: (req, file, cb) => {
+    const name = (file.originalname || '').toLowerCase();
+    const mime = (file.mimetype || '').toLowerCase();
+    const okExt = name.endsWith('.csv');
+    const okMime = ['text/csv', 'application/csv', 'application/vnd.ms-excel', 'text/plain', 'application/octet-stream'].includes(mime);
+    if (okExt || okMime) return cb(null, true);
+    const err = new Error('Only .csv files are accepted');
+    err.code = 'INVALID_FILE_TYPE';
+    return cb(err);
+  }
+}).single('file');
+
+function optionalCsvUpload(req, res, next) {
+  const contentType = req.headers['content-type'] || '';
+  if (contentType.includes('multipart/form-data')) {
+    return csvUpload(req, res, (err) => {
+      if (err) {
+        const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+        const message = err.code === 'LIMIT_FILE_SIZE' ? `CSV exceeds maximum size of ${MAX_CSV_BYTES} bytes` : err.message;
+        return res.status(status).json({ error: message, code: err.code || 'UPLOAD_ERROR' });
+      }
+      return next();
+    });
+  }
+  return next();
+}
 
 /**
  * Helper to get active marketplace listings for a canonical event.
@@ -747,6 +824,137 @@ router.get('/api/discovery/promoters/dashboard', (req, res) => {
 });
 
 /**
+ * Helper: upcoming canonical events tied to a promoter (by organizer name or source id).
+ */
+function promoterUpcomingEvents(promoter) {
+  const today = new Date().toISOString().substring(0, 10);
+  const sourceIds = promoter.source_ids || (promoter.source_id ? [promoter.source_id] : []);
+  const name = (promoter.canonical_name || '').toLowerCase();
+  return canonicalRegistry.getAllEvents().filter(e => {
+    if (e.status === 'CANCELLED') return false;
+    const date = e.start_date || e.date;
+    if (!date || date < today) return false;
+    const orgMatch = e.organizer_name && name && e.organizer_name.toLowerCase().includes(name);
+    const srcMatch = (e.sources || []).some(s => s.source_id && sourceIds.includes(s.source_id));
+    return Boolean(orgMatch || srcMatch);
+  });
+}
+
+/**
+ * GET /api/discovery/promoters/verification-queue
+ * ADMIN ONLY. Bulk review queue: DISCOVERED / IDENTITY_MATCHED / POSSIBLE_DUPLICATE
+ * with the evidence/source links the admin needs. Never auto-verifies.
+ */
+router.get('/api/discovery/promoters/verification-queue', requireDiscoveryAdmin, (req, res) => {
+  const queue = promoterRegistry.getVerificationQueue();
+  res.json({ success: true, count: queue.length, queue });
+});
+
+/**
+ * GET /api/discovery/promoters/admin/registry
+ * ADMIN ONLY. Registry view with TIKUM filter tokens + operational columns.
+ */
+router.get('/api/discovery/promoters/admin/registry', requireDiscoveryAdmin, (req, res) => {
+  const filter = {
+    status: req.query.status || 'ALL',
+    category: req.query.category,
+    city: req.query.city
+  };
+  const list = promoterRegistry.queryPromoters(filter);
+
+  const promoters = list.map(p => {
+    const upcoming = promoterUpcomingEvents(p);
+    return {
+      promoter_id: p.promoter_id,
+      canonical_name: p.canonical_name,
+      instagram_handle: p.instagram_handle,
+      instagram_url: p.instagram_url,
+      website_url: p.website_url,
+      city: p.city,
+      category: p.category,
+      apmi_member: !!p.apmi_member,
+      verification_status: p.verification_status,
+      authority_level: p.authority_level,
+      last_verified_at: p.last_verified_at || null,
+      updated_at: p.updated_at || null,
+      upcoming_events_count: upcoming.length,
+      possible_duplicates_count: (p.duplicate_candidates || []).length
+    };
+  });
+
+  res.json({ success: true, count: promoters.length, filter: filter.status, promoters });
+});
+
+/**
+ * GET /api/discovery/promoters/import/history
+ * ADMIN ONLY. Recent admin CSV import audit records.
+ */
+router.get('/api/discovery/promoters/import/history', requireDiscoveryAdmin, (req, res) => {
+  const imports = PromoterImportService.getImportHistory(Number(req.query.limit) || 50);
+  res.json({ success: true, count: imports.length, imports });
+});
+
+/**
+ * POST /api/discovery/promoters/import/preview
+ * ADMIN ONLY. Accepts multipart CSV upload (field: file) or JSON { csv_content }.
+ * Validates + previews WITHOUT importing. Admin must explicitly confirm next.
+ */
+router.post('/api/discovery/promoters/import/preview', requireDiscoveryAdmin, optionalCsvUpload, (req, res) => {
+  try {
+    let csvContent = req.body?.csv_content;
+    let filename = req.body?.filename || null;
+
+    if (req.file) {
+      csvContent = req.file.buffer.toString('utf8');
+      filename = req.file.originalname || filename;
+    }
+    if (!csvContent || typeof csvContent !== 'string') {
+      return res.status(400).json({ error: 'csv_content or a CSV file upload (field "file") is required', code: 'NO_CONTENT' });
+    }
+    if (Buffer.byteLength(csvContent, 'utf8') > MAX_CSV_BYTES) {
+      return res.status(413).json({ error: `CSV exceeds maximum size of ${MAX_CSV_BYTES} bytes`, code: 'FILE_TOO_LARGE' });
+    }
+
+    const preview = PromoterImportService.previewImport(csvContent, { filename });
+    res.json({ success: true, ...preview });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, code: err.code });
+  }
+});
+
+/**
+ * POST /api/discovery/promoters/import/confirm
+ * ADMIN ONLY. Applies a previously previewed CSV (preview_id) or raw csv_content
+ * to the PromoterDiscoveryRegistry. Idempotent, non-destructive, never auto-verifies.
+ */
+router.post('/api/discovery/promoters/import/confirm', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const csvContent = req.body?.csv_content;
+    const previewId = req.body?.preview_id || null;
+
+    if (!csvContent && !previewId) {
+      return res.status(400).json({ error: 'csv_content or preview_id is required to confirm the import', code: 'NO_CONTENT' });
+    }
+    if (csvContent && Buffer.byteLength(csvContent, 'utf8') > MAX_CSV_BYTES) {
+      return res.status(413).json({ error: `CSV exceeds maximum size of ${MAX_CSV_BYTES} bytes`, code: 'FILE_TOO_LARGE' });
+    }
+
+    const report = PromoterImportService.confirmImport({
+      csv_content: csvContent || null,
+      preview_id: previewId,
+      filename: req.body?.filename || null,
+      admin_id: req.adminUser.id,
+      source: req.body?.source || 'ADMIN_CSV_IMPORT'
+    });
+
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, ...report });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, code: err.code, structure_errors: err.structure_errors });
+  }
+});
+
+/**
  * GET /api/discovery/promoters/:id
  * Single promoter profile with provenance claims and linked canonical events
  */
@@ -769,9 +977,10 @@ router.get('/api/discovery/promoters/:id', (req, res) => {
 
 /**
  * POST /api/discovery/promoters/import
- * Imports CSV or JSON list of promoter candidates
+ * ADMIN ONLY (legacy low-level import). Prefer the preview → confirm workflow at
+ * /api/discovery/promoters/import/preview + /import/confirm.
  */
-router.post('/api/discovery/promoters/import', (req, res) => {
+router.post('/api/discovery/promoters/import', requireDiscoveryAdmin, (req, res) => {
   try {
     let candidates = [];
     if (req.body.csv_content) {
@@ -795,7 +1004,7 @@ router.post('/api/discovery/promoters/import', (req, res) => {
  * POST /api/discovery/promoters
  * Registers a single promoter candidate
  */
-router.post('/api/discovery/promoters', (req, res) => {
+router.post('/api/discovery/promoters', requireDiscoveryAdmin, (req, res) => {
   try {
     const result = promoterRegistry.registerCandidate(req.body);
     res.status(201).json({ success: true, ...result });
@@ -808,9 +1017,9 @@ router.post('/api/discovery/promoters', (req, res) => {
  * POST /api/discovery/promoters/:id/verify
  * Elevates promoter to VERIFIED_OFFICIAL_PROMOTER_ACCOUNT (Tier S Primary Source)
  */
-router.post('/api/discovery/promoters/:id/verify', (req, res) => {
+router.post('/api/discovery/promoters/:id/verify', requireDiscoveryAdmin, (req, res) => {
   try {
-    const officerId = req.headers['x-user-id'] || 'admin-1';
+    const officerId = req.adminUser.id;
     const evidence = req.body?.evidence || 'Verified through official domain / APMI cross-reference';
     const website_match = req.body?.website_match === true;
     const promoter = promoterRegistry.verifyPromoter(req.params.id, { evidence, verified_by: officerId, website_match });
@@ -824,7 +1033,7 @@ router.post('/api/discovery/promoters/:id/verify', (req, res) => {
  * POST /api/discovery/promoters/:id/match-identity
  * Advances candidate to IDENTITY_MATCHED
  */
-router.post('/api/discovery/promoters/:id/match-identity', (req, res) => {
+router.post('/api/discovery/promoters/:id/match-identity', requireDiscoveryAdmin, (req, res) => {
   try {
     const website_url = req.body?.website_url;
     const evidence = req.body?.evidence;
@@ -838,7 +1047,7 @@ router.post('/api/discovery/promoters/:id/match-identity', (req, res) => {
 /**
  * POST /api/discovery/promoters/:id/reject
  */
-router.post('/api/discovery/promoters/:id/reject', (req, res) => {
+router.post('/api/discovery/promoters/:id/reject', requireDiscoveryAdmin, (req, res) => {
   try {
     const reason = req.body?.reason || 'Failed identity verification';
     const promoter = promoterRegistry.rejectPromoter(req.params.id, reason);
@@ -851,7 +1060,7 @@ router.post('/api/discovery/promoters/:id/reject', (req, res) => {
 /**
  * POST /api/discovery/promoters/:id/inactivate
  */
-router.post('/api/discovery/promoters/:id/inactivate', (req, res) => {
+router.post('/api/discovery/promoters/:id/inactivate', requireDiscoveryAdmin, (req, res) => {
   try {
     const reason = req.body?.reason || 'Ceased live event production';
     const promoter = promoterRegistry.inactivatePromoter(req.params.id, reason);
@@ -864,7 +1073,7 @@ router.post('/api/discovery/promoters/:id/inactivate', (req, res) => {
 /**
  * POST /api/discovery/promoters/merge
  */
-router.post('/api/discovery/promoters/merge', (req, res) => {
+router.post('/api/discovery/promoters/merge', requireDiscoveryAdmin, (req, res) => {
   try {
     const { target_id, duplicate_id, reason } = req.body;
     if (!target_id || !duplicate_id) {
