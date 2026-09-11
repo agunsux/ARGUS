@@ -7,7 +7,8 @@
  * Captures telemetry and stage-level error boundaries.
  */
 
-const { sourceRegistry } = require('./SourceRegistry');
+const crypto = require('crypto');
+const { sourceRegistry, TRUST_LEVELS } = require('./SourceRegistry');
 const { EventNormalizationService } = require('./EventNormalizationService');
 const { EventDeduplicationService } = require('./EventDeduplicationService');
 const { EventVerificationService, VERIFICATION_STATUS } = require('./EventVerificationService');
@@ -46,9 +47,10 @@ class EventIngestionPipeline {
   /**
    * Ingests a raw event payload from any source into ARGUS.
    * @param {object} rawPayload - Raw incoming data from source
-   * @param {string} sourceId - Registered source ID (e.g. 'src-tiket-com', 'src-loket')
+   * @param {string} sourceId - Registered source ID (e.g. 'src-tiket-com', 'src-loket', 'src-promoter-antarasuara-instagram')
+   * @param {object} observationMeta - Optional social post observation metadata (post_url, observed_at, published_at, fingerprint)
    */
-  async ingestEvent(rawPayload, sourceId) {
+  async ingestEvent(rawPayload, sourceId, observationMeta = {}) {
     this.metrics.last_run_at = new Date().toISOString();
     this.metrics.events_discovered++;
 
@@ -93,7 +95,9 @@ class EventIngestionPipeline {
       source_id: source.source_id,
       source_name: source.source_name,
       trust_level: source.trust_level,
-      source_url: rawPayload.official_ticket_url || rawPayload.url || rawPayload.source_url || null,
+      source_type: source.source_type,
+      source_role: source.source_role,
+      source_url: observationMeta.post_url || rawPayload.official_ticket_url || rawPayload.url || rawPayload.source_url || null,
       source_event_identifier: rawPayload.source_event_id || rawPayload.external_id || null,
       name: normTitle,
       canonical_name: normTitle,
@@ -107,8 +111,8 @@ class EventIngestionPipeline {
       event_type: eventType,
       category: rawPayload.category || eventType,
       description: rawPayload.description,
-      official_ticket_url: rawPayload.official_ticket_url || rawPayload.url || null,
-      official_ticketing_provider: source.source_name,
+      official_ticket_url: rawPayload.official_ticket_url || null,
+      official_ticketing_provider: source.source_role === 'TRANSACTION_SOURCE' ? source.source_name : (rawPayload.official_ticketing_provider || null),
       official_event_url: rawPayload.official_event_url || null,
       organizer_name: rawPayload.organizer_name || 'Promoter',
       artists: Array.isArray(rawPayload.artists) ? rawPayload.artists : [],
@@ -117,14 +121,36 @@ class EventIngestionPipeline {
 
     this.logStage('NORMALIZE', normTitle, 'SUCCESS', { slug, eventType, venue: venueNorm.venue_name });
 
+    // Build Observation Snapshot
+    const fingerprint = observationMeta.content_fingerprint || 
+      crypto.createHash('sha256').update(JSON.stringify(rawPayload)).digest('hex').substring(0, 16);
+
+    const obsRecord = {
+      observation_id: observationMeta.observation_id || `obs-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      source_id: source.source_id,
+      post_url: observationMeta.post_url || rawPayload.post_url || rawPayload.source_url || rawPayload.url || null,
+      observed_at: observationMeta.observed_at || new Date().toISOString(),
+      published_at: observationMeta.published_at || rawPayload.published_at || null,
+      content_fingerprint: fingerprint,
+      claims: {
+        title: normTitle,
+        date: dtNorm.date,
+        venue: venueNorm.venue_name,
+        city: venueNorm.city,
+        status: rawPayload.status || 'UPCOMING',
+        ticket_url: rawPayload.official_ticket_url || null
+      }
+    };
+
     // Stage 4 & 5: IDENTIFY & DEDUPLICATE
     const existingEvents = canonicalRegistry.getAllEvents();
     const dedupResult = EventDeduplicationService.findDuplicateCandidate(normalizedRecord, existingEvents);
 
     let canonicalEvent;
+    let changesDetected = [];
 
     if (dedupResult.isMatch && dedupResult.canonicalEvent) {
-      // DUPLICATE DETECTED -> MERGE INTO ONE CANONICAL EVENT
+      // DUPLICATE DETECTED -> MERGE INTO ONE CANONICAL EVENT WITH OBSERVATION UPDATE
       this.metrics.duplicates_detected++;
       this.metrics.events_merged++;
       canonicalEvent = dedupResult.canonicalEvent;
@@ -135,30 +161,41 @@ class EventIngestionPipeline {
         confidence: dedupResult.confidence
       });
 
-      // Stage 6: ENRICH
-      canonicalRegistry.addSourceRecord(canonicalEvent.event_id, normalizedRecord);
-
-      // Merge artists if new
-      if (normalizedRecord.artists && normalizedRecord.artists.length > 0) {
-        const existingArtists = new Set((canonicalEvent.artists || []).map(a => a.toLowerCase()));
-        for (const a of normalizedRecord.artists) {
-          if (!existingArtists.has(a.toLowerCase())) {
-            canonicalEvent.artists.push(a);
-          }
+      // Stage 6: ENRICH WITH OBSERVATION UPDATE & CHANGE DETECTION
+      const updateResult = canonicalRegistry.updateEventFromObservation(
+        canonicalEvent.event_id,
+        normalizedRecord,
+        source.source_id,
+        obsRecord
+      );
+      if (updateResult && updateResult.changes) {
+        changesDetected = updateResult.changes;
+        if (changesDetected.length > 0) {
+          this.logStage('ENRICH', normTitle, 'CHANGES_RECORDED', {
+            changes: changesDetected
+          });
         }
       }
     } else {
       // Stage 6 & 7: CREATE NEW CANONICAL EVENT & VERIFY
+      const isPrimary = source.trust_level === TRUST_LEVELS.TIER_S || 
+                        source.source_type === 'PROMOTER_OFFICIAL_SOCIAL' || 
+                        source.source_role === 'PRIMARY_EVENT_SOURCE';
+
       canonicalEvent = canonicalRegistry.createEvent({
         ...normalizedRecord,
         slug,
-        sources: [normalizedRecord]
+        sources: [normalizedRecord],
+        verification_status: isPrimary ? VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED : undefined,
+        verification_confidence: isPrimary ? 90 : undefined,
+        observations: [obsRecord]
       });
       this.metrics.events_created++;
 
       this.logStage('IDENTIFY', normTitle, 'NEW_CANONICAL_CREATED', {
         canonical_id: canonicalEvent.event_id,
-        slug
+        slug,
+        is_primary_source: isPrimary
       });
     }
 
@@ -168,9 +205,9 @@ class EventIngestionPipeline {
       this.logStage('VERIFY', canonicalEvent.canonical_name, 'DATA_CONFLICT', {
         conflicts: canonicalEvent.conflicts
       });
-    } else if (canonicalEvent.verification_status === VERIFICATION_STATUS.VERIFIED) {
+    } else if (canonicalEvent.verification_status === VERIFICATION_STATUS.VERIFIED || canonicalEvent.verification_status === VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED) {
       this.metrics.events_verified++;
-      this.logStage('VERIFY', canonicalEvent.canonical_name, 'VERIFIED', {
+      this.logStage('VERIFY', canonicalEvent.canonical_name, canonicalEvent.verification_status, {
         confidence: canonicalEvent.verification_confidence
       });
     } else {

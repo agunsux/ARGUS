@@ -13,6 +13,7 @@ const { TRUST_LEVELS } = require('./SourceRegistry');
 const VERIFICATION_STATUS = {
   DISCOVERED: 'DISCOVERED',
   PENDING_REVIEW: 'PENDING_REVIEW',
+  PRIMARY_SOURCE_VERIFIED: 'PRIMARY_SOURCE_VERIFIED',
   VERIFIED: 'VERIFIED',
   STALE: 'STALE',
   CANCELLED: 'CANCELLED',
@@ -42,6 +43,12 @@ class EventVerificationService {
         flags: ['NO_SOURCES_RECORDED']
       };
     }
+
+    const hasTierS = sourceRecords.some(s => 
+      s.trust_level === TRUST_LEVELS.TIER_S || 
+      s.source_type === 'PROMOTER_OFFICIAL_SOCIAL' || 
+      s.source_role === 'PRIMARY_EVENT_SOURCE'
+    );
 
     // 1. Conflict Detection between independent sources
     const dates = new Set();
@@ -77,14 +84,27 @@ class EventVerificationService {
       }
     }
 
-    // If source conflict exists, do NOT silently publish as VERIFIED!
+    // If source conflict exists:
+    // When a Tier S Verified Promoter source conflicts with a secondary source (e.g. ticketing or listing),
+    // prioritize the verified promoter while preserving the conflict record and flagging for admin review.
     if (conflicts.length > 0) {
-      return {
-        verification_status: VERIFICATION_STATUS.DATA_CONFLICT,
-        verification_confidence: 50,
-        conflicts,
-        flags: ['SOURCE_DATA_CONFLICT_DETECTED']
-      };
+      if (hasTierS) {
+        flags.push('SOURCE_DATA_CONFLICT_DETECTED');
+        flags.push('PRIMARY_PROMOTER_SOURCE_PRECEDENCE');
+        return {
+          verification_status: VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED,
+          verification_confidence: 85,
+          conflicts,
+          flags
+        };
+      } else {
+        return {
+          verification_status: VERIFICATION_STATUS.DATA_CONFLICT,
+          verification_confidence: 50,
+          conflicts,
+          flags: ['SOURCE_DATA_CONFLICT_DETECTED']
+        };
+      }
     }
 
     // 2. Source Tier Scoring
@@ -92,7 +112,10 @@ class EventVerificationService {
     const hasTier2 = sourceRecords.some(s => s.trust_level === TRUST_LEVELS.TIER_2);
     const hasTier3 = sourceRecords.some(s => s.trust_level === TRUST_LEVELS.TIER_3);
 
-    if (hasTier1) {
+    if (hasTierS) {
+      score += 60; // Tier S Verified Official Promoter Social / Website
+      flags.push('TIER_S_PRIMARY_PROMOTER_SOURCE_CONFIRMED');
+    } else if (hasTier1) {
       score += 45; // Official Organizer, Venue, or League
       flags.push('TIER_1_OFFICIAL_AUTHORITY_CONFIRMED');
     } else if (hasTier2) {
@@ -136,7 +159,7 @@ class EventVerificationService {
     if (canonicalEvent.status === 'CANCELLED') {
       status = VERIFICATION_STATUS.CANCELLED;
     } else if (confidence >= 80) {
-      status = VERIFICATION_STATUS.VERIFIED;
+      status = hasTierS ? VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED : VERIFICATION_STATUS.VERIFIED;
     } else if (confidence >= 60) {
       status = VERIFICATION_STATUS.PENDING_REVIEW;
     } else {
@@ -144,7 +167,7 @@ class EventVerificationService {
     }
 
     // Check freshness
-    if (status === VERIFICATION_STATUS.VERIFIED && canonicalEvent.last_verified_at) {
+    if ((status === VERIFICATION_STATUS.VERIFIED || status === VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED) && canonicalEvent.last_verified_at) {
       const lastVerifTime = new Date(canonicalEvent.last_verified_at).getTime();
       const now = Date.now();
       if (now - lastVerifTime > FRESHNESS_WINDOW_MS) {

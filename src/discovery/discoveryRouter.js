@@ -16,6 +16,10 @@ const { demandCapture } = require('./DemandCaptureService');
 const { AdminEventControlService } = require('./AdminEventControlService');
 const { EventSEOService } = require('./EventSEOService');
 const { ListingService } = require('../services/listingService');
+const { apmiPromoterRegistry } = require('./ApmiPromoterRegistry');
+const { promoterRegistry, PROMOTER_STATUS, PROMOTER_AUTHORITY } = require('./PromoterDiscoveryRegistry');
+const { PromoterImportService } = require('./PromoterImportService');
+const { discoverySignalService, SIGNAL_STATUS } = require('./EventDiscoverySignalService');
 const { state, recordAuditLog } = require('../database');
 const { renderFooterHtml } = require('../config/businessProfile');
 
@@ -231,6 +235,216 @@ router.get('/events/category/:category', (req, res) => {
   res.redirect(`/events?category=${encodeURIComponent(req.params.category)}`);
 });
 
+/**
+ * GET /promoters & /promoters/apmi
+ * APMI Promoters Directory & Verified Events Archive Hub
+ */
+router.get(['/promoters', '/promoters/apmi'], (req, res) => {
+  const directory = apmiPromoterRegistry.getAllPromotersWithEvents(canonicalRegistry);
+  const assoc = directory.association;
+
+  const memberCardsHtml = directory.members.map(m => {
+    return `
+      <div class="promoter-card" style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:24px; display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+            <div>
+              <span class="badge badge-sm" style="background:#0ea5e9; color:#fff; font-weight:700;">APMI MEMBER</span>
+              <h3 style="font-size:20px; font-weight:800; color:#f8fafc; margin:8px 0 4px;">
+                <a href="/promoters/apmi/${m.slug}" style="color:inherit; text-decoration:none;">${m.name}</a>
+              </h3>
+              <div style="font-size:12px; color:#64748b;">${m.legal_name}</div>
+            </div>
+            ${m.website ? `<a href="${m.website}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-secondary" style="font-size:11px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Web</a>` : ''}
+          </div>
+
+          <p style="color:#94a3b8; font-size:13px; line-height:1.5; margin-bottom:16px;">${m.bio}</p>
+
+          <div style="margin-bottom:16px;">
+            <div style="font-size:11px; font-weight:700; color:#cbd5e1; text-transform:uppercase; margin-bottom:6px;">Festival &amp; Konser Ikonik:</div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+              ${(m.signature_events || []).map(sig => `<span style="background:#1e293b; color:#38bdf8; font-size:11px; padding:3px 8px; border-radius:6px;">${sig}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid #1e293b; padding-top:14px; margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-size:12px; color:#10b981; font-weight:700;">
+            <i class="fa-solid fa-calendar-check"></i> ${m.event_metrics.total_events} Event Terdata (${m.event_metrics.upcoming_events} Mendatang)
+          </div>
+          <a href="/promoters/apmi/${m.slug}" class="btn btn-sm btn-primary" style="font-size:12px;">Lihat Jadwal Event</a>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direktori Promotor Musik Indonesia (APMI) &amp; Arsip Jadwal Konser Resmi | Tikum</title>
+  <meta name="description" content="Arsip direktori resmi asosiasi promotor musik Indonesia (APMI). Jelajahi daftar promotor resmi, festival musik, dan jadwal konser terverifikasi di Indonesia.">
+  <link rel="canonical" href="https://tikum.app/promoters/apmi">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand">
+        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Event Discovery &amp; Verified Marketplace</span>
+        </div>
+      </a>
+      <nav class="main-nav">
+        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
+        <a href="/promoters/apmi" class="nav-link active"><i class="fa-solid fa-users"></i> Promotor APMI</a>
+        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> Tawaran Tiket</a>
+        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Jual Tiket</a>
+        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Status</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top:40px; padding-bottom:60px;">
+    <div style="text-align:center; max-width:800px; margin:0 auto 36px;">
+      <div class="hero-pill"><i class="fa-solid fa-certificate"></i> ASOSIASI PROMOTOR MUSIK INDONESIA (APMI)</div>
+      <h1 style="font-size:32px; font-weight:800; letter-spacing:-0.5px; margin:14px 0;">Direktori Promotor Resmi &amp; Ekosistem Musik Indonesia</h1>
+      <p style="color:#94a3b8; font-size:15px; line-height:1.6;">
+        Arsip terakreditasi asosiasi promotor musik Indonesia (APMI). Temukan profil promotor resmi, rekam jejak festival legendaris, dan jadwal konser resmi yang diselenggarakan di seluruh Indonesia.
+      </p>
+      <div style="display:flex; justify-content:center; gap:16px; margin-top:16px; font-size:13px; color:#38bdf8;">
+        <span><i class="fa-solid fa-building"></i> ${directory.total_members} Promotor Terakreditasi</span>
+        <span>&bull;</span>
+        <span><a href="https://apmi.co.id/#members" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:underline;">Kunjungi Portal Resmi APMI</a></span>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:24px;">
+      ${memberCardsHtml}
+    </div>
+  </main>
+
+  ${renderFooterHtml()}
+  <script src="/js/i18n.js"></script>
+</body>
+</html>`;
+
+  res.type('html').send(html);
+});
+
+/**
+ * GET /promoters/apmi/:slug
+ * Individual APMI Promoter Profile & Event Showcase Page
+ */
+router.get('/promoters/apmi/:slug', (req, res) => {
+  const result = apmiPromoterRegistry.getEventsForPromoter(req.params.slug, canonicalRegistry);
+  if (!result) {
+    return res.status(404).send(`<!DOCTYPE html>
+      <html><head><title>Promotor Tidak Ditemukan — Tikum</title></head>
+      <body style="font-family:sans-serif; background:#0f172a; color:#fff; text-align:center; padding:50px;">
+        <h2>Promotor APMI Tidak Ditemukan</h2>
+        <p>Promotor yang Anda cari tidak terdaftar dalam direktori resmi APMI.</p>
+        <a href="/promoters/apmi" style="color:#38bdf8;">Kembali ke Direktori APMI</a>
+      </body></html>`);
+  }
+
+  const { promoter, events } = result;
+
+  const eventsListHtml = events.all.length > 0 ? events.all.map(e => `
+    <div style="background:#131d31; border:1px solid #1e293b; border-radius:10px; padding:18px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <div>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
+          <span class="badge badge-sm">${e.event_type || e.category}</span>
+          <span style="font-size:12px; color:#38bdf8;"><i class="fa-solid fa-location-dot"></i> ${e.city}</span>
+          <span style="font-size:12px; color:#94a3b8;"><i class="fa-solid fa-calendar-day"></i> ${e.start_date || e.date}</span>
+        </div>
+        <h4 style="font-size:16px; margin:0; color:#f8fafc;">${e.canonical_name}</h4>
+        <div style="font-size:12px; color:#64748b; margin-top:4px;">${e.venue_name}</div>
+      </div>
+      <a href="/events/${e.slug}" class="btn btn-sm btn-primary">Lihat Detail Event</a>
+    </div>
+  `).join('') : `<div style="text-align:center; padding:40px; color:#64748b; background:#131d31; border-radius:10px;">Belum ada jadwal konser aktif dari promotor ini di kalender terverifikasi.</div>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${promoter.name} — Profil Promotor Musik Resmi APMI &amp; Jadwal Event | Tikum</title>
+  <meta name="description" content="Profil resmi ${promoter.name} (${promoter.legal_name}), anggota Asosiasi Promotor Musik Indonesia (APMI). Lihat rekam jejak festival dan jadwal konser terverifikasi.">
+  <link rel="canonical" href="https://tikum.app/promoters/apmi/${promoter.slug}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand">
+        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Event Discovery &amp; Verified Marketplace</span>
+        </div>
+      </a>
+      <nav class="main-nav">
+        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
+        <a href="/promoters/apmi" class="nav-link active"><i class="fa-solid fa-users"></i> Promotor APMI</a>
+        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> Tawaran Tiket</a>
+        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Jual Tiket</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top:40px; padding-bottom:60px; max-width:900px;">
+    <div style="margin-bottom:24px;">
+      <a href="/promoters/apmi" style="color:#38bdf8; text-decoration:none; font-size:14px;"><i class="fa-solid fa-arrow-left"></i> Kembali ke Direktori Promotor APMI</a>
+    </div>
+
+    <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:32px; margin-bottom:30px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+        <div>
+          <span class="badge badge-sm" style="background:#0ea5e9; color:#fff; font-weight:700;">PROMOTOR TERAKREDITASI APMI</span>
+          <h1 style="font-size:28px; font-weight:800; color:#f8fafc; margin:10px 0 4px;">${promoter.name}</h1>
+          <div style="color:#64748b; font-size:14px;">${promoter.legal_name}</div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          ${promoter.website ? `<a href="${promoter.website}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary"><i class="fa-solid fa-globe"></i> Website Resmi</a>` : ''}
+          ${promoter.instagram ? `<a href="${promoter.instagram}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-secondary"><i class="fa-brands fa-instagram"></i> Instagram</a>` : ''}
+        </div>
+      </div>
+
+      <p style="color:#cbd5e1; font-size:15px; line-height:1.6; margin-top:20px;">
+        ${promoter.bio}
+      </p>
+
+      <div style="margin-top:24px; padding-top:20px; border-top:1px solid #1e293b;">
+        <div style="font-size:12px; font-weight:700; color:#94a3b8; text-transform:uppercase; margin-bottom:8px;">Festival &amp; Konser Ikonik:</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          ${(promoter.signature_events || []).map(s => `<span style="background:#1e293b; color:#38bdf8; font-size:13px; padding:4px 12px; border-radius:8px; font-weight:600;">${s}</span>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h2 style="font-size:22px; font-weight:800; color:#f8fafc; margin-bottom:16px;">
+        <i class="fa-solid fa-list-check"></i> Kalender Event Resmi (${events.total} Event)
+      </h2>
+      ${eventsListHtml}
+    </div>
+  </main>
+
+  ${renderFooterHtml()}
+  <script src="/js/i18n.js"></script>
+</body>
+</html>`;
+
+  res.type('html').send(html);
+});
+
 // ==========================================
 // 2. PUBLIC DISCOVERY REST APIS
 // ==========================================
@@ -390,6 +604,54 @@ router.get('/api/discovery/telemetry', (req, res) => {
 });
 
 // ==========================================
+// 2.5 APMI PROMOTER DIRECTORY APIS
+// ==========================================
+
+/**
+ * GET /api/discovery/promoters/apmi
+ * Returns full APMI directory, leadership board, member list, and event counts
+ */
+router.get('/api/discovery/promoters/apmi', (req, res) => {
+  const directory = apmiPromoterRegistry.getAllPromotersWithEvents(canonicalRegistry);
+  res.json({
+    success: true,
+    ...directory
+  });
+});
+
+/**
+ * GET /api/discovery/promoters/apmi/:slug
+ * Detailed APMI member promoter profile and their associated canonical events
+ */
+router.get('/api/discovery/promoters/apmi/:slug', (req, res) => {
+  const result = apmiPromoterRegistry.getEventsForPromoter(req.params.slug, canonicalRegistry);
+  if (!result) {
+    return res.status(404).json({ error: 'APMI promoter not found', code: 'PROMOTER_NOT_FOUND' });
+  }
+  res.json({
+    success: true,
+    ...result
+  });
+});
+
+/**
+ * GET /api/discovery/promoters/apmi/:slug/events
+ * Categorized events for an APMI promoter
+ */
+router.get('/api/discovery/promoters/apmi/:slug/events', (req, res) => {
+  const result = apmiPromoterRegistry.getEventsForPromoter(req.params.slug, canonicalRegistry);
+  if (!result) {
+    return res.status(404).json({ error: 'APMI promoter not found', code: 'PROMOTER_NOT_FOUND' });
+  }
+  res.json({
+    success: true,
+    promoter_name: result.promoter.name,
+    slug: result.promoter.slug,
+    events: result.events
+  });
+});
+
+// ==========================================
 // 3. ADMIN CONTROL CENTER APIS
 // ==========================================
 
@@ -454,6 +716,253 @@ router.post('/api/discovery/admin/events/:id/cancel', (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// ==========================================
+// 4. PROMOTER DISCOVERY & INTELLIGENCE APIS
+// ==========================================
+
+/**
+ * GET /api/discovery/promoters
+ * List promoters with optional filters (verification_status, category, city, apmi_member)
+ */
+router.get('/api/discovery/promoters', (req, res) => {
+  const filter = {
+    verification_status: req.query.verification_status,
+    category: req.query.category,
+    city: req.query.city,
+    apmi_member: req.query.apmi_member === 'true'
+  };
+  const list = promoterRegistry.getAllPromoters(filter);
+  res.json({ success: true, count: list.length, promoters: list });
+});
+
+/**
+ * GET /api/discovery/promoters/dashboard
+ * Complete coverage statistics by status, category, city, and duplicate count
+ */
+router.get('/api/discovery/promoters/dashboard', (req, res) => {
+  const stats = promoterRegistry.getDashboardStats();
+  res.json({ success: true, ...stats });
+});
+
+/**
+ * GET /api/discovery/promoters/:id
+ * Single promoter profile with provenance claims and linked canonical events
+ */
+router.get('/api/discovery/promoters/:id', (req, res) => {
+  const promoter = promoterRegistry.getPromoterById(req.params.id) || 
+                   promoterRegistry.getPromoterBySlug(req.params.id) ||
+                   promoterRegistry.getPromoterByHandle(req.params.id);
+  if (!promoter) {
+    return res.status(404).json({ error: `Promoter ${req.params.id} not found` });
+  }
+
+  // Find canonical events associated with this promoter
+  const events = canonicalRegistry.getAllEvents().filter(e => {
+    return (e.organizer_name && e.organizer_name.toLowerCase().includes(promoter.canonical_name.toLowerCase())) ||
+           (e.sources && e.sources.some(s => s.source_id && (promoter.source_ids || []).includes(s.source_id)));
+  });
+
+  res.json({ success: true, promoter, events });
+});
+
+/**
+ * POST /api/discovery/promoters/import
+ * Imports CSV or JSON list of promoter candidates
+ */
+router.post('/api/discovery/promoters/import', (req, res) => {
+  try {
+    let candidates = [];
+    if (req.body.csv_content) {
+      candidates = PromoterImportService.parseCSV(req.body.csv_content);
+    } else if (Array.isArray(req.body.candidates)) {
+      candidates = req.body.candidates;
+    } else if (req.body.canonical_name || req.body.promoter_name) {
+      candidates = [req.body];
+    } else {
+      return res.status(400).json({ error: 'Request body must contain csv_content, candidates array, or single candidate' });
+    }
+
+    const report = PromoterImportService.importCandidates(candidates);
+    res.json({ success: true, ...report });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/promoters
+ * Registers a single promoter candidate
+ */
+router.post('/api/discovery/promoters', (req, res) => {
+  try {
+    const result = promoterRegistry.registerCandidate(req.body);
+    res.status(201).json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/promoters/:id/verify
+ * Elevates promoter to VERIFIED_OFFICIAL_PROMOTER_ACCOUNT (Tier S Primary Source)
+ */
+router.post('/api/discovery/promoters/:id/verify', (req, res) => {
+  try {
+    const officerId = req.headers['x-user-id'] || 'admin-1';
+    const evidence = req.body?.evidence || 'Verified through official domain / APMI cross-reference';
+    const website_match = req.body?.website_match === true;
+    const promoter = promoterRegistry.verifyPromoter(req.params.id, { evidence, verified_by: officerId, website_match });
+    res.json({ success: true, promoter });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/promoters/:id/match-identity
+ * Advances candidate to IDENTITY_MATCHED
+ */
+router.post('/api/discovery/promoters/:id/match-identity', (req, res) => {
+  try {
+    const website_url = req.body?.website_url;
+    const evidence = req.body?.evidence;
+    const promoter = promoterRegistry.matchIdentity(req.params.id, { website_url, evidence });
+    res.json({ success: true, promoter });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/promoters/:id/reject
+ */
+router.post('/api/discovery/promoters/:id/reject', (req, res) => {
+  try {
+    const reason = req.body?.reason || 'Failed identity verification';
+    const promoter = promoterRegistry.rejectPromoter(req.params.id, reason);
+    res.json({ success: true, promoter });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/promoters/:id/inactivate
+ */
+router.post('/api/discovery/promoters/:id/inactivate', (req, res) => {
+  try {
+    const reason = req.body?.reason || 'Ceased live event production';
+    const promoter = promoterRegistry.inactivatePromoter(req.params.id, reason);
+    res.json({ success: true, promoter });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/promoters/merge
+ */
+router.post('/api/discovery/promoters/merge', (req, res) => {
+  try {
+    const { target_id, duplicate_id, reason } = req.body;
+    if (!target_id || !duplicate_id) {
+      return res.status(400).json({ error: 'target_id and duplicate_id are required' });
+    }
+    const merged = promoterRegistry.mergePromoters(target_id, duplicate_id, reason);
+    res.json({ success: true, promoter: merged });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/promoters/:id/posts
+ * Ingests a promoter social post announcement.
+ * If account is verified official promoter, directly creates/updates CanonicalEvent!
+ */
+router.post('/api/discovery/promoters/:id/posts', async (req, res) => {
+  try {
+    const result = await discoverySignalService.processSocialPost(req.body, req.params.id);
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/discovery/signals
+ */
+router.get('/api/discovery/signals', (req, res) => {
+  const filter = {
+    status: req.query.status,
+    promoter_id: req.query.promoter_id
+  };
+  const list = discoverySignalService.getAllSignals(filter);
+  res.json({ success: true, count: list.length, signals: list });
+});
+
+/**
+ * POST /api/discovery/signals/:id/verify
+ */
+router.post('/api/discovery/signals/:id/verify', async (req, res) => {
+  try {
+    const officerId = req.headers['x-user-id'] || 'admin-1';
+    const result = await discoverySignalService.verifySignal(req.params.id, {
+      verified_by: officerId,
+      overridePayload: req.body
+    });
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/discovery/events/:id/provenance
+ * Returns full field-level provenance, observation snapshots, and change history for an event
+ */
+router.get('/api/discovery/events/:id/provenance', (req, res) => {
+  const event = canonicalRegistry.getEventById(req.params.id) || canonicalRegistry.getEventBySlug(req.params.id);
+  if (!event) {
+    return res.status(404).json({ error: `Event ${req.params.id} not found` });
+  }
+
+  res.json({
+    success: true,
+    event_id: event.event_id,
+    canonical_name: event.canonical_name,
+    verification_status: event.verification_status,
+    verification_confidence: event.verification_confidence,
+    update_priority: event.update_priority,
+    field_provenance: event.field_provenance,
+    observations: event.observations,
+    event_history: event.event_history,
+    conflicts: event.conflicts,
+    sources: event.sources
+  });
+});
+
+/**
+ * GET /api/discovery/conflicts
+ * Returns events that currently have conflicts flagged for review
+ */
+router.get('/api/discovery/conflicts', (req, res) => {
+  const conflictingEvents = canonicalRegistry.getAllEvents().filter(e => e.conflicts && e.conflicts.length > 0);
+  res.json({
+    success: true,
+    count: conflictingEvents.length,
+    conflicts: conflictingEvents.map(e => ({
+      event_id: e.event_id,
+      canonical_name: e.canonical_name,
+      verification_status: e.verification_status,
+      conflicts: e.conflicts,
+      primary_source: (e.sources || []).find(s => s.trust_level === 'TIER_S' || s.source_type === 'PROMOTER_OFFICIAL_SOCIAL')
+    }))
+  });
 });
 
 module.exports = router;

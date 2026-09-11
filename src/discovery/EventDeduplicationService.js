@@ -125,7 +125,10 @@ class EventDeduplicationService {
       }
 
       // 3. Conflict Detection: Same Title & Venue with Different Dates (Section 22: DATA_CONFLICT)
+      const incomingVenueName = (incomingRecord.venue_name || incomingRecord.venue || '').toLowerCase().trim();
+      const canonicalVenueName = (canonical.venue_name || canonical.venue || '').toLowerCase().trim();
       const isSameVenue = (incomingRecord.venue_id && canonical.venue_id && incomingRecord.venue_id === canonical.venue_id) ||
+                          (incomingVenueName && canonicalVenueName && (incomingVenueName.includes(canonicalVenueName) || canonicalVenueName.includes(incomingVenueName))) ||
                           (incomingVenue && canonicalVenue && (incomingVenue.includes(canonicalVenue) || canonicalVenue.includes(incomingVenue)));
       const titleSim = this.calculateTokenSimilarity(incomingNormTitle, canonicalNormTitle);
 
@@ -135,6 +138,50 @@ class EventDeduplicationService {
             isMatch: true,
             confidence: 85,
             matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT',
+            canonicalEvent: canonical
+          };
+        }
+      }
+
+      // 4. "Follow the Promoter": Same Title & City Updates (Venue Change or Reschedule)
+      const isSameCity = (incomingRecord.city && canonical.city && 
+                          incomingRecord.city.toLowerCase().trim() === canonical.city.toLowerCase().trim()) ||
+                         (!incomingRecord.city || !canonical.city);
+      const isExactTitle = incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase();
+      const isHighTitleSim = titleSim >= 0.8;
+
+      if (isSameCity && (isExactTitle || isHighTitleSim)) {
+        // Same date, different venue in same city -> Venue Move
+        if (incomingDate && canonicalDate && incomingDate === canonicalDate) {
+          return {
+            isMatch: true,
+            confidence: 92,
+            matchReason: 'VENUE_MOVE_SAME_DATE',
+            canonicalEvent: canonical
+          };
+        }
+
+        // Same exact event in same city with conflicting date -> Date Conflict / Reschedule
+        if (isExactTitle && incomingDate && canonicalDate && incomingDate !== canonicalDate) {
+          return {
+            isMatch: true,
+            confidence: 88,
+            matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT_IN_CITY',
+            canonicalEvent: canonical
+          };
+        }
+
+        // Same organizer/promoter updating date or venue -> Promoter Event Update / Reschedule
+        const isSameOrganizer = (incomingRecord.organizer_name && canonical.organizer_name &&
+                                incomingRecord.organizer_name.toLowerCase() === canonical.organizer_name.toLowerCase());
+        const isSameSource = incomingRecord.source_id && canonical.sources && 
+                             canonical.sources.some(s => s.source_id === incomingRecord.source_id);
+
+        if (isSameOrganizer || isSameSource || isSameVenue) {
+          return {
+            isMatch: true,
+            confidence: 90,
+            matchReason: 'PROMOTER_EVENT_UPDATE_RESCHEDULE',
             canonicalEvent: canonical
           };
         }

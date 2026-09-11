@@ -96,6 +96,86 @@ class CanonicalEventRegistry {
         handoff_type: 'DIGITAL_TRANSFER',
         venue_gate_authority: 'Promoter & Venue Security'
       },
+      field_provenance: eventData.field_provenance || {
+        event_name: {
+          value: normTitle,
+          source_id: eventData.source_id || (sources[0] && sources[0].source_id) || null,
+          source_url: eventData.source_url || (sources[0] && sources[0].source_url) || null,
+          observed_at: now,
+          published_at: eventData.published_at || null,
+          confidence: 'HIGH'
+        },
+        start_date: {
+          value: dtNorm.date,
+          source_id: eventData.source_id || (sources[0] && sources[0].source_id) || null,
+          source_url: eventData.source_url || (sources[0] && sources[0].source_url) || null,
+          observed_at: now,
+          published_at: eventData.published_at || null,
+          confidence: dtNorm.date ? 'HIGH' : 'UNKNOWN'
+        },
+        start_time: {
+          value: eventData.time || null,
+          source_id: eventData.source_id || (sources[0] && sources[0].source_id) || null,
+          source_url: eventData.source_url || null,
+          observed_at: now,
+          confidence: eventData.time ? 'HIGH' : 'UNKNOWN'
+        },
+        venue_name: {
+          value: venueNorm.venue_name,
+          source_id: eventData.source_id || (sources[0] && sources[0].source_id) || null,
+          source_url: eventData.source_url || null,
+          observed_at: now,
+          confidence: venueNorm.venue_name ? 'HIGH' : 'UNKNOWN'
+        },
+        city: {
+          value: venueNorm.city,
+          source_id: eventData.source_id || (sources[0] && sources[0].source_id) || null,
+          source_url: eventData.source_url || null,
+          observed_at: now,
+          confidence: venueNorm.city ? 'HIGH' : 'UNKNOWN'
+        },
+        artists: {
+          value: eventData.artists || [],
+          source_id: eventData.source_id || (sources[0] && sources[0].source_id) || null,
+          source_url: eventData.source_url || null,
+          observed_at: now,
+          confidence: (eventData.artists && eventData.artists.length > 0) ? 'HIGH' : 'UNKNOWN'
+        },
+        official_ticket_url: {
+          value: eventData.official_ticket_url || null,
+          source_id: eventData.official_ticket_url ? (eventData.source_id || (sources[0] && sources[0].source_id)) : null,
+          source_url: eventData.official_ticket_url || null,
+          observed_at: eventData.official_ticket_url ? now : null,
+          confidence: eventData.official_ticket_url ? 'HIGH' : 'UNKNOWN'
+        },
+        ticket_price: {
+          value: eventData.ticket_price || 'UNKNOWN',
+          source_id: eventData.ticket_price ? eventData.source_id : null,
+          source_url: null,
+          observed_at: eventData.ticket_price ? now : null,
+          confidence: eventData.ticket_price ? 'HIGH' : 'UNKNOWN'
+        },
+        status: {
+          value: eventData.status || 'UPCOMING',
+          source_id: eventData.source_id || (sources[0] && sources[0].source_id) || null,
+          source_url: eventData.source_url || null,
+          observed_at: now,
+          confidence: 'HIGH'
+        }
+      },
+      observations: Array.isArray(eventData.observations) ? [...eventData.observations] : (eventData.observation ? [eventData.observation] : []),
+      event_history: Array.isArray(eventData.event_history) ? [...eventData.event_history] : [
+        {
+          timestamp: now,
+          change_type: 'INITIAL_ANNOUNCEMENT',
+          field: 'all',
+          old_value: null,
+          new_value: { name: normTitle, date: dtNorm.date, venue: venueNorm.venue_name },
+          source_id: eventData.source_id || (sources[0] && sources[0].source_id) || 'system',
+          reason: 'Initial canonical event created'
+        }
+      ],
+      update_priority: this.computeUpdatePriority(dtNorm.date),
       sources: sources,
       source_count: sources.length,
       verification_status: eventData.verification_status || VERIFICATION_STATUS.DISCOVERED,
@@ -114,18 +194,302 @@ class CanonicalEventRegistry {
       canonicalEvent.verification_confidence = Math.max(90, eventData.verification_confidence || 95);
       canonicalEvent.is_verified = true;
       canonicalEvent.conflicts = [];
+    } else if (eventData.verification_status === VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED) {
+      canonicalEvent.verification_status = VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED;
+      canonicalEvent.verification_confidence = Math.max(85, eventData.verification_confidence || 90);
+      canonicalEvent.is_verified = true;
+      canonicalEvent.conflicts = [];
     } else {
       const evalResult = EventVerificationService.evaluateEvent(canonicalEvent, canonicalEvent.sources);
       canonicalEvent.verification_status = evalResult.verification_status;
       canonicalEvent.verification_confidence = evalResult.verification_confidence;
       canonicalEvent.conflicts = evalResult.conflicts;
-      canonicalEvent.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED);
+      canonicalEvent.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED || evalResult.verification_status === VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED);
     }
 
     this.events.set(eventId, canonicalEvent);
     this.slugMap.set(slug, eventId);
 
     return canonicalEvent;
+  }
+
+  computeUpdatePriority(startDate) {
+    if (!startDate) return 'SCHEDULED';
+    const eventTime = new Date(startDate).getTime();
+    const nowTime = Date.now();
+    const diffDays = Math.ceil((eventTime - nowTime) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return 'ARCHIVED';
+    if (diffDays <= 7) return 'HIGH_PRIORITY';
+    if (diffDays <= 30) return 'FREQUENT';
+    if (diffDays <= 90) return 'WEEKLY';
+    return 'SCHEDULED';
+  }
+
+  /**
+   * Updates an existing canonical event from an incoming observation.
+   * Enforces dual-level authority:
+   * 1. Account authority (Tier S vs Secondary)
+   * 2. Observation freshness (newer post > older post, never let stale post overwrite newer announcement)
+   * Maintains immutable event history and preserves all observations.
+   */
+  updateEventFromObservation(eventId, incomingRecord, sourceId, observation = {}) {
+    const event = this.getEventById(eventId);
+    if (!event) return null;
+
+    const now = new Date().toISOString();
+    const obsId = observation.observation_id || `obs-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const observedAt = observation.observed_at || now;
+    const publishedAt = observation.published_at || incomingRecord.published_at || null;
+    const postUrl = observation.post_url || incomingRecord.source_url || null;
+    const fingerprint = observation.content_fingerprint || null;
+
+    const isPrimarySource = incomingRecord.trust_level === TRUST_LEVELS.TIER_S || 
+                            incomingRecord.source_type === 'PROMOTER_OFFICIAL_SOCIAL' || 
+                            incomingRecord.source_role === 'PRIMARY_EVENT_SOURCE';
+
+    const changes = [];
+
+    // Helper to test if incoming observation is fresher than current field observation
+    const isFresherThan = (existingFieldMeta) => {
+      if (!existingFieldMeta || !existingFieldMeta.value) return true;
+
+      const existingIsTierS = existingFieldMeta.source_id && 
+        (existingFieldMeta.source_id.includes('promoter') || existingFieldMeta.source_id.includes('apmi'));
+
+      // 1. Tier S Primary Source takes precedence over secondary source
+      if (isPrimarySource && !existingIsTierS) {
+        return true;
+      }
+      // 2. Secondary source NEVER overrides a verified Tier S primary source!
+      if (!isPrimarySource && existingIsTierS) {
+        return false;
+      }
+
+      // 3. For sources of equal tier, compare published_at first, then observed_at
+      if (publishedAt && existingFieldMeta.published_at) {
+        return new Date(publishedAt).getTime() >= new Date(existingFieldMeta.published_at).getTime();
+      }
+      if (observedAt && existingFieldMeta.observed_at) {
+        return new Date(observedAt).getTime() >= new Date(existingFieldMeta.observed_at).getTime();
+      }
+      return true;
+    };
+
+    // 1. Date Change / Reschedule Check
+    const incomingDate = incomingRecord.start_date || incomingRecord.date;
+    if (incomingDate && incomingDate !== event.start_date) {
+      if (isFresherThan(event.field_provenance.start_date)) {
+        const oldDate = event.start_date;
+        event.start_date = incomingDate;
+        event.date = incomingDate;
+        if (incomingRecord.start_datetime) event.start_datetime = incomingRecord.start_datetime;
+
+        const changeType = (incomingRecord.status === 'RESCHEDULED' || event.status === 'RESCHEDULED' || oldDate) ? 'RESCHEDULED' : 'DATE_CHANGED';
+        if (incomingRecord.status === 'RESCHEDULED' || changeType === 'RESCHEDULED') {
+          event.status = 'RESCHEDULED';
+        }
+
+        event.event_history.push({
+          timestamp: now,
+          change_type: changeType,
+          field: 'start_date',
+          old_value: oldDate,
+          new_value: incomingDate,
+          source_id: sourceId,
+          observed_at: observedAt,
+          published_at: publishedAt,
+          reason: 'Promoter announced new date / reschedule'
+        });
+        changes.push(changeType);
+
+        event.field_provenance.start_date = {
+          value: incomingDate,
+          source_id: sourceId,
+          source_url: postUrl,
+          observed_at: observedAt,
+          published_at: publishedAt,
+          confidence: 'HIGH'
+        };
+      } else {
+        // Conflicting observation from secondary source!
+        event.conflicts = event.conflicts || [];
+        const existingConf = event.conflicts.find(c => c.field === 'start_date');
+        if (existingConf) {
+          if (!existingConf.values.includes(incomingDate)) existingConf.values.push(incomingDate);
+        } else {
+          event.conflicts.push({
+            field: 'start_date',
+            values: [event.start_date, incomingDate],
+            primary_value: event.start_date,
+            conflicting_source_id: sourceId,
+            reason: `Conflicting event date from source ${sourceId}: ${incomingDate} vs ${event.start_date}`
+          });
+        }
+      }
+    }
+
+    // 2. Venue Change Check
+    const incomingVenue = incomingRecord.venue_name || incomingRecord.venue;
+    if (incomingVenue && incomingVenue.toLowerCase().trim() !== (event.venue_name || '').toLowerCase().trim()) {
+      if (isFresherThan(event.field_provenance.venue_name)) {
+        const oldVenue = event.venue_name;
+        event.venue_name = incomingVenue;
+        event.venue = incomingVenue;
+        if (incomingRecord.venue_id) event.venue_id = incomingRecord.venue_id;
+        if (incomingRecord.city) {
+          event.city = incomingRecord.city;
+          event.venue_city = incomingRecord.city;
+        }
+
+        event.event_history.push({
+          timestamp: now,
+          change_type: 'VENUE_CHANGED',
+          field: 'venue_name',
+          old_value: oldVenue,
+          new_value: incomingVenue,
+          source_id: sourceId,
+          observed_at: observedAt,
+          published_at: publishedAt,
+          reason: 'Promoter announced venue change'
+        });
+        changes.push('VENUE_CHANGED');
+
+        event.field_provenance.venue_name = {
+          value: incomingVenue,
+          source_id: sourceId,
+          source_url: postUrl,
+          observed_at: observedAt,
+          published_at: publishedAt,
+          confidence: 'HIGH'
+        };
+        if (incomingRecord.city) {
+          event.field_provenance.city = {
+            value: incomingRecord.city,
+            source_id: sourceId,
+            source_url: postUrl,
+            observed_at: observedAt,
+            published_at: publishedAt,
+            confidence: 'HIGH'
+          };
+        }
+      }
+    }
+
+    // 3. Cancellation Check
+    if (incomingRecord.status === 'CANCELLED' && event.status !== 'CANCELLED') {
+      if (isFresherThan(event.field_provenance.status)) {
+        const oldStatus = event.status;
+        event.status = 'CANCELLED';
+        event.event_history.push({
+          timestamp: now,
+          change_type: 'CANCELLED',
+          field: 'status',
+          old_value: oldStatus,
+          new_value: 'CANCELLED',
+          source_id: sourceId,
+          observed_at: observedAt,
+          published_at: publishedAt,
+          reason: 'Promoter announced event cancellation'
+        });
+        changes.push('CANCELLED');
+
+        event.field_provenance.status = {
+          value: 'CANCELLED',
+          source_id: sourceId,
+          source_url: postUrl,
+          observed_at: observedAt,
+          published_at: publishedAt,
+          confidence: 'HIGH'
+        };
+      }
+    }
+
+    // 4. Lineup Change Check
+    if (incomingRecord.artists && Array.isArray(incomingRecord.artists) && incomingRecord.artists.length > 0) {
+      const existingArtists = new Set((event.artists || []).map(a => a.toLowerCase()));
+      const newArtists = incomingRecord.artists.filter(a => !existingArtists.has(a.toLowerCase()));
+      if (newArtists.length > 0 && isFresherThan(event.field_provenance.artists)) {
+        const oldArtists = [...(event.artists || [])];
+        event.artists = [...oldArtists, ...newArtists];
+        event.event_history.push({
+          timestamp: now,
+          change_type: 'LINEUP_CHANGED',
+          field: 'artists',
+          old_value: oldArtists,
+          new_value: event.artists,
+          source_id: sourceId,
+          observed_at: observedAt,
+          published_at: publishedAt,
+          reason: 'Lineup announcement / additional artists'
+        });
+        changes.push('LINEUP_CHANGED');
+
+        event.field_provenance.artists = {
+          value: event.artists,
+          source_id: sourceId,
+          source_url: postUrl,
+          observed_at: observedAt,
+          published_at: publishedAt,
+          confidence: 'HIGH'
+        };
+      }
+    }
+
+    // 5. Ticket URL / Transaction Link Check
+    if (incomingRecord.official_ticket_url && incomingRecord.official_ticket_url !== event.official_ticket_url) {
+      if (isFresherThan(event.field_provenance.official_ticket_url)) {
+        const oldUrl = event.official_ticket_url;
+        event.official_ticket_url = incomingRecord.official_ticket_url;
+        event.event_history.push({
+          timestamp: now,
+          change_type: 'TICKET_INFO_CHANGED',
+          field: 'official_ticket_url',
+          old_value: oldUrl,
+          new_value: incomingRecord.official_ticket_url,
+          source_id: sourceId,
+          observed_at: observedAt,
+          published_at: publishedAt,
+          reason: 'Official ticketing URL announced or updated'
+        });
+        changes.push('TICKET_INFO_CHANGED');
+
+        event.field_provenance.official_ticket_url = {
+          value: incomingRecord.official_ticket_url,
+          source_id: sourceId,
+          source_url: postUrl,
+          observed_at: observedAt,
+          published_at: publishedAt,
+          confidence: 'HIGH'
+        };
+      }
+    }
+
+    // Append observation snapshot (CRITICAL DATA INTEGRITY: Never overwrite historical source observations!)
+    event.observations.push({
+      observation_id: obsId,
+      source_id: sourceId,
+      post_url: postUrl,
+      observed_at: observedAt,
+      published_at: publishedAt,
+      content_fingerprint: fingerprint,
+      claims: {
+        title: incomingRecord.canonical_name || incomingRecord.name,
+        date: incomingDate,
+        venue: incomingVenue,
+        status: incomingRecord.status || 'UPCOMING',
+        ticket_url: incomingRecord.official_ticket_url || null
+      },
+      changes_detected: changes
+    });
+
+    // Update source record
+    this.addSourceRecord(eventId, incomingRecord);
+
+    event.updated_at = now;
+    event.last_verified_at = now;
+    event.update_priority = this.computeUpdatePriority(event.start_date);
+
+    return { event, changes };
   }
 
   /**
@@ -174,8 +538,22 @@ class CanonicalEventRegistry {
     const evalResult = EventVerificationService.evaluateEvent(event, event.sources);
     event.verification_status = evalResult.verification_status;
     event.verification_confidence = evalResult.verification_confidence;
-    event.conflicts = evalResult.conflicts;
-    event.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED);
+
+    // Merge conflicts from evaluateEvent into event.conflicts without wiping existing
+    event.conflicts = event.conflicts || [];
+    if (evalResult.conflicts && evalResult.conflicts.length > 0) {
+      for (const c of evalResult.conflicts) {
+        const exist = event.conflicts.find(ec => ec.field === c.field);
+        if (exist) {
+          for (const v of c.values) {
+            if (!exist.values.includes(v)) exist.values.push(v);
+          }
+        } else {
+          event.conflicts.push(c);
+        }
+      }
+    }
+    event.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED || evalResult.verification_status === VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED);
 
     return event;
   }
