@@ -64,6 +64,24 @@ app.use((req, res, next) => {
   next();
 });
 
+// Dynamic SEO Endpoints (Robots.txt & Sitemap.xml)
+const { TechnicalSEOService } = require('./seo/TechnicalSEOService');
+const { VenueRegistry } = require('./discovery/VenueRegistry');
+const { CityRegistry } = require('./discovery/CityRegistry');
+const { articleRepository } = require('./content/ArticleRepository');
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(TechnicalSEOService.generateRobotsTxt());
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  res.type('application/xml').send(TechnicalSEOService.generateSitemapXml({
+    getVenues: () => VenueRegistry.getAllVenues(),
+    getCities: () => CityRegistry.getAllCities(),
+    getPublishedArticles: () => articleRepository.getPublishedArticles()
+  }));
+});
+
 // Serve front-end files
 const sendFileOpts = { dotfiles: 'allow' };
 app.use(express.static(path.resolve(__dirname, '../public'), sendFileOpts));
@@ -83,6 +101,22 @@ app.use('/api/mvp', offerRouter);
 // Mount Epic: Event Discovery & SEO Engine
 const discoveryRouter = require('./discovery/discoveryRouter');
 app.use(discoveryRouter);
+
+// Mount Entity SEO Router (Venues, Artists, Cities, Categories)
+const entityRouter = require('./discovery/entityRouter');
+app.use(entityRouter);
+
+// Mount Trust Authority Pages (/how-it-works, /buyer-protection, /seller-protection, /ticket-verification, /escrow, /disputes)
+const trustPagesRouter = require('./trust/trustPagesRouter');
+app.use(trustPagesRouter);
+
+// Mount Editorial Blog Engine (/blog, /blog/:slug, /guides)
+const blogRouter = require('./content/blogRouter');
+app.use(blogRouter);
+
+// Mount Content Admin Control Center
+const contentAdminRouter = require('./api/contentAdminRouter');
+app.use(contentAdminRouter);
 
 // Explicit Institutional Frontend Page Delivery
 const publicDir = path.resolve(__dirname, '../public');

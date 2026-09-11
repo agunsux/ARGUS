@@ -2,5 +2,13 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /api/
+Disallow: /uploads/
+Disallow: /pay
+Disallow: /pay/*
+Disallow: /*?*q=
+Disallow: /*?*sort=
+Disallow: /*?*status=
+
+Crawl-delay: 1
 
 Sitemap: https://tikum.app/sitemap.xml
