@@ -1,8 +1,14 @@
 /**
- * ARGUS Event Deduplication Service
+ * TIKUM / ARGUS Event Deduplication Service
  * 
- * Deterministic + Probabilistic Duplicate Detection.
- * Groups multiple independent source records into ONE Canonical Event.
+ * Multi-Factor Deterministic & Probabilistic Deduplication Engine:
+ * - External Source Identifier matching
+ * - Canonical slug and venue token matching
+ * - Artist overlap and lineup resolution
+ * - Reschedule and venue relocation tracking
+ * - Multi-day festival topology resolution
+ * - Spatial & entity collision prevention (Multi-hall, multi-city tours)
+ * - Ambiguous match quarantine (REVIEW_REQUIRED)
  */
 
 const { EventNormalizationService } = require('./EventNormalizationService');
@@ -38,32 +44,34 @@ class EventDeduplicationService {
   }
 
   /**
-   * Deterministic duplicate key.
-   * e.g., slug + date or venue_id + date + normalized_name
+   * Multi-factor deterministic duplicate key.
    */
   static buildDeterministicKey(event) {
-    const normName = EventNormalizationService.normalizeTitle(event.canonical_name || event.name || event.title).toLowerCase();
+    const normName = EventNormalizationService.normalizeTitle(event.canonical_name || event.name || event.title).toLowerCase().trim();
     const date = event.start_date || (event.start_datetime ? event.start_datetime.substring(0, 10) : event.date) || '';
     const venue = event.venue_id || (event.venue_name || event.venue || '').toLowerCase().trim();
-    return `${normName}::${venue}::${date}`;
+    const city = (event.city || event.venue_city || '').toLowerCase().trim();
+    return `${normName}::${venue}::${city}::${date}`;
   }
 
   /**
    * Evaluates if incoming event source record matches an existing canonical event.
-   * Returns: { isMatch: boolean, confidence: number, matchReason: string, canonicalEvent: object|null }
+   * Returns: { isMatch: boolean, confidence: number, matchReason: string, canonicalEvent: object|null, isAmbiguous?: boolean }
    */
   static findDuplicateCandidate(incomingRecord, existingCanonicalEvents) {
     const incomingNormTitle = EventNormalizationService.normalizeTitle(incomingRecord.name || incomingRecord.title || incomingRecord.canonical_name);
     const incomingDate = incomingRecord.start_date || (incomingRecord.start_datetime ? incomingRecord.start_datetime.substring(0, 10) : incomingRecord.date);
     const incomingVenue = incomingRecord.venue_id || (incomingRecord.venue_name || incomingRecord.venue || '').toLowerCase().trim();
+    const incomingCity = (incomingRecord.city || incomingRecord.venue_city || '').toLowerCase().trim();
+    const incomingArtists = (Array.isArray(incomingRecord.artists) ? incomingRecord.artists : (incomingRecord.artist ? [incomingRecord.artist] : [])).map(a => a.toLowerCase().trim());
 
     for (const canonical of existingCanonicalEvents) {
-      // 1. External Source ID Match (if from same source)
+      // 1. External Source ID Match (exact match for same source)
       if (canonical.sources && Array.isArray(canonical.sources)) {
         const matchingSource = canonical.sources.find(s => 
           s.source_id === incomingRecord.source_id && 
-          s.source_event_identifier && 
-          s.source_event_identifier === incomingRecord.source_event_identifier
+          (s.source_event_identifier || s.source_event_id) && 
+          (s.source_event_identifier || s.source_event_id) === (incomingRecord.source_event_identifier || incomingRecord.source_event_id)
         );
         if (matchingSource) {
           return {
@@ -75,19 +83,46 @@ class EventDeduplicationService {
         }
       }
 
-      // 2. Exact Deterministic Match (Name + Venue + Date)
       const canonicalDate = canonical.start_date || (canonical.start_datetime ? canonical.start_datetime.substring(0, 10) : canonical.date);
       const canonicalVenue = canonical.venue_id || (canonical.venue_name || canonical.venue || '').toLowerCase().trim();
+      const canonicalCity = (canonical.city || canonical.venue_city || '').toLowerCase().trim();
       const canonicalNormTitle = EventNormalizationService.normalizeTitle(canonical.canonical_name || canonical.name || canonical.title);
+      const canonicalArtists = (Array.isArray(canonical.artists) ? canonical.artists : (canonical.artist ? [canonical.artist] : [])).map(a => a.toLowerCase().trim());
 
-      if (incomingDate && canonicalDate && incomingDate === canonicalDate) {
-        // Same date: check venue and title
-        const isSameVenue = (incomingRecord.venue_id && canonical.venue_id && incomingRecord.venue_id === canonical.venue_id) ||
-                            (incomingVenue && canonicalVenue && (incomingVenue.includes(canonicalVenue) || canonicalVenue.includes(incomingVenue)));
+      // ==========================================
+      // SPATIAL & ENTITY COLLISION PREVENTION
+      // ==========================================
 
-        const titleSim = this.calculateTokenSimilarity(incomingNormTitle, canonicalNormTitle);
+      // Collision Rule A: Multi-City Tour (Same Artist, Different Cities)
+      // If same artist performs in Jakarta vs Singapore or Bandung on different dates, they are DISTINCT events!
+      if (incomingCity && canonicalCity && incomingCity !== canonicalCity) {
+        if (incomingDate !== canonicalDate) {
+          continue; // Distinct tour stops, do NOT merge!
+        }
+      }
 
-        // Exact match
+      // Collision Rule B: Multi-Hall Spatial Collision (Same Venue + Same Date, Distinct Artists)
+      // e.g. Exhibition Hall A hosts Act 1, Exhibition Hall B hosts Act 2 on the same night
+      const isSameDate = incomingDate && canonicalDate && incomingDate === canonicalDate;
+      const isSameVenue = (incomingRecord.venue_id && canonical.venue_id && incomingRecord.venue_id === canonical.venue_id) ||
+                          (incomingVenue && canonicalVenue && (incomingVenue.includes(canonicalVenue) || canonicalVenue.includes(incomingVenue)));
+
+      const titleSim = this.calculateTokenSimilarity(incomingNormTitle, canonicalNormTitle);
+
+      if (isSameDate && isSameVenue && titleSim < 0.25) {
+        const hasArtistOverlap = incomingArtists.length > 0 && canonicalArtists.length > 0 &&
+          incomingArtists.some(ia => canonicalArtists.includes(ia));
+        if (!hasArtistOverlap) {
+          continue; // Two distinct events in different halls of the same venue on the same night!
+        }
+      }
+
+      // ==========================================
+      // DETERMINISTIC & PROBABILISTIC MATCHING
+      // ==========================================
+
+      // 2. Exact Deterministic Match (Title + Venue + Date)
+      if (isSameDate) {
         if (isSameVenue && incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase()) {
           return {
             isMatch: true,
@@ -97,8 +132,7 @@ class EventDeduplicationService {
           };
         }
 
-        // Fuzzy match on same venue & same date with >= 50% token overlap
-        // e.g. "Persib vs Persija" vs "Persib Bandung vs Persija Jakarta"
+        // 3. High Token Similarity on Same Venue + Date (e.g. "Persib vs Persija" vs "Persib Bandung vs Persija Jakarta")
         if (isSameVenue && titleSim >= 0.4) {
           return {
             isMatch: true,
@@ -108,11 +142,9 @@ class EventDeduplicationService {
           };
         }
 
-        // Artist overlap match on same date & same city
-        if (incomingRecord.artists && canonical.artists && Array.isArray(incomingRecord.artists) && Array.isArray(canonical.artists)) {
-          const commonArtists = incomingRecord.artists.filter(a => 
-            canonical.artists.some(ca => ca.toLowerCase() === a.toLowerCase())
-          );
+        // 4. Artist Overlap Match on Same Venue & Same Date
+        if (incomingArtists.length > 0 && canonicalArtists.length > 0) {
+          const commonArtists = incomingArtists.filter(a => canonicalArtists.includes(a));
           if (commonArtists.length > 0 && isSameVenue) {
             return {
               isMatch: true,
@@ -124,14 +156,7 @@ class EventDeduplicationService {
         }
       }
 
-      // 3. Conflict Detection: Same Title & Venue with Different Dates (Section 22: DATA_CONFLICT)
-      const incomingVenueName = (incomingRecord.venue_name || incomingRecord.venue || '').toLowerCase().trim();
-      const canonicalVenueName = (canonical.venue_name || canonical.venue || '').toLowerCase().trim();
-      const isSameVenue = (incomingRecord.venue_id && canonical.venue_id && incomingRecord.venue_id === canonical.venue_id) ||
-                          (incomingVenueName && canonicalVenueName && (incomingVenueName.includes(canonicalVenueName) || canonicalVenueName.includes(incomingVenueName))) ||
-                          (incomingVenue && canonicalVenue && (incomingVenue.includes(canonicalVenue) || canonicalVenue.includes(incomingVenue)));
-      const titleSim = this.calculateTokenSimilarity(incomingNormTitle, canonicalNormTitle);
-
+      // 5. Conflict Detection: Same Title & Venue with Different Dates (Disagreement on date)
       if (isSameVenue && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || titleSim >= 0.75)) {
         if (incomingDate && canonicalDate && incomingDate !== canonicalDate) {
           return {
@@ -143,16 +168,15 @@ class EventDeduplicationService {
         }
       }
 
-      // 4. "Follow the Promoter": Same Title & City Updates (Venue Change or Reschedule)
-      const isSameCity = (incomingRecord.city && canonical.city && 
-                          incomingRecord.city.toLowerCase().trim() === canonical.city.toLowerCase().trim()) ||
-                         (!incomingRecord.city || !canonical.city);
+      // 6. Reschedule & Venue Move Detection: Same Title & Same City
+      const isSameCityOrMetro = (incomingCity && canonicalCity && (incomingCity === canonicalCity || incomingCity.includes(canonicalCity) || canonicalCity.includes(incomingCity))) ||
+                                (!incomingCity || !canonicalCity);
       const isExactTitle = incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase();
       const isHighTitleSim = titleSim >= 0.8;
 
-      if (isSameCity && (isExactTitle || isHighTitleSim)) {
+      if (isSameCityOrMetro && (isExactTitle || isHighTitleSim)) {
         // Same date, different venue in same city -> Venue Move
-        if (incomingDate && canonicalDate && incomingDate === canonicalDate) {
+        if (isSameDate) {
           return {
             isMatch: true,
             confidence: 92,
@@ -161,7 +185,7 @@ class EventDeduplicationService {
           };
         }
 
-        // Same exact event in same city with conflicting date -> Date Conflict / Reschedule
+        // Same exact event title in same city with different date -> Reschedule or Date Discrepancy
         if (isExactTitle && incomingDate && canonicalDate && incomingDate !== canonicalDate) {
           return {
             isMatch: true,
@@ -171,27 +195,53 @@ class EventDeduplicationService {
           };
         }
 
-        // Same organizer/promoter updating date or venue -> Promoter Event Update / Reschedule
-        const isSameOrganizer = (incomingRecord.organizer_name && canonical.organizer_name &&
-                                incomingRecord.organizer_name.toLowerCase() === canonical.organizer_name.toLowerCase());
+        // Same organizer/promoter updating date or venue
+        const isSameOrganizer = incomingRecord.organizer_name && canonical.organizer_name &&
+          incomingRecord.organizer_name.toLowerCase().trim() === canonical.organizer_name.toLowerCase().trim();
         const isSameSource = incomingRecord.source_id && canonical.sources && 
-                             canonical.sources.some(s => s.source_id === incomingRecord.source_id);
+          canonical.sources.some(s => s.source_id === incomingRecord.source_id);
 
-        if (isSameOrganizer || isSameSource || isSameVenue) {
+        if (isSameOrganizer || isSameSource) {
           return {
             isMatch: true,
-            confidence: 90,
-            matchReason: 'PROMOTER_EVENT_UPDATE_RESCHEDULE',
+            confidence: 86,
+            matchReason: 'PROMOTER_EVENT_UPDATE_SAME_CITY',
             canonicalEvent: canonical
           };
         }
+      }
+
+      // 7. Multi-Day Festival Edition Match
+      // e.g. "Pestapora 2026" (3-day) vs "Pestapora 2026 Day 1"
+      if (titleSim >= 0.6 && isSameVenue) {
+        const isMultiDayPass = /day\s*\d|daily\s*pass|3-day|weekend/i.test(incomingRecord.name || '');
+        const isParentFestival = /day\s*\d|daily\s*pass|3-day|weekend/i.test(canonical.canonical_name || '') === false;
+        if (isMultiDayPass && isParentFestival) {
+          return {
+            isMatch: true,
+            confidence: 85,
+            matchReason: 'FESTIVAL_DAILY_EDITION_ATTACHMENT',
+            canonicalEvent: canonical
+          };
+        }
+      }
+
+      // 8. Ambiguous match check (quarantine signal)
+      if (titleSim >= 0.45 && titleSim < 0.75 && isSameDate) {
+        return {
+          isMatch: false,
+          isAmbiguous: true,
+          confidence: Math.round(titleSim * 100),
+          matchReason: `AMBIGUOUS_MATCH_REQUIRES_REVIEW (${Math.round(titleSim * 100)}% token similarity)`,
+          canonicalEvent: canonical
+        };
       }
     }
 
     return {
       isMatch: false,
       confidence: 0,
-      matchReason: 'NO_MATCH',
+      matchReason: 'NO_MATCH_FOUND',
       canonicalEvent: null
     };
   }

@@ -112,6 +112,15 @@ class EventSEOService {
     const metaDesc = `Informasi lengkap ${event.canonical_name} di ${event.venue_name}, ${event.city} tanggal ${event.start_date || event.date}. Cek ketersediaan tiket resmi dan perlindungan transfer tiket resale aman Tikum.`;
     const canonicalUrl = `https://tikum.app/events/${event.slug}`;
 
+    let robotsDirective = 'noindex, follow';
+    if ((event.verification_status === 'VERIFIED' || event.verification_status === 'PRIMARY_SOURCE_VERIFIED') && event.is_verified && event.status !== 'CANCELLED' && event.status !== 'POSTPONED') {
+      robotsDirective = 'index, follow';
+    } else if (event.verification_status === 'REJECTED') {
+      robotsDirective = 'noindex, nofollow';
+    } else {
+      robotsDirective = 'noindex, follow';
+    }
+
     const dateFormatted = event.start_date || event.date || 'TBA';
     const city = event.city || event.venue_city || 'Jakarta';
     const venue = event.venue_name || 'Venue TBA';
@@ -224,6 +233,7 @@ class EventSEOService {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
   <meta name="description" content="${metaDesc}">
+  <meta name="robots" content="${robotsDirective}">
   <link rel="canonical" href="${canonicalUrl}">
   
   <!-- OpenGraph / Facebook -->
@@ -331,6 +341,9 @@ class EventSEOService {
         Tipe Tiket: <strong>${event.admission_protocol?.type || 'BARCODE_PLUS_ID'}</strong>. 
         ${event.admission_protocol?.description || 'Verifikasi tiket digital dan fisik di gate acara bersama Event PIC Tikum.'}
       </p>
+      <div style="font-size: 11px; color: #64748b; margin-top: 6px; border-top: 1px solid #1e293b; padding-top: 6px;">
+        <em>${event.admission_protocol?.verification_disclaimer || 'Verifikasi fisik gerbang memvalidasi kepemilikan dan integritas tiket, namun tidak menggantikan validasi kriptografis langsung dari promotor penerbit tiket.'}</em>
+      </div>
     </section>
 
     <!-- Section 3: Related Events in Same City -->

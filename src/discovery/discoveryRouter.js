@@ -1135,23 +1135,14 @@ router.post('/api/discovery/signals/:id/verify', async (req, res) => {
  * Returns full field-level provenance, observation snapshots, and change history for an event
  */
 router.get('/api/discovery/events/:id/provenance', (req, res) => {
-  const event = canonicalRegistry.getEventById(req.params.id) || canonicalRegistry.getEventBySlug(req.params.id);
-  if (!event) {
+  const provenance = AdminEventControlService.getEventProvenance(req.params.id);
+  if (!provenance) {
     return res.status(404).json({ error: `Event ${req.params.id} not found` });
   }
 
   res.json({
     success: true,
-    event_id: event.event_id,
-    canonical_name: event.canonical_name,
-    verification_status: event.verification_status,
-    verification_confidence: event.verification_confidence,
-    update_priority: event.update_priority,
-    field_provenance: event.field_provenance,
-    observations: event.observations,
-    event_history: event.event_history,
-    conflicts: event.conflicts,
-    sources: event.sources
+    ...provenance
   });
 });
 
@@ -1172,6 +1163,122 @@ router.get('/api/discovery/conflicts', (req, res) => {
       primary_source: (e.sources || []).find(s => s.trust_level === 'TIER_S' || s.source_type === 'PROMOTER_OFFICIAL_SOCIAL')
     }))
   });
+});
+
+/**
+ * GET /api/discovery/admin/intelligence
+ * Comprehensive event intelligence dashboard (Real database state only)
+ */
+router.get('/api/discovery/admin/intelligence', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const dashboard = AdminEventControlService.getControlDashboard();
+    res.json({ success: true, ...dashboard });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/discovery/admin/sources/health
+ * Returns telemetry and circuit-breaker status for all sources
+ */
+router.get('/api/discovery/admin/sources/health', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const allSources = sourceRegistry.getAllSources();
+    res.json({
+      success: true,
+      sources: allSources.map(s => ({
+        source_id: s.source_id,
+        source_name: s.source_name,
+        tier: s.tier,
+        health_status: s.health_status,
+        circuit_breaker: s.circuit_breaker_status,
+        consecutive_failures: s.consecutive_failures,
+        telemetry: s.telemetry
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/admin/events/:id/verify
+ * Officer manually verifies an event with mandatory notes
+ */
+router.post('/api/discovery/admin/events/:id/verify', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const officerId = req.adminUser.id;
+    const notes = req.body?.notes || req.body?.verification_notes || '';
+    const updated = AdminEventControlService.verifyEvent(req.params.id, officerId, notes);
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, event: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/admin/events/:id/reject
+ * Officer manually rejects an event
+ */
+router.post('/api/discovery/admin/events/:id/reject', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const officerId = req.adminUser.id;
+    const reason = req.body?.reason || req.body?.rejection_reason || 'Manually rejected by officer';
+    const updated = AdminEventControlService.rejectEvent(req.params.id, officerId, reason);
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, event: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/admin/events/:id/conflict/resolve
+ * Officer resolves conflicting data fields
+ */
+router.post('/api/discovery/admin/events/:id/conflict/resolve', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const officerId = req.adminUser.id;
+    const chosenFields = req.body?.chosen_fields || req.body;
+    const updated = AdminEventControlService.resolveConflict(req.params.id, officerId, chosenFields);
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, event: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/admin/events/:id/cancel
+ * Cancels an event officially
+ */
+router.post('/api/discovery/admin/events/:id/cancel', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const officerId = req.adminUser.id;
+    const reason = req.body?.reason || 'Official event cancellation';
+    const updated = AdminEventControlService.cancelEvent(req.params.id, officerId, reason);
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, event: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/admin/events/:id/expire
+ * Marks event as EXPIRED for scheduled re-verification
+ */
+router.post('/api/discovery/admin/events/:id/expire', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const officerId = req.adminUser.id;
+    const updated = AdminEventControlService.markExpired(req.params.id, officerId);
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, event: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 module.exports = router;

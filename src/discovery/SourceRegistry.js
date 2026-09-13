@@ -1,11 +1,10 @@
 /**
- * ARGUS Source Registry (Epic: Event Intelligence & Discovery Engine)
+ * TIKUM / ARGUS Source Registry (Epic: Event Supply Intelligence & Verified Ingestion)
  * 
- * Manages event data sources across Indonesia with strict trust hierarchy:
- * TIER S: Official promoter (APMI), venue, artist, league/federation
- * TIER A: Licensed discovery platforms & APIs (Bandsintown, Eventbrite)
- * TIER B: Government tourism / event calendars / verified news
- * TIER C: Secondary marketplaces & community forums (never canonical truth)
+ * Manages event data sources across Indonesia with strict 3-tier trust hierarchy:
+ * TIER 1: Primary & Authoritative (Official Promoters, Venues, Primary Ticketing Partners, Leagues)
+ * TIER 2: Trusted Commercial (Major Ticketing Platforms, Licensed Discovery APIs, Tourism Calendars)
+ * TIER 3: Discovery Signals (Social Channels: Instagram, TikTok, X. Strictly discovery signals — cannot solely verify)
  */
 
 const SOURCE_TYPES = {
@@ -23,6 +22,7 @@ const SOURCE_TYPES = {
   NEWS: 'NEWS',
   PROMOTER_OFFICIAL_SOCIAL: 'PROMOTER_OFFICIAL_SOCIAL',
   SOCIAL_SIGNAL: 'SOCIAL_SIGNAL',
+  COMMUNITY: 'COMMUNITY',
   OTHER: 'OTHER'
 };
 
@@ -41,15 +41,15 @@ const AUTHORITY_SCOPES = {
 };
 
 const TRUST_LEVELS = {
-  TIER_S: 'TIER_S', // Official Promoter (APMI), Venue, Artist, League
-  TIER_1: 'TIER_1', // Backward compatibility for Tier S
-  TIER_A: 'TIER_A', // Licensed Discovery APIs
-  TIER_2: 'TIER_2', // Backward compatibility for ticketing platforms
-  TIER_B: 'TIER_B', // Government / tourism boards / media
-  TIER_3: 'TIER_3', // Backward compatibility
-  TIER_4: 'TIER_4', // Secondary media
-  TIER_C: 'TIER_C', // Secondary resale
-  TIER_5: 'TIER_5'  // User submissions / unverified social
+  TIER_S: 'TIER_S', // Official Promoter (APMI), Venue, Artist, League (Tier 1)
+  TIER_1: 'TIER_1', // Tier 1 Authoritative
+  TIER_A: 'TIER_A', // Licensed Discovery APIs (Tier 2)
+  TIER_2: 'TIER_2', // Commercial Ticketing Platforms (Tier 2)
+  TIER_B: 'TIER_B', // Government / tourism boards / media (Tier 2)
+  TIER_3: 'TIER_3', // Secondary media
+  TIER_4: 'TIER_4', // Secondary listing
+  TIER_C: 'TIER_C', // Resale platforms
+  TIER_5: 'TIER_5'  // User submissions / unverified social (Tier 3)
 };
 
 const PERMISSION_STATUS = {
@@ -72,7 +72,9 @@ const CRAWL_FREQUENCY = {
 const SOURCE_STATUS = {
   ACTIVE: 'ACTIVE',
   DEGRADED: 'DEGRADED',
-  INACTIVE: 'INACTIVE'
+  FAILING: 'FAILING',
+  INACTIVE: 'INACTIVE',
+  CIRCUIT_OPEN: 'CIRCUIT_OPEN'
 };
 
 const ACCESS_METHODS = {
@@ -98,22 +100,25 @@ class SourceRegistry {
 
   _initializeDefaultSources() {
     const defaults = [
-      // APMI Apex Association & Accredited Member Promoters
+      // ==========================================
+      // TIER 1: AUTHORITATIVE PROMOTERS (APMI APEX & MEMBERS)
+      // ==========================================
       {
         source_id: 'src-assoc-apmi',
         source_name: 'APMI (Asosiasi Promotor Musik Indonesia)',
         source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
+        tier: 1,
+        authority_level: 'HIGH',
         base_url: 'https://apmi.co.id',
         country: 'Indonesia',
+        language: 'id',
         coverage: 'NATIONAL',
         category: 'MUSIC',
+        adapter: 'PromoterAdapter',
         access_method: ACCESS_METHODS.FEED,
         permission_status: PERMISSION_STATUS.AUTHORIZED_API,
-        terms_url: 'https://apmi.co.id',
-        robots_url: 'https://apmi.co.id/robots.txt',
-        commercial_use_allowed: true,
-        scraping_allowed: false,
-        attribution_required: true,
+        terms_reference: 'APMI Official Member Association Feed',
+        robots_policy: 'HONOR_ROBOTS_TXT',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
         priority: 1,
@@ -126,12 +131,18 @@ class SourceRegistry {
         source_id: 'src-promoter-boss-creator',
         source_name: 'Boss Creator (Official Promoter / APMI Member)',
         source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
+        tier: 1,
+        authority_level: 'HIGH',
         base_url: 'https://bosscreator.id',
         country: 'Indonesia',
+        language: 'id',
         coverage: 'NATIONAL',
         category: 'MUSIC',
+        adapter: 'PromoterAdapter',
         access_method: ACCESS_METHODS.FEED,
         permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        terms_reference: 'Official Promoter Channel',
+        robots_policy: 'HONOR_ROBOTS_TXT',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
         priority: 1,
@@ -144,12 +155,18 @@ class SourceRegistry {
         source_id: 'src-promoter-antarasuara',
         source_name: 'Antarasuara (Official Promoter / APMI Member)',
         source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
+        tier: 1,
+        authority_level: 'HIGH',
         base_url: 'https://antarasuara.com',
         country: 'Indonesia',
+        language: 'id',
         coverage: 'NATIONAL',
         category: 'MUSIC',
+        adapter: 'PromoterAdapter',
         access_method: ACCESS_METHODS.FEED,
         permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        terms_reference: 'Official Promoter Channel',
+        robots_policy: 'HONOR_ROBOTS_TXT',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
         priority: 1,
@@ -159,15 +176,93 @@ class SourceRegistry {
         notes: 'Sheila on 7 Tunggu Aku Di Tour, Hindia, Kunto Aji concerts'
       },
       {
+        source_id: 'src-org-pk-ent',
+        source_name: 'PK Entertainment (Official Promoter / APMI Member)',
+        source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
+        tier: 1,
+        authority_level: 'HIGH',
+        base_url: 'https://pk-ent.com',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        adapter: 'PromoterAdapter',
+        access_method: ACCESS_METHODS.MANUAL,
+        permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        terms_reference: 'Official Promoter Channel',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        rate_limit: '30 req/min',
+        crawl_frequency: CRAWL_FREQUENCY.DAILY,
+        priority: 1,
+        reliability_score: 1.0,
+        trust_level: TRUST_LEVELS.TIER_1,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official promoter for Coldplay, Ed Sheeran, etc.'
+      },
+      {
+        source_id: 'src-promoter-isb-live',
+        source_name: 'Ismaya Live (Official Promoter / APMI Member)',
+        source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
+        tier: 1,
+        authority_level: 'HIGH',
+        base_url: 'https://ismayalive.com',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        adapter: 'PromoterAdapter',
+        access_method: ACCESS_METHODS.FEED,
+        permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        terms_reference: 'Official Promoter Channel',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        rate_limit: '30 req/min',
+        crawl_frequency: CRAWL_FREQUENCY.DAILY,
+        priority: 1,
+        reliability_score: 1.0,
+        trust_level: TRUST_LEVELS.TIER_1,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'We The Fest, Djakarta Warehouse Project (DWP)'
+      },
+      {
+        source_id: 'src-promoter-sound-rh',
+        source_name: 'Sound Rhythm (Official Promoter / APMI Member)',
+        source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
+        tier: 1,
+        authority_level: 'HIGH',
+        base_url: 'https://soundrhythm.id',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        adapter: 'PromoterAdapter',
+        access_method: ACCESS_METHODS.FEED,
+        permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        terms_reference: 'Official Promoter Channel',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        rate_limit: '30 req/min',
+        crawl_frequency: CRAWL_FREQUENCY.DAILY,
+        priority: 1,
+        reliability_score: 1.0,
+        trust_level: TRUST_LEVELS.TIER_1,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'OneRepublic, Charlie Puth, Kygo Jakarta'
+      },
+      {
         source_id: 'src-promoter-otello-asia',
         source_name: 'Otello Asia (Official Promoter / APMI Member)',
         source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
+        tier: 1,
+        authority_level: 'HIGH',
         base_url: 'https://otelloasia.com',
         country: 'Indonesia',
+        language: 'id',
         coverage: 'NATIONAL',
         category: 'MUSIC',
+        adapter: 'PromoterAdapter',
         access_method: ACCESS_METHODS.FEED,
         permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        terms_reference: 'Official Promoter Channel',
+        robots_policy: 'HONOR_ROBOTS_TXT',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
         priority: 1,
@@ -180,12 +275,18 @@ class SourceRegistry {
         source_id: 'src-promoter-plainsong',
         source_name: 'Plainsong Live (Official Promoter / APMI Member)',
         source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
+        tier: 1,
+        authority_level: 'HIGH',
         base_url: 'https://joylandfest.com',
         country: 'Indonesia',
+        language: 'id',
         coverage: 'BALI_JAKARTA',
         category: 'MUSIC',
+        adapter: 'PromoterAdapter',
         access_method: ACCESS_METHODS.FEED,
         permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        terms_reference: 'Official Promoter Channel',
+        robots_policy: 'HONOR_ROBOTS_TXT',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
         priority: 1,
@@ -198,12 +299,18 @@ class SourceRegistry {
         source_id: 'src-promoter-aloka',
         source_name: 'ALOKA (Official Promoter / APMI Member)',
         source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
+        tier: 1,
+        authority_level: 'HIGH',
         base_url: 'https://aloka.co.id',
         country: 'Indonesia',
+        language: 'id',
         coverage: 'JAKARTA_METRO',
         category: 'MUSIC',
+        adapter: 'PromoterAdapter',
         access_method: ACCESS_METHODS.FEED,
         permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        terms_reference: 'Official Promoter Channel',
+        robots_policy: 'HONOR_ROBOTS_TXT',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
         priority: 1,
@@ -212,274 +319,303 @@ class SourceRegistry {
         active_status: SOURCE_STATUS.ACTIVE,
         notes: 'Asian pop tours, K-Pop fan meetings, and international shows'
       },
+      // ==========================================
+      // TIER 1: VENUES & LEAGUES
+      // ==========================================
       {
-        source_id: 'src-org-pk-ent',
-        source_name: 'PK Entertainment (Official Promoter / APMI Member)',
-        source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
-        base_url: 'https://pk-ent.com',
+        source_id: 'src-venue-gbk',
+        source_name: 'PPK GBK (Official Venue Authority)',
+        source_type: SOURCE_TYPES.OFFICIAL_VENUE,
+        tier: 1,
+        authority_level: 'HIGH',
+        base_url: 'https://gbk.id',
         country: 'Indonesia',
-        coverage: 'NATIONAL',
-        category: 'MUSIC',
-        access_method: ACCESS_METHODS.MANUAL,
+        language: 'id',
+        coverage: 'JAKARTA',
+        category: 'VENUE',
+        adapter: 'VenueAdapter',
+        access_method: ACCESS_METHODS.API,
         permission_status: PERMISSION_STATUS.AUTHORIZED_API,
-        rate_limit: '30 req/min',
-        crawl_frequency: CRAWL_FREQUENCY.DAILY,
-        priority: 1,
-        reliability_score: 1.0,
+        terms_reference: 'Venue Authority Public Calendar',
+        robots_policy: 'HONOR_ROBOTS_TXT',
         trust_level: TRUST_LEVELS.TIER_1,
         active_status: SOURCE_STATUS.ACTIVE,
-        notes: 'Official promoter for Coldplay, Ed Sheeran, etc.'
+        notes: 'Official management body for Gelora Bung Karno sports complex'
       },
       {
-        source_id: 'src-promoter-sound-rh',
-        source_name: 'Sound Rhythm (Official Promoter / APMI Member)',
-        source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
-        base_url: 'https://soundrhythm.id',
+        source_id: 'src-league-ibl',
+        source_name: 'IBL Indonesia (Official League)',
+        source_type: SOURCE_TYPES.SPORTS_ORGANIZATION,
+        tier: 1,
+        authority_level: 'HIGH',
+        base_url: 'https://iblindonesia.com',
         country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'SPORTS',
+        adapter: 'VenueAdapter',
+        access_method: ACCESS_METHODS.API,
+        permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        terms_reference: 'Official League Sports Calendar',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        trust_level: TRUST_LEVELS.TIER_1,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'National basketball league governing body'
+      },
+      {
+        source_id: 'src-argus-verified-seed',
+        source_name: 'ARGUS Curated Seed Verification',
+        source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
+        tier: 1,
+        authority_level: 'HIGH',
+        base_url: 'https://tikum.app',
+        country: 'Indonesia',
+        language: 'id',
         coverage: 'NATIONAL',
         category: 'MUSIC',
+        adapter: 'PromoterAdapter',
         access_method: ACCESS_METHODS.FEED,
         permission_status: PERMISSION_STATUS.AUTHORIZED_API,
-        rate_limit: '30 req/min',
-        crawl_frequency: CRAWL_FREQUENCY.DAILY,
-        priority: 1,
-        reliability_score: 1.0,
+        terms_reference: 'Internal Verified Institutional Seed Database',
+        robots_policy: 'INTERNAL',
         trust_level: TRUST_LEVELS.TIER_1,
         active_status: SOURCE_STATUS.ACTIVE,
-        notes: 'OneRepublic, Charlie Puth, Kygo Jakarta'
+        notes: 'Curated ground truth seed events'
       },
-      {
-        source_id: 'src-promoter-isb-live',
-        source_name: 'Ismaya Live (Official Promoter / APMI Member)',
-        source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
-        base_url: 'https://ismayalive.com',
-        country: 'Indonesia',
-        coverage: 'NATIONAL',
-        category: 'MUSIC',
-        access_method: ACCESS_METHODS.FEED,
-        permission_status: PERMISSION_STATUS.AUTHORIZED_API,
-        rate_limit: '30 req/min',
-        crawl_frequency: CRAWL_FREQUENCY.DAILY,
-        priority: 1,
-        reliability_score: 1.0,
-        trust_level: TRUST_LEVELS.TIER_1,
-        active_status: SOURCE_STATUS.ACTIVE,
-        notes: 'We The Fest, Djakarta Warehouse Project (DWP)'
-      },
-      // Ticketing Platforms
-      // TIER S: Verified Official Promoter Instagram Sources ("Follow the Promoter")
-      {
-        source_id: 'src-promoter-antarasuara-instagram',
-        source_name: 'Antarasuara (Official Instagram)',
-        source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
-        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
-        authority_scope: AUTHORITY_SCOPES.EVENT,
-        authority_level: TRUST_LEVELS.TIER_S,
-        trust_level: TRUST_LEVELS.TIER_S,
-        base_url: 'https://www.instagram.com/antara.suara/',
-        account_handle: '@antara.suara',
-        country: 'Indonesia',
-        coverage: 'NATIONAL',
-        category: 'MUSIC',
-        access_method: ACCESS_METHODS.MANUAL_REVIEW,
-        permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
-        commercial_use_allowed: true,
-        scraping_allowed: false,
-        attribution_required: true,
-        priority: 1,
-        reliability_score: 1.0,
-        active_status: SOURCE_STATUS.ACTIVE,
-        account_verified_at: '2026-09-01T00:00:00Z',
-        notes: 'Verified Official Promoter Instagram for Antarasuara (APMI Member)'
-      },
-      {
-        source_id: 'src-promoter-bosscreator-instagram',
-        source_name: 'Boss Creator (Official Instagram)',
-        source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
-        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
-        authority_scope: AUTHORITY_SCOPES.EVENT,
-        authority_level: TRUST_LEVELS.TIER_S,
-        trust_level: TRUST_LEVELS.TIER_S,
-        base_url: 'https://www.instagram.com/boss.creator/',
-        account_handle: '@boss.creator',
-        country: 'Indonesia',
-        coverage: 'NATIONAL',
-        category: 'MUSIC',
-        access_method: ACCESS_METHODS.MANUAL_REVIEW,
-        permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
-        commercial_use_allowed: true,
-        scraping_allowed: false,
-        attribution_required: true,
-        priority: 1,
-        reliability_score: 1.0,
-        active_status: SOURCE_STATUS.ACTIVE,
-        account_verified_at: '2026-09-01T00:00:00Z',
-        notes: 'Verified Official Promoter Instagram for Boss Creator (APMI Member)'
-      },
-      {
-        source_id: 'src-promoter-otello-asia-instagram',
-        source_name: 'Otello Asia (Official Instagram)',
-        source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
-        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
-        authority_scope: AUTHORITY_SCOPES.EVENT,
-        authority_level: TRUST_LEVELS.TIER_S,
-        trust_level: TRUST_LEVELS.TIER_S,
-        base_url: 'https://www.instagram.com/otelloasia/',
-        account_handle: '@otelloasia',
-        country: 'Indonesia',
-        coverage: 'NATIONAL',
-        category: 'MUSIC',
-        access_method: ACCESS_METHODS.MANUAL_REVIEW,
-        permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
-        commercial_use_allowed: true,
-        scraping_allowed: false,
-        attribution_required: true,
-        priority: 1,
-        reliability_score: 1.0,
-        active_status: SOURCE_STATUS.ACTIVE,
-        account_verified_at: '2026-09-01T00:00:00Z',
-        notes: 'Verified Official Promoter Instagram for Otello Asia (APMI Member)'
-      },
-      {
-        source_id: 'src-promoter-plainsong-instagram',
-        source_name: 'Plainsong Live (Official Instagram)',
-        source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
-        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
-        authority_scope: AUTHORITY_SCOPES.EVENT,
-        authority_level: TRUST_LEVELS.TIER_S,
-        trust_level: TRUST_LEVELS.TIER_S,
-        base_url: 'https://www.instagram.com/joylandfest/',
-        account_handle: '@joylandfest',
-        country: 'Indonesia',
-        coverage: 'BALI_JAKARTA',
-        category: 'MUSIC',
-        access_method: ACCESS_METHODS.MANUAL_REVIEW,
-        permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
-        commercial_use_allowed: true,
-        scraping_allowed: false,
-        attribution_required: true,
-        priority: 1,
-        reliability_score: 1.0,
-        active_status: SOURCE_STATUS.ACTIVE,
-        account_verified_at: '2026-09-01T00:00:00Z',
-        notes: 'Verified Official Promoter Instagram for Plainsong Live / Joyland (APMI Member)'
-      },
+      // ==========================================
+      // TIER 2: TRUSTED COMMERCIAL & TICKETING PLATFORMS
+      // ==========================================
       {
         source_id: 'src-tiket-com',
         source_name: 'tiket.com',
         source_type: SOURCE_TYPES.OFFICIAL_TICKETING_PLATFORM,
+        tier: 2,
+        authority_level: 'MEDIUM',
         base_url: 'https://www.tiket.com/to-do',
         country: 'Indonesia',
+        language: 'id',
         coverage: 'NATIONAL',
         category: 'MUSIC',
+        adapter: 'TiketComAdapter',
         access_method: ACCESS_METHODS.FEED,
         permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
         trust_level: TRUST_LEVELS.TIER_2,
         active_status: SOURCE_STATUS.ACTIVE,
         terms_reference: 'Partner API ToS / Structured Public Catalog',
+        robots_policy: 'HONOR_ROBOTS_TXT',
         notes: 'Major OTA & primary ticketing partner for large concerts & attractions'
       },
       {
         source_id: 'src-loket',
         source_name: 'LOKET',
         source_type: SOURCE_TYPES.OFFICIAL_TICKETING_PLATFORM,
+        tier: 2,
+        authority_level: 'MEDIUM',
         base_url: 'https://www.loket.com',
         country: 'Indonesia',
+        language: 'id',
         coverage: 'NATIONAL',
         category: 'MUSIC',
+        adapter: 'LoketAdapter',
         access_method: ACCESS_METHODS.FEED,
         permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
         trust_level: TRUST_LEVELS.TIER_2,
         active_status: SOURCE_STATUS.ACTIVE,
         terms_reference: 'Public Structured Event Feed',
+        robots_policy: 'HONOR_ROBOTS_TXT',
         notes: 'Major primary ticketing platform for festivals and indie gigs'
       },
       {
         source_id: 'src-goers',
         source_name: 'GOERS',
         source_type: SOURCE_TYPES.OFFICIAL_TICKETING_PLATFORM,
+        tier: 2,
+        authority_level: 'MEDIUM',
         base_url: 'https://goersapp.com',
         country: 'Indonesia',
+        language: 'id',
         coverage: 'NATIONAL',
         category: 'MUSIC',
+        adapter: 'GoersAdapter',
         access_method: ACCESS_METHODS.FEED,
         permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
         trust_level: TRUST_LEVELS.TIER_2,
         active_status: SOURCE_STATUS.ACTIVE,
+        terms_reference: 'Public Structured Event Feed',
+        robots_policy: 'HONOR_ROBOTS_TXT',
         notes: 'Key ticketing platform for nightlife, lifestyle, and regional events'
       },
-      {
-        source_id: 'src-ticket2u',
-        source_name: 'Ticket2U',
-        source_type: SOURCE_TYPES.OFFICIAL_TICKETING_PLATFORM,
-        base_url: 'https://www.ticket2u.id',
-        country: 'Indonesia',
-        coverage: 'NATIONAL',
-        category: 'MUSIC',
-        access_method: ACCESS_METHODS.FEED,
-        permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
-        trust_level: TRUST_LEVELS.TIER_2,
-        active_status: SOURCE_STATUS.ACTIVE,
-        notes: 'Regional and international concert ticketing partner'
-      },
-      // Sports Leagues & Venues
-      {
-        source_id: 'src-league-ibl',
-        source_name: 'IBL Indonesia (Official League)',
-        source_type: SOURCE_TYPES.SPORTS_ORGANIZATION,
-        base_url: 'https://iblindonesia.com',
-        country: 'Indonesia',
-        coverage: 'NATIONAL',
-        category: 'SPORTS',
-        access_method: ACCESS_METHODS.API,
-        permission_status: PERMISSION_STATUS.AUTHORIZED_API,
-        trust_level: TRUST_LEVELS.TIER_1,
-        active_status: SOURCE_STATUS.ACTIVE,
-        notes: 'National basketball league governing body'
-      },
-      {
-        source_id: 'src-venue-gbk',
-        source_name: 'PPK GBK (Official Venue Authority)',
-        source_type: SOURCE_TYPES.OFFICIAL_VENUE,
-        base_url: 'https://gbk.id',
-        country: 'Indonesia',
-        coverage: 'JAKARTA',
-        category: 'VENUE',
-        access_method: ACCESS_METHODS.API,
-        permission_status: PERMISSION_STATUS.AUTHORIZED_API,
-        trust_level: TRUST_LEVELS.TIER_1,
-        active_status: SOURCE_STATUS.ACTIVE,
-        notes: 'Official management body for Gelora Bung Karno sports complex'
-      },
-      // Discovery APIs
       {
         source_id: 'src-disc-bandsintown',
         source_name: 'Bandsintown API',
         source_type: SOURCE_TYPES.EVENT_DISCOVERY_API,
+        tier: 2,
+        authority_level: 'MEDIUM',
         base_url: 'https://bandsintown.com',
         country: 'Indonesia',
+        language: 'en',
         coverage: 'NATIONAL',
         category: 'MUSIC',
+        adapter: 'EventSourceAdapter',
         access_method: ACCESS_METHODS.AUTHORIZED_API,
         permission_status: PERMISSION_STATUS.LICENSED_DATA,
         trust_level: TRUST_LEVELS.TIER_A,
         active_status: SOURCE_STATUS.ACTIVE,
+        terms_reference: 'Developer API License',
+        robots_policy: 'API_DIRECT',
         notes: 'Licensed tour discovery database'
       },
-      // Community
+      {
+        source_id: 'src-ticketmaster',
+        source_name: 'Ticketmaster API',
+        source_type: SOURCE_TYPES.TICKETING_PLATFORM,
+        tier: 2,
+        authority_level: 'MEDIUM',
+        base_url: 'https://app.ticketmaster.com',
+        country: 'Global',
+        language: 'en',
+        coverage: 'INTERNATIONAL',
+        category: 'MUSIC',
+        adapter: 'TicketmasterAdapter',
+        access_method: ACCESS_METHODS.AUTHORIZED_API,
+        permission_status: PERMISSION_STATUS.NOT_ALLOWED, // default until API key provided
+        trust_level: TRUST_LEVELS.TIER_2,
+        active_status: SOURCE_STATUS.INACTIVE,
+        terms_reference: 'Ticketmaster Developer Terms',
+        robots_policy: 'API_DIRECT',
+        notes: 'Requires developer API key before live activation'
+      },
+      {
+        source_id: 'src-livenation',
+        source_name: 'Live Nation Global Tours',
+        source_type: SOURCE_TYPES.OFFICIAL_ORGANIZER,
+        tier: 1,
+        authority_level: 'HIGH',
+        base_url: 'https://livenation.asia',
+        country: 'International',
+        language: 'en',
+        coverage: 'INTERNATIONAL',
+        category: 'MUSIC',
+        adapter: 'LiveNationAdapter',
+        access_method: ACCESS_METHODS.MANUAL_REVIEW,
+        permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
+        trust_level: TRUST_LEVELS.TIER_1,
+        active_status: SOURCE_STATUS.ACTIVE,
+        terms_reference: 'Manual Review / Public Press Releases',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        notes: 'International tour promoter public announcements'
+      },
+      // ==========================================
+      // TIER 3: DISCOVERY SIGNALS (SOCIAL CHANNELS)
+      // Strictly Discovery Signals — Cannot solely verify!
+      // ==========================================
+      {
+        source_id: 'src-promoter-antarasuara-instagram',
+        source_name: 'Antarasuara (Official Instagram)',
+        source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
+        tier: 3,
+        authority_level: 'LOW',
+        source_role: SOURCE_ROLES.DISCOVERY_SIGNAL,
+        base_url: 'https://www.instagram.com/antara.suara/',
+        account_handle: '@antara.suara',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        adapter: 'SocialDiscoveryAdapter',
+        access_method: ACCESS_METHODS.MANUAL_REVIEW,
+        permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
+        trust_level: TRUST_LEVELS.TIER_S, // promoter identity is verified, but channel is Tier 3 discovery signal
+        active_status: SOURCE_STATUS.ACTIVE,
+        terms_reference: 'Social Discovery Policy (Signal Only)',
+        robots_policy: 'API_OR_MANUAL_REVIEW',
+        notes: 'Verified Official Promoter Instagram for Antarasuara (Discovery Signal Only)'
+      },
+      {
+        source_id: 'src-promoter-bosscreator-instagram',
+        source_name: 'Boss Creator (Official Instagram)',
+        source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
+        tier: 3,
+        authority_level: 'LOW',
+        source_role: SOURCE_ROLES.DISCOVERY_SIGNAL,
+        base_url: 'https://www.instagram.com/boss.creator/',
+        account_handle: '@boss.creator',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        adapter: 'SocialDiscoveryAdapter',
+        access_method: ACCESS_METHODS.MANUAL_REVIEW,
+        permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        terms_reference: 'Social Discovery Policy (Signal Only)',
+        robots_policy: 'API_OR_MANUAL_REVIEW',
+        notes: 'Verified Official Promoter Instagram for Boss Creator (Discovery Signal Only)'
+      },
+      {
+        source_id: 'src-promoter-otello-asia-instagram',
+        source_name: 'Otello Asia (Official Instagram)',
+        source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
+        tier: 3,
+        authority_level: 'LOW',
+        source_role: SOURCE_ROLES.DISCOVERY_SIGNAL,
+        base_url: 'https://www.instagram.com/otelloasia/',
+        account_handle: '@otelloasia',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        adapter: 'SocialDiscoveryAdapter',
+        access_method: ACCESS_METHODS.MANUAL_REVIEW,
+        permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        terms_reference: 'Social Discovery Policy (Signal Only)',
+        robots_policy: 'API_OR_MANUAL_REVIEW',
+        notes: 'Verified Official Promoter Instagram for Otello Asia (Discovery Signal Only)'
+      },
+      {
+        source_id: 'src-promoter-plainsong-instagram',
+        source_name: 'Plainsong Live (Official Instagram)',
+        source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
+        tier: 3,
+        authority_level: 'LOW',
+        source_role: SOURCE_ROLES.DISCOVERY_SIGNAL,
+        base_url: 'https://www.instagram.com/joylandfest/',
+        account_handle: '@joylandfest',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'BALI_JAKARTA',
+        category: 'MUSIC',
+        adapter: 'SocialDiscoveryAdapter',
+        access_method: ACCESS_METHODS.MANUAL_REVIEW,
+        permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        terms_reference: 'Social Discovery Policy (Signal Only)',
+        robots_policy: 'API_OR_MANUAL_REVIEW',
+        notes: 'Verified Official Promoter Instagram for Plainsong Live (Discovery Signal Only)'
+      },
       {
         source_id: 'src-argus-community',
         source_name: 'ARGUS Community Submission',
-        source_type: SOURCE_TYPES.OTHER,
-        base_url: 'https://argus.id',
+        source_type: SOURCE_TYPES.COMMUNITY,
+        tier: 3,
+        authority_level: 'LOW',
+        base_url: 'https://tikum.app',
         country: 'Indonesia',
+        language: 'id',
         coverage: 'NATIONAL',
-        category: 'OTHER',
+        category: 'COMMUNITY',
+        adapter: 'EventSourceAdapter',
         access_method: ACCESS_METHODS.SUBMISSION,
         permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
         trust_level: TRUST_LEVELS.TIER_5,
         active_status: SOURCE_STATUS.ACTIVE,
-        notes: 'Direct crowd submissions requiring operator/evidence verification'
+        terms_reference: 'Community Submission Policy',
+        robots_policy: 'INTERNAL',
+        notes: 'Crowdsourced event submissions requiring operator evidence check'
       }
     ];
 
@@ -489,42 +625,90 @@ class SourceRegistry {
   }
 
   registerSource(sourceData) {
-    if (!sourceData.source_id || !sourceData.source_name) {
+    const id = sourceData.source_id;
+    const name = sourceData.source_name || sourceData.name;
+    if (!id || !name) {
       throw new Error('Source must have source_id and source_name');
     }
 
+    // Determine tier (1, 2, or 3)
+    let tier = sourceData.tier;
+    if (!tier) {
+      if (sourceData.trust_level === TRUST_LEVELS.TIER_S || sourceData.trust_level === TRUST_LEVELS.TIER_1) {
+        tier = 1;
+      } else if (sourceData.trust_level === TRUST_LEVELS.TIER_A || sourceData.trust_level === TRUST_LEVELS.TIER_2 || sourceData.trust_level === TRUST_LEVELS.TIER_B) {
+        tier = 2;
+      } else {
+        tier = 3;
+      }
+    }
+
+    let authority = sourceData.authority_level;
+    if (!authority) {
+      authority = tier === 1 ? 'HIGH' : (tier === 2 ? 'MEDIUM' : 'LOW');
+    }
+
     const source = {
-      source_id: sourceData.source_id,
-      source_name: sourceData.source_name,
-      source_type: sourceData.source_type || SOURCE_TYPES.OTHER,
+      source_id: id,
+      source_name: name,
+      name: name, // compatibility
+      source_type: sourceData.source_type || sourceData.type || SOURCE_TYPES.OTHER,
+      type: sourceData.source_type || sourceData.type || SOURCE_TYPES.OTHER, // compatibility
+      tier: tier,
+      authority_level: authority,
+      source_role: sourceData.source_role || (tier === 1 ? SOURCE_ROLES.PRIMARY_EVENT_SOURCE : (tier === 2 ? SOURCE_ROLES.CORROBORATING_SOURCE : SOURCE_ROLES.DISCOVERY_SIGNAL)),
+      authority_scope: sourceData.authority_scope || AUTHORITY_SCOPES.EVENT,
       base_url: sourceData.base_url || '',
       country: sourceData.country || 'Indonesia',
+      language: sourceData.language || 'id',
       coverage: sourceData.coverage || 'NATIONAL',
       category: sourceData.category || 'MUSIC',
+      adapter: sourceData.adapter || 'EventSourceAdapter',
       access_method: sourceData.access_method || ACCESS_METHODS.MANUAL,
       permission_status: sourceData.permission_status || PERMISSION_STATUS.MANUAL_REVIEW,
+      terms_reference: sourceData.terms_reference || 'Compliant Access Protocol',
+      robots_policy: sourceData.robots_policy || 'HONOR_ROBOTS_TXT',
       terms_url: sourceData.terms_url || null,
       robots_url: sourceData.robots_url || null,
       api_url: sourceData.api_url || null,
-      commercial_use_allowed: sourceData.commercial_use_allowed !== false,
-      scraping_allowed: sourceData.scraping_allowed === true,
-      attribution_required: sourceData.attribution_required !== false,
+      account_handle: sourceData.account_handle || null,
       rate_limit: sourceData.rate_limit || '30 req/min',
       crawl_frequency: sourceData.crawl_frequency || CRAWL_FREQUENCY.DAILY,
       priority: sourceData.priority || 1,
-      reliability_score: sourceData.reliability_score || 0.9,
-      enabled: sourceData.enabled !== false,
-      trust_level: sourceData.trust_level || TRUST_LEVELS.TIER_5,
-      active_status: sourceData.active_status || SOURCE_STATUS.ACTIVE,
-      circuit_breaker_status: 'CLOSED',
-      consecutive_failures: 0,
+      reliability_score: sourceData.reliability_score || (tier === 1 ? 1.0 : (tier === 2 ? 0.8 : 0.5)),
+      enabled: sourceData.enabled !== false && sourceData.active !== false,
+      active: sourceData.enabled !== false && sourceData.active !== false, // compatibility
+      trust_level: sourceData.trust_level || (tier === 1 ? TRUST_LEVELS.TIER_1 : (tier === 2 ? TRUST_LEVELS.TIER_2 : TRUST_LEVELS.TIER_5)),
+      active_status: sourceData.active_status || sourceData.health_status || SOURCE_STATUS.ACTIVE,
+      health_status: sourceData.active_status || sourceData.health_status || SOURCE_STATUS.ACTIVE,
+      
+      // Circuit breaker
+      circuit_breaker_status: sourceData.circuit_breaker_status || 'CLOSED',
+      consecutive_failures: sourceData.consecutive_failures || 0,
+      cooldown_until: null,
+      
+      // Real database telemetry (Zero mock metrics)
+      telemetry: {
+        successful_fetches: 0,
+        failed_fetches: 0,
+        parse_failures: 0,
+        schema_failures: 0,
+        rate_limit_events: 0,
+        last_success: sourceData.last_successful_sync || null,
+        last_failure: sourceData.last_failed_sync || null,
+        average_latency_ms: 0,
+        events_discovered: 0,
+        events_changed: 0,
+        events_rejected: 0,
+        source_freshness: sourceData.last_successful_sync || null
+      },
+
       last_successful_sync: sourceData.last_successful_sync || null,
       last_failed_sync: sourceData.last_failed_sync || null,
       last_successful_fetch: sourceData.last_successful_fetch || null,
       last_attempted_fetch: sourceData.last_attempted_fetch || null,
-      terms_reference: sourceData.terms_reference || 'Compliant Access Protocol',
       notes: sourceData.notes || '',
-      created_at: new Date().toISOString()
+      created_at: sourceData.created_at || new Date().toISOString()
     };
 
     this.sources.set(source.source_id, source);
@@ -539,44 +723,95 @@ class SourceRegistry {
     return Array.from(this.sources.values());
   }
 
+  getSourcesByTier(tier) {
+    return this.getAllSources().filter(s => s.tier === tier);
+  }
+
   isSourcePermittedForIngestion(sourceId) {
     const src = this.getSource(sourceId);
     if (!src || !src.enabled) return false;
-    if (src.circuit_breaker_status === 'OPEN') return false;
+    if (src.circuit_breaker_status === 'OPEN') {
+      if (src.cooldown_until && Date.now() > new Date(src.cooldown_until).getTime()) {
+        src.circuit_breaker_status = 'HALF_OPEN';
+        return true;
+      }
+      return false;
+    }
     if (src.permission_status === PERMISSION_STATUS.NOT_ALLOWED || src.permission_status === PERMISSION_STATUS.UNKNOWN) {
       return false;
     }
     return true;
   }
 
-  updateHealth(sourceId, status, { success = false } = {}) {
+  updateHealth(sourceId, status, { success = false, latencyMs = 0, isParseFailure = false, isSchemaFailure = false, isRateLimited = false } = {}) {
     const src = this.sources.get(sourceId);
     if (!src) return null;
 
     const now = new Date().toISOString();
     src.last_attempted_fetch = now;
+
     if (success) {
+      src.telemetry.successful_fetches++;
+      src.telemetry.last_success = now;
+      src.telemetry.source_freshness = now;
       src.last_successful_fetch = now;
       src.last_successful_sync = now;
       src.active_status = SOURCE_STATUS.ACTIVE;
+      src.health_status = SOURCE_STATUS.ACTIVE;
       src.consecutive_failures = 0;
       src.circuit_breaker_status = 'CLOSED';
+      src.cooldown_until = null;
     } else {
+      src.telemetry.failed_fetches++;
+      src.telemetry.last_failure = now;
       src.last_failed_sync = now;
       src.consecutive_failures = (src.consecutive_failures || 0) + 1;
+
+      if (isParseFailure) src.telemetry.parse_failures++;
+      if (isSchemaFailure) src.telemetry.schema_failures++;
+      if (isRateLimited) src.telemetry.rate_limit_events++;
+
       if (src.consecutive_failures >= 3) {
         src.circuit_breaker_status = 'OPEN';
-        src.active_status = SOURCE_STATUS.DEGRADED;
+        src.active_status = SOURCE_STATUS.CIRCUIT_OPEN;
+        src.health_status = SOURCE_STATUS.CIRCUIT_OPEN;
+        src.cooldown_until = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 min cooldown
       } else if (status) {
         src.active_status = status;
+        src.health_status = status;
+      } else {
+        src.active_status = SOURCE_STATUS.DEGRADED;
+        src.health_status = SOURCE_STATUS.DEGRADED;
       }
     }
+
+    if (latencyMs > 0) {
+      const prevAvg = src.telemetry.average_latency_ms || latencyMs;
+      src.telemetry.average_latency_ms = Math.round((prevAvg + latencyMs) / 2);
+    }
+
     return src;
   }
 
-  /**
-   * Registers a verified official promoter Instagram social source as Tier S Primary Event Source.
-   */
+  recordEventMetrics(sourceId, { discovered = 0, changed = 0, rejected = 0 } = {}) {
+    const src = this.sources.get(sourceId);
+    if (!src) return;
+    if (discovered) src.telemetry.events_discovered += discovered;
+    if (changed) src.telemetry.events_changed += changed;
+    if (rejected) src.telemetry.events_rejected += rejected;
+  }
+
+  resetCircuitBreaker(sourceId) {
+    const src = this.sources.get(sourceId);
+    if (!src) return null;
+    src.circuit_breaker_status = 'CLOSED';
+    src.consecutive_failures = 0;
+    src.cooldown_until = null;
+    src.active_status = SOURCE_STATUS.ACTIVE;
+    src.health_status = SOURCE_STATUS.ACTIVE;
+    return src;
+  }
+
   registerVerifiedPromoterSocial(promoterId, promoterName, handle, profileUrl) {
     const cleanId = (promoterId || '').replace(/^prm-/, '').replace(/[^a-z0-9_-]/gi, '-').toLowerCase();
     const sourceId = `src-promoter-${cleanId}-instagram`;
@@ -584,15 +819,18 @@ class SourceRegistry {
       source_id: sourceId,
       source_name: `${promoterName} (Official Instagram)`,
       source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
+      tier: 1, // Official promoter verified account is Tier 1 authority
+      authority_level: 'HIGH',
       source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
       authority_scope: AUTHORITY_SCOPES.EVENT,
-      authority_level: TRUST_LEVELS.TIER_S,
       trust_level: TRUST_LEVELS.TIER_S,
       base_url: profileUrl || `https://www.instagram.com/${(handle || '').replace('@', '')}/`,
       account_handle: handle,
       country: 'Indonesia',
+      language: 'id',
       coverage: 'NATIONAL',
       category: 'MUSIC',
+      adapter: 'SocialDiscoveryAdapter',
       access_method: ACCESS_METHODS.MANUAL_REVIEW,
       permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
       commercial_use_allowed: true,
@@ -601,10 +839,20 @@ class SourceRegistry {
       priority: 1,
       reliability_score: 1.0,
       active_status: SOURCE_STATUS.ACTIVE,
+      health_status: SOURCE_STATUS.ACTIVE,
       account_verified_at: new Date().toISOString(),
-      notes: `Verified Official Promoter Instagram for ${promoterName}`
+      notes: `Verified Official Promoter Instagram for ${promoterName} (Tier S Primary Source)`
     };
-    this.sources.set(sourceId, record);
+
+    this.registerSource(record);
+
+    // Register alias without hyphens if applicable (e.g., antara-suara vs antarasuara)
+    const noHyphens = cleanId.replace(/-/g, '');
+    if (noHyphens !== cleanId) {
+      const aliasId = `src-promoter-${noHyphens}-instagram`;
+      this.sources.set(aliasId, { ...record, source_id: aliasId });
+    }
+
     return record;
   }
 
@@ -614,7 +862,6 @@ class SourceRegistry {
   }
 }
 
-// Singleton instance
 const sourceRegistryInstance = new SourceRegistry();
 
 module.exports = {

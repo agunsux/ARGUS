@@ -125,11 +125,16 @@ Sitemap: ${origin}/sitemap.xml
       });
     }
 
-    // 3. Dynamic Canonical Events
+    // 3. Dynamic Canonical Events (P0 Gate: Only fully VERIFIED events enter sitemap)
     try {
       const events = canonicalRegistry.getAllEvents();
       for (const ev of events) {
-        if (ev.status !== 'CANCELLED' && ev.slug) {
+        const isEligible = (ev.verification_status === 'VERIFIED' || ev.verification_status === 'PRIMARY_SOURCE_VERIFIED') &&
+                           ev.is_verified === true &&
+                           ev.status !== 'CANCELLED' &&
+                           ev.status !== 'POSTPONED' &&
+                           ev.slug;
+        if (isEligible) {
           urls.push({
             loc: `${origin}/events/${ev.slug}`,
             lastmod: ev.updated_at ? ev.updated_at.substring(0, 10) : nowIso,

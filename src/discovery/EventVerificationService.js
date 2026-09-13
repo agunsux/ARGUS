@@ -1,31 +1,43 @@
 /**
- * ARGUS Event Verification Service
+ * TIKUM / ARGUS Event Verification Service
  * 
- * Evidence-Based Verification Engine:
- * - Computes Confidence Score (0 - 100)
- * - Assigns Verification Status (DISCOVERED, PENDING_REVIEW, VERIFIED, STALE, CANCELLED, BLOCKED, DATA_CONFLICT)
- * - Detects source conflicts (e.g., date mismatch) and marks DATA_CONFLICT
- * - Detects stale events past freshness window
+ * Strict Fail-Closed Evidence-Based Verification Engine:
+ * - Computes Confidence Score (0 - 98%, never claims 100% certainty)
+ * - Assigns Verification Status:
+ *   UNVERIFIED, PARTIALLY_VERIFIED, VERIFIED, CONFLICTED, CHANGED, CANCELLED, POSTPONED, EXPIRED, LEGAL_REVIEW_REQUIRED, REJECTED
+ * - Enforces Tier 3 Gating: Social channels can DISCOVER, but CANNOT SOLELY VERIFY
+ * - Enforces Conflict Detection: Source disagreements trigger CONFLICTED status and block indexation
+ * - Enforces Temporal Freshness & Expiration (expires_at)
  */
 
-const { TRUST_LEVELS } = require('./SourceRegistry');
+const { TRUST_LEVELS, sourceRegistry } = require('./SourceRegistry');
 
 const VERIFICATION_STATUS = {
-  DISCOVERED: 'DISCOVERED',
-  PENDING_REVIEW: 'PENDING_REVIEW',
+  UNVERIFIED: 'UNVERIFIED',
+  DISCOVERED: 'UNVERIFIED', // backward compatibility alias
+  PARTIALLY_VERIFIED: 'PARTIALLY_VERIFIED',
+  PENDING_REVIEW: 'PARTIALLY_VERIFIED', // backward compatibility alias
   PRIMARY_SOURCE_VERIFIED: 'PRIMARY_SOURCE_VERIFIED',
   VERIFIED: 'VERIFIED',
-  STALE: 'STALE',
+  CONFLICTED: 'CONFLICTED',
+  DATA_CONFLICT: 'CONFLICTED', // backward compatibility alias
+  CHANGED: 'CHANGED',
+  POSTPONED: 'POSTPONED',
   CANCELLED: 'CANCELLED',
-  BLOCKED: 'BLOCKED',
-  DATA_CONFLICT: 'DATA_CONFLICT'
+  EXPIRED: 'EXPIRED',
+  STALE: 'EXPIRED', // backward compatibility alias
+  LEGAL_REVIEW_REQUIRED: 'LEGAL_REVIEW_REQUIRED',
+  REJECTED: 'REJECTED',
+  BLOCKED: 'REJECTED', // backward compatibility alias
+  UNKNOWN: 'UNKNOWN'
 };
 
-const FRESHNESS_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
+const FRESHNESS_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 days default maximum TTL
 
 class EventVerificationService {
   /**
    * Computes evidence-based confidence score and status.
+   * STRICT FAIL CLOSED: Without Tier 1 evidence, events remain UNVERIFIED.
    * @param {object} canonicalEvent
    * @param {Array} sourceRecords
    * @returns {object} { verification_status, verification_confidence, conflicts, flags }
@@ -37,60 +49,85 @@ class EventVerificationService {
 
     if (!sourceRecords || sourceRecords.length === 0) {
       return {
-        verification_status: VERIFICATION_STATUS.DISCOVERED,
-        verification_confidence: 20,
+        verification_status: VERIFICATION_STATUS.UNVERIFIED,
+        verification_confidence: 10,
         conflicts: [],
-        flags: ['NO_SOURCES_RECORDED']
+        flags: ['NO_SOURCES_RECORDED', 'FAIL_CLOSED_UNVERIFIED']
       };
     }
 
-    const hasTierS = sourceRecords.some(s => 
-      s.trust_level === TRUST_LEVELS.TIER_S || 
-      s.source_type === 'PROMOTER_OFFICIAL_SOCIAL' || 
-      s.source_role === 'PRIMARY_EVENT_SOURCE'
-    );
+    // 1. Check Source Authority Tiers
+    let hasTier1 = false;
+    let hasTier2 = false;
+    let onlyTier3 = true;
 
-    // 1. Conflict Detection between independent sources
-    const dates = new Set();
-    const venues = new Set();
+    for (const s of sourceRecords) {
+      const srcMeta = sourceRegistry.getSource(s.source_id) || {};
+      const tier = s.tier || srcMeta.tier || 2;
+      const isTier1 = tier === 1 || s.trust_level === TRUST_LEVELS.TIER_S || s.trust_level === TRUST_LEVELS.TIER_1;
+      const isTier2 = tier === 2 || s.trust_level === TRUST_LEVELS.TIER_A || s.trust_level === TRUST_LEVELS.TIER_2 || s.trust_level === TRUST_LEVELS.TIER_B;
+
+      if (isTier1) {
+        hasTier1 = true;
+        onlyTier3 = false;
+      } else if (isTier2) {
+        hasTier2 = true;
+        onlyTier3 = false;
+      }
+    }
+
+    // 2. Conflict Detection across distinct sources
+    const dates = new Map(); // date -> source_id
+    const venues = new Map(); // venue -> source_id
 
     for (const record of sourceRecords) {
       const d = record.start_date || (record.start_datetime ? record.start_datetime.substring(0, 10) : record.date);
-      if (d) dates.add(d);
+      if (d && !dates.has(d)) dates.set(d, record.source_id);
 
       const v = record.venue_id || (record.venue_name || '').toLowerCase().trim();
-      if (v) venues.add(v);
+      if (v) {
+        // Strip common whitespace/punctuation for canonical alias matching
+        const normalizedKey = v.replace(/[^a-z0-9]/g, '');
+        if (normalizedKey && !venues.has(normalizedKey)) {
+          venues.set(normalizedKey, { raw: record.venue_name || record.venue, source_id: record.source_id });
+        }
+      }
     }
 
     if (dates.size > 1) {
+      const dateEntries = Array.from(dates.entries());
       conflicts.push({
         field: 'start_date',
-        values: Array.from(dates),
+        source_a: dateEntries[0][1],
+        value_a: dateEntries[0][0],
+        source_b: dateEntries[1][1],
+        value_b: dateEntries[1][0],
+        values: Array.from(dates.keys()),
         reason: 'Different sources report conflicting event dates'
       });
     }
 
     if (venues.size > 1) {
-      // Check if they are truly different or aliases handled by normalization
-      const uniqueNormalizedVenues = new Set(
-        Array.from(venues).map(v => v.replace(/[^a-z0-9]/g, ''))
-      );
-      if (uniqueNormalizedVenues.size > 1) {
-        conflicts.push({
-          field: 'venue',
-          values: Array.from(venues),
-          reason: 'Different sources report conflicting event venues'
-        });
-      }
+      const venueEntries = Array.from(venues.values());
+      conflicts.push({
+        field: 'venue',
+        source_a: venueEntries[0].source_id,
+        value_a: venueEntries[0].raw,
+        source_b: venueEntries[1].source_id,
+        value_b: venueEntries[1].raw,
+        values: venueEntries.map(v => v.raw),
+        reason: 'Different sources report conflicting event venues'
+      });
     }
 
     // If source conflict exists:
-    // When a Tier S Verified Promoter source conflicts with a secondary source (e.g. ticketing or listing),
-    // prioritize the verified promoter while preserving the conflict record and flagging for admin review.
     if (conflicts.length > 0) {
-      if (hasTierS) {
-        flags.push('SOURCE_DATA_CONFLICT_DETECTED');
-        flags.push('PRIMARY_PROMOTER_SOURCE_PRECEDENCE');
+      flags.push('SOURCE_DATA_CONFLICT_DETECTED');
+      // If a Tier 1 authoritative promoter/venue exists alongside a secondary source,
+      // we preserve the conflict but can assign PRIMARY_SOURCE_VERIFIED if promoter is clear.
+      // Otherwise, conflict blocks verification -> CONFLICTED!
+      if (hasTier1 && sourceRecords.some(s => s.source_type === 'PROMOTER_OFFICIAL_SOCIAL' || s.source_id.includes('promoter'))) {
+        flags.push('PRIMARY_PROMOTER_PRECEDENCE');
         return {
           verification_status: VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED,
           verification_confidence: 85,
@@ -99,80 +136,85 @@ class EventVerificationService {
         };
       } else {
         return {
-          verification_status: VERIFICATION_STATUS.DATA_CONFLICT,
-          verification_confidence: 50,
+          verification_status: VERIFICATION_STATUS.CONFLICTED,
+          verification_confidence: 45,
           conflicts,
-          flags: ['SOURCE_DATA_CONFLICT_DETECTED']
+          flags: ['CONFLICT_BLOCKS_VERIFICATION']
         };
       }
     }
 
-    // 2. Source Tier Scoring
-    const hasTier1 = sourceRecords.some(s => s.trust_level === TRUST_LEVELS.TIER_1);
-    const hasTier2 = sourceRecords.some(s => s.trust_level === TRUST_LEVELS.TIER_2);
-    const hasTier3 = sourceRecords.some(s => s.trust_level === TRUST_LEVELS.TIER_3);
-
-    if (hasTierS) {
-      score += 60; // Tier S Verified Official Promoter Social / Website
-      flags.push('TIER_S_PRIMARY_PROMOTER_SOURCE_CONFIRMED');
-    } else if (hasTier1) {
-      score += 45; // Official Organizer, Venue, or League
-      flags.push('TIER_1_OFFICIAL_AUTHORITY_CONFIRMED');
-    } else if (hasTier2) {
-      score += 35; // Established ticketing platform
-      flags.push('TIER_2_TICKETING_PLATFORM_CONFIRMED');
-    } else if (hasTier3) {
-      score += 20; // Government calendar
-      flags.push('TIER_3_GOVERNMENT_CALENDAR');
-    } else {
-      score += 10; // Community / social
-      flags.push('TIER_5_COMMUNITY_SUBMISSION');
+    // 3. TIER 3 ONLY DISCOVERY RULE:
+    // Social channels can discover, but CANNOT solely verify!
+    if (onlyTier3 && !hasTier1 && !hasTier2) {
+      return {
+        verification_status: VERIFICATION_STATUS.UNVERIFIED,
+        verification_confidence: 30,
+        conflicts: [],
+        flags: ['TIER_3_SOCIAL_DISCOVERY_ONLY', 'PENDING_TIER_1_CORROBORATION']
+      };
     }
 
-    // 3. Independent Source Confirmation (+25 for 2+ distinct sources)
+    // 4. Source Tier Base Scoring
+    if (hasTier1) {
+      score += 55; // Tier 1 Official Promoter / Venue / League
+      flags.push('TIER_1_OFFICIAL_AUTHORITY_CONFIRMED');
+    } else if (hasTier2) {
+      score += 35; // Tier 2 Commercial Ticketing Platform / Discovery API
+      flags.push('TIER_2_COMMERCIAL_SOURCE_CONFIRMED');
+    }
+
+    // 5. Independent Multi-Source Corroboration
     const uniqueSourceIds = new Set(sourceRecords.map(s => s.source_id));
     if (uniqueSourceIds.size >= 3) {
-      score += 30;
+      score += 25;
       flags.push('MULTIPLE_INDEPENDENT_SOURCES_3_PLUS');
     } else if (uniqueSourceIds.size >= 2) {
-      score += 25;
+      score += 20;
       flags.push('INDEPENDENT_SOURCE_CORROBORATION');
     }
 
-    // 4. Official Ticket URL validity (+15)
+    // 6. Valid Official Ticket Destination URL (+15)
     if (canonicalEvent.official_ticket_url && /^https?:\/\//i.test(canonicalEvent.official_ticket_url)) {
       score += 15;
       flags.push('OFFICIAL_TICKET_URL_VERIFIED');
     }
 
-    // 5. Venue and Date integrity (+15)
-    if (canonicalEvent.venue_name && canonicalEvent.start_datetime) {
-      score += 15;
+    // 7. Complete Temporal & Spatial Integrity (+10)
+    if (canonicalEvent.venue_name && (canonicalEvent.start_datetime || canonicalEvent.start_date)) {
+      score += 10;
       flags.push('COMPLETE_TEMPORAL_SPATIAL_DATA');
     }
 
-    // Cap at 100
-    const confidence = Math.min(100, Math.max(0, score));
+    // Never claim 100% certainty (cap confidence at 95%)
+    const confidence = Math.min(95, Math.max(10, score));
 
-    // Determine status based on confidence & source rules
-    let status = VERIFICATION_STATUS.DISCOVERED;
+    // Determine verification status
+    let status = VERIFICATION_STATUS.UNVERIFIED;
     if (canonicalEvent.status === 'CANCELLED') {
       status = VERIFICATION_STATUS.CANCELLED;
-    } else if (confidence >= 80) {
-      status = hasTierS ? VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED : VERIFICATION_STATUS.VERIFIED;
-    } else if (confidence >= 60) {
-      status = VERIFICATION_STATUS.PENDING_REVIEW;
+    } else if (canonicalEvent.status === 'POSTPONED') {
+      status = VERIFICATION_STATUS.POSTPONED;
+    } else if (hasTier1 && confidence >= 75) {
+      status = VERIFICATION_STATUS.VERIFIED;
+    } else if (hasTier2 && uniqueSourceIds.size >= 2 && confidence >= 65) {
+      status = VERIFICATION_STATUS.PARTIALLY_VERIFIED;
     } else {
-      status = VERIFICATION_STATUS.DISCOVERED;
+      status = VERIFICATION_STATUS.UNVERIFIED;
     }
 
-    // Check freshness
-    if ((status === VERIFICATION_STATUS.VERIFIED || status === VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED) && canonicalEvent.last_verified_at) {
-      const lastVerifTime = new Date(canonicalEvent.last_verified_at).getTime();
+    // 8. Temporal Freshness / Expiration Check
+    if (status === VERIFICATION_STATUS.VERIFIED || status === VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED) {
       const now = Date.now();
-      if (now - lastVerifTime > FRESHNESS_WINDOW_MS) {
-        status = VERIFICATION_STATUS.STALE;
-        flags.push('VERIFICATION_EXPIRED_STALE');
+      if (canonicalEvent.expires_at && now > new Date(canonicalEvent.expires_at).getTime()) {
+        status = VERIFICATION_STATUS.EXPIRED;
+        flags.push('EXPIRED_BY_TEMPORAL_TTL');
+      } else if (canonicalEvent.last_verified_at) {
+        const lastVerifTime = new Date(canonicalEvent.last_verified_at).getTime();
+        if (now - lastVerifTime > FRESHNESS_WINDOW_MS) {
+          status = VERIFICATION_STATUS.EXPIRED;
+          flags.push('VERIFICATION_EXPIRED_STALE');
+        }
       }
     }
 
@@ -187,5 +229,6 @@ class EventVerificationService {
 
 module.exports = {
   EventVerificationService,
-  VERIFICATION_STATUS
+  VERIFICATION_STATUS,
+  FRESHNESS_WINDOW_MS
 };
