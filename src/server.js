@@ -118,11 +118,20 @@ app.use(blogRouter);
 const contentAdminRouter = require('./api/contentAdminRouter');
 app.use(contentAdminRouter);
 
+// Mount Admin Trust Control Center (Epics M & N)
+const adminTrustRouter = require('./api/adminTrustRouter');
+app.use('/api/admin/trust', adminTrustRouter);
+
+// Mount Canonical Authentication APIs (Magic Link, Sessions)
+const authRouter = require('./api/authRouter');
+app.use('/api/auth', authRouter);
+
 // Explicit Institutional Frontend Page Delivery
 const publicDir = path.resolve(__dirname, '../public');
 const { businessProfile } = require('./config/businessProfile');
 app.get('/api/business-profile', (req, res) => res.json(businessProfile));
 
+app.get('/login', (req, res) => res.sendFile(path.join(publicDir, 'login.html'), sendFileOpts));
 app.get('/create', (req, res) => res.sendFile(path.join(publicDir, 'create.html'), sendFileOpts));
 app.get('/pay/:id', (req, res) => res.sendFile(path.join(publicDir, 'pay.html'), sendFileOpts));
 app.get('/pay', (req, res) => res.sendFile(path.join(publicDir, 'pay.html'), sendFileOpts));

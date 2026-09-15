@@ -28,7 +28,7 @@ class MetricsCollector {
       cpu_usage_system_ms: Math.round(process.cpuUsage().system / 1000),
       memory_heap_used_mb: parseFloat((mem.heapUsed / 1024 / 1024).toFixed(2)),
       memory_heap_total_mb: parseFloat((mem.heapTotal / 1024 / 1024).toFixed(2)),
-      queue_depth: 0 // Mock queue depth indicator for pipeline
+      queue_depth: 0 // Ingestion queue depth (synchronous pipeline indicator)
     };
   }
 

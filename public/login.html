@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masuk / Daftar — TIKUM Authentic Access</title>
+  <meta name="description" content="Masuk atau buat akun TIKUM menggunakan Magic Link passwordless yang aman.">
+  <link rel="canonical" href="https://tikum.app/login">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .auth-card {
+      max-width: 440px;
+      margin: 48px auto;
+      background: var(--card-bg, #ffffff);
+      border: 1px solid var(--border-color, #e5e7eb);
+      border-radius: 12px;
+      padding: 36px 28px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    }
+    .auth-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: #ecfdf5;
+      color: #059669;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .auth-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary, #111827);
+      margin: 0 0 8px;
+    }
+    .auth-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary, #6b7280);
+      margin: 0 0 24px;
+      line-height: 1.5;
+    }
+    .auth-input-group {
+      margin-bottom: 20px;
+    }
+    .auth-input-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary, #374151);
+      margin-bottom: 6px;
+    }
+    .auth-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border-color, #d1d5db);
+      border-radius: 8px;
+      font-size: 15px;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    .auth-input:focus {
+      outline: none;
+      border-color: #059669;
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+    }
+    .auth-btn {
+      width: 100%;
+      padding: 12px;
+      background: #059669;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.2s;
+    }
+    .auth-btn:hover {
+      background: #047857;
+    }
+    .auth-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .auth-status-box {
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 20px;
+      display: none;
+      line-height: 1.5;
+    }
+    .auth-status-box.info {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+      display: block;
+    }
+    .auth-status-box.error {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      display: block;
+    }
+    .auth-user-info {
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand">
+        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Verified Ticket Marketplace</span>
+        </div>
+      </a>
+      <nav class="main-nav">
+        <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Beranda</a>
+        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> Tawaran</a>
+        <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="auth-card" id="authCard">
+      <div class="auth-badge">
+        <i class="fa-solid fa-bolt"></i> Akses Passwordless Terverifikasi
+      </div>
+
+      <!-- State: Logged In -->
+      <div id="loggedInView" style="display: none;">
+        <h1 class="auth-title">Akun Anda</h1>
+        <p class="auth-subtitle">Anda sedang masuk dengan sesi terautentikasi aktif.</p>
+        <div class="auth-user-info">
+          <div><strong>Email:</strong> <span id="userEmail">-</span></div>
+          <div style="margin-top: 6px;"><strong>Peran:</strong> <span id="userRole" style="text-transform: uppercase;">-</span></div>
+          <div style="margin-top: 6px;"><strong>ID:</strong> <span id="userId" style="font-family: monospace; font-size: 12px;">-</span></div>
+        </div>
+        <button class="auth-btn" id="btnLogout" style="background: #dc2626;">
+          <i class="fa-solid fa-right-from-bracket"></i> Keluar (Log Out)
+        </button>
+      </div>
+
+      <!-- State: Form Login / Continue with Email -->
+      <div id="loginFormView">
+        <h1 class="auth-title">Masuk ke TIKUM</h1>
+        <p class="auth-subtitle">
+          Mendukung pendaftaran baru dan pengguna lama. TIKUM menggunakan tautan akses cepat (Magic Link) tanpa perlu menyimpan kata sandi.
+        </p>
+
+        <div id="statusBox" class="auth-status-box"></div>
+
+        <form id="magicLinkForm">
+          <div class="auth-input-group">
+            <label for="emailInput">Alamat Email</label>
+            <input 
+              type="email" 
+              id="emailInput" 
+              class="auth-input" 
+              placeholder="nama@email.com" 
+              required 
+              autocomplete="email"
+            >
+          </div>
+
+          <button type="submit" class="auth-btn" id="btnSubmit">
+            <span>Lanjutkan dengan Email</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </form>
+
+        <p style="font-size: 12px; color: #9ca3af; text-align: center; margin-top: 20px; line-height: 1.5;">
+          Tautan akses berlaku selama 15 menit dan hanya dapat digunakan 1 kali.
+        </p>
+      </div>
+
+      <!-- State: Confirmation Sent -->
+      <div id="confirmationView" style="display: none;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <i class="fa-solid fa-envelope-circle-check" style="font-size: 48px; color: #059669;"></i>
+        </div>
+        <h1 class="auth-title" style="text-align: center;">Periksa Email Anda</h1>
+        <p class="auth-subtitle" style="text-align: center;">
+          Tautan masuk telah dikirimkan ke <strong id="sentEmail">-</strong>.<br>
+          Klik tautan di email tersebut untuk langsung masuk ke akun Anda.
+        </p>
+        <div class="auth-status-box info" style="display: block; font-size: 13px;">
+          <i class="fa-solid fa-circle-info"></i> Tautan berlaku selama <strong>15 menit</strong> dan sekali pakai. Jika tidak muncul di kotak masuk, periksa folder spam.
+        </div>
+        <button class="auth-btn" style="background: #4b5563; margin-top: 16px;" onclick="window.location.reload()">
+          <i class="fa-solid fa-arrow-rotate-left"></i> Kirim Ulang atau Gunakan Email Lain
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (async function() {
+      const statusBox = document.getElementById('statusBox');
+      const loggedInView = document.getElementById('loggedInView');
+      const loginFormView = document.getElementById('loginFormView');
+      const confirmationView = document.getElementById('confirmationView');
+      const magicLinkForm = document.getElementById('magicLinkForm');
+      const emailInput = document.getElementById('emailInput');
+      const btnSubmit = document.getElementById('btnSubmit');
+      const btnLogout = document.getElementById('btnLogout');
+
+      // Check URL parameters for errors
+      const params = new URLSearchParams(window.location.search);
+      const errCode = params.get('error');
+      if (errCode) {
+        statusBox.className = 'auth-status-box error';
+        if (errCode === 'TOKEN_EXPIRED') {
+          statusBox.textContent = 'Tautan akses telah kedaluwarsa (batas 15 menit). Silakan minta tautan baru.';
+        } else if (errCode === 'TOKEN_ALREADY_USED') {
+          statusBox.textContent = 'Tautan akses ini sudah pernah digunakan (perlindungan replay). Silakan minta tautan baru.';
+        } else {
+          statusBox.textContent = 'Tautan verifikasi tidak valid atau telah kedaluwarsa. Silakan coba lagi.';
+        }
+      }
+
+      // Check existing session
+      try {
+        const res = await fetch('/api/auth/session');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated && data.user) {
+            loginFormView.style.display = 'none';
+            confirmationView.style.display = 'none';
+            loggedInView.style.display = 'block';
+            document.getElementById('userEmail').textContent = data.user.email || '-';
+            document.getElementById('userRole').textContent = data.user.role || '-';
+            document.getElementById('userId').textContent = data.user.id || '-';
+          }
+        }
+      } catch (e) {
+        // Continue unauthenticated
+      }
+
+      // Handle Magic Link request
+      magicLinkForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const email = emailInput.value.trim();
+        if (!email) return;
+
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
+        statusBox.style.display = 'none';
+
+        try {
+          const res = await fetch('/api/auth/magic-link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+          });
+          const data = await res.json();
+
+          if (res.ok) {
+            loginFormView.style.display = 'none';
+            confirmationView.style.display = 'block';
+            document.getElementById('sentEmail').textContent = email;
+          } else {
+            statusBox.className = 'auth-status-box error';
+            statusBox.textContent = data.error || 'Gagal mengirim link akses. Silakan coba beberapa saat lagi.';
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = '<span>Lanjutkan dengan Email</span> <i class="fa-solid fa-arrow-right"></i>';
+          }
+        } catch (err) {
+          statusBox.className = 'auth-status-box error';
+          statusBox.textContent = 'Terjadi kesalahan jaringan. Silakan periksa koneksi Anda.';
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = '<span>Lanjutkan dengan Email</span> <i class="fa-solid fa-arrow-right"></i>';
+        }
+      });
+
+      // Handle Logout
+      if (btnLogout) {
+        btnLogout.addEventListener('click', async function() {
+          btnLogout.disabled = true;
+          try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+          } catch (e) {}
+          window.location.reload();
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,9 +1,9 @@
 /**
- * ARGUS PAYMENT PROVIDER ABSTRACTION
+ * TIKUM / ARGUS — Canonical Payment Provider Abstraction (Epic F)
  * 
- * Base interface for multi-channel / multi-country payment and escrow providers.
- * Designed for modularity: initial implementation is iPaymu (Indonesia),
- * with support for future ASEAN gateways (HitPay, 2C2P, Xendit, etc.).
+ * Provider-independent interface for multi-channel / ASEAN payment gateways.
+ * Keeps core marketplace, order, and dispute logic completely decouple from any
+ * specific financial provider (iPaymu, HitPay, 2C2P, Xendit, etc.).
  */
 
 class PaymentProvider {
@@ -12,7 +12,7 @@ class PaymentProvider {
   }
 
   /**
-   * Provider identifier (e.g. 'ipaymu', 'hitpay', 'xendit')
+   * Provider identifier (e.g. 'ipaymu', 'xendit', 'hitpay')
    * @returns {string}
    */
   getName() {
@@ -28,8 +28,16 @@ class PaymentProvider {
   }
 
   /**
+   * Provider operational verification status:
+   * 'PENDING_VERIFICATION', 'ACTIVE', 'BLOCKED', 'MAINTENANCE'
+   * @returns {{ status: string, isVerified: boolean, message: string }}
+   */
+  getStatus() {
+    throw new Error('getStatus() must be implemented by payment provider');
+  }
+
+  /**
    * Returns supported payment channels with escrow capability metadata.
-   * Crucial: Not every channel supports escrow holding!
    * @returns {Array<{ code: string, name: string, type: string, isEscrowSupported: boolean }>}
    */
   getSupportedChannels() {
@@ -49,35 +57,51 @@ class PaymentProvider {
 
   /**
    * Creates a payment session / invoice for an order.
-   * Throws if an escrow order selects a channel that does not support escrow.
-   * @param {Object} params
-   * @param {string} params.orderId
-   * @param {number} params.amount
-   * @param {string} params.channel
-   * @param {Object} params.buyer
-   * @param {boolean} params.requiresEscrow
-   * @returns {Promise<Object>}
+   * Throws if provider is in PENDING_VERIFICATION.
    */
-  async createPayment({ orderId, amount, channel, buyer, requiresEscrow = true }) {
+  async createPayment({ orderId, amount, currency = 'IDR', channel, buyer = {}, requiresEscrow = true, metadata = {} }) {
     throw new Error('createPayment() must be implemented by payment provider');
   }
 
   /**
-   * Verifies incoming webhook signature from the gateway.
-   * @param {Object} headers
-   * @param {Object|string} body
-   * @returns {boolean}
+   * Queries provider for current payment status.
    */
-  verifyWebhook(headers, body) {
+  async getPaymentStatus({ orderId, providerRef }) {
+    throw new Error('getPaymentStatus() must be implemented by payment provider');
+  }
+
+  /**
+   * Captures authorized funds into escrow holding.
+   */
+  async capture({ orderId, providerRef, amount }) {
+    throw new Error('capture() must be implemented by payment provider');
+  }
+
+  /**
+   * Issues refund to buyer.
+   */
+  async refund({ orderId, providerRef, amount, reason }) {
+    throw new Error('refund() must be implemented by payment provider');
+  }
+
+  /**
+   * Cancels payment session / unpaid invoice.
+   */
+  async cancel({ orderId, providerRef, reason }) {
+    throw new Error('cancel() must be implemented by payment provider');
+  }
+
+  /**
+   * Verifies incoming webhook cryptographic signature.
+   */
+  verifyWebhook(headers = {}, body = {}) {
     throw new Error('verifyWebhook() must be implemented by payment provider');
   }
 
   /**
-   * Normalizes webhook payload into canonical ARGUS payment event.
-   * @param {Object} payload
-   * @returns {{ orderId: string, providerRef: string, amount: number, status: string, isEscrowLocked: boolean, channel: string }}
+   * Normalizes gateway webhook payload into canonical ARGUS payment event.
    */
-  parseWebhook(payload) {
+  parseWebhook(payload = {}) {
     throw new Error('parseWebhook() must be implemented by payment provider');
   }
 }

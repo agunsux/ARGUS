@@ -15,6 +15,7 @@ const { EventVerificationService, VERIFICATION_STATUS } = require('./EventVerifi
 const { sourceRegistry, TRUST_LEVELS } = require('./SourceRegistry');
 const { EventSourceObservation } = require('./models/EventSourceObservation');
 const { EventConflict } = require('./models/EventConflict');
+const { EventQualityGate, CANONICAL_STATES, MARKETPLACE_ELIGIBILITY } = require('./EventQualityGate');
 
 class CanonicalEventRegistry {
   constructor() {
@@ -227,6 +228,13 @@ class CanonicalEventRegistry {
       canonicalEvent.verification_reasons = evalResult.flags || [];
       canonicalEvent.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED || evalResult.verification_status === 'PRIMARY_SOURCE_VERIFIED');
     }
+
+    // Epic B: Deterministic Event Quality Gate
+    const qualityResult = EventQualityGate.evaluateEventQuality(canonicalEvent, canonicalEvent.sources);
+    canonicalEvent.event_quality_score = qualityResult.event_quality_score;
+    canonicalEvent.marketplace_eligibility = qualityResult.marketplace_eligibility;
+    canonicalEvent.quality_factors = qualityResult.quality_factors;
+    canonicalEvent.block_reasons = qualityResult.block_reasons;
 
     this.events.set(eventId, canonicalEvent);
     this.slugMap.set(slug, eventId);
@@ -593,6 +601,12 @@ class CanonicalEventRegistry {
       }
     }
 
+    const qualityResult = EventQualityGate.evaluateEventQuality(event, event.sources);
+    event.event_quality_score = qualityResult.event_quality_score;
+    event.marketplace_eligibility = qualityResult.marketplace_eligibility;
+    event.quality_factors = qualityResult.quality_factors;
+    event.block_reasons = qualityResult.block_reasons;
+
     return event;
   }
 
@@ -620,6 +634,11 @@ class CanonicalEventRegistry {
           new_value: 'EXPIRED',
           reason: 'Authoritative evidence TTL elapsed without corroborating sync'
         });
+        const qualityResult = EventQualityGate.evaluateEventQuality(event, event.sources);
+        event.event_quality_score = qualityResult.event_quality_score;
+        event.marketplace_eligibility = qualityResult.marketplace_eligibility;
+        event.quality_factors = qualityResult.quality_factors;
+        event.block_reasons = qualityResult.block_reasons;
         expiredEvents.push(event.event_id);
       }
     }

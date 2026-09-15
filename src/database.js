@@ -27,7 +27,14 @@ const state = {
   offers: [],
   offer_audit_logs: [],
   notifications: [],
-  promoter_imports: [] // Admin CSV promoter import history (source of record: PromoterDiscoveryRegistry)
+  promoter_imports: [], // Admin CSV promoter import history (source of record: PromoterDiscoveryRegistry)
+  evidence_items: [],
+  venue_shifts: [],
+  verification_sessions: [],
+  incidents: [],
+  financial_ledger: [],
+  magic_link_tokens: [],
+  processed_webhooks: new Set()
 };
 
 let seqId = 1;
@@ -68,6 +75,7 @@ function resetDatabase() {
   state.transaction_challenges = [];
   state.evidence_access_logs = [];
   state.step_up_tokens = [];
+  state.magic_link_tokens = [];
 
   const isTest = process.env.NODE_ENV === 'test';
   const defaultTestPass = isTest ? 'pilot123' : null;
@@ -687,6 +695,12 @@ function resetDatabase() {
   state.offer_audit_logs = [];
   state.notifications = [];
   state.promoter_imports = [];
+  state.evidence_items = [];
+  state.venue_shifts = [];
+  state.verification_sessions = [];
+  state.incidents = [];
+  state.financial_ledger = [];
+  state.processed_webhooks = new Set();
 
   try {
     const { canonicalRegistry } = require('./discovery/CanonicalEventRegistry');
@@ -707,6 +721,20 @@ function resetDatabase() {
   logId = 2;
   offerAuditLogId = 1;
 }
+
+module.exports = {
+  state,
+  resetDatabase,
+  db: { serialize: (cb) => cb() },
+  run,
+  all,
+  get,
+  recordAuditLog,
+  recordOfferAuditLog,
+  initializeDatabase,
+  hashPassword,
+  verifyPassword
+};
 
 resetDatabase();
 

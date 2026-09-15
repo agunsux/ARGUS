@@ -22,7 +22,6 @@ const { EventDeduplicationService } = require('./EventDeduplicationService');
 const { EventVerificationService, VERIFICATION_STATUS } = require('./EventVerificationService');
 const { canonicalRegistry } = require('./CanonicalEventRegistry');
 const { EventSourceObservation } = require('./models/EventSourceObservation');
-const { recordAuditLog } = require('../database');
 
 class EventIngestionPipeline {
   constructor() {

@@ -1,3 +1,14 @@
+/**
+ * TIKUM / ARGUS — Canonical Dispute Infrastructure (Epic L)
+ * 
+ * Evidence-backed dispute resolution.
+ * Non-Negotiable Invariants:
+ * - A dispute must NEVER be resolved solely by free-text opinion.
+ * - Every decision MUST reference verified evidence.
+ * - Supports appeals for contested decisions.
+ * - Canonical outcomes: BUYER_FAVORED, SELLER_FAVORED, PARTIAL, PLATFORM_ERROR, INSUFFICIENT_EVIDENCE, PENDING.
+ */
+
 const { v4: uuidv4 } = require('uuid');
 const { state, recordAuditLog } = require('../database');
 const { EscrowService, ESCROW_STATUS } = require('./escrowService');
@@ -7,21 +18,29 @@ const DISPUTE_STATUS = {
   OPEN: 'OPEN',
   INVESTIGATING: 'INVESTIGATING',
   DECISION_PENDING: 'DECISION_PENDING',
-  RESOLVED: 'RESOLVED'
+  RESOLVED: 'RESOLVED',
+  APPEALED: 'APPEALED',
+  CLOSED_FINAL: 'CLOSED_FINAL'
 };
 
 const DISPUTE_OUTCOME = {
+  BUYER_FAVORED: 'BUYER_FAVORED',
+  SELLER_FAVORED: 'SELLER_FAVORED',
+  PARTIAL: 'PARTIAL',
+  PLATFORM_ERROR: 'PLATFORM_ERROR',
+  INSUFFICIENT_EVIDENCE: 'INSUFFICIENT_EVIDENCE',
+  PENDING: 'PENDING',
+  // Backward compatibility aliases matching exact string values
   REFUND_BUYER: 'REFUND_BUYER',
   RELEASE_SELLER: 'RELEASE_SELLER',
-  PARTIAL_REFUND: 'PARTIAL_REFUND',
-  ESCALATE: 'ESCALATE'
+  PARTIAL_REFUND: 'PARTIAL_REFUND'
 };
 
 class DisputeService {
   /**
-   * Buyer reports an issue (e.g. ticket invalid at gate)
+   * Buyer or seller opens a dispute on an order.
    */
-  static async openDispute({ orderId, buyerId, reason, initialEvidenceBundleId }) {
+  static async openDispute({ orderId, buyerId, reason, claimDetails = null, initialEvidenceBundleId = null }) {
     const order = state.orders.find(o => o.id === orderId);
     if (!order) throw new Error('Order not found');
 
@@ -45,8 +64,11 @@ class DisputeService {
     await EscrowService.markDisputed(orderId, buyerId, reason);
 
     const disputeId = `dsp-${uuidv4()}`;
+    const now = new Date().toISOString();
+
     const dispute = {
       id: disputeId,
+      dispute_id: disputeId,
       order_id: orderId,
       buyer_id: buyerId,
       seller_id: order.seller_id,
@@ -54,13 +76,29 @@ class DisputeService {
       event_id: order.event_id,
       pic_id: picId,
       status: DISPUTE_STATUS.OPEN,
-      outcome: null,
+      outcome: DISPUTE_OUTCOME.PENDING,
       reason: reason || 'TICKET_INVALID_AT_GATE',
+      claim: {
+        claimant_id: buyerId,
+        claim_type: reason || 'TICKET_INVALID_AT_GATE',
+        details: claimDetails || reason,
+        submitted_at: now
+      },
       decision_notes: null,
+      decision_evidence_ids: [],
       evidence_bundle_id: initialEvidenceBundleId || null,
       pic_evidence_bundle_id: null,
       pic_notes: null,
-      created_at: new Date().toISOString(),
+      appeals: [],
+      timeline: [
+        {
+          action: 'DISPUTE_OPENED',
+          actor_id: buyerId,
+          timestamp: now,
+          notes: reason
+        }
+      ],
+      created_at: now,
       resolved_at: null,
       resolved_by: null
     };
@@ -72,7 +110,7 @@ class DisputeService {
       pic_id: picId
     });
 
-    // Non-blocking secondary effect: Dispute opened email
+    // Secondary effect: Dispute opened notification
     const buyer = state.users.find(u => u.id === buyerId);
     const seller = state.users.find(u => u.id === order.seller_id);
     const pic = picId ? state.users.find(u => u.id === picId) : null;
@@ -85,7 +123,7 @@ class DisputeService {
    * Event PIC submits physical field evidence / investigation notes
    */
   static async submitPicInvestigation({ disputeId, picUserId, notes, evidenceBundleId, gateStatus }) {
-    const dispute = state.disputes.find(d => d.id === disputeId);
+    const dispute = state.disputes.find(d => d.id === disputeId || d.dispute_id === disputeId);
     if (!dispute) throw new Error('Dispute not found');
 
     // PIC authorization: must be assigned ACTIVE to this event
@@ -103,7 +141,15 @@ class DisputeService {
     dispute.pic_notes = notes;
     dispute.pic_evidence_bundle_id = evidenceBundleId || null;
 
-    // If gateStatus provided, update/record entry verification
+    if (!dispute.timeline) dispute.timeline = [];
+    dispute.timeline.push({
+      action: 'PIC_INVESTIGATION_SUBMITTED',
+      actor_id: picUserId,
+      timestamp: new Date().toISOString(),
+      notes
+    });
+
+    // If gateStatus provided, update entry verification
     if (gateStatus) {
       const existingEntry = state.entry_verifications.find(ev => ev.order_id === dispute.order_id);
       if (existingEntry) {
@@ -133,38 +179,85 @@ class DisputeService {
   }
 
   /**
-   * ARGUS Admin resolves the dispute based on evidence and policy
+   * ARGUS Officer resolves the dispute.
+   * INVARIANT: Decision must reference evidence. Never resolve on free-text opinion alone.
    */
-  static async resolveDispute({ disputeId, officerId, outcome, decisionReason, decisionNotes }) {
-    const dispute = state.disputes.find(d => d.id === disputeId);
+  static async resolveDispute({
+    disputeId,
+    officerId,
+    outcome,
+    decisionReason,
+    decisionNotes = null,
+    evidenceIds = []
+  }) {
+    const dispute = state.disputes.find(d => d.id === disputeId || d.dispute_id === disputeId);
     if (!dispute) throw new Error('Dispute not found');
 
-    if (dispute.status === DISPUTE_STATUS.RESOLVED) {
+    if (dispute.status === DISPUTE_STATUS.RESOLVED || dispute.status === DISPUTE_STATUS.CLOSED_FINAL) {
       throw new Error('Dispute already resolved');
     }
 
-    if (![DISPUTE_OUTCOME.REFUND_BUYER, DISPUTE_OUTCOME.RELEASE_SELLER, DISPUTE_OUTCOME.PARTIAL_REFUND].includes(outcome)) {
+    // Normalize outcome
+    const canonicalOutcome = DISPUTE_OUTCOME[outcome] || outcome;
+    const validOutcomes = [
+      'BUYER_FAVORED',
+      'SELLER_FAVORED',
+      'PARTIAL',
+      'PLATFORM_ERROR',
+      'INSUFFICIENT_EVIDENCE',
+      'REFUND_BUYER',
+      'RELEASE_SELLER',
+      'PARTIAL_REFUND'
+    ];
+
+    if (!validOutcomes.includes(outcome)) {
       throw new Error(`Invalid dispute resolution outcome: ${outcome}`);
     }
 
-    if (!decisionReason) {
-      throw new Error('Decision reason is required');
+    if (!decisionReason || decisionReason.trim().length < 5) {
+      throw new Error('Decision reason is required and must explain the findings');
     }
 
+    // Evidence requirement check: must have attached evidence or PIC inspection
+    const attachedEvidence = [
+      ...(Array.isArray(evidenceIds) ? evidenceIds : []),
+      dispute.evidence_bundle_id,
+      dispute.pic_evidence_bundle_id
+    ].filter(Boolean);
+
+    if (attachedEvidence.length === 0 && !dispute.pic_notes) {
+      // Invariant: Resolution must have evidence backing
+      const err = new Error('Evidence-backed dispute invariant violation: Resolution must reference at least one evidence item or PIC field report.');
+      err.code = 'EVIDENCE_REFERENCE_MANDATORY';
+      throw err;
+    }
+
+    const now = new Date().toISOString();
     dispute.status = DISPUTE_STATUS.RESOLVED;
-    dispute.outcome = outcome;
+    dispute.outcome = canonicalOutcome === 'BUYER_FAVORED' || outcome === 'REFUND_BUYER'
+      ? 'REFUND_BUYER'
+      : (canonicalOutcome === 'SELLER_FAVORED' || outcome === 'RELEASE_SELLER' ? 'RELEASE_SELLER' : canonicalOutcome);
+    dispute.canonical_outcome = canonicalOutcome;
     dispute.decision_notes = `${decisionReason}. ${decisionNotes || ''}`.trim();
-    dispute.resolved_at = new Date().toISOString();
+    dispute.decision_evidence_ids = attachedEvidence;
+    dispute.resolved_at = now;
     dispute.resolved_by = officerId;
+
+    if (!dispute.timeline) dispute.timeline = [];
+    dispute.timeline.push({
+      action: 'DISPUTE_RESOLVED',
+      actor_id: officerId,
+      timestamp: now,
+      outcome: dispute.outcome,
+      notes: dispute.decision_notes
+    });
 
     const order = state.orders.find(o => o.id === dispute.order_id);
     const escrow = state.escrows.find(e => e.order_id === dispute.order_id);
 
-    if (outcome === DISPUTE_OUTCOME.REFUND_BUYER) {
-      // Refund buyer in full
+    if (dispute.outcome === 'REFUND_BUYER' || canonicalOutcome === 'BUYER_FAVORED') {
       await EscrowService.refundToBuyer(dispute.order_id, officerId, dispute.decision_notes);
-    } else if (outcome === DISPUTE_OUTCOME.RELEASE_SELLER) {
-      // Force confirmed entry if evidence proved ticket was actually valid
+    } else if (dispute.outcome === 'RELEASE_SELLER' || canonicalOutcome === 'SELLER_FAVORED') {
       let verification = state.entry_verifications.find(ev => ev.order_id === dispute.order_id);
       if (!verification) {
         verification = {
@@ -174,7 +267,7 @@ class DisputeService {
           pic_id: officerId,
           status: 'CONFIRMED',
           gate: 'Admin Resolution',
-          verified_at: new Date().toISOString(),
+          verified_at: now,
           notes: 'Confirmed by Admin dispute resolution'
         };
         state.entry_verifications.push(verification);
@@ -182,23 +275,24 @@ class DisputeService {
         verification.status = 'CONFIRMED';
       }
 
-      // Transition escrow back to RELEASE_PENDING and release
       escrow.status = ESCROW_STATUS.RELEASE_PENDING;
       await EscrowService.releaseToSeller(dispute.order_id, officerId);
     }
 
     await recordAuditLog('DISPUTE', disputeId, 'RESOLVED', officerId, {
-      outcome,
+      outcome: dispute.outcome,
+      canonical_outcome: canonicalOutcome,
       decisionReason,
-      resolved_at: dispute.resolved_at
+      evidence_count: attachedEvidence.length,
+      resolved_at: now
     });
 
-    // Non-blocking secondary effect: Dispute resolved email
+    // Secondary effect: Dispute resolved notification
     const resolvedBuyer = state.users.find(u => u.id === dispute.buyer_id);
     const resolvedSeller = state.users.find(u => u.id === dispute.seller_id);
     emailService.sendDisputeResolvedEmail({
       dispute,
-      outcome,
+      outcome: dispute.outcome,
       decisionNotes: dispute.decision_notes,
       buyer: resolvedBuyer,
       seller: resolvedSeller
@@ -208,10 +302,58 @@ class DisputeService {
   }
 
   /**
-   * Get complete dossier for a dispute
+   * Contest a resolved dispute through formal Appeal.
+   */
+  static async fileAppeal({ disputeId, appellantId, appealReason, newEvidenceBundleId = null }) {
+    const dispute = state.disputes.find(d => d.id === disputeId || d.dispute_id === disputeId);
+    if (!dispute) throw new Error('Dispute not found');
+
+    if (dispute.status !== DISPUTE_STATUS.RESOLVED) {
+      throw new Error(`Cannot appeal dispute with status '${dispute.status}'. Only RESOLVED disputes can be appealed.`);
+    }
+
+    if (dispute.buyer_id !== appellantId && dispute.seller_id !== appellantId) {
+      const err = new Error('Unauthorized: only the buyer or seller can file an appeal for this dispute');
+      err.code = 'UNAUTHORIZED_APPEAL';
+      throw err;
+    }
+
+    const appealId = `apl-${uuidv4()}`;
+    const now = new Date().toISOString();
+
+    const appeal = {
+      appeal_id: appealId,
+      appellant_id: appellantId,
+      appeal_reason: appealReason,
+      new_evidence_bundle_id: newEvidenceBundleId,
+      submitted_at: now,
+      status: 'PENDING_REVIEW'
+    };
+
+    if (!dispute.appeals) dispute.appeals = [];
+    dispute.appeals.push(appeal);
+    dispute.status = DISPUTE_STATUS.APPEALED;
+
+    dispute.timeline.push({
+      action: 'APPEAL_FILED',
+      actor_id: appellantId,
+      timestamp: now,
+      notes: appealReason
+    });
+
+    await recordAuditLog('DISPUTE_APPEAL', appealId, 'FILED', appellantId, {
+      dispute_id: disputeId,
+      reason: appealReason
+    });
+
+    return { dispute, appeal };
+  }
+
+  /**
+   * Complete dossier for a dispute
    */
   static getDisputeDossier(disputeId) {
-    const dispute = state.disputes.find(d => d.id === disputeId);
+    const dispute = state.disputes.find(d => d.id === disputeId || d.dispute_id === disputeId);
     if (!dispute) return null;
 
     const order = state.orders.find(o => o.id === dispute.order_id) || {};
@@ -238,10 +380,15 @@ class DisputeService {
       event,
       venue,
       entryVerifications,
-      auditLogs
+      auditLogs,
+      appeals: dispute.appeals || [],
+      timeline: dispute.timeline || []
     };
   }
 }
 
-module.exports = { DisputeService, DISPUTE_STATUS, DISPUTE_OUTCOME };
-
+module.exports = {
+  DisputeService,
+  DISPUTE_STATUS,
+  DISPUTE_OUTCOME
+};

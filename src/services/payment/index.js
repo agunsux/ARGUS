@@ -42,6 +42,7 @@ class PaymentManager {
       list.push({
         provider: name,
         country: provider.getCountry(),
+        status: provider.getStatus ? provider.getStatus().status : 'UNKNOWN',
         channels: provider.getSupportedChannels()
       });
     }
