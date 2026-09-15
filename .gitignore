@@ -44,3 +44,6 @@ yarn-error.log*
 *.enc
 0.26.0*
 data/
+
+.vercel
+.env*

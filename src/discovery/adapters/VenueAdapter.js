@@ -12,13 +12,62 @@ class VenueAdapter extends EventSourceAdapter {
     super(sourceId, options);
     this.venueName = options.venueName || 'Venue Authority';
     this.fixtureData = options.fixtureData || null;
+    this.dataSource = options.dataSource || null;
+    this.calendarUrl = options.calendarUrl || options.feedUrl || null;
   }
 
   async discover(query = {}) {
     if (this.fixtureData) {
       return this.fixtureData.map(item => this.parse(item));
     }
-    return [];
+
+    if (this.dataSource && Array.isArray(this.dataSource)) {
+      return this.dataSource.map(item => this.parse(item));
+    }
+
+    if (this.calendarUrl) {
+      return this.fetchWithRetry(async () => {
+        const res = await fetch(this.calendarUrl);
+        if (!res.ok) throw new Error(`${this.sourceId} calendar returned HTTP ${res.status}`);
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.events || data.calendar || data.data || []);
+        return list.map(item => this.parse(item));
+      });
+    }
+
+    return {
+      status: 'DATA_UNAVAILABLE',
+      reason: `No authorized live calendar endpoint configured for ${this.sourceId}; failing closed`,
+      events: []
+    };
+  }
+
+  /**
+   * Directly ingests real external venue observations into canonical pipeline with full provenance.
+   */
+  async acquireRealObservations(rawItems = [], ingestionPipelineInstance = null) {
+    const pipeline = ingestionPipelineInstance || require('../EventIngestionPipeline').ingestionPipeline;
+    const results = [];
+
+    for (const raw of rawItems) {
+      const parsed = this.parse(raw);
+      const observationMeta = {
+        observation_id: raw.observation_id || null,
+        source_id: this.sourceId,
+        post_url: parsed.official_event_url || null,
+        published_at: raw.published_at || null,
+        observed_at: raw.observed_at || new Date().toISOString()
+      };
+
+      const result = await pipeline.ingestEvent(parsed, this.sourceId, observationMeta);
+      results.push(result);
+    }
+
+    return {
+      source_id: this.sourceId,
+      total_acquired: results.length,
+      acquisitions: results
+    };
   }
 
   parse(raw) {

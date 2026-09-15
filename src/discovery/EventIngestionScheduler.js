@@ -137,8 +137,11 @@ class EventIngestionScheduler {
           break;
 
         case JOB_TYPES.EVENT_DISCOVERY_DAILY:
+          result = await this._runDiscoveryJob();
+          break;
+
         case JOB_TYPES.EVENT_REFRESH_DAILY:
-          result = { status: 'REQUIRES_ADAPTER_EXECUTION', message: `${jobName} requires configured adapters with live upstream connections. Use adapter registry for controlled execution.` };
+          result = await this._runRefreshJob();
           break;
 
         default:
@@ -227,6 +230,83 @@ class EventIngestionScheduler {
       total_unverified_candidates: unverified.length,
       promoted_to_verified: promoted,
       still_unverified: stillUnverified,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Discovery sweep: queries all permitted active adapters for real event candidates.
+   * Feeds discovered items through the canonical Ingestion Pipeline.
+   * Zero fabrication: if an adapter returns DATA_UNAVAILABLE or READY_PASSIVE, records state honestly.
+   */
+  async _runDiscoveryJob() {
+    const { adapterRegistry } = require('./adapters/AdapterRegistry');
+    const { ingestionPipeline } = require('./EventIngestionPipeline');
+
+    const sources = sourceRegistry.getAllSources().filter(s => sourceRegistry.isSourcePermittedForIngestion(s.source_id));
+    const summary = {
+      job: JOB_TYPES.EVENT_DISCOVERY_DAILY,
+      total_sources_polled: sources.length,
+      events_discovered: 0,
+      events_ingested: 0,
+      sources_unavailable: 0,
+      sources_passive: 0,
+      source_results: []
+    };
+
+    for (const src of sources) {
+      try {
+        const adapter = adapterRegistry.getAdapter(src.source_id);
+        const discoveryOutput = await adapter.discover();
+
+        if (Array.isArray(discoveryOutput)) {
+          summary.events_discovered += discoveryOutput.length;
+          for (const item of discoveryOutput) {
+            const ingestRes = await ingestionPipeline.ingestEvent(item, src.source_id);
+            if (ingestRes && ingestRes.success) {
+              summary.events_ingested++;
+            }
+          }
+          summary.source_results.push({
+            source_id: src.source_id,
+            status: 'SUCCESS',
+            count: discoveryOutput.length
+          });
+        } else if (discoveryOutput && typeof discoveryOutput === 'object') {
+          if (discoveryOutput.status === 'DATA_UNAVAILABLE') {
+            summary.sources_unavailable++;
+          } else if (discoveryOutput.status === 'READY_PASSIVE' || discoveryOutput.status === 'UNSUPPORTED' || discoveryOutput.status === 'MANUAL_SOURCE_ONLY') {
+            summary.sources_passive++;
+          }
+          summary.source_results.push({
+            source_id: src.source_id,
+            status: discoveryOutput.status || 'REPORTED',
+            reason: discoveryOutput.reason || 'No events'
+          });
+        }
+      } catch (err) {
+        summary.source_results.push({
+          source_id: src.source_id,
+          status: 'ERROR',
+          error: err.message
+        });
+      }
+    }
+
+    summary.timestamp = new Date().toISOString();
+    return summary;
+  }
+
+  /**
+   * Refresh job: refreshes verification status and sweeps expired events.
+   */
+  async _runRefreshJob() {
+    const verifRes = this._runVerificationSweep();
+    const expireRes = this._runExpirationSweep();
+    return {
+      job: JOB_TYPES.EVENT_REFRESH_DAILY,
+      verification: verifRes,
+      expiration: expireRes,
       timestamp: new Date().toISOString()
     };
   }
