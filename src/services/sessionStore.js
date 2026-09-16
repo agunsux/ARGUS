@@ -113,6 +113,13 @@ class SessionStore {
   }
 
   /**
+   * Alias for findSession
+   */
+  static getSession(token) {
+    return this.findSession(token);
+  }
+
+  /**
    * Revokes a specific session token immediately.
    */
   static revokeSession(token, reason = 'LOGOUT') {

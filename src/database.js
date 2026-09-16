@@ -84,13 +84,16 @@ function resetDatabase() {
   const defaultTestPass = isTest ? 'pilot123' : null;
   const defaultPassHash = isTest ? PILOT123_HASH : null;
 
+  const now = new Date().toISOString();
   state.users = [
-    { id: 'admin-1', name: 'Trust Officer ARGUS', email: 'ops@argus.id', phone: '081234567890', role: 'admin', password: process.env.ARGUS_ADMIN_PASSWORD ? hashPassword(process.env.ARGUS_ADMIN_PASSWORD) : defaultPassHash },
-    { id: 'seller-1', name: 'Budi Santoso', email: 'budi.seller@example.com', phone: '082223334445', role: 'seller', password: process.env.ARGUS_SELLER_PASSWORD ? hashPassword(process.env.ARGUS_SELLER_PASSWORD) : defaultPassHash },
-    { id: 'buyer-1', name: 'Dewi Lestari', email: 'dewi.buyer@example.com', phone: '085556667778', role: 'buyer', password: process.env.ARGUS_BUYER_PASSWORD ? hashPassword(process.env.ARGUS_BUYER_PASSWORD) : defaultPassHash },
-    { id: 'buyer-2', name: 'Rina Wijaya', email: 'rina.buyer@example.com', phone: '085556667779', role: 'buyer', password: process.env.ARGUS_BUYER2_PASSWORD ? hashPassword(process.env.ARGUS_BUYER2_PASSWORD) : defaultPassHash },
-    { id: 'pic-1', name: 'Agus Hendra (Event PIC)', email: 'agus.pic@argus.id', phone: '081199887766', role: 'pic', password: process.env.ARGUS_PIC_PASSWORD ? hashPassword(process.env.ARGUS_PIC_PASSWORD) : defaultPassHash }
+    { id: 'admin-1', name: 'Trust Officer ARGUS', email: 'ops@argus.id', phone: '081234567890', role: 'admin', status: 'ACTIVE', password: process.env.ARGUS_ADMIN_PASSWORD ? hashPassword(process.env.ARGUS_ADMIN_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_ADMIN_PASSWORD ? hashPassword(process.env.ARGUS_ADMIN_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null },
+    { id: 'seller-1', name: 'Budi Santoso', email: 'budi.seller@example.com', phone: '082223334445', role: 'seller', status: 'ACTIVE', password: process.env.ARGUS_SELLER_PASSWORD ? hashPassword(process.env.ARGUS_SELLER_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_SELLER_PASSWORD ? hashPassword(process.env.ARGUS_SELLER_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null },
+    { id: 'buyer-1', name: 'Dewi Lestari', email: 'dewi.buyer@example.com', phone: '085556667778', role: 'buyer', status: 'ACTIVE', password: process.env.ARGUS_BUYER_PASSWORD ? hashPassword(process.env.ARGUS_BUYER_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_BUYER_PASSWORD ? hashPassword(process.env.ARGUS_BUYER_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null },
+    { id: 'buyer-2', name: 'Rina Wijaya', email: 'rina.buyer@example.com', phone: '085556667779', role: 'buyer', status: 'ACTIVE', password: process.env.ARGUS_BUYER2_PASSWORD ? hashPassword(process.env.ARGUS_BUYER2_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_BUYER2_PASSWORD ? hashPassword(process.env.ARGUS_BUYER2_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null },
+    { id: 'pic-1', name: 'Agus Hendra (Event PIC)', email: 'agus.pic@argus.id', phone: '081199887766', role: 'pic', status: 'ACTIVE', password: process.env.ARGUS_PIC_PASSWORD ? hashPassword(process.env.ARGUS_PIC_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_PIC_PASSWORD ? hashPassword(process.env.ARGUS_PIC_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null }
   ];
+
+  bootstrapAdminUser();
 
   state.seller_profiles = [
     { user_id: 'seller-1', kyc_status: 'VERIFIED', nik_hash: 'hash-ktp-budi-327101', active_listing_limit: 10 }
@@ -1089,9 +1092,60 @@ async function recordOfferAuditLog({ offerId, actorId, actorRole, fromStatus, to
 }
 
 /**
+ * Deterministic, idempotent bootstrap mechanism for the first admin user.
+ * Uses ADMIN_EMAIL and ADMIN_PASSWORD (or ARGUS_ADMIN_EMAIL / ARGUS_ADMIN_PASSWORD).
+ * Creates the admin only if one does not already exist.
+ * Never overwrites an existing admin, never logs or exposes the admin password.
+ */
+function bootstrapAdminUser() {
+  if (!state.users) {
+    state.users = [];
+  }
+  const adminEmail = (process.env.ADMIN_EMAIL || process.env.ARGUS_ADMIN_EMAIL || 'ops@argus.id').toLowerCase().trim();
+
+  // Check if an admin already exists (matching email or default admin role)
+  const existingAdmin = state.users.find(
+    u => (u.email && u.email.toLowerCase() === adminEmail) ||
+         (!process.env.ADMIN_EMAIL && !process.env.ARGUS_ADMIN_EMAIL && u.role && u.role.toUpperCase() === 'ADMIN')
+  );
+
+  if (existingAdmin) {
+    // Idempotent: do not overwrite
+    if (!existingAdmin.password_hash && existingAdmin.password) {
+      existingAdmin.password_hash = existingAdmin.password;
+    }
+    if (!existingAdmin.status) {
+      existingAdmin.status = 'ACTIVE';
+    }
+    return { created: false, user: existingAdmin };
+  }
+
+  const rawPassword = process.env.ADMIN_PASSWORD || process.env.ARGUS_ADMIN_PASSWORD || 'admin123';
+  const hashedPassword = hashPassword(rawPassword);
+  const now = new Date().toISOString();
+
+  const newAdmin = {
+    id: `admin-${Date.now()}`,
+    name: 'System Administrator',
+    email: adminEmail,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    password: hashedPassword,
+    password_hash: hashedPassword,
+    created_at: now,
+    updated_at: now,
+    last_login_at: null
+  };
+
+  state.users.push(newAdmin);
+  return { created: true, user: newAdmin };
+}
+
+/**
  * Mock database initialization
  */
 async function initializeDatabase() {
+  bootstrapAdminUser();
   return Promise.resolve();
 }
 
@@ -1105,6 +1159,7 @@ module.exports = {
   recordAuditLog,
   recordOfferAuditLog,
   initializeDatabase,
+  bootstrapAdminUser,
   hashPassword,
   verifyPassword
 };

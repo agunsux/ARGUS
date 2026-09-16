@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Masuk / Daftar — TIKUM Authentic Access</title>
-  <meta name="description" content="Masuk atau buat akun TIKUM menggunakan Magic Link passwordless yang aman.">
+  <title>Masuk / Login — TIKUM Authentic Access</title>
+  <meta name="description" content="Masuk ke akun TIKUM atau console operasional ARGUS.">
   <link rel="canonical" href="https://tikum.app/login">
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -13,11 +13,12 @@
     .auth-card {
       max-width: 440px;
       margin: 48px auto;
-      background: var(--card-bg, #ffffff);
-      border: 1px solid var(--border-color, #e5e7eb);
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
       border-radius: 12px;
-      padding: 36px 28px;
+      padding: 32px 24px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      color: #111827;
     }
     .auth-badge {
       display: inline-flex;
@@ -32,33 +33,33 @@
       margin-bottom: 16px;
     }
     .auth-title {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 700;
-      color: var(--text-primary, #111827);
-      margin: 0 0 8px;
+      color: #111827;
+      margin: 0 0 6px;
     }
     .auth-subtitle {
-      font-size: 14px;
-      color: var(--text-secondary, #6b7280);
-      margin: 0 0 24px;
+      font-size: 13px;
+      color: #6b7280;
+      margin: 0 0 20px;
       line-height: 1.5;
     }
     .auth-input-group {
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .auth-input-group label {
       display: block;
       font-size: 13px;
       font-weight: 600;
-      color: var(--text-primary, #374151);
+      color: #374151;
       margin-bottom: 6px;
     }
     .auth-input {
       width: 100%;
-      padding: 12px 14px;
-      border: 1px solid var(--border-color, #d1d5db);
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
       border-radius: 8px;
-      font-size: 15px;
+      font-size: 14px;
       box-sizing: border-box;
       transition: border-color 0.2s;
     }
@@ -81,7 +82,6 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: background-color 0.2s;
     }
     .auth-btn:hover {
       background: #047857;
@@ -91,216 +91,307 @@
       cursor: not-allowed;
     }
     .auth-status-box {
-      padding: 14px;
+      padding: 12px;
       border-radius: 8px;
-      font-size: 14px;
-      margin-bottom: 20px;
+      font-size: 13px;
+      margin-bottom: 16px;
       display: none;
       line-height: 1.5;
     }
-    .auth-status-box.info {
-      background: #ecfdf5;
-      color: #065f46;
-      border: 1px solid #a7f3d0;
-      display: block;
-    }
     .auth-status-box.error {
       background: #fef2f2;
-      color: #991b1b;
+      color: #b91c1c;
       border: 1px solid #fecaca;
       display: block;
     }
+    .auth-status-box.success {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+      display: block;
+    }
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 20px;
+    }
+    .auth-tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #6b7280;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+    }
+    .auth-tab.active {
+      color: #059669;
+      border-bottom-color: #059669;
+    }
     .auth-user-info {
       background: #f3f4f6;
+      padding: 14px;
       border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 20px;
-      font-size: 14px;
+      font-size: 13px;
+      margin-bottom: 18px;
+      color: #374151;
     }
   </style>
 </head>
-<body>
+<body style="background: #f9fafb; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 
   <!-- Site Header -->
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-          <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle">Verified Ticket Marketplace</span>
-        </div>
+  <header style="background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 14px 20px;">
+    <div style="max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+      <a href="/" style="font-weight: 800; font-size: 18px; color: #059669; text-decoration: none;">
+        TIKUM <span style="font-size: 12px; color: #6b7280; font-weight: 500;">ARGUS Identity</span>
       </a>
-      <nav class="main-nav">
-        <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Beranda</a>
-        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> Tawaran</a>
-        <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
-      </nav>
+      <div>
+        <a href="/signup" style="font-size: 14px; color: #059669; font-weight: 600; text-decoration: none; margin-right: 14px;">Daftar Akun</a>
+        <a href="/admin" style="font-size: 13px; color: #4b5563; text-decoration: none;">Admin Console</a>
+      </div>
     </div>
   </header>
 
-  <main class="container">
+  <main style="padding: 20px;">
     <div class="auth-card" id="authCard">
       <div class="auth-badge">
-        <i class="fa-solid fa-bolt"></i> Akses Passwordless Terverifikasi
+        <i class="fa-solid fa-shield-halved"></i> Autentikasi Terverifikasi
       </div>
 
       <!-- State: Logged In -->
       <div id="loggedInView" style="display: none;">
         <h1 class="auth-title">Akun Anda</h1>
-        <p class="auth-subtitle">Anda sedang masuk dengan sesi terautentikasi aktif.</p>
+        <p class="auth-subtitle">Anda sedang masuk dengan sesi aktif terautentikasi.</p>
         <div class="auth-user-info">
-          <div><strong>Email:</strong> <span id="userEmail">-</span></div>
-          <div style="margin-top: 6px;"><strong>Peran:</strong> <span id="userRole" style="text-transform: uppercase;">-</span></div>
-          <div style="margin-top: 6px;"><strong>ID:</strong> <span id="userId" style="font-family: monospace; font-size: 12px;">-</span></div>
+          <div><strong>Nama:</strong> <span id="userName">-</span></div>
+          <div style="margin-top: 4px;"><strong>Email:</strong> <span id="userEmail">-</span></div>
+          <div style="margin-top: 4px;"><strong>Peran:</strong> <span id="userRole" style="text-transform: uppercase;">-</span></div>
+          <div style="margin-top: 4px;"><strong>ID:</strong> <span id="userId" style="font-family: monospace; font-size: 12px;">-</span></div>
         </div>
-        <button class="auth-btn" id="btnLogout" style="background: #dc2626;">
-          <i class="fa-solid fa-right-from-bracket"></i> Keluar (Log Out)
-        </button>
+        <div style="display: flex; gap: 8px;">
+          <button class="auth-btn" id="btnLogout" style="background: #dc2626;">
+            <i class="fa-solid fa-right-from-bracket"></i> Keluar
+          </button>
+          <a href="/admin" id="btnGoAdmin" class="auth-btn" style="background: #1f2937; text-decoration: none; display: none;">
+            <i class="fa-solid fa-gauge"></i> Admin Console
+          </a>
+        </div>
       </div>
 
-      <!-- State: Form Login / Continue with Email -->
+      <!-- State: Login Forms -->
       <div id="loginFormView">
         <h1 class="auth-title">Masuk ke TIKUM</h1>
         <p class="auth-subtitle">
-          Mendukung pendaftaran baru dan pengguna lama. TIKUM menggunakan tautan akses cepat (Magic Link) tanpa perlu menyimpan kata sandi.
+          Silakan masuk ke akun pengguna atau console operasional.
         </p>
+
+        <div class="auth-tabs">
+          <button type="button" id="tabPassword" class="auth-tab active" onclick="switchTab('password')">Kata Sandi</button>
+          <button type="button" id="tabMagicLink" class="auth-tab" onclick="switchTab('magic')">Magic Link</button>
+        </div>
 
         <div id="statusBox" class="auth-status-box"></div>
 
-        <form id="magicLinkForm">
+        <!-- Form 1: Password Login -->
+        <form id="passwordLoginForm" onsubmit="handlePasswordLogin(event)">
           <div class="auth-input-group">
-            <label for="emailInput">Alamat Email</label>
-            <input 
-              type="email" 
-              id="emailInput" 
-              class="auth-input" 
-              placeholder="nama@email.com" 
-              required 
-              autocomplete="email"
-            >
+            <label for="loginEmail">Alamat Email</label>
+            <input type="email" id="loginEmail" class="auth-input" placeholder="nama@email.com" required autocomplete="email">
           </div>
 
-          <button type="submit" class="auth-btn" id="btnSubmit">
-            <span>Lanjutkan dengan Email</span>
-            <i class="fa-solid fa-arrow-right"></i>
+          <div class="auth-input-group">
+            <label for="loginPassword">Kata Sandi</label>
+            <input type="password" id="loginPassword" class="auth-input" placeholder="Kata sandi Anda" required autocomplete="current-password">
+          </div>
+
+          <button type="submit" class="auth-btn" id="btnLoginSubmit">
+            <i class="fa-solid fa-right-to-bracket"></i> Masuk
           </button>
         </form>
 
-        <p style="font-size: 12px; color: #9ca3af; text-align: center; margin-top: 20px; line-height: 1.5;">
-          Tautan akses berlaku selama 15 menit dan hanya dapat digunakan 1 kali.
-        </p>
+        <!-- Form 2: Magic Link -->
+        <form id="magicLinkForm" style="display: none;" onsubmit="handleMagicLink(event)">
+          <div class="auth-input-group">
+            <label for="magicEmail">Alamat Email</label>
+            <input type="email" id="magicEmail" class="auth-input" placeholder="nama@email.com" required autocomplete="email">
+          </div>
+
+          <button type="submit" class="auth-btn" id="btnMagicSubmit">
+            <span>Kirim Tautan Masuk</span>
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 24px; font-size: 13px; color: #6b7280;">
+          Belum memiliki akun? <a href="/signup" style="color: #059669; font-weight: 600; text-decoration: none;">Daftar akun baru</a>
+        </div>
       </div>
 
-      <!-- State: Confirmation Sent -->
-      <div id="confirmationView" style="display: none;">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <i class="fa-solid fa-envelope-circle-check" style="font-size: 48px; color: #059669;"></i>
-        </div>
-        <h1 class="auth-title" style="text-align: center;">Periksa Email Anda</h1>
-        <p class="auth-subtitle" style="text-align: center;">
-          Tautan masuk telah dikirimkan ke <strong id="sentEmail">-</strong>.<br>
-          Klik tautan di email tersebut untuk langsung masuk ke akun Anda.
+      <!-- State: Magic Link Sent -->
+      <div id="confirmationView" style="display: none; text-align: center;">
+        <i class="fa-solid fa-envelope-circle-check" style="font-size: 44px; color: #059669; margin-bottom: 12px;"></i>
+        <h2 style="font-size: 20px; font-weight: 700; margin: 0 0 8px;">Periksa Email Anda</h2>
+        <p style="font-size: 13px; color: #6b7280; margin-bottom: 16px;">
+          Tautan masuk telah dikirim ke <strong id="sentEmail">-</strong>.
         </p>
-        <div class="auth-status-box info" style="display: block; font-size: 13px;">
-          <i class="fa-solid fa-circle-info"></i> Tautan berlaku selama <strong>15 menit</strong> dan sekali pakai. Jika tidak muncul di kotak masuk, periksa folder spam.
-        </div>
-        <button class="auth-btn" style="background: #4b5563; margin-top: 16px;" onclick="window.location.reload()">
-          <i class="fa-solid fa-arrow-rotate-left"></i> Kirim Ulang atau Gunakan Email Lain
+        <button class="auth-btn" style="background: #4b5563;" onclick="window.location.reload()">
+          Kembali ke Masuk
         </button>
       </div>
     </div>
   </main>
 
   <script>
-    (async function() {
+    function switchTab(tab) {
+      const tabPwd = document.getElementById('tabPassword');
+      const tabMag = document.getElementById('tabMagicLink');
+      const formPwd = document.getElementById('passwordLoginForm');
+      const formMag = document.getElementById('magicLinkForm');
       const statusBox = document.getElementById('statusBox');
-      const loggedInView = document.getElementById('loggedInView');
-      const loginFormView = document.getElementById('loginFormView');
-      const confirmationView = document.getElementById('confirmationView');
-      const magicLinkForm = document.getElementById('magicLinkForm');
-      const emailInput = document.getElementById('emailInput');
-      const btnSubmit = document.getElementById('btnSubmit');
-      const btnLogout = document.getElementById('btnLogout');
 
-      // Check URL parameters for errors
-      const params = new URLSearchParams(window.location.search);
-      const errCode = params.get('error');
-      if (errCode) {
+      statusBox.style.display = 'none';
+
+      if (tab === 'password') {
+        tabPwd.classList.add('active');
+        tabMag.classList.remove('active');
+        formPwd.style.display = 'block';
+        formMag.style.display = 'none';
+      } else {
+        tabMag.classList.add('active');
+        tabPwd.classList.remove('active');
+        formMag.style.display = 'block';
+        formPwd.style.display = 'none';
+      }
+    }
+
+    async function handlePasswordLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const statusBox = document.getElementById('statusBox');
+      const btn = document.getElementById('btnLoginSubmit');
+
+      statusBox.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Email atau kata sandi salah');
+        }
+
+        statusBox.className = 'auth-status-box success';
+        statusBox.innerText = 'Login berhasil! Mengarahkan...';
+
+        const params = new URLSearchParams(window.location.search);
+        const redirect = params.get('redirect');
+
+        setTimeout(() => {
+          if (redirect) {
+            window.location.href = redirect;
+          } else if (data.user && (data.user.role === 'admin' || data.user.role === 'ADMIN')) {
+            window.location.href = '/admin';
+          } else {
+            window.location.href = '/';
+          }
+        }, 800);
+      } catch (err) {
         statusBox.className = 'auth-status-box error';
-        if (errCode === 'TOKEN_EXPIRED') {
-          statusBox.textContent = 'Tautan akses telah kedaluwarsa (batas 15 menit). Silakan minta tautan baru.';
-        } else if (errCode === 'TOKEN_ALREADY_USED') {
-          statusBox.textContent = 'Tautan akses ini sudah pernah digunakan (perlindungan replay). Silakan minta tautan baru.';
+        statusBox.innerText = err.message;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk';
+      }
+    }
+
+    async function handleMagicLink(e) {
+      e.preventDefault();
+      const email = document.getElementById('magicEmail').value.trim();
+      const statusBox = document.getElementById('statusBox');
+      const btn = document.getElementById('btnMagicSubmit');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
+      statusBox.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          document.getElementById('loginFormView').style.display = 'none';
+          document.getElementById('confirmationView').style.display = 'block';
+          document.getElementById('sentEmail').textContent = email;
         } else {
-          statusBox.textContent = 'Tautan verifikasi tidak valid atau telah kedaluwarsa. Silakan coba lagi.';
+          statusBox.className = 'auth-status-box error';
+          statusBox.textContent = data.error || 'Gagal mengirim tautan masuk.';
+          btn.disabled = false;
+          btn.innerHTML = '<span>Kirim Tautan Masuk</span> <i class="fa-solid fa-paper-plane"></i>';
+        }
+      } catch (err) {
+        statusBox.className = 'auth-status-box error';
+        statusBox.textContent = 'Terjadi kesalahan jaringan.';
+        btn.disabled = false;
+        btn.innerHTML = '<span>Kirim Tautan Masuk</span> <i class="fa-solid fa-paper-plane"></i>';
+      }
+    }
+
+    (async function checkSession() {
+      const params = new URLSearchParams(window.location.search);
+      const statusBox = document.getElementById('statusBox');
+
+      if (params.get('registered') === 'true') {
+        statusBox.className = 'auth-status-box success';
+        statusBox.textContent = 'Pendaftaran berhasil! Silakan masuk dengan kata sandi Anda.';
+        if (params.get('email')) {
+          document.getElementById('loginEmail').value = params.get('email');
         }
       }
 
-      // Check existing session
+      const err = params.get('error');
+      if (err) {
+        statusBox.className = 'auth-status-box error';
+        statusBox.textContent = err === 'TOKEN_EXPIRED' ? 'Tautan kedaluwarsa.' : 'Akses gagal atau tautan tidak valid.';
+      }
+
       try {
-        const res = await fetch('/api/auth/session');
+        const res = await fetch('/api/auth/me');
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated && data.user) {
-            loginFormView.style.display = 'none';
-            confirmationView.style.display = 'none';
-            loggedInView.style.display = 'block';
+            document.getElementById('loginFormView').style.display = 'none';
+            document.getElementById('loggedInView').style.display = 'block';
+            document.getElementById('userName').textContent = data.user.name || '-';
             document.getElementById('userEmail').textContent = data.user.email || '-';
             document.getElementById('userRole').textContent = data.user.role || '-';
             document.getElementById('userId').textContent = data.user.id || '-';
+            if (data.user.role === 'admin' || data.user.role === 'ADMIN') {
+              document.getElementById('btnGoAdmin').style.display = 'inline-flex';
+            }
           }
         }
-      } catch (e) {
-        // Continue unauthenticated
-      }
+      } catch (e) {}
 
-      // Handle Magic Link request
-      magicLinkForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const email = emailInput.value.trim();
-        if (!email) return;
-
-        btnSubmit.disabled = true;
-        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
-        statusBox.style.display = 'none';
-
+      document.getElementById('btnLogout').addEventListener('click', async () => {
         try {
-          const res = await fetch('/api/auth/magic-link', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email })
-          });
-          const data = await res.json();
-
-          if (res.ok) {
-            loginFormView.style.display = 'none';
-            confirmationView.style.display = 'block';
-            document.getElementById('sentEmail').textContent = email;
-          } else {
-            statusBox.className = 'auth-status-box error';
-            statusBox.textContent = data.error || 'Gagal mengirim link akses. Silakan coba beberapa saat lagi.';
-            btnSubmit.disabled = false;
-            btnSubmit.innerHTML = '<span>Lanjutkan dengan Email</span> <i class="fa-solid fa-arrow-right"></i>';
-          }
-        } catch (err) {
-          statusBox.className = 'auth-status-box error';
-          statusBox.textContent = 'Terjadi kesalahan jaringan. Silakan periksa koneksi Anda.';
-          btnSubmit.disabled = false;
-          btnSubmit.innerHTML = '<span>Lanjutkan dengan Email</span> <i class="fa-solid fa-arrow-right"></i>';
-        }
+          await fetch('/api/auth/logout', { method: 'POST' });
+        } catch (e) {}
+        window.location.reload();
       });
-
-      // Handle Logout
-      if (btnLogout) {
-        btnLogout.addEventListener('click', async function() {
-          btnLogout.disabled = true;
-          try {
-            await fetch('/api/auth/logout', { method: 'POST' });
-          } catch (e) {}
-          window.location.reload();
-        });
-      }
     })();
   </script>
 </body>

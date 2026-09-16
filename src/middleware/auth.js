@@ -116,15 +116,24 @@ function authenticate(req, res, next) {
       code: 'AUTH_REQUIRED'
     });
   }
+  if (user.status && user.status.toUpperCase() === 'SUSPENDED') {
+    return res.status(403).json({
+      error: 'Account is suspended. Access denied.',
+      code: 'USER_SUSPENDED'
+    });
+  }
   next();
 }
+
+const requireAuth = authenticate;
 
 /**
  * Middleware: Requires a specific server-side role.
  * Role is read strictly from trusted req.user.role, never client inputs.
  */
 function authorize(allowedRoles = []) {
-  const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+  const rawRoles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+  const normalizedAllowed = rawRoles.map(r => (typeof r === 'string' ? r.toUpperCase() : r));
   
   return (req, res, next) => {
     const user = req.user || resolveUser(req);
@@ -135,11 +144,27 @@ function authorize(allowedRoles = []) {
       });
     }
 
-    if (roles.length > 0 && !roles.includes(user.role)) {
+    if (user.status && user.status.toUpperCase() === 'SUSPENDED') {
       return res.status(403).json({
-        error: `Forbidden: role '${user.role}' not permitted for this action`,
-        code: 'FORBIDDEN'
+        error: 'Account is suspended. Access denied.',
+        code: 'USER_SUSPENDED'
       });
+    }
+
+    const userRole = (user.role || '').toUpperCase();
+    if (normalizedAllowed.length > 0) {
+      const isAllowed = normalizedAllowed.some(role => {
+        if (role === 'ADMIN' && userRole === 'ADMIN') return true;
+        if (role === 'USER' && (userRole === 'USER' || userRole === 'BUYER' || userRole === 'SELLER' || userRole === 'PIC')) return true;
+        return role === userRole;
+      });
+
+      if (!isAllowed) {
+        return res.status(403).json({
+          error: `Forbidden: role '${user.role}' not permitted for this action`,
+          code: 'FORBIDDEN'
+        });
+      }
     }
 
     next();
@@ -148,13 +173,14 @@ function authorize(allowedRoles = []) {
 
 /**
  * Middleware: Requires authenticated admin role.
- * Shorthand for authorize(['admin']).
+ * Shorthand for authorize(['ADMIN']).
  */
-const requireAdmin = authorize(['admin']);
+const requireAdmin = authorize(['ADMIN']);
 
 module.exports = {
   resolveUser,
   authenticate,
+  requireAuth,
   authorize,
   requireAdmin,
   parseCookies

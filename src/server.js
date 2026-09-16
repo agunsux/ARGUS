@@ -122,6 +122,10 @@ app.use(contentAdminRouter);
 const adminTrustRouter = require('./api/adminTrustRouter');
 app.use('/api/admin/trust', adminTrustRouter);
 
+// Mount Admin Control Plane APIs (Epic 5.1)
+const adminRouter = require('./api/adminRouter');
+app.use('/api/admin', adminRouter);
+
 // Mount Canonical Authentication APIs (Magic Link, Sessions)
 const authRouter = require('./api/authRouter');
 app.use('/api/auth', authRouter);
@@ -131,6 +135,7 @@ const publicDir = path.resolve(__dirname, '../public');
 const { businessProfile } = require('./config/businessProfile');
 app.get('/api/business-profile', (req, res) => res.json(businessProfile));
 
+app.get('/signup', (req, res) => res.sendFile(path.join(publicDir, 'signup.html'), sendFileOpts));
 app.get('/login', (req, res) => res.sendFile(path.join(publicDir, 'login.html'), sendFileOpts));
 app.get('/create', (req, res) => res.sendFile(path.join(publicDir, 'create.html'), sendFileOpts));
 app.get('/pay/:id', (req, res) => res.sendFile(path.join(publicDir, 'pay.html'), sendFileOpts));

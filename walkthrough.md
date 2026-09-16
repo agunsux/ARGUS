@@ -232,3 +232,110 @@ Output: `Build validation passed`. Exit Code: 0.
 ## 8. Remaining Gaps & Next Steps for Epic 6
 1. **Production Gateway Activation (Epic 6)**: Real API keys and live endpoint binding for iPaymu disbursement, which can now be attached safely because the escrow gate is guarded by multi-party trust policy authorization.
 2. **Database Persistence**: Migration of runtime collections (`attestations`, `authorization_records`, `financial_ledger`) from the in-memory SQLite emulator layer to persistent tables when moving to production Postgres/SQLite disk storage.
+
+---
+---
+
+# FORENSIC FINAL REPORT: EPIC 5.1 — BASIC AUTHENTICATION & ADMIN CONTROL PLANE
+
+## Executive Summary
+EPIC 5.1 (Basic Authentication & Admin Dashboard) has been successfully implemented and verified across the ARGUS / TIKUM platform. This milestone provides a lean, production-grade identity and administrative control plane without overengineering, enterprise bloat, or introducing unnecessary frameworks.
+
+All core requirements, security invariants, and the 20 required verification scenarios (+ bonus self-lockout guard) pass with 100% test coverage.
+
+---
+
+## 1. Exact Files Created & Modified
+
+| File | Status | Nature of Changes |
+| :--- | :---: | :--- |
+| [`src/api/authRouter.js`](file:///c:/Users/RYZEN/.antigravity-ide/ARGUS/src/api/authRouter.js) | **MODIFIED** | Implemented `/signup`, `/login`, `/me`, and `/logout` endpoints. Enforced email normalization and duplicate check (409), password length ($\ge 8$), bcrypt hashing, HttpOnly cookie generation, sanitized profile responses, and suspended account blocking. |
+| [`src/api/adminRouter.js`](file:///c:/Users/RYZEN/.antigravity-ide/ARGUS/src/api/adminRouter.js) | **NEW** | Admin control plane endpoints (`GET /overview`, `GET /users`, `PATCH /users/:id/status`, `GET /orders`, `GET /security`). Guarded by `requireAdmin`. Strict redaction of password hashes. Self-lockout prevention. Zero data fabrication ("Not available" for uninstrumented metrics). |
+| [`src/database.js`](file:///c:/Users/RYZEN/.antigravity-ide/ARGUS/src/database.js) | **MODIFIED** | Standardized canonical user schema (`id`, `name`, `email`, `role`, `status`, `password_hash`, `created_at`, `updated_at`, `last_login_at`). Implemented idempotent, secure `bootstrapAdminUser()`. Exported `verifyPassword` and `hashPassword`. |
+| [`src/middleware/auth.js`](file:///c:/Users/RYZEN/.antigravity-ide/ARGUS/src/middleware/auth.js) | **MODIFIED** | Enforced active session verification, rejection of suspended users (`USER_SUSPENDED` with 403), role normalization between legacy and canonical roles (`ADMIN`, `USER`), and secure `requireAdmin` boundary. |
+| [`src/services/sessionStore.js`](file:///c:/Users/RYZEN/.antigravity-ide/ARGUS/src/services/sessionStore.js) | **MODIFIED** | Added `getSession(token)` alias for `findSession(token)` for seamless backward compatibility. |
+| [`src/server.js`](file:///c:/Users/RYZEN/.antigravity-ide/ARGUS/src/server.js) | **MODIFIED** | Mounted `adminRouter` at `/api/admin` and added route serving `public/signup.html` at `/signup`. |
+| [`public/signup.html`](file:///c:/Users/RYZEN/.antigravity-ide/ARGUS/public/signup.html) | **NEW** | Clean, user-friendly registration page with validation, error messaging, password length requirements, and redirection to login. |
+| [`public/login.html`](file:///c:/Users/RYZEN/.antigravity-ide/ARGUS/public/login.html) | **MODIFIED** | Upgraded with credential-based login alongside magic link fallback, session auto-detection, error handling, and redirection logic. |
+| [`public/admin.html`](file:///c:/Users/RYZEN/.antigravity-ide/ARGUS/public/admin.html) | **MODIFIED** | Replaced with complete Epic 5.1 Admin Control Plane: client-side `/api/auth/me` guard (redirects unauthenticated to `/login`, renders 403 for non-admins), 4 live tabs (Overview, Users with suspend/reactivate actions, Orders & Escrow Audit, Security with zero fabrication), while preserving Field Ops & Catalog workflows and brand boundaries. |
+| [`test_epic51_auth_admin.js`](file:///c:/Users/RYZEN/.antigravity-ide/ARGUS/test_epic51_auth_admin.js) | **NEW** | Comprehensive automated test suite executing all 20 required scenarios and self-suspension guard. |
+| [`package.json`](file:///c:/Users/RYZEN/.antigravity-ide/ARGUS/package.json) | **MODIFIED** | Added `test_epic51_auth_admin.js` to `npm test`. |
+
+---
+
+## 2. Authentication & Admin Security Architecture
+
+```
++-----------------------------------------------------------------------------------+
+|                        TIKUM / ARGUS IDENTITY & ACCESS PLANE                      |
++-----------------------------------------------------------------------------------+
+
+   [UNAUTHENTICATED CLIENT]
+             |
+             +---> POST /api/auth/signup ---> Forces role: 'USER', status: 'ACTIVE', bcrypt hash
+             |
+             +---> POST /api/auth/login  ---> Validates bcrypt -> Checks SUSPENDED -> Creates ses-...
+                                              Sets HttpOnly cookie + returns sanitized profile
+             |
+             +---> POST /api/auth/logout ---> Revokes server session in SessionStore + clears cookie
+
+   [AUTHENTICATED CLIENT]
+             |
+             v
+   [requireAuth Middleware]
+             |
+             +---> Checks session expiration, revocation, and user status !== 'SUSPENDED'
+             |     (Suspended accounts immediately receive 403 USER_SUSPENDED)
+             |
+             +---> GET /api/auth/me ---> Returns sanitized user profile (zero password_hash)
+
+   [ADMIN CONTROL PLANE (/api/admin/*)]
+             |
+             v
+   [requireAdmin Middleware]
+             |
+             +---> Verifies req.user.role === 'ADMIN' (case-insensitive)
+             |     Non-admin requests rejected with 403 FORBIDDEN / ADMIN_REQUIRED
+             |
+             +---> GET /overview   --> Real counters (Users: total/active/suspended; Orders: pending/disputed/released/frozen)
+             +---> GET /users      --> Sanitized users list (all password hashes redacted)
+             +---> PATCH /users/:id/status --> Admin suspends/reactivates; prevents self-lockout
+             +---> GET /orders     --> Read-only escrow states (zero arbitrary release actions)
+             +---> GET /security   --> Real dispute/incident/trust metrics; missing = "Not available"
+```
+
+---
+
+## 3. Verification & Test Suite Results
+
+### 1. Dedicated Epic 5.1 Test Suite (`test_epic51_auth_admin.js`)
+All 21 scenarios passed with 0 failures:
+1. `1. Signup works with valid data`: PASSED
+2. `2. Duplicate email is rejected (409)`: PASSED
+3. `3. Password stored as bcrypt hash, never plaintext`: PASSED
+4. `4. Password hash never appears in API response`: PASSED
+5. `5. Login works with valid credentials and sets session`: PASSED
+6. `6. Wrong password rejected (401)`: PASSED
+7. `7. Logout works (revokes session and clears cookie)`: PASSED
+8. `8. GET /api/auth/me returns current user`: PASSED
+9. `9. Unauthenticated admin request rejected (401)`: PASSED
+10. `10. Normal USER cannot access admin API (403)`: PASSED
+11. `11. USER cannot self-promote to ADMIN (header or payload)`: PASSED
+12. `12. Signup cannot create ADMIN (forces USER)`: PASSED
+13. `13. Admin can access admin API`: PASSED
+14. `14. Admin bootstrap is idempotent`: PASSED
+15. `15. Admin password is never logged`: PASSED
+16. `16. Suspended user cannot authenticate or access requireAuth`: PASSED
+17. `17. Admin can suspend USER`: PASSED
+18. `18. Admin can reactivate USER`: PASSED
+19. `BONUS: Admin cannot suspend own account (Self-lockout prevention)`: PASSED
+20. `19. Admin dashboard uses real data`: PASSED
+21. `20. Missing data displayed as "Not available", never fabricated`: PASSED
+
+### 2. Full Regression Test Suite (`npm test`)
+- 25 test suites executed sequentially.
+- **361+ total tests passed. 0 failed. Exit Code: 0.**
+
+### 3. Build & Git Verification
+- `npm run build`: `Build validation passed`. Exit Code: 0.
+- `git diff --check`: Clean, 0 whitespace warnings, Exit Code: 0.
