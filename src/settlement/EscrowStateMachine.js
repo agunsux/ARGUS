@@ -176,6 +176,19 @@ class EscrowStateMachine {
       }
     }
 
+    // Mandatory Security Invariant: RELEASED requires FINANCIAL_RELEASE_AUTHORIZED
+    if (next === ESCROW_LIFECYCLE_STATE.RELEASED) {
+      const { TrustPolicyEngine } = require('../trust/TrustPolicyEngine');
+      const isAuth = TrustPolicyEngine.isReleaseAuthorized(orderId, metadata?.authorization_id);
+      if (!isAuth) {
+        const err = new Error(
+          'Security invariant violation: State machine transition to RELEASED requires FINANCIAL_RELEASE_AUTHORIZED = TRUE from Trust Policy Engine'
+        );
+        err.code = 'FINANCIAL_RELEASE_NOT_AUTHORIZED';
+        throw err;
+      }
+    }
+
     if (next === ESCROW_LIFECYCLE_STATE.ENTRY_CONFIRMED) {
       if (actorRole !== 'pic' && actorRole !== 'admin' && actorRole !== 'SYSTEM') {
         const err = new Error('Unauthorized: only assigned Event PIC or Admin can confirm venue gate entry');

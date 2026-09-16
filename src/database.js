@@ -34,7 +34,10 @@ const state = {
   incidents: [],
   financial_ledger: [],
   magic_link_tokens: [],
-  processed_webhooks: new Set()
+  processed_webhooks: new Set(),
+  attestations: [],
+  authorization_records: [],
+  pic_velocity_log: []
 };
 
 let seqId = 1;
@@ -701,6 +704,9 @@ function resetDatabase() {
   state.incidents = [];
   state.financial_ledger = [];
   state.processed_webhooks = new Set();
+  state.attestations = [];
+  state.authorization_records = [];
+  state.pic_velocity_log = [];
 
   try {
     const { canonicalRegistry } = require('./discovery/CanonicalEventRegistry');

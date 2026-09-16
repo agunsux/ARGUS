@@ -426,13 +426,21 @@ async function runSuite() {
       reason: 'Cooling-off window elapsed post-admission'
     });
 
-    // 10. RELEASE_PENDING -> RELEASED (Terminal success)
+    // Authorize release through TrustPolicyEngine
+    const { TrustPolicyEngine, ATTESTATION_TYPE } = require('./src/trust/TrustPolicyEngine');
+    await TrustPolicyEngine.recordAttestation({ orderId: testOrderId, attestationType: ATTESTATION_TYPE.PLATFORM_ATTESTATION, actorId: 'SYSTEM', actorRole: 'system', result: 'PASS' });
+    await TrustPolicyEngine.recordAttestation({ orderId: testOrderId, attestationType: ATTESTATION_TYPE.TICKET_EVIDENCE_ATTESTATION, actorId: 'SYSTEM', actorRole: 'system', result: 'PASS' });
+    await TrustPolicyEngine.recordAttestation({ orderId: testOrderId, attestationType: ATTESTATION_TYPE.PAYMENT_ATTESTATION, actorId: 'SYSTEM', actorRole: 'system', result: 'PASS' });
+    const authRecord = await TrustPolicyEngine.evaluateAuthorization(testOrderId);
+
+    // 10. RELEASE_PENDING -> RELEASED (Terminal success with verified authorization)
     const finalTransition = await EscrowStateMachine.transition({
       orderId: testOrderId,
       targetState: ESCROW_LIFECYCLE_STATE.RELEASED,
       actorId: 'admin-1',
       actorRole: 'admin',
-      reason: 'Settlement disbursed to seller'
+      reason: 'Settlement disbursed to seller',
+      metadata: { authorization_id: authRecord.authorization_id }
     });
 
     assert.strictEqual(finalTransition.current_state, ESCROW_LIFECYCLE_STATE.RELEASED);

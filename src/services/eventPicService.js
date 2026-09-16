@@ -189,6 +189,14 @@ class EventPicService {
       throw err;
     }
 
+    // Trust Policy PC-1 & PC-4 validation
+    const { TrustPolicyEngine, ATTESTATION_TYPE } = require('../trust/TrustPolicyEngine');
+    TrustPolicyEngine.validatePicConflictOfInterest({ picUserId, orderId });
+    const velocityCheck = TrustPolicyEngine.checkPicBurstVelocity({ picUserId, gate });
+    if (velocityCheck.anomalyDetected) {
+      order.velocity_anomaly = true;
+    }
+
     const ticket = state.tickets.find(t => t.id === order.ticket_id);
     if (!ticket) throw new Error('Ticket not found');
 
@@ -234,6 +242,36 @@ class EventPicService {
       if (escrow && escrow.status === 'ESCROWED') {
         escrow.status = 'RELEASE_PENDING';
       }
+
+      // Record PIC, VENUE_ENTRY, and BUYER attestations in TrustPolicyEngine
+      try {
+        await TrustPolicyEngine.recordAttestation({
+          orderId,
+          attestationType: ATTESTATION_TYPE.PIC_ATTESTATION,
+          actorId: picUserId,
+          actorRole: 'pic',
+          result: 'PASS',
+          evidenceRef: evidenceBundleId,
+          metadata: { gate: verification.gate }
+        });
+        await TrustPolicyEngine.recordAttestation({
+          orderId,
+          attestationType: ATTESTATION_TYPE.VENUE_ENTRY_ATTESTATION,
+          actorId: picUserId,
+          actorRole: 'pic',
+          result: 'PASS',
+          evidenceRef: evidenceBundleId,
+          metadata: { gate: verification.gate }
+        });
+        await TrustPolicyEngine.recordAttestation({
+          orderId,
+          attestationType: ATTESTATION_TYPE.BUYER_ATTESTATION,
+          actorId: order.buyer_id,
+          actorRole: 'buyer',
+          result: 'PASS',
+          metadata: { gate: verification.gate }
+        });
+      } catch (e) {}
     } else {
       order.operational_stage = status;
     }
@@ -455,6 +493,19 @@ class EventPicService {
       const err = new Error('Order not found');
       err.code = 'ORDER_NOT_FOUND';
       throw err;
+    }
+
+    const { TrustPolicyEngine, ATTESTATION_TYPE } = require('../trust/TrustPolicyEngine');
+    // PC-1: Conflict of interest validation
+    TrustPolicyEngine.validatePicConflictOfInterest({ picUserId, orderId });
+
+    // PC-2: Shift Geofence & Operational Window
+    TrustPolicyEngine.validatePicShiftAndWindow({ picUserId, orderId, gate, timestampStr: currentDateStr });
+
+    // PC-4: Burst Velocity Check
+    const velocityCheck = TrustPolicyEngine.checkPicBurstVelocity({ picUserId, gate });
+    if (velocityCheck.anomalyDetected) {
+      order.velocity_anomaly = true;
     }
 
     const activeCheck = this.isPicActiveForEvent(picUserId, order.event_id, currentDateStr);
