@@ -201,23 +201,55 @@ class TrustPolicyEngine {
 
     // Role authorization boundary: Actor identity must match attestation scope
     const normalizedRole = actorRole.toLowerCase();
-    if (attestationType === ATTESTATION_TYPE.BUYER_ATTESTATION && normalizedRole !== 'buyer') {
-      const err = new Error('Unauthorized: only buyer can provide BUYER_ATTESTATION');
-      err.code = 'UNAUTHORIZED_ATTESTOR';
-      err.status = 403;
-      throw err;
+    if (attestationType === ATTESTATION_TYPE.BUYER_ATTESTATION) {
+      if (normalizedRole !== 'buyer') {
+        const err = new Error('Unauthorized: only buyer can provide BUYER_ATTESTATION');
+        err.code = 'UNAUTHORIZED_ATTESTOR';
+        err.status = 403;
+        throw err;
+      }
+      const order = state.orders ? state.orders.find(o => o.id === orderId) : null;
+      if (order && actorId !== order.buyer_id) {
+        const err = new Error('Unauthorized: actor ID does not match order buyer');
+        err.code = 'UNAUTHORIZED_ATTESTOR';
+        err.status = 403;
+        throw err;
+      }
     }
-    if ((attestationType === ATTESTATION_TYPE.PIC_ATTESTATION || attestationType === ATTESTATION_TYPE.VENUE_ENTRY_ATTESTATION) && normalizedRole !== 'pic' && normalizedRole !== 'admin') {
-      const err = new Error('Unauthorized: only PIC or Admin can provide PIC/VENUE_ENTRY_ATTESTATION');
-      err.code = 'UNAUTHORIZED_ATTESTOR';
-      err.status = 403;
-      throw err;
+    if (attestationType === ATTESTATION_TYPE.SELLER_ATTESTATION) {
+      if (normalizedRole !== 'seller' && normalizedRole !== 'admin') {
+        const err = new Error('Unauthorized: only seller can provide SELLER_ATTESTATION');
+        err.code = 'UNAUTHORIZED_ATTESTOR';
+        err.status = 403;
+        throw err;
+      }
+      const order = state.orders ? state.orders.find(o => o.id === orderId) : null;
+      if (order && normalizedRole === 'seller' && actorId !== order.seller_id) {
+        const err = new Error('Unauthorized: actor ID does not match order seller');
+        err.code = 'UNAUTHORIZED_ATTESTOR';
+        err.status = 403;
+        throw err;
+      }
     }
-    if (attestationType === ATTESTATION_TYPE.PLATFORM_ATTESTATION && normalizedRole !== 'system' && normalizedRole !== 'admin') {
-      const err = new Error('Unauthorized: only SYSTEM or Admin can provide PLATFORM_ATTESTATION');
-      err.code = 'UNAUTHORIZED_ATTESTOR';
-      err.status = 403;
-      throw err;
+    if (attestationType === ATTESTATION_TYPE.PIC_ATTESTATION || attestationType === ATTESTATION_TYPE.VENUE_ENTRY_ATTESTATION) {
+      if (normalizedRole !== 'pic' && normalizedRole !== 'admin') {
+        const err = new Error('Unauthorized: only PIC or Admin can provide PIC/VENUE_ENTRY_ATTESTATION');
+        err.code = 'UNAUTHORIZED_ATTESTOR';
+        err.status = 403;
+        throw err;
+      }
+    }
+    if (
+      attestationType === ATTESTATION_TYPE.PLATFORM_ATTESTATION ||
+      attestationType === ATTESTATION_TYPE.PAYMENT_ATTESTATION ||
+      attestationType === ATTESTATION_TYPE.TICKET_EVIDENCE_ATTESTATION
+    ) {
+      if (normalizedRole !== 'system' && normalizedRole !== 'admin') {
+        const err = new Error(`Unauthorized: only SYSTEM or Admin can provide ${attestationType}`);
+        err.code = 'UNAUTHORIZED_ATTESTOR';
+        err.status = 403;
+        throw err;
+      }
     }
 
     if (!state.attestations) {
@@ -381,22 +413,43 @@ class TrustPolicyEngine {
     const financialReleaseAuthorized = (outcome === AUTHORIZATION_OUTCOME.PASS);
     const now = new Date().toISOString();
 
+    const satisfiedAttestations = [];
+    const failedAttestations = [];
+    for (const [type, att] of receivedMap.entries()) {
+      if (att.result === 'PASS') {
+        satisfiedAttestations.push(type);
+      } else {
+        failedAttestations.push(type);
+      }
+    }
+    const allReasons = [...blockingReasons, ...exceptionReasons];
+    const conflicts = [...exceptionReasons];
+
     const authRecord = {
       authorization_id: `auth-${uuidv4()}`,
       order_id: orderId,
       risk_level: riskAssessment.riskLevel,
+      riskLevel: riskAssessment.riskLevel,
       policy_version: policy.policy_version,
       status: financialReleaseAuthorized ? 'AUTHORIZED' : outcome,
       outcome: outcome,
+      decision: outcome,
       financial_release_authorized: financialReleaseAuthorized,
+      authorized: financialReleaseAuthorized,
       required_attestations: requiredTypes,
       received_attestations: Array.from(receivedMap.keys()),
+      satisfied_attestations: satisfiedAttestations,
+      failed_attestations: failedAttestations,
       missing_attestations: missingAttestations,
+      conflicts: conflicts,
+      reasons: allReasons,
       blocking_reasons: blockingReasons,
       exception_reasons: exceptionReasons,
       authorized_at: financialReleaseAuthorized ? now : null,
       policy_decision_reference: `dec-${Date.now()}`,
-      created_at: now
+      created_at: now,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      revoked_at: null
     };
 
     if (!state.authorization_records) {
@@ -427,25 +480,42 @@ class TrustPolicyEngine {
    */
   static isReleaseAuthorized(orderId, expectedAuthId = null) {
     if (!state.authorization_records) return false;
-    const record = state.authorization_records.find(r => r.order_id === orderId);
-    if (!record) return false;
 
-    if (expectedAuthId && record.authorization_id !== expectedAuthId) {
+    let record = null;
+    if (expectedAuthId) {
+      record = state.authorization_records.find(r => r.authorization_id === expectedAuthId);
+      if (!record || record.order_id !== orderId) {
+        return false;
+      }
+    } else {
+      record = state.authorization_records.find(r => r.order_id === orderId);
+      if (!record) return false;
+    }
+
+    // Verify authorization has not been revoked
+    if (record.revoked_at) {
       return false;
     }
 
-    // Verify hold states in live state to prevent stale authorization race
+    // Verify authorization has not expired
+    if (record.expires_at && new Date(record.expires_at).getTime() <= Date.now()) {
+      return false;
+    }
+
+    // Verify hold and terminal states in live state to prevent stale authorization race
     const escrow = state.escrows ? state.escrows.find(e => e.order_id === orderId) : null;
     const order = state.orders ? state.orders.find(o => o.id === orderId) : null;
 
-    if (escrow && (escrow.status === 'DISPUTED' || escrow.status === 'FROZEN' || escrow.status === 'REFUND_PENDING')) {
+    const blockedStates = ['DISPUTED', 'FROZEN', 'REFUND_PENDING', 'REJECTED', 'CANCELLED'];
+    if (escrow && blockedStates.includes((escrow.status || '').toUpperCase())) {
       return false;
     }
-    if (order && (order.status === 'DISPUTED' || order.status === 'FROZEN' || order.status === 'REFUND_PENDING')) {
+    if (order && blockedStates.includes((order.status || '').toUpperCase())) {
       return false;
     }
 
-    return record.financial_release_authorized === true && record.outcome === AUTHORIZATION_OUTCOME.PASS;
+    return (record.financial_release_authorized === true || record.authorized === true) &&
+      (record.outcome === AUTHORIZATION_OUTCOME.PASS || record.decision === AUTHORIZATION_OUTCOME.PASS);
   }
 
   /**
@@ -483,7 +553,7 @@ class TrustPolicyEngine {
       throw err;
     }
 
-    // Hard Block 3: Direct Phone or NIK Match
+    // Hard Block 3: Direct Phone Match
     if (picUser && buyer && picUser.phone && picUser.phone === buyer.phone) {
       const err = new Error('Security Violation (PC-1): Collusion detected — PIC shares phone number with buyer');
       err.code = 'COLLUSION_SELF_DEALING_DETECTED';
@@ -492,6 +562,24 @@ class TrustPolicyEngine {
     }
     if (picUser && seller && picUser.phone && picUser.phone === seller.phone) {
       const err = new Error('Security Violation (PC-1): Collusion detected — PIC shares phone number with seller');
+      err.code = 'COLLUSION_SELF_DEALING_DETECTED';
+      err.status = 403;
+      throw err;
+    }
+
+    // Hard Block 4: Direct NIK Match
+    const picNik = picUser?.nik_hash || picUser?.nik || state.seller_profiles?.find(sp => sp.user_id === picUserId)?.nik_hash;
+    const buyerNik = buyer?.nik_hash || buyer?.nik || state.seller_profiles?.find(sp => sp.user_id === order.buyer_id)?.nik_hash;
+    const sellerNik = seller?.nik_hash || seller?.nik || state.seller_profiles?.find(sp => sp.user_id === order.seller_id)?.nik_hash;
+
+    if (picNik && buyerNik && picNik === buyerNik) {
+      const err = new Error('Security Violation (PC-1): Collusion detected — PIC shares NIK/identity with buyer');
+      err.code = 'COLLUSION_SELF_DEALING_DETECTED';
+      err.status = 403;
+      throw err;
+    }
+    if (picNik && sellerNik && picNik === sellerNik) {
+      const err = new Error('Security Violation (PC-1): Collusion detected — PIC shares NIK/identity with seller');
       err.code = 'COLLUSION_SELF_DEALING_DETECTED';
       err.status = 403;
       throw err;

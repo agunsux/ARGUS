@@ -28,6 +28,7 @@
  * 24. Cross-transaction authorization token reuse -> FAIL (FINANCIAL_RELEASE_NOT_AUTHORIZED)
  */
 
+process.env.NODE_ENV = 'test';
 const assert = require('assert');
 const { state, resetDatabase } = require('./src/database');
 const { TrustPolicyEngine, RISK_LEVEL, ATTESTATION_TYPE, AUTHORIZATION_OUTCOME } = require('./src/trust/TrustPolicyEngine');
@@ -970,6 +971,106 @@ async function runEpic5Suite() {
       assert.strictEqual(e.code, 'FINANCIAL_RELEASE_NOT_AUTHORIZED');
     }
     assert.ok(crossReuseBlocked, 'Cross-transaction authorization token reuse must be rejected');
+
+    // Test authorization expiration check
+    authRecordA.expires_at = new Date(Date.now() - 5000).toISOString();
+    assert.strictEqual(TrustPolicyEngine.isReleaseAuthorized(orderA.id, authRecordA.authorization_id), false, 'Expired authorization must be rejected');
+    authRecordA.expires_at = new Date(Date.now() + 3600000).toISOString();
+
+    // Test authorization revocation check
+    authRecordA.revoked_at = new Date().toISOString();
+    assert.strictEqual(TrustPolicyEngine.isReleaseAuthorized(orderA.id, authRecordA.authorization_id), false, 'Revoked authorization must be rejected');
+    authRecordA.revoked_at = null;
+    assert.strictEqual(TrustPolicyEngine.isReleaseAuthorized(orderA.id, authRecordA.authorization_id), true, 'Valid authorization must be accepted');
+  });
+
+  // -------------------------------------------------------------------------
+  // SCENARIO 25: Accepted counter-offer passes through normal transaction/trust/escrow authorization path
+  // -------------------------------------------------------------------------
+  await testAsync('Scenario 25: Accepted counter-offer passes through normal transaction/trust/escrow authorization path', async () => {
+    const { ListingService } = require('./src/services/listingService');
+    const { OfferService, OFFER_STATUS } = require('./src/services/offerService');
+
+    // 1. Create and verify listing
+    const listingRes = await ListingService.createListing({
+      sellerId: 'seller-1',
+      eventId: 'event-coldplay',
+      seatInfo: 'VIP Row 10',
+      faceValue: 2000000,
+      price: 2500000,
+      rawBarcode: 'BC-COUNTER-OFFER-EPIC5'
+    });
+    await ListingService.verifyListing(listingRes.listing.id, 'admin-1', { approved: true });
+
+    // 2. Buyer makes initial offer
+    const initialOffer = await OfferService.createOffer({
+      buyerId: 'buyer-1',
+      listingId: listingRes.listing.id,
+      offerAmount: 2100000
+    });
+    assert.strictEqual(initialOffer.status, OFFER_STATUS.PENDING);
+
+    // 3. Seller counters the offer
+    const counterOfferRes = await OfferService.counterOffer({
+      offerId: initialOffer.id,
+      sellerId: 'seller-1',
+      counterAmount: 2300000
+    });
+    assert.strictEqual(counterOfferRes.status, OFFER_STATUS.COUNTERED);
+
+    // INVARIANT: counter-offer creation MUST NOT trigger escrow release or financial payout
+    const initialEscrow = state.escrows.find(e => e.order_id === `ord-${counterOfferRes.id}`);
+    assert.strictEqual(initialEscrow, undefined, 'No escrow released or created on bare counter-offer');
+
+    // 4. Buyer accepts the counter-offer -> creates Order & Escrow in PENDING_PAYMENT
+    const acceptedRes = await OfferService.acceptCounterOffer({
+      offerId: initialOffer.id,
+      buyerId: 'buyer-1'
+    });
+    assert.strictEqual(acceptedRes.offer.status, OFFER_STATUS.ACCEPTED);
+    const orderId = acceptedRes.order.id;
+    assert.strictEqual(acceptedRes.order.ticket_price, 2300000);
+
+    // INVARIANT: Attempting release immediately fails (no payment, no entry, no trust authorization)
+    let prematureReleaseFailed = false;
+    try {
+      await EscrowService.releaseToSeller(orderId, 'admin-1');
+    } catch (e) {
+      prematureReleaseFailed = true;
+      assert.ok(e.code === 'INVALID_ESCROW_STATE' || e.code === 'ENTRY_NOT_CONFIRMED');
+    }
+    assert.ok(prematureReleaseFailed, 'Release must fail on unpaid/unverified counter-offer order');
+
+    // 5. Payment is captured into escrow
+    await EscrowService.recordPayment({
+      orderId,
+      providerRef: `pay-ref-${orderId}`,
+      idempotencyKey: `idemp-counter-${orderId}`,
+      amountPaid: acceptedRes.pricing.totalAmount
+    });
+
+    // 6. PIC verifies entry at gate
+    await EventPicService.recordEntryVerification({
+      picUserId: 'pic-1',
+      orderId,
+      gate: 'Gate 1',
+      status: 'CONFIRMED'
+    });
+
+    // 7. Trust Policy evaluates and authorizes release
+    const authDecision = await TrustPolicyEngine.evaluateAuthorization(orderId);
+    assert.strictEqual(authDecision.financial_release_authorized, true);
+    assert.strictEqual(authDecision.authorized, true);
+    assert.strictEqual(authDecision.decision, 'PASS');
+    assert.ok(authDecision.satisfied_attestations.length > 0);
+    assert.strictEqual(authDecision.revoked_at, null);
+
+    // 8. Escrow release succeeds following full trust & authorization pipeline
+    const releaseRes = await EscrowService.releaseToSeller(orderId, 'admin-1');
+    assert.strictEqual(releaseRes.success, true);
+    assert.strictEqual(releaseRes.alreadyReleased, false);
+    assert.strictEqual(releaseRes.escrow.status, ESCROW_STATUS.RELEASED);
+    assert.strictEqual(releaseRes.order.status, ORDER_STATUS.SETTLED);
   });
 
   console.log('\n================================================================');

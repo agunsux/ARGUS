@@ -189,9 +189,10 @@ class EventPicService {
       throw err;
     }
 
-    // Trust Policy PC-1 & PC-4 validation
+    // Trust Policy PC-1, PC-2 & PC-4 validation
     const { TrustPolicyEngine, ATTESTATION_TYPE } = require('../trust/TrustPolicyEngine');
     TrustPolicyEngine.validatePicConflictOfInterest({ picUserId, orderId });
+    TrustPolicyEngine.validatePicShiftAndWindow({ picUserId, orderId, gate, timestampStr: currentDateStr });
     const velocityCheck = TrustPolicyEngine.checkPicBurstVelocity({ picUserId, gate });
     if (velocityCheck.anomalyDetected) {
       order.velocity_anomaly = true;
