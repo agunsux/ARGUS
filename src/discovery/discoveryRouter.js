@@ -24,6 +24,8 @@ const { PromoterImportService, MAX_CSV_BYTES } = require('./PromoterImportServic
 const { discoverySignalService, SIGNAL_STATUS } = require('./EventDiscoverySignalService');
 const { state, recordAuditLog } = require('../database');
 const { renderFooterHtml } = require('../config/businessProfile');
+const { cityRegistry, CityRegistry } = require('./CityRegistry');
+const { PopularityEngine } = require('./PopularityEngine');
 
 // ==========================================
 // PROMOTER IMPORT ADMIN GUARD & CSV UPLOAD
@@ -127,7 +129,7 @@ router.get('/events/:slug', (req, res, next) => {
 
   if (!event) {
     // Fallback: search in state.events if not in registry
-    const legacy = (state.events || []).find(e => e.id === slug || e.slug === slug);
+    const legacy = (state.events || []).find(e => e.id === slug || e.slug === slug || EventNormalizationService.generateSlug(e.name || e.title, e.venue_city || e.city, e.date || e.start_date) === slug);
     if (!legacy) {
       return res.status(404).send(`<!DOCTYPE html>
         <html><head><title>Event Not Found — Tikum</title></head>
@@ -529,47 +531,257 @@ router.get('/promoters/apmi/:slug', (req, res) => {
 /**
  * GET /api/discovery/events
  * JSON listing of canonical events with search, city, category filters
+ * Core canonical handler for GET /api/events and GET /api/discovery/events
+ * Supports:
+ * - Sorting:
+ *   sort=nearest (Haversine distance ASC + event_date ASC)
+ *   sort=upcoming (Strict chronological event_date ASC)
+ *   sort=popular (popularity_score DESC)
+ *   sort=trending (demand velocity)
+ *   sort=local_gems (deterministic regional score DESC)
+ * - Filtering: q, city, province, category, artist, venue, promoter, date_from, date_to, verified_only, status
  */
-router.get('/api/discovery/events', (req, res) => {
-  const { q, city, category, status } = req.query;
+function handleGetEvents(req, res) {
+  const {
+    q, city, province, category, artist, venue, promoter,
+    date_from, date_to, verified_only, status,
+    sort = 'nearest', lat, lng, user_city, limit = 100, page = 1
+  } = req.query;
+
   let allEvents = canonicalRegistry.getAllEvents();
 
-  if (q && q.trim()) {
-    const term = q.toLowerCase().trim();
-    allEvents = allEvents.filter(e => 
-      (e.canonical_name || '').toLowerCase().includes(term) ||
-      (e.venue_name || '').toLowerCase().includes(term) ||
-      (e.city || '').toLowerCase().includes(term)
+  const searchTerm = (q || req.query.search || req.query.query || '').trim();
+
+  // 1. Text search
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    allEvents = allEvents.filter(e =>
+      (e.canonical_name || e.title || '').toLowerCase().includes(term) ||
+      (e.venue_name || e.venue || '').toLowerCase().includes(term) ||
+      (e.city || '').toLowerCase().includes(term) ||
+      (e.artist || '').toLowerCase().includes(term) ||
+      (Array.isArray(e.artists) && e.artists.some(a => a.toLowerCase().includes(term)))
     );
   }
 
+  // 2. City filter
   if (city && city.trim()) {
-    allEvents = allEvents.filter(e => (e.city || '').toLowerCase().includes(city.toLowerCase().trim()));
+    const cleanCity = city.toLowerCase().trim();
+    allEvents = allEvents.filter(e => (e.city || '').toLowerCase() === cleanCity || (e.city || '').toLowerCase().includes(cleanCity));
   }
 
+  // 3. Province filter
+  if (province && province.trim()) {
+    const cleanProv = province.toLowerCase().trim();
+    allEvents = allEvents.filter(e => (e.province || '').toLowerCase().includes(cleanProv));
+  }
+
+  // 4. Category filter
   if (category && category.trim()) {
-    allEvents = allEvents.filter(e => (e.event_type || e.category || '').toUpperCase() === category.toUpperCase().trim());
+    const cleanCat = category.toUpperCase().trim();
+    allEvents = allEvents.filter(e => (e.event_type || e.category || '').toUpperCase() === cleanCat);
   }
 
+  // 5. Artist filter
+  if (artist && artist.trim()) {
+    const cleanArtist = artist.toLowerCase().trim();
+    allEvents = allEvents.filter(e =>
+      (e.artist || '').toLowerCase().includes(cleanArtist) ||
+      (Array.isArray(e.artists) && e.artists.some(a => a.toLowerCase().includes(cleanArtist)))
+    );
+  }
+
+  // 6. Venue filter
+  if (venue && venue.trim()) {
+    const cleanVenue = venue.toLowerCase().trim();
+    allEvents = allEvents.filter(e => (e.venue_name || e.venue || '').toLowerCase().includes(cleanVenue));
+  }
+
+  // 7. Promoter filter
+  if (promoter && promoter.trim()) {
+    const cleanPromoter = promoter.toLowerCase().trim();
+    allEvents = allEvents.filter(e => (e.organizer_name || '').toLowerCase().includes(cleanPromoter));
+  }
+
+  // 8. Date range filters
+  if (date_from) {
+    allEvents = allEvents.filter(e => (e.start_date || e.date) >= date_from);
+  }
+  if (date_to) {
+    allEvents = allEvents.filter(e => (e.start_date || e.date) <= date_to);
+  }
+
+  // 9. Verified only filter
+  if (verified_only === 'true' || verified_only === true) {
+    allEvents = allEvents.filter(e => e.verification_status === 'VERIFIED' || e.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+  }
+
+  // 10. Status filter
   if (status && status.trim()) {
-    allEvents = allEvents.filter(e => e.status === status);
+    allEvents = allEvents.filter(e => (e.verification_status === status || e.status === status));
   }
 
-  const eventsWithMetadata = allEvents.map(e => {
+  // Resolve user coordinates for spatial distance calculation
+  let userLat = lat !== undefined && lat !== '' ? Number(lat) : null;
+  let userLng = lng !== undefined && lng !== '' ? Number(lng) : null;
+
+  if ((userLat === null || userLng === null) && user_city) {
+    const matchedCity = cityRegistry.findCity(user_city);
+    if (matchedCity) {
+      userLat = matchedCity.lat;
+      userLng = matchedCity.lng;
+    }
+  }
+
+  // Enrich with distance_km if coordinates available
+  const enriched = allEvents.map(e => {
+    let dist = null;
+    if (userLat !== null && userLng !== null) {
+      const eLat = e.lat || (cityRegistry.findCity(e.city) ? cityRegistry.findCity(e.city).lat : null);
+      const eLng = e.lng || (cityRegistry.findCity(e.city) ? cityRegistry.findCity(e.city).lng : null);
+      if (eLat !== null && eLng !== null) {
+        dist = CityRegistry.haversineDistanceKm(userLat, userLng, eLat, eLng);
+      }
+    }
     const activeListings = getActiveResaleListings(e.event_id);
     return {
       ...e,
+      distance_km: dist,
       active_listings_count: activeListings.length,
       min_price: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null
     };
   });
 
+  // Sorting
+  const sortMode = String(sort).toLowerCase().trim();
+  if (sortMode === 'nearest') {
+    // If user coordinates available: sort by distance_km ASC, then event_date ASC
+    // If coordinates NOT available: sort by event_date ASC (chronological fallback)
+    enriched.sort((a, b) => {
+      if (a.distance_km !== null && b.distance_km !== null) {
+        if (a.distance_km !== b.distance_km) return a.distance_km - b.distance_km;
+      } else if (a.distance_km !== null) {
+        return -1;
+      } else if (b.distance_km !== null) {
+        return 1;
+      }
+      const dateA = a.start_date || a.date || '9999-99-99';
+      const dateB = b.start_date || b.date || '9999-99-99';
+      return dateA.localeCompare(dateB);
+    });
+  } else if (sortMode === 'upcoming') {
+    // Strict chronological sort: event_date ASC
+    enriched.sort((a, b) => {
+      const dateA = a.start_date || a.date || '9999-99-99';
+      const dateB = b.start_date || b.date || '9999-99-99';
+      return dateA.localeCompare(dateB);
+    });
+  } else if (sortMode === 'popular') {
+    // Ground-truth popularity score DESC
+    enriched.sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0));
+  } else if (sortMode === 'trending') {
+    // Demand velocity / recency
+    enriched.sort((a, b) => {
+      const trendA = (a.popularity_score || 0) + (a.context_signals?.is_imminent ? 15 : 0);
+      const trendB = (b.popularity_score || 0) + (b.context_signals?.is_imminent ? 15 : 0);
+      return trendB - trendA;
+    });
+  } else if (sortMode === 'local_gems') {
+    // Deterministic local gems score DESC
+    enriched.sort((a, b) => (b.local_gems_score || 0) - (a.local_gems_score || 0));
+  } else if (sortMode === 'newest') {
+    // Ingestion recency
+    enriched.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
+
   res.json({
     success: true,
-    total: eventsWithMetadata.length,
-    events: eventsWithMetadata
+    total: enriched.length,
+    sort: sortMode,
+    user_location: (userLat !== null && userLng !== null) ? { lat: userLat, lng: userLng, city: user_city || null } : null,
+    events: enriched
+  });
+}
+
+// Canonical Discovery REST API endpoints
+router.get('/api/events', handleGetEvents);
+router.get('/api/discovery/events', handleGetEvents);
+
+/**
+ * GET /api/events/home-feed
+ * Delivers structured landing sections:
+ * - upcoming_nearest
+ * - trending_popular
+ * - near_you
+ * - this_weekend
+ * - local_gems
+ */
+router.get('/api/events/home-feed', (req, res) => {
+  const { city, lat, lng } = req.query;
+  const allEvents = canonicalRegistry.getAllEvents();
+
+  // 1. Upcoming Nearest (Chronological)
+  const upcoming = [...allEvents]
+    .filter(e => e.verification_status !== 'CANCELLED' && e.verification_status !== 'EXPIRED')
+    .sort((a, b) => (a.start_date || a.date || '9999').localeCompare(b.start_date || b.date || '9999'))
+    .slice(0, 8);
+
+  // 2. Trending Popular
+  const popular = [...allEvents]
+    .filter(e => e.verification_status !== 'CANCELLED' && e.verification_status !== 'EXPIRED')
+    .sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0))
+    .slice(0, 8);
+
+  // 3. Near You (Filtered by user city or coordinates)
+  let nearYou = [];
+  if (city) {
+    const cleanCity = city.toLowerCase().trim();
+    nearYou = allEvents.filter(e => (e.city || '').toLowerCase() === cleanCity);
+  } else if (lat && lng) {
+    const uLat = Number(lat);
+    const uLng = Number(lng);
+    nearYou = allEvents
+      .map(e => {
+        const eLat = e.lat || (cityRegistry.findCity(e.city) ? cityRegistry.findCity(e.city).lat : null);
+        const eLng = e.lng || (cityRegistry.findCity(e.city) ? cityRegistry.findCity(e.city).lng : null);
+        const dist = (eLat && eLng) ? CityRegistry.haversineDistanceKm(uLat, uLng, eLat, eLng) : 9999;
+        return { ...e, distance_km: dist };
+      })
+      .filter(e => e.distance_km <= 150)
+      .sort((a, b) => a.distance_km - b.distance_km)
+      .slice(0, 8);
+  } else {
+    nearYou = upcoming.slice(0, 6);
+  }
+
+  // 4. This Weekend
+  const now = new Date();
+  const thisWeekend = allEvents.filter(e => {
+    const d = e.start_date || e.date;
+    if (!d) return false;
+    const diffDays = (new Date(d).getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+    return diffDays >= 0 && diffDays <= 4;
+  }).slice(0, 8);
+
+  // 5. Local Gems (Deterministic regional high-quality concerts)
+  const localGems = allEvents
+    .filter(e => e.is_local_gem)
+    .sort((a, b) => (b.local_gems_score || 0) - (a.local_gems_score || 0))
+    .slice(0, 8);
+
+  res.json({
+    success: true,
+    sections: {
+      upcoming_nearest: upcoming,
+      trending_popular: popular,
+      popular_events: popular,
+      near_you: nearYou,
+      this_weekend: thisWeekend,
+      local_gems: localGems
+    }
   });
 });
+
 
 /**
  * GET /api/discovery/events/:slugOrId

@@ -16,6 +16,9 @@ const { sourceRegistry, TRUST_LEVELS } = require('./SourceRegistry');
 const { EventSourceObservation } = require('./models/EventSourceObservation');
 const { EventConflict } = require('./models/EventConflict');
 const { EventQualityGate, CANONICAL_STATES, MARKETPLACE_ELIGIBILITY } = require('./EventQualityGate');
+const { PopularityEngine } = require('./PopularityEngine');
+const { SourceClaim, CLAIM_TYPES } = require('./models/SourceClaim');
+const { cityRegistry } = require('./CityRegistry');
 
 class CanonicalEventRegistry {
   constructor() {
@@ -81,7 +84,8 @@ class CanonicalEventRegistry {
     const dtNorm = EventNormalizationService.normalizeDateTime(
       date,
       eventData.time,
-      eventData.timezone || 'Asia/Jakarta'
+      eventData.timezone,
+      venueNorm.city || eventData.city || eventData.venue_city || eventData.province
     );
 
     const eventType = eventData.event_type || EventNormalizationService.normalizeEventType(eventData.category, normTitle);
@@ -171,15 +175,70 @@ class CanonicalEventRegistry {
       },
 
       // Granular field-level provenance
+      // Geo coordinates & capacity tier for spatial search & popularity
+      lat: venueNorm.lat || (typeof cityRegistry !== 'undefined' && cityRegistry.findCity && cityRegistry.findCity(venueNorm.city) ? cityRegistry.findCity(venueNorm.city).lat : null),
+      lng: venueNorm.lng || (typeof cityRegistry !== 'undefined' && cityRegistry.findCity && cityRegistry.findCity(venueNorm.city) ? cityRegistry.findCity(venueNorm.city).lng : null),
+      capacity_tier: venueNorm.capacity_tier || eventData.capacity_tier || 'UNKNOWN',
+
+      // Atomic Source Claims
+      claims: Array.isArray(eventData.claims) ? [...eventData.claims] : [],
+
+      // Granular field-level provenance with multi-factor confidence
       field_provenance: eventData.field_provenance || {
-        event_name: { value: normTitle, source_id: (sources[0] && sources[0].source_id) || null, observed_at: now, confidence: 'HIGH' },
-        start_date: { value: dtNorm.date, source_id: (sources[0] && sources[0].source_id) || null, observed_at: now, confidence: dtNorm.date ? 'HIGH' : 'UNKNOWN' },
-        venue_name: { value: venueNorm.venue_name, source_id: (sources[0] && sources[0].source_id) || null, observed_at: now, confidence: 'HIGH' },
-        city: { value: venueNorm.city, source_id: (sources[0] && sources[0].source_id) || null, observed_at: now, confidence: 'HIGH' },
-        artists: { value: eventData.artists || [], source_id: (sources[0] && sources[0].source_id) || null, observed_at: now, confidence: 'HIGH' },
-        official_ticket_url: { value: eventData.official_ticket_url || null, source_id: eventData.official_ticket_url ? (sources[0] && sources[0].source_id) : null, observed_at: now, confidence: eventData.official_ticket_url ? 'HIGH' : 'UNKNOWN' },
-        status: { value: eventData.status || 'UPCOMING', source_id: (sources[0] && sources[0].source_id) || null, observed_at: now, confidence: 'HIGH' },
-        ticket_price: { value: eventData.ticket_price || 'UNKNOWN', source_id: (sources[0] && sources[0].source_id) || null, observed_at: now, confidence: eventData.ticket_price && eventData.ticket_price !== 'UNKNOWN' ? 'HIGH' : 'UNKNOWN' }
+        event_name: {
+          value: normTitle,
+          source_id: (sources[0] && sources[0].source_id) || null,
+          observed_at: now,
+          ...EventVerificationService.calculateFieldConfidence({ fieldType: 'EVENT_NAME', sourceType: (sources[0] && sources[0].source_id) ? (sources[0].source_id.includes('promoter') ? 'promoter' : 'ticketing') : 'promoter', observedAt: now })
+        },
+        start_date: {
+          value: dtNorm.date,
+          source_id: (sources[0] && sources[0].source_id) || null,
+          observed_at: now,
+          ...EventVerificationService.calculateFieldConfidence({ fieldType: 'EVENT_DATE', sourceType: (sources[0] && sources[0].source_id) ? (sources[0].source_id.includes('promoter') ? 'promoter' : 'ticketing') : 'promoter', observedAt: now })
+        },
+        venue_name: {
+          value: venueNorm.venue_name,
+          source_id: (sources[0] && sources[0].source_id) || null,
+          observed_at: now,
+          ...EventVerificationService.calculateFieldConfidence({ fieldType: 'VENUE', sourceType: 'venue', observedAt: now })
+        },
+        city: {
+          value: venueNorm.city,
+          source_id: (sources[0] && sources[0].source_id) || null,
+          observed_at: now,
+          ...EventVerificationService.calculateFieldConfidence({ fieldType: 'CITY', sourceType: 'venue', observedAt: now })
+        },
+        artists: {
+          value: eventData.artists || (eventData.artist ? [eventData.artist] : []),
+          source_id: (sources[0] && sources[0].source_id) || null,
+          observed_at: now,
+          ...EventVerificationService.calculateFieldConfidence({ fieldType: 'LINEUP', sourceType: 'promoter', observedAt: now })
+        },
+        official_ticket_url: {
+          value: eventData.official_ticket_url || null,
+          source_id: eventData.official_ticket_url ? (sources[0] && sources[0].source_id) : null,
+          observed_at: now,
+          ...(eventData.official_ticket_url
+            ? EventVerificationService.calculateFieldConfidence({ fieldType: 'TICKET_PRICE', sourceType: 'ticketing', observedAt: now })
+            : { confidence: 'UNKNOWN', prior_authority: 0, freshness_factor: 0, age_days: 0, is_conflicted: false }
+          )
+        },
+        status: {
+          value: eventData.status || 'UPCOMING',
+          source_id: (sources[0] && sources[0].source_id) || null,
+          observed_at: now,
+          ...EventVerificationService.calculateFieldConfidence({ fieldType: 'STATUS', sourceType: 'promoter', observedAt: now })
+        },
+        ticket_price: {
+          value: eventData.ticket_price || 'UNKNOWN',
+          source_id: (sources[0] && sources[0].source_id) || null,
+          observed_at: now,
+          ...(eventData.ticket_price && eventData.ticket_price !== 'UNKNOWN'
+            ? EventVerificationService.calculateFieldConfidence({ fieldType: 'TICKET_PRICE', sourceType: 'ticketing', observedAt: now })
+            : { confidence: 'UNKNOWN', prior_authority: 0, freshness_factor: 0, age_days: 0, is_conflicted: false }
+          )
+        }
       },
 
       // Immutable observation records
@@ -200,6 +259,8 @@ class CanonicalEventRegistry {
 
       update_priority: this.computeUpdatePriority(dtNorm.date),
       sources: sources,
+      atomic_claims: Array.isArray(eventData.claims) ? [...eventData.claims] : (Array.isArray(eventData.atomic_claims) ? [...eventData.atomic_claims] : []),
+      claims: Array.isArray(eventData.claims) ? [...eventData.claims] : (Array.isArray(eventData.atomic_claims) ? [...eventData.atomic_claims] : []),
       verification_status: eventData.verification_status || VERIFICATION_STATUS.UNVERIFIED,
       verification_confidence: eventData.verification_confidence || 0,
       verification_reasons: eventData.verification_reasons || [],
@@ -228,6 +289,19 @@ class CanonicalEventRegistry {
       canonicalEvent.verification_reasons = evalResult.flags || [];
       canonicalEvent.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED || evalResult.verification_status === 'PRIMARY_SOURCE_VERIFIED');
     }
+
+    // Ground-Truth Popularity Scoring
+    const popResult = PopularityEngine.calculatePopularity(canonicalEvent, eventData.popularity_signals || {});
+    canonicalEvent.popularity_score = popResult.popularity_score;
+    canonicalEvent.popularity_confidence = popResult.popularity_confidence;
+    canonicalEvent.popularity_signals = popResult.popularity_signals;
+    canonicalEvent.context_signals = popResult.context_signals;
+
+    // Deterministic LOCAL_GEMS Evaluation
+    const localGemResult = PopularityEngine.evaluateLocalGem(canonicalEvent);
+    canonicalEvent.is_local_gem = localGemResult.is_eligible;
+    canonicalEvent.local_gems_score = localGemResult.local_gems_score;
+    canonicalEvent.local_gems_factors = localGemResult.factors || null;
 
     // Epic B: Deterministic Event Quality Gate
     const qualityResult = EventQualityGate.evaluateEventQuality(canonicalEvent, canonicalEvent.sources);
@@ -738,6 +812,31 @@ class CanonicalEventRegistry {
         artists: leg.artists || []
       });
     }
+  }
+
+  /**
+   * Refreshes freshness and evaluates STALE / EXPIRED lifecycle transitions
+   */
+  refreshFreshness() {
+    let staleCount = 0;
+    let expiredCount = 0;
+
+    for (const event of this.events.values()) {
+      const evalResult = EventVerificationService.evaluateEvent(event, event.sources || []);
+      if (evalResult.verification_status !== event.verification_status) {
+        if (evalResult.verification_status === VERIFICATION_STATUS.STALE) {
+          staleCount++;
+          event.verification_status = VERIFICATION_STATUS.STALE;
+          event.is_verified = false;
+        } else if (evalResult.verification_status === VERIFICATION_STATUS.EXPIRED) {
+          expiredCount++;
+          event.verification_status = VERIFICATION_STATUS.EXPIRED;
+          event.is_verified = false;
+        }
+      }
+    }
+
+    return { stale_count: staleCount, expired_count: expiredCount, total_events: this.events.size };
   }
 
   reset() {

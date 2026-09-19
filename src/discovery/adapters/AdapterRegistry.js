@@ -12,6 +12,9 @@ const { LiveNationAdapter } = require('./LiveNationAdapter');
 const { PromoterAdapter } = require('./PromoterAdapter');
 const { VenueAdapter } = require('./VenueAdapter');
 const { SocialDiscoveryAdapter } = require('./SocialDiscoveryAdapter');
+const { DewatiketAdapter } = require('./DewatiketAdapter');
+const { YesplisAdapter } = require('./YesplisAdapter');
+const { ArtatixAdapter } = require('./ArtatixAdapter');
 const { EventSourceAdapter } = require('./EventSourceAdapter');
 const { sourceRegistry } = require('../SourceRegistry');
 
@@ -36,6 +39,12 @@ class AdapterRegistry {
       adapterInstance = new LoketAdapter(sourceId, options);
     } else if (sourceId === 'src-goers') {
       adapterInstance = new GoersAdapter(sourceId, options);
+    } else if (sourceId === 'src-dewatiket') {
+      adapterInstance = new DewatiketAdapter(sourceId, options);
+    } else if (sourceId === 'src-yesplis') {
+      adapterInstance = new YesplisAdapter(sourceId, options);
+    } else if (sourceId === 'src-artatix') {
+      adapterInstance = new ArtatixAdapter(sourceId, options);
     } else if (sourceId === 'src-livenation') {
       adapterInstance = new LiveNationAdapter(sourceId, options);
     } else if (sourceId.includes('venue') || sourceId.includes('league')) {

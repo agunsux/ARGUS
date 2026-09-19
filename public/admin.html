@@ -406,8 +406,8 @@
         <span class="nav-item-left"><i class="fa-solid fa-calendar-days"></i> Events</span>
         <span id="sidebarEventsCount" class="nav-badge">-</span>
       </button>
-      <button class="nav-item" onclick="switchView('tickets', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-ticket"></i> Tickets</span>
+      <button class="nav-item" onclick="switchView('listings', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-ticket"></i> Listings</span>
         <span id="sidebarTicketsCount" class="nav-badge">-</span>
       </button>
       <button class="nav-item" onclick="switchView('orders', this)">
@@ -431,8 +431,20 @@
         <span class="nav-item-left"><i class="fa-solid fa-triangle-exclamation"></i> Incidents</span>
         <span id="sidebarIncidentsCount" class="nav-badge danger" style="display: none;">0</span>
       </button>
+      <button class="nav-item" onclick="switchView('trust', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-user-shield"></i> Trust &amp; Verification</span>
+        <span id="sidebarTrustCount" class="nav-badge warning" style="display: none;">0</span>
+      </button>
       <button class="nav-item" onclick="switchView('venue-pic', this)">
         <span class="nav-item-left"><i class="fa-solid fa-person-shelter"></i> Venue / PIC</span>
+      </button>
+      <button class="nav-item" onclick="switchView('event-supply', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-satellite-dish"></i> Supply &amp; Coverage</span>
+        <span id="sidebarSupplyAlertCount" class="nav-badge warning" style="display: none;">0</span>
+      </button>
+      <button class="nav-item" onclick="switchView('sources', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-tower-broadcast"></i> Sources</span>
+        <span id="sidebarSourcesBadge" class="nav-badge">-</span>
       </button>
 
       <div class="sidebar-heading" style="margin-top: 16px;">Platform Control</div>
@@ -486,9 +498,32 @@
           </div>
         </div>
 
+        <!-- 1b. Canonical Supply / Marketplace / Source Health (P0 truth strip) -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Canonical Events <i class="fa-solid fa-database" style="color: #38bdf8;"></i></div>
+            <div id="kpiCanonicalTotal" class="kpi-value">-</div>
+            <div id="kpiCanonicalBreakdown" class="kpi-sub">Verified: - | Pending: -</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Stale / Expired <i class="fa-solid fa-hourglass-half" style="color: #fbbf24;"></i></div>
+            <div id="kpiCanonicalStale" class="kpi-value">-</div>
+            <div class="kpi-sub">Perlu re-verifikasi sumber</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Active Listings <i class="fa-solid fa-tags" style="color: #34d399;"></i></div>
+            <div id="kpiMarketListings" class="kpi-value">-</div>
+            <div id="kpiMarketListingBreakdown" class="kpi-sub">Pending: - | Sold: -</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Source Health <i class="fa-solid fa-tower-broadcast" style="color: #38bdf8;"></i></div>
+            <div id="kpiSourceHealth" class="kpi-value">-</div>
+            <div id="kpiSourceBreakdown" class="kpi-sub">Active: - | Degraded: - | Blocked: -</div>
+          </div>
+        </div>
+
         <!-- 2. Action Required / Operational Alerts Section -->
-        <div class="panel" style="border-left: 3px solid #ef4444;">
-          <div class="panel-header">
+        <div class="panel" style="border-left: 3px solid #ef4444;">          <div class="panel-header">
             <div class="panel-title">
               <i class="fa-solid fa-bell" style="color: #ef4444;"></i> Action Required &bull; Operational Alerts
             </div>
@@ -691,6 +726,320 @@
             </table>
           </div>
         </div>
+        <div id="eventDetailPanel" style="display: none;"></div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- VIEW: EVENT SUPPLY & COVERAGE (SUPPLY INTELLIGENCE LAYER) -->
+      <!-- ============================================================ -->
+      <div id="viewEventSupply" style="display: none;">
+        <!-- Header Banner -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h2 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;">
+              <i class="fa-solid fa-satellite-dish" style="color: #38bdf8;"></i> Nationwide Supply Intelligence &amp; Discovery Control Center
+            </h2>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+              Multi-source registry health, 40+ Indonesian city coverage, and 7-stage pipeline verification diagnostics
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="loadEventSupplyView()">
+              <i class="fa-solid fa-rotate"></i> Refresh Supply Data
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="switchView('overview')">
+              <i class="fa-solid fa-arrow-left"></i> Overview
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="metrics-grid" style="margin-bottom: 16px;">
+          <div class="metric-card">
+            <div class="metric-label"><i class="fa-solid fa-server"></i> Registered Sources</div>
+            <div class="metric-value" id="supplyTotalSources">-</div>
+            <div class="metric-footer" id="supplySourcesBreakdown">Active: - | Degraded: -</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label"><i class="fa-solid fa-calendar-check"></i> Canonical Events</div>
+            <div class="metric-value" id="supplyTotalEvents">-</div>
+            <div class="metric-footer" id="supplyEventsBreakdown">Verified: - | Unverified: -</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label"><i class="fa-solid fa-triangle-exclamation"></i> Conflicted / Stale</div>
+            <div class="metric-value" id="supplyConflictedEvents" style="color: #fb923c;">-</div>
+            <div class="metric-footer" id="supplyStaleEvents">Stale: - | Expired: -</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label"><i class="fa-solid fa-map-location-dot"></i> City Coverage Ratio</div>
+            <div class="metric-value" id="supplyCoverageRatio" style="color: #38bdf8;">-%</div>
+            <div class="metric-footer" id="supplyCoverageCount">- / 40+ Cities Active</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label"><i class="fa-solid fa-eye-slash"></i> Market Blindspots</div>
+            <div class="metric-value" id="supplyBlindspotsCount" style="color: #f87171;">-</div>
+            <div class="metric-footer">Kota tanpa data event aktif</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label"><i class="fa-solid fa-shield-halved"></i> Verification Ratio</div>
+            <div class="metric-value" id="supplyVerificationRatio" style="color: #34d399;">-%</div>
+            <div class="metric-footer">Multi-source corroboration</div>
+          </div>
+        </div>
+
+        <!-- Diagnostic Inspector Panel -->
+        <div class="panel" style="margin-bottom: 16px;">
+          <div class="panel-header">
+            <div class="panel-title">
+              <i class="fa-solid fa-stethoscope" style="color: #38bdf8;"></i> Deep Event Supply Diagnostic (Stage 1–7 Pipeline Inspector)
+            </div>
+            <span class="tag tag-neutral">Zero-Mock Supply Audit</span>
+          </div>
+          <div style="padding: 16px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+              <input type="text" id="diagnosticSearchInput" class="ops-search-input" style="flex: 1; padding: 8px 14px;" placeholder="Masukkan nama artis, judul konser, atau Event ID (contoh: LANY, Raisa, ev-can-...)">
+              <button class="btn btn-primary btn-sm" onclick="runSupplyDiagnostics()"><i class="fa-solid fa-magnifying-glass"></i> Diagnosa Jalur Supply</button>
+            </div>
+            <div id="diagnosticResultsContainer" style="display: none;">
+              <!-- Diagnostic Stage Cards Injected Dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Two Column: City Coverage Matrix & Source Health Registry -->
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <!-- City Matrix Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title"><i class="fa-solid fa-city"></i> Nationwide City Coverage Matrix (40+ Kota)</div>
+              <span id="cityMatrixBadge" class="tag tag-neutral">-</span>
+            </div>
+            <div style="overflow-x: auto; max-height: 400px;">
+              <table class="ops-table">
+                <thead>
+                  <tr>
+                    <th>Kota</th>
+                    <th>Wilayah</th>
+                    <th>Provinsi</th>
+                    <th style="text-align: center;">Events</th>
+                    <th style="text-align: center;">Venues</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="cityMatrixTableBody">
+                  <tr><td colspan="6" style="text-align: center; color: #64748b;">Memuat data cakupan kota...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Source Health Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title"><i class="fa-solid fa-network-wired"></i> Multi-Source Registry &amp; Adapter Health</div>
+              <span id="sourceHealthBadge" class="tag tag-neutral">-</span>
+            </div>
+            <div style="overflow-x: auto; max-height: 400px;">
+              <table class="ops-table">
+                <thead>
+                  <tr>
+                    <th>Source</th>
+                    <th>Tipe</th>
+                    <th>Tier</th>
+                    <th>Cakupan</th>
+                    <th>Status</th>
+                    <th>Circuit</th>
+                  </tr>
+                </thead>
+                <tbody id="sourceHealthTableBody">
+                  <tr><td colspan="6" style="text-align: center; color: #64748b;">Memuat data status sumber...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Unverified & Conflicted Events Queue -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-inbox"></i> Antrean Verifikasi &amp; Resolusi Konflik Faktual</div>
+            <span id="unverifiedQueueBadge" class="tag tag-warning">-</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="ops-table">
+              <thead>
+                <tr>
+                  <th>Event ID</th>
+                  <th>Nama Event</th>
+                  <th>Tanggal</th>
+                  <th>Venue &amp; Kota</th>
+                  <th>Status Verifikasi</th>
+                  <th>Konflik</th>
+                  <th>Sumber</th>
+                  <th>Aksi Operator</th>
+                </tr>
+              </thead>
+              <tbody id="unverifiedQueueTableBody">
+                <tr><td colspan="8" style="text-align: center; color: #64748b;">Memuat antrean verifikasi...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- VIEW: TRUST / VERIFICATION -->
+      <!-- ============================================================ -->
+      <div id="viewTrust" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h2 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;">
+              <i class="fa-solid fa-user-shield" style="color: #38bdf8;"></i> Trust &amp; Verification Queue
+            </h2>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+              Verifikasi penjual, verifikasi tiket, risk flags, insiden, dan status bukti — data nyata saja.
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="loadTrustView()">
+            <i class="fa-solid fa-rotate"></i> Refresh
+          </button>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Seller KYC Pending <i class="fa-solid fa-id-card" style="color: #fbbf24;"></i></div>
+            <div id="trustSellerPending" class="kpi-value">-</div>
+            <div id="trustSellerBreakdown" class="kpi-sub">Verified: - | Unverified: -</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Ticket Verification <i class="fa-solid fa-ticket" style="color: #38bdf8;"></i></div>
+            <div id="trustTicketPending" class="kpi-value">-</div>
+            <div id="trustTicketBreakdown" class="kpi-sub">Under review: - | Evidence required: -</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Risk Flags <i class="fa-solid fa-flag" style="color: #ef4444;"></i></div>
+            <div id="trustRiskFlags" class="kpi-value">-</div>
+            <div id="trustRiskBreakdown" class="kpi-sub">Blocked: - | Pending review: -</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Evidence Items <i class="fa-solid fa-folder-open" style="color: #34d399;"></i></div>
+            <div id="trustEvidence" class="kpi-value">-</div>
+            <div id="trustEvidenceBreakdown" class="kpi-sub">Bundles: - | Pending review: -</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title"><i class="fa-solid fa-store"></i> Seller Verification Queue</div>
+              <span id="trustSellerBadge" class="tag tag-neutral">-</span>
+            </div>
+            <div style="overflow-x: auto; max-height: 360px;">
+              <table class="ops-table">
+                <thead>
+                  <tr><th>Seller ID</th><th>Nama</th><th>Email</th><th>KYC</th><th>Akun</th></tr>
+                </thead>
+                <tbody id="trustSellerTableBody">
+                  <tr><td colspan="5" style="text-align: center; color: #64748b;">Memuat...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title"><i class="fa-solid fa-ticket"></i> Ticket Verification Queue</div>
+              <span id="trustTicketBadge" class="tag tag-neutral">-</span>
+            </div>
+            <div style="overflow-x: auto; max-height: 360px;">
+              <table class="ops-table">
+                <thead>
+                  <tr><th>Ticket</th><th>Event</th><th>Seller</th><th>Verifikasi</th><th>Risk</th></tr>
+                </thead>
+                <tbody id="trustTicketTableBody">
+                  <tr><td colspan="5" style="text-align: center; color: #64748b;">Memuat...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-triangle-exclamation"></i> Risk &amp; Incident Flags</div>
+            <span class="tag tag-neutral">Trust Policy Engine</span>
+          </div>
+          <div class="panel-body" id="trustRiskContainer">
+            <div style="text-align: center; color: #64748b;">Memuat...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- VIEW: SOURCES (SOURCE REGISTRY HEALTH) -->
+      <!-- ============================================================ -->
+      <div id="viewSources" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h2 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;">
+              <i class="fa-solid fa-tower-broadcast" style="color: #38bdf8;"></i> Source Registry Health
+            </h2>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+              Authority tier, health, fetch terakhir, kegagalan terakhir, HTTP status, gap status, dan jumlah klaim.
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="loadSourcesView()">
+            <i class="fa-solid fa-rotate"></i> Refresh
+          </button>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Registered Sources <i class="fa-solid fa-server" style="color: #38bdf8;"></i></div>
+            <div id="sourcesTotal" class="kpi-value">-</div>
+            <div id="sourcesTotalBreakdown" class="kpi-sub">Never fetched: - | Disabled: -</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Healthy <i class="fa-solid fa-circle-check" style="color: #34d399;"></i></div>
+            <div id="sourcesHealthy" class="kpi-value">-</div>
+            <div class="kpi-sub">Fetch sukses dalam 14 hari</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Degraded / Stale <i class="fa-solid fa-triangle-exclamation" style="color: #fbbf24;"></i></div>
+            <div id="sourcesDegraded" class="kpi-value">-</div>
+            <div id="sourcesDegradedBreakdown" class="kpi-sub">Degraded: - | Stale: -</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Blocked <i class="fa-solid fa-ban" style="color: #ef4444;"></i></div>
+            <div id="sourcesBlocked" class="kpi-value">-</div>
+            <div class="kpi-sub">Circuit open / permission ditolak</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-network-wired"></i> Registered Sources</div>
+            <span id="sourcesBadge" class="tag tag-neutral">-</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="ops-table">
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Tier</th>
+                  <th>Health</th>
+                  <th>Last Success</th>
+                  <th>Last Failure</th>
+                  <th>HTTP</th>
+                  <th>Gap Status</th>
+                  <th>Claims</th>
+                </tr>
+              </thead>
+              <tbody id="sourcesTableBody">
+                <tr><td colspan="8" style="text-align: center; color: #64748b;">Memuat data sumber...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
     </main>
@@ -741,7 +1090,7 @@
           headers: { 'Accept': 'application/json' }
         });
         if (res.status === 401) {
-          window.location.href = '/login?redirect=/admin';
+          window.location.href = '/admin/login';
           return;
         }
         if (res.status === 403) {
@@ -902,6 +1251,31 @@
           </tr>
         `).join('');
       }
+
+      // 8. Canonical Supply / Marketplace / Source Health truth strip
+      const ce = data.canonical_events || {};
+      const mk = data.marketplace || {};
+      const sh = data.source_health || {};
+      const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+
+      setText('kpiCanonicalTotal', ce.total !== undefined ? ce.total : 'N/A');
+      setText('kpiCanonicalBreakdown', `Verified: ${ce.verified !== undefined ? ce.verified : '-'} | Pending: ${ce.pending_verification !== undefined ? ce.pending_verification : '-'}`);
+      setText('kpiCanonicalStale', ce.stale !== undefined ? ce.stale : 'N/A');
+      setText('kpiMarketListings', mk.active_listings !== undefined ? mk.active_listings : 'N/A');
+      setText('kpiMarketListingBreakdown', `Pending: ${mk.pending_listings !== undefined ? mk.pending_listings : '-'} | Sold: ${mk.sold_listings !== undefined ? mk.sold_listings : '-'}`);
+      setText('kpiSourceHealth', sh.total !== undefined ? `${sh.active || 0}/${sh.total}` : 'N/A');
+      setText('kpiSourceBreakdown', `Active: ${sh.active || 0} | Degraded: ${sh.degraded || 0} | Blocked: ${sh.blocked || 0}`);
+
+      const trustBadge = document.getElementById('sidebarTrustCount');
+      if (trustBadge) {
+        const pendingTrust = (tf.tickets_awaiting_verification || 0) + (tf.suspicious_sellers || 0);
+        if (pendingTrust > 0) {
+          trustBadge.style.display = 'inline-block';
+          trustBadge.innerText = pendingTrust;
+        } else {
+          trustBadge.style.display = 'none';
+        }
+      }
     }
 
     // Quick Search across Event, Ticket, Order, Seller, Buyer
@@ -963,6 +1337,8 @@
     }
 
     // View Switching
+    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust'];
+
     function switchView(viewName, btn = null) {
       currentView = viewName;
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -970,18 +1346,30 @@
 
       document.getElementById('viewOverview').style.display = viewName === 'overview' ? 'block' : 'none';
       document.getElementById('viewSearch').style.display = viewName === 'search' ? 'block' : 'none';
-      document.getElementById('viewGeneric').style.display = (viewName !== 'overview' && viewName !== 'search') ? 'block' : 'none';
+      document.getElementById('viewEventSupply').style.display = viewName === 'event-supply' ? 'block' : 'none';
+      document.getElementById('viewTrust').style.display = viewName === 'trust' ? 'block' : 'none';
+      document.getElementById('viewSources').style.display = viewName === 'sources' ? 'block' : 'none';
+      document.getElementById('viewGeneric').style.display = DEDICATED_VIEWS.includes(viewName) ? 'none' : 'block';
 
-      if (viewName !== 'overview' && viewName !== 'search') {
+      if (viewName === 'event-supply') {
+        loadEventSupplyView();
+      } else if (viewName === 'sources') {
+        loadSourcesView();
+      } else if (viewName === 'trust') {
+        loadTrustView();
+      } else if (!DEDICATED_VIEWS.includes(viewName)) {
         loadGenericEntityView(viewName);
       }
     }
 
     // Load Specific Sidebar Entity View
+    let eventsFilter = 'all';
+    let eventsRegistryMode = 'state';
+
     async function loadGenericEntityView(viewName) {
       const titles = {
-        'events': 'Manajemen Event & Katalog Pertunjukan',
-        'tickets': 'Manajemen Tiket & Listing Terbuka',
+        'events': 'Canonical Events & Event Operations',
+        'listings': 'Listing Marketplace (Active / Pending / Sold / Suspended)',
         'orders': 'Audit Pesanan & Rekening Penampungan (Escrow)',
         'sellers': 'Daftar Penjual & Verifikasi Profil Trust',
         'buyers': 'Daftar Pembeli Terdaftar',
@@ -991,36 +1379,90 @@
         'venue-pic': 'Penugasan PIC & Cakupan Venue Lapangan'
       };
 
-      document.getElementById('genericViewTitle').innerHTML = `<i class="fa-solid fa-list"></i> ${titles[viewName] || viewName.toUpperCase()}`;
+      if (viewName === 'events') {
+        document.getElementById('genericViewTitle').innerHTML = `
+          <i class="fa-solid fa-calendar-days"></i> ${titles.events}
+          <span style="margin-left: 12px; display: inline-flex; gap: 4px; flex-wrap: wrap;">
+            ${['all', 'verified', 'pending', 'stale', 'cancelled', 'conflicted'].map(f => `
+              <button class="btn btn-secondary btn-sm" onclick="setEventsFilter('${f}')" style="${eventsFilter === f ? 'border-color: #38bdf8; color: #38bdf8;' : ''}">${f}</button>
+            `).join('')}
+            <button class="btn btn-secondary btn-sm" onclick="toggleEventsRegistry()" title="Beralih antara proyeksi state.events dan Canonical Event Registry">${eventsRegistryMode === 'canonical' ? 'Registry: CANONICAL' : 'Registry: STATE'}</button>
+          </span>`;
+      } else {
+        document.getElementById('genericViewTitle').innerHTML = `<i class="fa-solid fa-list"></i> ${titles[viewName] || viewName.toUpperCase()}`;
+      }
+
       const th = document.getElementById('genericTableHead');
       const tb = document.getElementById('genericTableBody');
-      tb.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>`;
+      const detailPanel = document.getElementById('eventDetailPanel');
+      if (detailPanel && viewName !== 'events') detailPanel.style.display = 'none';
+      tb.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 30px; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>`;
 
       try {
-        const res = await fetch(`/api/admin/${viewName}`);
+        let url = `/api/admin/${viewName}`;
+        if (viewName === 'events') {
+          url += `?source=${eventsRegistryMode}&status=${eventsFilter}`;
+        }
+        const res = await adminFetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         renderGenericTable(viewName, data, th, tb);
       } catch (err) {
-        tb.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px; color: #ef4444;">Gagal memuat data: ${err.message}</td></tr>`;
+        tb.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 20px; color: #ef4444;">Gagal memuat data: ${err.message}</td></tr>`;
       }
+    }
+
+    function setEventsFilter(filter) {
+      eventsFilter = filter;
+      loadGenericEntityView('events');
+    }
+
+    function toggleEventsRegistry() {
+      eventsRegistryMode = eventsRegistryMode === 'canonical' ? 'state' : 'canonical';
+      eventsFilter = 'all';
+      loadGenericEntityView('events');
     }
 
     function renderGenericTable(name, data, th, tb) {
       if (name === 'events') {
-        th.innerHTML = `<tr><th>ID</th><th>Nama Event</th><th>Venue</th><th>Tanggal</th><th>Tiket Listed</th><th>Orders</th><th>PIC</th><th>Status</th></tr>`;
-        tb.innerHTML = (data.events || []).map(e => `
-          <tr>
-            <td class="mono">${e.id}</td>
-            <td style="font-weight: 600; color: #fff;">${e.name}</td>
-            <td>${e.venue_name} (${e.city})</td>
-            <td class="mono">${e.date}</td>
-            <td class="mono">${e.tickets_count}</td>
-            <td class="mono">${e.orders_count}</td>
-            <td>${e.pic_name}</td>
-            <td>${renderTag(e.status)}</td>
-          </tr>
-        `).join('');
+        th.innerHTML = `<tr><th>Event</th><th>Venue</th><th>Tanggal</th><th>Lifecycle</th><th>Verifikasi</th><th>Last Verified</th><th>Sources</th><th>Konflik</th><th>Aksi</th></tr>`;
+        if ((data.events || []).length === 0) {
+          tb.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #64748b;">Tidak ada event pada filter ini.</td></tr>`;
+        } else {
+          tb.innerHTML = (data.events || []).map(e => `
+            <tr>
+              <td>
+                <div style="font-weight: 600; color: #fff;">${e.name || '-'}</div>
+                <div class="mono" style="font-size: 10px; color: #64748b;">${e.canonical_event_id || e.id}</div>
+              </td>
+              <td>${e.venue_name || 'N/A'} (${e.city || 'N/A'})</td>
+              <td class="mono">${e.date || 'N/A'}</td>
+              <td>${renderTag(e.status)}</td>
+              <td>${renderTag(e.verification_status || (e.is_verified ? 'VERIFIED' : 'PENDING'))}</td>
+              <td class="mono" style="font-size: 11px;">${e.last_verified_at ? String(e.last_verified_at).substring(0, 19).replace('T', ' ') : 'N/A'}</td>
+              <td class="mono">${e.source_count !== undefined ? e.source_count : '-'}</td>
+              <td>${e.conflict_count > 0 ? `<span class="tag tag-critical">${e.conflict_count}</span>` : '<span class="tag tag-success">0</span>'}</td>
+              <td><button class="btn btn-secondary btn-sm" onclick="openEventDetail('${e.canonical_event_id || e.id}')"><i class="fa-solid fa-magnifying-glass"></i> Detail</button></td>
+            </tr>
+          `).join('');
+        }
+      } else if (name === 'listings') {
+        th.innerHTML = `<tr><th>Listing ID</th><th>Event</th><th>Penjual</th><th>Seat</th><th>Harga</th><th>Status</th><th>Verifikasi Tiket</th></tr>`;
+        if ((data.listings || []).length === 0) {
+          tb.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #64748b;">Belum ada listing pada filter ini.</td></tr>`;
+        } else {
+          tb.innerHTML = (data.listings || []).map(l => `
+            <tr>
+              <td class="mono" style="font-size: 11px;">${l.listing_id}</td>
+              <td>${l.event_name}</td>
+              <td>${l.seller_name}</td>
+              <td class="mono" style="font-size: 11px;">${l.seat_info}</td>
+              <td class="mono">${formatRupiah(l.price)}</td>
+              <td>${renderTag(l.status)}</td>
+              <td>${renderTag(l.ticket_verification_status)}</td>
+            </tr>
+          `).join('');
+        }
       } else if (name === 'tickets') {
         th.innerHTML = `<tr><th>Listing ID</th><th>Ticket ID</th><th>Event</th><th>Penjual</th><th>Seat</th><th>Harga</th><th>Status</th></tr>`;
         tb.innerHTML = (data.tickets || []).map(t => `
@@ -1123,6 +1565,570 @@
       }
     }
 
+    // ============================================================
+    // Admin fetch helper (session expiry → login page)
+    // ============================================================
+    async function adminFetch(url, options = {}) {
+      const res = await fetch(url, options);
+      if (res.status === 401) {
+        window.location.href = '/admin/login';
+        throw new Error('Sesi admin berakhir. Silakan login kembali.');
+      }
+      return res;
+    }
+
+    function formatTs(value) {
+      if (!value) return 'N/A';
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return String(value);
+      return d.toISOString().substring(0, 19).replace('T', ' ');
+    }
+
+    // ============================================================
+    // Canonical Event Detail — Claims / Provenance / Conflicts / Gaps
+    // ============================================================
+    async function openEventDetail(eventId) {
+      const panel = document.getElementById('eventDetailPanel');
+      panel.style.display = 'block';
+      panel.innerHTML = `<div class="panel"><div class="panel-body"><i class="fa-solid fa-spinner fa-spin"></i> Memuat detail event <span class="mono">${eventId}</span>...</div></div>`;
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      try {
+        const res = await adminFetch(`/api/admin/events/${encodeURIComponent(eventId)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderEventDetail(data);
+      } catch (err) {
+        panel.innerHTML = `<div class="panel"><div class="panel-body" style="color: #f87171;">Gagal memuat detail event: ${err.message}</div></div>`;
+      }
+    }
+
+    function renderStageCards(stages) {
+      const entries = Object.entries(stages || {});
+      if (entries.length === 0) {
+        return '<div style="color: #64748b; font-size: 12px;">Diagnostik source gap tidak tersedia untuk event ini (belum ada di Canonical Registry).</div>';
+      }
+      return entries.map(([name, stage]) => {
+        const status = (stage && stage.status) || 'UNKNOWN';
+        const cls = status === 'PASS' ? 'tag-success' : ((status === 'GAP' || status === 'FAIL' || status === 'BLOCKED') ? 'tag-critical' : 'tag-medium');
+        let detail = 'OK';
+        if (stage) {
+          if (stage.claim_count !== undefined) detail = `Claims: ${stage.claim_count}`;
+          else if (stage.gap_reason) detail = stage.gap_reason;
+          else if (stage.verification_status) detail = `${stage.verification_status} (${stage.verification_confidence || 0}%)`;
+          else if (stage.blocker_reason) detail = stage.blocker_reason;
+          else if (stage.resolved_city) detail = stage.resolved_city;
+          else if (stage.source_count !== undefined) detail = `Sources: ${stage.source_count}`;
+        }
+        return `<div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 6px; padding: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <span style="font-size: 11px; color: #fff; font-weight: 600;">${name}</span>
+            <span class="tag ${cls}">${status}</span>
+          </div>
+          <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">${detail}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderEventDetail(data) {
+      const panel = document.getElementById('eventDetailPanel');
+      const claims = data.claims || [];
+      const conflicts = data.conflicts || [];
+      const sources = data.sources || [];
+      const provenance = data.provenance || {};
+      const stages = (data.source_gap && data.source_gap.stages) || {};
+      const marketplace = data.marketplace || {};
+      const isCanonical = data.registry === 'canonical';
+
+      const provenanceRows = Object.entries(provenance).map(([field, p]) => `
+        <tr>
+          <td class="mono" style="font-size: 11px;">${field}</td>
+          <td style="font-size: 11px;">${p && p.value !== undefined && p.value !== null ? String(typeof p.value === 'object' ? JSON.stringify(p.value) : p.value) : '-'}</td>
+          <td class="mono" style="font-size: 11px;">${(p && p.source_id) || '-'}</td>
+          <td class="mono" style="font-size: 11px;">${(p && p.confidence) || 'N/A'}</td>
+          <td class="mono" style="font-size: 11px;">${p && p.observed_at ? formatTs(p.observed_at) : '-'}</td>
+        </tr>`).join('');
+
+      const claimsRows = claims.map(c => `
+        <tr>
+          <td class="mono" style="font-size: 10px;">${c.claim_id || '-'}</td>
+          <td>${c.claim_type || '-'}</td>
+          <td style="font-size: 11px;">${c.value !== undefined && c.value !== null ? String(typeof c.value === 'object' ? JSON.stringify(c.value) : c.value) : '-'}</td>
+          <td class="mono" style="font-size: 11px;">${c.source_id || '-'}</td>
+          <td class="mono" style="font-size: 11px;">Tier ${c.source_authority_tier !== undefined ? c.source_authority_tier : '-'}</td>
+          <td class="mono" style="font-size: 10px;">${c.observed_at ? formatTs(c.observed_at) : '-'}</td>
+          <td class="mono" style="font-size: 10px;">${c.evidence_hash ? String(c.evidence_hash).substring(0, 16) + '…' : '-'}</td>
+        </tr>`).join('');
+
+      const sourcesRows = sources.map(s => `
+        <tr>
+          <td class="mono" style="font-size: 11px;">${s.source_id}</td>
+          <td>${s.source_name || '-'}</td>
+          <td class="mono">Tier ${s.tier !== undefined ? s.tier : '-'}</td>
+          <td>${s.authority_level || '-'}</td>
+          <td style="font-size: 11px;">${s.source_url ? `<a href="${s.source_url}" target="_blank" rel="noopener" style="color: #38bdf8;">sumber</a>` : '-'}</td>
+        </tr>`).join('');
+
+      const conflictsRows = conflicts.map(c => `
+        <tr>
+          <td>${c.field || '-'}</td>
+          <td style="font-size: 11px;">${c.value_a !== undefined ? String(c.value_a) : '-'}</td>
+          <td class="mono" style="font-size: 11px;">${c.source_a || '-'}</td>
+          <td style="font-size: 11px;">${c.value_b !== undefined ? String(c.value_b) : '-'}</td>
+          <td class="mono" style="font-size: 11px;">${c.source_b || '-'}</td>
+        </tr>`).join('');
+
+      panel.innerHTML = `
+        <div class="panel" style="border-left: 3px solid #38bdf8;">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-magnifying-glass-chart"></i> ${data.name || data.event_id} <span class="mono" style="font-size: 10px; color: #64748b; margin-left: 8px;">${data.canonical_event_id || data.event_id}</span></div>
+            <div style="display: flex; gap: 6px;">
+              ${isCanonical ? `
+                <button class="btn btn-primary btn-sm" onclick="verifyEvent('${data.canonical_event_id}')"><i class="fa-solid fa-check"></i> Approve</button>
+                <button class="btn btn-secondary btn-sm" onclick="rejectEvent('${data.canonical_event_id}')"><i class="fa-solid fa-xmark"></i> Reject</button>` : ''}
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('eventDetailPanel').style.display='none'">Tutup</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="kpi-grid" style="margin-bottom: 12px;">
+              <div class="kpi-card"><div class="kpi-label">Verification</div><div style="margin-top: 6px;">${renderTag(data.verification_status || 'UNVERIFIED')}</div><div class="kpi-sub">Confidence: ${data.verification_confidence !== undefined ? data.verification_confidence + '%' : 'N/A'}</div></div>
+              <div class="kpi-card"><div class="kpi-label">Last Verified</div><div class="kpi-value" style="font-size: 13px;">${data.last_verified_at ? formatTs(data.last_verified_at) : 'N/A'}</div><div class="kpi-sub">Expires: ${data.expires_at ? formatTs(data.expires_at) : 'N/A'}</div></div>
+              <div class="kpi-card"><div class="kpi-label">Claims / Sources</div><div class="kpi-value" style="font-size: 18px;">${claims.length} / ${sources.length}</div><div class="kpi-sub">Conflicts: ${conflicts.length}</div></div>
+              <div class="kpi-card"><div class="kpi-label">Marketplace</div><div class="kpi-value" style="font-size: 18px;">${marketplace.active_listings || 0}</div><div class="kpi-sub">Active listings • ${marketplace.orders_total || 0} orders</div></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-bottom: 16px;">${renderStageCards(stages)}</div>
+
+            <h4 style="color: #fff; font-size: 12px;">Source Claims (${claims.length})</h4>
+            ${claims.length === 0
+              ? '<div style="color: #64748b; font-size: 12px; padding: 8px 0;">Tidak ada SourceClaim terekam untuk event ini.</div>'
+              : `<div style="overflow-x: auto;"><table class="ops-table"><thead><tr><th>Claim</th><th>Field</th><th>Value</th><th>Source</th><th>Tier</th><th>Observed</th><th>Evidence Hash</th></tr></thead><tbody>${claimsRows}</tbody></table></div>`}
+
+            <h4 style="color: #fff; font-size: 12px; margin-top: 16px;">Field Provenance (${Object.keys(provenance).length})</h4>
+            ${Object.keys(provenance).length === 0
+              ? '<div style="color: #64748b; font-size: 12px; padding: 8px 0;">Provenance tidak tersedia (event di luar Canonical Registry).</div>'
+              : `<div style="overflow-x: auto;"><table class="ops-table"><thead><tr><th>Field</th><th>Value</th><th>Source</th><th>Confidence</th><th>Observed</th></tr></thead><tbody>${provenanceRows}</tbody></table></div>`}
+
+            <h4 style="color: #fff; font-size: 12px; margin-top: 16px;">Sources (${sources.length})</h4>
+            ${sources.length === 0
+              ? '<div style="color: #64748b; font-size: 12px; padding: 8px 0;">Belum ada sumber tertaut.</div>'
+              : `<div style="overflow-x: auto;"><table class="ops-table"><thead><tr><th>Source ID</th><th>Nama</th><th>Tier</th><th>Authority</th><th>URL</th></tr></thead><tbody>${sourcesRows}</tbody></table></div>`}
+
+            <h4 style="color: #fff; font-size: 12px; margin-top: 16px;">Conflicts (${conflicts.length})</h4>
+            ${conflicts.length === 0
+              ? '<div style="color: #34d399; font-size: 12px; padding: 8px 0;">Tidak ada konflik faktual aktif.</div>'
+              : `<div style="overflow-x: auto;"><table class="ops-table"><thead><tr><th>Field</th><th>Value A</th><th>Source A</th><th>Value B</th><th>Source B</th></tr></thead><tbody>${conflictsRows}</tbody></table></div>`}
+          </div>
+        </div>`;
+    }
+
+    async function verifyEvent(eventId) {
+      if (!confirm(`Approve verifikasi untuk event ${eventId}?\nAksi ini tercatat di audit trail.`)) return;
+      try {
+        const res = await adminFetch(`/api/admin/events/${encodeURIComponent(eventId)}/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes: 'Manual approval via Operations Console' })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        showToast(`Event ${eventId} berhasil diverifikasi.`, 'success');
+        openEventDetail(eventId);
+        fetchDashboardOverview();
+      } catch (err) {
+        showToast('Gagal verifikasi event: ' + err.message, 'danger');
+      }
+    }
+
+    async function rejectEvent(eventId) {
+      const reason = prompt(`Alasan penolakan untuk event ${eventId}:`, 'Informasi tidak dapat diverifikasi dari sumber resmi');
+      if (reason === null) return;
+      try {
+        const res = await adminFetch(`/api/admin/events/${encodeURIComponent(eventId)}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        showToast(`Event ${eventId} ditolak.`, 'success');
+        openEventDetail(eventId);
+      } catch (err) {
+        showToast('Gagal menolak event: ' + err.message, 'danger');
+      }
+    }
+
+    // ============================================================
+    // Sources View — Source Registry Health
+    // ============================================================
+    async function loadSourcesView() {
+      const tbody = document.getElementById('sourcesTableBody');
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data sumber...</td></tr>`;
+
+      try {
+        const res = await adminFetch('/api/admin/sources');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const s = data.summary || {};
+        const sources = data.sources || [];
+
+        document.getElementById('sourcesTotal').innerText = s.total !== undefined ? s.total : '-';
+        document.getElementById('sourcesTotalBreakdown').innerText = `Never fetched: ${s.never_fetched || 0} | Disabled: ${s.disabled || 0}`;
+        document.getElementById('sourcesHealthy').innerText = s.healthy !== undefined ? s.healthy : '-';
+        document.getElementById('sourcesDegraded').innerText = (s.degraded || 0) + (s.stale || 0);
+        document.getElementById('sourcesDegradedBreakdown').innerText = `Degraded: ${s.degraded || 0} | Stale: ${s.stale || 0}`;
+        document.getElementById('sourcesBlocked').innerText = s.blocked !== undefined ? s.blocked : '-';
+        document.getElementById('sourcesBadge').innerText = `${sources.length} Sources`;
+
+        const sidebarBadge = document.getElementById('sidebarSourcesBadge');
+        if (sidebarBadge) {
+          sidebarBadge.innerText = sources.length;
+          if ((s.blocked || 0) > 0) sidebarBadge.classList.add('danger');
+        }
+
+        if (sources.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #64748b;">Belum ada sumber terdaftar.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = sources.map(src => `
+          <tr>
+            <td>
+              <div style="font-weight: 600; color: #fff;">${src.source_name}</div>
+              <div class="mono" style="font-size: 10px; color: #64748b;">${src.source_id}</div>
+            </td>
+            <td class="mono">Tier ${src.tier !== undefined ? src.tier : '-'}</td>
+            <td>${renderTag(src.health)}</td>
+            <td class="mono" style="font-size: 11px;">${formatTs(src.last_successful_fetch)}</td>
+            <td class="mono" style="font-size: 11px;">${formatTs(src.last_failure)}</td>
+            <td class="mono">${src.last_http_status !== null && src.last_http_status !== undefined ? src.last_http_status : 'N/A'}</td>
+            <td>${renderTag(src.source_gap_status)}</td>
+            <td class="mono">${src.claim_count || 0}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #ef4444;">Gagal memuat data sumber: ${err.message}</td></tr>`;
+      }
+    }
+
+    // ============================================================
+    // Trust / Verification View
+    // ============================================================
+    async function loadTrustView() {
+      try {
+        const [verRes, incRes] = await Promise.all([
+          adminFetch('/api/admin/verification'),
+          adminFetch('/api/admin/incidents')
+        ]);
+        if (!verRes.ok) throw new Error(`HTTP ${verRes.status}`);
+        const data = await verRes.json();
+        const incidentsData = incRes.ok ? await incRes.json() : { incidents: [] };
+
+        const sv = data.seller_verification || {};
+        const tv = data.ticket_verification || {};
+        const rf = data.risk_flags || {};
+        const ev = data.evidence || {};
+        const inc = data.incidents || {};
+
+        document.getElementById('trustSellerPending').innerText = sv.pending !== undefined ? sv.pending : '-';
+        document.getElementById('trustSellerBreakdown').innerText = `Verified: ${sv.verified || 0} | Unverified: ${sv.unverified || 0}`;
+        document.getElementById('trustTicketPending').innerText = (tv.under_review || 0) + (tv.evidence_required || 0);
+        document.getElementById('trustTicketBreakdown').innerText = `Under review: ${tv.under_review || 0} | Evidence required: ${tv.evidence_required || 0}`;
+        document.getElementById('trustRiskFlags').innerText = (rf.blocked_authorizations || 0) + (rf.pending_reviews || 0);
+        document.getElementById('trustRiskBreakdown').innerText = `Blocked: ${rf.blocked_authorizations || 0} | Pending review: ${rf.pending_reviews || 0}`;
+        document.getElementById('trustEvidence').innerText = ev.items !== undefined ? ev.items : '-';
+        document.getElementById('trustEvidenceBreakdown').innerText = `Bundles: ${ev.bundles || 0} | Pending review: ${ev.pending_review || 0}`;
+
+        const sellerRows = sv.sellers || [];
+        document.getElementById('trustSellerBadge').innerText = `${sellerRows.length} Sellers`;
+        document.getElementById('trustSellerTableBody').innerHTML = sellerRows.length === 0
+          ? `<tr><td colspan="5" style="text-align: center; color: #64748b;">Belum ada penjual terdaftar.</td></tr>`
+          : sellerRows.map(s => `
+            <tr>
+              <td class="mono" style="font-size: 11px;">${s.seller_id}</td>
+              <td>${s.name || '-'}</td>
+              <td style="font-size: 11px;">${s.email || '-'}</td>
+              <td>${renderTag(s.kyc_status)}</td>
+              <td>${renderTag(s.account_status)}</td>
+            </tr>`).join('');
+
+        const ticketRows = tv.tickets || [];
+        document.getElementById('trustTicketBadge').innerText = `${ticketRows.length} Tickets`;
+        document.getElementById('trustTicketTableBody').innerHTML = ticketRows.length === 0
+          ? `<tr><td colspan="5" style="text-align: center; color: #64748b;">Belum ada tiket terdaftar.</td></tr>`
+          : ticketRows.map(t => `
+            <tr>
+              <td class="mono" style="font-size: 11px;">${t.ticket_id}</td>
+              <td class="mono" style="font-size: 11px;">${t.event_id}</td>
+              <td class="mono" style="font-size: 11px;">${t.seller_id}</td>
+              <td>${renderTag(t.verification_status)}</td>
+              <td>${renderTag(t.risk_status)}</td>
+            </tr>`).join('');
+
+        const openIncidents = (incidentsData.incidents || []).filter(i => i.status !== 'RESOLVED');
+        document.getElementById('trustRiskContainer').innerHTML = `
+          <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 12px;">
+            <div>High-risk sellers: <strong class="mono">${rf.high_risk_sellers || 0}</strong></div>
+            <div>Open incidents: <strong class="mono">${inc.open || 0}</strong></div>
+            <div>Critical incidents: <strong class="mono" style="color: #f87171;">${inc.critical || 0}</strong></div>
+          </div>
+          ${openIncidents.length === 0
+            ? '<div style="color: #34d399; font-size: 12px;">Tidak ada insiden terbuka.</div>'
+            : openIncidents.map(i => `
+              <div class="alert-card">
+                <div class="alert-left">
+                  ${renderTag(i.severity)}
+                  <div>
+                    <div class="alert-title">${i.type || 'INCIDENT'} — ${i.event_name || i.event_id}</div>
+                    <div class="alert-meta">${i.description || ''}</div>
+                  </div>
+                </div>
+                ${renderTag(i.status)}
+              </div>`).join('')}`;
+      } catch (err) {
+        showToast('Gagal memuat Trust & Verification: ' + err.message, 'danger');
+      }
+    }
+
+    // ============================================================
+    // Event Supply Control Center Handlers
+    // ============================================================
+    async function loadEventSupplyView() {
+      try {
+        const [covRes, queueRes] = await Promise.all([
+          fetch('/api/admin/event-supply/coverage'),
+          fetch('/api/admin/event-supply/unverified-queue')
+        ]);
+
+        if (covRes.ok) {
+          const data = await covRes.json();
+          renderSupplyCoverageData(data);
+        }
+        if (queueRes.ok) {
+          const qData = await queueRes.json();
+          renderUnverifiedQueue(qData);
+        }
+      } catch (err) {
+        showToast('Gagal memuat data Supply Control Center: ' + err.message, 'danger');
+      }
+    }
+
+    function renderSupplyCoverageData(data) {
+      const s = data.summary || {};
+      document.getElementById('supplyTotalSources').innerText = s.total_sources ?? '-';
+      document.getElementById('supplySourcesBreakdown').innerText = `Active: ${s.active_sources || 0} | Degraded: ${s.degraded_sources || 0}`;
+      document.getElementById('supplyTotalEvents').innerText = s.total_canonical_events ?? '-';
+      document.getElementById('supplyEventsBreakdown').innerText = `Verified: ${s.verified_events || 0} | Unverified: ${s.unverified_events || 0}`;
+      document.getElementById('supplyConflictedEvents').innerText = s.conflicted_events ?? 0;
+      document.getElementById('supplyStaleEvents').innerText = `Stale: ${s.stale_events || 0} | Expired: ${s.expired_events || 0}`;
+
+      const ratioPct = Math.round((s.city_coverage_ratio || 0) * 100);
+      document.getElementById('supplyCoverageRatio').innerText = `${ratioPct}%`;
+      document.getElementById('supplyCoverageCount').innerText = `${s.covered_cities || 0} / ${s.total_registered_cities || 40} Kota Aktif`;
+      document.getElementById('supplyBlindspotsCount').innerText = s.blindspot_cities ?? '-';
+
+      const vRatio = s.total_canonical_events > 0 ? Math.round((s.verified_events / s.total_canonical_events) * 100) : 0;
+      document.getElementById('supplyVerificationRatio').innerText = `${vRatio}%`;
+
+      // Update sidebar alert count if any conflicted
+      const alertBadge = document.getElementById('sidebarSupplyAlertCount');
+      if (s.conflicted_events > 0) {
+        alertBadge.style.display = 'inline-block';
+        alertBadge.innerText = s.conflicted_events;
+      } else {
+        alertBadge.style.display = 'none';
+      }
+
+      // Render City Matrix
+      const matrix = data.city_matrix || [];
+      document.getElementById('cityMatrixBadge').innerText = `${matrix.length} Kota Terdaftar`;
+      const cityTbody = document.getElementById('cityMatrixTableBody');
+      if (matrix.length === 0) {
+        cityTbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748b;">Belum ada data kota.</td></tr>`;
+      } else {
+        cityTbody.innerHTML = matrix.map(c => `
+          <tr>
+            <td style="font-weight: 600; color: #fff;">${c.name}</td>
+            <td><span class="tag tag-neutral">${c.region}</span></td>
+            <td>${c.province}</td>
+            <td style="text-align: center;" class="mono">${c.event_count}</td>
+            <td style="text-align: center;" class="mono">${c.venue_count}</td>
+            <td>${c.status === 'BLINDSPOT' ? '<span class="tag tag-critical">BLINDSPOT</span>' : (c.status === 'LOW' ? '<span class="tag tag-medium">LOW DENSITY</span>' : '<span class="tag tag-success">HEALTHY</span>')}</td>
+          </tr>
+        `).join('');
+      }
+
+      // Render Sources Health
+      const sources = data.sources || [];
+      document.getElementById('sourceHealthBadge').innerText = `${sources.length} Sources`;
+      const srcTbody = document.getElementById('sourceHealthTableBody');
+      if (sources.length === 0) {
+        srcTbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748b;">Belum ada sumber terdaftar.</td></tr>`;
+      } else {
+        srcTbody.innerHTML = sources.map(src => `
+          <tr>
+            <td>
+              <div style="font-weight: 600; color: #fff;">${src.source_name}</div>
+              <div class="mono" style="font-size: 10px; color: #64748b;">${src.source_id}</div>
+            </td>
+            <td><span class="tag tag-neutral">${src.type}</span></td>
+            <td class="mono">Tier ${src.tier}</td>
+            <td style="font-size: 11px;">${src.coverage_city || src.coverage_region}</td>
+            <td>${renderTag(src.active_status || src.status)}</td>
+            <td><span class="mono tag ${src.circuit_breaker_status === 'OPEN' ? 'tag-critical' : 'tag-success'}">${src.circuit_breaker_status}</span></td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    function renderUnverifiedQueue(qData) {
+      const queue = qData.unverified_events || [];
+      document.getElementById('unverifiedQueueBadge').innerText = `${queue.length} Butuh Verifikasi / Review`;
+      const tbody = document.getElementById('unverifiedQueueTableBody');
+      if (queue.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 20px; color: #34d399;"><i class="fa-solid fa-circle-check"></i> Seluruh event telah terverifikasi authoritative. Antrean kosong.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = queue.map(e => `
+        <tr>
+          <td class="mono" style="font-size: 11px;">${e.event_id}</td>
+          <td style="font-weight: 600; color: #fff;">${e.title}</td>
+          <td class="mono">${e.start_date || 'N/A'}</td>
+          <td>${e.venue || '-'} (${e.city || 'N/A'})</td>
+          <td>${renderTag(e.verification_status)} <span class="mono" style="font-size: 11px;">(${e.verification_confidence}%)</span></td>
+          <td>${e.conflict_count > 0 ? `<span class="tag tag-critical">${e.conflict_count} Konflik</span>` : '<span class="tag tag-success">0</span>'}</td>
+          <td class="mono">${e.source_count}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="quickDiagnose('${e.event_id}')" title="Periksa status 7-stage"><i class="fa-solid fa-stethoscope"></i></button>
+            ${e.conflict_count > 0 ? `<button class="btn btn-primary btn-sm" onclick="promptResolveConflict('${e.event_id}')" style="margin-left: 4px;">Resolve</button>` : ''}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function quickDiagnose(id) {
+      document.getElementById('diagnosticSearchInput').value = id;
+      await runSupplyDiagnostics();
+      document.getElementById('diagnosticSearchInput').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function runSupplyDiagnostics() {
+      const q = document.getElementById('diagnosticSearchInput').value.trim();
+      if (!q) {
+        showToast('Masukkan nama artis, konser, atau event ID untuk diagnosa.', 'danger');
+        return;
+      }
+      const container = document.getElementById('diagnosticResultsContainer');
+      container.style.display = 'block';
+      container.innerHTML = `<div style="padding: 20px; text-align: center; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Menjalankan 7-Stage Pipeline Diagnostic Inspection untuk "${q}"...</div>`;
+
+      try {
+        const res = await fetch(`/api/admin/event-supply/diagnostics?query=${encodeURIComponent(q)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderDiagnosticReport(data);
+      } catch (err) {
+        container.innerHTML = `<div style="padding: 16px; color: #f87171; background: rgba(239, 68, 68, 0.1); border-radius: 6px;">Diagnosa gagal: ${err.message}</div>`;
+      }
+    }
+
+    function renderDiagnosticReport(data) {
+      const container = document.getElementById('diagnosticResultsContainer');
+      if (!data.event_identified) {
+        container.innerHTML = `
+          <div style="padding: 16px; background: #131d33; border: 1px solid #1e293b; border-radius: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-weight: 700; color: #fff; font-size: 14px;">Diagnosa: "${data.query}"</div>
+              <span class="tag tag-critical">SUPPLY_GAP</span>
+            </div>
+            <p style="color: #f87171; margin-top: 8px;">Event tidak ditemukan di dalam Canonical Registry maupun antrean pipeline.</p>
+            <div style="font-size: 12px; color: #94a3b8;">Rekomendasi Operasional: Verifikasi apakah promotor/sumber resmi telah terdaftar di Source Registry atau jalankan adapter ingestion spesifik.</div>
+          </div>
+        `;
+        return;
+      }
+
+      const st = data.stages || {};
+      const verdictClass = data.overall_verdict === 'PUBLIC_ACTIVE' ? 'tag-success' : (data.overall_verdict === 'SUPPLY_GAP' ? 'tag-critical' : 'tag-high');
+
+      container.innerHTML = `
+        <div style="padding: 16px; background: #131d33; border: 1px solid #1e293b; border-radius: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 12px; margin-bottom: 16px;">
+            <div>
+              <div style="font-size: 15px; font-weight: 700; color: #fff;">${data.title}</div>
+              <div class="mono" style="font-size: 11px; color: #64748b;">ID: ${data.canonical_event_id} &bull; Slug: ${data.slug}</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Overall Pipeline Verdict</div>
+              <span class="tag ${verdictClass}" style="font-size: 13px; font-weight: 700;">${data.overall_verdict}</span>
+            </div>
+          </div>
+
+          <!-- 7-Stage Breakdown -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+            ${renderStageCard('1. Source Discovery', st.source_discovery)}
+            ${renderStageCard('2. Raw Claims', st.claims)}
+            ${renderStageCard('3. Normalization', st.normalization)}
+            ${renderStageCard('4. Deduplication', st.deduplication)}
+            ${renderStageCard('5. Canonical Entity', st.canonical_event)}
+            ${renderStageCard('6. Evidence & Verif', st.evidence_verification)}
+            ${renderStageCard('7. Public Delivery', st.public_delivery)}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStageCard(title, stage = {}) {
+      const status = stage.status || 'UNKNOWN';
+      const statusTag = status === 'PASS' ? '<span class="tag tag-success">PASS</span>' : (status === 'GAP' || status === 'FAIL' || status === 'BLOCKED' ? '<span class="tag tag-critical">' + status + '</span>' : '<span class="tag tag-medium">' + status + '</span>');
+
+      let detailsHtml = '';
+      if (stage.registered_sources_count !== undefined) {
+        detailsHtml += `Sources: ${stage.registered_sources_count} (${stage.authoritative_tier_1 ? 'Tier 1' : 'None'})`;
+      } else if (stage.claim_count !== undefined) {
+        detailsHtml += `Claims: ${stage.claim_count} (Unique fields: ${stage.unique_fields_covered || 0})`;
+      } else if (stage.resolved_city) {
+        detailsHtml += `${stage.resolved_city} &bull; ${stage.timezone || ''}`;
+      } else if (stage.verification_status) {
+        detailsHtml += `${stage.verification_status} (${stage.verification_confidence}%)`;
+      } else if (stage.in_public_feed !== undefined) {
+        detailsHtml += stage.in_public_feed ? 'Tersedia di Katalog Publik' : `Diblokir: ${stage.blocker_reason || 'Belum Verifikasi'}`;
+      } else {
+        detailsHtml += stage.issues ? stage.issues.join(', ') : 'OK';
+      }
+
+      return `
+        <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 6px; padding: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-size: 11px; font-weight: 700; color: #fff;">${title}</div>
+            ${statusTag}
+          </div>
+          <div style="font-size: 11px; color: #94a3b8;">${detailsHtml}</div>
+        </div>
+      `;
+    }
+
+    async function promptResolveConflict(eventId) {
+      const note = prompt(`Resolusi Konflik untuk Event ${eventId}.\nMasukkan catatan operasional:`, 'Manual verification confirmed from official promoter post');
+      if (note === null) return;
+      try {
+        const res = await fetch('/api/admin/event-supply/resolve-conflict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_id: eventId,
+            chosen_fields: {},
+            resolution_notes: note
+          })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showToast(`Konflik pada ${eventId} berhasil diselesaikan.`, 'success');
+        loadEventSupplyView();
+      } catch (err) {
+        showToast('Gagal menyelesaikan konflik: ' + err.message, 'danger');
+      }
+    }
+
     function handleAlertAction(url, entity) {
       if (url.startsWith('#')) {
         const view = url.substring(1);
@@ -1143,13 +2149,42 @@
 
     async function handleLogout() {
       try {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        await fetch('/api/admin/logout', { method: 'POST' });
       } catch (e) {}
-      window.location.href = '/login';
+      window.location.href = '/admin/login';
     }
 
-    // Initial Load
-    fetchDashboardOverview();
+    // ============================================================
+    // Admin session identity (server-side truth)
+    // ============================================================
+    async function loadAdminSession() {
+      try {
+        const res = await fetch('/api/admin/session', { headers: { 'Accept': 'application/json' } });
+        if (res.status === 401) {
+          window.location.href = '/admin/login';
+          return false;
+        }
+        if (!res.ok) {
+          window.location.href = '/admin/login?error=ADMIN_ACCESS_REQUIRED';
+          return false;
+        }
+        const data = await res.json();
+        if (data.user) {
+          const identity = document.getElementById('operatorIdentity');
+          identity.innerText = `${data.user.name || data.user.email} • ${data.user.role}`;
+          identity.title = data.user.email;
+        }
+        return true;
+      } catch (e) {
+        return true;
+      }
+    }
+
+    (async function initOpsConsole() {
+      const sessionOk = await loadAdminSession();
+      if (!sessionOk) return;
+      fetchDashboardOverview();
+    })();
   </script>
 </body>
 </html>

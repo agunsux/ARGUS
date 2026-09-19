@@ -118,10 +118,8 @@ class AdminEventControlService {
     event.verification_notes = notes;
 
     try {
-      recordAuditLog('event_verified', {
-        event_id: eventId,
-        officer_id: officerId,
-        old_status: oldStatus,
+      recordAuditLog('EVENT', eventId, 'EVENT_MANUALLY_VERIFIED', officerId, {
+        previous_status: oldStatus,
         new_status: 'VERIFIED',
         notes
       });
@@ -145,10 +143,8 @@ class AdminEventControlService {
     event.updated_at = new Date().toISOString();
 
     try {
-      recordAuditLog('event_rejected', {
-        event_id: eventId,
-        officer_id: officerId,
-        old_status: oldStatus,
+      recordAuditLog('EVENT', eventId, 'EVENT_MANUALLY_REJECTED', officerId, {
+        previous_status: oldStatus,
         new_status: 'REJECTED',
         reason
       });
@@ -196,9 +192,7 @@ class AdminEventControlService {
     event.resolved_by = officerId;
 
     try {
-      recordAuditLog('event_conflict_resolved', {
-        event_id: eventId,
-        officer_id: officerId,
+      recordAuditLog('EVENT', eventId, 'EVENT_CONFLICT_RESOLVED', officerId, {
         chosen_fields: chosenFields,
         reason: chosenFields.reason || 'Manual officer conflict resolution'
       });
@@ -223,9 +217,7 @@ class AdminEventControlService {
     event.updated_at = new Date().toISOString();
 
     try {
-      recordAuditLog('event_status_changed', {
-        event_id: eventId,
-        officer_id: officerId,
+      recordAuditLog('EVENT', eventId, 'EVENT_CANCELLED', officerId, {
         new_status: 'CANCELLED',
         reason
       });
@@ -246,9 +238,7 @@ class AdminEventControlService {
     event.updated_at = new Date().toISOString();
 
     try {
-      recordAuditLog('event_status_changed', {
-        event_id: eventId,
-        officer_id: officerId,
+      recordAuditLog('EVENT', eventId, 'EVENT_MARKED_EXPIRED', officerId, {
         new_status: 'EXPIRED',
         reason: 'Manual officer expiration trigger'
       });

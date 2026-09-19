@@ -13,6 +13,19 @@ const { SessionStore } = require('../services/sessionStore');
 const { state } = require('../database');
 
 /**
+ * Canonical admin role set for the TIKUM Operations Control Center.
+ * Intentionally flat (no granular RBAC yet): every role below may operate
+ * the control center; ordinary users can never hold these roles because
+ * roles are only ever assigned server-side.
+ */
+const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN', 'OPS', 'TRUST_OFFICER'];
+
+function isAdminRole(role) {
+  if (!role || typeof role !== 'string') return false;
+  return ADMIN_ROLES.includes(role.toUpperCase());
+}
+
+/**
  * Parses cookies from cookie header string
  */
 function parseCookies(cookieHeader) {
@@ -172,10 +185,10 @@ function authorize(allowedRoles = []) {
 }
 
 /**
- * Middleware: Requires authenticated admin role.
- * Shorthand for authorize(['ADMIN']).
+ * Middleware: Requires authenticated admin role (ADMIN, SUPER_ADMIN, OPS, TRUST_OFFICER).
+ * Shorthand for authorize(ADMIN_ROLES).
  */
-const requireAdmin = authorize(['ADMIN']);
+const requireAdmin = authorize([...ADMIN_ROLES]);
 
 module.exports = {
   resolveUser,
@@ -183,5 +196,7 @@ module.exports = {
   requireAuth,
   authorize,
   requireAdmin,
+  isAdminRole,
+  ADMIN_ROLES,
   parseCookies
 };

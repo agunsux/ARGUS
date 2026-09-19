@@ -78,11 +78,13 @@ class EventSourceAdapter {
         lastError = err;
         const latencyMs = Date.now() - startTime;
         const isRateLimited = err.status === 429 || /429|rate\s*limit/i.test(err.message);
+        const httpStatus = this.extractHttpStatus(err);
 
         sourceRegistry.updateHealth(this.sourceId, null, {
           success: false,
           latencyMs,
-          isRateLimited
+          isRateLimited,
+          httpStatus
         });
 
         // If circuit tripped open, abort retries immediately
@@ -100,6 +102,18 @@ class EventSourceAdapter {
     }
 
     throw new Error(`Failed to fetch from ${this.sourceId} after ${attempt} attempts: ${lastError.message}`);
+  }
+
+  /**
+   * Best-effort extraction of an upstream HTTP status from an adapter error.
+   * Returns null when the failure was not HTTP-attributable (timeout, DNS, parse).
+   */
+  extractHttpStatus(err) {
+    if (!err) return null;
+    if (typeof err.status === 'number') return err.status;
+    if (typeof err.statusCode === 'number') return err.statusCode;
+    const match = /(?:HTTP|status(?:\s*code)?)\s*[:=]?\s*(\d{3})/i.exec(err.message || '');
+    return match ? Number(match[1]) : null;
   }
 
   /**

@@ -1137,8 +1137,18 @@ function bootstrapAdminUser() {
     return { created: false, user: existingAdmin };
   }
 
-  const rawPassword = process.env.ADMIN_PASSWORD || process.env.ARGUS_ADMIN_PASSWORD || 'admin123';
-  const hashedPassword = hashPassword(rawPassword);
+  // Admin credentials MUST come from the environment. There is deliberately
+  // no well-known fallback password: without configuration the bootstrapped
+  // admin is locked (no usable password) until ADMIN_PASSWORD is set.
+  const rawPassword = process.env.ADMIN_PASSWORD || process.env.ARGUS_ADMIN_PASSWORD;
+  const hashedPassword = rawPassword
+    ? hashPassword(rawPassword)
+    : (process.env.NODE_ENV === 'test' ? PILOT123_HASH : null);
+
+  if (!rawPassword && process.env.NODE_ENV !== 'test') {
+    console.warn('[SECURITY] ADMIN_PASSWORD / ARGUS_ADMIN_PASSWORD is not set. Bootstrapped admin account has no usable password (login disabled). Set the environment variable to enable admin login.');
+  }
+
   const now = new Date().toISOString();
 
   const newAdmin = {

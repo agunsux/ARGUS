@@ -82,14 +82,58 @@ app.get('/sitemap.xml', (req, res) => {
   }));
 });
 
-const { requireAdmin } = require('./middleware/auth');
+const { resolveUser, isAdminRole } = require('./middleware/auth');
 
 // Institutional and static file delivery
 const publicDir = path.resolve(__dirname, '../public');
 const sendFileOpts = { dotfiles: 'allow' };
 
-// Enforce admin authorization boundary before static handler
-app.get(['/admin', '/admin.html'], requireAdmin, (req, res) => res.sendFile(path.join(publicDir, 'admin.html'), sendFileOpts));
+function wantsHtml(req) {
+  const accept = req.headers.accept || '';
+  return accept.includes('text/html') || accept.includes('application/xhtml+xml');
+}
+
+// Dedicated admin login surface (public)
+app.get('/admin/login', (req, res) => {
+  const user = resolveUser(req);
+  if (user && isAdminRole(user.role) && (user.status || 'ACTIVE').toUpperCase() !== 'SUSPENDED') {
+    return res.redirect(302, '/admin');
+  }
+  return res.sendFile(path.join(publicDir, 'admin-login.html'), sendFileOpts);
+});
+
+// Enforce admin authorization boundary before static handler.
+// Browser navigation (Accept: text/html) is redirected to /admin/login;
+// API clients receive explicit 401/403 JSON.
+app.get(['/admin', '/admin.html'], (req, res) => {
+  const user = resolveUser(req);
+
+  if (!user) {
+    if (wantsHtml(req)) return res.redirect(302, '/admin/login');
+    return res.status(401).json({
+      error: 'Authentication required. Invalid or missing session.',
+      code: 'AUTH_REQUIRED'
+    });
+  }
+
+  if ((user.status || '').toUpperCase() === 'SUSPENDED') {
+    if (wantsHtml(req)) return res.redirect(302, '/admin/login?error=USER_SUSPENDED');
+    return res.status(403).json({
+      error: 'Account is suspended. Access denied.',
+      code: 'USER_SUSPENDED'
+    });
+  }
+
+  if (!isAdminRole(user.role)) {
+    if (wantsHtml(req)) return res.redirect(302, '/admin/login?error=ADMIN_ACCESS_REQUIRED');
+    return res.status(403).json({
+      error: `Forbidden: role '${user.role}' not permitted for this action`,
+      code: 'FORBIDDEN'
+    });
+  }
+
+  return res.sendFile(path.join(publicDir, 'admin.html'), sendFileOpts);
+});
 
 // Serve front-end files
 app.use(express.static(publicDir, sendFileOpts));

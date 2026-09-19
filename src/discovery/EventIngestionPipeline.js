@@ -22,6 +22,7 @@ const { EventDeduplicationService } = require('./EventDeduplicationService');
 const { EventVerificationService, VERIFICATION_STATUS } = require('./EventVerificationService');
 const { canonicalRegistry } = require('./CanonicalEventRegistry');
 const { EventSourceObservation } = require('./models/EventSourceObservation');
+const { SourceClaim, CLAIM_TYPES } = require('./models/SourceClaim');
 
 class EventIngestionPipeline {
   constructor() {
@@ -117,7 +118,8 @@ class EventIngestionPipeline {
     const dtNorm = EventNormalizationService.normalizeDateTime(
       rawDate,
       sanitizedPayload.time,
-      sanitizedPayload.timezone
+      sanitizedPayload.timezone,
+      venueNorm.city || sanitizedPayload.city || sanitizedPayload.province
     );
     const eventType = sanitizedPayload.event_type || EventNormalizationService.normalizeEventType(sanitizedPayload.category, normTitle);
     const slug = EventNormalizationService.generateSlug(normTitle, venueNorm.city, dtNorm.date);
@@ -224,6 +226,49 @@ class EventIngestionPipeline {
           sourceRegistry.recordEventMetrics(sourceId, { changed: 1 });
         }
       }
+
+      // Append decomposed claims to canonical event
+      const incomingClaims = [
+        new SourceClaim({
+          source_id: source.source_id,
+          source_url: normalizedRecord.source_url,
+          claim_type: CLAIM_TYPES.EVENT_NAME,
+          value: normTitle,
+          observed_at: observation.observed_at,
+          source_authority_tier: source.tier || 2
+        }),
+        new SourceClaim({
+          source_id: source.source_id,
+          source_url: normalizedRecord.source_url,
+          claim_type: CLAIM_TYPES.EVENT_DATE,
+          value: dtNorm.date,
+          observed_at: observation.observed_at,
+          source_authority_tier: source.tier || 2
+        }),
+        new SourceClaim({
+          source_id: source.source_id,
+          source_url: normalizedRecord.source_url,
+          claim_type: CLAIM_TYPES.VENUE,
+          value: venueNorm.venue_name,
+          observed_at: observation.observed_at,
+          source_authority_tier: source.tier || 2
+        }),
+        new SourceClaim({
+          source_id: source.source_id,
+          source_url: normalizedRecord.source_url,
+          claim_type: CLAIM_TYPES.CITY,
+          value: venueNorm.city,
+          observed_at: observation.observed_at,
+          source_authority_tier: source.tier || 2
+        })
+      ];
+
+      canonicalEvent.atomic_claims = canonicalEvent.atomic_claims || [];
+      canonicalEvent.claims = canonicalEvent.claims || [];
+      for (const cl of incomingClaims) {
+        canonicalEvent.atomic_claims.push(cl);
+        canonicalEvent.claims.push(cl);
+      }
     } else {
       // CREATE NEW CANONICAL EVENT
       // Enforce fail-closed verification:
@@ -246,13 +291,71 @@ class EventIngestionPipeline {
         initialConfidence = 60;
       }
 
+      const claims = [
+        new SourceClaim({
+          source_id: source.source_id,
+          source_url: normalizedRecord.source_url,
+          claim_type: CLAIM_TYPES.EVENT_NAME,
+          value: normTitle,
+          observed_at: observation.observed_at,
+          source_authority_tier: source.tier || 2
+        }),
+        new SourceClaim({
+          source_id: source.source_id,
+          source_url: normalizedRecord.source_url,
+          claim_type: CLAIM_TYPES.EVENT_DATE,
+          value: dtNorm.date,
+          observed_at: observation.observed_at,
+          source_authority_tier: source.tier || 2
+        }),
+        new SourceClaim({
+          source_id: source.source_id,
+          source_url: normalizedRecord.source_url,
+          claim_type: CLAIM_TYPES.VENUE,
+          value: venueNorm.venue_name,
+          observed_at: observation.observed_at,
+          source_authority_tier: source.tier || 2
+        }),
+        new SourceClaim({
+          source_id: source.source_id,
+          source_url: normalizedRecord.source_url,
+          claim_type: CLAIM_TYPES.CITY,
+          value: venueNorm.city,
+          observed_at: observation.observed_at,
+          source_authority_tier: source.tier || 2
+        })
+      ];
+
+      if (normalizedRecord.artists && normalizedRecord.artists.length > 0) {
+        claims.push(new SourceClaim({
+          source_id: source.source_id,
+          source_url: normalizedRecord.source_url,
+          claim_type: CLAIM_TYPES.LINEUP,
+          value: normalizedRecord.artists,
+          observed_at: observation.observed_at,
+          source_authority_tier: source.tier || 2
+        }));
+      }
+
+      if (normalizedRecord.official_ticket_url) {
+        claims.push(new SourceClaim({
+          source_id: source.source_id,
+          source_url: normalizedRecord.source_url,
+          claim_type: CLAIM_TYPES.TICKET_PRICE,
+          value: normalizedRecord.ticket_price || 'UNKNOWN',
+          observed_at: observation.observed_at,
+          source_authority_tier: source.tier || 2
+        }));
+      }
+
       canonicalEvent = canonicalRegistry.createEvent({
         ...normalizedRecord,
         slug,
         sources: [normalizedRecord],
         verification_status: initialStatus,
         verification_confidence: initialConfidence,
-        observations: [observation.toJSON()]
+        observations: [observation.toJSON()],
+        claims: claims
       });
 
       this.metrics.events_created++;
