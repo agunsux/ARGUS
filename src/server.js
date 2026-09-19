@@ -82,9 +82,17 @@ app.get('/sitemap.xml', (req, res) => {
   }));
 });
 
-// Serve front-end files
+const { requireAdmin } = require('./middleware/auth');
+
+// Institutional and static file delivery
+const publicDir = path.resolve(__dirname, '../public');
 const sendFileOpts = { dotfiles: 'allow' };
-app.use(express.static(path.resolve(__dirname, '../public'), sendFileOpts));
+
+// Enforce admin authorization boundary before static handler
+app.get(['/admin', '/admin.html'], requireAdmin, (req, res) => res.sendFile(path.join(publicDir, 'admin.html'), sendFileOpts));
+
+// Serve front-end files
+app.use(express.static(publicDir, sendFileOpts));
 
 // Mount Trust APIs
 app.use(trustApi);
@@ -131,7 +139,6 @@ const authRouter = require('./api/authRouter');
 app.use('/api/auth', authRouter);
 
 // Explicit Institutional Frontend Page Delivery
-const publicDir = path.resolve(__dirname, '../public');
 const { businessProfile } = require('./config/businessProfile');
 app.get('/api/business-profile', (req, res) => res.json(businessProfile));
 
@@ -143,7 +150,6 @@ app.get('/pay', (req, res) => res.sendFile(path.join(publicDir, 'pay.html'), sen
 app.get('/offers', (req, res) => res.sendFile(path.join(publicDir, 'offers.html'), sendFileOpts));
 app.get('/track/:id', (req, res) => res.sendFile(path.join(publicDir, 'track.html'), sendFileOpts));
 app.get('/track', (req, res) => res.sendFile(path.join(publicDir, 'track.html'), sendFileOpts));
-app.get('/admin', (req, res) => res.sendFile(path.join(publicDir, 'admin.html'), sendFileOpts));
 app.get('/terms', (req, res) => res.sendFile(path.join(publicDir, 'terms.html'), sendFileOpts));
 app.get('/privacy', (req, res) => res.sendFile(path.join(publicDir, 'privacy.html'), sendFileOpts));
 app.get('/faq', (req, res) => res.sendFile(path.join(publicDir, 'faq.html'), sendFileOpts));

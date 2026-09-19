@@ -6,799 +6,1150 @@
   <title>TIKUM Operations Console — ARGUS Trust Engine | SHINERVA HQ</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* Operational Control Center Layout ("Airport Operations Room") */
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* Top Control Bar */
+    .ops-header {
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .ops-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: #fff;
+    }
+    .ops-brand-badge {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+    }
+    .ops-title {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+    .ops-subtitle {
+      font-size: 10px;
+      font-weight: 600;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    /* Search Bar */
+    .ops-search-box {
+      position: relative;
+      width: 320px;
+    }
+    .ops-search-input {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #fff;
+      padding: 6px 12px 6px 32px;
+      border-radius: 6px;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+    .ops-search-input:focus {
+      outline: none;
+      border-color: #38bdf8;
+      background: #0f172a;
+    }
+    .ops-search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    /* Header Actions */
+    .ops-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ops-badge-clock {
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #94a3b8;
+    }
+
+    /* Dashboard Shell */
+    .ops-shell {
+      display: flex;
+      min-height: calc(100vh - 53px);
+    }
+
+    /* Sidebar */
+    .ops-sidebar {
+      width: 220px;
+      background: #0b1120;
+      border-right: 1px solid #1e293b;
+      flex-shrink: 0;
+      padding: 16px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .sidebar-heading {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #64748b;
+      padding: 8px 12px 4px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      color: #94a3b8;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      box-sizing: border-box;
+    }
+    .nav-item:hover {
+      background: #1e293b;
+      color: #fff;
+    }
+    .nav-item.active {
+      background: #1e293b;
+      color: #38bdf8;
+      font-weight: 600;
+      border-left: 3px solid #38bdf8;
+      border-radius: 0 6px 6px 0;
+    }
+    .nav-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-badge {
+      background: #334155;
+      color: #cbd5e1;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .nav-badge.danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .nav-badge.warning {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    /* Main Workspace */
+    .ops-workspace {
+      flex: 1;
+      padding: 20px 24px;
+      overflow-y: auto;
+      max-width: 1600px;
+    }
+
+    /* Metric KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 14px;
+      position: relative;
+    }
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .kpi-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .kpi-sub {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    /* Operations Section Panels */
+    .panel {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 12px 16px;
+      background: #131d33;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-body {
+      padding: 16px;
+    }
+
+    /* Dense Data Tables */
+    .ops-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 12px;
+    }
+    .ops-table th {
+      padding: 8px 12px;
+      background: #0b1120;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .ops-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #1e293b;
+      color: #cbd5e1;
+      vertical-align: middle;
+    }
+    .ops-table tr:hover td {
+      background: rgba(30, 41, 59, 0.5);
+    }
+
+    /* Status Badges */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .tag-critical { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .tag-high { background: rgba(249, 115, 22, 0.2); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4); }
+    .tag-medium { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .tag-low { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .tag-success { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .tag-neutral { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+
+    /* Operational Alerts List */
+    .alert-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 6px;
+      background: #131d33;
+      border: 1px solid #1e293b;
+      margin-bottom: 8px;
+      gap: 12px;
+    }
+    .alert-card:last-child {
+      margin-bottom: 0;
+    }
+    .alert-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+    .alert-meta {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .alert-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 1024px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .ops-sidebar { width: 180px; }
+    }
+    @media (max-width: 768px) {
+      .ops-shell { flex-direction: column; }
+      .ops-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #1e293b; }
+      .ops-search-box { width: 200px; }
+    }
+
+    /* Mono Numbers & Codes */
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Site Header -->
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge" style="background: linear-gradient(135deg, #475569, #1e293b);"><i class="fa-solid fa-lock"></i></div>
+  <!-- Top Operations Bar -->
+  <header class="ops-header">
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <a href="/admin" class="ops-brand">
+        <div class="ops-brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
-          <div class="brand-title">TIKUM <span style="font-size: 12px; color: var(--cyan); font-weight: 600;">OPS CONSOLE</span></div>
-          <span class="brand-subtitle">Powered by ARGUS Trust Engine &bull; SHINERVA HQ</span>
+          <div class="ops-title">TIKUM <span style="color: #38bdf8; font-weight: 400;">OPERATIONS CONTROL</span></div>
+          <div class="ops-subtitle">Powered by ARGUS Trust Engine &bull; SHINERVA HQ</div>
         </div>
       </a>
 
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <div id="authStatus" style="font-size: 12px; color: var(--text-muted); display: none;">
-          <span class="badge badge-success"><i class="fa-solid fa-user-shield"></i> <span id="authUserName">Administrator</span></span>
-        </div>
-        <button id="btnLogout" class="btn btn-secondary btn-sm" style="display: none;" onclick="handleLogout()">
-          <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
-        </button>
-        <a href="/" class="nav-link btn-sm"><i class="fa-solid fa-house"></i> Beranda Publik</a>
+      <!-- Quick Operational Search -->
+      <div class="ops-search-box">
+        <i class="fa-solid fa-magnifying-glass ops-search-icon"></i>
+        <input type="text" id="adminSearchInput" class="ops-search-input" placeholder="Cari Event, Tiket, Order, Penjual, Pembeli..." onkeyup="handleQuickSearch(event)">
       </div>
+    </div>
+
+    <div class="ops-controls">
+      <div id="liveClock" class="ops-badge-clock">UTC+7 --:--:--</div>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8;">
+        <span class="tag tag-success"><i class="fa-solid fa-circle" style="font-size: 6px;"></i> ONLINE</span>
+        <span id="operatorIdentity" class="mono" style="color: #fff; font-weight: 600;">ops@argus.id</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="fetchDashboardOverview()" title="Muat ulang seluruh data">
+        <i class="fa-solid fa-rotate"></i> Sync
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="handleLogout()" title="Keluar dari sesi admin">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </button>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="container" style="max-width: 1200px; padding: 24px 16px;">
+  <!-- Main Shell -->
+  <div class="ops-shell">
 
-    <!-- Authentication Verification Spinner -->
-    <div id="authChecking" style="text-align: center; padding: 80px 20px;">
-      <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 32px; color: var(--cyan); margin-bottom: 16px;"></i>
-      <div style="font-size: 14px; color: var(--text-muted);">Memverifikasi otorisasi administrator...</div>
-    </div>
+    <!-- Sidebar Navigation -->
+    <aside class="ops-sidebar">
+      <div class="sidebar-heading">Operational Workspace</div>
+      <button class="nav-item active" onclick="switchView('overview', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-gauge-high"></i> Overview</span>
+        <span id="sidebarAlertCount" class="nav-badge danger" style="display: none;">0</span>
+      </button>
+      <button class="nav-item" onclick="switchView('events', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-calendar-days"></i> Events</span>
+        <span id="sidebarEventsCount" class="nav-badge">-</span>
+      </button>
+      <button class="nav-item" onclick="switchView('tickets', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-ticket"></i> Tickets</span>
+        <span id="sidebarTicketsCount" class="nav-badge">-</span>
+      </button>
+      <button class="nav-item" onclick="switchView('orders', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-money-bill-transfer"></i> Orders</span>
+        <span id="sidebarOrdersCount" class="nav-badge">-</span>
+      </button>
+      <button class="nav-item" onclick="switchView('sellers', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-store"></i> Sellers</span>
+      </button>
+      <button class="nav-item" onclick="switchView('buyers', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-user-group"></i> Buyers</span>
+      </button>
+      <button class="nav-item" onclick="switchView('payments', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-vault"></i> Payments &amp; Ledger</span>
+      </button>
+      <button class="nav-item" onclick="switchView('disputes', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-scale-balanced"></i> Disputes</span>
+        <span id="sidebarDisputesCount" class="nav-badge warning" style="display: none;">0</span>
+      </button>
+      <button class="nav-item" onclick="switchView('incidents', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-triangle-exclamation"></i> Incidents</span>
+        <span id="sidebarIncidentsCount" class="nav-badge danger" style="display: none;">0</span>
+      </button>
+      <button class="nav-item" onclick="switchView('venue-pic', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-person-shelter"></i> Venue / PIC</span>
+      </button>
 
-    <!-- 403 Forbidden Surface (Shown when authenticated as non-admin) -->
-    <div id="unauthorizedNotice" class="card" style="display: none; max-width: 500px; margin: 60px auto; padding: 32px; text-align: center;">
-      <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--danger-bg); color: var(--danger); display: inline-flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 16px;">
-        <i class="fa-solid fa-shield-halved"></i>
-      </div>
-      <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 8px;">403 Forbidden</h2>
-      <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
-        Akses khusus Administrator TIKUM / ARGUS.<br>
-        Akun Anda (<span id="userRoleInfo" class="mono" style="color: var(--cyan);"></span>) tidak memiliki hak akses untuk membuka Admin Control Plane.
-      </p>
-      <div style="display: flex; gap: 12px; justify-content: center;">
-        <a href="/" class="btn"><i class="fa-solid fa-house"></i> Ke Beranda</a>
-        <button class="btn btn-secondary" onclick="handleLogout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar</button>
-      </div>
-    </div>
+      <div class="sidebar-heading" style="margin-top: 16px;">Platform Control</div>
+      <a href="/" class="nav-item" target="_blank">
+        <span class="nav-item-left"><i class="fa-solid fa-arrow-up-right-from-square"></i> Portal Publik</span>
+      </a>
+    </aside>
 
-    <!-- Authenticated Admin Control Plane Surface -->
-    <div id="adminApp" style="display: none;">
+    <!-- Workspace Area -->
+    <main class="ops-workspace">
 
-      <!-- Header Info Banner -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
-        <div>
-          <h1 style="font-size: 22px; font-weight: 800; color: #fff; margin: 0;">Admin Control Plane</h1>
-          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-            Terhubung sebagai: <strong id="adminNameDisplay" style="color: #fff;">-</strong> (<span id="adminEmailDisplay" class="mono" style="color: var(--cyan);">-</span>) &bull; Mode Otorisasi: <span class="badge badge-info">SERVER-SIDE ENFORCED</span>
+      <!-- Global Notification Toast -->
+      <div id="opsToast" style="display: none; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 12px;"></div>
+
+      <!-- ============================================================ -->
+      <!-- VIEW 1: OVERVIEW (PRIMARY) -->
+      <!-- ============================================================ -->
+      <div id="viewOverview">
+
+        <!-- 1. Top-Level Operational Cards (Real Data Only, "N/A" if unavailable) -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Active Events <i class="fa-solid fa-calendar-check" style="color: #38bdf8;"></i></div>
+            <div id="kpiActiveEvents" class="kpi-value">-</div>
+            <div class="kpi-sub">Upcoming &amp; On Sale</div>
           </div>
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-secondary btn-sm" onclick="refreshCurrentTab()">
-            <i class="fa-solid fa-rotate"></i> Muat Ulang Data
-          </button>
-        </div>
-      </div>
-
-      <!-- Navigation Tabs -->
-      <div class="pill-group" style="margin-bottom: 24px; flex-wrap: wrap;">
-        <button class="pill-btn active" onclick="switchAdminTab('overview', this)">
-          <i class="fa-solid fa-chart-pie"></i> Ringkasan Sistem
-        </button>
-        <button class="pill-btn" onclick="switchAdminTab('users', this)">
-          <i class="fa-solid fa-users"></i> Manajemen Pengguna (<span id="tabCountUsers">-</span>)
-        </button>
-        <button class="pill-btn" onclick="switchAdminTab('orders', this)">
-          <i class="fa-solid fa-money-bill-transfer"></i> Transaksi &amp; Escrow (<span id="tabCountOrders">-</span>)
-        </button>
-        <button class="pill-btn" onclick="switchAdminTab('security', this)">
-          <i class="fa-solid fa-shield-virus"></i> Trust &amp; Keamanan
-        </button>
-        <button class="pill-btn" onclick="switchAdminTab('fieldops', this)">
-          <i class="fa-solid fa-ticket"></i> Operasi Lapangan &amp; Katalog
-        </button>
-      </div>
-
-      <!-- Toast Notification Box -->
-      <div id="adminToast" class="notice-box notice-success" style="display: none; margin-bottom: 20px;"></div>
-
-      <!-- ======================================================== -->
-      <!-- TAB 1: OVERVIEW -->
-      <!-- ======================================================== -->
-      <div id="tabOverview">
-        <!-- User Metrics -->
-        <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 12px; font-weight: 700;">
-          <i class="fa-solid fa-user-group"></i> Metrik Pengguna
-        </h3>
-        <div class="grid-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
-          <div class="card" style="padding: 16px; margin-bottom: 0;">
-            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Total Pengguna Terdaftar</div>
-            <div id="statTotalUsers" style="font-size: 28px; font-weight: 800; color: #fff; margin-top: 4px;" class="mono">-</div>
-            <div style="font-size: 11px; color: var(--cyan); margin-top: 2px;">Akun terverifikasi database</div>
+          <div class="kpi-card">
+            <div class="kpi-label">Tickets Listed <i class="fa-solid fa-tags" style="color: #34d399;"></i></div>
+            <div id="kpiTicketsListed" class="kpi-value">-</div>
+            <div class="kpi-sub">Active Marketplace Listings</div>
           </div>
-          <div class="card" style="padding: 16px; margin-bottom: 0;">
-            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Pengguna Aktif</div>
-            <div id="statActiveUsers" style="font-size: 28px; font-weight: 800; color: #34d399; margin-top: 4px;" class="mono">-</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Status: ACTIVE</div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total Orders <i class="fa-solid fa-receipt" style="color: #60a5fa;"></i></div>
+            <div id="kpiTotalOrders" class="kpi-value">-</div>
+            <div class="kpi-sub">All-Time Transactions</div>
           </div>
-          <div class="card" style="padding: 16px; margin-bottom: 0;">
-            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Pengguna Ditangguhkan</div>
-            <div id="statSuspendedUsers" style="font-size: 28px; font-weight: 800; color: var(--danger); margin-top: 4px;" class="mono">-</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Status: SUSPENDED</div>
+          <div class="kpi-card">
+            <div class="kpi-label">Pending Payments <i class="fa-solid fa-clock" style="color: #f59e0b;"></i></div>
+            <div id="kpiPendingPayments" class="kpi-value">-</div>
+            <div class="kpi-sub">Within Payment Window</div>
           </div>
-        </div>
-
-        <!-- Order & Escrow Metrics -->
-        <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 12px; font-weight: 700;">
-          <i class="fa-solid fa-vault"></i> Metrik Transaksi &amp; Escrow
-        </h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
-          <div class="card" style="padding: 16px; margin-bottom: 0;">
-            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Total Pesanan</div>
-            <div id="statTotalOrders" style="font-size: 26px; font-weight: 800; color: #fff; margin-top: 4px;" class="mono">-</div>
-            <div style="font-size: 11px; color: var(--cyan); margin-top: 2px;">Seluruh riwayat pesanan</div>
+          <div class="kpi-card">
+            <div class="kpi-label">Open Disputes <i class="fa-solid fa-scale-balanced" style="color: #ef4444;"></i></div>
+            <div id="kpiOpenDisputes" class="kpi-value">-</div>
+            <div class="kpi-sub">Investigasi Aktif</div>
           </div>
-          <div class="card" style="padding: 16px; margin-bottom: 0;">
-            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Menunggu Pembayaran</div>
-            <div id="statPendingOrders" style="font-size: 26px; font-weight: 800; color: var(--warning); margin-top: 4px;" class="mono">-</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">PENDING / RESERVED</div>
-          </div>
-          <div class="card" style="padding: 16px; margin-bottom: 0;">
-            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Sengketa / Disputed</div>
-            <div id="statDisputedOrders" style="font-size: 26px; font-weight: 800; color: var(--danger); margin-top: 4px;" class="mono">-</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Dalam investigasi PIC</div>
-          </div>
-          <div class="card" style="padding: 16px; margin-bottom: 0;">
-            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Selesai / Released</div>
-            <div id="statReleasedOrders" style="font-size: 26px; font-weight: 800; color: #34d399; margin-top: 4px;" class="mono">-</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Dana diteruskan ke penjual</div>
-          </div>
-          <div class="card" style="padding: 16px; margin-bottom: 0;">
-            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Dibekukan / Frozen</div>
-            <div id="statFrozenOrders" style="font-size: 26px; font-weight: 800; color: #a855f7; margin-top: 4px;" class="mono">-</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Tindakan pengamanan trust</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ======================================================== -->
-      <!-- TAB 2: USERS MANAGEMENT -->
-      <!-- ======================================================== -->
-      <div id="tabUsers" class="card" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-          <div>
-            <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Daftar Pengguna Platform</h3>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-              Kelola status operasional akun pengguna. Hash kata sandi dilindungi secara kriptografis dan tidak pernah diekspos ke antarmuka.
-            </div>
-          </div>
-          <div id="usersTableCount" class="badge badge-info" style="font-size: 12px;">-</div>
-        </div>
-
-        <div style="overflow-x: auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Pengguna</th>
-                <th>Email</th>
-                <th>Peran</th>
-                <th>Status</th>
-                <th>Dibuat</th>
-                <th>Login Terakhir</th>
-                <th>Aksi Admin</th>
-              </tr>
-            </thead>
-            <tbody id="usersTableBody">
-              <tr>
-                <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">Memuat data pengguna...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ======================================================== -->
-      <!-- TAB 3: ORDERS & ESCROW AUDIT -->
-      <!-- ======================================================== -->
-      <div id="tabOrders" class="card" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-          <div>
-            <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Audit Transaksi &amp; Rekening Penampungan (Escrow)</h3>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-              Read-Only Audit: Otorisasi pencairan dana dikendalikan penuh secara multi-layer oleh Trust Policy Engine. Tidak ada pelepasan dana sewenang-wenang.
-            </div>
-          </div>
-          <div id="ordersTableCount" class="badge badge-info" style="font-size: 12px;">-</div>
-        </div>
-
-        <div style="overflow-x: auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>ID Pesanan</th>
-                <th>Pembeli</th>
-                <th>Penjual</th>
-                <th>Nominal</th>
-                <th>Status Pesanan</th>
-                <th>Status Escrow</th>
-                <th>Waktu Transaksi</th>
-              </tr>
-            </thead>
-            <tbody id="ordersTableBody">
-              <tr>
-                <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">Memuat data transaksi...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ======================================================== -->
-      <!-- TAB 4: TRUST & SECURITY -->
-      <!-- ======================================================== -->
-      <div id="tabSecurity" style="display: none;">
-        <div class="card" style="margin-bottom: 20px;">
-          <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 4px;">Pusat Audit Keamanan &amp; Trust Policy Engine</h3>
-          <div style="font-size: 12px; color: var(--text-muted);">
-            Seluruh metrik berasal langsung dari tabel operasional aktif. Zero-fabrication: metrik yang belum terintegrasi ditampilkan sebagai "Not available".
+          <div class="kpi-card">
+            <div class="kpi-label">Active Incidents <i class="fa-solid fa-triangle-exclamation" style="color: #f87171;"></i></div>
+            <div id="kpiActiveIncidents" class="kpi-value">-</div>
+            <div class="kpi-sub">Insiden Gate / Venue</div>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;">
-          <!-- Disputes Card -->
-          <div class="card" style="padding: 20px; margin-bottom: 0;">
-            <div style="font-size: 12px; text-transform: uppercase; color: var(--text-dim); font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-scale-balanced" style="color: var(--cyan);"></i> Audit Sengketa (Disputes)
+        <!-- 2. Action Required / Operational Alerts Section -->
+        <div class="panel" style="border-left: 3px solid #ef4444;">
+          <div class="panel-header">
+            <div class="panel-title">
+              <i class="fa-solid fa-bell" style="color: #ef4444;"></i> Action Required &bull; Operational Alerts
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-size: 13px; color: var(--text-muted);">Total Sengketa</span>
-              <strong id="secDisputesTotal" class="mono" style="color: #fff;">-</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-size: 13px; color: var(--text-muted);">Sengketa Terbuka</span>
-              <strong id="secDisputesOpen" class="mono" style="color: var(--danger);">-</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="font-size: 13px; color: var(--text-muted);">Sengketa Selesai</span>
-              <strong id="secDisputesResolved" class="mono" style="color: #34d399;">-</strong>
-            </div>
+            <span id="alertsBadge" class="tag tag-critical">0 Menunggu Tindakan</span>
           </div>
-
-          <!-- Incidents Card -->
-          <div class="card" style="padding: 20px; margin-bottom: 0;">
-            <div style="font-size: 12px; text-transform: uppercase; color: var(--text-dim); font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-triangle-exclamation" style="color: var(--warning);"></i> Insiden Operasional
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-size: 13px; color: var(--text-muted);">Total Insiden Tercatat</span>
-              <strong id="secIncidentsTotal" class="mono" style="color: #fff;">-</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="font-size: 13px; color: var(--text-muted);">Insiden Terbuka</span>
-              <strong id="secIncidentsOpen" class="mono" style="color: var(--danger);">-</strong>
-            </div>
-          </div>
-
-          <!-- Trust Policy Engine Evaluation Card -->
-          <div class="card" style="padding: 20px; margin-bottom: 0;">
-            <div style="font-size: 12px; text-transform: uppercase; color: var(--text-dim); font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-shield-halved" style="color: #34d399;"></i> Trust Policy Engine
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-size: 13px; color: var(--text-muted);">Total Evaluasi Autorisasi</span>
-              <strong id="secAuthTotal" class="mono" style="color: #fff;">-</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-size: 13px; color: var(--text-muted);">Autorisasi Terblokir (BLOCK)</span>
-              <strong id="secAuthBlocked" class="mono" style="color: var(--danger);">-</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-size: 13px; color: var(--text-muted);">Menunggu Review (EXCEPTION)</span>
-              <strong id="secAuthPending" class="mono" style="color: var(--warning);">-</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="font-size: 13px; color: var(--text-muted);">Kegagalan Atestasi (FAIL)</span>
-              <strong id="secAttestFail" class="mono" style="color: var(--danger);">-</strong>
-            </div>
-          </div>
-
-          <!-- Integrity & External Intel (Zero Fabrication) -->
-          <div class="card" style="padding: 20px; margin-bottom: 0;">
-            <div style="font-size: 12px; text-transform: uppercase; color: var(--text-dim); font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-microchip" style="color: #a855f7;"></i> Infrastruktur Kriptografis Lanjutan
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-size: 13px; color: var(--text-muted);">External Threat Intelligence</span>
-              <span id="secThreatIntel" class="badge badge-slate">Not available</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="font-size: 13px; color: var(--text-muted);">Hardware Security Modules</span>
-              <span id="secHsmStatus" class="badge badge-slate">Not available</span>
+          <div class="panel-body">
+            <div id="alertsContainer">
+              <div style="text-align: center; padding: 16px; color: #64748b;">Memeriksa status operasional...</div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- ======================================================== -->
-      <!-- TAB 5: FIELD OPS & CATALOG (Legacy Operational Workflows) -->
-      <!-- ======================================================== -->
-      <div id="tabFieldOps" style="display: none;">
-        <div class="pill-group" style="margin-bottom: 16px;">
-          <button class="pill-btn active" onclick="switchFieldSubTab('events', this)">
-            <i class="fa-solid fa-calendar-days"></i> Katalog Event
-          </button>
-          <button class="pill-btn" onclick="switchFieldSubTab('promoters', this)">
-            <i class="fa-solid fa-user-check"></i> Promoter Import &amp; Registry
-          </button>
-        </div>
-
-        <!-- SubTab: Events Management -->
-        <div id="fieldEvents" class="card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-            <div>
-              <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Katalog Event</h3>
-              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Daftar event yang terdaftar di platform ARGUS.</div>
-            </div>
-            <button class="btn btn-secondary btn-sm" onclick="loadAdminEvents()">
-              <i class="fa-solid fa-rotate"></i> Muat Ulang
-            </button>
+        <!-- 3. Event Operations Table -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-calendar-days" style="color: #38bdf8;"></i> Event Operations</div>
+            <span id="eventOperationsCount" class="tag tag-neutral">0 Events</span>
           </div>
-
           <div style="overflow-x: auto;">
-            <table>
+            <table class="ops-table">
               <thead>
                 <tr>
-                  <th>ID Event</th>
-                  <th>Nama Acara &amp; Kategori</th>
-                  <th>Kota &amp; Venue</th>
-                  <th>Tanggal</th>
-                  <th>Sumber</th>
-                  <th>Status Verifikasi</th>
+                  <th>Event</th>
+                  <th>Date</th>
+                  <th>Venue</th>
+                  <th style="text-align: center;">Tickets Listed</th>
+                  <th style="text-align: center;">Orders</th>
+                  <th>PIC Field Officer</th>
+                  <th>Operational Status</th>
                 </tr>
               </thead>
-              <tbody id="eventsTableBody">
-                <tr>
-                  <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">Memuat event...</td>
-                </tr>
+              <tbody id="eventOperationsTableBody">
+                <tr><td colspan="7" style="text-align: center; padding: 20px; color: #64748b;">Memuat data event...</td></tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- SubTab: Promoter Registry -->
-        <div id="fieldPromoters" class="card" style="display: none;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-            <div>
-              <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">Promoter Registry</h3>
-              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Registry promotor konser terverifikasi.</div>
-            </div>
-            <div id="promoterRegistryCount" style="font-size: 12px; color: var(--text-muted);"></div>
+        <!-- 4. Venue / PIC Status Table (Strategic Ground Moat) -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-person-shelter" style="color: #34d399;"></i> Venue &amp; PIC Operational Coverage</div>
+            <span class="tag tag-neutral">Ground Verification Status</span>
           </div>
           <div style="overflow-x: auto;">
-            <table>
+            <table class="ops-table">
               <thead>
                 <tr>
-                  <th>Promotor</th>
-                  <th>Instagram</th>
-                  <th>Kota</th>
-                  <th>Kategori</th>
-                  <th>APMI</th>
-                  <th>Verifikasi</th>
+                  <th>Event</th>
+                  <th>Venue</th>
+                  <th>PIC Petugas</th>
+                  <th>PIC Status</th>
+                  <th>Verification Status</th>
+                  <th>Incident Status</th>
                 </tr>
               </thead>
-              <tbody id="promoterRegistryBody">
-                <tr>
-                  <td colspan="6" style="text-align: center; padding: 16px; color: var(--text-muted);">Memuat promotor...</td>
-                </tr>
+              <tbody id="venuePicTableBody">
+                <tr><td colspan="6" style="text-align: center; padding: 20px; color: #64748b;">Memuat status PIC venue...</td></tr>
               </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 5. Split Operational Grid: Trust Snapshot & Finance Snapshot -->
+        <div class="grid-2">
+
+          <!-- Trust & Fraud Snapshot -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title"><i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> Trust &amp; Fraud Snapshot</div>
+              <span class="tag tag-neutral">Operational Truth</span>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+              <table class="ops-table">
+                <tbody>
+                  <tr>
+                    <td>Tickets Awaiting Verification</td>
+                    <td id="snapTicketsAwaiting" class="mono" style="text-align: right; font-weight: 700; color: #fff;">-</td>
+                  </tr>
+                  <tr>
+                    <td>Suspicious / Unverified Sellers</td>
+                    <td id="snapSuspiciousSellers" class="mono" style="text-align: right; font-weight: 700; color: #fff;">-</td>
+                  </tr>
+                  <tr>
+                    <td>Blocked / Suspicious Orders</td>
+                    <td id="snapSuspiciousOrders" class="mono" style="text-align: right; font-weight: 700; color: #f87171;">-</td>
+                  </tr>
+                  <tr>
+                    <td>Trust Reviews Pending</td>
+                    <td id="snapTrustReviews" class="mono" style="text-align: right; font-weight: 700; color: #fbbf24;">-</td>
+                  </tr>
+                  <tr>
+                    <td>Open Disputes</td>
+                    <td id="snapDisputesOpen" class="mono" style="text-align: right; font-weight: 700; color: #ef4444;">-</td>
+                  </tr>
+                  <tr>
+                    <td>Gate Operational Pass Rate</td>
+                    <td id="snapPassRate" class="mono" style="text-align: right; font-weight: 700; color: #34d399;">-</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Payment / Finance Snapshot (From FinancialLedger) -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title"><i class="fa-solid fa-vault" style="color: #34d399;"></i> Financial Ledger Snapshot</div>
+              <span class="tag tag-neutral">Double-Entry Ledger Truth</span>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+              <table class="ops-table">
+                <tbody>
+                  <tr>
+                    <td>Payment Gateway Clearing (Asset)</td>
+                    <td id="snapGatewayClearing" class="mono" style="text-align: right; font-weight: 700; color: #38bdf8;">-</td>
+                  </tr>
+                  <tr>
+                    <td>Pending Seller Payable (Liability)</td>
+                    <td id="snapSellerPayable" class="mono" style="text-align: right; font-weight: 700; color: #fbbf24;">-</td>
+                  </tr>
+                  <tr>
+                    <td>Platform Fee Revenue (Revenue)</td>
+                    <td id="snapPlatformRevenue" class="mono" style="text-align: right; font-weight: 700; color: #34d399;">-</td>
+                  </tr>
+                  <tr>
+                    <td>Tax Payable (DJP Liability)</td>
+                    <td id="snapTaxPayable" class="mono" style="text-align: right; font-weight: 700; color: #94a3b8;">-</td>
+                  </tr>
+                  <tr>
+                    <td>Settlement Disbursed (Disbursed)</td>
+                    <td id="snapSettlementDisbursed" class="mono" style="text-align: right; font-weight: 700; color: #fff;">-</td>
+                  </tr>
+                  <tr>
+                    <td>Gateway Payments (Sukses / Pending / Gagal)</td>
+                    <td id="snapPaymentRatio" class="mono" style="text-align: right; font-weight: 700; color: #cbd5e1;">-</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 6. Recent Activity Audit Trail -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-clock-rotate-left" style="color: #94a3b8;"></i> Recent Operational Activity</div>
+            <span class="tag tag-neutral">Cryptographic Audit Log</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="ops-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Type</th>
+                  <th>Action</th>
+                  <th>Entity</th>
+                  <th>Actor</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="recentActivityTableBody">
+                <tr><td colspan="6" style="text-align: center; padding: 20px; color: #64748b;">Memuat log aktivitas...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- VIEW 2: SEARCH RESULTS -->
+      <!-- ============================================================ -->
+      <div id="viewSearch" style="display: none;">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-magnifying-glass"></i> Hasil Pencarian Operasional: "<span id="searchQueryLabel"></span>"</div>
+            <button class="btn btn-secondary btn-sm" onclick="switchView('overview')"><i class="fa-solid fa-arrow-left"></i> Kembali ke Overview</button>
+          </div>
+          <div class="panel-body">
+            <div id="searchResultsContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- DEDICATED ENTITY SUB-VIEWS (Sidebar Navigation) -->
+      <!-- ============================================================ -->
+      <div id="viewGeneric" style="display: none;">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title" id="genericViewTitle">-</div>
+            <button class="btn btn-secondary btn-sm" onclick="switchView('overview')"><i class="fa-solid fa-arrow-left"></i> Overview</button>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="ops-table" id="genericTable">
+              <thead id="genericTableHead"></thead>
+              <tbody id="genericTableBody"></tbody>
             </table>
           </div>
         </div>
       </div>
 
-    </div>
-
-  </main>
-
-  <!-- Site Footer -->
-  <footer class="site-footer">
-    <div class="footer-container">
-      <div class="footer-col footer-business">
-        <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> ARGUS — SHINERVA HQ
-        </div>
-        <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Infrastruktur transfer tiket sekunder terverifikasi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
-        </p>
-        <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
-          <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
-          <div>SHINERVA HQ</div>
-          <div>Jl. Pasirluyu No. 79</div>
-          <div>Bandung 40254</div>
-          <div>Indonesia</div>
-        </div>
-      </div>
-
-      <div class="footer-col footer-contact-col">
-        <div style="font-weight: 700; color: #fff; margin-bottom: 8px; font-size: 14px;">Kontak Resmi</div>
-        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-          <div>
-            <span style="color: var(--text-dim);">Email:</span>
-            <a href="mailto:agunsux@gmail.com" style="color: var(--cyan); text-decoration: none; margin-left: 6px;">agunsux@gmail.com</a>
-          </div>
-          <div>
-            <span style="color: var(--text-dim);">WhatsApp:</span>
-            <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none; margin-left: 6px;"><i class="fa-brands fa-whatsapp"></i> 081299927378</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="footer-col footer-links-col">
-        <div style="font-weight: 700; color: #fff; margin-bottom: 8px; font-size: 14px;">Layanan &amp; Legalitas</div>
-        <div class="footer-links" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-          <a href="/faq"><i class="fa-solid fa-circle-question"></i> FAQ / Pertanyaan Umum</a>
-          <a href="/terms"><i class="fa-solid fa-file-contract"></i> Syarat &amp; Ketentuan</a>
-          <a href="/refund-policy"><i class="fa-solid fa-rotate-left"></i> Kebijakan Pengembalian Dana (Refund)</a>
-          <a href="/contact"><i class="fa-solid fa-address-book"></i> Kontak Kami</a>
-          <a href="/privacy"><i class="fa-solid fa-user-shield"></i> Kebijakan Privasi (UU PDP)</a>
-        </div>
-      </div>
-    </div>
-    <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
-      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang.
-    </div>
-  </footer>
+    </main>
+  </div>
 
   <script>
-    let currentUser = null;
-    let activeAdminTab = 'overview';
+    // Live Clock UTC+7
+    function updateClock() {
+      const now = new Date();
+      const utc7 = new Date(now.getTime() + (7 * 3600 * 1000) + (now.getTimezoneOffset() * 60 * 1000));
+      const pad = n => String(n).padStart(2, '0');
+      const timeStr = `${pad(utc7.getHours())}:${pad(utc7.getMinutes())}:${pad(utc7.getSeconds())} WIB`;
+      document.getElementById('liveClock').innerText = timeStr;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    // Verification on DOM load
-    document.addEventListener('DOMContentLoaded', () => {
-      checkAdminAuth();
-    });
+    // Active View State
+    let currentView = 'overview';
+    let cachedOverviewData = null;
 
-    async function checkAdminAuth() {
+    function formatRupiah(num) {
+      if (typeof num !== 'number' || isNaN(num)) return 'N/A';
+      return 'Rp ' + Math.round(num).toLocaleString('id-ID');
+    }
+
+    function renderTag(val) {
+      const v = (val || '').toUpperCase();
+      if (v === 'CRITICAL' || v === 'DISPUTED' || v === 'FROZEN' || v === 'FAILED' || v === 'SUSPENDED' || v.includes('FAIL')) {
+        return `<span class="tag tag-critical">${val}</span>`;
+      }
+      if (v === 'HIGH' || v === 'INCIDENT' || v === 'WARNING' || v === 'REJECTED') {
+        return `<span class="tag tag-high">${val}</span>`;
+      }
+      if (v === 'MEDIUM' || v === 'PENDING' || v === 'PENDING_PAYMENT' || v === 'RESERVED' || v === 'INVESTIGATING' || v === 'UNVERIFIED') {
+        return `<span class="tag tag-medium">${val}</span>`;
+      }
+      if (v === 'ACTIVE' || v === 'VERIFIED' || v === 'SETTLED' || v === 'RELEASED' || v === 'CONFIRMED' || v === 'CLEAR' || v === 'ONLINE') {
+        return `<span class="tag tag-success">${val}</span>`;
+      }
+      return `<span class="tag tag-neutral">${val || 'N/A'}</span>`;
+    }
+
+    // Load Overview Data from Backend API
+    async function fetchDashboardOverview() {
       try {
-        const res = await fetch('/api/auth/me', {
+        const res = await fetch('/api/admin/overview', {
           headers: { 'Accept': 'application/json' }
         });
-
         if (res.status === 401) {
           window.location.href = '/login?redirect=/admin';
           return;
         }
-
+        if (res.status === 403) {
+          alert('403 Forbidden: Akun Anda bukan Administrator.');
+          window.location.href = '/';
+          return;
+        }
         if (!res.ok) {
-          window.location.href = '/login?redirect=/admin';
-          return;
+          throw new Error(`HTTP ${res.status}`);
         }
-
         const data = await res.json();
-        currentUser = data.user;
-
-        const role = (currentUser && currentUser.role ? currentUser.role : '').toUpperCase();
-        if (role !== 'ADMIN') {
-          document.getElementById('authChecking').style.display = 'none';
-          document.getElementById('unauthorizedNotice').style.display = 'block';
-          document.getElementById('userRoleInfo').innerText = (currentUser.email || currentUser.id) + ' (role: ' + currentUser.role + ')';
-          return;
-        }
-
-        // Authenticated Admin User
-        document.getElementById('authChecking').style.display = 'none';
-        document.getElementById('adminApp').style.display = 'block';
-        document.getElementById('authStatus').style.display = 'inline-flex';
-        document.getElementById('authUserName').innerText = currentUser.name || currentUser.email;
-        document.getElementById('btnLogout').style.display = 'inline-flex';
-        document.getElementById('adminNameDisplay').innerText = currentUser.name || currentUser.email;
-        document.getElementById('adminEmailDisplay').innerText = currentUser.email;
-
-        // Load all data
-        await Promise.all([
-          loadAdminOverview(),
-          loadAdminUsers(),
-          loadAdminOrders(),
-          loadAdminSecurity()
-        ]);
-
+        cachedOverviewData = data;
+        renderOverview(data);
       } catch (err) {
-        console.error('Auth verification error:', err);
-        window.location.href = '/login?redirect=/admin';
+        console.error('Failed to load admin overview:', err);
+        showToast('Gagal memuat data overview: ' + err.message, 'danger');
       }
+    }
+
+    function renderOverview(data) {
+      const m = data.metrics || {};
+      const tf = data.trust_fraud_snapshot || {};
+      const pf = data.payment_finance_snapshot || {};
+
+      // 1. Top Cards
+      document.getElementById('kpiActiveEvents').innerText = m.active_events !== undefined ? m.active_events : 'N/A';
+      document.getElementById('kpiTicketsListed').innerText = m.tickets_listed !== undefined ? m.tickets_listed : 'N/A';
+      document.getElementById('kpiTotalOrders').innerText = m.total_orders !== undefined ? m.total_orders : 'N/A';
+      document.getElementById('kpiPendingPayments').innerText = m.pending_payments !== undefined ? m.pending_payments : 'N/A';
+      document.getElementById('kpiOpenDisputes').innerText = m.open_disputes !== undefined ? m.open_disputes : 'N/A';
+      document.getElementById('kpiActiveIncidents').innerText = m.active_incidents !== undefined ? m.active_incidents : 'N/A';
+
+      // Sidebar badges
+      const alerts = data.alerts || [];
+      const alertBadge = document.getElementById('sidebarAlertCount');
+      if (alerts.length > 0) {
+        alertBadge.style.display = 'inline-block';
+        alertBadge.innerText = alerts.length;
+      } else {
+        alertBadge.style.display = 'none';
+      }
+
+      document.getElementById('sidebarEventsCount').innerText = m.active_events !== undefined ? m.active_events : '-';
+      document.getElementById('sidebarTicketsCount').innerText = m.tickets_listed !== undefined ? m.tickets_listed : '-';
+      document.getElementById('sidebarOrdersCount').innerText = m.total_orders !== undefined ? m.total_orders : '-';
+
+      const dspBadge = document.getElementById('sidebarDisputesCount');
+      if (m.open_disputes > 0) {
+        dspBadge.style.display = 'inline-block';
+        dspBadge.innerText = m.open_disputes;
+      } else {
+        dspBadge.style.display = 'none';
+      }
+
+      const incBadge = document.getElementById('sidebarIncidentsCount');
+      if (m.active_incidents > 0) {
+        incBadge.style.display = 'inline-block';
+        incBadge.innerText = m.active_incidents;
+      } else {
+        incBadge.style.display = 'none';
+      }
+
+      // 2. Action Required / Alerts
+      const alertsContainer = document.getElementById('alertsContainer');
+      document.getElementById('alertsBadge').innerText = `${alerts.length} Menunggu Tindakan`;
+      if (alerts.length === 0) {
+        alertsContainer.innerHTML = `
+          <div style="padding: 16px; text-align: center; color: #34d399; font-weight: 500;">
+            <i class="fa-solid fa-circle-check"></i> Seluruh operasional berjalan normal. Tidak ada item darurat saat ini.
+          </div>
+        `;
+      } else {
+        alertsContainer.innerHTML = alerts.map(a => `
+          <div class="alert-card">
+            <div class="alert-left">
+              ${renderTag(a.severity)}
+              <div>
+                <div class="alert-title">${a.title}</div>
+                <div class="alert-meta">${a.description} &bull; <span class="mono">${a.related_entity}: ${a.entity_id}</span></div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              ${renderTag(a.current_status)}
+              <button class="btn btn-secondary btn-sm" onclick="handleAlertAction('${a.action_url}', '${a.related_entity}')">${a.action_label}</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // 3. Event Operations
+      const evOps = data.event_operations || [];
+      document.getElementById('eventOperationsCount').innerText = `${evOps.length} Events`;
+      const evTableBody = document.getElementById('eventOperationsTableBody');
+      if (evOps.length === 0) {
+        evTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 16px; color: #64748b;">Belum ada event operasional.</td></tr>`;
+      } else {
+        evTableBody.innerHTML = evOps.map(e => `
+          <tr>
+            <td style="font-weight: 600; color: #fff;">${e.name}</td>
+            <td class="mono">${e.date || 'N/A'}</td>
+            <td>${e.venue_name} (${e.city})</td>
+            <td style="text-align: center;" class="mono">${e.tickets_listed}</td>
+            <td style="text-align: center;" class="mono">${e.orders_count}</td>
+            <td><i class="fa-solid fa-user-shield" style="color: #38bdf8; font-size: 11px;"></i> ${e.pic_name}</td>
+            <td>${renderTag(e.operational_status)}</td>
+          </tr>
+        `).join('');
+      }
+
+      // 4. Venue / PIC Status
+      const vPic = data.venue_pic_status || [];
+      const vTableBody = document.getElementById('venuePicTableBody');
+      if (vPic.length === 0) {
+        vTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 16px; color: #64748b;">Belum ada data PIC venue.</td></tr>`;
+      } else {
+        vTableBody.innerHTML = vPic.map(vp => `
+          <tr>
+            <td style="font-weight: 600; color: #fff;">${vp.event_name}</td>
+            <td>${vp.venue_name}</td>
+            <td><strong>${vp.pic_name}</strong></td>
+            <td>${renderTag(vp.pic_status)}</td>
+            <td>${renderTag(vp.verification_status)}</td>
+            <td>${renderTag(vp.incident_status)}</td>
+          </tr>
+        `).join('');
+      }
+
+      // 5. Trust & Fraud Snapshot
+      document.getElementById('snapTicketsAwaiting').innerText = tf.tickets_awaiting_verification !== undefined ? tf.tickets_awaiting_verification : 'N/A';
+      document.getElementById('snapSuspiciousSellers').innerText = tf.suspicious_sellers !== undefined ? tf.suspicious_sellers : 'N/A';
+      document.getElementById('snapSuspiciousOrders').innerText = tf.suspicious_orders !== undefined ? tf.suspicious_orders : 'N/A';
+      document.getElementById('snapTrustReviews').innerText = tf.trust_reviews_pending !== undefined ? tf.trust_reviews_pending : 'N/A';
+      document.getElementById('snapDisputesOpen').innerText = tf.disputes_open !== undefined ? tf.disputes_open : 'N/A';
+      document.getElementById('snapPassRate').innerText = tf.operational_pass_rate !== undefined ? tf.operational_pass_rate : 'N/A';
+
+      // 6. Payment & Finance Snapshot (From FinancialLedger)
+      document.getElementById('snapGatewayClearing').innerText = formatRupiah(pf.gateway_clearing_idr);
+      document.getElementById('snapSellerPayable').innerText = formatRupiah(pf.seller_payable_pending_idr);
+      document.getElementById('snapPlatformRevenue').innerText = formatRupiah(pf.platform_fee_revenue_idr);
+      document.getElementById('snapTaxPayable').innerText = formatRupiah(pf.tax_payable_idr);
+      document.getElementById('snapSettlementDisbursed').innerText = formatRupiah(pf.settlement_disbursed_idr);
+      document.getElementById('snapPaymentRatio').innerText = `${pf.successful_payments || 0} / ${pf.pending_payments || 0} / ${pf.failed_payments || 0}`;
+
+      // 7. Recent Activity
+      const activity = data.recent_activity || [];
+      const actBody = document.getElementById('recentActivityTableBody');
+      if (activity.length === 0) {
+        actBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 16px; color: #64748b;">Belum ada catatan aktivitas.</td></tr>`;
+      } else {
+        actBody.innerHTML = activity.map(a => `
+          <tr>
+            <td class="mono" style="font-size: 11px; color: #94a3b8;">${a.time ? a.time.replace('T', ' ').substring(0, 19) : '-'}</td>
+            <td><span class="tag tag-neutral">${a.type}</span></td>
+            <td><strong>${a.action}</strong></td>
+            <td class="mono" style="font-size: 11px;">${a.entity}</td>
+            <td class="mono" style="font-size: 11px; color: #38bdf8;">${a.actor}</td>
+            <td>${renderTag(a.status)}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    // Quick Search across Event, Ticket, Order, Seller, Buyer
+    let searchDebounce = null;
+    function handleQuickSearch(e) {
+      const q = e.target.value.trim();
+      clearTimeout(searchDebounce);
+      if (!q) {
+        switchView('overview');
+        return;
+      }
+      searchDebounce = setTimeout(() => executeSearch(q), 300);
+    }
+
+    async function executeSearch(q) {
+      try {
+        const res = await fetch(`/api/admin/search?q=${encodeURIComponent(q)}`);
+        if (!res.ok) throw new Error('Search failed');
+        const data = await res.json();
+        renderSearchResults(q, data);
+        switchView('search');
+      } catch (err) {
+        showToast('Pencarian gagal: ' + err.message, 'danger');
+      }
+    }
+
+    function renderSearchResults(q, data) {
+      document.getElementById('searchQueryLabel').innerText = q;
+      const container = document.getElementById('searchResultsContainer');
+      const totalResults = (data.events.length + data.tickets.length + data.orders.length + data.sellers.length + data.buyers.length);
+
+      if (totalResults === 0) {
+        container.innerHTML = `<div style="text-align: center; padding: 40px; color: #64748b;">Tidak ada data yang cocok dengan pencarian "${q}".</div>`;
+        return;
+      }
+
+      let html = '';
+      if (data.events.length > 0) {
+        html += `<h4>Events (${data.events.length})</h4><table class="ops-table"><thead><tr><th>ID</th><th>Nama</th><th>Venue</th><th>Tanggal</th><th>Status</th></tr></thead><tbody>` +
+          data.events.map(e => `<tr><td class="mono">${e.id}</td><td>${e.name || e.title}</td><td>${e.venue_name || e.venue}</td><td class="mono">${e.date || e.start_date}</td><td>${renderTag(e.status)}</td></tr>`).join('') + `</tbody></table>`;
+      }
+      if (data.orders.length > 0) {
+        html += `<h4 style="margin-top: 16px;">Orders (${data.orders.length})</h4><table class="ops-table"><thead><tr><th>Order ID</th><th>Event</th><th>Pembeli</th><th>Penjual</th><th>Nominal</th><th>Status</th></tr></thead><tbody>` +
+          data.orders.map(o => `<tr><td class="mono">${o.id}</td><td class="mono">${o.event_id}</td><td class="mono">${o.buyer_id}</td><td class="mono">${o.seller_id}</td><td class="mono">${formatRupiah(o.total_amount || o.ticket_price)}</td><td>${renderTag(o.status)}</td></tr>`).join('') + `</tbody></table>`;
+      }
+      if (data.tickets.length > 0) {
+        html += `<h4 style="margin-top: 16px;">Tickets / Listings (${data.tickets.length})</h4><table class="ops-table"><thead><tr><th>Listing ID</th><th>Ticket ID</th><th>Event</th><th>Harga</th><th>Status</th></tr></thead><tbody>` +
+          data.tickets.map(t => `<tr><td class="mono">${t.id}</td><td class="mono">${t.ticket_id}</td><td class="mono">${t.event_id}</td><td class="mono">${formatRupiah(t.price)}</td><td>${renderTag(t.status)}</td></tr>`).join('') + `</tbody></table>`;
+      }
+      if (data.sellers.length > 0) {
+        html += `<h4 style="margin-top: 16px;">Sellers (${data.sellers.length})</h4><table class="ops-table"><thead><tr><th>ID</th><th>Nama</th><th>Email</th><th>Role</th><th>Status</th></tr></thead><tbody>` +
+          data.sellers.map(s => `<tr><td class="mono">${s.id}</td><td>${s.name}</td><td>${s.email}</td><td>${renderTag(s.role)}</td><td>${renderTag(s.status)}</td></tr>`).join('') + `</tbody></table>`;
+      }
+      if (data.buyers.length > 0) {
+        html += `<h4 style="margin-top: 16px;">Buyers (${data.buyers.length})</h4><table class="ops-table"><thead><tr><th>ID</th><th>Nama</th><th>Email</th><th>Status</th></tr></thead><tbody>` +
+          data.buyers.map(b => `<tr><td class="mono">${b.id}</td><td>${b.name}</td><td>${b.email}</td><td>${renderTag(b.status)}</td></tr>`).join('') + `</tbody></table>`;
+      }
+      container.innerHTML = html;
+    }
+
+    // View Switching
+    function switchView(viewName, btn = null) {
+      currentView = viewName;
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      document.getElementById('viewOverview').style.display = viewName === 'overview' ? 'block' : 'none';
+      document.getElementById('viewSearch').style.display = viewName === 'search' ? 'block' : 'none';
+      document.getElementById('viewGeneric').style.display = (viewName !== 'overview' && viewName !== 'search') ? 'block' : 'none';
+
+      if (viewName !== 'overview' && viewName !== 'search') {
+        loadGenericEntityView(viewName);
+      }
+    }
+
+    // Load Specific Sidebar Entity View
+    async function loadGenericEntityView(viewName) {
+      const titles = {
+        'events': 'Manajemen Event & Katalog Pertunjukan',
+        'tickets': 'Manajemen Tiket & Listing Terbuka',
+        'orders': 'Audit Pesanan & Rekening Penampungan (Escrow)',
+        'sellers': 'Daftar Penjual & Verifikasi Profil Trust',
+        'buyers': 'Daftar Pembeli Terdaftar',
+        'payments': 'Catatan Keuangan & Financial Ledger Mutasi',
+        'disputes': 'Daftar Sengketa (Disputes) & Klaim Pembeli',
+        'incidents': 'Laporan Insiden Operasional Gate & Venue',
+        'venue-pic': 'Penugasan PIC & Cakupan Venue Lapangan'
+      };
+
+      document.getElementById('genericViewTitle').innerHTML = `<i class="fa-solid fa-list"></i> ${titles[viewName] || viewName.toUpperCase()}`;
+      const th = document.getElementById('genericTableHead');
+      const tb = document.getElementById('genericTableBody');
+      tb.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data...</td></tr>`;
+
+      try {
+        const res = await fetch(`/api/admin/${viewName}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderGenericTable(viewName, data, th, tb);
+      } catch (err) {
+        tb.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px; color: #ef4444;">Gagal memuat data: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderGenericTable(name, data, th, tb) {
+      if (name === 'events') {
+        th.innerHTML = `<tr><th>ID</th><th>Nama Event</th><th>Venue</th><th>Tanggal</th><th>Tiket Listed</th><th>Orders</th><th>PIC</th><th>Status</th></tr>`;
+        tb.innerHTML = (data.events || []).map(e => `
+          <tr>
+            <td class="mono">${e.id}</td>
+            <td style="font-weight: 600; color: #fff;">${e.name}</td>
+            <td>${e.venue_name} (${e.city})</td>
+            <td class="mono">${e.date}</td>
+            <td class="mono">${e.tickets_count}</td>
+            <td class="mono">${e.orders_count}</td>
+            <td>${e.pic_name}</td>
+            <td>${renderTag(e.status)}</td>
+          </tr>
+        `).join('');
+      } else if (name === 'tickets') {
+        th.innerHTML = `<tr><th>Listing ID</th><th>Ticket ID</th><th>Event</th><th>Penjual</th><th>Seat</th><th>Harga</th><th>Status</th></tr>`;
+        tb.innerHTML = (data.tickets || []).map(t => `
+          <tr>
+            <td class="mono">${t.listing_id}</td>
+            <td class="mono">${t.ticket_id}</td>
+            <td>${t.event_name}</td>
+            <td>${t.seller_name}</td>
+            <td class="mono">${t.seat_info}</td>
+            <td class="mono">${formatRupiah(t.price)}</td>
+            <td>${renderTag(t.status)}</td>
+          </tr>
+        `).join('');
+      } else if (name === 'orders') {
+        th.innerHTML = `<tr><th>Order ID</th><th>Pembeli</th><th>Penjual</th><th>Tiket / Event</th><th>Nominal</th><th>Status Order</th><th>Escrow</th></tr>`;
+        tb.innerHTML = (data.orders || []).map(o => `
+          <tr>
+            <td class="mono">${o.id}</td>
+            <td class="mono">${o.buyer_id}</td>
+            <td class="mono">${o.seller_id}</td>
+            <td class="mono">${o.event_id}</td>
+            <td class="mono">${formatRupiah(o.amount)}</td>
+            <td>${renderTag(o.status)}</td>
+            <td>${renderTag(o.escrow_status)}</td>
+          </tr>
+        `).join('');
+      } else if (name === 'sellers') {
+        th.innerHTML = `<tr><th>ID</th><th>Nama</th><th>Email</th><th>Phone</th><th>KYC Status</th><th>Total Penjualan</th><th>Status Akun</th></tr>`;
+        tb.innerHTML = (data.sellers || []).map(s => `
+          <tr>
+            <td class="mono">${s.id}</td>
+            <td style="font-weight: 600; color: #fff;">${s.name}</td>
+            <td>${s.email}</td>
+            <td class="mono">${s.phone}</td>
+            <td>${renderTag(s.kyc_status)}</td>
+            <td class="mono">${s.completed_sales} / ${s.total_sales}</td>
+            <td>${renderTag(s.status)}</td>
+          </tr>
+        `).join('');
+      } else if (name === 'buyers') {
+        th.innerHTML = `<tr><th>ID</th><th>Nama</th><th>Email</th><th>Phone</th><th>Total Pembelian</th><th>Status Akun</th></tr>`;
+        tb.innerHTML = (data.buyers || []).map(b => `
+          <tr>
+            <td class="mono">${b.id}</td>
+            <td style="font-weight: 600; color: #fff;">${b.name}</td>
+            <td>${b.email}</td>
+            <td class="mono">${b.phone}</td>
+            <td class="mono">${b.total_purchases}</td>
+            <td>${renderTag(b.status)}</td>
+          </tr>
+        `).join('');
+      } else if (name === 'payments') {
+        th.innerHTML = `<tr><th>Tx ID</th><th>Event Type</th><th>Order ID</th><th>Keterangan</th><th>Waktu</th></tr>`;
+        tb.innerHTML = (data.ledger_transactions || []).map(tx => `
+          <tr>
+            <td class="mono">${tx.transaction_id || tx.id}</td>
+            <td>${renderTag(tx.event_type)}</td>
+            <td class="mono">${tx.order_id}</td>
+            <td>${tx.description || '-'}</td>
+            <td class="mono" style="font-size: 11px;">${tx.timestamp || tx.created_at || '-'}</td>
+          </tr>
+        `).join('');
+      } else if (name === 'disputes') {
+        th.innerHTML = `<tr><th>Dispute ID</th><th>Order ID</th><th>Event</th><th>Alasan</th><th>Status</th><th>Outcome</th></tr>`;
+        tb.innerHTML = (data.disputes || []).map(d => `
+          <tr>
+            <td class="mono">${d.id}</td>
+            <td class="mono">${d.order_id}</td>
+            <td>${d.event_name}</td>
+            <td>${d.reason}</td>
+            <td>${renderTag(d.status)}</td>
+            <td>${renderTag(d.outcome)}</td>
+          </tr>
+        `).join('');
+      } else if (name === 'incidents') {
+        th.innerHTML = `<tr><th>Incident ID</th><th>Event</th><th>Tipe Insiden</th><th>Severity</th><th>Deskripsi</th><th>Status</th></tr>`;
+        tb.innerHTML = (data.incidents || []).map(i => `
+          <tr>
+            <td class="mono">${i.id}</td>
+            <td>${i.event_name}</td>
+            <td><span class="tag tag-neutral">${i.type}</span></td>
+            <td>${renderTag(i.severity)}</td>
+            <td>${i.description}</td>
+            <td>${renderTag(i.status)}</td>
+          </tr>
+        `).join('');
+      } else if (name === 'venue-pic') {
+        th.innerHTML = `<tr><th>Event</th><th>Venue</th><th>Gate Info</th><th>PIC Petugas</th><th>Phone</th><th>Status PIC</th><th>Verifikasi Masuk</th></tr>`;
+        tb.innerHTML = (data.coverage || []).map(c => `
+          <tr>
+            <td style="font-weight: 600; color: #fff;">${c.event_name}</td>
+            <td>${c.venue_name}</td>
+            <td>${c.venue_gate_info}</td>
+            <td><strong>${c.pic_name}</strong></td>
+            <td class="mono">${c.pic_phone}</td>
+            <td>${renderTag(c.pic_status)}</td>
+            <td class="mono">${c.confirmed_entries} Sukses / ${c.failed_entries} Gagal</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    function handleAlertAction(url, entity) {
+      if (url.startsWith('#')) {
+        const view = url.substring(1);
+        const navBtn = Array.from(document.querySelectorAll('.nav-item')).find(b => b.innerText.toLowerCase().includes(view));
+        switchView(view, navBtn);
+      }
+    }
+
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('opsToast');
+      toast.style.display = 'block';
+      toast.style.background = type === 'danger' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+      toast.style.color = type === 'danger' ? '#f87171' : '#34d399';
+      toast.style.border = `1px solid ${type === 'danger' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`;
+      toast.innerHTML = msg;
+      setTimeout(() => { toast.style.display = 'none'; }, 4000);
     }
 
     async function handleLogout() {
       try {
         await fetch('/api/auth/logout', { method: 'POST' });
-      } catch (e) {
-        console.error('Logout error:', e);
-      }
-      sessionStorage.clear();
+      } catch (e) {}
       window.location.href = '/login';
     }
 
-    function switchAdminTab(tab, btn) {
-      activeAdminTab = tab;
-      document.querySelectorAll('.pill-group .pill-btn').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-
-      document.getElementById('tabOverview').style.display = tab === 'overview' ? 'block' : 'none';
-      document.getElementById('tabUsers').style.display = tab === 'users' ? 'block' : 'none';
-      document.getElementById('tabOrders').style.display = tab === 'orders' ? 'block' : 'none';
-      document.getElementById('tabSecurity').style.display = tab === 'security' ? 'block' : 'none';
-      document.getElementById('tabFieldOps').style.display = tab === 'fieldops' ? 'block' : 'none';
-
-      if (tab === 'fieldops') {
-        loadAdminEvents();
-      }
-    }
-
-    function switchFieldSubTab(subTab, btn) {
-      document.querySelectorAll('#tabFieldOps .pill-btn').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-      document.getElementById('fieldEvents').style.display = subTab === 'events' ? 'block' : 'none';
-      document.getElementById('fieldPromoters').style.display = subTab === 'promoters' ? 'block' : 'none';
-      if (subTab === 'promoters') loadPromoterRegistry();
-    }
-
-    function refreshCurrentTab() {
-      loadAdminOverview();
-      loadAdminUsers();
-      loadAdminOrders();
-      loadAdminSecurity();
-      if (activeAdminTab === 'fieldops') {
-        loadAdminEvents();
-        loadPromoterRegistry();
-      }
-      showToast('Data berhasil diperbarui');
-    }
-
-    function showToast(msg) {
-      const toast = document.getElementById('adminToast');
-      toast.innerText = msg;
-      toast.style.display = 'flex';
-      setTimeout(() => { toast.style.display = 'none'; }, 3500);
-    }
-
-    async function loadAdminOverview() {
-      try {
-        const res = await fetch('/api/admin/overview');
-        if (!res.ok) return;
-        const data = await res.json();
-
-        document.getElementById('statTotalUsers').innerText = data.users.total;
-        document.getElementById('statActiveUsers').innerText = data.users.active;
-        document.getElementById('statSuspendedUsers').innerText = data.users.suspended;
-        document.getElementById('tabCountUsers').innerText = data.users.total;
-
-        document.getElementById('statTotalOrders').innerText = data.orders.total;
-        document.getElementById('statPendingOrders').innerText = data.orders.pending;
-        document.getElementById('statDisputedOrders').innerText = data.orders.disputed;
-        document.getElementById('statReleasedOrders').innerText = data.orders.released;
-        document.getElementById('statFrozenOrders').innerText = data.orders.frozen;
-        document.getElementById('tabCountOrders').innerText = data.orders.total;
-      } catch (e) {
-        console.error('Failed to load overview', e);
-      }
-    }
-
-    async function loadAdminUsers() {
-      const tbody = document.getElementById('usersTableBody');
-      try {
-        const res = await fetch('/api/admin/users');
-        if (!res.ok) throw new Error('Gagal memuat pengguna');
-        const data = await res.json();
-        const users = data.users || [];
-
-        document.getElementById('usersTableCount').innerText = `${users.length} pengguna`;
-
-        if (users.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">Tidak ada pengguna terdaftar.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = users.map(u => {
-          const isSelf = currentUser && currentUser.id === u.id;
-          const isSuspended = u.status === 'SUSPENDED';
-          const statusBadge = isSuspended
-            ? '<span class="badge badge-danger"><i class="fa-solid fa-ban"></i> SUSPENDED</span>'
-            : '<span class="badge badge-success"><i class="fa-solid fa-check"></i> ACTIVE</span>';
-          
-          const roleBadge = (u.role || '').toUpperCase() === 'ADMIN'
-            ? '<span class="badge badge-info" style="font-weight: 700;">ADMIN</span>'
-            : '<span class="badge badge-slate">USER</span>';
-
-          const actionBtn = isSelf
-            ? '<span style="font-size: 11px; color: var(--text-dim);">(Akun Sendiri)</span>'
-            : `<button class="btn btn-sm ${isSuspended ? 'btn-success' : 'btn-danger'}" onclick="toggleUserStatus('${escapeHtml(u.id)}', '${escapeHtml(u.status || 'ACTIVE')}')">
-                 <i class="fa-solid ${isSuspended ? 'fa-user-check' : 'fa-user-slash'}"></i> ${isSuspended ? 'Aktifkan' : 'Tangguhkan'}
-               </button>`;
-
-          const created = u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
-          const lastLogin = u.last_login_at ? new Date(u.last_login_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-';
-
-          return `<tr>
-            <td>
-              <div style="font-weight: 700; color: #fff;">${escapeHtml(u.name || '-')}</div>
-              <div class="mono" style="font-size: 11px; color: var(--text-dim);">${escapeHtml(u.id)}</div>
-            </td>
-            <td><span class="mono" style="color: var(--cyan);">${escapeHtml(u.email || '-')}</span></td>
-            <td>${roleBadge}</td>
-            <td>${statusBadge}</td>
-            <td style="font-size: 12px; color: var(--text-muted);">${created}</td>
-            <td style="font-size: 12px; color: var(--text-muted);">${lastLogin}</td>
-            <td>${actionBtn}</td>
-          </tr>`;
-        }).join('');
-      } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--danger);">${escapeHtml(err.message)}</td></tr>`;
-      }
-    }
-
-    async function toggleUserStatus(userId, currentStatus) {
-      const newStatus = currentStatus === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
-      const confirmMsg = newStatus === 'SUSPENDED'
-        ? `Tangguhkan akun pengguna ${userId}? Pengguna tidak akan dapat login atau bertransaksi.`
-        : `Aktifkan kembali akun pengguna ${userId}?`;
-
-      if (!confirm(confirmMsg)) return;
-
-      try {
-        const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/status`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          alert(data.error || 'Gagal mengubah status pengguna');
-          return;
-        }
-        showToast(`Status pengguna berhasil diubah menjadi ${newStatus}`);
-        await loadAdminUsers();
-        await loadAdminOverview();
-      } catch (err) {
-        alert('Error: ' + err.message);
-      }
-    }
-
-    async function loadAdminOrders() {
-      const tbody = document.getElementById('ordersTableBody');
-      try {
-        const res = await fetch('/api/admin/orders');
-        if (!res.ok) throw new Error('Gagal memuat transaksi');
-        const data = await res.json();
-        const orders = data.orders || [];
-
-        document.getElementById('ordersTableCount').innerText = `${orders.length} pesanan`;
-
-        if (orders.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">Belum ada transaksi di sistem.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = orders.map(o => {
-          const escrowBadge = o.escrow_status === 'RELEASED'
-            ? '<span class="badge badge-success">RELEASED</span>'
-            : o.escrow_status === 'HELD'
-            ? '<span class="badge badge-info">HELD</span>'
-            : o.escrow_status === 'FROZEN'
-            ? '<span class="badge badge-danger">FROZEN</span>'
-            : o.escrow_status === 'DISPUTED'
-            ? '<span class="badge badge-warning">DISPUTED</span>'
-            : `<span class="badge badge-slate">${escapeHtml(o.escrow_status || 'NONE')}</span>`;
-
-          const orderBadge = o.status === 'SETTLED' || o.status === 'RELEASED'
-            ? '<span class="badge badge-success">SETTLED</span>'
-            : o.status === 'PENDING_PAYMENT'
-            ? '<span class="badge badge-warning">PENDING</span>'
-            : `<span class="badge badge-slate">${escapeHtml(o.status || '-')}</span>`;
-
-          const amountFormatted = 'Rp ' + Number(o.amount || 0).toLocaleString('id-ID');
-          const date = o.created_at ? new Date(o.created_at).toLocaleString('id-ID') : '-';
-
-          return `<tr>
-            <td><code class="mono" style="color: var(--cyan);">${escapeHtml(o.id)}</code></td>
-            <td class="mono" style="font-size: 12px;">${escapeHtml(o.buyer_id || '-')}</td>
-            <td class="mono" style="font-size: 12px;">${escapeHtml(o.seller_id || '-')}</td>
-            <td class="mono" style="font-weight: 700; color: #34d399;">${amountFormatted}</td>
-            <td>${orderBadge}</td>
-            <td>${escrowBadge}</td>
-            <td style="font-size: 12px; color: var(--text-muted);">${date}</td>
-          </tr>`;
-        }).join('');
-      } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--danger);">${escapeHtml(err.message)}</td></tr>`;
-      }
-    }
-
-    async function loadAdminSecurity() {
-      try {
-        const res = await fetch('/api/admin/security');
-        if (!res.ok) return;
-        const data = await res.json();
-
-        document.getElementById('secDisputesTotal').innerText = data.disputes.total;
-        document.getElementById('secDisputesOpen').innerText = data.disputes.open;
-        document.getElementById('secDisputesResolved').innerText = data.disputes.resolved;
-
-        document.getElementById('secIncidentsTotal').innerText = data.incidents.total;
-        document.getElementById('secIncidentsOpen').innerText = data.incidents.open;
-
-        document.getElementById('secAuthTotal').innerText = data.trust_policy.total_evaluations;
-        document.getElementById('secAuthBlocked').innerText = data.trust_policy.blocked_authorizations;
-        document.getElementById('secAuthPending').innerText = data.trust_policy.pending_reviews;
-        document.getElementById('secAttestFail').innerText = data.trust_policy.failed_attestations;
-
-        document.getElementById('secThreatIntel').innerText = data.external_threat_intel || 'Not available';
-        document.getElementById('secHsmStatus').innerText = data.hardware_security_modules || 'Not available';
-      } catch (err) {
-        console.error('Failed to load security data', err);
-      }
-    }
-
-    async function loadAdminEvents() {
-      const tbody = document.getElementById('eventsTableBody');
-      try {
-        const res = await fetch('/api/discovery/events');
-        if (!res.ok) return;
-        const data = await res.json();
-        const events = data.events || [];
-
-        if (events.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">Tidak ada event di sistem.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = events.slice(0, 10).map(ev => `
-          <tr>
-            <td><code class="mono" style="font-size: 11px; color: var(--cyan);">${escapeHtml(ev.id)}</code></td>
-            <td>
-              <div style="font-weight: 700; color: #fff;">${escapeHtml(ev.name || ev.title)}</div>
-              <span class="badge badge-slate">${escapeHtml(ev.category || 'EVENT')}</span>
-            </td>
-            <td>${escapeHtml(ev.venue_city || '-')} &bull; <span style="color: var(--text-dim);">${escapeHtml(ev.venue_name || ev.venue || '-')}</span></td>
-            <td class="mono" style="font-size: 12px;">${escapeHtml(ev.start_date || ev.date || '-')}</td>
-            <td><span class="badge ${ev.source === 'SEED' ? 'badge-info' : 'badge-slate'}">${escapeHtml(ev.source || 'USER')}</span></td>
-            <td><span class="badge badge-success"><i class="fa-solid fa-check"></i> AKTIF</span></td>
-          </tr>
-        `).join('');
-      } catch (e) {
-        console.error('Failed to load events', e);
-      }
-    }
-
-    async function loadPromoterRegistry() {
-      const tbody = document.getElementById('promoterRegistryBody');
-      try {
-        const res = await fetch('/api/discovery/promoters?status=ALL');
-        if (!res.ok) return;
-        const data = await res.json();
-        const promoters = data.promoters || [];
-
-        document.getElementById('promoterRegistryCount').innerText = `${promoters.length} promotor`;
-        if (promoters.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 16px; color: var(--text-muted);">Tidak ada promotor.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = promoters.slice(0, 10).map(p => `
-          <tr>
-            <td><strong>${escapeHtml(p.canonical_name)}</strong></td>
-            <td>${escapeHtml(p.instagram_handle || '-')}</td>
-            <td>${escapeHtml(p.city || '-')}</td>
-            <td>${escapeHtml(p.category || '-')}</td>
-            <td>${p.apmi_member ? '<span class="badge badge-success">APMI</span>' : '<span class="badge badge-info">NON-APMI</span>'}</td>
-            <td><span class="badge badge-success">${escapeHtml(p.verification_status || 'VERIFIED')}</span></td>
-          </tr>
-        `).join('');
-      } catch (e) {
-        console.error('Failed to load promoters', e);
-      }
-    }
-
-    function escapeHtml(str) {
-      if (!str) return '';
-      const div = document.createElement('div');
-      div.innerText = String(str);
-      return div.innerHTML;
-    }
+    // Initial Load
+    fetchDashboardOverview();
   </script>
 </body>
 </html>
