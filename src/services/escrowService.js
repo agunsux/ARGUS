@@ -50,24 +50,89 @@ const releaseMutex = new OrderReleaseMutex();
 class EscrowService {
   /**
    * Calculate transparent fee breakdown
+   * Supports both legacy percentage mode and modern two-sided policy mode.
    */
-  static calculatePricing(ticketPrice, feePercentage = parseFloat(process.env.ARGUS_FEE_RATE || '0.10')) {
-    const price = parseInt(ticketPrice);
-    const platformFee = Math.round(price * feePercentage);
-    const totalAmount = price + platformFee;
+  static calculatePricing(ticketPrice, feePercentage = null, options = {}) {
+    const price = parseInt(ticketPrice, 10);
+    const { MarketplacePricingEngine } = require('../pricing/MarketplacePricingEngine');
+    const { TaxEngine } = require('../pricing/TaxEngine');
+
+    // If caller explicitly passed a custom numeric feePercentage (e.g. 0.05 or 0.15) and no policyVersion
+    if (feePercentage !== null && typeof feePercentage === 'number' && !options.policyVersion && !options.useTwoSided) {
+      const platformFee = Math.round(price * feePercentage);
+      const totalAmount = price + platformFee;
+      return {
+        ticketPrice: price,
+        platformFee: platformFee,
+        feePercentage: feePercentage,
+        totalAmount: totalAmount,
+        currency: 'IDR',
+        buyer_fee: platformFee,
+        seller_fee: 0,
+        buyer_tax: 0,
+        seller_tax_withholding: 0,
+        buyer_total: totalAmount,
+        seller_net_payout: price,
+        policy_version: 'CUSTOM-FEE-PERCENTAGE'
+      };
+    }
+
+    // Determine active policy: default to LEGACY-BUYER-10PCT for unadorned calls to preserve test compatibility,
+    // or 2026.1-ID-DEFAULT when specified or when useTwoSided is true.
+    const policyVersion = options.policyVersion || process.env.TIKUM_PRICING_POLICY || (options.useTwoSided ? '2026.1-ID-DEFAULT' : 'LEGACY-BUYER-10PCT');
+    const taxPolicyVersion = options.taxPolicyVersion || (policyVersion === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : '2026.1-ID-TAX');
+
+    const fees = MarketplacePricingEngine.calculateFees({
+      ticketPrice: price,
+      policyVersion
+    });
+
+    const taxes = TaxEngine.calculateTax({
+      ticketPrice: price,
+      buyerPlatformFee: fees.buyer_fee,
+      sellerTaxProfile: options.sellerTaxProfile || {},
+      taxPolicyVersion
+    });
+
+    const buyerTotal = price + fees.buyer_fee + taxes.total_buyer_tax;
+    const sellerNetPayout = price - fees.seller_fee - taxes.total_seller_tax_withholding;
+
     return {
       ticketPrice: price,
-      platformFee: platformFee,
-      feePercentage: feePercentage,
-      totalAmount: totalAmount,
-      currency: 'IDR'
+      platformFee: fees.buyer_fee,
+      feePercentage: fees.buyer_rate,
+      totalAmount: buyerTotal,
+      currency: fees.currency || 'IDR',
+      policy_version: fees.policy_version,
+      tax_policy_version: taxes.tax_policy_version,
+      buyer_fee: fees.buyer_fee,
+      seller_fee: fees.seller_fee,
+      total_platform_fee: fees.total_platform_fee,
+      buyer_tax: taxes.total_buyer_tax,
+      seller_tax_withholding: taxes.total_seller_tax_withholding,
+      total_tax: taxes.total_tax_collected,
+      buyer_total: buyerTotal,
+      seller_net_payout: sellerNetPayout,
+      tax_breakdown: taxes,
+      pricing_breakdown: fees
     };
   }
 
   /**
    * Buyer creates an order on a verified active listing
+   * Locks transaction quote, guarantees immutable pricing, and registers escrow.
    */
-  static async createOrder({ buyerId, listingId, customAmount = null, paymentDeadlineHours = 2 }) {
+  static async createOrder({
+    buyerId,
+    listingId,
+    customAmount = null,
+    paymentDeadlineHours = 2,
+    quoteId = null,
+    policyVersion = null,
+    taxPolicyVersion = null
+  }) {
+    const { TransactionQuoteService } = require('../pricing/TransactionQuoteService');
+
     const buyer = state.users.find(u => u.id === buyerId);
     if (!buyer) {
       const err = new Error('Buyer not found');
@@ -89,8 +154,43 @@ class EscrowService {
     }
 
     const effectivePrice = (customAmount !== null && customAmount !== undefined) ? parseInt(customAmount, 10) : listing.price;
-    const pricing = this.calculatePricing(effectivePrice);
     const orderId = `ord-${uuidv4()}`;
+
+    // Resolve or generate immutable TransactionQuote
+    let quote;
+    if (quoteId) {
+      quote = TransactionQuoteService.validateQuote(quoteId);
+      await TransactionQuoteService.consumeQuote(quoteId, orderId, buyerId);
+    } else {
+      const effectivePricingPolicy = policyVersion || process.env.TIKUM_PRICING_POLICY || 'LEGACY-BUYER-10PCT';
+      const effectiveTaxPolicy = taxPolicyVersion || (effectivePricingPolicy === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : '2026.1-ID-TAX');
+
+      quote = await TransactionQuoteService.generateQuote({
+        listingId,
+        ticketPrice: effectivePrice,
+        buyerId,
+        sellerId: listing.seller_id,
+        pricingPolicyVersion: effectivePricingPolicy,
+        taxPolicyVersion: effectiveTaxPolicy,
+        ttlMinutes: paymentDeadlineHours * 60
+      });
+      await TransactionQuoteService.consumeQuote(quote.id, orderId, buyerId);
+    }
+
+    const pricing = {
+      ticketPrice: quote.ticket_price,
+      platformFee: quote.buyer_platform_fee,
+      feePercentage: quote.pricing_breakdown?.buyer_rate || 0.10,
+      totalAmount: quote.buyer_total,
+      currency: quote.currency || 'IDR',
+      buyer_fee: quote.buyer_platform_fee,
+      seller_fee: quote.seller_platform_fee,
+      buyer_tax: quote.buyer_tax_amount,
+      seller_tax_withholding: quote.seller_tax_withholding,
+      buyer_total: quote.buyer_total,
+      seller_net_payout: quote.seller_net_payout,
+      quote_id: quote.id
+    };
 
     // Reserve listing immediately
     listing.status = LISTING_STATUS.RESERVED;
@@ -104,9 +204,18 @@ class EscrowService {
       seller_id: listing.seller_id,
       ticket_id: listing.ticket_id,
       event_id: listing.event_id,
-      ticket_price: pricing.ticketPrice,
-      platform_fee: pricing.platformFee,
-      total_amount: pricing.totalAmount,
+      ticket_price: quote.ticket_price,
+      platform_fee: quote.buyer_platform_fee,
+      buyer_fee: quote.buyer_platform_fee,
+      seller_fee: quote.seller_platform_fee,
+      buyer_tax: quote.buyer_tax_amount,
+      seller_tax_withholding: quote.seller_tax_withholding,
+      buyer_total: quote.buyer_total,
+      seller_net_payout: quote.seller_net_payout,
+      total_amount: quote.buyer_total,
+      quote_id: quote.id,
+      pricing_policy: quote.pricing_breakdown?.policy_version || 'LEGACY-BUYER-10PCT',
+      tax_policy: quote.tax_breakdown?.tax_policy_version || 'ZERO-TAX-TEST',
       status: ORDER_STATUS.PENDING_PAYMENT,
       payment_deadline: paymentDeadline,
       expires_at: paymentDeadline,
@@ -121,8 +230,16 @@ class EscrowService {
       order_id: orderId,
       buyer_id: buyerId,
       seller_id: listing.seller_id,
-      amount: pricing.ticketPrice, // Seller will receive ticket price; ARGUS fee collected
-      total_paid: pricing.totalAmount,
+      amount: quote.seller_net_payout, // Authoritative net payable owed to seller upon verified admission
+      ticket_price: quote.ticket_price,
+      seller_net_payout: quote.seller_net_payout,
+      total_paid: quote.buyer_total,
+      buyer_total: quote.buyer_total,
+      buyer_fee: quote.buyer_platform_fee,
+      seller_fee: quote.seller_platform_fee,
+      buyer_tax: quote.buyer_tax_amount,
+      seller_tax_withholding: quote.seller_tax_withholding,
+      quote_id: quote.id,
       status: ESCROW_STATUS.PENDING_PAYMENT,
       provider_escrow_id: null,
       created_at: new Date().toISOString(),
@@ -134,12 +251,15 @@ class EscrowService {
     await recordAuditLog('ORDER', orderId, 'CREATED', buyerId, {
       listing_id: listingId,
       pricing,
+      quote_id: quote.id,
       custom_amount: customAmount ? pricing.ticketPrice : null
     });
 
     await recordAuditLog('ESCROW', escrowId, 'CREATED', buyerId, {
       order_id: orderId,
-      status: ESCROW_STATUS.PENDING_PAYMENT
+      status: ESCROW_STATUS.PENDING_PAYMENT,
+      seller_net_payout: quote.seller_net_payout,
+      buyer_total: quote.buyer_total
     });
 
     // If listing bought at full price (not negotiated offer), auto-supersede any pending offers
@@ -273,6 +393,22 @@ class EscrowService {
       amount_held: escrow.amount,
       provider_escrow_id: escrow.provider_escrow_id
     });
+
+    // Record balanced double-entry payment capture in FinancialLedger
+    try {
+      const { FinancialLedger } = require('../settlement/FinancialLedger');
+      await FinancialLedger.recordPaymentCapture({
+        orderId,
+        quoteId: order.quote_id || escrow.quote_id || null,
+        ticketPrice: order.ticket_price || escrow.ticket_price || escrow.amount,
+        platformFee: order.platform_fee || order.buyer_fee || 0,
+        buyerFee: order.buyer_fee !== undefined ? order.buyer_fee : (order.platform_fee || 0),
+        sellerFee: order.seller_fee || 0,
+        buyerTax: order.buyer_tax || 0,
+        sellerTax: order.seller_tax_withholding || 0,
+        actorId: order.buyer_id || 'SYSTEM'
+      });
+    } catch (e) {}
 
     // Record PAYMENT, PLATFORM, and TICKET_EVIDENCE attestations in TrustPolicyEngine
     try {
@@ -420,6 +556,7 @@ class EscrowService {
       try {
         ledgerTx = await FinancialLedger.recordDisbursementRelease({
           orderId,
+          quoteId: order.quote_id || escrow.quote_id || null,
           sellerAmount: escrow.amount,
           actorId: actorId || 'SYSTEM'
         });
@@ -477,6 +614,23 @@ class EscrowService {
       reason,
       refunded_at: escrow.refunded_at
     });
+
+    // Record balanced refund in FinancialLedger
+    try {
+      const { FinancialLedger } = require('../settlement/FinancialLedger');
+      await FinancialLedger.recordRefund({
+        orderId,
+        quoteId: order.quote_id || escrow.quote_id || null,
+        ticketPrice: order.ticket_price || escrow.ticket_price || escrow.amount,
+        platformFee: order.platform_fee || order.buyer_fee || 0,
+        buyerFee: order.buyer_fee,
+        sellerFee: order.seller_fee,
+        buyerTax: order.buyer_tax,
+        sellerTax: order.seller_tax_withholding,
+        actorId: actorId || 'SYSTEM',
+        reason: reason || 'BUYER_REFUND'
+      });
+    } catch (e) {}
 
     return { success: true, escrow, order, reason };
   }

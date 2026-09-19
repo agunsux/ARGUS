@@ -37,7 +37,12 @@ const state = {
   processed_webhooks: new Set(),
   attestations: [],
   authorization_records: [],
-  pic_velocity_log: []
+  pic_velocity_log: [],
+  quotes: [],
+  pricing_policies: [],
+  pricing_audit_logs: [],
+  tax_policies: [],
+  tax_audit_logs: []
 };
 
 let seqId = 1;
@@ -710,6 +715,18 @@ function resetDatabase() {
   state.attestations = [];
   state.authorization_records = [];
   state.pic_velocity_log = [];
+  state.quotes = [];
+  state.pricing_policies = [];
+  state.pricing_audit_logs = [];
+  state.tax_policies = [];
+  state.tax_audit_logs = [];
+
+  try {
+    const { MarketplacePricingEngine } = require('./pricing/MarketplacePricingEngine');
+    const { TaxEngine } = require('./pricing/TaxEngine');
+    MarketplacePricingEngine.init();
+    TaxEngine.init();
+  } catch (e) {}
 
   try {
     const { canonicalRegistry } = require('./discovery/CanonicalEventRegistry');

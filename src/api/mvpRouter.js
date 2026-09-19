@@ -809,7 +809,7 @@ router.post('/seller/orders/:orderId/handoff-challenge', async (req, res) => {
  */
 router.post('/buyer/order', async (req, res) => {
   try {
-    const { buyerId, listingId } = req.body;
+    const { buyerId, listingId, quoteId, quote_id, policyVersion } = req.body;
     if (!buyerId || !listingId) {
       return res.status(400).json({ error: 'buyerId and listingId are required', code: 'VALIDATION_ERROR' });
     }
@@ -817,7 +817,14 @@ router.post('/buyer/order', async (req, res) => {
       return res.status(401).json({ error: 'Unknown buyer', code: 'AUTH_REQUIRED' });
     }
 
-    const result = await EscrowService.createOrder({ buyerId, listingId });
+    const effectiveQuoteId = quoteId || quote_id || null;
+    const result = await EscrowService.createOrder({
+      buyerId,
+      listingId,
+      quoteId: effectiveQuoteId,
+      policyVersion: policyVersion || null
+    });
+
     res.status(201).json({
       success: true,
       message: 'Order created. Payment required to lock escrow.',
@@ -1872,6 +1879,194 @@ router.get('/evidence/:id/file', async (req, res) => {
   } catch (err) {
     res.status(mapRouterError(err, 403)).json({ error: err.message, code: err.code || 'EVIDENCE_ACCESS_DENIED' });
   }
+});
+
+// =============================================================================
+// PRICING, TAX, QUOTE & ECONOMICS ENGINE ENDPOINTS
+// =============================================================================
+const { MarketplacePricingEngine } = require('../pricing/MarketplacePricingEngine');
+const { TaxEngine } = require('../pricing/TaxEngine');
+const { TransactionQuoteService } = require('../pricing/TransactionQuoteService');
+const { EconomicsEngine } = require('../pricing/EconomicsEngine');
+
+/**
+ * Calculate transparent quote preview for buyer and seller
+ * POST /api/mvp/pricing/calculate
+ */
+router.post('/pricing/calculate', async (req, res) => {
+  try {
+    const {
+      ticketPrice,
+      listingId = null,
+      buyerId = null,
+      sellerId = null,
+      policyVersion = '2026.1-ID-DEFAULT',
+      taxPolicyVersion = '2026.1-ID-TAX',
+      lockQuote = false
+    } = req.body;
+
+    if (!ticketPrice || parseInt(ticketPrice, 10) <= 0) {
+      return res.status(400).json({ error: 'Valid positive ticketPrice is required', code: 'INVALID_TICKET_PRICE' });
+    }
+
+    if (lockQuote) {
+      const quote = await TransactionQuoteService.generateQuote({
+        listingId,
+        ticketPrice: parseInt(ticketPrice, 10),
+        buyerId,
+        sellerId,
+        pricingPolicyVersion: policyVersion,
+        taxPolicyVersion: taxPolicyVersion
+      });
+      return res.json({
+        success: true,
+        quote_id: quote.id,
+        pricing: quote
+      });
+    }
+
+    // Resolve seller tax profile if sellerId or listingId is provided
+    let effectiveSellerId = sellerId;
+    if (!effectiveSellerId && listingId) {
+      const listing = state.listings.find(l => l.id === listingId);
+      if (listing) effectiveSellerId = listing.seller_id;
+    }
+    const sellerProfile = state.seller_profiles?.find(sp => sp.user_id === effectiveSellerId) || {};
+    const sellerTaxProfile = {
+      seller_type: sellerProfile.seller_type || 'INDIVIDUAL',
+      spt_declaration_submitted: sellerProfile.spt_declaration_submitted === true,
+      annual_turnover: sellerProfile.annual_turnover || 0,
+      tax_exempt: sellerProfile.tax_exempt === true,
+      exemption_reason: sellerProfile.exemption_reason || null
+    };
+
+    const fees = MarketplacePricingEngine.calculateFees({
+      ticketPrice: parseInt(ticketPrice, 10),
+      policyVersion
+    });
+
+    const taxes = TaxEngine.calculateTax({
+      ticketPrice: parseInt(ticketPrice, 10),
+      buyerPlatformFee: fees.buyer_fee,
+      sellerTaxProfile,
+      taxPolicyVersion
+    });
+
+    const buyerTotal = parseInt(ticketPrice, 10) + fees.buyer_fee + taxes.total_buyer_tax;
+    const sellerNetPayout = parseInt(ticketPrice, 10) - fees.seller_fee - taxes.total_seller_tax_withholding;
+
+    res.json({
+      success: true,
+      ticket_price: parseInt(ticketPrice, 10),
+      currency: fees.currency,
+      buyer_fee: fees.buyer_fee,
+      seller_fee: fees.seller_fee,
+      total_platform_fee: fees.total_platform_fee,
+      buyer_tax: taxes.total_buyer_tax,
+      seller_tax_withholding: taxes.total_seller_tax_withholding,
+      total_tax: taxes.total_tax_collected,
+      buyer_total: buyerTotal,
+      seller_net_payout: sellerNetPayout,
+      pricing_breakdown: fees,
+      tax_breakdown: taxes
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message, code: err.code || 'PRICING_CALCULATION_ERROR' });
+  }
+});
+
+/**
+ * Retrieve quote by ID and inspect lock status
+ * GET /api/mvp/pricing/quote/:id
+ */
+router.get('/pricing/quote/:id', (req, res) => {
+  const quote = TransactionQuoteService.getQuote(req.params.id);
+  if (!quote) {
+    return res.status(404).json({ error: 'Quote not found', code: 'QUOTE_NOT_FOUND' });
+  }
+  res.json({ success: true, quote });
+});
+
+/**
+ * List all registered pricing policies (Admin only)
+ * GET /api/mvp/admin/pricing/policies
+ */
+router.get('/admin/pricing/policies', (req, res) => {
+  const callerId = getCallerId(req, req.query.requesterId);
+  if (!callerId) return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
+  const caller = findUser(callerId);
+  if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
+
+  const policies = MarketplacePricingEngine.listPolicies();
+  res.json({ success: true, policies });
+});
+
+/**
+ * Register or update pricing policy (Admin only)
+ * POST /api/mvp/admin/pricing/policies
+ */
+router.post('/admin/pricing/policies', async (req, res) => {
+  const callerId = getCallerId(req, req.body?.officerId);
+  if (!callerId) return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
+  const caller = findUser(callerId);
+  if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
+
+  try {
+    const policy = await MarketplacePricingEngine.registerPolicy(req.body, callerId);
+    res.status(201).json({ success: true, policy });
+  } catch (err) {
+    res.status(400).json({ error: err.message, code: err.code || 'POLICY_REGISTRATION_FAILED' });
+  }
+});
+
+/**
+ * List all registered tax policies (Admin only)
+ * GET /api/mvp/admin/tax/policies
+ */
+router.get('/admin/tax/policies', (req, res) => {
+  const callerId = getCallerId(req, req.query.requesterId);
+  if (!callerId) return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
+  const caller = findUser(callerId);
+  if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
+
+  const policies = TaxEngine.listPolicies();
+  res.json({ success: true, policies });
+});
+
+/**
+ * Register or update tax policy (Admin only)
+ * POST /api/mvp/admin/tax/policies
+ */
+router.post('/admin/tax/policies', async (req, res) => {
+  const callerId = getCallerId(req, req.body?.officerId);
+  if (!callerId) return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
+  const caller = findUser(callerId);
+  if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
+
+  try {
+    const policy = await TaxEngine.registerPolicy(req.body, callerId);
+    res.status(201).json({ success: true, policy });
+  } catch (err) {
+    res.status(400).json({ error: err.message, code: err.code || 'TAX_POLICY_REGISTRATION_FAILED' });
+  }
+});
+
+/**
+ * Live unit economics and contribution margin report (Admin only)
+ * GET /api/mvp/admin/economics/contribution-margin
+ */
+router.get('/admin/economics/contribution-margin', (req, res) => {
+  const callerId = getCallerId(req, req.query.requesterId);
+  if (!callerId) return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
+  const caller = findUser(callerId);
+  if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
+
+  const summary = EconomicsEngine.calculateContributionMargin({
+    startDate: req.query.startDate,
+    endDate: req.query.endDate
+  });
+
+  res.json({ success: true, economics: summary });
 });
 
 module.exports = router;
