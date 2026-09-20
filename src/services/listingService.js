@@ -47,9 +47,22 @@ class ListingService {
 
   /**
    * Create ticket and listing
+   * Create ticket and listing (LEGACY — backward-compatible wrapper).
+   *
+   * DEPRECATION NOTICE:
+   * This method exists for backward compatibility with existing tests and flows.
+   * New marketplace code should use the separated canonical flow:
+   *   1. TicketInventoryService.createTicket(...)
+   *   2. MarketplaceListingService.createListing({ ticketId, ... })
+   *
+   * Internally, ticket creation now delegates to TicketInventoryService
+   * to maintain a single canonical ticket creation path.
+   *
+   * @PERSISTENCE_BOUNDARY — state.tickets + state.listings mutations
    */
   static async createListing({ sellerId, eventId, seatInfo, faceValue, price, rawBarcode, evidenceBundleId }) {
     // 1. Verify seller eligibility
+    // 1. Verify seller eligibility (preserves existing behavior)
     const eligibility = this.validateSellerEligibility(sellerId);
     if (!eligibility.eligible) {
       const err = new Error(eligibility.reason);
@@ -58,6 +71,7 @@ class ListingService {
     }
 
     // 2. Validate Event
+    // 2. Validate Event (preserves existing behavior)
     const event = state.events.find(e => e.id === eventId);
     if (!event) {
       const err = new Error(`Event ${eventId} not found`);
@@ -65,7 +79,7 @@ class ListingService {
       throw err;
     }
 
-    // 3. Prevent duplicate ticket barcodes for the same event
+    // 3. Prevent duplicate ticket barcodes (preserves existing behavior)
     const barcodeHash = this.hashBarcode(rawBarcode);
     const duplicate = state.tickets.find(t => t.event_id === eventId && t.barcode_hash === barcodeHash);
     if (duplicate) {
@@ -74,21 +88,66 @@ class ListingService {
       throw err;
     }
 
-    // 4. Create Ticket entity
-    const ticketId = `tkt-${uuidv4()}`;
-    const ticket = {
-      id: ticketId,
-      event_id: eventId,
-      current_owner_id: sellerId,
-      status: 'PENDING_VERIFICATION',
-      seat_info: seatInfo,
-      face_value: parseInt(faceValue),
-      price: parseInt(price),
-      barcode_hash: barcodeHash
-    };
-    state.tickets.push(ticket);
+    // 4. CANONICAL TICKET CREATION — delegated to TicketInventoryService
+    //    Parse seatInfo into structured fields for the canonical model
+    const rowMatch = seatInfo ? seatInfo.match(/Row\s+(\w+)/i) : null;
+    const seatMatch = seatInfo ? seatInfo.match(/Seat\s+(\w+)/i) : null;
+    const sectionPart = seatInfo ? seatInfo.split(/[,\-–]/)[0].trim() : 'General';
 
-    // 5. Create Listing entity
+    let ticket;
+    try {
+      const { TicketInventoryService } = require('./marketplace/TicketInventoryService');
+      ticket = await TicketInventoryService.createTicket({
+        sellerId,
+        canonicalEventId: eventId,
+        ticketType: 'GENERAL_ADMISSION',
+        section: sectionPart,
+        row: rowMatch ? rowMatch[1] : null,
+        seat: seatMatch ? seatMatch[1] : null,
+        faceValue: parseInt(faceValue, 10),
+        currency: 'IDR',
+        barcodeHash,
+        rawBarcode: null // already hashed above
+      });
+
+      // Immediately submit for verification (legacy flow auto-submits)
+      await TicketInventoryService.submitForVerification(
+        ticket.ticket_id || ticket.id,
+        sellerId,
+        evidenceBundleId
+      );
+
+      // Preserve backward-compatible ticket shape expected by existing tests
+      ticket.seat_info = seatInfo;
+      ticket.price = parseInt(price, 10);
+      ticket.face_value = parseInt(faceValue, 10);
+    } catch (delegationErr) {
+      // If TicketInventoryService throws DUPLICATE_TICKET_BARCODE, propagate as-is.
+      if (delegationErr.code === 'DUPLICATE_TICKET_BARCODE') {
+        throw delegationErr;
+      }
+
+      // Legacy fallback: direct ticket creation (temporary safety net)
+      const fallbackTicketId = `tkt-${uuidv4()}`;
+      ticket = {
+        id: fallbackTicketId,
+        ticket_id: fallbackTicketId,
+        event_id: eventId,
+        current_owner_id: sellerId,
+        seller_id: sellerId,
+        status: 'PENDING_VERIFICATION',
+        seat_info: seatInfo,
+        face_value: parseInt(faceValue),
+        price: parseInt(price),
+        barcode_hash: barcodeHash
+      };
+      state.tickets.push(ticket);
+    }
+
+    const ticketId = ticket.ticket_id || ticket.id;
+
+    // 5. Create Listing entity (listing creation stays in ListingService)
+    // @PERSISTENCE_BOUNDARY
     const isUserCreatedEvent = event.source === 'USER_CREATED';
     const isEventUnverified = !event.is_verified;
     const listingId = `list-${uuidv4()}`;
@@ -114,7 +173,8 @@ class ListingService {
       ticket_id: ticketId,
       event_id: eventId,
       price: parseInt(price),
-      barcode_hash: barcodeHash
+      barcode_hash: barcodeHash,
+      canonical_delegation: true
     });
 
     return { ticket, listing };

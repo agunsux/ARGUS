@@ -42,7 +42,8 @@ const state = {
   pricing_policies: [],
   pricing_audit_logs: [],
   tax_policies: [],
-  tax_audit_logs: []
+  tax_audit_logs: [],
+  reservations: []
 };
 
 let seqId = 1;
@@ -720,6 +721,7 @@ function resetDatabase() {
   state.pricing_audit_logs = [];
   state.tax_policies = [];
   state.tax_audit_logs = [];
+  state.reservations = [];
 
   try {
     const { MarketplacePricingEngine } = require('./pricing/MarketplacePricingEngine');

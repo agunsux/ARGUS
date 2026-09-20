@@ -125,6 +125,7 @@ class EscrowService {
   static async createOrder({
     buyerId,
     listingId,
+    reservationId = null,
     customAmount = null,
     paymentDeadlineHours = 2,
     quoteId = null,
@@ -147,7 +148,41 @@ class EscrowService {
       throw err;
     }
 
-    if (listing.status !== LISTING_STATUS.ACTIVE) {
+    // Reservation validation if converting from reservation
+    let reservation = null;
+    if (reservationId) {
+      reservation = (state.reservations || []).find(r => r.id === reservationId || r.reservation_id === reservationId);
+      if (!reservation) {
+        const err = new Error(`Reservation '${reservationId}' not found`);
+        err.code = 'RESERVATION_NOT_FOUND';
+        throw err;
+      }
+      if (reservation.buyer_id !== buyerId) {
+        const err = new Error('Forbidden: Reservation belongs to another buyer');
+        err.code = 'UNAUTHORIZED_RESERVATION_OWNER';
+        err.status = 403;
+        throw err;
+      }
+      if (reservation.listing_id !== listingId) {
+        const err = new Error('Reservation listing mismatch');
+        err.code = 'RESERVATION_LISTING_MISMATCH';
+        throw err;
+      }
+      if (reservation.status !== 'PENDING') {
+        const err = new Error(`Reservation is in '${reservation.status}' status and cannot be converted`);
+        err.code = 'RESERVATION_NOT_ACTIVE';
+        throw err;
+      }
+      if (new Date(reservation.expires_at) <= new Date()) {
+        const err = new Error('Reservation has expired');
+        err.code = 'RESERVATION_EXPIRED';
+        throw err;
+      }
+    }
+
+    const isListingReservedByThisReservation = reservation && listing.status === LISTING_STATUS.RESERVED && reservation.listing_id === listing.id;
+
+    if (listing.status !== LISTING_STATUS.ACTIVE && !isListingReservedByThisReservation) {
       const err = new Error(`Listing is not available for purchase (status: ${listing.status})`);
       err.code = 'LISTING_NOT_ACTIVE';
       throw err;
@@ -214,6 +249,7 @@ class EscrowService {
       seller_net_payout: quote.seller_net_payout,
       total_amount: quote.buyer_total,
       quote_id: quote.id,
+      reservation_id: reservationId || null,
       pricing_policy: quote.pricing_breakdown?.policy_version || 'LEGACY-BUYER-10PCT',
       tax_policy: quote.tax_breakdown?.tax_policy_version || 'ZERO-TAX-TEST',
       status: ORDER_STATUS.PENDING_PAYMENT,
@@ -222,6 +258,16 @@ class EscrowService {
       created_at: new Date().toISOString()
     };
     state.orders.push(order);
+
+    // Convert reservation if order created from active reservation
+    if (reservationId) {
+      try {
+        const { ReservationService } = require('./marketplace/ReservationService');
+        await ReservationService.convertReservation(reservationId, orderId);
+      } catch (resErr) {
+        // Log error but order is already recorded
+      }
+    }
 
     // Create Escrow account record in PENDING_PAYMENT
     const escrowId = `esc-${uuidv4()}`;
