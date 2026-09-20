@@ -87,6 +87,8 @@ function resetDatabase() {
   state.evidence_access_logs = [];
   state.step_up_tokens = [];
   state.magic_link_tokens = [];
+  state.email_logs = [];
+  state.password_reset_tokens = [];
 
   const isTest = process.env.NODE_ENV === 'test';
   const defaultTestPass = isTest ? 'pilot123' : null;
@@ -1124,7 +1126,10 @@ function bootstrapAdminUser() {
   if (!state.users) {
     state.users = [];
   }
-  const adminEmail = (process.env.ADMIN_EMAIL || process.env.ARGUS_ADMIN_EMAIL || 'ops@argus.id').toLowerCase().trim();
+  const defaultAdminEmail = (process.env.NODE_ENV === 'test' && !process.env.ADMIN_EMAIL && !process.env.ARGUS_ADMIN_EMAIL)
+    ? 'ops@argus.id'
+    : 'admin@tikum.app';
+  const adminEmail = (process.env.ADMIN_EMAIL || process.env.ARGUS_ADMIN_EMAIL || defaultAdminEmail).toLowerCase().trim();
 
   // Check if an admin already exists (matching email or default admin role)
   const existingAdmin = state.users.find(

@@ -12,6 +12,21 @@ const BRAND_NAME = 'TIKUM';
 const CANONICAL_ORIGIN = businessProfile.canonicalOrigin || 'https://tikum.app';
 const SUPPORT_EMAIL = businessProfile.supportEmail || 'support@tikum.app';
 const ADMIN_EMAIL = businessProfile.adminEmail || 'admin@tikum.app';
+const HELLO_EMAIL = businessProfile.helloEmail || 'hello@tikum.app';
+const NO_REPLY_EMAIL = process.env.EMAIL_NO_REPLY || 'no-reply@tikum.app';
+
+/**
+ * Sanitize and escape HTML strings to prevent HTML / XSS injection into emails
+ */
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 /**
  * Shared HTML wrapper providing consistent styling and legal footer
@@ -466,8 +481,8 @@ const TEMPLATES = {
         <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Uji Coba Pengiriman Berhasil</h2>
         <p>Email ini dikirimkan melalui permintaan pengujian resmi oleh administrator TIKUM:</p>
         <div class="info-card">
-          <div class="info-row"><span class="info-label">Diuji Oleh:</span><span class="info-value">${d.adminId || 'admin-1'}</span></div>
-          <div class="info-row"><span class="info-label">Waktu:</span><span class="info-value">${new Date().toISOString()}</span></div>
+          <div class="info-row"><span class="info-label">Diuji Oleh:</span><span class="info-value">${escapeHtml(d.adminId || 'admin-1')}</span></div>
+          <div class="info-row"><span class="info-label">Waktu:</span><span class="info-value">${escapeHtml(new Date().toISOString())}</span></div>
           <div class="info-row"><span class="info-label">Provider Outbound:</span><span class="info-value">Resend Free (Zero-Cost)</span></div>
         </div>
       `;
@@ -477,8 +492,163 @@ const TEMPLATES = {
         text: wrapText({ title, content: textContent })
       };
     }
+  },
+
+  ADMIN_PASSWORD_RESET: {
+    subject: () => `[TIKUM ADMIN] Permintaan Reset Password Administrator`,
+    render: (d) => {
+      const title = 'Reset Password Administrator';
+      const resetUrl = d.resetUrl || `${CANONICAL_ORIGIN}/admin/login?reset_token=${d.token || d.resetToken || ''}`;
+      const content = `
+        <span class="badge badge-warning" style="background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">Akses Khusus Administrator</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Permintaan Reset Password Admin</h2>
+        <p>Kami menerima permintaan untuk mereset kredensial akun administrator TIKUM (<strong>${escapeHtml(d.adminEmail || ADMIN_EMAIL)}</strong>).</p>
+        <p>Klik tombol di bawah ini untuk mengatur ulang password administrator Anda:</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Identitas Admin:</span><span class="info-value">${escapeHtml(d.adminEmail || ADMIN_EMAIL)}</span></div>
+          <div class="info-row"><span class="info-label">Waktu Permintaan:</span><span class="info-value">${escapeHtml(d.requestedAt || new Date().toISOString())}</span></div>
+          <div class="info-row"><span class="info-label">Masa Berlaku:</span><span class="info-value" style="color: #fbbf24;">30 Menit</span></div>
+        </div>
+        <p style="color: #94a3b8; font-size: 12px;">PENTING: Jangan pernah membagikan tautan ini. Jika Anda tidak mengajukan permintaan ini, segera hubungi tim sekuritas.</p>
+      `;
+      const textContent = `[TIKUM ADMIN] Permintaan Reset Password Administrator\n\nIdentitas: ${d.adminEmail || ADMIN_EMAIL}\nBuka tautan berikut untuk mereset password:\n${resetUrl}\n\nTautan ini berlaku selama 30 menit.`;
+      return {
+        html: wrapHtml({ title, preheader: 'Reset password akun administrator TIKUM', content, actionButton: { text: 'Reset Password Admin', url: resetUrl } }),
+        text: wrapText({ title, content: textContent, actionUrl: resetUrl })
+      };
+    }
+  },
+
+  ADMIN_SECURITY_ALERT: {
+    subject: (d) => `[TIKUM SECURITY ALERT] ${d.title || 'Peringatan Keamanan Administrator'}`,
+    render: (d) => {
+      const title = d.title || 'Peringatan Keamanan Administrator';
+      const severity = (d.severity || 'CRITICAL').toUpperCase();
+      const content = `
+        <span class="badge" style="background-color: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444;">${escapeHtml(severity)} ALERT</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">${escapeHtml(d.title || 'Pemberitahuan Keamanan Sistem')}</h2>
+        <p>${escapeHtml(d.message || 'Terdeteksi aktivitas kritis atau anomali pada sistem operasional TIKUM.')}</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Level Keparahan:</span><span class="info-value" style="color: #f87171;">${escapeHtml(severity)}</span></div>
+          <div class="info-row"><span class="info-label">Waktu Deteksi:</span><span class="info-value">${escapeHtml(d.timestamp || new Date().toISOString())}</span></div>
+          ${d.ip ? `<div class="info-row"><span class="info-label">IP Address:</span><span class="info-value">${escapeHtml(d.ip)}</span></div>` : ''}
+          ${d.action ? `<div class="info-row"><span class="info-label">Tindakan:</span><span class="info-value">${escapeHtml(d.action)}</span></div>` : ''}
+        </div>
+        ${d.details ? `<pre style="background: #1e293b; padding: 12px; border-radius: 4px; font-size: 12px; color: #94a3b8; overflow-x: auto;">${escapeHtml(typeof d.details === 'string' ? d.details : JSON.stringify(d.details, null, 2))}</pre>` : ''}
+      `;
+      const textContent = `[TIKUM SECURITY ALERT] ${d.title || 'Peringatan Keamanan'}\nKeparahan: ${severity}\nWaktu: ${d.timestamp || new Date().toISOString()}\n\n${d.message || ''}\n\n${d.details ? (typeof d.details === 'string' ? d.details : JSON.stringify(d.details, null, 2)) : ''}`;
+      return {
+        html: wrapHtml({ title, preheader: `[ALERT] ${d.title || 'Security Alert'}`, content, actionButton: { text: 'Buka Admin Control Plane', url: `${CANONICAL_ORIGIN}/admin` } }),
+        text: wrapText({ title, content: textContent, actionUrl: `${CANONICAL_ORIGIN}/admin` })
+      };
+    }
+  },
+
+  TICKET_DELIVERY: {
+    subject: (d) => `Tiket Anda Siap Diunduh #${d.orderId || ''} — ${d.eventTitle || 'Event TIKUM'}`,
+    render: (d) => {
+      const title = `E-Ticket Siap Diunduh #${d.orderId || ''}`;
+      const downloadUrl = d.downloadUrl || `${CANONICAL_ORIGIN}/track/${d.orderId || ''}`;
+      const content = `
+        <span class="badge badge-success">Tiket Siap &amp; Terverifikasi</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">E-Ticket Anda Telah Tersedia</h2>
+        <p>E-Ticket untuk pesanan <strong>#${escapeHtml(d.orderId || '')}</strong> telah berhasil diterbitkan dan siap diunduh.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Event:</span><span class="info-value">${escapeHtml(d.eventTitle || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Kategori:</span><span class="info-value">${escapeHtml(d.ticketCategory || d.category || 'General Admission')}</span></div>
+          <div class="info-row"><span class="info-label">Nomor Kursi:</span><span class="info-value">${escapeHtml(d.seatInfo || 'Free Standing')}</span></div>
+          <div class="info-row"><span class="info-label">Venue:</span><span class="info-value">${escapeHtml(d.venueName || '-')}</span></div>
+        </div>
+        <p>Simpan e-ticket ini di ponsel Anda dan tunjukkan kepada Event PIC TIKUM saat berada di gerbang venue untuk pendampingan scan.</p>
+      `;
+      const textContent = `E-Ticket Siap Diunduh!\nID Pesanan: #${d.orderId || ''}\nEvent: ${d.eventTitle || '-'}\nKategori: ${d.ticketCategory || d.category || 'General Admission'}\nKursi: ${d.seatInfo || 'Free Standing'}\nUnduh tiket di: ${downloadUrl}`;
+      return {
+        html: wrapHtml({ title, preheader: `E-Ticket pesanan #${d.orderId} siap diunduh`, content, actionButton: { text: 'Unduh E-Ticket', url: downloadUrl } }),
+        text: wrapText({ title, content: textContent, actionUrl: downloadUrl })
+      };
+    }
+  },
+
+  DELIVERY_CONFIRMATION: {
+    subject: (d) => `Konfirmasi Penyerahan Tiket Selesai #${d.orderId || ''}`,
+    render: (d) => {
+      const title = `Penyerahan Tiket Selesai #${d.orderId || ''}`;
+      const trackUrl = `${CANONICAL_ORIGIN}/track/${d.orderId || ''}`;
+      const content = `
+        <span class="badge badge-success">Tiket Berhasil Diserahkan</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Serah Terima Tiket Berhasil Divalidasi</h2>
+        <p>Penyerahan tiket untuk pesanan <strong>#${escapeHtml(d.orderId || '')}</strong> telah diverifikasi oleh sistem TIKUM.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">ID Pesanan:</span><span class="info-value">${escapeHtml(d.orderId || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Event:</span><span class="info-value">${escapeHtml(d.eventTitle || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Waktu Verifikasi:</span><span class="info-value">${escapeHtml(d.verifiedAt || new Date().toISOString())}</span></div>
+          <div class="info-row"><span class="info-label">Status Escrow:</span><span class="info-value" style="color: #34d399;">SIAP DILEPAS KE PENJUAL</span></div>
+        </div>
+        <p>Terima kasih telah bertransaksi secara aman melalui platform TIKUM.</p>
+      `;
+      const textContent = `Konfirmasi Penyerahan Tiket Selesai #${d.orderId || ''}.\nEvent: ${d.eventTitle || '-'}\nWaktu: ${d.verifiedAt || new Date().toISOString()}\nStatus Escrow: Siap dilepas.`;
+      return {
+        html: wrapHtml({ title, preheader: `Penyerahan tiket pesanan #${d.orderId} selesai diverifikasi`, content, actionButton: { text: 'Lihat Status Transaksi', url: trackUrl } }),
+        text: wrapText({ title, content: textContent, actionUrl: trackUrl })
+      };
+    }
+  },
+
+  EVENT_CANCELLATION: {
+    subject: (d) => `Pemberitahuan Pembatalan Event: ${d.eventTitle || 'Event TIKUM'}`,
+    render: (d) => {
+      const title = `Pembatalan Event: ${d.eventTitle || 'Event'}`;
+      const content = `
+        <span class="badge badge-warning" style="background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">Event Dibatalkan</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Event Resmi Dibatalkan oleh Promotor</h2>
+        <p>Penyelenggara resmi telah mengumumkan pembatalan untuk event <strong>${escapeHtml(d.eventTitle || 'Event TIKUM')}</strong>.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Event:</span><span class="info-value">${escapeHtml(d.eventTitle || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Alasan:</span><span class="info-value">${escapeHtml(d.cancellationReason || d.reason || 'Keputusan resmi promotor / force majeure')}</span></div>
+          ${d.orderId ? `<div class="info-row"><span class="info-label">ID Pesanan:</span><span class="info-value">${escapeHtml(d.orderId)}</span></div>` : ''}
+          ${d.refundAmount ? `<div class="info-row"><span class="info-label">Estimasi Refund:</span><span class="info-value" style="color: #34d399;">Rp ${(d.refundAmount || 0).toLocaleString('id-ID')}</span></div>` : ''}
+        </div>
+        <p>Sesuai dengan <strong>Kebijakan Perlindungan Konsumen TIKUM</strong>, dana tiket yang masih berada di Rekening Bersama (Escrow) akan diproses untuk pengembalian 100% kepada pembeli.</p>
+      `;
+      const textContent = `Pemberitahuan Pembatalan Event: ${d.eventTitle || 'Event'}\nAlasan: ${d.cancellationReason || d.reason || 'Keputusan resmi promotor'}\nDana di Escrow akan dikembalikan 100% sesuai kebijakan TIKUM.`;
+      return {
+        html: wrapHtml({ title, preheader: `Event ${d.eventTitle || ''} resmi dibatalkan`, content, actionButton: { text: 'Informasi Refund & Kebijakan', url: `${CANONICAL_ORIGIN}/refund-policy` } }),
+        text: wrapText({ title, content: textContent, actionUrl: `${CANONICAL_ORIGIN}/refund-policy` })
+      };
+    }
+  },
+
+  REFUND_CONFIRMATION: {
+    subject: (d) => `Pengembalian Dana (Refund) Berhasil #${d.orderId || ''}`,
+    render: (d) => {
+      const title = `Refund Selesai #${d.orderId || ''}`;
+      const trackUrl = `${CANONICAL_ORIGIN}/track/${d.orderId || ''}`;
+      const content = `
+        <span class="badge badge-success">Refund Berhasil</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Dana Telah Dikembalikan ke Rekening Anda</h2>
+        <p>Pengembalian dana untuk pesanan <strong>#${escapeHtml(d.orderId || '')}</strong> telah berhasil diproses melalui gateway pembayaran resmi.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">ID Pesanan:</span><span class="info-value">${escapeHtml(d.orderId || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Nominal Refund:</span><span class="info-value" style="color: #34d399;">Rp ${(d.amount || 0).toLocaleString('id-ID')}</span></div>
+          <div class="info-row"><span class="info-label">Metode Pembayaran:</span><span class="info-value">${escapeHtml(d.channel || 'Metode Pembayaran Asli')}</span></div>
+          <div class="info-row"><span class="info-label">Alasan Refund:</span><span class="info-value">${escapeHtml(d.reason || 'Sengketa disetujui / Event dibatalkan')}</span></div>
+        </div>
+        <p>Waktu efektif dana masuk ke rekening Anda bergantung pada kebijakan bank atau penyedia e-wallet terkait (1&ndash;3 hari kerja).</p>
+      `;
+      const textContent = `Pengembalian Dana (Refund) Berhasil #${d.orderId || ''}.\nNominal: Rp ${(d.amount || 0).toLocaleString('id-ID')}\nAlasan: ${d.reason || 'Refund disetujui'}\nDana dikembalikan ke saluran pembayaran asal.`;
+      return {
+        html: wrapHtml({ title, preheader: `Refund sebesar Rp ${(d.amount || 0).toLocaleString('id-ID')} berhasil diproses`, content, actionButton: { text: 'Lihat Bukti Refund', url: trackUrl } }),
+        text: wrapText({ title, content: textContent, actionUrl: trackUrl })
+      };
+    }
   }
 };
+
+// Aliases for template lookup flexibility
+TEMPLATES.TICKET_DELIVERED = TEMPLATES.TICKET_DELIVERY;
+TEMPLATES.EVENT_CANCELLED = TEMPLATES.EVENT_CANCELLATION;
+TEMPLATES.REFUND_CONFIRMED = TEMPLATES.REFUND_CONFIRMATION;
+TEMPLATES.CRITICAL_OPERATIONAL_ALERT = TEMPLATES.SYSTEM_ALERT;
 
 /**
  * Render email content given template name and payload data
@@ -500,8 +670,11 @@ function renderTemplate(templateName, data = {}) {
 module.exports = {
   TEMPLATES,
   renderTemplate,
+  escapeHtml,
   BRAND_NAME,
   SUPPORT_EMAIL,
   ADMIN_EMAIL,
+  HELLO_EMAIL,
+  NO_REPLY_EMAIL,
   CANONICAL_ORIGIN
 };

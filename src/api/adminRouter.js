@@ -12,9 +12,12 @@
 
 const express = require('express');
 const router = express.Router();
-const { state, recordAuditLog, verifyPassword } = require('../database');
+const { state, recordAuditLog, verifyPassword, hashPassword } = require('../database');
+const crypto = require('crypto');
+const { v4: uuidv4 } = require('uuid');
 const { requireAdmin, resolveUser, isAdminRole, ADMIN_ROLES } = require('../middleware/auth');
 const { SessionStore } = require('../services/sessionStore');
+const { emailService } = require('../services/emailService');
 const { FinancialLedger } = require('../settlement/FinancialLedger');
 const { sourceRegistry } = require('../discovery/SourceRegistry');
 const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
@@ -256,6 +259,152 @@ router.post('/logout', async (req, res) => {
   }
 
   return res.status(200).json({ success: true, message: 'Logged out successfully' });
+});
+
+/**
+ * POST /api/admin/password-reset/request
+ * Initiates admin password reset.
+ * Generic response prevents email enumeration.
+ * Uses EmailService with ADMIN_EMAIL identity.
+ */
+router.post('/password-reset/request', async (req, res) => {
+  const { email } = req.body || {};
+  if (!email || typeof email !== 'string' || !email.trim()) {
+    return res.status(400).json({ error: 'Email is required', code: 'INVALID_EMAIL' });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const adminUser = (state.users || []).find(
+    u => u.email && u.email.toLowerCase() === normalizedEmail && isAdminRole(u.role)
+  );
+
+  // Generic response to prevent administrator enumeration
+  const genericResponse = {
+    success: true,
+    message: 'Jika email terdaftar sebagai administrator, petunjuk reset password telah dikirimkan ke kotak masuk.'
+  };
+
+  if (!adminUser) {
+    return res.status(200).json(genericResponse);
+  }
+
+  // Generate cryptographically secure single-use token (256 bits of entropy)
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const now = Date.now();
+  const expiresAt = new Date(now + 30 * 60 * 1000).toISOString(); // 30 minutes
+
+  const tokenRecord = {
+    id: `aprt-${uuidv4()}`,
+    user_id: adminUser.id,
+    email: adminUser.email,
+    token_hash: tokenHash,
+    created_at: new Date(now).toISOString(),
+    expires_at: expiresAt,
+    used: false,
+    used_at: null,
+    ip_address: req.ip || req.connection?.remoteAddress || null
+  };
+
+  if (!state.password_reset_tokens) {
+    state.password_reset_tokens = [];
+  }
+  state.password_reset_tokens.push(tokenRecord);
+
+  const resetUrl = `https://tikum.app/admin/reset-password?token=${rawToken}`;
+
+  // Non-blocking dispatch via EmailService using admin identity
+  try {
+    await emailService.sendAdminPasswordResetEmail({
+      adminEmail: adminUser.email,
+      resetToken: rawToken,
+      resetUrl
+    });
+  } catch (emailErr) {
+    console.error('[AdminRouter:PasswordReset] Failed to dispatch admin reset email:', emailErr.message);
+  }
+
+  await recordAuditLog('ADMIN_AUTH', adminUser.id, 'ADMIN_PASSWORD_RESET_REQUESTED', 'SYSTEM', {
+    ip: tokenRecord.ip_address,
+    token_id: tokenRecord.id
+  }).catch(() => {});
+
+  return res.status(200).json(genericResponse);
+});
+
+/**
+ * POST /api/admin/password-reset/confirm
+ * Verifies reset token, updates administrator password, revokes sessions,
+ * and dispatches security alert to admin email identity.
+ */
+router.post('/password-reset/confirm', async (req, res) => {
+  const { token, newPassword } = req.body || {};
+
+  if (!token || typeof token !== 'string') {
+    return res.status(400).json({ error: 'Token reset password is required', code: 'INVALID_TOKEN' });
+  }
+
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+    return res.status(400).json({ error: 'Password baru minimal 8 karakter', code: 'INVALID_PASSWORD' });
+  }
+
+  const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+  const tokenRecord = (state.password_reset_tokens || []).find(
+    t => t.token_hash === tokenHash && !t.used
+  );
+
+  if (!tokenRecord) {
+    return res.status(400).json({ error: 'Token tidak valid atau sudah pernah digunakan', code: 'INVALID_TOKEN' });
+  }
+
+  const isExpired = new Date(tokenRecord.expires_at).getTime() < Date.now();
+  if (isExpired) {
+    return res.status(400).json({ error: 'Token reset password telah kedaluwarsa', code: 'TOKEN_EXPIRED' });
+  }
+
+  const adminUser = (state.users || []).find(u => u.id === tokenRecord.user_id || u.email === tokenRecord.email);
+  if (!adminUser) {
+    return res.status(404).json({ error: 'Pengguna administrator tidak ditemukan', code: 'ADMIN_NOT_FOUND' });
+  }
+
+  // Invalidate token immediately
+  tokenRecord.used = true;
+  tokenRecord.used_at = new Date().toISOString();
+
+  // Hash and update password
+  const newHash = hashPassword(newPassword);
+  adminUser.password = newHash;
+  adminUser.password_hash = newHash;
+  adminUser.updated_at = new Date().toISOString();
+
+  // Revoke all existing sessions for this administrator
+  if (state.sessions && Array.isArray(state.sessions)) {
+    const userSessions = state.sessions.filter(s => s.user_id === adminUser.id || s.userId === adminUser.id);
+    for (const sess of userSessions) {
+      SessionStore.revokeSession(sess.session_token, 'ADMIN_PASSWORD_RESET');
+    }
+  }
+
+  // Clear admin session cookie
+  clearAdminSessionCookie(res);
+
+  // Dispatch Security Alert via EmailService
+  emailService.sendAdminSecurityAlertEmail({
+    title: 'Password Administrator Telah Diubah',
+    message: `Password untuk akun administrator ${adminUser.email} baru saja diperbarui melalui reset token.`,
+    severity: 'HIGH',
+    ip: req.ip || req.connection?.remoteAddress || null,
+    action: 'PASSWORD_RESET_COMPLETED'
+  }).catch(() => {});
+
+  await recordAuditLog('ADMIN_AUTH', adminUser.id, 'ADMIN_PASSWORD_RESET_COMPLETED', adminUser.id, {
+    ip: req.ip || req.connection?.remoteAddress || null
+  }).catch(() => {});
+
+  return res.status(200).json({
+    success: true,
+    message: 'Password administrator berhasil diperbarui. Silakan masuk kembali.'
+  });
 });
 
 /**

@@ -1,155 +1,177 @@
 # TIKUM — Professional Email Infrastructure Runbook
 **Zero-Cost First (Rp0/month) &bull; Cloudflare Email Routing + Resend Free**
-
 Domain: `https://tikum.app`
+Parent Entity: `SHINERVA HQ`
 
 ---
 
-## 1. High-Level Architecture
+## 1. System Readiness & Scope Boundary Declaration
+
+> [!IMPORTANT]
+> **Email Infrastructure Code**: Production-ready pending external DNS configuration and provider credential activation.
+>
+> **TIKUM Marketplace Overall**: **NOT YET PRODUCTION-READY** for real financial transactions. Real transactions require completing durable database persistence (PostgreSQL / Cloud SQL migration from in-memory fixtures), distributed locking for escrow/gate validation, and durable idempotency mechanisms.
+>
+> **Scope Lock**: The email infrastructure layer does NOT alter marketplace financial state machines, ticket lifecycle rules, or escrow settlement flows. Email dispatch is strictly an isolated secondary effect.
+
+---
+
+## 2. High-Level Architecture & Boundary Separation
 
 ```
-INCOMING (Business Routing):
-Customer / External Sender
+INBOUND ROUTING (Zero-Cost Inbound Custom Domain):
+Customer / External Sender / Admin
           │
           ▼
-[hello | support | admin | pic]@tikum.app
+[admin | support | hello | no-reply]@tikum.app
           │
           ▼
-Cloudflare Email Routing (MX records at apex tikum.app)
+Cloudflare Email Routing (Apex MX at tikum.app)
           │
           ▼
-Verified Destination Inbox (agunsux@gmail.com)
+Configured Destination Inbox (e.g. agunsux@gmail.com)
 
-OUTGOING (Transactional Delivery):
-TIKUM Application (Event-driven side effect)
+OUTBOUND TRANSACTIONAL (Zero-Cost Outbound Delivery):
+Application Layer (Auth / Order / Payment / Dispute / Alert)
           │
           ▼
-EmailService (Centralized singleton, Idempotency check, Free-tier guard)
+EmailService (Singleton Abstraction, Idempotency Deduplication, Quota Guard)
           │
           ▼
-Resend Free API (Server-side only with RESEND_API_KEY)
+EmailProvider Resolution Matrix:
+  - NODE_ENV === 'test'                      ──▶ TestEmailProvider (in-memory, network isolated)
+  - NODE_ENV === 'development' (no key)      ──▶ TestEmailProvider (sandbox mode)
+  - NODE_ENV === 'production' (no key)       ──▶ FAIL CLOSED (UnconfiguredEmailProvider, status: NOT_CONFIGURED)
+  - NODE_ENV === 'production' (with key)     ──▶ ResendEmailProvider (HTTPS POST https://api.resend.com/emails)
           │
           ▼
-From: "TIKUM <support@tikum.app>", Reply-To: "support@tikum.app"
+Resend Free API (3,000 emails/mo, 100 emails/day)
           │
           ▼
-Customer / User Inbox (DKIM + SPF + DMARC aligned)
+DKIM (resend._domainkey) + SPF (bounces/return-path) + DMARC Alignment
+          │
+          ▼
+Recipient Inbox
 ```
 
 ---
 
-## 2. Inbound: Cloudflare Email Routing Configuration
+## 3. Provider Resolution & Fail-Closed Invariant
 
-### DNS Responsibility
-Cloudflare Email Routing handles inbound delivery to `@tikum.app` addresses without incurring mailbox hosting costs.
+To prevent catastrophic silent delivery simulation in production (e.g., users assuming password reset or ticket delivery emails were sent when credentials were forgotten):
 
-### Authoritative DNS Baseline
-Authoritative nameservers for `tikum.app`:
+| Environment | `RESEND_API_KEY` | Resolved Provider | Delivery Behavior | Result Status |
+|---|---|---|---|---|
+| `test` | Any / None | `TestEmailProvider` | In-memory array capture; ZERO network calls | `MOCKED` (success: true) |
+| `development` | Absent | `TestEmailProvider` | In-memory sandbox; ZERO network calls | `MOCKED` (success: true) |
+| `development` | Present | `ResendEmailProvider` | Live delivery to recipient via Resend API | `DELIVERED` (success: true) |
+| `production` | **Absent** | **`UnconfiguredEmailProvider`** | **FAIL CLOSED**. Never instantiates `TestEmailProvider`. Never simulates delivery. | **`NOT_CONFIGURED`** (success: false, code: `EMAIL_PROVIDER_NOT_CONFIGURED`) |
+| `production` | **Present** | **`ResendEmailProvider`** | Live delivery via Resend API (`api.resend.com`) | `DELIVERED` (success: true) |
+
+---
+
+## 4. Inbound: Cloudflare Email Routing Configuration (Operator-Pending)
+
+### Status: PENDING OPERATOR ACTIVATION IN CLOUDFLARE DASHBOARD
+
+### Responsibilities
+- Receives inbound emails sent to `@tikum.app` addresses.
+- Forwards them directly to the configured operator inbox without requiring paid mailbox hosting (e.g. Google Workspace / Microsoft 365).
+
+### Authoritative Nameservers
 - `pedro.ns.cloudflare.com`
 - `jamie.ns.cloudflare.com`
 
-Existing apex record:
-- `A` &rarr; `76.76.21.21` (**Vercel Production DNS &mdash; DO NOT TOUCH**)
+*Apex Record*: `A tikum.app -> 76.76.21.21` (Vercel Production DNS — **DO NOT TOUCH**).
 
-### Step-by-Step Dashboard Setup
-1. Log in to **Cloudflare Dashboard** &rarr; Select `tikum.app`.
-2. Go to **Email Routing** (under the domain menu).
-3. Click **Enable Email Routing**. Cloudflare will automatically display the required records:
-   - **MX Records**:
-     - `route1.mx.cloudflare.net`
-     - `route2.mx.cloudflare.net`
-     - `route3.mx.cloudflare.net`
-   - **SPF TXT Record**:
-     - Name: `tikum.app`
-     - Value: `v=spf1 include:_spf.mx.cloudflare.net ~all`
-4. Go to **Destination Addresses** &rarr; Add `agunsux@gmail.com`.
-   - Open Gmail, find the verification email from Cloudflare, and click the confirmation link.
-5. Go to **Routing Rules** &rarr; Create 4 custom routing rules:
-   - `hello@tikum.app` &rarr; `agunsux@gmail.com`
-   - `support@tikum.app` &rarr; `agunsux@gmail.com`
-   - `admin@tikum.app` &rarr; `agunsux@gmail.com`
-   - `pic@tikum.app` &rarr; `agunsux@gmail.com`
+### Required Cloudflare Email Routing Rules
+Configure in Cloudflare Dashboard &rarr; **Email Routing** &rarr; **Routing Rules**:
 
----
-
-## 3. Outbound: Resend Free Configuration
-
-### DNS Responsibility
-Resend handles outbound transactional email delivery for events triggered by the TIKUM application.
-
-### Important DNS Rule (Do NOT Invent or Guess Records)
-- Resend generates domain-specific DNS records inside the Resend dashboard.
-- **DKIM**: Typically configured on a selector subdomain, e.g. `resend._domainkey.tikum.app`.
-- **Return-Path / Bounce**: Scoped to a dedicated bounce subdomain (e.g. `bounces.tikum.app` or `send.tikum.app`), preventing SPF collision on apex `tikum.app`.
-- If Resend instructs an apex record merge, follow the exact dashboard guidance. Never create two separate SPF TXT records for the same hostname.
-
-### Step-by-Step Dashboard Setup
-1. Log in to [Resend Dashboard](https://resend.com/domains).
-2. Click **Add Domain** &rarr; Enter `tikum.app`.
-3. Add the exact DNS records provided by Resend into Cloudflare DNS:
-   - **DKIM TXT Record**:
-     - Type: `TXT`
-     - Host: `resend._domainkey` (or exact name provided)
-     - Value: `p=...` (exact public key provided)
-   - **Bounce Subdomain Records**:
-     - MX / TXT records according to Resend's instructions for the return-path subdomain.
-4. Add **DMARC Record**:
-   - Type: `TXT`
-   - Host: `_dmarc`
-   - Value: `v=DMARC1; p=none; rua=mailto:admin@tikum.app`
-5. Click **Verify Domain** in Resend.
-6. Generate an API Key under **API Keys** &rarr; Set as `RESEND_API_KEY` in Vercel / server production environment variables.
-
----
-
-## 4. DMARC Alignment Roadmap
-
-TIKUM follows a progressive 3-phase DMARC enforcement policy:
-
-1. **Phase 1: Monitoring (Launch / Current)**
-   `v=DMARC1; p=none; rua=mailto:admin@tikum.app`
-   *Purpose: Collect aggregate delivery telemetry without impacting deliverability.*
-2. **Phase 2: Quarantine (After 14 Days Clean Telemetry)**
-   `v=DMARC1; p=quarantine; pct=100; rua=mailto:admin@tikum.app`
-   *Purpose: Direct unauthenticated spoofing attempts to spam/junk folders.*
-3. **Phase 3: Reject (Strict Anti-Spoofing & Brand Protection)**
-   `v=DMARC1; p=reject; rua=mailto:admin@tikum.app`
-   *Purpose: Block fraudulent senders pretending to be @tikum.app.*
-
----
-
-## 5. Sender & Recipient Architecture
-
-| Address | Role | Direction | Handled By |
+| Inbound Custom Address | Action | Destination Address | Purpose |
 |---|---|---|---|
-| `support@tikum.app` | Customer Support & Transactional Replies | Inbound & Outbound | Cloudflare Routing &rarr; `agunsux@gmail.com` / Resend |
-| `hello@tikum.app` | General Inquiries & Public Inbound | Inbound | Cloudflare Routing &rarr; `agunsux@gmail.com` |
-| `admin@tikum.app` | Operational Alerts & Infrastructure Health | Inbound & Outbound | Cloudflare Routing &rarr; `agunsux@gmail.com` / Resend |
-| `pic@tikum.app` | On-site Field & Venue Coordination | Inbound | Cloudflare Routing &rarr; `agunsux@gmail.com` |
-| `TIKUM <support@tikum.app>` | Primary Canonical Transactional Sender | Outbound | Resend API |
+| `admin@tikum.app` | Forward | `<operator_admin_email>` | Admin alerts, password resets, operational notices |
+| `support@tikum.app` | Forward | `<operator_support_email>` | Customer service inquiries, dispute communications |
+| `hello@tikum.app` | Forward | `<operator_business_email>` | General business inquiries |
+| `no-reply@tikum.app` | Drop / Forward | Drop (or blackhole inbox) | Inbound blackhole for automated notices |
+
+### Cloudflare MX Baseline
+When Email Routing is enabled, Cloudflare automatically prompts to add authoritative apex MX records:
+- `route1.mx.cloudflare.net` (Priority 93)
+- `route2.mx.cloudflare.net` (Priority 21)
+- `route3.mx.cloudflare.net` (Priority 9)
+- SPF TXT: `v=spf1 include:_spf.mx.cloudflare.net ~all`
+
+> [!WARNING]
+> Do NOT point apex MX records to Resend. Resend uses a dedicated subdomain return-path (e.g., `send.tikum.app`), which completely avoids MX collisions on `tikum.app`.
 
 ---
 
-## 6. Payment & Order Safety Invariants
+## 5. Outbound: Resend DNS Records (Operator-Pending)
 
-Email delivery is strictly a **secondary effect**:
-- Transaction state transitions (e.g. order reservation, payment verification, escrow lock, settlement, dispute resolution) execute completely and commit to state **before** any email dispatch.
-- Email dispatch is completely non-blocking (`.catch()` handled).
-- Email failure, rate-limiting, or missing API keys will **NEVER**:
-  - Roll back an order
-  - Change payment state
-  - Block escrow hold or release
-  - Block dispute opening or resolution
-  - Alter iPaymu integration flow
+### Status: PENDING OPERATOR SETUP IN RESEND & CLOUDFLARE DASHBOARD
+
+> [!CAUTION]
+> **Do NOT invent or hardcode SPF/DKIM records.** The exact DKIM selector, public key, and return-path subdomain MUST be copied directly from the Resend Dashboard after adding the domain `tikum.app`.
+
+### Operator Setup Procedure:
+1. Log in to [Resend Dashboard](https://resend.com/domains).
+2. Click **Add Domain** &rarr; Input `tikum.app` &rarr; Select Region (`ap-southeast-1` or `us-east-1`).
+3. Resend generates specific DNS records for your domain. **Copy the exact values provided by Resend into Cloudflare DNS**:
+
+| Record Type | Name / Host | Expected Value Source | Proxy Status |
+|---|---|---|---|
+| **TXT (DKIM)** | `resend._domainkey` (or selector from Resend) | `p=<EXACT_PUBLIC_KEY_FROM_RESEND_DASHBOARD>` | DNS Only (Grey Cloud) |
+| **MX (Return-Path)** | `send` or `bounces` (subdomain from Resend) | Exact feedback SMTP hostname provided by Resend | DNS Only (Grey Cloud) |
+| **TXT (SPF)** | `send` or `bounces` (subdomain from Resend) | `v=spf1 include:amazonses.com ~all` (as specified by Resend) | DNS Only (Grey Cloud) |
+| **TXT (DMARC)** | `_dmarc` | `v=DMARC1; p=none; rua=mailto:admin@tikum.app; pct=100; sp=none` | DNS Only (Grey Cloud) |
+
+4. Click **Verify Domain** in Resend. Wait for status `Verified`.
+5. Under **API Keys**, create a restricted API key:
+   - Name: `tikum-prod-outbound`
+   - Permission: `Sending access` (restricted to domain `tikum.app`)
+6. Store key as `RESEND_API_KEY` in production environment secrets.
 
 ---
 
-## 7. Free-Tier Safeguards (Rp0 Cost Guarantee)
+## 6. Environment Variables Inventory
 
-Resend Free tier limits:
-- Max 100 emails/day
-- Max 3,000 emails/month
+| Variable | Recommended Production Value | Description |
+|---|---|---|
+| `NODE_ENV` | `production` | Enforces fail-closed provider selection |
+| `ADMIN_EMAIL` | `admin@tikum.app` | Canonical admin identity (NOT a credential) |
+| `ADMIN_PASSWORD` | `<secure-16+-character-secret>` | Hashed admin credential seed |
+| `EMAIL_FROM` | `TIKUM <no-reply@tikum.app>` | Default transactional sender identity |
+| `EMAIL_REPLY_TO` | `support@tikum.app` | Default reply-to for transactional emails |
+| `EMAIL_ADMIN_FROM` | `TIKUM Admin <admin@tikum.app>` | Sender identity for administrative & security notices |
+| `RESEND_API_KEY` | `re_...` (From Resend Dashboard) | Server-side only Resend API token |
 
-`EmailService` actively tracks usage and enforces these limits internally:
-- If either quota threshold is reached, outgoing transactional emails are suppressed and logged as `QUOTA_EXCEEDED` / `QUOTA_SUPPRESSED`.
-- The system will **never** silently generate paid overages or bill charges.
+---
+
+## 7. Security & Isolation Controls
+
+1. **Fail-Closed Production Guard**: If `RESEND_API_KEY` is missing in `NODE_ENV=production`, `emailService` returns `{ success: false, status: 'NOT_CONFIGURED', code: 'EMAIL_PROVIDER_NOT_CONFIGURED' }`. Never silently simulates delivery.
+2. **Server-Side Secret Isolation**: `RESEND_API_KEY` is strictly server-side. It is never exposed in browser bundles, HTML responses, public API endpoints, or logs.
+3. **From Address Anti-Spoofing**: Callers cannot specify arbitrary `From` addresses. Senders are strictly validated and clamped to authorized `@tikum.app` identities.
+4. **CRLF Header Injection Protection**: All dynamic recipient emails, subjects, and headers are stripped of `\r` and `\n` characters before dispatch.
+5. **HTML Template Escaping**: User-supplied values (e.g. names, notes, event titles) are escaped using `escapeHtml` to prevent HTML/XSS injection.
+6. **Secondary Effect Guarantee**: Email sending is strictly a secondary effect. Network timeout or missing API keys NEVER rolls back or mutates an order, payment, or escrow state.
+7. **Persistence Boundary (`@PERSISTENCE_BOUNDARY`)**: Structured email logs in `state.email_logs` are currently in-memory. They must be migrated to a durable PostgreSQL / Cloud SQL ledger before enterprise scale.
+
+---
+
+## 8. Controlled Production Smoke-Test Procedure
+
+Only after DNS verification is complete in Resend and `RESEND_API_KEY` is set in production:
+
+1. Send **one controlled smoke-test email** to the operator inbox (`admin@tikum.app`) via authenticated admin test endpoint:
+   ```bash
+   curl -X POST https://tikum.app/api/mvp/admin/email-test \
+     -H "Content-Type: application/json" \
+     -H "Cookie: session_token=<admin_session>" \
+     -d '{"officerId":"admin-1","recipient":"admin@tikum.app"}'
+   ```
+2. Inspect inbox headers:
+   - `From: TIKUM <support@tikum.app>` or `TIKUM <no-reply@tikum.app>`
+   - `Reply-To: support@tikum.app`
+   - Authentication-Results: `dkim=pass`, `spf=pass`, `dmarc=pass`.
+3. Do NOT claim live email deliverability until this live test passes with verified headers.
