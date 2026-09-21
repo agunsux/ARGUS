@@ -13,6 +13,7 @@ const { DisputeService, DISPUTE_STATUS, DISPUTE_OUTCOME } = require('../services
 const { SettlementService } = require('../services/settlementService');
 const { createEvidenceBundle } = require('../verification/evidence');
 const { emailService } = require('../services/emailService');
+const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('../discovery/EventTemporalLifecycleEngine');
 
 // Multer for evidence uploads
 const uploadsDir = process.env.VERCEL
@@ -309,14 +310,32 @@ router.get('/auth/me', (req, res) => {
  * GET /api/mvp/events
  */
 router.get('/events', (req, res) => {
-  const { q, city, category, source, verified, startDate, endDate } = req.query;
+  const { q, city, category, source, verified, startDate, endDate, include_past, scope } = req.query;
+
+  // Cache Integrity: Prevent stale caching of event listings
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
+  const showAllOrPast = include_past === 'true' || scope === 'all';
+  const now = new Date();
 
   let filtered = state.events.filter(event => {
     // Soft-deleted / cancelled filter: allow status filter or exclude DIBATALKAN unless explicitly queried
     if (req.query.status) {
-      if (event.status !== req.query.status) return false;
+      const qStatus = req.query.status.toUpperCase();
+      const evStatus = (event.status || '').toUpperCase();
+      const evLifecycle = (event.lifecycle_status || '').toUpperCase();
+      if (evStatus !== qStatus && evLifecycle !== qStatus) return false;
+      if (qStatus === 'UPCOMING' && !EventTemporalLifecycleEngine.isEventUpcoming(event, now)) {
+        return false;
+      }
     } else {
-      if (event.status === 'DIBATALKAN') return false;
+      if (event.status === 'DIBATALKAN' || event.status === 'CANCELLED' || event.lifecycle_status === 'CANCELLED') return false;
+      // Invariant 1: event_end_at <= now must be an absolute public Upcoming exclusion
+      if (!showAllOrPast && !EventTemporalLifecycleEngine.isEventUpcoming(event, now)) {
+        return false;
+      }
     }
 
     // Keyword search 'q' (matches name, title, artists, venue_name, venue, city)
@@ -362,8 +381,13 @@ router.get('/events', (req, res) => {
     return true;
   });
 
-  // Sort upcoming events first (ascending by start_date)
+  // Sort upcoming events first (ascending by start_date / event_start_at)
   filtered.sort((a, b) => {
+    const isUpcomingA = EventTemporalLifecycleEngine.isEventUpcoming(a, now);
+    const isUpcomingB = EventTemporalLifecycleEngine.isEventUpcoming(b, now);
+    if (isUpcomingA && !isUpcomingB) return -1;
+    if (!isUpcomingA && isUpcomingB) return 1;
+
     const dateA = a.start_date || a.date || '9999-99-99';
     const dateB = b.start_date || b.date || '9999-99-99';
     return dateA.localeCompare(dateB);
@@ -374,6 +398,7 @@ router.get('/events', (req, res) => {
     const pic = state.event_pics.find(ep => ep.event_id === event.id && ep.status === 'ACTIVE');
     const activeListings = state.listings.filter(l => l.event_id === event.id && l.status === 'ACTIVE');
     const minPrice = activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null;
+    const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
 
     return {
       ...event,
@@ -381,6 +406,11 @@ router.get('/events', (req, res) => {
       title: event.title || event.name,
       start_date: event.start_date || event.date,
       date: event.date || event.start_date,
+      event_start_at: event.event_start_at || temporal.event_start_at,
+      event_end_at: event.event_end_at || temporal.event_end_at,
+      event_timezone: event.event_timezone || temporal.event_timezone,
+      archive_at: event.archive_at || temporal.archive_at,
+      lifecycle_status: event.lifecycle_status || EventTemporalLifecycleEngine.resolveLifecycleStatus(event, now),
       venue_name: event.venue_name || event.venue || venue.name,
       venue: event.venue || event.venue_name || venue.name,
       venue_city: event.venue_city || venue.city || 'Jakarta',

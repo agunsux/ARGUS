@@ -5,6 +5,7 @@
  */
 
 const { canonicalRegistry } = require('./CanonicalEventRegistry');
+const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
 
 class ArtistRegistry {
   /**
@@ -32,11 +33,16 @@ class ArtistRegistry {
       }
     }
 
-    return Array.from(artistMap.values()).map(artist => ({
-      ...artist,
-      event_count: artist.events.length,
-      upcoming_events: artist.events.filter(e => e.status !== 'CANCELLED')
-    }));
+    return Array.from(artistMap.values()).map(artist => {
+      const upcoming = artist.events.filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e));
+      const past = artist.events.filter(e => !EventTemporalLifecycleEngine.isEventUpcoming(e));
+      return {
+        ...artist,
+        event_count: artist.events.length,
+        upcoming_events: upcoming,
+        past_events: past
+      };
+    });
   }
 
   /**

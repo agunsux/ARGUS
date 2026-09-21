@@ -68,7 +68,7 @@ async function runSuite() {
 
   // Test 1: Seeded events verification
   await testAsync('Test 1: Seeded events integrity (min 18 events, Sep-Dec 2026, source=SEED, is_verified=true)', async () => {
-    const res = await apiRequest('/api/mvp/events');
+    const res = await apiRequest('/api/mvp/events?include_past=true');
     assert.strictEqual(res.status, 200);
     assert.ok(res.data.events.length >= 18, `Expected >= 18 events, got ${res.data.events.length}`);
 
@@ -146,7 +146,7 @@ async function runSuite() {
     assert.ok(resBandung.data.events.every(e => e.venue_city.toLowerCase().includes('bandung')));
 
     // 4B: Search by category
-    const resStandup = await apiRequest('/api/mvp/events?category=STANDUP');
+    const resStandup = await apiRequest('/api/mvp/events?category=STANDUP&include_past=true');
     assert.strictEqual(resStandup.status, 200);
     assert.ok(resStandup.data.events.length >= 2, 'Expected >= 2 STANDUP events');
     assert.ok(resStandup.data.events.every(e => e.category === 'STANDUP'));

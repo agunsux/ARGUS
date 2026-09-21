@@ -135,11 +135,13 @@ Sitemap: ${origin}/sitemap.xml
                            ev.status !== 'POSTPONED' &&
                            ev.slug;
         if (isEligible) {
+          const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
+          const isUpcoming = EventTemporalLifecycleEngine.isEventUpcoming(ev);
           urls.push({
             loc: `${origin}/events/${ev.slug}`,
             lastmod: ev.updated_at ? ev.updated_at.substring(0, 10) : nowIso,
-            changefreq: 'daily',
-            priority: '0.9'
+            changefreq: isUpcoming ? 'daily' : 'monthly',
+            priority: isUpcoming ? '0.9' : '0.4'
           });
         }
       }

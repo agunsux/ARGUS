@@ -79,6 +79,13 @@ class ListingService {
       throw err;
     }
 
+    const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
+    if (!EventTemporalLifecycleEngine.isEventUpcoming(event)) {
+      const err = new Error(`Cannot list ticket for concluded/expired event '${eventId}'`);
+      err.code = 'EVENT_CONCLUDED';
+      throw err;
+    }
+
     // 3. Prevent duplicate ticket barcodes (preserves existing behavior)
     const barcodeHash = this.hashBarcode(rawBarcode);
     const duplicate = state.tickets.find(t => t.event_id === eventId && t.barcode_hash === barcodeHash);
@@ -232,7 +239,18 @@ class ListingService {
    */
   static getActiveListings(eventId = null) {
     return state.listings
-      .filter(l => l.status === LISTING_STATUS.ACTIVE && (!eventId || l.event_id === eventId))
+      .filter(l => {
+        if (l.status !== LISTING_STATUS.ACTIVE) return false;
+        if (eventId && l.event_id !== eventId) return false;
+        const event = state.events.find(e => e.id === l.event_id);
+        if (event) {
+          const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
+          if (!EventTemporalLifecycleEngine.isEventUpcoming(event)) {
+            return false;
+          }
+        }
+        return true;
+      })
       .map(listing => {
         const event = state.events.find(e => e.id === listing.event_id) || {};
         const venue = state.venues.find(v => v.id === event.venue_id) || {};

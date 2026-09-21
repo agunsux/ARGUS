@@ -20,6 +20,7 @@ const { canonicalRegistry } = require('./CanonicalEventRegistry');
 const { TechnicalSEOService } = require('../seo/TechnicalSEOService');
 const { StructuredDataFactory } = require('../seo/StructuredDataFactory');
 const { renderFooterHtml } = require('../config/businessProfile');
+const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
 
 // Common navigation header HTML helper
 function renderNavHeader(activeSection = '') {
@@ -138,18 +139,21 @@ router.get('/venues/:slug', (req, res) => {
     jsonLd: [placeJsonLd, breadcrumbsJsonLd]
   });
 
-  const eventsHtml = venue.events.map(e => `
+  const eventsHtml = venue.events.map(e => {
+    const isUpcoming = EventTemporalLifecycleEngine.isEventUpcoming(e);
+    return `
     <div style="background:#131d31; border:1px solid #1e293b; border-radius:10px; padding:18px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
       <div>
         <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
           <span class="badge badge-sm">${e.category || e.event_type}</span>
+          ${isUpcoming ? '<span class="badge badge-sm badge-success">MENDATANG</span>' : '<span class="badge badge-sm badge-slate">SELESAI</span>'}
           <span style="font-size:12px; color:#94a3b8;"><i class="fa-solid fa-calendar-day"></i> ${e.start_date || e.date}</span>
         </div>
         <h4 style="font-size:18px; margin:0; color:#f8fafc;">${e.canonical_name}</h4>
       </div>
-      <a href="/events/${e.slug}" class="btn btn-sm btn-primary">Lihat Tiket</a>
+      <a href="/events/${e.slug}" class="btn btn-sm ${isUpcoming ? 'btn-primary' : 'btn-outline'}">${isUpcoming ? 'Lihat Tiket' : 'Lihat Arsip'}</a>
     </div>
-  `).join('');
+  `;}).join('');
 
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -281,20 +285,23 @@ router.get('/artists/:slug', (req, res) => {
     jsonLd
   });
 
-  const eventsHtml = artist.events.map(e => `
+  const eventsHtml = artist.events.map(e => {
+    const isUpcoming = EventTemporalLifecycleEngine.isEventUpcoming(e);
+    return `
     <div style="background:#131d31; border:1px solid #1e293b; border-radius:10px; padding:18px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
       <div>
         <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
           <span class="badge badge-sm">${e.category || e.event_type}</span>
+          ${isUpcoming ? '<span class="badge badge-sm badge-success">MENDATANG</span>' : '<span class="badge badge-sm badge-slate">SELESAI</span>'}
           <span style="font-size:12px; color:#38bdf8;"><i class="fa-solid fa-location-dot"></i> ${e.city}</span>
           <span style="font-size:12px; color:#94a3b8;"><i class="fa-solid fa-calendar-day"></i> ${e.start_date || e.date}</span>
         </div>
         <h4 style="font-size:18px; margin:0; color:#f8fafc;">${e.canonical_name}</h4>
         <div style="font-size:13px; color:#64748b; margin-top:4px;">${e.venue_name}</div>
       </div>
-      <a href="/events/${e.slug}" class="btn btn-sm btn-primary">Lihat Tiket</a>
+      <a href="/events/${e.slug}" class="btn btn-sm ${isUpcoming ? 'btn-primary' : 'btn-outline'}">${isUpcoming ? 'Lihat Tiket' : 'Lihat Arsip'}</a>
     </div>
-  `).join('');
+  `;}).join('');
 
   const html = `<!DOCTYPE html>
 <html lang="id">

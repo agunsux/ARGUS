@@ -9,6 +9,7 @@
  */
 
 const { renderFooterHtml } = require('../config/businessProfile');
+const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
 
 class EventSEOService {
   /**
@@ -26,11 +27,14 @@ class EventSEOService {
       schemaType = 'TheaterEvent';
     }
 
+    const isPastOrConcluded = !EventTemporalLifecycleEngine.isEventUpcoming(event);
     let schemaStatus = 'https://schema.org/EventScheduled';
-    if (event.status === 'CANCELLED') {
+    if (event.status === 'CANCELLED' || event.lifecycle_status === 'CANCELLED') {
       schemaStatus = 'https://schema.org/EventCancelled';
-    } else if (event.status === 'POSTPONED') {
+    } else if (event.status === 'POSTPONED' || event.lifecycle_status === 'POSTPONED') {
       schemaStatus = 'https://schema.org/EventPostponed';
+    } else if (isPastOrConcluded) {
+      schemaStatus = 'https://schema.org/EventCompleted';
     }
 
     const startDateIso = event.start_datetime || `${event.start_date || event.date}T19:00:00+07:00`;
@@ -71,29 +75,31 @@ class EventSEOService {
 
     // Offers: Accurately distinguish official primary ticket from secondary resale
     const offers = [];
-    if (event.official_ticket_url) {
-      offers.push({
-        '@type': 'Offer',
-        'name': `Tiket Resmi (${event.official_ticketing_provider || 'Official Primary Provider'})`,
-        'url': event.official_ticket_url,
-        'availability': event.status === 'SOLD_OUT' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
-        'priceCurrency': 'IDR',
-        'validFrom': event.created_at || '2026-01-01'
-      });
-    }
+    if (!isPastOrConcluded) {
+      if (event.official_ticket_url) {
+        offers.push({
+          '@type': 'Offer',
+          'name': `Tiket Resmi (${event.official_ticketing_provider || 'Official Primary Provider'})`,
+          'url': event.official_ticket_url,
+          'availability': event.status === 'SOLD_OUT' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+          'priceCurrency': 'IDR',
+          'validFrom': event.created_at || '2026-01-01'
+        });
+      }
 
-    // If Tikum verified resale listings exist, list them as secondary market offers
-    if (activeListings && activeListings.length > 0) {
-      const minPrice = Math.min(...activeListings.map(l => l.price));
-      offers.push({
-        '@type': 'AggregateOffer',
-        'name': 'Tikum Verified Resale Inventory',
-        'url': `https://tikum.app/events/${event.slug}`,
-        'priceCurrency': 'IDR',
-        'lowPrice': minPrice,
-        'offerCount': activeListings.length,
-        'availability': 'https://schema.org/InStock'
-      });
+      // If Tikum verified resale listings exist, list them as secondary market offers
+      if (activeListings && activeListings.length > 0) {
+        const minPrice = Math.min(...activeListings.map(l => l.price));
+        offers.push({
+          '@type': 'AggregateOffer',
+          'name': 'Tikum Verified Resale Inventory',
+          'url': `https://tikum.app/events/${event.slug}`,
+          'priceCurrency': 'IDR',
+          'lowPrice': minPrice,
+          'offerCount': activeListings.length,
+          'availability': 'https://schema.org/InStock'
+        });
+      }
     }
 
     if (offers.length > 0) {
@@ -107,6 +113,8 @@ class EventSEOService {
    * Generates complete SSR HTML for the event landing page.
    */
   static renderEventPageHtml(event, activeListings = [], relatedEvents = []) {
+    const isPastOrConcluded = !EventTemporalLifecycleEngine.isEventUpcoming(event);
+    const validRelated = (relatedEvents || []).filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e));
     const jsonLd = JSON.stringify(this.buildStructuredData(event, activeListings));
     const title = `${event.canonical_name} — Jadwal, Lokasi, Tiket Resmi & Resale Terverifikasi | Tikum`;
     const metaDesc = `Informasi lengkap ${event.canonical_name} di ${event.venue_name}, ${event.city} tanggal ${event.start_date || event.date}. Cek ketersediaan tiket resmi dan perlindungan transfer tiket resale aman Tikum.`;
@@ -130,7 +138,17 @@ class EventSEOService {
 
     // Resale section rendering
     let resaleHtml = '';
-    if (activeListings && activeListings.length > 0) {
+    if (isPastOrConcluded) {
+      resaleHtml = `
+        <div class="resale-card" style="background:#1e293b; border:1px solid #334155; text-align:center; padding:30px 20px; border-radius:12px; margin-bottom:24px;">
+          <div style="font-size:36px; color:#94a3b8; margin-bottom:12px;"><i class="fa-solid fa-calendar-check"></i></div>
+          <h3 style="color:#f8fafc; margin-bottom:8px;">Event Ini Telah Berakhir</h3>
+          <p style="color:#94a3b8; font-size:14px; max-width:520px; margin:0 auto;">
+            Acara ini telah terlaksana pada ${dateFormatted}. Seluruh transaksi tiket resale dan layanan escrow untuk event ini telah selesai dan ditutup.
+          </p>
+        </div>
+      `;
+    } else if (activeListings && activeListings.length > 0) {
       const minPrice = Math.min(...activeListings.map(l => l.price));
       resaleHtml = `
         <div class="resale-card verified-active">
@@ -175,7 +193,22 @@ class EventSEOService {
 
     // Official ticket section
     let officialTicketHtml = '';
-    if (event.official_ticket_url) {
+    if (isPastOrConcluded) {
+      officialTicketHtml = `
+        <div class="official-ticket-box" style="opacity:0.8;">
+          <div class="official-header">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <div>
+              <strong>Dokumentasi Acara Terlaksana</strong>
+              <div class="text-muted">${event.organizer_name || 'Official Organizer'}</div>
+            </div>
+          </div>
+          <div class="official-action">
+            <span class="badge badge-slate">Acara Selesai</span>
+          </div>
+        </div>
+      `;
+    } else if (event.official_ticket_url) {
       officialTicketHtml = `
         <div class="official-ticket-box">
           <div class="official-header">
@@ -208,12 +241,12 @@ class EventSEOService {
 
     // Related events section
     let relatedHtml = '';
-    if (relatedEvents && relatedEvents.length > 0) {
+    if (validRelated && validRelated.length > 0) {
       relatedHtml = `
         <section class="related-events-section">
           <h3>Event Terkait di ${city}</h3>
           <div class="related-grid">
-            ${relatedEvents.slice(0, 4).map(re => `
+            ${validRelated.slice(0, 4).map(re => `
               <a href="/events/${re.slug}" class="related-card">
                 <span class="badge badge-sm">${re.category || re.event_type}</span>
                 <h4>${re.canonical_name || re.name}</h4>

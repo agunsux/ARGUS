@@ -24,6 +24,7 @@ const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
 const { cityRegistry } = require('../discovery/CityRegistry');
 const { sourceGapDiagnosticService } = require('../discovery/SourceGapDiagnosticService');
 const { AdminEventControlService } = require('../discovery/AdminEventControlService');
+const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
 
 const VERIFIED_STATUSES = ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED'];
 
@@ -1936,6 +1937,39 @@ router.get('/verification', requireAdmin, (req, res) => {
     },
     timestamp: new Date().toISOString()
   });
+});
+
+/**
+ * POST /api/admin/events/reconcile-lifecycle
+ * Authoritative admin trigger for temporal lifecycle reconciliation.
+ */
+router.post('/events/reconcile-lifecycle', requireAdmin, async (req, res) => {
+  try {
+    const actorId = req.adminUser?.id || req.user?.id || 'ADMIN';
+    const result = await EventTemporalLifecycleEngine.reconcileAllEvents(new Date(), actorId);
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: 'RECONCILIATION_FAILED' });
+  }
+});
+
+/**
+ * GET /api/admin/events/lifecycle-audit
+ * Historical audit report of expired/mismatched events.
+ */
+router.get('/events/lifecycle-audit', requireAdmin, (req, res) => {
+  try {
+    const result = EventTemporalLifecycleEngine.auditHistoricalEvents(new Date());
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: 'AUDIT_FAILED' });
+  }
 });
 
 module.exports = router;

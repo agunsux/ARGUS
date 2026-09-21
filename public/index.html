@@ -379,12 +379,24 @@
 
         loadingEl.style.display = 'none';
 
-        if (!data.events || data.events.length === 0) {
+        const nowMs = Date.now();
+        const upcomingEvents = (data.events || []).filter(event => {
+          if (event.lifecycle_status && ['COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED'].includes(event.lifecycle_status)) {
+            return false;
+          }
+          const endAt = event.event_end_at || event.end_datetime || (event.date ? `${event.date}T23:59:59+07:00` : null);
+          if (endAt && new Date(endAt).getTime() <= nowMs) {
+            return false;
+          }
+          return true;
+        });
+
+        if (upcomingEvents.length === 0) {
           emptyEl.style.display = 'block';
           return;
         }
 
-        gridEl.innerHTML = data.events.map(event => {
+        gridEl.innerHTML = upcomingEvents.map(event => {
           const isVerified = event.is_verified === true;
           const isUserCreated = event.source === 'USER_CREATED';
           

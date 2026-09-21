@@ -26,6 +26,7 @@ const { state, recordAuditLog } = require('../database');
 const { renderFooterHtml } = require('../config/businessProfile');
 const { cityRegistry, CityRegistry } = require('./CityRegistry');
 const { PopularityEngine } = require('./PopularityEngine');
+const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('./EventTemporalLifecycleEngine');
 
 // ==========================================
 // PROMOTER IMPORT ADMIN GUARD & CSV UPLOAD
@@ -159,8 +160,16 @@ router.get('/events/:slug', (req, res, next) => {
  * Main Event Discovery Catalog Hub
  */
 router.get('/events', (req, res) => {
-  const { q, city, category, status } = req.query;
+  const { q, city, category, status, include_past, scope } = req.query;
+
+  // Cache Integrity
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   let allEvents = canonicalRegistry.getAllEvents();
+  const showAllOrPast = include_past === 'true' || scope === 'all';
+  const now = new Date();
 
   if (q && q.trim()) {
     const term = q.toLowerCase().trim();
@@ -182,14 +191,27 @@ router.get('/events', (req, res) => {
   }
 
   if (status && status.trim()) {
-    allEvents = allEvents.filter(e => e.status === status);
+    const qStatus = status.toUpperCase();
+    allEvents = allEvents.filter(e => (e.status || '').toUpperCase() === qStatus || (e.lifecycle_status || '').toUpperCase() === qStatus);
+    if (qStatus === 'UPCOMING') {
+      allEvents = allEvents.filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e, now));
+    }
   } else {
     // Exclude cancelled by default from public browsing unless asked
-    allEvents = allEvents.filter(e => e.status !== 'CANCELLED');
+    allEvents = allEvents.filter(e => (e.status || '').toUpperCase() !== 'CANCELLED' && (e.lifecycle_status || '').toUpperCase() !== 'CANCELLED');
+    if (!showAllOrPast) {
+      allEvents = allEvents.filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e, now));
+    }
   }
 
   // Sort upcoming first
-  allEvents.sort((a, b) => (a.start_date || '9999-99-99').localeCompare(b.start_date || '9999-99-99'));
+  allEvents.sort((a, b) => {
+    const isUpcomingA = EventTemporalLifecycleEngine.isEventUpcoming(a, now);
+    const isUpcomingB = EventTemporalLifecycleEngine.isEventUpcoming(b, now);
+    if (isUpcomingA && !isUpcomingB) return -1;
+    if (!isUpcomingA && isUpcomingB) return 1;
+    return (a.start_date || '9999-99-99').localeCompare(b.start_date || '9999-99-99');
+  });
 
   const itemsHtml = allEvents.map(e => {
     const activeListings = getActiveResaleListings(e.event_id);
@@ -544,11 +566,18 @@ router.get('/promoters/apmi/:slug', (req, res) => {
 function handleGetEvents(req, res) {
   const {
     q, city, province, category, artist, venue, promoter,
-    date_from, date_to, verified_only, status,
+    date_from, date_to, verified_only, status, include_past, scope,
     sort = 'nearest', lat, lng, user_city, limit = 100, page = 1
   } = req.query;
 
+  // Cache Integrity
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   let allEvents = canonicalRegistry.getAllEvents();
+  const showAllOrPast = include_past === 'true' || scope === 'all';
+  const now = new Date();
 
   const searchTerm = (q || req.query.search || req.query.query || '').trim();
 
@@ -618,7 +647,16 @@ function handleGetEvents(req, res) {
 
   // 10. Status filter
   if (status && status.trim()) {
-    allEvents = allEvents.filter(e => (e.verification_status === status || e.status === status));
+    const qStatus = status.toUpperCase();
+    allEvents = allEvents.filter(e => (e.verification_status || '').toUpperCase() === qStatus || (e.status || '').toUpperCase() === qStatus || (e.lifecycle_status || '').toUpperCase() === qStatus);
+    if (qStatus === 'UPCOMING') {
+      allEvents = allEvents.filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e, now));
+    }
+  } else {
+    allEvents = allEvents.filter(e => (e.status || '').toUpperCase() !== 'CANCELLED' && (e.lifecycle_status || '').toUpperCase() !== 'CANCELLED');
+    if (!showAllOrPast) {
+      allEvents = allEvents.filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e, now));
+    }
   }
 
   // Resolve user coordinates for spatial distance calculation
@@ -717,8 +755,13 @@ router.get('/api/discovery/events', handleGetEvents);
  * - local_gems
  */
 router.get('/api/events/home-feed', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   const { city, lat, lng } = req.query;
-  const allEvents = canonicalRegistry.getAllEvents();
+  const now = new Date();
+  const allEvents = canonicalRegistry.getAllEvents().filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e, now));
 
   // 1. Upcoming Nearest (Chronological)
   const upcoming = [...allEvents]
@@ -755,7 +798,6 @@ router.get('/api/events/home-feed', (req, res) => {
   }
 
   // 4. This Weekend
-  const now = new Date();
   const thisWeekend = allEvents.filter(e => {
     const d = e.start_date || e.date;
     if (!d) return false;

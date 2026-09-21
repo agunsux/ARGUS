@@ -154,6 +154,13 @@ class MarketplaceListingService {
       throw err;
     }
 
+    const { EventTemporalLifecycleEngine } = require('../../discovery/EventTemporalLifecycleEngine');
+    if (!EventTemporalLifecycleEngine.isEventUpcoming(event)) {
+      const err = new Error(`Cannot list ticket for concluded/expired event '${eventId}'`);
+      err.code = 'EVENT_CONCLUDED';
+      throw err;
+    }
+
     // 7. Validate Price
     const numericPrice = parseInt(price, 10);
     if (isNaN(numericPrice) || numericPrice <= 0) {

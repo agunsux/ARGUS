@@ -19,6 +19,7 @@ const { EventQualityGate, CANONICAL_STATES, MARKETPLACE_ELIGIBILITY } = require(
 const { PopularityEngine } = require('./PopularityEngine');
 const { SourceClaim, CLAIM_TYPES } = require('./models/SourceClaim');
 const { cityRegistry } = require('./CityRegistry');
+const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('./EventTemporalLifecycleEngine');
 
 class CanonicalEventRegistry {
   constructor() {
@@ -111,6 +112,17 @@ class CanonicalEventRegistry {
     const verifiedAt = eventData.last_verified_at || eventData.verified_at || now;
     const expiresAt = eventData.expires_at || this.computeExpirationDate(dtNorm.date, new Date(verifiedAt));
 
+    // Compute authoritative temporal attributes
+    const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes({
+      ...eventData,
+      start_date: dtNorm.date,
+      start_time: eventData.time || dtNorm.time,
+      venue_city: venueNorm.city,
+      city: venueNorm.city,
+      province: venueNorm.province,
+      timezone: dtNorm.timezone
+    });
+
     // Construct Canonical Event Model conforming to Part 6 & P0 Invariants
     const canonicalEvent = {
       event_id: eventId,
@@ -129,14 +141,18 @@ class CanonicalEventRegistry {
       venue_city: venueNorm.city, // compatibility
       province: venueNorm.province,
       country: venueNorm.country || eventData.country || 'Indonesia',
-      start_at: dtNorm.start_datetime,
-      start_datetime: dtNorm.start_datetime, // compatibility
-      start_date: dtNorm.date,
-      date: dtNorm.date, // compatibility
-      end_at: eventData.end_datetime || eventData.end_at || null,
-      end_datetime: eventData.end_datetime || eventData.end_at || null,
-      end_date: eventData.end_date || null,
-      timezone: dtNorm.timezone,
+      event_start_at: temporal.event_start_at,
+      event_end_at: temporal.event_end_at,
+      event_timezone: temporal.event_timezone,
+      archive_at: temporal.archive_at,
+      start_at: temporal.event_start_at,
+      start_datetime: temporal.event_start_at, // compatibility
+      start_date: temporal.start_date,
+      date: temporal.start_date, // compatibility
+      end_at: temporal.event_end_at,
+      end_datetime: temporal.event_end_at, // compatibility
+      end_date: temporal.end_date,
+      timezone: temporal.event_timezone,
       category: eventData.category || eventType,
       event_type: eventType,
       event_status: eventData.status || eventData.event_status || 'UPCOMING',
@@ -309,6 +325,20 @@ class CanonicalEventRegistry {
     canonicalEvent.marketplace_eligibility = qualityResult.marketplace_eligibility;
     canonicalEvent.quality_factors = qualityResult.quality_factors;
     canonicalEvent.block_reasons = qualityResult.block_reasons;
+
+    // Epic: Authoritative Temporal Lifecycle Resolution
+    const resolvedLifecycle = EventTemporalLifecycleEngine.resolveLifecycleStatus(canonicalEvent);
+    canonicalEvent.lifecycle_status = resolvedLifecycle;
+    if (resolvedLifecycle === LIFECYCLE_STATUS.COMPLETED ||
+        resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED ||
+        resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS ||
+        resolvedLifecycle === LIFECYCLE_STATUS.CANCELLED) {
+      canonicalEvent.status = resolvedLifecycle;
+      canonicalEvent.event_status = resolvedLifecycle;
+    } else if (resolvedLifecycle === LIFECYCLE_STATUS.LIVE) {
+      canonicalEvent.status = 'LIVE';
+      canonicalEvent.event_status = 'LIVE';
+    }
 
     this.events.set(eventId, canonicalEvent);
     this.slugMap.set(slug, eventId);
@@ -681,6 +711,28 @@ class CanonicalEventRegistry {
     event.quality_factors = qualityResult.quality_factors;
     event.block_reasons = qualityResult.block_reasons;
 
+    // Epic: Authoritative Temporal Lifecycle Resolution
+    const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
+    event.event_start_at = temporal.event_start_at;
+    event.event_end_at = temporal.event_end_at;
+    event.event_timezone = temporal.event_timezone;
+    event.archive_at = temporal.archive_at;
+    event.start_datetime = temporal.event_start_at;
+    event.end_datetime = temporal.event_end_at;
+
+    const resolvedLifecycle = EventTemporalLifecycleEngine.resolveLifecycleStatus(event);
+    event.lifecycle_status = resolvedLifecycle;
+    if (resolvedLifecycle === LIFECYCLE_STATUS.COMPLETED ||
+        resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED ||
+        resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS ||
+        resolvedLifecycle === LIFECYCLE_STATUS.CANCELLED) {
+      event.status = resolvedLifecycle;
+      event.event_status = resolvedLifecycle;
+    } else if (resolvedLifecycle === LIFECYCLE_STATUS.LIVE) {
+      event.status = 'LIVE';
+      event.event_status = 'LIVE';
+    }
+
     return event;
   }
 
@@ -747,7 +799,13 @@ class CanonicalEventRegistry {
         stateEventsArray[existingIdx] = {
           ...stateEventsArray[existingIdx],
           ...canonical,
-          id: canonical.event_id
+          id: canonical.event_id,
+          event_start_at: canonical.event_start_at,
+          event_end_at: canonical.event_end_at,
+          event_timezone: canonical.event_timezone,
+          archive_at: canonical.archive_at,
+          lifecycle_status: canonical.lifecycle_status,
+          status: canonical.status
         };
       } else {
         stateEventsArray.push({

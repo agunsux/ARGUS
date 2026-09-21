@@ -233,8 +233,20 @@ app.use((err, req, res, next) => {
 // Start listener only when running standalone locally
 if (require.main === module && !process.env.VERCEL) {
   const { startOfferExpiryJob } = require('./jobs/offerExpiryJob');
+  const { EventTemporalLifecycleEngine } = require('./discovery/EventTemporalLifecycleEngine');
   startOfferExpiryJob();
-  dbPromise.then(() => {
+  dbPromise.then(async () => {
+    try {
+      await EventTemporalLifecycleEngine.reconcileAllEvents();
+      // Periodic temporal lifecycle reconciliation (every 10 minutes)
+      setInterval(() => {
+        EventTemporalLifecycleEngine.reconcileAllEvents().catch(err => {
+          console.error('[EventTemporalLifecycleEngine] Periodic reconciliation error:', err);
+        });
+      }, 10 * 60 * 1000).unref();
+    } catch (e) {
+      console.error('Initial event lifecycle reconciliation error:', e);
+    }
     app.listen(PORT, () => {
       console.log(`==================================================`);
       console.log(`  ARGUS Trust Infrastructure running on port ${PORT}`);
