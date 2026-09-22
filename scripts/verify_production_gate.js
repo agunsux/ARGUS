@@ -64,17 +64,24 @@ function fetch(url, headers = {}) {
   console.log('   Inline scripts checked:', scriptMatches.length);
   console.log('   Script parse errors:', scriptErrors);
 
-  // 4. Assertions
+  // 4. Assertions for Zero-Trust Production Reality
+  const suspectIds = [
+    'event-hindia-bandung-2026', 'event-sheila-2026-bandung', 'event-lany-jakarta-2026',
+    'event-bruno-mars-2026', 'event-the-weeknd-jis', 'event-coldplay', 'event-gnr'
+  ];
+  const foundSuspects = eventIds.filter(id => suspectIds.includes(id));
+
   const checks = [
     { name: 'Events endpoint HTTP 200', pass: evRes.status === 200 },
     { name: 'Events Cache-Control has no-store', pass: evRes.headers['cache-control']?.includes('no-store') },
-    { name: 'Exactly 18 upcoming events returned', pass: events.length === 18 },
+    { name: 'Zero unverified seed events leaked in baseline (Count is 0)', pass: events.length === 0 },
     { name: 'Zero historical events leaked (Coldplay, SO7, GNR, Raditya)', pass: foundLeaks.length === 0 },
+    { name: 'Zero suspect events leaked (Hindia, SO7 2026, LANY, Bruno Mars, Weeknd)', pass: foundSuspects.length === 0 },
     { name: 'Zero LIVE events in upcoming feed (IBL Finals excluded)', pass: !eventIds.includes('event-ibl-finals-2026') },
     { name: 'Listings endpoint HTTP 200', pass: listRes.status === 200 },
     { name: 'Listings Cache-Control has no-store', pass: listRes.headers['cache-control']?.includes('no-store') },
+    { name: 'Zero listings leaked for unverified/unproven seed events', pass: listings.length === 0 },
     { name: 'Coldplay listing excluded from public listings', pass: listings.every(l => l.event_id !== 'event-coldplay') },
-    { name: 'Pestapora listing (list-demo-pestapora) present', pass: listings.some(l => l.event_id === 'event-pestapora-2026') },
     { name: 'Homepage HTML HTTP 200', pass: homeRes.status === 200 },
     { name: '0 client-side script syntax errors on homepage', pass: scriptErrors === 0 }
   ];
@@ -89,7 +96,7 @@ function fetch(url, headers = {}) {
   }
 
   console.log('================================================================');
-  console.log('FINAL VERDICT:', allPassed ? '✅ ALL PRODUCTION GATES PASSED (100% CLEAN)' : '❌ GATE FAILED');
+  console.log('FINAL VERDICT:', allPassed ? '✅ ALL PRODUCTION GATES PASSED (100% ZERO-TRUST CLEAN)' : '❌ GATE FAILED');
   console.log('================================================================');
   process.exit(allPassed ? 0 : 1);
 })();
