@@ -101,8 +101,8 @@ async function runSuite() {
   });
 
   test('EventQualityGate: Evaluates event quality score and marketplace eligibility deterministically', () => {
-    const verifiedEvent = canonicalRegistry.getEventById('event-coldplay');
-    assert.ok(verifiedEvent, 'Coldplay seed event should exist');
+    const verifiedEvent = canonicalRegistry.getEventById('event-pestapora-2026');
+    assert.ok(verifiedEvent, 'Pestapora seed event should exist');
     assert.ok(verifiedEvent.event_quality_score >= 80, `Expected score >= 80, got ${verifiedEvent.event_quality_score}`);
     assert.strictEqual(verifiedEvent.marketplace_eligibility, MARKETPLACE_ELIGIBILITY.ELIGIBLE);
   });
@@ -130,7 +130,7 @@ async function runSuite() {
   await asyncTest('TicketTrustService: Registers ticket with SUBMITTED status and ownership metadata', async () => {
     testTicket = await TicketTrustService.registerTicket({
       ticketId: 'tkt-test-redteam-01',
-      eventId: 'event-coldplay',
+      eventId: 'event-pestapora-2026',
       sellerId: 'seller-1',
       ticketType: 'VIP_CAT1',
       section: 'CAT 1',
@@ -149,7 +149,7 @@ async function runSuite() {
     await assert.rejects(async () => {
       await TicketTrustService.registerTicket({
         ticketId: 'tkt-test-duplicate-barcode',
-        eventId: 'event-coldplay',
+        eventId: 'event-pestapora-2026',
         sellerId: 'seller-2',
         barcodeHash: 'hash-barcode-redteam-01' // Duplicate!
       });
@@ -512,8 +512,8 @@ async function runSuite() {
   let testShift;
   await asyncTest('VenueOperationsService: Creates shift assignment and checks in PIC', async () => {
     testShift = await VenueOperationsService.createShiftAssignment({
-      eventId: 'event-coldplay',
-      venueId: 'venue-gbk',
+      eventId: 'event-pestapora-2026',
+      venueId: 'venue-kemayoran',
       picUserId: 'pic-1',
       shiftName: 'West Gate Turnstile Shift'
     });
@@ -524,7 +524,7 @@ async function runSuite() {
       shiftId: testShift.shift_id,
       picUserId: 'pic-1',
       newStatus: PIC_STATUS.CHECKED_IN,
-      locationDetails: 'Arrived at Gate 7 GBK'
+      locationDetails: 'Arrived at Gate 7 Kemayoran'
     });
 
     assert.strictEqual(checkedIn.status, PIC_STATUS.CHECKED_IN);
@@ -543,8 +543,8 @@ async function runSuite() {
   });
 
   test('VenueOperationsService: Delivers pre-event briefing pack and post-event postmortem', () => {
-    const briefing = VenueOperationsService.getPreEventBriefing('event-coldplay', 'pic-1');
-    assert.strictEqual(briefing.event_id, 'event-coldplay');
+    const briefing = VenueOperationsService.getPreEventBriefing('event-pestapora-2026', 'pic-1');
+    assert.strictEqual(briefing.event_id, 'event-pestapora-2026');
     assert.ok(briefing.venue.name);
     assert.ok(briefing.admission_protocol);
     assert.ok(briefing.escalation_contacts.length > 0);
@@ -561,7 +561,7 @@ async function runSuite() {
       type: INCIDENT_TYPES.ENTRY_FAILURE,
       severity: INCIDENT_SEVERITY.HIGH,
       orderId: 'ord-incident-test',
-      eventId: 'event-coldplay',
+      eventId: 'event-pestapora-2026',
       reporterId: 'pic-1',
       description: 'Barcode rejected at Turnstile 3 with error duplicate scan'
     });
@@ -588,7 +588,7 @@ async function runSuite() {
       id: dispOrderId,
       buyer_id: 'buyer-1',
       seller_id: 'seller-1',
-      event_id: 'event-coldplay',
+      event_id: 'event-pestapora-2026',
       ticket_id: 'tkt-test-redteam-01',
       total_amount: 1500000,
       status: 'PAID_ESCROWED'

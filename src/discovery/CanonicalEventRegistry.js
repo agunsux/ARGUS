@@ -852,6 +852,7 @@ class CanonicalEventRegistry {
 
       this.createEvent({
         event_id: leg.id,
+        slug: leg.slug,
         canonical_name: normTitle,
         category: leg.category,
         start_date: dtNorm.date,

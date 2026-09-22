@@ -75,7 +75,7 @@ async function apiRequest(endpoint, { method = 'GET', headers = {}, body = null 
 async function setupPaidOrder({ sellerId = 'seller-1', buyerId = 'buyer-1', barcode = 'BC-TEST-' + uuidv4() } = {}) {
   const listingRes = await ListingService.createListing({
     sellerId,
-    eventId: 'event-coldplay',
+    eventId: 'event-pestapora-2026',
     seatInfo: 'CAT 1 - Gate Test',
     faceValue: 1250000,
     price: 1500000,
@@ -622,7 +622,7 @@ async function runRedTeamSuite() {
         picUserId: 'pic-1',
         orderId: order.id,
         photoFile: true,
-        currentDateStr: '2026-11-15'
+        currentDateStr: '2026-09-25'
       });
 
       const prevEnv = process.env.NODE_ENV;

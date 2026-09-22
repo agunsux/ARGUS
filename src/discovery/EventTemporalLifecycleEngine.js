@@ -147,6 +147,12 @@ class EventTemporalLifecycleEngine {
 
     // 1. Determine Start Datetime
     let startDate = eventData.start_date || eventData.date;
+    if (!startDate && (eventData.event_start_at || eventData.start_datetime)) {
+      const explicitStart = eventData.event_start_at || eventData.start_datetime;
+      if (explicitStart && explicitStart.includes('T')) {
+        startDate = explicitStart.split('T')[0];
+      }
+    }
     if (startDate && startDate.includes('T')) {
       startDate = startDate.split('T')[0];
     }
@@ -173,17 +179,21 @@ class EventTemporalLifecycleEngine {
     startTime = `${sParts[0].padStart(2, '0')}:${(sParts[1] || '00').padStart(2, '0')}`;
 
     let startAtIso = eventData.event_start_at || eventData.start_datetime;
-    if (!startAtIso || !startAtIso.includes('T') || (!startAtIso.includes('+') && !startAtIso.endsWith('Z'))) {
+    if (!startAtIso || !startAtIso.includes('T') || (!startAtIso.includes('+') && !startAtIso.endsWith('Z')) || !startAtIso.startsWith(startDate)) {
       startAtIso = `${startDate}T${startTime}:00${offset}`;
     }
 
     // 2. Determine End Datetime
     let endAtIso = eventData.event_end_at || eventData.end_datetime;
-    const endDate = eventData.end_date ? (eventData.end_date.includes('T') ? eventData.end_date.split('T')[0] : eventData.end_date) : null;
+    let endDate = eventData.end_date ? (eventData.end_date.includes('T') ? eventData.end_date.split('T')[0] : eventData.end_date) : null;
+    if (!endDate && endAtIso && endAtIso.includes('T')) {
+      endDate = endAtIso.split('T')[0];
+    }
     const endTime = eventData.end_time;
+    const targetEndDate = endDate || startDate;
 
-    if (endAtIso && endAtIso.includes('T') && (endAtIso.includes('+') || endAtIso.endsWith('Z'))) {
-      // Valid explicit end datetime provided
+    if (endAtIso && endAtIso.includes('T') && (endAtIso.includes('+') || endAtIso.endsWith('Z')) && endAtIso.startsWith(targetEndDate)) {
+      // Valid explicit end datetime provided matching target end date
     } else if (endDate && endDate !== startDate) {
       // Multi-day event: ends at end of final day
       const cleanEndTime = endTime ? `${endTime.padStart(5, '0')}:00` : '23:59:59';
@@ -370,7 +380,7 @@ class EventTemporalLifecycleEngine {
     }
 
     const currentStatus = this.resolveLifecycleStatus(event, now);
-    return currentStatus === LIFECYCLE_STATUS.UPCOMING || currentStatus === LIFECYCLE_STATUS.LIVE;
+    return currentStatus === LIFECYCLE_STATUS.UPCOMING;
   }
 
   /**

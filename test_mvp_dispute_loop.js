@@ -43,7 +43,7 @@ async function runDisputeSuite() {
   await testAsync('Setup: Verified Listing & Paid Escrow Order', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-coldplay',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 1 - Section West, Row A, Seat 1',
       faceValue: 1250000,
       price: 1500000,
@@ -107,7 +107,7 @@ async function runDisputeSuite() {
     assert.ok(dossier);
     assert.strictEqual(dossier.buyer.id, 'buyer-1');
     assert.strictEqual(dossier.seller.id, 'seller-1');
-    assert.strictEqual(dossier.event.id, 'event-coldplay');
+    assert.strictEqual(dossier.event.id, 'event-pestapora-2026');
     assert.strictEqual(dossier.entryVerifications[0].status, 'INVALID');
     assert.ok(dossier.auditLogs.length >= 3);
   });
@@ -138,7 +138,7 @@ async function runDisputeSuite() {
   await testAsync('Setup Scenario 2: Verified Listing & Paid Escrow Order', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-coldplay',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 1 - Section West, Row B, Seat 2',
       faceValue: 1250000,
       price: 1500000,

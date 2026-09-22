@@ -381,7 +381,14 @@
 
         const nowMs = Date.now();
         const upcomingEvents = (data.events || []).filter(event => {
-          if (event.lifecycle_status && ['COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED'].includes(event.lifecycle_status)) {
+          if (event.lifecycle_status && ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED'].includes(event.lifecycle_status)) {
+            return false;
+          }
+          if (event.status && ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED', 'DIBATALKAN'].includes(event.status)) {
+            return false;
+          }
+          const startAt = event.event_start_at || event.start_datetime;
+          if (startAt && new Date(startAt).getTime() <= nowMs) {
             return false;
           }
           const endAt = event.event_end_at || event.end_datetime || (event.date ? `${event.date}T23:59:59+07:00` : null);
@@ -489,13 +496,27 @@
         const data = await res.json();
 
         loadingEl.style.display = 'none';
+        const nowMs = Date.now();
+        const activeListings = (data.listings || []).filter(l => {
+          if (l.event_status && ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED', 'DIBATALKAN'].includes(l.event_status)) {
+            return false;
+          }
+          if (l.event_lifecycle_status && ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED'].includes(l.event_lifecycle_status)) {
+            return false;
+          }
+          const endAt = l.event_end_at || (l.event_date ? `${l.event_date}T23:59:59+07:00` : null);
+          if (endAt && new Date(endAt).getTime() <= nowMs) {
+            return false;
+          }
+          return true;
+        });
 
-        if (!data.listings || data.listings.length === 0) {
+        if (activeListings.length === 0) {
           emptyEl.style.display = 'block';
           return;
         }
 
-        gridEl.innerHTML = data.listings.map(l => {
+        gridEl.innerHTML = activeListings.map(l => {
           const faceValue = l.face_value ? `Rp ${l.face_value.toLocaleString('id-ID')}` : '-';
           const askingPrice = (l.seller_asking_price || l.price) ? `Rp ${(l.seller_asking_price || l.price).toLocaleString('id-ID')}` : '-';
           const buyerTotal = (l.buyer_total_price || (l.pricing && l.pricing.totalAmount)) 

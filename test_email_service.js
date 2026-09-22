@@ -267,7 +267,7 @@ async function runTests() {
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 10000);
       const res = await ListingService.createListing({
         sellerId,
-        eventId: 'event-coldplay',
+        eventId: 'event-pestapora-2026',
         seatInfo: `CAT 1 - Seat ${uniqueSuffix}`,
         faceValue: 1250000,
         price: 1500000,

@@ -467,7 +467,7 @@ async function runSuite() {
   let activeQuote;
   await asyncTest('3.1 Generates immutable quote and satisfies double-entry balancing equation', async () => {
     activeQuote = await TransactionQuoteService.generateQuote({
-      listingId: 'list-demo-1',
+      listingId: 'list-demo-pestapora',
       ticketPrice: 1000000,
       buyerId: 'buyer-1',
       sellerId: 'seller-1',
@@ -516,7 +516,7 @@ async function runSuite() {
 
   await asyncTest('3.5 Expired quote is rejected after TTL elapses', async () => {
     const expiredQuote = await TransactionQuoteService.generateQuote({
-      listingId: 'list-demo-1',
+      listingId: 'list-demo-pestapora',
       ticketPrice: 500000,
       buyerId: 'buyer-1',
       ttlMinutes: -1 // Expired 1 minute ago
@@ -537,7 +537,7 @@ async function runSuite() {
   await asyncTest('4.1 Generate locked quote and create order with two-sided pricing and taxes', async () => {
     // Generate locked quote for listing
     e2eQuote = await TransactionQuoteService.generateQuote({
-      listingId: 'list-demo-1',
+      listingId: 'list-demo-pestapora',
       ticketPrice: 1500000,
       buyerId: 'buyer-1',
       sellerId: 'seller-1',
@@ -559,7 +559,7 @@ async function runSuite() {
 
     const orderRes = await EscrowService.createOrder({
       buyerId: 'buyer-1',
-      listingId: 'list-demo-1',
+      listingId: 'list-demo-pestapora',
       quoteId: e2eQuote.id
     });
 
@@ -677,7 +677,7 @@ async function runSuite() {
       id: 'list-refund-demo',
       ticket_id: 'ticket-demo-2',
       seller_id: 'seller-1',
-      event_id: 'event-coldplay',
+      event_id: 'event-pestapora-2026',
       face_value: 1000000,
       price: 1000000,
       status: LISTING_STATUS.ACTIVE,
@@ -851,7 +851,7 @@ async function runSuite() {
   await asyncTest('6.3 POST /api/mvp/pricing/calculate with lockQuote: Generates locked Quote ID', async () => {
     const res = await apiPost('/api/mvp/pricing/calculate', {
       ticketPrice: 3000000,
-      listingId: 'list-demo-1',
+      listingId: 'list-demo-pestapora',
       buyerId: 'buyer-1',
       lockQuote: true
     });

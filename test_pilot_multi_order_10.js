@@ -54,7 +54,7 @@ async function runPilot() {
       const seller = sellers[i % 5];
       const lr = await ListingService.createListing({
         sellerId: seller,
-        eventId: 'event-coldplay',
+        eventId: 'event-pestapora-2026',
         seatInfo: 'CAT 1 - Seat ' + (100 + i),
         faceValue: 1250000,
         price: 1500000,
@@ -75,12 +75,12 @@ async function runPilot() {
   });
 
   test('PIC dashboard: ONE EVENT -> MANY ORDERS -> ONE PIC with admission_protocol', () => {
-    const dash = EventPicService.getPicEventDashboard('pic-1', 'event-coldplay');
+    const dash = EventPicService.getPicEventDashboard('pic-1', 'event-pestapora-2026');
     assert.strictEqual(dash.stats.total_orders, 10);
-    assert.strictEqual(dash.operational_cell.event_id, 'event-coldplay');
+    assert.strictEqual(dash.operational_cell.event_id, 'event-pestapora-2026');
     assert.strictEqual(dash.orders.length, 10);
     assert.ok(dash.operational_cell.admission_protocol);
-    assert.strictEqual(dash.operational_cell.admission_protocol.type, 'BARCODE_PLUS_ID');
+    assert.strictEqual(dash.operational_cell.admission_protocol.type, 'PHYSICAL_WRISTBAND');
   });
 
   await testAsync('Mandatory rule: TICKET_VERIFIED != ENTRY_CONFIRMED (escrow locked until admission)', async () => {

@@ -152,10 +152,10 @@ async function runSuite() {
     assert.ok(resStandup.data.events.every(e => e.category === 'STANDUP'));
 
     // 4C: Text search
-    const resSearch = await apiRequest('/api/mvp/events?q=Coldplay');
+    const resSearch = await apiRequest('/api/mvp/events?q=Pestapora');
     assert.strictEqual(resSearch.status, 200);
     assert.strictEqual(resSearch.data.events.length, 1);
-    assert.strictEqual(resSearch.data.events[0].id, 'event-coldplay');
+    assert.strictEqual(resSearch.data.events[0].id, 'event-pestapora-2026');
 
     // 4D: Filter by source
     const resUserCreated = await apiRequest('/api/mvp/events?source=USER_CREATED');

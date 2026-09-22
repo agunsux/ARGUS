@@ -48,7 +48,7 @@ async function runAll() {
     // Create a listing
     const listingRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-coldplay',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 1 - Tribune Barat Row 12',
       faceValue: 1500000,
       price: 1800000,
@@ -61,7 +61,7 @@ async function runAll() {
     const l = activeListings.find(item => item.id === listingRes.listing.id);
 
     assert.ok(l, 'Listing must be returned in active listings');
-    assert.ok(l.event_title.includes('Coldplay'), 'Event title must match Coldplay');
+    assert.ok(l.event_title.includes('Pestapora'), 'Event title must match Pestapora');
     assert.ok(l.venue_name, 'Venue must be present');
     assert.ok(l.event_date, 'Date/time must be present');
     assert.strictEqual(l.ticket_category, 'CAT 1', 'Ticket category must be extracted');
@@ -70,7 +70,7 @@ async function runAll() {
     assert.strictEqual(l.seller_asking_price, 1800000);
     assert.strictEqual(l.verification_status, 'VERIFIED');
     assert.strictEqual(typeof l.pic_available, 'boolean');
-    assert.strictEqual(l.pic_available, true, 'pic-1 is assigned to event-coldplay');
+    assert.strictEqual(l.pic_available, true, 'pic-1 is assigned to event-pestapora-2026');
 
     // Pricing calculation
     const pricing = EscrowService.calculatePricing(l.price);
@@ -83,7 +83,7 @@ async function runAll() {
   await runTest('Test 2: Seller can counter-offer with strict boundary & anti-chat enforcement', async () => {
     const listingRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-coldplay',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'VIP - Row 1',
       faceValue: 3000000,
       price: 3500000,
@@ -152,7 +152,7 @@ async function runAll() {
   await runTest('Test 3: Buyer accepts counter-offer -> Order created & listing locked', async () => {
     const listingRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-coldplay',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 2 - Row 5',
       faceValue: 1000000,
       price: 1500000,

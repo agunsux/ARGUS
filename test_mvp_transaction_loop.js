@@ -39,7 +39,7 @@ async function runSuite() {
   await testAsync('Step 1: Verified Seller creates ticket listing with barcode', async () => {
     const result = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-coldplay',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 1 - Section West, Row K, Seat 18',
       faceValue: 1250000,
       price: 1500000,
@@ -105,11 +105,11 @@ async function runSuite() {
 
   // 6. PIC assigned to Event + Venue + Date (Event-Centric Cell)
   test('Step 6: PIC operational cell active at venue (Event + Venue + Date grouping)', () => {
-    const activeCheck = EventPicService.isPicActiveForEvent('pic-1', 'event-coldplay', '2026-11-15');
+    const activeCheck = EventPicService.isPicActiveForEvent('pic-1', 'event-pestapora-2026', '2026-09-25');
     assert.strictEqual(activeCheck.active, true);
-    assert.strictEqual(activeCheck.event.id, 'event-coldplay');
+    assert.strictEqual(activeCheck.event.id, 'event-pestapora-2026');
 
-    const dashboard = EventPicService.getPicEventDashboard('pic-1', 'event-coldplay');
+    const dashboard = EventPicService.getPicEventDashboard('pic-1', 'event-pestapora-2026');
     assert.ok(dashboard.orders.length >= 1);
     const cellOrder = dashboard.orders.find(o => o.order_id === order1.id);
     assert.ok(cellOrder);

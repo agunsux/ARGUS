@@ -393,13 +393,13 @@ async function runSuite() {
   // SECTION 40: SEO TECHNICAL AUDIT
   // ==========================================
   await testAsync('Section 40: SEO technical audit validates Schema.org JSON-LD and canonical metadata', async () => {
-    const res = await apiRequest('/events/coldplay-music-of-the-spheres-jakarta-2026');
+    const res = await apiRequest('/events/pestapora-2026-jakarta');
     assert.strictEqual(res.status, 200);
     const html = res.data;
 
     // 1. Stable Canonical Link
     assert.ok(
-      html.includes('<link rel="canonical" href="https://tikum.app/events/coldplay-music-of-the-spheres-jakarta-2026">')
+      html.includes('<link rel="canonical" href="https://tikum.app/events/pestapora-2026-jakarta">')
     );
 
     // 2. OpenGraph & Twitter
@@ -413,7 +413,7 @@ async function runSuite() {
 
     assert.strictEqual(jsonLd['@context'], 'https://schema.org');
     assert.strictEqual(jsonLd['@type'], 'MusicEvent');
-    assert.ok(jsonLd.name.includes('Coldplay'));
+    assert.ok(jsonLd.name.includes('Pestapora'));
     assert.strictEqual(jsonLd.location['@type'], 'Place');
     assert.strictEqual(jsonLd.location.address.addressCountry, 'ID');
     assert.ok(jsonLd.offers, 'Offers must be structured');

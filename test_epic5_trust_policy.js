@@ -56,7 +56,7 @@ async function testAsync(title, fn) {
   }
 }
 
-async function setupBaselineOrder({ orderId = 'ord-test-1', amount = 1000000, buyerId = 'buyer-1', sellerId = 'seller-1', eventId = 'event-coldplay', ticketId = 'tkt-test-1' } = {}) {
+async function setupBaselineOrder({ orderId = 'ord-test-1', amount = 1000000, buyerId = 'buyer-1', sellerId = 'seller-1', eventId = 'event-pestapora-2026', ticketId = 'tkt-test-1' } = {}) {
   // Clear any existing matching order
   state.orders = state.orders ? state.orders.filter(o => o.id !== orderId) : [];
   state.escrows = state.escrows ? state.escrows.filter(e => e.order_id !== orderId) : [];
@@ -539,15 +539,15 @@ async function runEpic5Suite() {
   // SCENARIO 11: PIC outside operational window -> FAIL (PIC_OUTSIDE_OPERATIONAL_WINDOW)
   // -------------------------------------------------------------------------
   await testAsync('Scenario 11: PIC outside operational window -> FAIL', async () => {
-    const { order } = await setupBaselineOrder({ orderId: 'ord-scen-11', eventId: 'event-coldplay' });
+    const { order } = await setupBaselineOrder({ orderId: 'ord-scen-11', eventId: 'event-pestapora-2026' });
 
-    // Event is on 2026-11-15 19:00:00. Attempt 10 hours before (09:00:00)
+    // Event is on 2026-09-25. Attempt before operational window (2026-09-24 10:00:00)
     let windowBlocked = false;
     try {
       TrustPolicyEngine.validatePicShiftAndWindow({
         picUserId: 'pic-1',
         orderId: order.id,
-        timestampStr: '2026-11-15T09:00:00.000Z'
+        timestampStr: '2026-09-24T10:00:00.000Z'
       });
     } catch (e) {
       windowBlocked = true;
@@ -588,10 +588,10 @@ async function runEpic5Suite() {
   // SCENARIO 13: PIC wrong gate -> FAIL (PIC_GATE_MISMATCH)
   // -------------------------------------------------------------------------
   await testAsync('Scenario 13: PIC wrong gate -> FAIL (PIC_GATE_MISMATCH)', async () => {
-    const { order } = await setupBaselineOrder({ orderId: 'ord-scen-13', eventId: 'event-coldplay' });
+    const { order } = await setupBaselineOrder({ orderId: 'ord-scen-13', eventId: 'event-pestapora-2026' });
 
     // Ensure PIC assignment has gate 'Gate 1'
-    const assign = state.event_pics.find(ep => ep.pic_user_id === 'pic-1' && ep.event_id === 'event-coldplay');
+    const assign = state.event_pics.find(ep => ep.pic_user_id === 'pic-1' && ep.event_id === 'event-pestapora-2026');
     if (assign) assign.venue_gate = 'Gate 1';
 
     let gateMismatchBlocked = false;
@@ -994,7 +994,7 @@ async function runEpic5Suite() {
     // 1. Create and verify listing
     const listingRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-coldplay',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'VIP Row 10',
       faceValue: 2000000,
       price: 2500000,

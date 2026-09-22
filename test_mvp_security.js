@@ -41,7 +41,7 @@ async function runSecuritySuite() {
     try {
       await ListingService.createListing({
         sellerId: 'unverified-seller',
-        eventId: 'event-coldplay',
+        eventId: 'event-pestapora-2026',
         seatInfo: 'CAT 1 - Seat 99',
         faceValue: 1250000,
         price: 1500000,
@@ -61,7 +61,7 @@ async function runSecuritySuite() {
       // First listing
       await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-coldplay',
+        eventId: 'event-pestapora-2026',
         seatInfo: 'CAT 1 - Seat 101',
         faceValue: 1250000,
         price: 1500000,
@@ -71,7 +71,7 @@ async function runSecuritySuite() {
       // Second listing should fail
       await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-coldplay',
+        eventId: 'event-pestapora-2026',
         seatInfo: 'CAT 1 - Seat 102',
         faceValue: 1250000,
         price: 1500000,
@@ -91,7 +91,7 @@ async function runSecuritySuite() {
     // First listing with barcode
     await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-coldplay',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 1 - Seat 50',
       faceValue: 1250000,
       price: 1500000,
@@ -102,7 +102,7 @@ async function runSecuritySuite() {
     try {
       await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-coldplay',
+        eventId: 'event-pestapora-2026',
         seatInfo: 'CAT 1 - Seat 51',
         faceValue: 1250000,
         price: 1500000,
@@ -118,7 +118,7 @@ async function runSecuritySuite() {
   await testAsync('Security 4: Escrow Invariant — Cannot release funds before confirmed gate entry', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-coldplay',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 1 - Seat 60',
       faceValue: 1250000,
       price: 1500000,
@@ -151,7 +151,7 @@ async function runSecuritySuite() {
   await testAsync('Security 5: Payment Idempotency — Duplicate webhook/request returns existing state', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-coldplay',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 1 - Seat 70',
       faceValue: 1250000,
       price: 1500000,

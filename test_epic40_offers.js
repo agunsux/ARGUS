@@ -89,7 +89,7 @@ async function runTests() {
     // -------------------------------------------------------------------------
     await testAsync('Attack 1: Negative Amount & Boundary Validation (0, negative, 49%, 100%, 150%)', async () => {
       resetDatabase();
-      const listing = state.listings[0]; // price = 1500000
+      const listing = state.listings.find(l => l.status === 'ACTIVE'); // price = 1500000
 
       // 1A. Offer amount = 0
       const res0 = await apiRequest(`/api/listings/${listing.id}/offers`, {
@@ -153,7 +153,7 @@ async function runTests() {
     // -------------------------------------------------------------------------
     await testAsync('Attack 2: Anti-Chat & XSS Injection Strictly Rejected (No Free Text Allowed)', async () => {
       resetDatabase();
-      const listing = state.listings[0];
+      const listing = state.listings.find(l => l.status === 'ACTIVE');
 
       // 2A. Offer with WhatsApp chat redirect message
       const resChat = await apiRequest(`/api/listings/${listing.id}/offers`, {
@@ -197,7 +197,7 @@ async function runTests() {
     // -------------------------------------------------------------------------
     await testAsync('Attack 3: Anti-Spam & Rate Limiting Rules Enforced (4 Rules)', async () => {
       resetDatabase();
-      const listing1 = state.listings[0];
+      const listing1 = state.listings.find(l => l.status === 'ACTIVE');
 
       // Rule A: Max 1 pending offer per buyer per listing
       const resOffer1 = await apiRequest(`/api/listings/${listing1.id}/offers`, {
@@ -221,7 +221,7 @@ async function runTests() {
           id: `list-demo-${i}`,
           ticket_id: `ticket-demo-${i}`,
           seller_id: 'seller-1',
-          event_id: 'event-coldplay',
+          event_id: 'event-pestapora-2026',
           price: 1500000,
           status: 'ACTIVE',
           created_at: new Date().toISOString()
@@ -258,7 +258,7 @@ async function runTests() {
           id: `list-demo-${i}`,
           ticket_id: `ticket-demo-${i}`,
           seller_id: 'seller-1',
-          event_id: 'event-coldplay',
+          event_id: 'event-pestapora-2026',
           price: 1500000,
           status: 'ACTIVE',
           created_at: new Date().toISOString()
@@ -284,7 +284,7 @@ async function runTests() {
 
       // Rule D: 6-hour cooldown after rejection
       resetDatabase();
-      const freshListing = state.listings[0];
+      const freshListing = state.listings.find(l => l.status === 'ACTIVE');
       const resToDecline = await apiRequest(`/api/listings/${freshListing.id}/offers`, {
         method: 'POST',
         headers: { 'x-user-id': 'buyer-1' },
@@ -316,7 +316,7 @@ async function runTests() {
     // -------------------------------------------------------------------------
     await testAsync('Attack 4: Authorization & IDOR Resistance (401, 403, Self-Offer Block)', async () => {
       resetDatabase();
-      const listing = state.listings[0];
+      const listing = state.listings.find(l => l.status === 'ACTIVE');
 
       // 4A. Seller cannot offer on own listing
       const resSelf = await apiRequest(`/api/listings/${listing.id}/offers`, {
@@ -373,7 +373,7 @@ async function runTests() {
     // -------------------------------------------------------------------------
     await testAsync('Attack 5: Atomic Concurrency Lock on Accept (Zero Race Condition / Double-Sell)', async () => {
       resetDatabase();
-      const listing = state.listings[0];
+      const listing = state.listings.find(l => l.status === 'ACTIVE');
 
       // Submit Offer A by buyer-1 (Rp 1.2M)
       const resA = await apiRequest(`/api/listings/${listing.id}/offers`, {
@@ -435,7 +435,7 @@ async function runTests() {
     // -------------------------------------------------------------------------
     await testAsync('Attack 6: State Machine Invariants & Strict Enum Decline Reasons', async () => {
       resetDatabase();
-      const listing = state.listings[0];
+      const listing = state.listings.find(l => l.status === 'ACTIVE');
 
       // Create Offer 1
       const resO1 = await apiRequest(`/api/listings/${listing.id}/offers`, {
@@ -510,7 +510,7 @@ async function runTests() {
     // -------------------------------------------------------------------------
     await testAsync('Test 7: Dynamic Platform Fee & Seller Payout Derived from Negotiated Offer Amount', async () => {
       resetDatabase();
-      const listing = state.listings[0]; // original price = 1500000
+      const listing = state.listings.find(l => l.status === 'ACTIVE'); // original price = 1500000
       const negotiatedAmount = 1200000;
 
       const resOffer = await apiRequest(`/api/listings/${listing.id}/offers`, {
@@ -556,7 +556,7 @@ async function runTests() {
     // -------------------------------------------------------------------------
     await testAsync('Attack 8: Privacy Enforcement Under UU PDP (Masked Buyer Name, Zero PII Leak)', async () => {
       resetDatabase();
-      const listing = state.listings[0];
+      const listing = state.listings.find(l => l.status === 'ACTIVE');
 
       // Buyer Dewi Lestari (email: dewi.buyer@example.com, phone: 085556667778) creates offer
       await apiRequest(`/api/listings/${listing.id}/offers`, {
@@ -593,7 +593,7 @@ async function runTests() {
     // -------------------------------------------------------------------------
     await testAsync('Test 9: TTL Expiration & Background Cron Auto-Cancellation', async () => {
       resetDatabase();
-      const listing = state.listings[0];
+      const listing = state.listings.find(l => l.status === 'ACTIVE');
 
       // Create offer
       const resOffer = await apiRequest(`/api/listings/${listing.id}/offers`, {
@@ -629,7 +629,7 @@ async function runTests() {
     // -------------------------------------------------------------------------
     await testAsync('Test 10: Full-Price Buy Automatically Supersedes Pending Offers', async () => {
       resetDatabase();
-      const listing = state.listings[0];
+      const listing = state.listings.find(l => l.status === 'ACTIVE');
 
       // Buyer 1 submits pending offer
       const resOffer = await apiRequest(`/api/listings/${listing.id}/offers`, {
@@ -658,7 +658,7 @@ async function runTests() {
     // -------------------------------------------------------------------------
     await testAsync('Test 11: Append-Only Immutable Audit Trail for Offers (UPDATE/DELETE Forbidden)', async () => {
       resetDatabase();
-      const listing = state.listings[0];
+      const listing = state.listings.find(l => l.status === 'ACTIVE');
 
       // Submit offer -> generates audit log
       const resOffer = await apiRequest(`/api/listings/${listing.id}/offers`, {

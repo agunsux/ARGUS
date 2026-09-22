@@ -506,8 +506,11 @@ router.get('/categories/:slug', (req, res) => {
   };
 
   const targetCategory = catMap[slug] || slug.toUpperCase();
+  const now = new Date();
   const allEvents = canonicalRegistry.getAllEvents().filter(e => 
-    (e.event_type || e.category || '').toUpperCase() === targetCategory && e.status !== 'CANCELLED'
+    (e.event_type || e.category || '').toUpperCase() === targetCategory &&
+    e.status !== 'CANCELLED' &&
+    EventTemporalLifecycleEngine.isEventUpcoming(e, now)
   );
 
   if (allEvents.length === 0) {

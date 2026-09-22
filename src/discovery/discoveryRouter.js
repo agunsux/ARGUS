@@ -16,6 +16,7 @@ const { ingestionPipeline } = require('./EventIngestionPipeline');
 const { sourceRegistry } = require('./SourceRegistry');
 const { demandCapture } = require('./DemandCaptureService');
 const { AdminEventControlService } = require('./AdminEventControlService');
+const { EventNormalizationService } = require('./EventNormalizationService');
 const { EventSEOService } = require('./EventSEOService');
 const { ListingService } = require('../services/listingService');
 const { apmiPromoterRegistry } = require('./ApmiPromoterRegistry');

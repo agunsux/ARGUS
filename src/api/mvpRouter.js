@@ -542,6 +542,12 @@ router.post('/events', (req, res) => {
  */
 router.get('/listings', (req, res) => {
   const { eventId } = req.query;
+
+  // Cache Integrity: Prevent stale caching of ticket listings
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   const listings = ListingService.getActiveListings(eventId);
   // Add transparent pricing calculation to each listing
   const listingsWithPricing = listings.map(l => {

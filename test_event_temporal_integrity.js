@@ -139,7 +139,7 @@ async function main() {
     const upcoming = EventTemporalLifecycleEngine.isEventUpcoming(event, referenceNow);
 
     assert.strictEqual(status, LIFECYCLE_STATUS.LIVE);
-    assert.strictEqual(upcoming, true, 'Live events are visible in active feed');
+    assert.strictEqual(upcoming, false, 'Live events are NOT upcoming in discovery feed');
   });
 
   // Case 5: Concluded event in H+48 grace period (end_at < now < end_at + 48h), no open ops
@@ -300,7 +300,7 @@ async function main() {
     const upcoming = EventTemporalLifecycleEngine.isEventUpcoming(event, referenceNow);
 
     assert.strictEqual(status, LIFECYCLE_STATUS.LIVE);
-    assert.strictEqual(upcoming, true);
+    assert.strictEqual(upcoming, false, 'Festival in progress is LIVE, not upcoming');
     assert.ok(temporal.event_end_at.includes('2026-09-23T23:59:59+07:00'));
   });
 
@@ -735,6 +735,86 @@ async function main() {
         );
       }
     }
+  });
+
+  // Case 30: actual homepage inventory verification at 2026-09-22 21:32 WIB
+  runTest('Case 30: actual homepage inventory verification at 2026-09-22 21:32 WIB', () => {
+    resetDatabase();
+    const nowMs = referenceNow.getTime();
+
+    // Replicate homepage loadEvents filtering logic
+    const upcomingEvents = state.events.filter(e => {
+      if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED'].includes(e.lifecycle_status)) return false;
+      if (['COMPLETED', 'ARCHIVED', 'CANCELLED'].includes(e.status)) return false;
+      if (e.event_end_at && new Date(e.event_end_at).getTime() <= nowMs) return false;
+      if (e.event_start_at && new Date(e.event_start_at).getTime() <= nowMs) return false;
+      return EventTemporalLifecycleEngine.isEventUpcoming(e, referenceNow);
+    });
+
+    assert.ok(upcomingEvents.length > 0, 'Homepage must have upcoming events');
+
+    for (const ev of upcomingEvents) {
+      const endMs = new Date(ev.event_end_at || ev.date).getTime();
+      const startMs = new Date(ev.event_start_at || ev.date).getTime();
+      assert.ok(endMs > nowMs, `Event "${ev.name}" endMs (${endMs}) must be > nowMs (${nowMs})`);
+      assert.ok(startMs > nowMs, `Event "${ev.name}" startMs (${startMs}) must be > nowMs (${nowMs})`);
+      assert.notStrictEqual(ev.id, 'event-coldplay', 'Coldplay must NEVER appear in upcoming events');
+      assert.notStrictEqual(ev.id, 'event-so7-bandung', 'Sheila On 7 Bandung 2024 must NEVER appear in upcoming events');
+      assert.notStrictEqual(ev.id, 'event-raditya-dika-standup', 'Raditya Dika Sept 19 must NEVER appear in upcoming events');
+      assert.notStrictEqual(ev.id, 'event-ibl-finals-2026', 'IBL Finals Sept 22 must NEVER appear in upcoming events');
+    }
+
+    // Replicate homepage loadListings filtering logic
+    const activeListings = ListingService.getActiveListings().filter(l => {
+      const ev = state.events.find(e => e.id === l.event_id);
+      if (!ev) return false;
+      return EventTemporalLifecycleEngine.isEventUpcoming(ev, referenceNow);
+    });
+
+    assert.strictEqual(activeListings.length, 1, 'Exactly 1 active listing (Pestapora) should be present');
+    assert.strictEqual(activeListings[0].event_id, 'event-pestapora-2026');
+  });
+
+  // Case 31: Timezone midnight WIB (+07:00) parsed and offset correctly
+  runTest('Case 31: Timezone midnight WIB (+07:00) parsed and offset correctly', () => {
+    const event = {
+      id: 'matrix-case-31',
+      date: '2026-10-15',
+      time: '00:00',
+      city: 'Jakarta',
+      venue_city: 'Jakarta'
+    };
+    const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
+    assert.strictEqual(temporal.event_timezone, 'Asia/Jakarta');
+    assert.ok(temporal.event_start_at.includes('2026-10-15T00:00:00+07:00'));
+  });
+
+  // Case 32: Timezone midnight WITA (+08:00) parsed and offset correctly
+  runTest('Case 32: Timezone midnight WITA (+08:00) parsed and offset correctly', () => {
+    const event = {
+      id: 'matrix-case-32',
+      date: '2026-10-15',
+      time: '00:00',
+      city: 'Denpasar',
+      venue_city: 'Denpasar'
+    };
+    const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
+    assert.strictEqual(temporal.event_timezone, 'Asia/Makassar');
+    assert.ok(temporal.event_start_at.includes('2026-10-15T00:00:00+08:00'));
+  });
+
+  // Case 33: Timezone midnight WIT (+09:00) parsed and offset correctly
+  runTest('Case 33: Timezone midnight WIT (+09:00) parsed and offset correctly', () => {
+    const event = {
+      id: 'matrix-case-33',
+      date: '2026-10-15',
+      time: '00:00',
+      city: 'Jayapura',
+      venue_city: 'Jayapura'
+    };
+    const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
+    assert.strictEqual(temporal.event_timezone, 'Asia/Jayapura');
+    assert.ok(temporal.event_start_at.includes('2026-10-15T00:00:00+09:00'));
   });
 
   // ================================================================
