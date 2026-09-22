@@ -140,7 +140,7 @@ async function runSuite() {
   // Test 4: Search & Filter events
   await testAsync('Test 4: Search & filter events by keyword, city, category, and source', async () => {
     // 4A: Search by city
-    const resBandung = await apiRequest('/api/mvp/events?city=Bandung');
+    const resBandung = await apiRequest('/api/mvp/events?city=Bandung&include_past=true');
     assert.strictEqual(resBandung.status, 200);
     assert.ok(resBandung.data.events.length >= 3, 'Expected >= 3 events in Bandung');
     assert.ok(resBandung.data.events.every(e => e.venue_city.toLowerCase().includes('bandung')));
@@ -152,13 +152,13 @@ async function runSuite() {
     assert.ok(resStandup.data.events.every(e => e.category === 'STANDUP'));
 
     // 4C: Text search
-    const resSearch = await apiRequest('/api/mvp/events?q=Pestapora');
+    const resSearch = await apiRequest('/api/mvp/events?q=Pestapora&include_past=true');
     assert.strictEqual(resSearch.status, 200);
     assert.strictEqual(resSearch.data.events.length, 1);
     assert.strictEqual(resSearch.data.events[0].id, 'event-pestapora-2026');
 
     // 4D: Filter by source
-    const resUserCreated = await apiRequest('/api/mvp/events?source=USER_CREATED');
+    const resUserCreated = await apiRequest('/api/mvp/events?source=USER_CREATED&include_past=true');
     assert.strictEqual(resUserCreated.status, 200);
     assert.ok(resUserCreated.data.events.some(e => e.id === userCreatedEventId));
   });

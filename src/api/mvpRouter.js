@@ -321,20 +321,48 @@ router.get('/events', (req, res) => {
   const now = new Date();
 
   let filtered = state.events.filter(event => {
-    // Soft-deleted / cancelled filter: allow status filter or exclude DIBATALKAN unless explicitly queried
-    if (req.query.status) {
-      const qStatus = req.query.status.toUpperCase();
-      const evStatus = (event.status || '').toUpperCase();
-      const evLifecycle = (event.lifecycle_status || '').toUpperCase();
-      if (evStatus !== qStatus && evLifecycle !== qStatus) return false;
-      if (qStatus === 'UPCOMING' && !EventTemporalLifecycleEngine.isEventUpcoming(event, now)) {
-        return false;
+    const evStatus = (event.status || '').toUpperCase();
+    const evLifecycle = (event.lifecycle_status || '').toUpperCase();
+
+    // 1. Soft-deleted / cancelled events are never public
+    if (evStatus === 'DIBATALKAN' || evStatus === 'CANCELLED' || evLifecycle === 'CANCELLED') {
+      return false;
+    }
+
+    if (showAllOrPast) {
+      // Internal / admin scope with include_past=true or scope=all
+      if (req.query.status) {
+        const qStatus = req.query.status.toUpperCase();
+        if (evStatus !== qStatus && evLifecycle !== qStatus) return false;
       }
     } else {
-      if (event.status === 'DIBATALKAN' || event.status === 'CANCELLED' || event.lifecycle_status === 'CANCELLED') return false;
-      // Invariant 1: event_end_at <= now must be an absolute public Upcoming exclusion
-      if (!showAllOrPast && !EventTemporalLifecycleEngine.isEventUpcoming(event, now)) {
+      // PUBLIC FAIL-CLOSED GATE (Provenance Gate + Temporal Gate + Lifecycle Gate)
+      // 1. TEMPORAL GATE: event_end_at <= now is an absolute public Upcoming exclusion
+      if (!EventTemporalLifecycleEngine.isEventUpcoming(event, now)) {
         return false;
+      }
+
+      // 2. LIFECYCLE GATE: Live, Completed, and Archived events are NEVER public Upcoming
+      if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
+          ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) {
+        return false;
+      }
+
+      // 3. PROVENANCE GATE: Public Upcoming MUST have verified authoritative provenance with evidence
+      const isVerified = event.is_verified === true && 
+        (event.verification_status === 'VERIFIED' || event.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+      const hasProvenance = Boolean(event.source_url && event.evidence_hash && event.verified_at);
+
+      if (!isVerified || !hasProvenance) {
+        return false;
+      }
+
+      // If status query is passed (e.g. ?status=UPCOMING), must match public status
+      if (req.query.status) {
+        const qStatus = req.query.status.toUpperCase();
+        if (qStatus !== 'UPCOMING' && qStatus !== 'ON_SALE' && evStatus !== qStatus && evLifecycle !== qStatus) {
+          return false;
+        }
       }
     }
 
@@ -577,6 +605,27 @@ router.get('/listings/:id', (req, res) => {
   const venue = state.venues.find(v => v.id === event.venue_id) || {};
   const sellerProfile = state.seller_profiles.find(sp => sp.user_id === listing.seller_id) || {};
 
+  const now = new Date();
+  const { scope } = req.query;
+  const isInternal = scope === 'admin' || scope === 'internal';
+
+  // Invariant: Listings inherit event eligibility. Active listings for unverified/expired events fail-closed.
+  if (!isInternal && listing.status === 'ACTIVE') {
+    const evStatus = (event.status || '').toUpperCase();
+    const evLifecycle = (event.lifecycle_status || '').toUpperCase();
+    const isCancelled = evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED';
+    const isPast = !EventTemporalLifecycleEngine.isEventUpcoming(event, now);
+    const isFinished = ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
+                       ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus);
+    const isVerified = event.is_verified === true &&
+      (event.verification_status === 'VERIFIED' || event.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+    const hasProvenance = Boolean(event.source_url && event.evidence_hash && event.verified_at);
+
+    if (isCancelled || isPast || isFinished || !isVerified || !hasProvenance) {
+      return res.status(404).json({ error: 'Listing not found or event is not eligible for public sale', code: 'LISTING_NOT_ELIGIBLE' });
+    }
+  }
+
   res.json({
     listing: {
       id: listing.id,
@@ -600,7 +649,7 @@ router.get('/listings/:id', (req, res) => {
         venue_name: event.venue_name || venue.name || event.venue,
         venue_city: venue.city || event.venue_city || 'Jakarta',
         admission_protocol: event.admission_protocol || null,
-        is_verified: event.is_verified !== undefined ? event.is_verified : true,
+        is_verified: event.is_verified === true,
         source: event.source || 'SEED'
       },
       seller: {
@@ -1719,6 +1768,12 @@ router.post('/admin/events/:id/verify', async (req, res) => {
 
     const isVerified = req.body.is_verified !== undefined ? Boolean(req.body.is_verified) : true;
     event.is_verified = isVerified;
+    event.verification_status = isVerified ? 'VERIFIED' : 'UNVERIFIED';
+    if (isVerified) {
+      event.verified_at = new Date().toISOString();
+      event.evidence_hash = event.evidence_hash || `admin-verified-${officerId}-${Date.now()}`;
+      event.source_url = event.source_url || event.official_link || 'https://tikum.app/admin/verified';
+    }
 
     await recordAuditLog('EVENT', event.id, isVerified ? 'EVENT_VERIFIED' : 'EVENT_UNVERIFIED', officerId, {
       event_name: event.name || event.title,

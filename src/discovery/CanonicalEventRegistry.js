@@ -70,6 +70,23 @@ class CanonicalEventRegistry {
    */
   createEvent(eventData) {
     const eventId = eventData.event_id || eventData.id || `ev-can-${uuidv4().substring(0, 8)}`;
+
+    // Anti-resurrection check on creation:
+    const existing = this.events.get(eventId);
+    if (existing) {
+      const isTerminal = (
+        existing.lifecycle_status === LIFECYCLE_STATUS.COMPLETED ||
+        existing.lifecycle_status === LIFECYCLE_STATUS.ARCHIVED ||
+        existing.lifecycle_status === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS ||
+        existing.status === 'COMPLETED' ||
+        existing.status === 'CANCELLED' ||
+        existing.status === 'ARCHIVED'
+      );
+      if (isTerminal && (eventData.status === 'UPCOMING' || !eventData.status)) {
+        return existing;
+      }
+    }
+
     const title = eventData.canonical_name || eventData.name || eventData.title;
     if (!title) {
       throw new Error('Event must have canonical_name, name, or title');
@@ -101,10 +118,21 @@ class CanonicalEventRegistry {
         source_name: srcMeta.source_name || eventData.source_name || eventData.source_id,
         tier: srcMeta.tier || (eventData.tier || 2),
         authority_level: srcMeta.authority_level || 'MEDIUM',
-        trust_level: srcMeta.trust_level || eventData.trust_level || TRUST_LEVELS.TIER_5,
-        source_url: eventData.official_ticket_url || eventData.source_url || null,
+        source_url: eventData.source_url || eventData.official_ticket_url || null,
+        source_account: eventData.source_account || srcMeta.canonical_account || null,
+        source_type: eventData.source_type || srcMeta.source_type || null,
         source_event_identifier: eventData.source_event_identifier || eventData.source_event_id || null,
-        retrieved_at: new Date().toISOString()
+        retrieved_at: eventData.source_last_checked_at || new Date().toISOString()
+      });
+    } else if (!eventData.source_id && (eventData.source_type || eventData.source_url) && sources.length === 0) {
+      sources.push({
+        source_id: eventData.source_account ? `src-${eventData.source_account.replace(/[^a-zA-Z0-9_-]/g, '')}` : 'src-direct-provenance',
+        source_name: eventData.source_account || eventData.source_type,
+        source_type: eventData.source_type,
+        source_url: eventData.source_url,
+        source_account: eventData.source_account || null,
+        tier: 2,
+        retrieved_at: eventData.source_last_checked_at || new Date().toISOString()
       });
     }
 
@@ -168,6 +196,14 @@ class CanonicalEventRegistry {
       ticket_provider: eventData.official_ticketing_provider || null,
       official_ticketing_provider: eventData.official_ticketing_provider || null,
       
+      // Mandatory Canonical Provenance Fields
+      source_type: eventData.source_type || (sources[0] && sources[0].source_type) || null,
+      source_url: eventData.source_url || (sources[0] && sources[0].source_url) || null,
+      source_account: eventData.source_account || (sources[0] && (sources[0].source_account || sources[0].account_handle)) || null,
+      source_published_at: eventData.source_published_at || (sources[0] && sources[0].published_at) || null,
+      source_last_checked_at: eventData.source_last_checked_at || (sources[0] && sources[0].retrieved_at) || now,
+      evidence_hash: eventData.evidence_hash || null,
+
       // Provenance counters & timestamps
       source_count: sources.length,
       first_seen_at: eventData.first_seen_at || now,
@@ -284,27 +320,15 @@ class CanonicalEventRegistry {
       conflicts: []
     };
 
-    // Evaluate verification with strict fail-closed engine
-    if (eventData.verification_status === 'PRIMARY_SOURCE_VERIFIED' || eventData.verification_status === VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED) {
-      canonicalEvent.verification_status = VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED;
-      canonicalEvent.verification_confidence = Math.min(95, Math.max(85, eventData.verification_confidence || 90));
-      canonicalEvent.is_verified = true;
-      canonicalEvent.conflicts = [];
-      canonicalEvent.verification_reasons = ['Direct announcement from verified official promoter account'];
-    } else if (eventData.is_verified === true || eventData.verification_status === VERIFICATION_STATUS.VERIFIED) {
-      canonicalEvent.verification_status = VERIFICATION_STATUS.VERIFIED;
-      canonicalEvent.verification_confidence = Math.min(95, Math.max(85, eventData.verification_confidence || 90));
-      canonicalEvent.is_verified = true;
-      canonicalEvent.conflicts = [];
-      canonicalEvent.verification_reasons = ['Confirmed by verified authoritative source'];
-    } else {
-      const evalResult = EventVerificationService.evaluateEvent(canonicalEvent, canonicalEvent.sources);
-      canonicalEvent.verification_status = evalResult.verification_status;
-      canonicalEvent.verification_confidence = evalResult.verification_confidence;
-      canonicalEvent.conflicts = evalResult.conflicts || [];
-      canonicalEvent.verification_reasons = evalResult.flags || [];
-      canonicalEvent.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED || evalResult.verification_status === 'PRIMARY_SOURCE_VERIFIED');
-    }
+    // Evaluate verification through the strict fail-closed engine.
+    // A record's self-declared is_verified / verification_status is NEVER trusted:
+    // only a SourceRegistry-verified authoritative source can produce VERIFIED.
+    const evalResult = EventVerificationService.evaluateEvent(canonicalEvent, canonicalEvent.sources);
+    canonicalEvent.verification_status = evalResult.verification_status;
+    canonicalEvent.verification_confidence = evalResult.verification_confidence;
+    canonicalEvent.conflicts = evalResult.conflicts || [];
+    canonicalEvent.verification_reasons = evalResult.flags || [];
+    canonicalEvent.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED || evalResult.verification_status === 'PRIMARY_SOURCE_VERIFIED');
 
     // Ground-Truth Popularity Scoring
     const popResult = PopularityEngine.calculatePopularity(canonicalEvent, eventData.popularity_signals || {});
@@ -356,6 +380,24 @@ class CanonicalEventRegistry {
   updateEventFromObservation(eventId, incomingRecord, sourceId, observation = {}) {
     const event = this.getEventById(eventId);
     if (!event) return null;
+
+    // Anti-resurrection guard:
+    const isTerminal = (
+      event.lifecycle_status === LIFECYCLE_STATUS.COMPLETED ||
+      event.lifecycle_status === LIFECYCLE_STATUS.ARCHIVED ||
+      event.lifecycle_status === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS ||
+      event.status === 'COMPLETED' ||
+      event.status === 'CANCELLED' ||
+      event.status === 'ARCHIVED'
+    );
+    if (isTerminal) {
+      return {
+        event,
+        changes: [],
+        rejected: 'RESURRECTION_REJECTED_FOR_TERMINAL_EVENT',
+        reason: `Event ${eventId} is in terminal lifecycle status ${event.lifecycle_status || event.status} and cannot be resurrected.`
+      };
+    }
 
     const srcMeta = sourceRegistry.getSource(sourceId) || {};
     const incomingTier = srcMeta.tier || incomingRecord.tier || 2;
@@ -434,16 +476,23 @@ class CanonicalEventRegistry {
         };
       } else {
         // Discrepancy from secondary/equal tier source -> spawn EventConflict
-        this.addConflict(event, {
-          field: 'start_date',
-          source_a: event.field_provenance?.start_date?.source_id || 'existing',
-          value_a: event.start_date,
-          source_b: sourceId,
-          value_b: incomingDate,
-          source_a_tier: existingTier,
-          source_b_tier: incomingTier,
-          reason: `Conflicting event date from source ${sourceId}: ${incomingDate} vs ${event.start_date}`
-        });
+        // unless incoming observation is older/superseded by current authoritative publication
+        const isStaleObservation = publishedAt && event.field_provenance?.start_date?.published_at &&
+          new Date(publishedAt).getTime() < new Date(event.field_provenance.start_date.published_at).getTime() &&
+          incomingTier >= existingTier;
+
+        if (!isStaleObservation) {
+          this.addConflict(event, {
+            field: 'start_date',
+            source_a: event.field_provenance?.start_date?.source_id || 'existing',
+            value_a: event.start_date,
+            source_b: sourceId,
+            value_b: incomingDate,
+            source_a_tier: existingTier,
+            source_b_tier: incomingTier,
+            reason: `Conflicting event date from source ${sourceId}: ${incomingDate} vs ${event.start_date}`
+          });
+        }
       }
     }
 
@@ -487,16 +536,22 @@ class CanonicalEventRegistry {
           confidence: 'HIGH'
         };
       } else {
-        this.addConflict(event, {
-          field: 'venue_name',
-          source_a: event.field_provenance?.venue_name?.source_id || 'existing',
-          value_a: event.venue_name,
-          source_b: sourceId,
-          value_b: incomingVenue,
-          source_a_tier: existingTier,
-          source_b_tier: incomingTier,
-          reason: `Conflicting event venue from source ${sourceId}: ${incomingVenue} vs ${event.venue_name}`
-        });
+        const isStaleObservation = publishedAt && event.field_provenance?.venue_name?.published_at &&
+          new Date(publishedAt).getTime() < new Date(event.field_provenance.venue_name.published_at).getTime() &&
+          incomingTier >= existingTier;
+
+        if (!isStaleObservation) {
+          this.addConflict(event, {
+            field: 'venue_name',
+            source_a: event.field_provenance?.venue_name?.source_id || 'existing',
+            value_a: event.venue_name,
+            source_b: sourceId,
+            value_b: incomingVenue,
+            source_a_tier: existingTier,
+            source_b_tier: incomingTier,
+            reason: `Conflicting event venue from source ${sourceId}: ${incomingVenue} vs ${event.venue_name}`
+          });
+        }
       }
     }
 
@@ -636,6 +691,17 @@ class CanonicalEventRegistry {
 
     event.observations.push(obsRecord.toJSON());
     this.addSourceRecord(eventId, incomingRecord);
+
+    if (postUrl && !event.source_url) {
+      event.source_url = postUrl;
+    }
+    const hash = (observation && observation.content_hash) || (obsRecord && obsRecord.content_hash);
+    if (hash && !event.evidence_hash) {
+      event.evidence_hash = hash;
+    }
+    if (event.is_verified && !event.verified_at) {
+      event.verified_at = now;
+    }
 
     event.last_seen_at = now;
     event.last_checked_at = now;
@@ -800,11 +866,18 @@ class CanonicalEventRegistry {
           ...stateEventsArray[existingIdx],
           ...canonical,
           id: canonical.event_id,
+          name: canonical.canonical_name || stateEventsArray[existingIdx].name,
+          title: canonical.canonical_name || stateEventsArray[existingIdx].title,
           event_start_at: canonical.event_start_at,
           event_end_at: canonical.event_end_at,
           event_timezone: canonical.event_timezone,
           archive_at: canonical.archive_at,
           lifecycle_status: canonical.lifecycle_status,
+          is_verified: canonical.is_verified,
+          verification_status: canonical.verification_status,
+          source_url: canonical.source_url,
+          evidence_hash: canonical.evidence_hash,
+          verified_at: canonical.verified_at,
           status: canonical.status
         };
       } else {
@@ -827,28 +900,20 @@ class CanonicalEventRegistry {
       const venueNorm = EventNormalizationService.normalizeVenue(leg.venue_name || leg.venue, leg.venue_city || leg.city);
       const dtNorm = EventNormalizationService.normalizeDateTime(leg.start_date || leg.date);
 
-      const sources = [];
-      if (leg.source === 'SEED') {
-        sources.push({
-          source_id: 'src-argus-verified-seed',
-          source_name: 'ARGUS Curated Seed Verification',
-          tier: 1,
-          authority_level: 'HIGH',
-          trust_level: TRUST_LEVELS.TIER_1,
-          source_url: leg.official_link || null,
-          retrieved_at: new Date().toISOString()
-        });
-      } else {
-        sources.push({
-          source_id: 'src-argus-community',
-          source_name: 'ARGUS Community Submission',
-          tier: 3,
-          authority_level: 'LOW',
-          trust_level: TRUST_LEVELS.TIER_5,
-          source_url: leg.official_link || null,
-          retrieved_at: new Date().toISOString()
-        });
-      }
+      // Seed / legacy records are CLAIMS ONLY. They are never treated as authoritative
+      // evidence: they are stored against the non-authoritative legacy-seed source and
+      // can only become public through a separate verified evidence record.
+      const sources = [{
+        source_id: 'src-legacy-seed',
+        source_name: 'Legacy / Seed Claim (Unverified)',
+        tier: 4,
+        authority_level: 'NONE',
+        trust_level: TRUST_LEVELS.TIER_5,
+        source_url: leg.source_url || leg.official_link || null,
+        source_account: leg.source_account || null,
+        source_type: leg.source_type || null,
+        retrieved_at: leg.source_last_checked_at || new Date().toISOString()
+      }];
 
       this.createEvent({
         event_id: leg.id,
@@ -863,11 +928,24 @@ class CanonicalEventRegistry {
         status: leg.status || 'UPCOMING',
         official_event_url: leg.official_link,
         official_ticket_url: leg.official_link,
+        official_event_url: leg.official_link || leg.official_event_url,
+        official_ticket_url: leg.official_link || leg.official_ticket_url,
         sources: sources,
         source: leg.source || 'SEED',
         is_verified: leg.is_verified === true,
         verification_status: leg.is_verified ? VERIFICATION_STATUS.VERIFIED : VERIFICATION_STATUS.UNVERIFIED,
         verification_confidence: leg.is_verified ? 95 : 30,
+        claimed_source_id: leg.source_id || null,
+        claimed_verification_status: leg.verification_status || (leg.is_verified ? 'VERIFIED' : 'UNVERIFIED'),
+        claimed_official_link: leg.official_link || null,
+        source_type: leg.source_type || null,
+        source_url: leg.source_url || null,
+        source_account: leg.source_account || null,
+        source_published_at: leg.source_published_at || null,
+        source_last_checked_at: leg.source_last_checked_at || null,
+        evidence_hash: null,
+        verified_at: null,
+        inventory_class: leg.inventory_class || null,
         artists: leg.artists || []
       });
     }

@@ -387,8 +387,7 @@
           if (event.status && ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED', 'DIBATALKAN'].includes(event.status)) {
             return false;
           }
-          const startAt = event.event_start_at || event.start_datetime;
-          if (startAt && new Date(startAt).getTime() <= nowMs) {
+          if (event.is_verified !== true) {
             return false;
           }
           const endAt = event.event_end_at || event.end_datetime || (event.date ? `${event.date}T23:59:59+07:00` : null);
@@ -400,8 +399,12 @@
 
         if (upcomingEvents.length === 0) {
           emptyEl.style.display = 'block';
+          gridEl.style.display = 'none';
           return;
         }
+
+        emptyEl.style.display = 'none';
+        gridEl.style.display = 'grid';
 
         gridEl.innerHTML = upcomingEvents.map(event => {
           const isVerified = event.is_verified === true;

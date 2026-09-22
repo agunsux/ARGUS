@@ -34,6 +34,7 @@ class EventConflict {
     this.value_b = data.value_b !== undefined ? data.value_b : null;
     this.source_b_tier = data.source_b_tier || 2;
     
+    this.values = data.values || [this.value_a, this.value_b].filter(v => v !== undefined && v !== null);
     this.detected_at = data.detected_at || new Date().toISOString();
     this.resolution_status = data.resolution_status || CONFLICT_RESOLUTION_STATUS.UNRESOLVED;
     this.resolution_method = data.resolution_method || null;
@@ -67,6 +68,7 @@ class EventConflict {
       source_b: this.source_b,
       value_b: this.value_b,
       source_b_tier: this.source_b_tier,
+      values: this.values,
       detected_at: this.detected_at,
       resolution_status: this.resolution_status,
       resolution_method: this.resolution_method,

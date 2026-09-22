@@ -101,10 +101,18 @@ async function runSuite() {
   });
 
   test('EventQualityGate: Evaluates event quality score and marketplace eligibility deterministically', () => {
-    const verifiedEvent = canonicalRegistry.getEventById('event-pestapora-2026');
-    assert.ok(verifiedEvent, 'Pestapora seed event should exist');
-    assert.ok(verifiedEvent.event_quality_score >= 80, `Expected score >= 80, got ${verifiedEvent.event_quality_score}`);
-    assert.strictEqual(verifiedEvent.marketplace_eligibility, MARKETPLACE_ELIGIBILITY.ELIGIBLE);
+    const pestaporaEvent = canonicalRegistry.getEventById('event-pestapora-2026');
+    assert.ok(pestaporaEvent, 'Pestapora seed event should exist');
+    // Under Zero-Trust, seed event by itself is UNVERIFIED
+    const evalUnverified = EventQualityGate.evaluateEventQuality(pestaporaEvent, pestaporaEvent.sources);
+    assert.strictEqual(evalUnverified.marketplace_eligibility, MARKETPLACE_ELIGIBILITY.UNVERIFIED);
+
+    // With authoritative Tier 1 promoter evidence, evaluates to ELIGIBLE with score >= 80
+    const evalWithTier1 = EventQualityGate.evaluateEventQuality(pestaporaEvent, [
+      { source_id: 'src-boss-creator', tier: 1 }
+    ]);
+    assert.ok(evalWithTier1.event_quality_score >= 80, `Expected score >= 80, got ${evalWithTier1.event_quality_score}`);
+    assert.strictEqual(evalWithTier1.marketplace_eligibility, MARKETPLACE_ELIGIBILITY.ELIGIBLE);
   });
 
   test('EventQualityGate: Blocks cancelled events from marketplace eligibility', () => {

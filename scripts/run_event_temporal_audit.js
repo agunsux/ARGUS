@@ -9,7 +9,6 @@ resetDatabase();
 
 const { EventTemporalLifecycleEngine } = require('../src/discovery/EventTemporalLifecycleEngine');
 
-const now = new Date('2026-09-22T12:00:00+07:00');
 const now = new Date('2026-09-22T21:32:00+07:00');
 const audit = EventTemporalLifecycleEngine.auditHistoricalEvents(now);
 

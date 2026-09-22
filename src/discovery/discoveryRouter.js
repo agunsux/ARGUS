@@ -127,7 +127,11 @@ function getActiveResaleListings(eventId) {
  */
 router.get('/events/:slug', (req, res, next) => {
   const slug = req.params.slug;
-  const event = canonicalRegistry.getEventBySlug(slug) || canonicalRegistry.getEventById(slug);
+  const { include_past, scope } = req.query;
+  const showAllOrPast = include_past === 'true' || scope === 'all' || scope === 'admin';
+  const now = new Date();
+
+  let event = canonicalRegistry.getEventBySlug(slug) || canonicalRegistry.getEventById(slug);
 
   if (!event) {
     // Fallback: search in state.events if not in registry
@@ -141,16 +145,43 @@ router.get('/events/:slug', (req, res, next) => {
           <a href="/events" style="color:#38bdf8;">Kembali ke Katalog Event</a>
         </body></html>`);
     }
-    const converted = canonicalRegistry.createEvent(legacy);
-    const listings = getActiveResaleListings(converted.event_id);
-    const related = canonicalRegistry.getAllEvents().filter(e => e.city === converted.city && e.event_id !== converted.event_id);
-    const html = EventSEOService.renderEventPageHtml(converted, listings, related);
-    return res.type('html').send(html);
+    event = canonicalRegistry.createEvent(legacy);
+  }
+
+  // FAIL-CLOSED GATE FOR PUBLIC DETAIL PAGE
+  if (!showAllOrPast) {
+    const evStatus = (event.status || '').toUpperCase();
+    const evLifecycle = (event.lifecycle_status || '').toUpperCase();
+    const isCancelled = evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED';
+    const isPast = !EventTemporalLifecycleEngine.isEventUpcoming(event, now);
+    const isFinished = ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
+                       ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus);
+    const isVerified = event.is_verified === true &&
+      (event.verification_status === 'VERIFIED' || event.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+    const hasProvenance = Boolean(event.source_url && event.evidence_hash && event.verified_at);
+
+    if (isCancelled || isPast || isFinished || !isVerified || !hasProvenance) {
+      return res.status(404).send(`<!DOCTYPE html>
+        <html><head><title>Event Tidak Tersedia — Tikum</title></head>
+        <body style="font-family:sans-serif; background:#0f172a; color:#fff; text-align:center; padding:50px;">
+          <h2>Event Tidak Tersedia</h2>
+          <p>Event yang Anda cari belum memiliki verifikasi resmi atau jadwal telah selesai.</p>
+          <a href="/events" style="color:#38bdf8;">Kembali ke Katalog Event</a>
+        </body></html>`);
+    }
   }
 
   // Active resale listings attached to this canonical event
   const listings = getActiveResaleListings(event.event_id);
-  const related = canonicalRegistry.getAllEvents().filter(e => e.city === event.city && e.event_id !== event.event_id);
+  const related = canonicalRegistry.getAllEvents().filter(e => {
+    if (e.city !== event.city || e.event_id === event.event_id) return false;
+    if (!showAllOrPast) {
+      if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
+      if (e.is_verified !== true || (e.verification_status !== 'VERIFIED' && e.verification_status !== 'PRIMARY_SOURCE_VERIFIED')) return false;
+      if (!Boolean(e.source_url && e.evidence_hash && e.verified_at)) return false;
+    }
+    return true;
+  });
 
   const html = EventSEOService.renderEventPageHtml(event, listings, related);
   res.type('html').send(html);
@@ -191,17 +222,28 @@ router.get('/events', (req, res) => {
     allEvents = allEvents.filter(e => (e.event_type || e.category || '').toUpperCase() === catTerm);
   }
 
-  if (status && status.trim()) {
-    const qStatus = status.toUpperCase();
-    allEvents = allEvents.filter(e => (e.status || '').toUpperCase() === qStatus || (e.lifecycle_status || '').toUpperCase() === qStatus);
-    if (qStatus === 'UPCOMING') {
-      allEvents = allEvents.filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e, now));
-    }
+  if (!showAllOrPast) {
+    allEvents = allEvents.filter(e => {
+      const evStatus = (e.status || '').toUpperCase();
+      const evLifecycle = (e.lifecycle_status || '').toUpperCase();
+      if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
+      if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
+      if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
+          ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
+      const isVerified = e.is_verified === true &&
+        (e.verification_status === 'VERIFIED' || e.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+      const hasProvenance = Boolean(e.source_url && e.evidence_hash && e.verified_at);
+      if (!isVerified || !hasProvenance) return false;
+      if (status && status.trim()) {
+        const qStatus = status.toUpperCase();
+        if (qStatus !== 'UPCOMING' && qStatus !== 'ON_SALE' && evStatus !== qStatus && evLifecycle !== qStatus) return false;
+      }
+      return true;
+    });
   } else {
-    // Exclude cancelled by default from public browsing unless asked
-    allEvents = allEvents.filter(e => (e.status || '').toUpperCase() !== 'CANCELLED' && (e.lifecycle_status || '').toUpperCase() !== 'CANCELLED');
-    if (!showAllOrPast) {
-      allEvents = allEvents.filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e, now));
+    if (status && status.trim()) {
+      const qStatus = status.toUpperCase();
+      allEvents = allEvents.filter(e => (e.status || '').toUpperCase() === qStatus || (e.lifecycle_status || '').toUpperCase() === qStatus);
     }
   }
 
@@ -641,22 +683,29 @@ function handleGetEvents(req, res) {
     allEvents = allEvents.filter(e => (e.start_date || e.date) <= date_to);
   }
 
-  // 9. Verified only filter
-  if (verified_only === 'true' || verified_only === true) {
-    allEvents = allEvents.filter(e => e.verification_status === 'VERIFIED' || e.verification_status === 'PRIMARY_SOURCE_VERIFIED');
-  }
-
-  // 10. Status filter
-  if (status && status.trim()) {
-    const qStatus = status.toUpperCase();
-    allEvents = allEvents.filter(e => (e.verification_status || '').toUpperCase() === qStatus || (e.status || '').toUpperCase() === qStatus || (e.lifecycle_status || '').toUpperCase() === qStatus);
-    if (qStatus === 'UPCOMING') {
-      allEvents = allEvents.filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e, now));
-    }
+  // 9. Status & Fail-Closed Triple Gate (Temporal + Lifecycle + Provenance)
+  if (!showAllOrPast) {
+    allEvents = allEvents.filter(e => {
+      const evStatus = (e.status || '').toUpperCase();
+      const evLifecycle = (e.lifecycle_status || '').toUpperCase();
+      if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
+      if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
+      if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
+          ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
+      const isVerified = e.is_verified === true &&
+        (e.verification_status === 'VERIFIED' || e.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+      const hasProvenance = Boolean(e.source_url && e.evidence_hash && e.verified_at);
+      if (!isVerified || !hasProvenance) return false;
+      if (status && status.trim()) {
+        const qStatus = status.toUpperCase();
+        if (qStatus !== 'UPCOMING' && qStatus !== 'ON_SALE' && evStatus !== qStatus && evLifecycle !== qStatus) return false;
+      }
+      return true;
+    });
   } else {
-    allEvents = allEvents.filter(e => (e.status || '').toUpperCase() !== 'CANCELLED' && (e.lifecycle_status || '').toUpperCase() !== 'CANCELLED');
-    if (!showAllOrPast) {
-      allEvents = allEvents.filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e, now));
+    if (status && status.trim()) {
+      const qStatus = status.toUpperCase();
+      allEvents = allEvents.filter(e => (e.verification_status || '').toUpperCase() === qStatus || (e.status || '').toUpperCase() === qStatus || (e.lifecycle_status || '').toUpperCase() === qStatus);
     }
   }
 
@@ -760,9 +809,20 @@ router.get('/api/events/home-feed', (req, res) => {
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
 
-  const { city, lat, lng } = req.query;
   const now = new Date();
-  const allEvents = canonicalRegistry.getAllEvents().filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e, now));
+  const { city, lat, lng } = req.query;
+  const allEvents = canonicalRegistry.getAllEvents().filter(e => {
+    const evStatus = (e.status || '').toUpperCase();
+    const evLifecycle = (e.lifecycle_status || '').toUpperCase();
+    if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
+    if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
+    if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
+        ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
+    const isVerified = e.is_verified === true &&
+      (e.verification_status === 'VERIFIED' || e.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+    const hasProvenance = Boolean(e.source_url && e.evidence_hash && e.verified_at);
+    return isVerified && hasProvenance;
+  });
 
   // 1. Upcoming Nearest (Chronological)
   const upcoming = [...allEvents]
@@ -832,10 +892,30 @@ router.get('/api/events/home-feed', (req, res) => {
  */
 router.get('/api/discovery/events/:slugOrId', (req, res) => {
   const param = req.params.slugOrId;
+  const { include_past, scope } = req.query;
+  const showAllOrPast = include_past === 'true' || scope === 'all' || scope === 'admin';
+  const now = new Date();
+
   const event = canonicalRegistry.getEventBySlug(param) || canonicalRegistry.getEventById(param);
 
   if (!event) {
     return res.status(404).json({ error: 'Event not found in Canonical Registry', code: 'EVENT_NOT_FOUND' });
+  }
+
+  if (!showAllOrPast) {
+    const evStatus = (event.status || '').toUpperCase();
+    const evLifecycle = (event.lifecycle_status || '').toUpperCase();
+    const isCancelled = evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED';
+    const isPast = !EventTemporalLifecycleEngine.isEventUpcoming(event, now);
+    const isFinished = ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
+                       ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus);
+    const isVerified = event.is_verified === true &&
+      (event.verification_status === 'VERIFIED' || event.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+    const hasProvenance = Boolean(event.source_url && event.evidence_hash && event.verified_at);
+
+    if (isCancelled || isPast || isFinished || !isVerified || !hasProvenance) {
+      return res.status(404).json({ error: 'Event is unverified, expired, or unavailable for public discovery', code: 'EVENT_NOT_AVAILABLE' });
+    }
   }
 
   const activeListings = getActiveResaleListings(event.event_id);

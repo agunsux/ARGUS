@@ -278,11 +278,13 @@ class EventIngestionPipeline {
       const isTier1 = source.tier === 1 || source.trust_level === TRUST_LEVELS.TIER_S || source.trust_level === TRUST_LEVELS.TIER_1;
       const isTier3 = source.tier === 3 && source.trust_level !== TRUST_LEVELS.TIER_S;
 
+      // Enforce fail-closed authoritative provenance verification:
+      const isAuthoritative = sourceRegistry.isAuthoritativeSource(source.source_id, observationMeta.account_handle || sanitizedPayload.source_account);
       let initialStatus = VERIFICATION_STATUS.UNVERIFIED;
       let initialConfidence = 25;
 
-      if (isTier1) {
-        initialStatus = (source.source_type === SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL || source.trust_level === TRUST_LEVELS.TIER_S)
+      if (isAuthoritative) {
+        initialStatus = (source.source_type.includes('IG') || source.source_type.includes('SOCIAL'))
           ? 'PRIMARY_SOURCE_VERIFIED'
           : VERIFICATION_STATUS.VERIFIED;
         initialConfidence = 90;
@@ -351,6 +353,13 @@ class EventIngestionPipeline {
       canonicalEvent = canonicalRegistry.createEvent({
         ...normalizedRecord,
         slug,
+        source_id: source.source_id,
+        source_type: source.source_type,
+        source_url: normalizedRecord.source_url,
+        source_account: observationMeta.account_handle || sanitizedPayload.source_account || source.canonical_account || null,
+        source_published_at: observationMeta.published_at || sanitizedPayload.published_at || null,
+        source_last_checked_at: observationMeta.observed_at || new Date().toISOString(),
+        evidence_hash: observation.content_hash,
         sources: [normalizedRecord],
         verification_status: initialStatus,
         verification_confidence: initialConfidence,

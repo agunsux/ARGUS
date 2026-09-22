@@ -8,11 +8,25 @@
  */
 
 const SOURCE_TYPES = {
+  // 4 Approved Authoritative Source Types (with web / IG split)
+  OFFICIAL_PROMOTER_WEB: 'OFFICIAL_PROMOTER_WEB',
+  OFFICIAL_PROMOTER_IG: 'OFFICIAL_PROMOTER_IG',
+  OFFICIAL_ARTIST_WEB: 'OFFICIAL_ARTIST_WEB',
+  OFFICIAL_ARTIST_IG: 'OFFICIAL_ARTIST_IG',
+  OFFICIAL_EVENT_WEB: 'OFFICIAL_EVENT_WEB',
+  OFFICIAL_EVENT_IG: 'OFFICIAL_EVENT_IG',
+
+  // Backward compatibility authoritative aliases
   OFFICIAL_PROMOTER: 'OFFICIAL_PROMOTER',
   OFFICIAL_ORGANIZER: 'OFFICIAL_ORGANIZER', // backward compatibility
+  OFFICIAL_ORGANIZER: 'OFFICIAL_ORGANIZER',
   OFFICIAL_VENUE: 'OFFICIAL_VENUE',
   OFFICIAL_ARTIST: 'OFFICIAL_ARTIST',
+  OFFICIAL_EVENT: 'OFFICIAL_EVENT',
   OFFICIAL_TICKETING_PLATFORM: 'OFFICIAL_TICKETING_PLATFORM',
+  PROMOTER_OFFICIAL_SOCIAL: 'PROMOTER_OFFICIAL_SOCIAL',
+
+  // Secondary / Non-Authoritative Sources (Candidate discovery only - NEVER authoritative proof)
   TICKETING_PLATFORM: 'TICKETING_PLATFORM',
   SPORTS_ORGANIZATION: 'SPORTS_ORGANIZATION',
   GOVERNMENT: 'GOVERNMENT',
@@ -21,10 +35,32 @@ const SOURCE_TYPES = {
   EVENT_LISTING: 'EVENT_LISTING',
   NEWS: 'NEWS',
   PROMOTER_OFFICIAL_SOCIAL: 'PROMOTER_OFFICIAL_SOCIAL',
+  NEWS_BLOG: 'NEWS_BLOG',
+  SEARCH_ENGINE: 'SEARCH_ENGINE',
+  WIKIPEDIA: 'WIKIPEDIA',
+  EVENT_AGGREGATOR: 'EVENT_AGGREGATOR',
+  TICKET_AGGREGATOR: 'TICKET_AGGREGATOR',
+  AI_INFERRED: 'AI_INFERRED',
   SOCIAL_SIGNAL: 'SOCIAL_SIGNAL',
   COMMUNITY: 'COMMUNITY',
+  COMMUNITY_SUBMISSION: 'COMMUNITY_SUBMISSION',
+  UNVERIFIED_SOCIAL: 'UNVERIFIED_SOCIAL',
   OTHER: 'OTHER'
 };
+
+const AUTHORITATIVE_SOURCE_TYPES = [
+  SOURCE_TYPES.OFFICIAL_PROMOTER_WEB,
+  SOURCE_TYPES.OFFICIAL_PROMOTER_IG,
+  SOURCE_TYPES.OFFICIAL_ARTIST_WEB,
+  SOURCE_TYPES.OFFICIAL_ARTIST_IG,
+  SOURCE_TYPES.OFFICIAL_EVENT_WEB,
+  SOURCE_TYPES.OFFICIAL_EVENT_IG,
+  SOURCE_TYPES.OFFICIAL_PROMOTER,
+  SOURCE_TYPES.OFFICIAL_ORGANIZER,
+  SOURCE_TYPES.OFFICIAL_ARTIST,
+  SOURCE_TYPES.OFFICIAL_EVENT,
+  SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL
+];
 
 const SOURCE_ROLES = {
   PRIMARY_EVENT_SOURCE: 'PRIMARY_EVENT_SOURCE',
@@ -222,6 +258,81 @@ class SourceRegistry {
         trust_level: TRUST_LEVELS.TIER_1,
         active_status: SOURCE_STATUS.ACTIVE,
         notes: 'Official co-promoter for LANY, Ed Sheeran, Justin Bieber, etc.'
+      },
+      {
+        source_id: 'src-promoter-rajawali',
+        source_name: 'Rajawali Indonesia (Official Promoter)',
+        source_owner: 'Rajawali Indonesia',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_WEB,
+        tier: 1,
+        authority_level: 'HIGH',
+        base_url: 'https://rajawaliindonesia.com',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        adapter: 'PromoterAdapter',
+        access_method: ACCESS_METHODS.FEED,
+        permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        terms_reference: 'Official Promoter Channel',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        rate_limit: '30 req/min',
+        crawl_frequency: CRAWL_FREQUENCY.DAILY,
+        priority: 1,
+        reliability_score: 1.0,
+        trust_level: TRUST_LEVELS.TIER_1,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official promoter for Prambanan Jazz and international stadium tours'
+      },
+      {
+        source_id: 'src-promoter-ravel',
+        source_name: 'Ravel Entertainment (Official Promoter)',
+        source_owner: 'Ravel Entertainment',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_WEB,
+        tier: 1,
+        authority_level: 'HIGH',
+        base_url: 'https://ravelent.com',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        adapter: 'PromoterAdapter',
+        access_method: ACCESS_METHODS.FEED,
+        permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        terms_reference: 'Official Promoter Channel',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        rate_limit: '30 req/min',
+        crawl_frequency: CRAWL_FREQUENCY.DAILY,
+        priority: 1,
+        reliability_score: 1.0,
+        trust_level: TRUST_LEVELS.TIER_1,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official promoter for Hammersonic, Green Day Jakarta, BMTH Jakarta, etc.'
+      },
+      {
+        source_id: 'src-promoter-ismaya-live',
+        source_name: 'Ismaya Live (Official Promoter / APMI Member)',
+        source_owner: 'Ismaya Live',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_WEB,
+        tier: 1,
+        authority_level: 'HIGH',
+        base_url: 'https://ismayalive.com',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        adapter: 'PromoterAdapter',
+        access_method: ACCESS_METHODS.FEED,
+        permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        terms_reference: 'Official Promoter Channel',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        rate_limit: '30 req/min',
+        crawl_frequency: CRAWL_FREQUENCY.DAILY,
+        priority: 1,
+        reliability_score: 1.0,
+        trust_level: TRUST_LEVELS.TIER_1,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official promoter for DWP (Djakarta Warehouse Project) and We The Fest'
       },
       {
         source_id: 'src-promoter-dyandra-global',
@@ -768,16 +879,20 @@ class SourceRegistry {
       // ==========================================
       // TIER 3: DISCOVERY SIGNALS (SOCIAL CHANNELS)
       // Strictly Discovery Signals — Cannot solely verify!
+      // AUTHORITATIVE PROMOTER OFFICIAL INSTAGRAM ACCOUNTS
+      // Tier 1 Authoritative ONLY when explicitly registered with verified handle
       // ==========================================
       {
         source_id: 'src-promoter-antarasuara-instagram',
         source_name: 'Antarasuara (Official Instagram)',
-        source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
-        tier: 3,
-        authority_level: 'LOW',
-        source_role: SOURCE_ROLES.DISCOVERY_SIGNAL,
+        source_owner: 'Antarasuara',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
         base_url: 'https://www.instagram.com/antara.suara/',
         account_handle: '@antara.suara',
+        canonical_account: '@antara.suara',
         country: 'Indonesia',
         language: 'id',
         coverage: 'NATIONAL',
@@ -785,21 +900,23 @@ class SourceRegistry {
         adapter: 'SocialDiscoveryAdapter',
         access_method: ACCESS_METHODS.MANUAL_REVIEW,
         permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
-        trust_level: TRUST_LEVELS.TIER_S, // promoter identity is verified, but channel is Tier 3 discovery signal
+        trust_level: TRUST_LEVELS.TIER_S,
         active_status: SOURCE_STATUS.ACTIVE,
-        terms_reference: 'Social Discovery Policy (Signal Only)',
+        terms_reference: 'Official Verified Promoter Instagram',
         robots_policy: 'API_OR_MANUAL_REVIEW',
-        notes: 'Verified Official Promoter Instagram for Antarasuara (Discovery Signal Only)'
+        notes: 'Verified Official Promoter Instagram for Antarasuara'
       },
       {
         source_id: 'src-promoter-bosscreator-instagram',
         source_name: 'Boss Creator (Official Instagram)',
-        source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
-        tier: 3,
-        authority_level: 'LOW',
-        source_role: SOURCE_ROLES.DISCOVERY_SIGNAL,
+        source_owner: 'Boss Creator',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
         base_url: 'https://www.instagram.com/boss.creator/',
         account_handle: '@boss.creator',
+        canonical_account: '@boss.creator',
         country: 'Indonesia',
         language: 'id',
         coverage: 'NATIONAL',
@@ -809,19 +926,21 @@ class SourceRegistry {
         permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
         trust_level: TRUST_LEVELS.TIER_S,
         active_status: SOURCE_STATUS.ACTIVE,
-        terms_reference: 'Social Discovery Policy (Signal Only)',
+        terms_reference: 'Official Verified Promoter Instagram',
         robots_policy: 'API_OR_MANUAL_REVIEW',
-        notes: 'Verified Official Promoter Instagram for Boss Creator (Discovery Signal Only)'
+        notes: 'Verified Official Promoter Instagram for Boss Creator'
       },
       {
         source_id: 'src-promoter-otello-asia-instagram',
         source_name: 'Otello Asia (Official Instagram)',
-        source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
-        tier: 3,
-        authority_level: 'LOW',
-        source_role: SOURCE_ROLES.DISCOVERY_SIGNAL,
+        source_owner: 'Otello Asia',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
         base_url: 'https://www.instagram.com/otelloasia/',
         account_handle: '@otelloasia',
+        canonical_account: '@otelloasia',
         country: 'Indonesia',
         language: 'id',
         coverage: 'NATIONAL',
@@ -831,19 +950,21 @@ class SourceRegistry {
         permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
         trust_level: TRUST_LEVELS.TIER_S,
         active_status: SOURCE_STATUS.ACTIVE,
-        terms_reference: 'Social Discovery Policy (Signal Only)',
+        terms_reference: 'Official Verified Promoter Instagram',
         robots_policy: 'API_OR_MANUAL_REVIEW',
-        notes: 'Verified Official Promoter Instagram for Otello Asia (Discovery Signal Only)'
+        notes: 'Verified Official Promoter Instagram for Otello Asia'
       },
       {
         source_id: 'src-promoter-plainsong-instagram',
         source_name: 'Plainsong Live (Official Instagram)',
-        source_type: SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
-        tier: 3,
-        authority_level: 'LOW',
-        source_role: SOURCE_ROLES.DISCOVERY_SIGNAL,
+        source_owner: 'Plainsong Live',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
         base_url: 'https://www.instagram.com/joylandfest/',
         account_handle: '@joylandfest',
+        canonical_account: '@joylandfest',
         country: 'Indonesia',
         language: 'id',
         coverage: 'BALI_JAKARTA',
@@ -853,9 +974,400 @@ class SourceRegistry {
         permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
         trust_level: TRUST_LEVELS.TIER_S,
         active_status: SOURCE_STATUS.ACTIVE,
-        terms_reference: 'Social Discovery Policy (Signal Only)',
+        terms_reference: 'Official Verified Promoter Instagram',
         robots_policy: 'API_OR_MANUAL_REVIEW',
-        notes: 'Verified Official Promoter Instagram for Plainsong Live (Discovery Signal Only)'
+        notes: 'Verified Official Promoter Instagram for Plainsong Live'
+      },
+      {
+        source_id: 'src-ig-promoter-tem',
+        source_name: 'TEM Presents (Official Instagram)',
+        source_owner: 'TEM Presents',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/temgmt/',
+        account_handle: '@temgmt',
+        canonical_account: '@temgmt',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Verified Official Promoter Instagram for TEM Presents'
+      },
+      {
+        source_id: 'src-ig-promoter-pk',
+        source_name: 'PK Entertainment (Official Instagram)',
+        source_owner: 'PK Entertainment',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/pkentertainment.id/',
+        account_handle: '@pkentertainment.id',
+        canonical_account: '@pkentertainment.id',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Verified Official Promoter Instagram for PK Entertainment'
+      },
+      {
+        source_id: 'src-ig-promoter-rajawali',
+        source_name: 'Rajawali Indonesia (Official Instagram)',
+        source_owner: 'Rajawali Indonesia',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/rajawaliindonesia/',
+        account_handle: '@rajawaliindonesia',
+        canonical_account: '@rajawaliindonesia',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Verified Official Promoter Instagram for Rajawali Indonesia'
+      },
+      {
+        source_id: 'src-ig-promoter-ravel',
+        source_name: 'Ravel Entertainment (Official Instagram)',
+        source_owner: 'Ravel Entertainment',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/ravelentertainment/',
+        account_handle: '@ravelentertainment',
+        canonical_account: '@ravelentertainment',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Verified Official Promoter Instagram for Ravel Entertainment'
+      },
+      {
+        source_id: 'src-ig-promoter-dyandra',
+        source_name: 'Dyandra Global Edutainment (Official Instagram)',
+        source_owner: 'Dyandra Global Edutainment',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/dyandraglobal/',
+        account_handle: '@dyandraglobal',
+        canonical_account: '@dyandraglobal',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Verified Official Promoter Instagram for Dyandra Global'
+      },
+      {
+        source_id: 'src-ig-promoter-ismaya',
+        source_name: 'Ismaya Live (Official Instagram)',
+        source_owner: 'Ismaya Live',
+        source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/ismayalive/',
+        account_handle: '@ismayalive',
+        canonical_account: '@ismayalive',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Verified Official Promoter Instagram for Ismaya Live'
+      },
+      // ==========================================
+      // AUTHORITATIVE EVENT WEBSITES & INSTAGRAM
+      // ==========================================
+      {
+        source_id: 'src-event-pestapora-web',
+        source_name: 'Pestapora Official Website',
+        source_owner: 'Pestapora / Boss Creator',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT_WEB,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://pestapora.com',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'JAKARTA',
+        category: 'FESTIVAL',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Event Website for Pestapora'
+      },
+      {
+        source_id: 'src-event-pestapora-ig',
+        source_name: 'Pestapora (Official Instagram)',
+        source_owner: 'Pestapora / Boss Creator',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/pestapora/',
+        account_handle: '@pestapora',
+        canonical_account: '@pestapora',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'JAKARTA',
+        category: 'FESTIVAL',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Event Instagram for Pestapora'
+      },
+      {
+        source_id: 'src-event-synchronize-web',
+        source_name: 'Synchronize Fest Official Website',
+        source_owner: 'Synchronize Festival / Pusen',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT_WEB,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://synchronizefestival.com',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'JAKARTA',
+        category: 'FESTIVAL',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Event Website for Synchronize Fest'
+      },
+      {
+        source_id: 'src-event-synchronize-ig',
+        source_name: 'Synchronize Fest (Official Instagram)',
+        source_owner: 'Synchronize Festival / Pusen',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/synchronizefest/',
+        account_handle: '@synchronizefest',
+        canonical_account: '@synchronizefest',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'JAKARTA',
+        category: 'FESTIVAL',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Event Instagram for Synchronize Fest'
+      },
+      {
+        source_id: 'src-event-joyland-web',
+        source_name: 'Joyland Festival Official Website',
+        source_owner: 'Joyland Festival / Plainsong Live',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT_WEB,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://joylandfest.com',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'BALI_JAKARTA',
+        category: 'FESTIVAL',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Event Website for Joyland Festival'
+      },
+      {
+        source_id: 'src-event-joyland-ig',
+        source_name: 'Joyland Festival (Official Instagram)',
+        source_owner: 'Joyland Festival / Plainsong Live',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/joylandfest/',
+        account_handle: '@joylandfest',
+        canonical_account: '@joylandfest',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'BALI_JAKARTA',
+        category: 'FESTIVAL',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Event Instagram for Joyland Festival'
+      },
+      {
+        source_id: 'src-event-dwp-web',
+        source_name: 'Djakarta Warehouse Project Official Website',
+        source_owner: 'Djakarta Warehouse Project / Ismaya Live',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT_WEB,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://djakartawarehouse.com',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'JAKARTA',
+        category: 'FESTIVAL',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Event Website for Djakarta Warehouse Project (DWP)'
+      },
+      {
+        source_id: 'src-event-dwp-ig',
+        source_name: 'Djakarta Warehouse Project (Official Instagram)',
+        source_owner: 'Djakarta Warehouse Project / Ismaya Live',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/djakartawarehouseproject/',
+        account_handle: '@djakartawarehouseproject',
+        canonical_account: '@djakartawarehouseproject',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'JAKARTA',
+        category: 'FESTIVAL',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Event Instagram for DWP'
+      },
+      {
+        source_id: 'src-event-bigbang-web',
+        source_name: 'Big Bang Festival Official Website',
+        source_owner: 'Big Bang Festival / PT Expo Indo Jaya',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT_WEB,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://bigbangfest.com',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'JAKARTA',
+        category: 'FESTIVAL',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Event Website for Big Bang Festival'
+      },
+      {
+        source_id: 'src-event-bigbang-ig',
+        source_name: 'Big Bang Festival (Official Instagram)',
+        source_owner: 'Big Bang Festival / PT Expo Indo Jaya',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/bigbangfest.id/',
+        account_handle: '@bigbangfest.id',
+        canonical_account: '@bigbangfest.id',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'JAKARTA',
+        category: 'FESTIVAL',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Event Instagram for Big Bang Festival'
+      },
+      // ==========================================
+      // AUTHORITATIVE ARTIST WEBSITES & INSTAGRAM
+      // ==========================================
+      {
+        source_id: 'src-artist-sheilaon7-web',
+        source_name: 'Sheila On 7 Official Website',
+        source_owner: 'Sheila On 7',
+        source_type: SOURCE_TYPES.OFFICIAL_ARTIST_WEB,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://sheilaon7.com',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Artist Website for Sheila On 7'
+      },
+      {
+        source_id: 'src-artist-sheilaon7-ig',
+        source_name: 'Sheila On 7 (Official Instagram)',
+        source_owner: 'Sheila On 7',
+        source_type: SOURCE_TYPES.OFFICIAL_ARTIST_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/sheilaon7/',
+        account_handle: '@sheilaon7',
+        canonical_account: '@sheilaon7',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Verified Artist Instagram for Sheila On 7'
+      },
+      {
+        source_id: 'src-artist-coldplay-web',
+        source_name: 'Coldplay Official Website',
+        source_owner: 'Coldplay',
+        source_type: SOURCE_TYPES.OFFICIAL_ARTIST_WEB,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://coldplay.com',
+        country: 'International',
+        language: 'en',
+        coverage: 'INTERNATIONAL',
+        category: 'MUSIC',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Artist Website for Coldplay'
+      },
+      {
+        source_id: 'src-artist-coldplay-ig',
+        source_name: 'Coldplay (Official Instagram)',
+        source_owner: 'Coldplay',
+        source_type: SOURCE_TYPES.OFFICIAL_ARTIST_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/coldplay/',
+        account_handle: '@coldplay',
+        canonical_account: '@coldplay',
+        country: 'International',
+        language: 'en',
+        coverage: 'INTERNATIONAL',
+        category: 'MUSIC',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Verified Artist Instagram for Coldplay'
+      },
+      {
+        source_id: 'src-artist-hindia-ig',
+        source_name: 'Hindia / Baskara Putra (Official Instagram)',
+        source_owner: 'Hindia',
+        source_type: SOURCE_TYPES.OFFICIAL_ARTIST_IG,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://www.instagram.com/wordfangs/',
+        account_handle: '@wordfangs',
+        canonical_account: '@wordfangs',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official Verified Artist Instagram for Hindia / Baskara Putra'
       },
       {
         source_id: 'src-argus-community',
@@ -1123,6 +1635,80 @@ class SourceRegistry {
     return record;
   }
 
+  /**
+   * Checks whether a source is authoritative.
+   * If sourceAccount is provided, verifies that it matches the registered account handle.
+   */
+  isAuthoritativeSource(sourceId, sourceAccount = null) {
+    if (!sourceId) return false;
+    const src = this.getSource(sourceId);
+    if (!src) return false;
+    if (src.active_status !== SOURCE_STATUS.ACTIVE && src.active !== true) return false;
+
+    // Check if source type is in authoritative list
+    const isAuthType = AUTHORITATIVE_SOURCE_TYPES.includes(src.source_type) ||
+                       src.tier === 1 ||
+                       src.trust_level === TRUST_LEVELS.TIER_S ||
+                       src.trust_level === TRUST_LEVELS.TIER_1;
+    if (!isAuthType) return false;
+
+    // If source is an Instagram channel, enforce registered account boundary
+    const isSocialOrIg = (src.source_type || '').includes('IG') ||
+                         (src.source_type || '').includes('SOCIAL') ||
+                         (src.base_url || '').includes('instagram.com');
+    if (isSocialOrIg) {
+      const registeredHandle = (src.account_handle || src.canonical_account || src.source_account || '').replace(/^@/, '').toLowerCase().trim();
+      if (!registeredHandle) return false;
+
+      if (sourceAccount) {
+        const inputHandle = String(sourceAccount).replace(/^@/, '').toLowerCase().trim();
+        if (inputHandle !== registeredHandle) return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Validates mandatory provenance attributes for a public canonical event.
+   * Core invariant: NO SOURCE EVIDENCE = NO PUBLIC EVENT.
+   */
+  validateProvenance(provenance) {
+    const errors = [];
+    if (!provenance || typeof provenance !== 'object') {
+      return { valid: false, errors: ['Provenance object is required'] };
+    }
+
+    if (!provenance.source_type || !AUTHORITATIVE_SOURCE_TYPES.includes(provenance.source_type)) {
+      errors.push(`Invalid or non-authoritative source_type: '${provenance.source_type}'`);
+    }
+
+    if (!provenance.source_url || typeof provenance.source_url !== 'string' || !provenance.source_url.startsWith('http')) {
+      errors.push('Valid source_url starting with http/https is required');
+    }
+
+    if (!provenance.source_last_checked_at || isNaN(new Date(provenance.source_last_checked_at).getTime())) {
+      errors.push('Valid source_last_checked_at timestamp is required');
+    }
+
+    if (provenance.verification_status !== 'VERIFIED' && provenance.verification_status !== 'PRIMARY_SOURCE_VERIFIED') {
+      errors.push(`Public event requires verification_status VERIFIED, got: '${provenance.verification_status}'`);
+    }
+
+    if (!provenance.verified_at || isNaN(new Date(provenance.verified_at).getTime())) {
+      errors.push('Valid verified_at timestamp is required');
+    }
+
+    if (!provenance.evidence_hash || typeof provenance.evidence_hash !== 'string' || provenance.evidence_hash.length < 16) {
+      errors.push('Valid cryptographic evidence_hash is required');
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
   reset() {
     this.sources.clear();
     this._initializeDefaultSources();
@@ -1135,6 +1721,7 @@ module.exports = {
   SourceRegistry,
   sourceRegistry: sourceRegistryInstance,
   SOURCE_TYPES,
+  AUTHORITATIVE_SOURCE_TYPES,
   SOURCE_ROLES,
   AUTHORITY_SCOPES,
   TRUST_LEVELS,

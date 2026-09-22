@@ -128,12 +128,31 @@ class EventVerificationService {
   }
 
   /**
-   * Evaluates overall event verification status, confidence, and field provenance
+   * Evaluates overall event verification status, confidence, and field provenance.
+   * Core Invariant: NO SOURCE EVIDENCE = NO PUBLIC EVENT.
    */
   static evaluateEvent(canonicalEvent, sourceRecords = []) {
     let score = 0;
     const conflicts = [];
     const flags = [];
+
+    // Missing required fields fail-closed immediately (DO NOT GUESS)
+    // Missing temporal anchor fails closed immediately (DO NOT GUESS)
+    const eventDate = canonicalEvent.start_date || canonicalEvent.date || canonicalEvent.start_datetime;
+    const eventCity = canonicalEvent.venue_city || canonicalEvent.city;
+    const hasEventData = canonicalEvent && Object.keys(canonicalEvent).length > 0;
+    if (hasEventData && !eventDate) {
+      return {
+        verification_status: VERIFICATION_STATUS.UNVERIFIED,
+        verification_confidence: 0,
+        conflicts: [],
+        flags: ['MISSING_REQUIRED_EVENT_DATA', 'FAIL_CLOSED_UNVERIFIED'],
+        freshness_ttl_hours: 48
+      };
+    }
+    if (!eventCity) {
+      flags.push('MISSING_CITY_DATA');
+    }
 
     if (!sourceRecords || sourceRecords.length === 0) {
       return {
@@ -145,23 +164,33 @@ class EventVerificationService {
       };
     }
 
-    // 1. Source Authority Analysis
+    // 1. Authoritative Source Analysis (Official Promoter, Artist, Event - Web or Verified IG)
+    // Authority is resolved EXCLUSIVELY through the SourceRegistry authority boundary.
+    // Caller-provided tier/trust flags on the observation are NOT trusted on their own.
+    let hasAuthoritative = false;
+    let hasAuthoritativeSocial = false;
     let hasTier1 = false;
     let hasTier2 = false;
-    let onlyTier3 = true;
 
     for (const s of sourceRecords) {
+      const account = s.account_handle || s.source_account || s.canonical_account;
       const srcMeta = sourceRegistry.getSource(s.source_id) || {};
-      const tier = s.tier || srcMeta.tier || 2;
-      const isTier1 = tier === 1 || s.trust_level === TRUST_LEVELS.TIER_S || s.trust_level === TRUST_LEVELS.TIER_1;
-      const isTier2 = tier === 2 || s.trust_level === TRUST_LEVELS.TIER_A || s.trust_level === TRUST_LEVELS.TIER_2 || s.trust_level === TRUST_LEVELS.TIER_B;
-
-      if (isTier1) {
+      const isAuth = sourceRegistry.isAuthoritativeSource(s.source_id, account);
+      if (isAuth) {
+        hasAuthoritative = true;
         hasTier1 = true;
-        onlyTier3 = false;
-      } else if (isTier2) {
+        const srcType = String(s.source_type || srcMeta.source_type || '').toUpperCase();
+        if (srcType.includes('IG') || srcType.includes('SOCIAL')) {
+          hasAuthoritativeSocial = true;
+        }
+        continue;
+      }
+      const tier = srcMeta.tier || s.tier || 2;
+      if (tier === 1) {
+        // Tier 1 claim without a verified registry registration: NOT authoritative.
+        flags.push('UNREGISTERED_TIER_1_SOURCE_IGNORED');
+      } else if (tier === 2 || s.trust_level === TRUST_LEVELS.TIER_A || s.trust_level === TRUST_LEVELS.TIER_2 || s.trust_level === TRUST_LEVELS.TIER_B) {
         hasTier2 = true;
-        onlyTier3 = false;
       }
     }
 
@@ -183,91 +212,125 @@ class EventVerificationService {
     }
 
     if (dates.size > 1) {
-      const dateEntries = Array.from(dates.entries());
-      conflicts.push({
-        field: 'start_date',
-        source_a: dateEntries[0][1],
-        value_a: dateEntries[0][0],
-        source_b: dateEntries[1][1],
-        value_b: dateEntries[1][0],
-        values: Array.from(dates.keys()),
-        reason: 'Different sources report conflicting event dates'
-      });
-    }
+      const authDates = new Map();
+      for (const [d, sid] of dates.entries()) {
+        if (sourceRegistry.isAuthoritativeSource(sid)) authDates.set(d, sid);
+      }
 
-    if (venues.size > 1) {
-      const venueEntries = Array.from(venues.values());
-      conflicts.push({
-        field: 'venue',
-        source_a: venueEntries[0].source_id,
-        value_a: venueEntries[0].raw,
-        source_b: venueEntries[1].source_id,
-        value_b: venueEntries[1].raw,
-        values: venueEntries.map(v => v.raw),
-        reason: 'Different sources report conflicting event venues'
-      });
-    }
-
-    // If source conflict exists:
-    if (conflicts.length > 0) {
-      flags.push('SOURCE_DATA_CONFLICT_DETECTED');
-      // If a Tier 1 authoritative promoter/venue exists alongside a secondary source,
-      // we preserve the conflict but can assign PRIMARY_SOURCE_VERIFIED if promoter is clear.
-      // Otherwise, conflict blocks verification -> CONFLICTED!
-      if (hasTier1 && sourceRecords.some(s => s.source_type === 'PROMOTER_OFFICIAL_SOCIAL' || (s.source_id && s.source_id.includes('promoter')))) {
-        flags.push('PRIMARY_PROMOTER_PRECEDENCE');
-        return {
-          verification_status: VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED,
-          verification_confidence: 85,
-          conflicts,
-          flags,
-          freshness_ttl_hours: 48
-        };
+      if (authDates.size > 1) {
+        // Two authoritative sources report conflicting dates -> CONFLICTED!
+        const dateEntries = Array.from(authDates.entries());
+        conflicts.push({
+          field: 'start_date',
+          source_a: dateEntries[0][1],
+          value_a: dateEntries[0][0],
+          source_b: dateEntries[1][1],
+          value_b: dateEntries[1][0],
+          values: Array.from(authDates.keys()),
+          reason: 'Different authoritative sources report conflicting event dates'
+        });
+      } else if (authDates.size === 1) {
+        // Authoritative source takes precedence over secondary
+        flags.push('AUTHORITATIVE_PROMOTER_PRECEDENCE_DATE');
       } else {
-        return {
-          verification_status: VERIFICATION_STATUS.CONFLICTED,
-          verification_confidence: 45,
-          conflicts,
-          flags: ['CONFLICT_BLOCKS_VERIFICATION'],
-          freshness_ttl_hours: 48
-        };
+        const dateEntries = Array.from(dates.entries());
+        conflicts.push({
+          field: 'start_date',
+          source_a: dateEntries[0][1],
+          value_a: dateEntries[0][0],
+          source_b: dateEntries[1][1],
+          value_b: dateEntries[1][0],
+          values: Array.from(dates.keys()),
+          reason: 'Conflicting dates reported by discovery sources'
+        });
       }
     }
 
-    // 3. Social Discovery Only Rule: Cannot solely verify
-    if (onlyTier3 && !hasTier1 && !hasTier2) {
+    if (venues.size > 1) {
+      const authVenues = new Map();
+      for (const [normV, item] of venues.entries()) {
+        if (sourceRegistry.isAuthoritativeSource(item.source_id)) authVenues.set(normV, item);
+      }
+
+      if (authVenues.size > 1) {
+        const venueEntries = Array.from(authVenues.values());
+        conflicts.push({
+          field: 'venue',
+          source_a: venueEntries[0].source_id,
+          value_a: venueEntries[0].raw,
+          source_b: venueEntries[1].source_id,
+          value_b: venueEntries[1].raw,
+          values: venueEntries.map(v => v.raw),
+          reason: 'Different authoritative sources report conflicting event venues'
+        });
+      } else if (authVenues.size === 1) {
+        flags.push('AUTHORITATIVE_PROMOTER_PRECEDENCE_VENUE');
+      } else {
+        const venueEntries = Array.from(venues.values());
+        conflicts.push({
+          field: 'venue',
+          source_a: venueEntries[0].source_id,
+          value_a: venueEntries[0].raw,
+          source_b: venueEntries[1].source_id,
+          value_b: venueEntries[1].raw,
+          values: venueEntries.map(v => v.raw),
+          reason: 'Conflicting venues reported by discovery sources'
+        });
+      }
+    }
+
+    // If authoritative source conflict exists:
+    if (conflicts.length > 0) {
+      flags.push('AUTHORITATIVE_DATA_CONFLICT_DETECTED');
       return {
-        verification_status: VERIFICATION_STATUS.UNVERIFIED,
-        verification_confidence: 30,
-        conflicts: [],
-        flags: ['TIER_3_SOCIAL_DISCOVERY_ONLY', 'PENDING_TIER_1_CORROBORATION'],
+        verification_status: VERIFICATION_STATUS.CONFLICTED,
+        verification_confidence: 45,
+        conflicts,
+        flags: ['CONFLICT_BLOCKS_VERIFICATION'],
         freshness_ttl_hours: 48
       };
     }
 
-    // 4. Compute Base Confidence from Multi-Factor Field Confidence
+    // 3. Fail-Closed: Without authoritative source evidence, event CANNOT be VERIFIED
+    if (!hasAuthoritative) {
+      const isSocialTier3 = sourceRecords.some(s => (s.tier === 3 || s.trust_level === TRUST_LEVELS.TIER_5 || (s.source_id && s.source_id.includes('social'))));
+      const failFlags = ['SECONDARY_SOURCES_ONLY_NO_AUTHORITATIVE_PROOF'];
+      if (isSocialTier3) {
+        failFlags.push('TIER_3_SOCIAL_DISCOVERY_ONLY');
+      }
+      return {
+        verification_status: VERIFICATION_STATUS.UNVERIFIED,
+        verification_confidence: Math.min(50, score || (isSocialTier3 ? 30 : 50)),
+        conflicts: [],
+        flags: failFlags,
+        freshness_ttl_hours: 48
+      };
+    }
+
+    // 4. Compute Base Confidence
     const uniqueSourceIds = new Set(sourceRecords.map(s => s.source_id));
 
-    if (hasTier1) {
-      score += 55; // Tier 1 Official Promoter / Venue / League
+    if (hasAuthoritative) {
+      score += 65; // Authoritative Promoter / Venue / League / Verified IG (registry-verified only)
+      flags.push('AUTHORITATIVE_SOURCE_CONFIRMED');
       flags.push('TIER_1_OFFICIAL_AUTHORITY_CONFIRMED');
     } else if (hasTier2) {
-      score += 35; // Tier 2 Commercial Ticketing Platform / Discovery API
+      score += 35;
       flags.push('TIER_2_COMMERCIAL_SOURCE_CONFIRMED');
     }
 
-    // 5. Independent Multi-Source Corroboration
+    // 5. Corroboration Boost
     if (uniqueSourceIds.size >= 3) {
-      score += 25;
+      score += 20;
       flags.push('MULTIPLE_INDEPENDENT_SOURCES_3_PLUS');
     } else if (uniqueSourceIds.size >= 2) {
-      score += 20;
+      score += 15;
       flags.push('INDEPENDENT_SOURCE_CORROBORATION');
     }
 
-    // 6. Valid Official Ticket Destination URL (+15)
+    // 6. Valid Official Ticket Destination URL (+10)
     if (canonicalEvent.official_ticket_url && /^https?:\/\//i.test(canonicalEvent.official_ticket_url)) {
-      score += 15;
+      score += 10;
       flags.push('OFFICIAL_TICKET_URL_VERIFIED');
     }
 
@@ -277,8 +340,13 @@ class EventVerificationService {
       flags.push('COMPLETE_TEMPORAL_SPATIAL_DATA');
     }
 
-    // Never claim 100% certainty (cap confidence at 95%)
-    const confidence = Math.min(95, Math.max(10, score));
+    // Cap confidence at 95%
+    let confidence = Math.min(95, Math.max(10, score));
+    if (hasAuthoritativeSocial) {
+      // Direct announcement from a verified official promoter/artist/event IG account
+      // is primary evidence and carries high confidence even without corroboration.
+      confidence = Math.min(95, Math.max(85, confidence));
+    }
 
     // Determine verification status
     let status = VERIFICATION_STATUS.UNVERIFIED;
@@ -286,23 +354,32 @@ class EventVerificationService {
       status = VERIFICATION_STATUS.CANCELLED;
     } else if (canonicalEvent.status === 'POSTPONED') {
       status = VERIFICATION_STATUS.POSTPONED;
-    } else if (hasTier1 && confidence >= 75) {
-      status = VERIFICATION_STATUS.VERIFIED;
-    } else if (hasTier2 && uniqueSourceIds.size >= 2 && confidence >= 65) {
-      status = VERIFICATION_STATUS.PARTIALLY_VERIFIED;
+    } else if (hasAuthoritative && confidence >= 65) {
+      // Direct official announcement from a verified IG / official event channel is a primary proof.
+      status = hasAuthoritativeSocial
+        ? VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED
+        : VERIFICATION_STATUS.VERIFIED;
+      if (hasAuthoritativeSocial) {
+        flags.push('PRIMARY_SOURCE_SOCIAL_CONFIRMED');
+      }
     } else {
       status = VERIFICATION_STATUS.UNVERIFIED;
     }
 
-    // 8. Temporal Freshness / Expiration Check
-    const eventDate = canonicalEvent.start_date || canonicalEvent.date;
+    // 8. Temporal Freshness / Stale Check
     const ttlMs = getFreshnessTtlMs(eventDate);
-    const lastVerifiedTime = canonicalEvent.last_verified_at ? new Date(canonicalEvent.last_verified_at).getTime() : Date.now();
-    const ageSinceVerification = Date.now() - lastVerifiedTime;
+    const lastCheckedTime = canonicalEvent.source_last_checked_at
+      ? new Date(canonicalEvent.source_last_checked_at).getTime()
+      : (canonicalEvent.last_verified_at
+        ? new Date(canonicalEvent.last_verified_at).getTime()
+        : (canonicalEvent.verified_at ? new Date(canonicalEvent.verified_at).getTime() : 0));
 
-    if (ageSinceVerification > ttlMs && (status === VERIFICATION_STATUS.VERIFIED || status === VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED)) {
-      status = VERIFICATION_STATUS.STALE;
-      flags.push('FRESHNESS_TTL_EXPIRED_STALE');
+    if (lastCheckedTime > 0) {
+      const ageSinceCheck = Date.now() - lastCheckedTime;
+      if (ageSinceCheck > ttlMs && (status === VERIFICATION_STATUS.VERIFIED || status === 'PRIMARY_SOURCE_VERIFIED')) {
+        status = VERIFICATION_STATUS.STALE;
+        flags.push('FRESHNESS_TTL_EXPIRED_STALE');
+      }
     }
 
     const now = Date.now();

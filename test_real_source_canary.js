@@ -287,10 +287,16 @@ async function runCanaryTests() {
       city: 'Bandung',
       start_date: '2026-10-17',
       time: '16:00',
+      source_id: 'src-promoter-antarasuara',
+      source_url: 'https://antarasuara.com/event/bandung-indie-fest-2026',
+      raw_evidence_hash: 'sha256-antarasuara-bandung-indie-fest-2026'
+    };
+    await pipeline.ingestEvent(bandungEvent, 'src-promoter-antarasuara');
+    await pipeline.ingestEvent({
+      ...bandungEvent,
       source_id: 'src-yesplis',
       source_url: 'https://yesplis.com/event/bandung-indie-fest-2026'
-    };
-    await pipeline.ingestEvent(bandungEvent, 'src-yesplis');
+    }, 'src-yesplis');
 
     const bndCanonical = canonicalRegistry.getAllEvents().find(e => (e.title || '').includes('Bandung Indie Fest'));
     assert.ok(bndCanonical, 'Bandung Indie Fest canonical event must exist');

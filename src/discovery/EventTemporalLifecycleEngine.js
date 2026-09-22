@@ -318,7 +318,7 @@ class EventTemporalLifecycleEngine {
     if (rawStatus === LIFECYCLE_STATUS.CANCELLED || rawStatus === 'DIBATALKAN') {
       return LIFECYCLE_STATUS.CANCELLED;
     }
-    if (rawStatus === LIFECYCLE_STATUS.POSTPONED) {
+    if (rawStatus === LIFECYCLE_STATUS.POSTPONED || rawStatus === 'DITUNDA') {
       // If event was postponed and has a future start_at, it can transition to UPCOMING
       if (event.event_start_at && new Date(event.event_start_at).getTime() > now.getTime()) {
         return LIFECYCLE_STATUS.UPCOMING;

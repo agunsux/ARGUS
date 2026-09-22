@@ -45,6 +45,16 @@ async function runAll() {
   // TEST 1: Listing Attributes
   // ---------------------------------------------------------------------------
   await runTest('Test 1: Marketplace listings return all 10 canonical attributes', async () => {
+    // Ensure target event has verified authoritative provenance
+    const pest = state.events.find(e => e.id === 'event-pestapora-2026');
+    if (pest) {
+      pest.is_verified = true;
+      pest.verification_status = 'VERIFIED';
+      pest.evidence_hash = 'sha256-evidence-pestapora-test';
+      pest.verified_at = new Date().toISOString();
+      pest.source_url = 'https://pestapora.com';
+    }
+
     // Create a listing
     const listingRes = await ListingService.createListing({
       sellerId: 'seller-1',

@@ -93,3 +93,4 @@ function fetch(url, headers = {}) {
   console.log('================================================================');
   process.exit(allPassed ? 0 : 1);
 })();
+

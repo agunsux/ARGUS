@@ -243,12 +243,28 @@ class ListingService {
         if (l.status !== LISTING_STATUS.ACTIVE) return false;
         if (eventId && l.event_id !== eventId) return false;
         const event = state.events.find(e => e.id === l.event_id);
-        if (event) {
-          const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
-          if (!EventTemporalLifecycleEngine.isEventUpcoming(event)) {
+        if (!event) return false;
+
+        const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
+        if (!EventTemporalLifecycleEngine.isEventUpcoming(event)) {
+          return false;
+        }
+
+        const evStatus = (event.status || '').toUpperCase();
+        const evLifecycle = (event.lifecycle_status || '').toUpperCase();
+        if (['CANCELLED', 'DIBATALKAN', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'LIVE'].includes(evLifecycle) ||
+            ['CANCELLED', 'DIBATALKAN', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'LIVE'].includes(evStatus)) {
+          return false;
+        }
+
+        if (!event.is_verified || (event.verification_status !== 'VERIFIED' && event.verification_status !== 'PRIMARY_SOURCE_VERIFIED')) {
+          // Zero-trust seed data: unverified seed/legacy events must NEVER have active listings
+          // Epic 3.6: community user-created events are only viewable when explicitly queried by eventId
+          if (!eventId || event.source !== 'USER_CREATED') {
             return false;
           }
         }
+
         return true;
       })
       .map(listing => {

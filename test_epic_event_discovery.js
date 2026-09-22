@@ -65,6 +65,7 @@ async function runSuite() {
   // ==========================================
   let scenarioAEventId;
   let scenarioASlug;
+  let scenarioCSlug;
   await testAsync('Scenario A: Ingestion from tiket.com discovers event, creates canonical entry with source provenance', async () => {
     const payload = {
       name: 'Ed Sheeran: Mathematics Tour Jakarta 2026',
@@ -93,6 +94,19 @@ async function runSuite() {
 
     scenarioAEventId = res.data.canonical_event.event_id;
     scenarioASlug = res.data.canonical_event.slug;
+
+    // Corroborate with Tier 1 Authoritative Promoter (PK Entertainment)
+    await apiRequest('/api/discovery/ingest', {
+      method: 'POST',
+      body: {
+        payload: {
+          ...payload,
+          official_event_url: 'https://pk-ent.com/events/ed-sheeran',
+          source_event_id: 'pk-ed-sheeran-2026'
+        },
+        source_id: 'src-org-pk-ent'
+      }
+    });
 
     // Verify marketplace bridge (synced to state.events)
     const inState = state.events.find(e => e.id === scenarioAEventId);
@@ -174,6 +188,7 @@ async function runSuite() {
     assert.strictEqual(res2.data.canonical_event.event_id, eventId, 'Must keep same canonical event ID');
     assert.strictEqual(res2.data.canonical_event.source_count, 2, 'Must have 2 source records');
     assert.ok(res2.data.canonical_event.verification_confidence >= 80, 'Tier 1 promoter boost must verify event');
+    scenarioCSlug = res2.data.canonical_event.slug;
   });
 
   // ==========================================
@@ -393,13 +408,13 @@ async function runSuite() {
   // SECTION 40: SEO TECHNICAL AUDIT
   // ==========================================
   await testAsync('Section 40: SEO technical audit validates Schema.org JSON-LD and canonical metadata', async () => {
-    const res = await apiRequest('/events/pestapora-2026-jakarta');
+    const res = await apiRequest(`/events/${scenarioCSlug}`);
     assert.strictEqual(res.status, 200);
     const html = res.data;
 
     // 1. Stable Canonical Link
     assert.ok(
-      html.includes('<link rel="canonical" href="https://tikum.app/events/pestapora-2026-jakarta">')
+      html.includes(`<link rel="canonical" href="https://tikum.app/events/${scenarioCSlug}">`)
     );
 
     // 2. OpenGraph & Twitter
@@ -413,7 +428,7 @@ async function runSuite() {
 
     assert.strictEqual(jsonLd['@context'], 'https://schema.org');
     assert.strictEqual(jsonLd['@type'], 'MusicEvent');
-    assert.ok(jsonLd.name.includes('Pestapora'));
+    assert.ok(jsonLd.name.includes('Jazz'));
     assert.strictEqual(jsonLd.location['@type'], 'Place');
     assert.strictEqual(jsonLd.location.address.addressCountry, 'ID');
     assert.ok(jsonLd.offers, 'Offers must be structured');
@@ -428,7 +443,7 @@ async function runSuite() {
   // ==========================================
   await testAsync('Section 41: Business Acceptance — Discovery catalog query, filtering, and telemetry', async () => {
     // 1. User discovers events via public catalog API
-    const catRes = await apiRequest('/api/discovery/events?city=Jakarta');
+    const catRes = await apiRequest('/api/discovery/events?city=Jakarta&include_past=true');
     assert.strictEqual(catRes.status, 200);
     assert.ok(catRes.data.events.length >= 5);
 

@@ -14,6 +14,7 @@
 
 const assert = require('assert');
 const fs = require('fs');
+require('./src/database');
 
 // Core modules
 const { sourceRegistry, TRUST_LEVELS, SOURCE_TYPES, SOURCE_ROLES } = require('./src/discovery/SourceRegistry');
@@ -298,6 +299,7 @@ const THREAT_SCENARIOS = [
       await ingestionPipeline.ingestEvent({
         name: 'Postponed Festival Test',
         start_date: '2026-09-20',
+        start_date: '2026-10-20',
         venue_name: 'ICE BSD',
         city: 'Tangerang',
         category: 'FESTIVAL'
@@ -306,6 +308,7 @@ const THREAT_SCENARIOS = [
       await ingestionPipeline.ingestEvent({
         name: 'Postponed Festival Test',
         start_date: '2026-09-20',
+        start_date: '2026-10-20',
         venue_name: 'ICE BSD',
         city: 'Tangerang',
         category: 'FESTIVAL',

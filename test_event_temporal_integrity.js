@@ -764,15 +764,27 @@ async function main() {
       assert.notStrictEqual(ev.id, 'event-ibl-finals-2026', 'IBL Finals Sept 22 must NEVER appear in upcoming events');
     }
 
-    // Replicate homepage loadListings filtering logic
-    const activeListings = ListingService.getActiveListings().filter(l => {
+    // Replicate homepage loadListings filtering logic under Zero-Trust Seed Data:
+    // Unverified seed events must NOT expose active public listings (Criterion 1 & 8).
+    const unverifiedListings = ListingService.getActiveListings();
+    assert.strictEqual(unverifiedListings.length, 0, 'Zero-trust seed data: unverified event listing must NOT leak publicly');
+
+    // When an event independently obtains verified authoritative evidence, its listing becomes eligible:
+    const pestapora = state.events.find(e => e.id === 'event-pestapora-2026');
+    pestapora.is_verified = true;
+    pestapora.verification_status = 'VERIFIED';
+    pestapora.source_url = 'https://pestapora.com';
+    pestapora.evidence_hash = 'sha256-verified-pestapora-test-proof';
+    pestapora.verified_at = referenceNow.toISOString();
+
+    const verifiedListings = ListingService.getActiveListings().filter(l => {
       const ev = state.events.find(e => e.id === l.event_id);
       if (!ev) return false;
       return EventTemporalLifecycleEngine.isEventUpcoming(ev, referenceNow);
     });
 
-    assert.strictEqual(activeListings.length, 1, 'Exactly 1 active listing (Pestapora) should be present');
-    assert.strictEqual(activeListings[0].event_id, 'event-pestapora-2026');
+    assert.strictEqual(verifiedListings.length, 1, 'Verified event listing is present');
+    assert.strictEqual(verifiedListings[0].event_id, 'event-pestapora-2026');
   });
 
   // Case 31: Timezone midnight WIB (+07:00) parsed and offset correctly
