@@ -70,7 +70,7 @@ async function runSuite() {
     assert.strictEqual(pricing.ticketPrice, 1500000);
     assert.strictEqual(pricing.platformFee, 90000); // Canonical 6% fee
     assert.strictEqual(pricing.buyer_subtotal, 1590000);
-    assert.strictEqual(pricing.totalAmount, 1599900); // 1.590.000 + 9.900 PPN
+    assert.strictEqual(pricing.totalAmount, 1590000); // 1.590.000 (NON-PKP default: Rp0 tax)
   });
 
   // 4. Buyer reserves ticket & creates order
@@ -86,7 +86,7 @@ async function runSuite() {
     assert.strictEqual(order1.status, ORDER_STATUS.PENDING_PAYMENT);
     assert.strictEqual(escrow1.status, ESCROW_STATUS.PENDING_PAYMENT);
     assert.strictEqual(listing1.status, LISTING_STATUS.RESERVED);
-    assert.strictEqual(order1.total_amount, 1599900);
+    assert.strictEqual(order1.total_amount, 1590000);
   });
 
   // 5. Buyer pays -> Payment locked into Escrow

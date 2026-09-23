@@ -138,6 +138,10 @@
             <span>Tikum Trust &amp; Protection Fee (6%, min Rp 10.000, maks Rp 300.000):</span>
             <span id="pricePlatformFee" class="mono">-</span>
           </div>
+          <div class="price-row" id="priceTaxRow" style="display: none;">
+            <span>PPN Jasa Platform (11% PMK 131/2024):</span>
+            <span id="priceTax" class="mono">-</span>
+          </div>
           <div class="price-row total">
             <span>Total Pembayaran Pembeli:</span>
             <strong id="priceTotal" class="mono">-</strong>
@@ -448,15 +452,32 @@
       }
       const pricing = listing.pricing || {
         ticketPrice: listing.price,
-        platformFee: Math.round(listing.price * 0.10),
-        totalAmount: listing.price + Math.round(listing.price * 0.10)
         platformFee: defaultFee,
-        totalAmount: listing.price + defaultFee
+        buyer_fee: defaultFee,
+        buyer_tax: 0,
+        totalAmount: listing.price + defaultFee,
+        buyer_total: listing.price + defaultFee
       };
 
-      document.getElementById('priceTicket').innerText = 'Rp ' + Number(pricing.ticketPrice).toLocaleString('id-ID');
-      document.getElementById('pricePlatformFee').innerText = 'Rp ' + Number(pricing.platformFee).toLocaleString('id-ID');
-      document.getElementById('priceTotal').innerText = 'Rp ' + Number(pricing.totalAmount).toLocaleString('id-ID');
+      const ticketAmount = pricing.ticketPrice || listing.price || 0;
+      const buyerFeeAmount = pricing.buyer_fee !== undefined ? pricing.buyer_fee : (pricing.platformFee !== undefined ? pricing.platformFee : defaultFee);
+      const taxAmount = pricing.buyer_tax || (pricing.tax_breakdown && pricing.tax_breakdown.total_buyer_tax) || (pricing.taxes && pricing.taxes.total_buyer_tax) || 0;
+      const totalAmount = pricing.buyer_total !== undefined ? pricing.buyer_total : (pricing.totalAmount !== undefined ? pricing.totalAmount : (ticketAmount + buyerFeeAmount + taxAmount));
+
+      document.getElementById('priceTicket').innerText = 'Rp ' + Number(ticketAmount).toLocaleString('id-ID');
+      document.getElementById('pricePlatformFee').innerText = 'Rp ' + Number(buyerFeeAmount).toLocaleString('id-ID');
+
+      const taxRow = document.getElementById('priceTaxRow');
+      if (taxRow) {
+        if (taxAmount > 0) {
+          taxRow.style.display = 'flex';
+          document.getElementById('priceTax').innerText = 'Rp ' + Number(taxAmount).toLocaleString('id-ID');
+        } else {
+          taxRow.style.display = 'none';
+        }
+      }
+
+      document.getElementById('priceTotal').innerText = 'Rp ' + Number(totalAmount).toLocaleString('id-ID');
 
       // Check if purchase is possible
       const btn = document.getElementById('btnOrderSubmit');

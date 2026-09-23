@@ -2,6 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 const { state, recordAuditLog } = require('../database');
 const { LISTING_STATUS } = require('./listingService');
 const { emailService } = require('./emailService');
+const { TaxEngine } = require('../pricing/TaxEngine');
 
 const ESCROW_STATUS = {
   PENDING_PAYMENT: 'PENDING_PAYMENT',
@@ -69,7 +70,7 @@ class EscrowService {
       policyVersion
     });
 
-    const taxPolicyVersion = options.taxPolicyVersion || (policyVersion === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : '2026.1-ID-TAX');
+    const taxPolicyVersion = options.taxPolicyVersion || (policyVersion === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : TaxEngine.getDefaultTaxPolicyVersion());
     const taxes = TaxEngine.calculateTax({
       ticketPrice: fees.gross_ticket_value,
       buyerPlatformFee: fees.buyer_fee,
@@ -187,7 +188,7 @@ class EscrowService {
       await TransactionQuoteService.consumeQuote(quoteId, orderId, buyerId);
     } else {
       const effectivePricingPolicy = policyVersion || process.env.TIKUM_PRICING_POLICY || 'TIKUM_FEE_POLICY_V1';
-      const effectiveTaxPolicy = taxPolicyVersion || (effectivePricingPolicy === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : '2026.1-ID-TAX');
+      const effectiveTaxPolicy = taxPolicyVersion || (effectivePricingPolicy === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : TaxEngine.getDefaultTaxPolicyVersion());
 
       quote = await TransactionQuoteService.generateQuote({
         listingId,

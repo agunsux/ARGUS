@@ -55,7 +55,7 @@ class TransactionQuoteService {
     sellerId = null,
     paymentProcessingFee = 0,
     pricingPolicyVersion = 'TIKUM_FEE_POLICY_V1',
-    taxPolicyVersion = '2026.1-ID-TAX',
+    taxPolicyVersion = null,
     transactionDate = null,
     ttlMinutes = 15
   }) {

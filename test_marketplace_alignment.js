@@ -85,7 +85,7 @@ async function runAll() {
     // Pricing calculation
     const pricing = EscrowService.calculatePricing(l.price);
     assert.strictEqual(pricing.buyer_subtotal, 1908000, 'Buyer subtotal includes 6% canonical fee');
-    assert.strictEqual(pricing.totalAmount, 1919880, 'Buyer total price must include transparent 6% platform fee + tax');
+    assert.strictEqual(pricing.totalAmount, 1908000, 'Buyer total price must match canonical subtotal under NON-PKP default');
   });
 
   // ---------------------------------------------------------------------------
@@ -203,7 +203,7 @@ async function runAll() {
     assert.strictEqual(result.pricing.ticketPrice, 1350000);
     assert.strictEqual(result.pricing.platformFee, 81000); // 6% fee
     assert.strictEqual(result.pricing.buyer_subtotal, 1431000);
-    assert.strictEqual(result.pricing.totalAmount, 1439910); // Total buyer pay (1431000 + 8910 PPN)
+    assert.strictEqual(result.pricing.totalAmount, 1431000); // Total buyer pay (NON-PKP default: Rp0 tax)
 
     // Listing must be RESERVED
     const listing = state.listings.find(l => l.id === listingRes.listing.id);

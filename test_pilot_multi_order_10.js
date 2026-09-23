@@ -62,12 +62,12 @@ async function runPilot() {
       });
       await ListingService.verifyListing(lr.listing.id, 'admin-1', { approved: true });
       const or = await EscrowService.createOrder({ buyerId: buyers[i], listingId: lr.listing.id });
-      assert.strictEqual(or.order.total_amount, 1599900);
+      assert.strictEqual(or.order.total_amount, 1590000);
       await EscrowService.recordPayment({
         orderId: or.order.id,
         providerRef: 'pilot-pay-' + i,
         idempotencyKey: 'pilot-idem-' + i,
-        amountPaid: 1599900
+        amountPaid: 1590000
       });
       orders.push(or.order);
     }

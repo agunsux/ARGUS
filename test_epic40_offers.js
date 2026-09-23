@@ -533,9 +533,9 @@ async function runTests() {
       assert.strictEqual(order.ticket_price, 1200000, 'Order ticket price must be negotiated amount');
       assert.strictEqual(order.platform_fee, 72000, 'Platform fee must be 6% of negotiated amount (Rp 72.000), NOT 6% of Rp 1.500.000 (Rp 90.000)');
       assert.strictEqual(order.buyer_subtotal, 1272000, 'Buyer subtotal must be Rp 1.272.000');
-      assert.strictEqual(order.total_amount, 1279920, 'Total amount must be Rp 1.279.920');
+      assert.strictEqual(order.total_amount, 1272000, 'Total amount must be Rp 1.272.000 (NON-PKP default: Rp0 tax)');
       assert.strictEqual(escrow.amount, 1128000, 'Escrow held for seller disbursement must equal seller net payout (1.200.000 - 72.000)');
-      assert.strictEqual(escrow.total_paid, 1279920, 'Escrow total paid must equal total amount with platform fee & tax');
+      assert.strictEqual(escrow.total_paid, 1272000, 'Escrow total paid must equal total amount with platform fee');
       assert.strictEqual(pricing.platformFee, 72000);
 
       // Now execute simulated entry and settlement release to verify seller disbursement

@@ -38,7 +38,7 @@
  *      NEVER platform revenue.
  */
 
-const { state, recordAuditLog } = require('../database');
+const getState = () => require('../database').state;
 
 const VALID_PPN_REGIMES = new Set(['PMK_131_2024', 'NON_PKP', 'EXEMPT', 'STANDARD_12']);
 const VALID_TAXABLE_BASE_TYPES = new Set(['PLATFORM_FEE', 'TICKET_PRICE', 'TOTAL_AMOUNT']);
@@ -116,6 +116,7 @@ class TaxEngine {
    * Initialize tax policies in state
    */
   static init() {
+    const state = getState();
     if (!state.tax_policies) {
       state.tax_policies = [];
     }
@@ -131,14 +132,28 @@ class TaxEngine {
   }
 
   /**
+   * Determine default tax policy version based on TIKUM_TAX_REGIME.
+   * Default: 'NON-PKP-ID-TAX' (0% PPN) unless TIKUM_TAX_REGIME is explicitly 'PKP'.
+   */
+  static getDefaultTaxPolicyVersion() {
+    const regime = (process.env.TIKUM_TAX_REGIME || 'NON_PKP').toUpperCase();
+    if (regime === 'PKP') {
+      return '2026.1-ID-TAX';
+    }
+    return 'NON-PKP-ID-TAX';
+  }
+
+  /**
    * Get active tax policy by version
    */
-  static getPolicy(version = '2026.1-ID-TAX') {
+  static getPolicy(version = null) {
     this.init();
-    const policy = state.tax_policies.find(p => p.version === version && p.is_active);
+    const state = getState();
+    const targetVersion = version || this.getDefaultTaxPolicyVersion();
+    const policy = state.tax_policies.find(p => p.version === targetVersion && p.is_active);
     if (!policy) {
-      if (DEFAULT_TAX_POLICIES[version]) {
-        return DEFAULT_TAX_POLICIES[version];
+      if (DEFAULT_TAX_POLICIES[targetVersion]) {
+        return DEFAULT_TAX_POLICIES[targetVersion];
       }
       return null;
     }
@@ -150,6 +165,7 @@ class TaxEngine {
    */
   static listPolicies() {
     this.init();
+    const state = getState();
     return [...state.tax_policies];
   }
 
@@ -158,6 +174,7 @@ class TaxEngine {
    */
   static async registerPolicy(policyConfig, actorId = 'SYSTEM') {
     this.init();
+    const state = getState();
     const {
       version,
       country_code = 'ID',
@@ -255,7 +272,7 @@ class TaxEngine {
     sellerTaxProfile = {},
     buyerTaxProfile = {},
     transactionDate = null,
-    taxPolicyVersion = '2026.1-ID-TAX'
+    taxPolicyVersion = null
   }) {
     // 1. Fail-Closed Validation: Price & Platform Fee
     if (ticketPrice === undefined || ticketPrice === null || typeof ticketPrice !== 'number' || isNaN(ticketPrice) || ticketPrice < 0) {
@@ -281,9 +298,10 @@ class TaxEngine {
     const txDateIso = effectiveTxDate.toISOString();
 
     // 3. Fail-Closed Validation: Tax Policy Existence
-    const policy = this.getPolicy(taxPolicyVersion);
+    const effectiveTaxPolicy = taxPolicyVersion || this.getDefaultTaxPolicyVersion();
+    const policy = this.getPolicy(effectiveTaxPolicy);
     if (!policy) {
-      const err = new Error(`Tax calculation failed closed: Unknown tax policy version '${taxPolicyVersion}'`);
+      const err = new Error(`Tax calculation failed closed: Unknown tax policy version '${effectiveTaxPolicy}'`);
       err.code = 'TAX_FAIL_CLOSED_POLICY_NOT_FOUND';
       throw err;
     }

@@ -229,6 +229,7 @@ async function runSuite() {
     const taxes = TaxEngine.calculateTax({
       ticketPrice: 5000000, // Rp 5,000,000 ticket
       buyerPlatformFee: 250000, // Rp 250,000 platform fee
+      taxPolicyVersion: '2026.1-ID-TAX',
       transactionDate: '2026-09-19T10:00:00Z'
     });
     // PPN must be 11% effective on 250,000 = 27,500 (229,167 * 12%), NOT on ticket price

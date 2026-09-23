@@ -261,7 +261,7 @@ async function runBrandBoundaryTests() {
     assert.strictEqual(pricing.ticketPrice, 1000000);
     assert.strictEqual(pricing.platformFee, 60000); // Canonical 6% fee rate
     assert.strictEqual(pricing.buyer_subtotal, 1060000);
-    assert.strictEqual(pricing.totalAmount, 1066600); // 1,060,000 + 6,600 PPN
+    assert.strictEqual(pricing.totalAmount, 1060000); // 1,060,000 (NON-PKP default: Rp0 tax)
   });
 
   // -------------------------------------------------------------

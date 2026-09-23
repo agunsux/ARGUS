@@ -2010,7 +2010,7 @@ router.post('/pricing/calculate', async (req, res) => {
       sellerId = null,
       paymentProcessingFee = 0,
       policyVersion = 'TIKUM_FEE_POLICY_V1',
-      taxPolicyVersion = '2026.1-ID-TAX',
+      taxPolicyVersion = null,
       lockQuote = false
     } = req.body;
 
@@ -2021,6 +2021,7 @@ router.post('/pricing/calculate', async (req, res) => {
     const price = parseInt(ticketPrice, 10);
     const qty = parseInt(quantity || 1, 10);
     const pgFee = parseInt(paymentProcessingFee || 0, 10);
+    const effectiveTaxPolicy = taxPolicyVersion || TaxEngine.getDefaultTaxPolicyVersion();
 
     if (lockQuote) {
       const quote = await TransactionQuoteService.generateQuote({
@@ -2031,7 +2032,7 @@ router.post('/pricing/calculate', async (req, res) => {
         sellerId,
         paymentProcessingFee: pgFee,
         pricingPolicyVersion: policyVersion,
-        taxPolicyVersion: taxPolicyVersion
+        taxPolicyVersion: effectiveTaxPolicy
       });
       return res.json({
         success: true,
@@ -2067,7 +2068,7 @@ router.post('/pricing/calculate', async (req, res) => {
       ticketPrice: grossTicketValue,
       buyerPlatformFee: fees.buyer_fee,
       sellerTaxProfile,
-      taxPolicyVersion
+      taxPolicyVersion: effectiveTaxPolicy
     });
 
     const buyerSubtotal = grossTicketValue + fees.buyer_fee;
