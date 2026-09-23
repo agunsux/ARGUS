@@ -64,7 +64,7 @@ async function runDisputeSuite() {
       orderId: order1.id,
       providerRef: 'pay-ref-disp-1',
       idempotencyKey: 'idem-disp-1',
-      amountPaid: 1650000
+      amountPaid: order1.buyer_total
     });
 
     assert.strictEqual(escrow1.status, ESCROW_STATUS.ESCROWED);
@@ -159,7 +159,7 @@ async function runDisputeSuite() {
       orderId: order2.id,
       providerRef: 'pay-ref-disp-2',
       idempotencyKey: 'idem-disp-2',
-      amountPaid: 1650000
+      amountPaid: order2.buyer_total
     });
 
     assert.strictEqual(escrow2.status, ESCROW_STATUS.ESCROWED);

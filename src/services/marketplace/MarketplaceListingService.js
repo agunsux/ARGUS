@@ -200,11 +200,13 @@ class MarketplaceListingService {
       pricing: {
         ticket_price: numericPrice,
         seller_proceeds: pricing.seller_net_payout,
+        seller_payout: pricing.seller_net_payout,
         seller_fee: pricing.seller_fee,
         platform_fee: pricing.total_platform_fee || pricing.buyer_fee,
         buyer_fee: pricing.buyer_fee,
         buyer_total: pricing.buyer_total,
-        policy_version: pricing.policy_version
+        policy_version: pricing.fee_policy_version || pricing.policy_version,
+        fee_policy_version: pricing.fee_policy_version || pricing.policy_version
       },
       expires_at: expiresAt || null,
       created_at: now,

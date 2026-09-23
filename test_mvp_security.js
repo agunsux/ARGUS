@@ -135,7 +135,7 @@ async function runSecuritySuite() {
       orderId: orderRes.order.id,
       providerRef: 'pay-invariant-1',
       idempotencyKey: 'idem-inv-1',
-      amountPaid: 1650000
+      amountPaid: orderRes.order.buyer_total
     });
 
     // Attempt to release without gate entry verification
@@ -169,7 +169,7 @@ async function runSecuritySuite() {
       orderId: orderRes.order.id,
       providerRef: 'pay-idem-1',
       idempotencyKey: 'same-key-12345',
-      amountPaid: 1650000
+      amountPaid: orderRes.order.buyer_total
     });
     assert.strictEqual(p1.idempotent, false);
 
@@ -178,7 +178,7 @@ async function runSecuritySuite() {
       orderId: orderRes.order.id,
       providerRef: 'pay-idem-1-retry',
       idempotencyKey: 'same-key-12345',
-      amountPaid: 1650000
+      amountPaid: orderRes.order.buyer_total
     });
     assert.strictEqual(p2.idempotent, true);
     assert.strictEqual(p1.payment.id, p2.payment.id);

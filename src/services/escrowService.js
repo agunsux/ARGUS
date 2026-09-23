@@ -49,65 +49,54 @@ const releaseMutex = new OrderReleaseMutex();
 
 class EscrowService {
   /**
-   * Calculate transparent fee breakdown
-   * Supports both legacy percentage mode and modern two-sided policy mode.
+   * Calculate transparent fee breakdown using canonical fee engine.
+   * Single source of truth for pricing calculations.
    */
   static calculatePricing(ticketPrice, feePercentage = null, options = {}) {
-    const price = parseInt(ticketPrice, 10);
-    const { MarketplacePricingEngine } = require('../pricing/MarketplacePricingEngine');
+    const { CanonicalFeeEngine, TIKUM_FEE_POLICY_V1 } = require('../pricing/CanonicalFeeEngine');
     const { TaxEngine } = require('../pricing/TaxEngine');
 
-    // If caller explicitly passed a custom numeric feePercentage (e.g. 0.05 or 0.15) and no policyVersion
-    if (feePercentage !== null && typeof feePercentage === 'number' && !options.policyVersion && !options.useTwoSided) {
-      const platformFee = Math.round(price * feePercentage);
-      const totalAmount = price + platformFee;
-      return {
-        ticketPrice: price,
-        platformFee: platformFee,
-        feePercentage: feePercentage,
-        totalAmount: totalAmount,
-        currency: 'IDR',
-        buyer_fee: platformFee,
-        seller_fee: 0,
-        buyer_tax: 0,
-        seller_tax_withholding: 0,
-        buyer_total: totalAmount,
-        seller_net_payout: price,
-        policy_version: 'CUSTOM-FEE-PERCENTAGE'
-      };
-    }
+    // Canonical default is TIKUM_FEE_POLICY_V1
+    const policyVersion = options.policyVersion || process.env.TIKUM_PRICING_POLICY || 'TIKUM_FEE_POLICY_V1';
+    const quantity = options.quantity || 1;
+    const paymentProcessingFee = options.paymentProcessingFee || 0;
 
-    // Determine active policy: default to LEGACY-BUYER-10PCT for unadorned calls to preserve test compatibility,
-    // or 2026.1-ID-DEFAULT when specified or when useTwoSided is true.
-    const policyVersion = options.policyVersion || process.env.TIKUM_PRICING_POLICY || (options.useTwoSided ? '2026.1-ID-DEFAULT' : 'LEGACY-BUYER-10PCT');
-    const taxPolicyVersion = options.taxPolicyVersion || (policyVersion === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : '2026.1-ID-TAX');
-
-    const fees = MarketplacePricingEngine.calculateFees({
-      ticketPrice: price,
+    const fees = CanonicalFeeEngine.calculateTicketFees({
+      ticketPrice,
+      quantity,
+      paymentProcessingFee,
+      currency: options.currency || 'IDR',
       policyVersion
     });
 
+    const taxPolicyVersion = options.taxPolicyVersion || (policyVersion === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : '2026.1-ID-TAX');
     const taxes = TaxEngine.calculateTax({
-      ticketPrice: price,
+      ticketPrice: fees.gross_ticket_value,
       buyerPlatformFee: fees.buyer_fee,
       sellerTaxProfile: options.sellerTaxProfile || {},
       taxPolicyVersion
     });
 
-    const buyerTotal = price + fees.buyer_fee + taxes.total_buyer_tax;
-    const sellerNetPayout = price - fees.seller_fee - taxes.total_seller_tax_withholding;
+    const buyerTotal = fees.buyer_total + (taxes.total_buyer_tax || 0);
+    const sellerNetPayout = fees.seller_payout - (taxes.total_seller_tax_withholding || 0);
 
     return {
-      ticketPrice: price,
+      ticketPrice: fees.ticket_price,
+      quantity: fees.quantity,
+      gross_ticket_value: fees.gross_ticket_value,
       platformFee: fees.buyer_fee,
       feePercentage: fees.buyer_rate,
       totalAmount: buyerTotal,
-      currency: fees.currency || 'IDR',
-      policy_version: fees.policy_version,
+      currency: fees.currency,
+      policy_version: fees.fee_policy_version,
+      fee_policy_version: fees.fee_policy_version,
       tax_policy_version: taxes.tax_policy_version,
       buyer_fee: fees.buyer_fee,
       seller_fee: fees.seller_fee,
-      total_platform_fee: fees.total_platform_fee,
+      total_platform_fee: fees.total_tikum_fee,
+      total_tikum_fee: fees.total_tikum_fee,
+      payment_processing_fee: fees.payment_processing_fee,
+      buyer_subtotal: fees.buyer_subtotal,
       buyer_tax: taxes.total_buyer_tax,
       seller_tax_withholding: taxes.total_seller_tax_withholding,
       total_tax: taxes.total_tax_collected,
@@ -197,7 +186,7 @@ class EscrowService {
       quote = TransactionQuoteService.validateQuote(quoteId);
       await TransactionQuoteService.consumeQuote(quoteId, orderId, buyerId);
     } else {
-      const effectivePricingPolicy = policyVersion || process.env.TIKUM_PRICING_POLICY || 'LEGACY-BUYER-10PCT';
+      const effectivePricingPolicy = policyVersion || process.env.TIKUM_PRICING_POLICY || 'TIKUM_FEE_POLICY_V1';
       const effectiveTaxPolicy = taxPolicyVersion || (effectivePricingPolicy === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : '2026.1-ID-TAX');
 
       quote = await TransactionQuoteService.generateQuote({
@@ -214,16 +203,24 @@ class EscrowService {
 
     const pricing = {
       ticketPrice: quote.ticket_price,
+      quantity: quote.quantity || 1,
+      gross_ticket_value: quote.gross_ticket_value || quote.ticket_price,
       platformFee: quote.buyer_platform_fee,
-      feePercentage: quote.pricing_breakdown?.buyer_rate || 0.10,
+      feePercentage: quote.pricing_breakdown?.buyer_rate || 0.06,
       totalAmount: quote.buyer_total,
       currency: quote.currency || 'IDR',
+      fee_policy_version: quote.fee_policy_version || 'TIKUM_FEE_POLICY_V1',
       buyer_fee: quote.buyer_platform_fee,
       seller_fee: quote.seller_platform_fee,
+      total_platform_fee: quote.total_platform_fee,
+      total_tikum_fee: quote.total_platform_fee,
+      payment_processing_fee: quote.payment_processing_fee || 0,
+      buyer_subtotal: quote.buyer_subtotal || quote.buyer_total,
       buyer_tax: quote.buyer_tax_amount,
       seller_tax_withholding: quote.seller_tax_withholding,
       buyer_total: quote.buyer_total,
       seller_net_payout: quote.seller_net_payout,
+      seller_payout: quote.seller_net_payout,
       quote_id: quote.id
     };
 
@@ -239,18 +236,27 @@ class EscrowService {
       seller_id: listing.seller_id,
       ticket_id: listing.ticket_id,
       event_id: listing.event_id,
+      // Canonical Immutable Fee Snapshot (Requirement 6)
+      fee_policy_version: quote.fee_policy_version || quote.pricing_breakdown?.policy_version || 'TIKUM_FEE_POLICY_V1',
       ticket_price: quote.ticket_price,
+      quantity: quote.quantity || 1,
+      gross_ticket_value: quote.gross_ticket_value || quote.ticket_price,
+      buyer_fee: quote.buyer_fee !== undefined ? quote.buyer_fee : quote.buyer_platform_fee,
+      seller_fee: quote.seller_fee !== undefined ? quote.seller_fee : quote.seller_platform_fee,
       platform_fee: quote.buyer_platform_fee,
-      buyer_fee: quote.buyer_platform_fee,
-      seller_fee: quote.seller_platform_fee,
-      buyer_tax: quote.buyer_tax_amount,
-      seller_tax_withholding: quote.seller_tax_withholding,
+      payment_processing_fee: quote.payment_processing_fee || 0,
+      buyer_subtotal: quote.buyer_subtotal || (quote.ticket_price + quote.buyer_platform_fee),
       buyer_total: quote.buyer_total,
-      seller_net_payout: quote.seller_net_payout,
       total_amount: quote.buyer_total,
+      seller_payout: quote.seller_net_payout,
+      seller_net_payout: quote.seller_net_payout,
+      buyer_tax: quote.buyer_tax_amount || 0,
+      seller_tax_withholding: quote.seller_tax_withholding || 0,
+      currency: quote.currency || 'IDR',
+      calculated_at: quote.calculated_at || new Date().toISOString(),
       quote_id: quote.id,
       reservation_id: reservationId || null,
-      pricing_policy: quote.pricing_breakdown?.policy_version || 'LEGACY-BUYER-10PCT',
+      pricing_policy: quote.fee_policy_version || quote.pricing_breakdown?.policy_version || 'TIKUM_FEE_POLICY_V1',
       tax_policy: quote.tax_breakdown?.tax_policy_version || 'ZERO-TAX-TEST',
       status: ORDER_STATUS.PENDING_PAYMENT,
       payment_deadline: paymentDeadline,
@@ -278,13 +284,18 @@ class EscrowService {
       seller_id: listing.seller_id,
       amount: quote.seller_net_payout, // Authoritative net payable owed to seller upon verified admission
       ticket_price: quote.ticket_price,
+      quantity: quote.quantity || 1,
+      gross_ticket_value: quote.gross_ticket_value || quote.ticket_price,
+      seller_payout: quote.seller_net_payout,
       seller_net_payout: quote.seller_net_payout,
       total_paid: quote.buyer_total,
       buyer_total: quote.buyer_total,
       buyer_fee: quote.buyer_platform_fee,
       seller_fee: quote.seller_platform_fee,
+      payment_processing_fee: quote.payment_processing_fee || 0,
       buyer_tax: quote.buyer_tax_amount,
       seller_tax_withholding: quote.seller_tax_withholding,
+      fee_policy_version: quote.fee_policy_version || 'TIKUM_FEE_POLICY_V1',
       quote_id: quote.id,
       status: ESCROW_STATUS.PENDING_PAYMENT,
       provider_escrow_id: null,
@@ -383,8 +394,9 @@ class EscrowService {
       return { payment: existingPayment, order, escrow, idempotent: true };
     }
 
-    if (amountPaid && parseInt(amountPaid) !== order.total_amount) {
-      const err = new Error(`Payment amount mismatch. Expected ${order.total_amount}, got ${amountPaid}`);
+    const expectedAmount = order.buyer_total !== undefined ? order.buyer_total : order.total_amount;
+    if (amountPaid && parseInt(amountPaid, 10) !== expectedAmount) {
+      const err = new Error(`Payment amount mismatch. Expected ${expectedAmount}, got ${amountPaid}`);
       err.code = 'AMOUNT_MISMATCH';
       throw err;
     }
@@ -402,7 +414,7 @@ class EscrowService {
       id: paymentId,
       order_id: orderId,
       provider_ref: providerRef || `payref-${Date.now()}`,
-      amount: order.total_amount,
+      amount: expectedAmount,
       status: 'SETTLED',
       idempotency_key: idempotencyKey,
       created_at: new Date().toISOString()
@@ -446,7 +458,7 @@ class EscrowService {
       await FinancialLedger.recordPaymentCapture({
         orderId,
         quoteId: order.quote_id || escrow.quote_id || null,
-        ticketPrice: order.ticket_price || escrow.ticket_price || escrow.amount,
+        ticketPrice: order.gross_ticket_value || order.ticket_price || escrow.gross_ticket_value || escrow.ticket_price || escrow.amount,
         platformFee: order.platform_fee || order.buyer_fee || 0,
         buyerFee: order.buyer_fee !== undefined ? order.buyer_fee : (order.platform_fee || 0),
         sellerFee: order.seller_fee || 0,
@@ -668,6 +680,7 @@ class EscrowService {
         orderId,
         quoteId: order.quote_id || escrow.quote_id || null,
         ticketPrice: order.ticket_price || escrow.ticket_price || escrow.amount,
+        ticketPrice: order.gross_ticket_value || order.ticket_price || escrow.gross_ticket_value || escrow.ticket_price || escrow.amount,
         platformFee: order.platform_fee || order.buyer_fee || 0,
         buyerFee: order.buyer_fee,
         sellerFee: order.seller_fee,

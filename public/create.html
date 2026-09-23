@@ -205,15 +205,20 @@
             </div>
             <div class="price-row">
               <span>Nominal Bersih Penjual:</span>
+              <span>Harga Jual Anda:</span>
               <span id="calcSellerAmount" class="mono">Rp 0</span>
             </div>
             <div class="price-row">
               <span>Biaya Layanan &amp; Verifikasi PIC Lapangan (10%):</span>
               <span id="calcFeeAmount" class="mono">Rp 0</span>
+              <span>Tikum Seller Fee (6%, min Rp 10.000, maks Rp 300.000):</span>
+              <span id="calcFeeAmount" class="mono" style="color: var(--warning);">-Rp 0</span>
             </div>
             <div class="price-row total">
               <span>Total yang Dibayar Pembeli di Halaman Checkout:</span>
               <span id="calcTotalAmount" class="mono">Rp 0</span>
+              <span>Estimasi Payout Bersih yang Anda Terima:</span>
+              <span id="calcTotalAmount" class="mono" style="color: var(--success);">Rp 0</span>
             </div>
           </div>
         </div>
@@ -488,10 +493,23 @@
       const price = parseFloat(document.getElementById('sellingPrice').value) || 0;
       const fee = Math.round(price * 0.10);
       const total = price + fee;
+      const price = parseInt(document.getElementById('sellingPrice').value, 10) || 0;
+      if (price <= 0) {
+        document.getElementById('calcSellerAmount').innerText = 'Rp 0';
+        document.getElementById('calcFeeAmount').innerText = '-Rp 0';
+        document.getElementById('calcTotalAmount').innerText = 'Rp 0';
+        return;
+      }
+      const rawFee = Math.floor((price * 6) / 100);
+      let fee = Math.max(10000, Math.min(rawFee, 300000));
+      if (fee > price) fee = price;
+      const payout = price - fee;
 
       document.getElementById('calcSellerAmount').innerText = 'Rp ' + price.toLocaleString('id-ID');
       document.getElementById('calcFeeAmount').innerText = 'Rp ' + fee.toLocaleString('id-ID');
       document.getElementById('calcTotalAmount').innerText = 'Rp ' + total.toLocaleString('id-ID');
+      document.getElementById('calcFeeAmount').innerText = '-Rp ' + fee.toLocaleString('id-ID');
+      document.getElementById('calcTotalAmount').innerText = 'Rp ' + payout.toLocaleString('id-ID');
     }
 
     async function handleCreateNewEvent(e) {

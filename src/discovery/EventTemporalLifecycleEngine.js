@@ -117,8 +117,9 @@ class EventTemporalLifecycleEngine {
    * Returns timezone offset string (+07:00, +08:00, +09:00, Z).
    */
   static getTimezoneOffset(timezone) {
-    if (timezone === 'Asia/Makassar' || timezone === 'WITA') return '+08:00';
+    if (timezone === 'Asia/Makassar' || timezone === 'WITA' || timezone === 'Asia/Singapore' || timezone === 'Asia/Kuala_Lumpur' || timezone === 'Asia/Manila' || timezone === 'SGT' || timezone === 'MYT' || timezone === 'PHT') return '+08:00';
     if (timezone === 'Asia/Jayapura' || timezone === 'WIT') return '+09:00';
+    if (timezone === 'Asia/Bangkok' || timezone === 'Asia/Ho_Chi_Minh' || timezone === 'ICT') return '+07:00';
     if (timezone === 'UTC' || timezone === 'Etc/UTC') return '+00:00';
     return '+07:00'; // Default WIB / Asia/Jakarta
   }

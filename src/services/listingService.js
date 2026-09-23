@@ -158,6 +158,13 @@ class ListingService {
     const isUserCreatedEvent = event.source === 'USER_CREATED';
     const isEventUnverified = !event.is_verified;
     const listingId = `list-${uuidv4()}`;
+
+    const { CanonicalFeeEngine } = require('../pricing/CanonicalFeeEngine');
+    const feeBreakdown = CanonicalFeeEngine.calculateTicketFees({
+      ticketPrice: parseInt(price, 10),
+      quantity: 1
+    });
+
     const listing = {
       id: listingId,
       ticket_id: ticketId,
@@ -166,6 +173,17 @@ class ListingService {
       face_value: parseInt(faceValue),
       price: parseInt(price),
       seat_info: seatInfo,
+      pricing: {
+        fee_policy_version: feeBreakdown.fee_policy_version,
+        ticket_price: feeBreakdown.ticket_price,
+        gross_ticket_value: feeBreakdown.gross_ticket_value,
+        buyer_fee: feeBreakdown.buyer_fee,
+        seller_fee: feeBreakdown.seller_fee,
+        seller_payout: feeBreakdown.seller_payout,
+        buyer_subtotal: feeBreakdown.buyer_subtotal,
+        buyer_total: feeBreakdown.buyer_total,
+        currency: feeBreakdown.currency
+      },
       status: LISTING_STATUS.PENDING_VERIFICATION,
       rejection_reason: null,
       evidence_bundle_id: evidenceBundleId || null,

@@ -256,11 +256,12 @@ async function runBrandBoundaryTests() {
   // -------------------------------------------------------------
   // 11. NO TRANSACTION LOGIC CHANGED
   // -------------------------------------------------------------
-  check('11. Escrow calculations and pricing logic remain unchanged', () => {
+  check('11. Escrow calculations and pricing logic adhere to canonical 6% fee engine', () => {
     const pricing = EscrowService.calculatePricing(1000000);
     assert.strictEqual(pricing.ticketPrice, 1000000);
-    assert.strictEqual(pricing.platformFee, 100000); // 10% fee rate
-    assert.strictEqual(pricing.totalAmount, 1100000);
+    assert.strictEqual(pricing.platformFee, 60000); // Canonical 6% fee rate
+    assert.strictEqual(pricing.buyer_subtotal, 1060000);
+    assert.strictEqual(pricing.totalAmount, 1066600); // 1,060,000 + 6,600 PPN
   });
 
   // -------------------------------------------------------------

@@ -62,12 +62,12 @@ async function runPilot() {
       });
       await ListingService.verifyListing(lr.listing.id, 'admin-1', { approved: true });
       const or = await EscrowService.createOrder({ buyerId: buyers[i], listingId: lr.listing.id });
-      assert.strictEqual(or.order.total_amount, 1650000);
+      assert.strictEqual(or.order.total_amount, 1599900);
       await EscrowService.recordPayment({
         orderId: or.order.id,
         providerRef: 'pilot-pay-' + i,
         idempotencyKey: 'pilot-idem-' + i,
-        amountPaid: 1650000
+        amountPaid: 1599900
       });
       orders.push(or.order);
     }
@@ -141,7 +141,7 @@ async function runPilot() {
         idempotencyKey: 'pilot-stl-' + i, bankAccount: 'BCA pilot'
       });
       assert.strictEqual(s.settlement.status, 'EXECUTED');
-      assert.strictEqual(s.settlement.amount, 1500000);
+      assert.strictEqual(s.settlement.amount, 1410000); // 1.500.000 - 90.000 seller fee
       assert.strictEqual(s.settlement.mode, 'SIMULATED');
     }
     assert.strictEqual(state.orders.filter(o => o.status === 'SETTLED').length, 6);
@@ -244,7 +244,7 @@ async function runPilot() {
 
   await testAsync('PIC cannot modify settlement amount (server-side only)', async () => {
     const s = state.settlements.find(x => x.order_id === orders[1].id);
-    assert.strictEqual(s.amount, 1500000);
+    assert.strictEqual(s.amount, 1410000);
   });
 
   test('Audit trail covers multi-order pilot', () => {

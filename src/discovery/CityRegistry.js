@@ -5,74 +5,96 @@
  * Includes geographic coordinates (latitude, longitude) for accurate spatial distance calculation.
  */
 
-const { KNOWN_VENUES } = require('./EventNormalizationService');
+const KNOWN_VENUES = require('./EventNormalizationService').KNOWN_VENUES || [];
 const NATIONWIDE_CITIES = [
-  // Jabodetabek
-  { name: 'Jakarta', slug: 'jakarta', province: 'DKI Jakarta', region: 'Jabodetabek', lat: -6.2088, lng: 106.8456, timezone: 'Asia/Jakarta' },
-  { name: 'Tangerang', slug: 'tangerang', province: 'Banten', region: 'Jabodetabek', lat: -6.1783, lng: 106.6319, timezone: 'Asia/Jakarta' },
-  { name: 'Tangerang Selatan', slug: 'tangerang-selatan', province: 'Banten', region: 'Jabodetabek', lat: -6.2889, lng: 106.7179, timezone: 'Asia/Jakarta' },
-  { name: 'Bekasi', slug: 'bekasi', province: 'Jawa Barat', region: 'Jabodetabek', lat: -6.2383, lng: 106.9756, timezone: 'Asia/Jakarta' },
-  { name: 'Bogor', slug: 'bogor', province: 'Jawa Barat', region: 'Jabodetabek', lat: -6.5971, lng: 106.8060, timezone: 'Asia/Jakarta' },
-  { name: 'Depok', slug: 'depok', province: 'Jawa Barat', region: 'Jabodetabek', lat: -6.4025, lng: 106.7942, timezone: 'Asia/Jakarta' },
+  // Jabodetabek (Indonesia)
+  { name: 'Jakarta', slug: 'jakarta', country: 'Indonesia', province: 'DKI Jakarta', region: 'Jabodetabek', lat: -6.2088, lng: 106.8456, timezone: 'Asia/Jakarta' },
+  { name: 'Tangerang', slug: 'tangerang', country: 'Indonesia', province: 'Banten', region: 'Jabodetabek', lat: -6.1783, lng: 106.6319, timezone: 'Asia/Jakarta' },
+  { name: 'Tangerang Selatan', slug: 'tangerang-selatan', country: 'Indonesia', province: 'Banten', region: 'Jabodetabek', lat: -6.2889, lng: 106.7179, timezone: 'Asia/Jakarta' },
+  { name: 'Bekasi', slug: 'bekasi', country: 'Indonesia', province: 'Jawa Barat', region: 'Jabodetabek', lat: -6.2383, lng: 106.9756, timezone: 'Asia/Jakarta' },
+  { name: 'Bogor', slug: 'bogor', country: 'Indonesia', province: 'Jawa Barat', region: 'Jabodetabek', lat: -6.5971, lng: 106.8060, timezone: 'Asia/Jakarta' },
+  { name: 'Depok', slug: 'depok', country: 'Indonesia', province: 'Jawa Barat', region: 'Jabodetabek', lat: -6.4025, lng: 106.7942, timezone: 'Asia/Jakarta' },
 
-  // Jawa Barat
-  { name: 'Bandung', slug: 'bandung', province: 'Jawa Barat', region: 'Jawa Barat', lat: -6.9175, lng: 107.6191, timezone: 'Asia/Jakarta' },
-  { name: 'Cimahi', slug: 'cimahi', province: 'Jawa Barat', region: 'Jawa Barat', lat: -6.8722, lng: 107.5422, timezone: 'Asia/Jakarta' },
-  { name: 'Cirebon', slug: 'cirebon', province: 'Jawa Barat', region: 'Jawa Barat', lat: -6.7320, lng: 108.5523, timezone: 'Asia/Jakarta' },
-  { name: 'Tasikmalaya', slug: 'tasikmalaya', province: 'Jawa Barat', region: 'Jawa Barat', lat: -7.3274, lng: 108.2207, timezone: 'Asia/Jakarta' },
-  { name: 'Sukabumi', slug: 'sukabumi', province: 'Jawa Barat', region: 'Jawa Barat', lat: -6.9277, lng: 106.9300, timezone: 'Asia/Jakarta' },
+  // Jawa Barat (Indonesia)
+  { name: 'Bandung', slug: 'bandung', country: 'Indonesia', province: 'Jawa Barat', region: 'Jawa Barat', lat: -6.9175, lng: 107.6191, timezone: 'Asia/Jakarta' },
+  { name: 'Cimahi', slug: 'cimahi', country: 'Indonesia', province: 'Jawa Barat', region: 'Jawa Barat', lat: -6.8722, lng: 107.5422, timezone: 'Asia/Jakarta' },
+  { name: 'Cirebon', slug: 'cirebon', country: 'Indonesia', province: 'Jawa Barat', region: 'Jawa Barat', lat: -6.7320, lng: 108.5523, timezone: 'Asia/Jakarta' },
+  { name: 'Tasikmalaya', slug: 'tasikmalaya', country: 'Indonesia', province: 'Jawa Barat', region: 'Jawa Barat', lat: -7.3274, lng: 108.2207, timezone: 'Asia/Jakarta' },
+  { name: 'Sukabumi', slug: 'sukabumi', country: 'Indonesia', province: 'Jawa Barat', region: 'Jawa Barat', lat: -6.9277, lng: 106.9300, timezone: 'Asia/Jakarta' },
 
-  // Jawa Tengah & DIY
-  { name: 'Semarang', slug: 'semarang', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -6.9667, lng: 110.4167, timezone: 'Asia/Jakarta' },
-  { name: 'Solo', slug: 'solo', province: 'Jawa Tengah', region: 'Jawa Tengah', aliases: ['Surakarta'], lat: -7.5755, lng: 110.8243, timezone: 'Asia/Jakarta' },
-  { name: 'Surakarta', slug: 'surakarta', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -7.5755, lng: 110.8243, timezone: 'Asia/Jakarta' },
-  { name: 'Yogyakarta', slug: 'yogyakarta', province: 'DI Yogyakarta', region: 'DIY', aliases: ['Jogja', 'DIY'], lat: -7.7956, lng: 110.3695, timezone: 'Asia/Jakarta' },
-  { name: 'Magelang', slug: 'magelang', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -7.4706, lng: 110.2178, timezone: 'Asia/Jakarta' },
-  { name: 'Purwokerto', slug: 'purwokerto', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -7.4244, lng: 109.2302, timezone: 'Asia/Jakarta' },
-  { name: 'Salatiga', slug: 'salatiga', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -7.3305, lng: 110.5084, timezone: 'Asia/Jakarta' },
-  { name: 'Tegal', slug: 'tegal', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -6.8694, lng: 109.1402, timezone: 'Asia/Jakarta' },
-  { name: 'Kudus', slug: 'kudus', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -6.8048, lng: 110.8405, timezone: 'Asia/Jakarta' },
-  { name: 'Jepara', slug: 'jepara', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -6.5932, lng: 110.6778, timezone: 'Asia/Jakarta' },
-  { name: 'Kebumen', slug: 'kebumen', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -7.6686, lng: 109.6521, timezone: 'Asia/Jakarta' },
+  // Jawa Tengah & DIY (Indonesia)
+  { name: 'Semarang', slug: 'semarang', country: 'Indonesia', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -6.9667, lng: 110.4167, timezone: 'Asia/Jakarta' },
+  { name: 'Solo', slug: 'solo', country: 'Indonesia', province: 'Jawa Tengah', region: 'Jawa Tengah', aliases: ['Surakarta'], lat: -7.5755, lng: 110.8243, timezone: 'Asia/Jakarta' },
+  { name: 'Surakarta', slug: 'surakarta', country: 'Indonesia', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -7.5755, lng: 110.8243, timezone: 'Asia/Jakarta' },
+  { name: 'Yogyakarta', slug: 'yogyakarta', country: 'Indonesia', province: 'DI Yogyakarta', region: 'DIY', aliases: ['Jogja', 'DIY'], lat: -7.7956, lng: 110.3695, timezone: 'Asia/Jakarta' },
+  { name: 'Magelang', slug: 'magelang', country: 'Indonesia', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -7.4706, lng: 110.2178, timezone: 'Asia/Jakarta' },
+  { name: 'Purwokerto', slug: 'purwokerto', country: 'Indonesia', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -7.4244, lng: 109.2302, timezone: 'Asia/Jakarta' },
+  { name: 'Salatiga', slug: 'salatiga', country: 'Indonesia', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -7.3305, lng: 110.5084, timezone: 'Asia/Jakarta' },
+  { name: 'Tegal', slug: 'tegal', country: 'Indonesia', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -6.8694, lng: 109.1402, timezone: 'Asia/Jakarta' },
+  { name: 'Kudus', slug: 'kudus', country: 'Indonesia', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -6.8048, lng: 110.8405, timezone: 'Asia/Jakarta' },
+  { name: 'Jepara', slug: 'jepara', country: 'Indonesia', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -6.5932, lng: 110.6778, timezone: 'Asia/Jakarta' },
+  { name: 'Kebumen', slug: 'kebumen', country: 'Indonesia', province: 'Jawa Tengah', region: 'Jawa Tengah', lat: -7.6686, lng: 109.6521, timezone: 'Asia/Jakarta' },
 
-  // Jawa Timur
-  { name: 'Surabaya', slug: 'surabaya', province: 'Jawa Timur', region: 'Jawa Timur', lat: -7.2575, lng: 112.7521, timezone: 'Asia/Jakarta' },
-  { name: 'Malang', slug: 'malang', province: 'Jawa Timur', region: 'Jawa Timur', lat: -7.9666, lng: 112.6326, timezone: 'Asia/Jakarta' },
-  { name: 'Sidoarjo', slug: 'sidoarjo', province: 'Jawa Timur', region: 'Jawa Timur', lat: -7.4478, lng: 112.7183, timezone: 'Asia/Jakarta' },
-  { name: 'Mojokerto', slug: 'mojokerto', province: 'Jawa Timur', region: 'Jawa Timur', lat: -7.4726, lng: 112.4381, timezone: 'Asia/Jakarta' },
-  { name: 'Kediri', slug: 'kediri', province: 'Jawa Timur', region: 'Jawa Timur', lat: -7.8480, lng: 112.0178, timezone: 'Asia/Jakarta' },
-  { name: 'Tulungagung', slug: 'tulungagung', province: 'Jawa Timur', region: 'Jawa Timur', lat: -8.0647, lng: 111.9012, timezone: 'Asia/Jakarta' },
-  { name: 'Jember', slug: 'jember', province: 'Jawa Timur', region: 'Jawa Timur', lat: -8.1724, lng: 113.7007, timezone: 'Asia/Jakarta' },
-  { name: 'Banyuwangi', slug: 'banyuwangi', province: 'Jawa Timur', region: 'Jawa Timur', lat: -8.2192, lng: 114.3692, timezone: 'Asia/Jakarta' },
-  { name: 'Madiun', slug: 'madiun', province: 'Jawa Timur', region: 'Jawa Timur', lat: -7.6298, lng: 111.5239, timezone: 'Asia/Jakarta' },
+  // Jawa Timur (Indonesia)
+  { name: 'Surabaya', slug: 'surabaya', country: 'Indonesia', province: 'Jawa Timur', region: 'Jawa Timur', lat: -7.2575, lng: 112.7521, timezone: 'Asia/Jakarta' },
+  { name: 'Malang', slug: 'malang', country: 'Indonesia', province: 'Jawa Timur', region: 'Jawa Timur', lat: -7.9666, lng: 112.6326, timezone: 'Asia/Jakarta' },
+  { name: 'Sidoarjo', slug: 'sidoarjo', country: 'Indonesia', province: 'Jawa Timur', region: 'Jawa Timur', lat: -7.4478, lng: 112.7183, timezone: 'Asia/Jakarta' },
+  { name: 'Mojokerto', slug: 'mojokerto', country: 'Indonesia', province: 'Jawa Timur', region: 'Jawa Timur', lat: -7.4726, lng: 112.4381, timezone: 'Asia/Jakarta' },
+  { name: 'Kediri', slug: 'kediri', country: 'Indonesia', province: 'Jawa Timur', region: 'Jawa Timur', lat: -7.8480, lng: 112.0178, timezone: 'Asia/Jakarta' },
+  { name: 'Tulungagung', slug: 'tulungagung', country: 'Indonesia', province: 'Jawa Timur', region: 'Jawa Timur', lat: -8.0647, lng: 111.9012, timezone: 'Asia/Jakarta' },
+  { name: 'Jember', slug: 'jember', country: 'Indonesia', province: 'Jawa Timur', region: 'Jawa Timur', lat: -8.1724, lng: 113.7007, timezone: 'Asia/Jakarta' },
+  { name: 'Banyuwangi', slug: 'banyuwangi', country: 'Indonesia', province: 'Jawa Timur', region: 'Jawa Timur', lat: -8.2192, lng: 114.3692, timezone: 'Asia/Jakarta' },
+  { name: 'Madiun', slug: 'madiun', country: 'Indonesia', province: 'Jawa Timur', region: 'Jawa Timur', lat: -7.6298, lng: 111.5239, timezone: 'Asia/Jakarta' },
 
-  // Bali & Nusa Tenggara
-  { name: 'Bali', slug: 'bali', province: 'Bali', region: 'Bali', aliases: ['Denpasar', 'Badung', 'Gianyar'], lat: -8.6705, lng: 115.2126, timezone: 'Asia/Makassar' },
-  { name: 'Denpasar', slug: 'denpasar', province: 'Bali', region: 'Bali', lat: -8.6705, lng: 115.2126, timezone: 'Asia/Makassar' },
-  { name: 'Badung', slug: 'badung', province: 'Bali', region: 'Bali', lat: -8.5833, lng: 115.1833, timezone: 'Asia/Makassar' },
-  { name: 'Gianyar', slug: 'gianyar', province: 'Bali', region: 'Bali', lat: -8.5433, lng: 115.3283, timezone: 'Asia/Makassar' },
-  { name: 'Tabanan', slug: 'tabanan', province: 'Bali', region: 'Bali', lat: -8.5411, lng: 115.1252, timezone: 'Asia/Makassar' },
-  { name: 'Mataram', slug: 'mataram', province: 'Nusa Tenggara Barat', region: 'Nusa Tenggara', aliases: ['Lombok'], lat: -8.5833, lng: 116.1167, timezone: 'Asia/Makassar' },
+  // Bali & Nusa Tenggara (Indonesia)
+  { name: 'Bali', slug: 'bali', country: 'Indonesia', province: 'Bali', region: 'Bali', aliases: ['Denpasar', 'Badung', 'Gianyar'], lat: -8.6705, lng: 115.2126, timezone: 'Asia/Makassar' },
+  { name: 'Denpasar', slug: 'denpasar', country: 'Indonesia', province: 'Bali', region: 'Bali', lat: -8.6705, lng: 115.2126, timezone: 'Asia/Makassar' },
+  { name: 'Badung', slug: 'badung', country: 'Indonesia', province: 'Bali', region: 'Bali', lat: -8.5833, lng: 115.1833, timezone: 'Asia/Makassar' },
+  { name: 'Gianyar', slug: 'gianyar', country: 'Indonesia', province: 'Bali', region: 'Bali', lat: -8.5433, lng: 115.3283, timezone: 'Asia/Makassar' },
+  { name: 'Tabanan', slug: 'tabanan', country: 'Indonesia', province: 'Bali', region: 'Bali', lat: -8.5411, lng: 115.1252, timezone: 'Asia/Makassar' },
+  { name: 'Mataram', slug: 'mataram', country: 'Indonesia', province: 'Nusa Tenggara Barat', region: 'Nusa Tenggara', aliases: ['Lombok'], lat: -8.5833, lng: 116.1167, timezone: 'Asia/Makassar' },
 
-  // Sumatera
-  { name: 'Medan', slug: 'medan', province: 'Sumatera Utara', region: 'Sumatera', lat: 3.5952, lng: 98.6722, timezone: 'Asia/Jakarta' },
-  { name: 'Palembang', slug: 'palembang', province: 'Sumatera Selatan', region: 'Sumatera', lat: -2.9761, lng: 104.7754, timezone: 'Asia/Jakarta' },
-  { name: 'Pekanbaru', slug: 'pekanbaru', province: 'Riau', region: 'Sumatera', lat: 0.5071, lng: 101.4478, timezone: 'Asia/Jakarta' },
-  { name: 'Batam', slug: 'batam', province: 'Kepulauan Riau', region: 'Sumatera', lat: 1.1301, lng: 104.0529, timezone: 'Asia/Jakarta' },
-  { name: 'Padang', slug: 'padang', province: 'Sumatera Barat', region: 'Sumatera', lat: -0.9471, lng: 100.4172, timezone: 'Asia/Jakarta' },
-  { name: 'Bandar Lampung', slug: 'bandar-lampung', province: 'Lampung', region: 'Sumatera', aliases: ['Lampung'], lat: -5.3971, lng: 105.2668, timezone: 'Asia/Jakarta' },
+  // Sumatera (Indonesia)
+  { name: 'Medan', slug: 'medan', country: 'Indonesia', province: 'Sumatera Utara', region: 'Sumatera', lat: 3.5952, lng: 98.6722, timezone: 'Asia/Jakarta' },
+  { name: 'Palembang', slug: 'palembang', country: 'Indonesia', province: 'Sumatera Selatan', region: 'Sumatera', lat: -2.9761, lng: 104.7754, timezone: 'Asia/Jakarta' },
+  { name: 'Pekanbaru', slug: 'pekanbaru', country: 'Indonesia', province: 'Riau', region: 'Sumatera', lat: 0.5071, lng: 101.4478, timezone: 'Asia/Jakarta' },
+  { name: 'Batam', slug: 'batam', country: 'Indonesia', province: 'Kepulauan Riau', region: 'Sumatera', lat: 1.1301, lng: 104.0529, timezone: 'Asia/Jakarta' },
+  { name: 'Padang', slug: 'padang', country: 'Indonesia', province: 'Sumatera Barat', region: 'Sumatera', lat: -0.9471, lng: 100.4172, timezone: 'Asia/Jakarta' },
+  { name: 'Bandar Lampung', slug: 'bandar-lampung', country: 'Indonesia', province: 'Lampung', region: 'Sumatera', aliases: ['Lampung'], lat: -5.3971, lng: 105.2668, timezone: 'Asia/Jakarta' },
 
-  // Kalimantan
-  { name: 'Banjarmasin', slug: 'banjarmasin', province: 'Kalimantan Selatan', region: 'Kalimantan', lat: -3.3194, lng: 114.5908, timezone: 'Asia/Makassar' },
-  { name: 'Banjarbaru', slug: 'banjarbaru', province: 'Kalimantan Selatan', region: 'Kalimantan', lat: -3.4404, lng: 114.8306, timezone: 'Asia/Makassar' },
-  { name: 'Samarinda', slug: 'samarinda', province: 'Kalimantan Timur', region: 'Kalimantan', lat: -0.5022, lng: 117.1536, timezone: 'Asia/Makassar' },
-  { name: 'Balikpapan', slug: 'balikpapan', province: 'Kalimantan Timur', region: 'Kalimantan', lat: -1.2379, lng: 116.8529, timezone: 'Asia/Makassar' },
-  { name: 'Pontianak', slug: 'pontianak', province: 'Kalimantan Barat', region: 'Kalimantan', lat: -0.0263, lng: 109.3425, timezone: 'Asia/Jakarta' },
+  // Kalimantan (Indonesia)
+  { name: 'Banjarmasin', slug: 'banjarmasin', country: 'Indonesia', province: 'Kalimantan Selatan', region: 'Kalimantan', lat: -3.3194, lng: 114.5908, timezone: 'Asia/Makassar' },
+  { name: 'Banjarbaru', slug: 'banjarbaru', country: 'Indonesia', province: 'Kalimantan Selatan', region: 'Kalimantan', lat: -3.4404, lng: 114.8306, timezone: 'Asia/Makassar' },
+  { name: 'Samarinda', slug: 'samarinda', country: 'Indonesia', province: 'Kalimantan Timur', region: 'Kalimantan', lat: -0.5022, lng: 117.1536, timezone: 'Asia/Makassar' },
+  { name: 'Balikpapan', slug: 'balikpapan', country: 'Indonesia', province: 'Kalimantan Timur', region: 'Kalimantan', lat: -1.2379, lng: 116.8529, timezone: 'Asia/Makassar' },
+  { name: 'Pontianak', slug: 'pontianak', country: 'Indonesia', province: 'Kalimantan Barat', region: 'Kalimantan', lat: -0.0263, lng: 109.3425, timezone: 'Asia/Jakarta' },
 
-  // Sulawesi & Papua
-  { name: 'Makassar', slug: 'makassar', province: 'Sulawesi Selatan', region: 'Sulawesi', aliases: ['Ujung Pandang'], lat: -5.1477, lng: 119.4327, timezone: 'Asia/Makassar' },
-  { name: 'Manado', slug: 'manado', province: 'Sulawesi Utara', region: 'Sulawesi', lat: 1.4748, lng: 124.8421, timezone: 'Asia/Makassar' },
-  { name: 'Jayapura', slug: 'jayapura', province: 'Papua', region: 'Papua', lat: -2.5916, lng: 140.6690, timezone: 'Asia/Jayapura' }
+  // Sulawesi & Papua (Indonesia)
+  { name: 'Makassar', slug: 'makassar', country: 'Indonesia', province: 'Sulawesi Selatan', region: 'Sulawesi', aliases: ['Ujung Pandang'], lat: -5.1477, lng: 119.4327, timezone: 'Asia/Makassar' },
+  { name: 'Manado', slug: 'manado', country: 'Indonesia', province: 'Sulawesi Utara', region: 'Sulawesi', lat: 1.4748, lng: 124.8421, timezone: 'Asia/Makassar' },
+  { name: 'Jayapura', slug: 'jayapura', country: 'Indonesia', province: 'Papua', region: 'Papua', lat: -2.5916, lng: 140.6690, timezone: 'Asia/Jayapura' },
+
+  // Singapore
+  { name: 'Singapore', slug: 'singapore', country: 'Singapore', province: 'Central Region', region: 'Singapore', aliases: ['SG'], lat: 1.3521, lng: 103.8198, timezone: 'Asia/Singapore' },
+
+  // Malaysia
+  { name: 'Kuala Lumpur', slug: 'kuala-lumpur', country: 'Malaysia', province: 'Federal Territory', region: 'Kuala Lumpur', aliases: ['KL'], lat: 3.1390, lng: 101.6869, timezone: 'Asia/Kuala_Lumpur' },
+  { name: 'George Town', slug: 'george-town', country: 'Malaysia', province: 'Penang', region: 'Penang', aliases: ['Penang'], lat: 5.4141, lng: 100.3288, timezone: 'Asia/Kuala_Lumpur' },
+  { name: 'Johor Bahru', slug: 'johor-bahru', country: 'Malaysia', province: 'Johor', region: 'Johor', aliases: ['JB'], lat: 1.4927, lng: 103.7414, timezone: 'Asia/Kuala_Lumpur' },
+
+  // Thailand
+  { name: 'Bangkok', slug: 'bangkok', country: 'Thailand', province: 'Bangkok', region: 'Central Thailand', aliases: ['BKK', 'Krung Thep'], lat: 13.7563, lng: 100.5018, timezone: 'Asia/Bangkok' },
+  { name: 'Nonthaburi', slug: 'nonthaburi', country: 'Thailand', province: 'Nonthaburi', region: 'Impact Muang Thong Thani', lat: 13.8621, lng: 100.5144, timezone: 'Asia/Bangkok' },
+  { name: 'Chiang Mai', slug: 'chiang-mai', country: 'Thailand', province: 'Chiang Mai', region: 'Northern Thailand', lat: 18.7883, lng: 98.9853, timezone: 'Asia/Bangkok' },
+
+  // Philippines
+  { name: 'Manila', slug: 'manila', country: 'Philippines', province: 'Metro Manila', region: 'NCR', aliases: ['Metro Manila', 'Pasay', 'Quezon City', 'Taguig'], lat: 14.5995, lng: 120.9842, timezone: 'Asia/Manila' },
+  { name: 'Cebu City', slug: 'cebu-city', country: 'Philippines', province: 'Cebu', region: 'Central Visayas', aliases: ['Cebu'], lat: 10.3157, lng: 123.8854, timezone: 'Asia/Manila' },
+
+  // Vietnam
+  { name: 'Ho Chi Minh City', slug: 'ho-chi-minh-city', country: 'Vietnam', province: 'Southeast', region: 'HCMC', aliases: ['HCMC', 'Saigon'], lat: 10.8231, lng: 106.6297, timezone: 'Asia/Ho_Chi_Minh' },
+  { name: 'Hanoi', slug: 'hanoi', country: 'Vietnam', province: 'Red River Delta', region: 'Hanoi', aliases: ['Ha Noi'], lat: 21.0285, lng: 105.8542, timezone: 'Asia/Ho_Chi_Minh' },
+  { name: 'Da Nang', slug: 'da-nang', country: 'Vietnam', province: 'South Central Coast', region: 'Central Vietnam', aliases: ['Danang'], lat: 16.0544, lng: 108.2022, timezone: 'Asia/Ho_Chi_Minh' }
 ];
 
 class CityRegistry {
@@ -183,8 +205,36 @@ class CityRegistry {
     return cityRegistry.registerCity(data);
   }
 
+  static getAllCountries() {
+    return ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Philippines', 'Vietnam'];
+  }
+
+  static getCitiesByCountry(country) {
+    return cityRegistry.getCitiesByCountry(country);
+  }
+
+  getAllCountries() {
+    return ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Philippines', 'Vietnam'];
+  }
+
+  getCitiesByCountry(country) {
+    if (!country) return this.getAllCities();
+    const clean = country.toLowerCase().trim();
+    const cities = this.getAllCities();
+    return cities.filter(c => {
+      const cityCountry = (c.country || 'Indonesia').toLowerCase().trim();
+      return cityCountry === clean ||
+        (clean === 'id' && cityCountry === 'indonesia') ||
+        (clean === 'sg' && cityCountry === 'singapore') ||
+        (clean === 'my' && cityCountry === 'malaysia') ||
+        (clean === 'th' && cityCountry === 'thailand') ||
+        (clean === 'ph' && cityCountry === 'philippines') ||
+        (clean === 'vn' && cityCountry === 'vietnam');
+    });
+  }
+
   /**
-   * Dynamically registers a newly observed Indonesian city
+   * Dynamically registers a newly observed city
    */
   registerCity(cityData = {}) {
     if (!cityData.name) return null;
@@ -197,6 +247,7 @@ class CityRegistry {
     const newCity = {
       name: cityData.name,
       slug: slug,
+      country: cityData.country || 'Indonesia',
       province: cityData.province || 'Indonesia',
       region: cityData.region || 'Regional',
       lat: cityData.lat || -6.2088,

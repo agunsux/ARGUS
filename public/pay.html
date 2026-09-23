@@ -135,6 +135,7 @@
           </div>
           <div class="price-row">
             <span>Biaya Layanan &amp; Verifikasi PIC Lapangan (10%):</span>
+            <span>Tikum Trust &amp; Protection Fee (6%, min Rp 10.000, maks Rp 300.000):</span>
             <span id="pricePlatformFee" class="mono">-</span>
           </div>
           <div class="price-row total">
@@ -267,6 +268,7 @@
           </div>
           <div class="price-row" style="font-size: 12px; margin-bottom: 6px; display: flex; justify-content: space-between;">
             <span style="color: var(--text-muted);">Biaya Layanan Tikum (10%):</span>
+            <span style="color: var(--text-muted);">Tikum Trust &amp; Protection Fee (6%, min Rp 10.000, maks Rp 300.000):</span>
             <span id="calcPlatformFee" class="mono">-</span>
           </div>
           <div class="price-row total" style="font-size: 14px; border-top: 1px solid #1e293b; padding-top: 8px; margin-top: 8px; display: flex; justify-content: space-between;">
@@ -439,10 +441,17 @@
       }
 
       // Pricing
+      let defaultFee = 0;
+      if (listing.price > 0) {
+        const rawFee = Math.floor((listing.price * 6) / 100);
+        defaultFee = Math.max(10000, Math.min(rawFee, 300000));
+      }
       const pricing = listing.pricing || {
         ticketPrice: listing.price,
         platformFee: Math.round(listing.price * 0.10),
         totalAmount: listing.price + Math.round(listing.price * 0.10)
+        platformFee: defaultFee,
+        totalAmount: listing.price + defaultFee
       };
 
       document.getElementById('priceTicket').innerText = 'Rp ' + Number(pricing.ticketPrice).toLocaleString('id-ID');
@@ -567,6 +576,8 @@
       }
 
       const platformFee = Math.round(val * 0.10);
+      const rawFee = Math.floor((val * 6) / 100);
+      const platformFee = Math.max(10000, Math.min(rawFee, 300000));
       const total = val + platformFee;
       const minAllowed = Math.round(currentListing.price * 0.5);
 

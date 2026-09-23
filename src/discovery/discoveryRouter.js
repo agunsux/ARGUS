@@ -608,7 +608,7 @@ router.get('/promoters/apmi/:slug', (req, res) => {
  */
 function handleGetEvents(req, res) {
   const {
-    q, city, province, category, artist, venue, promoter,
+    q, city, province, country, category, category_group, artist, venue, promoter,
     date_from, date_to, verified_only, status, include_past, scope,
     sort = 'nearest', lat, lng, user_city, limit = 100, page = 1
   } = req.query;
@@ -631,6 +631,7 @@ function handleGetEvents(req, res) {
       (e.canonical_name || e.title || '').toLowerCase().includes(term) ||
       (e.venue_name || e.venue || '').toLowerCase().includes(term) ||
       (e.city || '').toLowerCase().includes(term) ||
+      (e.country || '').toLowerCase().includes(term) ||
       (e.artist || '').toLowerCase().includes(term) ||
       (Array.isArray(e.artists) && e.artists.some(a => a.toLowerCase().includes(term)))
     );
@@ -642,16 +643,38 @@ function handleGetEvents(req, res) {
     allEvents = allEvents.filter(e => (e.city || '').toLowerCase() === cleanCity || (e.city || '').toLowerCase().includes(cleanCity));
   }
 
+  // 2b. Country filter (supports Indonesia, Singapore, Malaysia, Thailand, Philippines, Vietnam and ISO codes)
+  if (country && country.trim()) {
+    const cleanCountry = country.toLowerCase().trim();
+    const countryCodeMap = {
+      'id': 'indonesia',
+      'sg': 'singapore',
+      'my': 'malaysia',
+      'th': 'thailand',
+      'ph': 'philippines',
+      'vn': 'vietnam'
+    };
+    const targetCountry = countryCodeMap[cleanCountry] || cleanCountry;
+    allEvents = allEvents.filter(e => {
+      const eCountry = (e.country || 'Indonesia').toLowerCase().trim();
+      return eCountry === targetCountry || eCountry.includes(targetCountry);
+    });
+  }
+
   // 3. Province filter
   if (province && province.trim()) {
     const cleanProv = province.toLowerCase().trim();
     allEvents = allEvents.filter(e => (e.province || '').toLowerCase().includes(cleanProv));
   }
 
-  // 4. Category filter
-  if (category && category.trim()) {
-    const cleanCat = category.toUpperCase().trim();
-    allEvents = allEvents.filter(e => (e.event_type || e.category || '').toUpperCase() === cleanCat);
+  // 4. Category filter (supports exact event_type, category, and broad category_group)
+  const catFilter = (category || category_group || '').toUpperCase().trim();
+  if (catFilter && catFilter !== 'ALL') {
+    allEvents = allEvents.filter(e => {
+      const eCat = (e.event_type || e.category || '').toUpperCase().trim();
+      const eGroup = (e.category_group || '').toUpperCase().trim();
+      return eCat === catFilter || eGroup === catFilter || (eGroup && eGroup.includes(catFilter));
+    });
   }
 
   // 5. Artist filter
@@ -810,8 +833,9 @@ router.get('/api/events/home-feed', (req, res) => {
   res.setHeader('Expires', '0');
 
   const now = new Date();
-  const { city, lat, lng } = req.query;
-  const allEvents = canonicalRegistry.getAllEvents().filter(e => {
+  const { city, lat, lng, country, category } = req.query;
+
+  let allEvents = canonicalRegistry.getAllEvents().filter(e => {
     const evStatus = (e.status || '').toUpperCase();
     const evLifecycle = (e.lifecycle_status || '').toUpperCase();
     if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
@@ -824,17 +848,45 @@ router.get('/api/events/home-feed', (req, res) => {
     return isVerified && hasProvenance;
   });
 
+  // Country filter if supplied
+  if (country && country.trim()) {
+    const cleanCountry = country.toLowerCase().trim();
+    const countryCodeMap = {
+      'id': 'indonesia',
+      'sg': 'singapore',
+      'my': 'malaysia',
+      'th': 'thailand',
+      'ph': 'philippines',
+      'vn': 'vietnam'
+    };
+    const targetCountry = countryCodeMap[cleanCountry] || cleanCountry;
+    allEvents = allEvents.filter(e => {
+      const eCountry = (e.country || 'Indonesia').toLowerCase().trim();
+      return eCountry === targetCountry || eCountry.includes(targetCountry);
+    });
+  }
+
+  // Category filter if supplied
+  if (category && category.trim() && category.toUpperCase().trim() !== 'ALL') {
+    const cleanCat = category.toUpperCase().trim();
+    allEvents = allEvents.filter(e => {
+      const eCat = (e.event_type || e.category || '').toUpperCase().trim();
+      const eGroup = (e.category_group || '').toUpperCase().trim();
+      return eCat === cleanCat || eGroup === cleanCat || (eGroup && eGroup.includes(cleanCat));
+    });
+  }
+
   // 1. Upcoming Nearest (Chronological)
   const upcoming = [...allEvents]
     .filter(e => e.verification_status !== 'CANCELLED' && e.verification_status !== 'EXPIRED')
     .sort((a, b) => (a.start_date || a.date || '9999').localeCompare(b.start_date || b.date || '9999'))
-    .slice(0, 8);
+    .slice(0, 12);
 
   // 2. Trending Popular
   const popular = [...allEvents]
     .filter(e => e.verification_status !== 'CANCELLED' && e.verification_status !== 'EXPIRED')
     .sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0))
-    .slice(0, 8);
+    .slice(0, 12);
 
   // 3. Near You (Filtered by user city or coordinates)
   let nearYou = [];
@@ -866,21 +918,40 @@ router.get('/api/events/home-feed', (req, res) => {
     return diffDays >= 0 && diffDays <= 4;
   }).slice(0, 8);
 
-  // 5. Local Gems (Deterministic regional high-quality concerts)
+  // 5. Local Gems (Deterministic regional high-quality concerts/events)
   const localGems = allEvents
     .filter(e => e.is_local_gem)
     .sort((a, b) => (b.local_gems_score || 0) - (a.local_gems_score || 0))
     .slice(0, 8);
 
+  // 6. Category Specific Sections (All Paid / Ticketed Categories)
+  const musicEvents = allEvents.filter(e => (e.category_group === 'MUSIC' || (e.category || '').toUpperCase().includes('CONCERT') || (e.category || '').toUpperCase().includes('MUSIC'))).slice(0, 8);
+  const sportsEvents = allEvents.filter(e => (e.category_group === 'SPORTS' || (e.category || '').toUpperCase().includes('SPORT'))).slice(0, 8);
+  const festivalEvents = allEvents.filter(e => (e.category_group === 'FESTIVALS_EXPERIENCES' || (e.category || '').toUpperCase().includes('FESTIVAL'))).slice(0, 8);
+  const comedyShows = allEvents.filter(e => (e.category_group === 'SHOWS_COMEDY' || (e.category || '').toUpperCase().includes('COMEDY') || (e.category || '').toUpperCase().includes('THEATER'))).slice(0, 8);
+  const businessEvents = allEvents.filter(e => (e.category_group === 'BUSINESS_EDUCATION' || (e.category || '').toUpperCase().includes('CONFERENCE'))).slice(0, 8);
+
   res.json({
     success: true,
+    feed: upcoming,
+    meta: {
+      total_verified_upcoming: allEvents.length,
+      country: country || 'ALL',
+      category: category || 'ALL',
+      countries: cityRegistry.getAllCountries ? cityRegistry.getAllCountries() : []
+    },
     sections: {
       upcoming_nearest: upcoming,
       trending_popular: popular,
       popular_events: popular,
       near_you: nearYou,
       this_weekend: thisWeekend,
-      local_gems: localGems
+      local_gems: localGems,
+      music: musicEvents,
+      sports: sportsEvents,
+      festivals_experiences: festivalEvents,
+      shows_comedy: comedyShows,
+      business_education: businessEvents
     }
   });
 });

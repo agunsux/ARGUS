@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 function getAllJsFiles(dir) {
   let results = [];
@@ -23,9 +23,10 @@ console.log(`Checking syntax for ${srcFiles.length} files in src/ ...`);
 let errorCount = 0;
 for (const file of srcFiles) {
   try {
-    execSync(`node -c "${file}"`, { stdio: 'pipe' });
+    execFileSync(process.execPath, ['-c', file], { stdio: 'pipe' });
   } catch (err) {
     console.error(`❌ Syntax error in: ${file}`);
+    console.error(err.stderr ? err.stderr.toString() : err.message);
     errorCount++;
   }
 }

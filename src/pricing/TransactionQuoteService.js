@@ -12,6 +12,7 @@
 
 const { v4: uuidv4 } = require('uuid');
 const { state, recordAuditLog } = require('../database');
+const { CanonicalFeeEngine, TIKUM_FEE_POLICY_V1 } = require('./CanonicalFeeEngine');
 const { MarketplacePricingEngine } = require('./MarketplacePricingEngine');
 const { TaxEngine } = require('./TaxEngine');
 
@@ -38,18 +39,22 @@ class TransactionQuoteService {
    * @param {Object} params
    * @param {string} params.listingId - Listing being purchased
    * @param {number} params.ticketPrice - Final agreed ticket price (IDR)
+   * @param {number} [params.quantity=1] - Multi-ticket order count
    * @param {string} params.buyerId - Prospective buyer
    * @param {string} [params.sellerId] - Seller ID (resolved from listing if omitted)
-   * @param {string} [params.pricingPolicyVersion='2026.1-ID-DEFAULT']
+   * @param {number} [params.paymentProcessingFee=0] - Explicit payment processing charges
+   * @param {string} [params.pricingPolicyVersion='TIKUM_FEE_POLICY_V1']
    * @param {string} [params.taxPolicyVersion='2026.1-ID-TAX']
    * @param {number} [params.ttlMinutes=15] - Quote validity duration
    */
   static async generateQuote({
     listingId,
     ticketPrice,
+    quantity = 1,
     buyerId,
     sellerId = null,
-    pricingPolicyVersion = '2026.1-ID-DEFAULT',
+    paymentProcessingFee = 0,
+    pricingPolicyVersion = 'TIKUM_FEE_POLICY_V1',
     taxPolicyVersion = '2026.1-ID-TAX',
     transactionDate = null,
     ttlMinutes = 15
@@ -62,6 +67,22 @@ class TransactionQuoteService {
       err.code = 'INVALID_TICKET_PRICE';
       throw err;
     }
+
+    const qty = parseInt(quantity || 1, 10);
+    if (isNaN(qty) || qty <= 0) {
+      const err = new Error(`Invalid quantity for quote: ${quantity}`);
+      err.code = 'INVALID_QUANTITY';
+      throw err;
+    }
+
+    const pgFee = parseInt(paymentProcessingFee || 0, 10);
+    if (isNaN(pgFee) || pgFee < 0) {
+      const err = new Error(`Invalid payment processing fee: ${paymentProcessingFee}`);
+      err.code = 'INVALID_PAYMENT_FEE';
+      throw err;
+    }
+
+    const effectivePolicyVersion = pricingPolicyVersion || 'TIKUM_FEE_POLICY_V1';
 
     // Resolve seller and seller profile if not provided
     let effectiveSellerId = sellerId;
@@ -79,16 +100,19 @@ class TransactionQuoteService {
       exemption_reason: sellerProfile.exemption_reason || null
     };
 
-    // 1. Calculate two-sided platform fees
+    // 1. Calculate two-sided platform fees via canonical engine
     const fees = MarketplacePricingEngine.calculateFees({
       ticketPrice: price,
-      policyVersion: pricingPolicyVersion
+      quantity: qty,
+      policyVersion: effectivePolicyVersion
     });
+
+    const grossTicketValue = fees.gross_ticket_value || (price * qty);
 
     // 2. Calculate separated tax liabilities with effective-date awareness
     const effectiveTxDate = transactionDate || new Date().toISOString();
     const taxes = TaxEngine.calculateTax({
-      ticketPrice: price,
+      ticketPrice: grossTicketValue,
       buyerPlatformFee: fees.buyer_fee,
       sellerTaxProfile,
       transactionDate: effectiveTxDate,
@@ -96,26 +120,27 @@ class TransactionQuoteService {
     });
 
     // 3. Compute final totals
-    const buyerTotal = price + fees.buyer_fee + taxes.total_buyer_tax;
-    const sellerNetPayout = price - fees.seller_fee - taxes.total_seller_tax_withholding;
+    const buyerSubtotal = grossTicketValue + fees.buyer_fee;
+    const buyerTotal = buyerSubtotal + pgFee + taxes.total_buyer_tax;
+    const sellerNetPayout = grossTicketValue - fees.seller_fee - taxes.total_seller_tax_withholding;
     const platformGrossRevenue = fees.buyer_fee + fees.seller_fee;
     const totalTaxLiability = taxes.total_tax_collected;
 
     // Mathematical Invariant Checks
-    if (buyerTotal !== price + fees.buyer_fee + taxes.total_buyer_tax) {
+    if (buyerTotal !== grossTicketValue + fees.buyer_fee + pgFee + taxes.total_buyer_tax) {
       const err = new Error('Quote calculation invariant violation: Buyer total mismatch');
       err.code = 'QUOTE_INVARIANT_VIOLATION';
       throw err;
     }
 
-    if (sellerNetPayout !== price - fees.seller_fee - taxes.total_seller_tax_withholding) {
+    if (sellerNetPayout !== grossTicketValue - fees.seller_fee - taxes.total_seller_tax_withholding) {
       const err = new Error('Quote calculation invariant violation: Seller payout mismatch');
       err.code = 'QUOTE_INVARIANT_VIOLATION';
       throw err;
     }
 
-    // Balancing Invariant: buyerTotal === sellerNetPayout + platformGrossRevenue + totalTaxLiability
-    const distributionSum = sellerNetPayout + platformGrossRevenue + totalTaxLiability;
+    // Balancing Invariant: buyerTotal === sellerNetPayout + platformGrossRevenue + totalTaxLiability + pgFee
+    const distributionSum = sellerNetPayout + platformGrossRevenue + totalTaxLiability + pgFee;
     if (buyerTotal !== distributionSum) {
       const err = new Error(
         `Double-entry quote balance violation: Inflow (${buyerTotal}) does not match Outflow (${distributionSum})`
@@ -135,13 +160,21 @@ class TransactionQuoteService {
       buyer_id: buyerId,
       seller_id: effectiveSellerId,
       ticket_price: price,
+      quantity: qty,
+      gross_ticket_value: grossTicketValue,
       currency: fees.currency || 'IDR',
+      fee_policy_version: fees.policy_version || effectivePolicyVersion,
       buyer_platform_fee: fees.buyer_fee,
       seller_platform_fee: fees.seller_fee,
+      buyer_fee: fees.buyer_fee,
+      seller_fee: fees.seller_fee,
       total_platform_fee: platformGrossRevenue,
+      total_tikum_fee: platformGrossRevenue,
+      payment_processing_fee: pgFee,
       buyer_tax_amount: taxes.total_buyer_tax,
       seller_tax_withholding: taxes.total_seller_tax_withholding,
       total_tax_amount: totalTaxLiability,
+      buyer_subtotal: buyerSubtotal,
       buyer_total: buyerTotal,
       seller_net_payout: sellerNetPayout,
       platform_gross_revenue: platformGrossRevenue,

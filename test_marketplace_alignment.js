@@ -84,7 +84,8 @@ async function runAll() {
 
     // Pricing calculation
     const pricing = EscrowService.calculatePricing(l.price);
-    assert.strictEqual(pricing.totalAmount, 1980000, 'Buyer total price must include transparent 10% platform fee');
+    assert.strictEqual(pricing.buyer_subtotal, 1908000, 'Buyer subtotal includes 6% canonical fee');
+    assert.strictEqual(pricing.totalAmount, 1919880, 'Buyer total price must include transparent 6% platform fee + tax');
   });
 
   // ---------------------------------------------------------------------------
@@ -200,8 +201,9 @@ async function runAll() {
     assert.strictEqual(result.offer.status, OFFER_STATUS.ACCEPTED);
     assert.strictEqual(result.order.ticket_price, 1350000, 'Order price must match agreed counter amount');
     assert.strictEqual(result.pricing.ticketPrice, 1350000);
-    assert.strictEqual(result.pricing.platformFee, 135000); // 10% fee
-    assert.strictEqual(result.pricing.totalAmount, 1485000); // Total buyer pay
+    assert.strictEqual(result.pricing.platformFee, 81000); // 6% fee
+    assert.strictEqual(result.pricing.buyer_subtotal, 1431000);
+    assert.strictEqual(result.pricing.totalAmount, 1439910); // Total buyer pay (1431000 + 8910 PPN)
 
     // Listing must be RESERVED
     const listing = state.listings.find(l => l.id === listingRes.listing.id);

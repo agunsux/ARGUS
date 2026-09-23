@@ -20,6 +20,7 @@ const { PopularityEngine } = require('./PopularityEngine');
 const { SourceClaim, CLAIM_TYPES } = require('./models/SourceClaim');
 const { cityRegistry } = require('./CityRegistry');
 const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('./EventTemporalLifecycleEngine');
+const { EventVisualProvenanceService } = require('./EventVisualProvenanceService');
 
 class CanonicalEventRegistry {
   constructor() {
@@ -151,6 +152,19 @@ class CanonicalEventRegistry {
       timezone: dtNorm.timezone
     });
 
+    // Resolve Image Visual Provenance
+    const visual = EventVisualProvenanceService.resolveEventImage(eventData, sources);
+
+    const resolvedCountry = venueNorm.country || eventData.country || 'Indonesia';
+    const resolvedCurrency = eventData.currency || (
+      resolvedCountry === 'Singapore' ? 'SGD' :
+      resolvedCountry === 'Malaysia' ? 'MYR' :
+      resolvedCountry === 'Thailand' ? 'THB' :
+      resolvedCountry === 'Philippines' ? 'PHP' :
+      resolvedCountry === 'Vietnam' ? 'VND' : 'IDR'
+    );
+    const categoryGroup = EventNormalizationService.mapCategoryToGroup ? EventNormalizationService.mapCategoryToGroup(eventType) : 'OTHER';
+
     // Construct Canonical Event Model conforming to Part 6 & P0 Invariants
     const canonicalEvent = {
       event_id: eventId,
@@ -168,7 +182,9 @@ class CanonicalEventRegistry {
       city: venueNorm.city,
       venue_city: venueNorm.city, // compatibility
       province: venueNorm.province,
-      country: venueNorm.country || eventData.country || 'Indonesia',
+      country: resolvedCountry,
+      currency: resolvedCurrency,
+      category_group: categoryGroup,
       event_start_at: temporal.event_start_at,
       event_end_at: temporal.event_end_at,
       event_timezone: temporal.event_timezone,
@@ -188,13 +204,35 @@ class CanonicalEventRegistry {
       organizer_name: eventData.organizer_name || 'Official Organizer',
       organizer_id: eventData.organizer_id || null,
       description: eventData.description || `${normTitle} diselenggarakan di ${venueNorm.venue_name}, ${venueNorm.city}. Informasi resmi dan pantauan verifikasi TIKUM.`,
-      event_image: eventData.event_image || eventData.poster_url || null,
-      poster_url: eventData.event_image || eventData.poster_url || null,
+
+      // Visual Provenance
+      image_url: visual.image_url,
+      thumbnail_url: visual.thumbnail_url,
+      image_source_type: visual.image_source_type,
+      image_source_url: visual.image_source_url,
+      image_source_account: visual.image_source_account,
+      image_source_tier: visual.image_source_tier,
+      image_last_checked_at: visual.image_last_checked_at,
+      image_evidence_hash: visual.image_evidence_hash,
+      image_license_status: visual.image_license_status,
+      image_status: visual.image_status,
+      image_scope: visual.image_scope,
+      image_credit: visual.image_credit,
+      is_fallback_image: visual.is_fallback,
+      fallback_meta: visual.fallback_meta || null,
+      event_image: visual.image_url || eventData.event_image || null,
+      poster_url: visual.image_url || eventData.poster_url || null,
+
+      // Pricing & Official Links
+      min_price: eventData.min_price || eventData.ticket_price || null,
+      max_price: eventData.max_price || null,
       official_event_url: eventData.official_event_url || eventData.official_link || null,
       official_ticket_url: eventData.official_ticket_url || null,
       ticket_url: eventData.official_ticket_url || null,
-      ticket_provider: eventData.official_ticketing_provider || null,
-      official_ticketing_provider: eventData.official_ticketing_provider || null,
+      ticket_provider: eventData.official_ticketing_provider || eventData.ticketing_partner || null,
+      official_ticketing_provider: eventData.official_ticketing_provider || eventData.ticketing_partner || null,
+      ticketing_partner: eventData.ticketing_partner || eventData.official_ticketing_provider || null,
+      authority_relationship: eventData.authority_relationship || null,
       
       // Mandatory Canonical Provenance Fields
       source_type: eventData.source_type || (sources[0] && sources[0].source_type) || null,

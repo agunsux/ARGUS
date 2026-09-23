@@ -4,24 +4,306 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tikum — Verified Ticket Marketplace by Shinerva</title>
-  <meta name="description" content="TIKUM adalah marketplace tiket sekunder terverifikasi di Indonesia. Transaksi aman dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.">
+  <meta name="description" content="Tikum adalah platform penemuan seluruh event berbayar dan bertiket di Asia Tenggara (Indonesia, Singapore, Malaysia, Thailand, Philippines, Vietnam). Konser, Olahraga, Festival, Teater, Komedi, dan Konferensi dengan verifikasi sumber resmi dan perlindungan turnstile.">
   <link rel="canonical" href="https://tikum.app/">
 
   <!-- OpenGraph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="TIKUM — Verified Ticket Marketplace by Shinerva">
-  <meta property="og:description" content="Marketplace tiket sekunder terverifikasi di Indonesia. Transaksi aman dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.">
+  <meta property="og:title" content="Tikum — Find Every Event Worth Buying a Ticket For">
+  <meta property="og:description" content="Temukan seluruh event berbayar dan bertiket di Asia Tenggara dengan verifikasi sumber resmi dan marketplace sekunder terlindungi.">
   <meta property="og:url" content="https://tikum.app/">
   <meta property="og:site_name" content="TIKUM">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="TIKUM — Verified Ticket Marketplace by Shinerva">
-  <meta name="twitter:description" content="Marketplace tiket sekunder terverifikasi di Indonesia.">
+  <meta name="twitter:title" content="Tikum — Find Every Event Worth Buying a Ticket For">
+  <meta name="twitter:description" content="Temukan seluruh event berbayar dan bertiket di Asia Tenggara.">
 
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* Discovery Hero & Country Navigation */
+    .discovery-hero {
+      text-align: center;
+      padding: 44px 20px 30px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .discovery-hero h1 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      line-height: 1.2;
+      margin: 14px 0 10px;
+      color: var(--text-main);
+    }
+    .discovery-hero p {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 720px;
+      margin: 0 auto 24px;
+      line-height: 1.6;
+    }
+    .search-discovery-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .search-discovery-bar .form-control {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      height: 44px;
+      font-size: 14px;
+    }
+    .category-pills-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+      scrollbar-width: thin;
+    }
+    .category-pills-bar::-webkit-scrollbar {
+      height: 4px;
+    }
+    .category-pills-bar::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+    .cat-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .cat-pill:hover, .cat-pill.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    /* Event Visual Card Styling */
+    .event-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .event-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--cyan);
+      box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.5);
+    }
+    .event-card-media {
+      position: relative;
+      width: 100%;
+      height: 160px;
+      background: #131d31;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .event-card-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    .event-card:hover .event-card-media img {
+      transform: scale(1.04);
+    }
+    .event-card-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: var(--text-muted);
+      text-align: center;
+      padding: 16px;
+      position: relative;
+    }
+    .event-card-fallback i {
+      font-size: 32px;
+      color: var(--cyan);
+      margin-bottom: 8px;
+    }
+    .event-card-fallback-badge {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      background: rgba(148, 163, 184, 0.15);
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: var(--text-dim);
+    }
+    .event-card-fallback-disclaimer {
+      font-size: 9px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+    .event-card-media-overlay {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+    }
+    .event-badge-cat {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      color: #38bdf8;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .event-badge-country {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .image-provenance-tag {
+      position: absolute;
+      bottom: 6px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      color: #94a3b8;
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .event-card-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      justify-content: space-between;
+    }
+    .event-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .event-card-title a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .event-card-title a:hover {
+      color: var(--cyan);
+    }
+    .event-card-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .event-card-meta i {
+      width: 16px;
+      color: var(--cyan);
+    }
+    .event-card-footer {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      margin-top: 6px;
+    }
+    .event-trust-badge {
+      font-size: 10px;
+      color: #10b981;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .event-price-cta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .event-price-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .event-price-val span {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: normal;
+      display: block;
+    }
+
+    /* Section Headers */
+    .discovery-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .discovery-section-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .discovery-section-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+  </style>
 </head>
 <body>
 
@@ -32,16 +314,17 @@
         <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
           <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle">Verified Ticket Marketplace</span>
+          <span class="brand-subtitle">Southeast Asia Event Discovery</span>
         </div>
       </a>
 
       <nav class="main-nav">
-        <a href="#events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
-        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> Tawaran Tiket</a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Buat Transfer Tiket</a>
+        <a href="#events" class="nav-link"><i class="fa-solid fa-compass"></i> Temukan Event</a>
+        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Direktori Resmi</a>
+        <a href="#marketplace" class="nav-link"><i class="fa-solid fa-ticket"></i> Marketplace Resale</a>
+        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Jual / Transfer</a>
         <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
-        <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
+        <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console</a>
         <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleLang()" style="padding: 4px 10px; font-size: 11px;" title="Switch Language"><i class="fa-solid fa-globe"></i> <span id="langLabel">EN</span></button>
         <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleTheme()" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
@@ -51,66 +334,153 @@
   <!-- Main Container -->
   <main class="container">
     
-    <!-- Hero Section -->
-    <section class="hero">
+    <!-- Hero Section: Viagogo / StubHub Inspired Discovery -->
+    <section class="discovery-hero">
       <div class="hero-pill">
-        <i class="fa-solid fa-shield-check"></i> TRUST LAYER TRANSFER TIKET INDONESIA
+        <i class="fa-solid fa-compass"></i> SOUTHEAST ASIA PAID &amp; TICKETED EVENT DISCOVERY
       </div>
-      <h1>Marketplace Tiket Terverifikasi dengan Perlindungan Fisik di Venue</h1>
+      <h1>Find Every Event Worth Buying a Ticket For</h1>
       <p>
-        Bukan marketplace spekulatif. Tikum melindungi pembeli dan penjual dengan dana tertahan di rekening penampungan internal (escrow) hingga tiket terbukti valid dan pembeli sukses memasuki venue bersama Event PIC lapangan kami.
+        Pusat penemuan seluruh event berbayar dan bertiket di Asia Tenggara — Konser Musik, Tur Dunia, Olahraga, Festival Budaya &amp; Kuliner, Pameran, Stand-Up Comedy, Teater, hingga Konferensi Bisnis dengan sumber resmi terakreditasi dan perlindungan turnstile.
       </p>
 
-      <!-- Quick Tracker Box -->
-      <div class="tracker-box">
-        <input 
-          type="text" 
-          id="quickTrackInput" 
-          class="tracker-input mono" 
-          placeholder="Masukkan ID Transaksi atau Listing (contoh: ord-... atau list-...)"
-          autocomplete="off"
-          spellcheck="false"
-        >
-        <button id="quickTrackBtn" class="btn" onclick="handleQuickTrack()">
-          <i class="fa-solid fa-arrow-right"></i> Lacak Status
+      <!-- Advanced Discovery Search Bar (Country + City + Keyword) -->
+      <div class="search-discovery-bar">
+        <!-- Country Selector Dropdown -->
+        <div style="min-width: 160px; flex: 1;">
+          <select id="discoveryCountrySelect" class="form-control" onchange="handleCountryChange()" style="font-weight: 600;">
+            <option value="">🌏 Seluruh Asia Tenggara</option>
+            <option value="Indonesia">🇮🇩 Indonesia (IDR)</option>
+            <option value="Singapore">🇸🇬 Singapore (SGD)</option>
+            <option value="Malaysia">🇲🇾 Malaysia (MYR)</option>
+            <option value="Thailand">🇹🇭 Thailand (THB)</option>
+            <option value="Philippines">🇵🇭 Philippines (PHP)</option>
+            <option value="Vietnam">🇻🇳 Vietnam (VND)</option>
+          </select>
+        </div>
+
+        <!-- Dynamic City Selector Dropdown -->
+        <div style="min-width: 150px; flex: 1;">
+          <select id="discoveryCitySelect" class="form-control" onchange="loadEvents()">
+            <option value="">Semua Kota</option>
+          </select>
+        </div>
+
+        <!-- Keyword Search Input (Debounced) -->
+        <div style="min-width: 260px; flex: 2; position: relative;">
+          <input 
+            type="text" 
+            id="eventSearchInput" 
+            class="form-control" 
+            placeholder="Cari artis, konser, tim sepak bola, festival, venue..."
+            oninput="debounceSearch()"
+            autocomplete="off"
+          >
+        </div>
+
+        <!-- Action Button -->
+        <button class="btn btn-primary" onclick="loadEvents()" style="height: 44px; padding: 0 20px;">
+          <i class="fa-solid fa-magnifying-glass"></i> Cari Event
         </button>
       </div>
 
-      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-        <a href="/create" class="btn"><i class="fa-solid fa-ticket"></i> Daftarkan Penjualan Tiket</a>
-        <a href="#protocol" class="btn btn-secondary"><i class="fa-solid fa-book-bookmark"></i> Protokol Verifikasi Kami</a>
+      <!-- Category Navigation Pills (All Paid / Ticketed Categories) -->
+      <div class="category-pills-bar">
+        <button class="cat-pill active" onclick="setCategoryFilter('', this)">
+          <i class="fa-solid fa-star"></i> Semua Acara
+        </button>
+        <button class="cat-pill" onclick="setCategoryFilter('MUSIC', this)">
+          <i class="fa-solid fa-music"></i> Musik &amp; Konser
+        </button>
+        <button class="cat-pill" onclick="setCategoryFilter('SPORTS', this)">
+          <i class="fa-solid fa-futbol"></i> Olahraga
+        </button>
+        <button class="cat-pill" onclick="setCategoryFilter('FESTIVALS_EXPERIENCES', this)">
+          <i class="fa-solid fa-tent"></i> Festival &amp; Atraksi
+        </button>
+        <button class="cat-pill" onclick="setCategoryFilter('SHOWS_COMEDY', this)">
+          <i class="fa-solid fa-masks-theater"></i> Teater &amp; Komedi
+        </button>
+        <button class="cat-pill" onclick="setCategoryFilter('BUSINESS_EDUCATION', this)">
+          <i class="fa-solid fa-briefcase"></i> Bisnis &amp; Konferensi
+        </button>
+        <button class="cat-pill" onclick="setCategoryFilter('OTHER', this)">
+          <i class="fa-solid fa-ticket"></i> Tiket Lainnya
+        </button>
       </div>
     </section>
 
     <!-- Trust Telemetry Strip -->
-    <div class="card" style="background: rgba(15, 23, 42, 0.7); border-color: #1e293b; margin: 30px 0;">
+    <div class="card" style="background: rgba(15, 23, 42, 0.7); border-color: #1e293b; margin: 10px 0 40px;">
       <div class="grid-3" style="text-align: center;">
         <div>
-          <div style="color: var(--cyan); font-size: 20px; margin-bottom: 6px;"><i class="fa-solid fa-fingerprint"></i></div>
-          <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Anti-Duplikasi Barcode</div>
-          <div style="font-size: 12px; color: var(--text-muted);">Hashing SHA-256 mencegah barcode yang sama didaftarkan lebih dari satu kali per event.</div>
+          <div style="color: var(--cyan); font-size: 20px; margin-bottom: 6px;"><i class="fa-solid fa-stamp"></i></div>
+          <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Zero-Trust Official Provenance</div>
+          <div style="font-size: 12px; color: var(--text-muted);">Setiap event diverifikasi dari promotor resmi (APMI/Live Nation/Ravel/dll), venue, dan partner tiket berlisensi.</div>
         </div>
         <div>
-          <div style="color: var(--warning); font-size: 20px; margin-bottom: 6px;"><i class="fa-solid fa-vault"></i></div>
-          <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Perlindungan Rekening Penampungan</div>
-          <div style="font-size: 12px; color: var(--text-muted);">Dana pembeli diamankan di sistem Tikum hingga gerbang masuk venue dilewati secara sah.</div>
+          <div style="color: var(--warning); font-size: 20px; margin-bottom: 6px;"><i class="fa-solid fa-image"></i></div>
+          <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Official Visual Provenance</div>
+          <div style="font-size: 12px; color: var(--text-muted);">Visual bersumber dari kanal resmi promotor dan artis. Tidak ada poster palsu atau rekayasa AI.</div>
         </div>
         <div>
           <div style="color: var(--success); font-size: 20px; margin-bottom: 6px;"><i class="fa-solid fa-user-shield"></i></div>
-          <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Verifikasi Lapangan di Venue</div>
-          <div style="font-size: 12px; color: var(--text-muted);">Event PIC Tikum bersiaga di gerbang venue dengan dual-handshake OTP dan bukti fisik.</div>
+          <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Perlindungan Turnstile di Venue</div>
+          <div style="font-size: 12px; color: var(--text-muted);">Dana transaksi tiket sekunder diamankan di escrow hingga pembeli sukses masuk turnstile venue.</div>
         </div>
       </div>
     </div>
 
-    <!-- Marketplace Ticket Listings Section (Canonical Marketplace Model) -->
-    <section id="marketplace" style="margin-top: 40px; margin-bottom: 50px;">
-      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
+    <!-- Dynamic Discovery Feed Section -->
+    <section id="events" style="margin-top: 10px; margin-bottom: 50px;">
+      <div class="discovery-section-header">
         <div>
-          <div class="hero-pill" style="margin-bottom: 8px;"><i class="fa-solid fa-ticket"></i> MARKETPLACE TIKET TERVERIFIKASI</div>
-          <h2 style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">Tiket Terverifikasi Siap Transaksi</h2>
-          <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
-            Setiap tiket dilindungi anti-duplikasi barcode, dana tertahan di rekening bersama (escrow iPaymu), dan verifikasi fisik Event PIC di venue.
+          <h2 class="discovery-section-title">
+            <i class="fa-solid fa-fire" style="color: #f59e0b;"></i> Event Terverifikasi &amp; Siap Hadir
+          </h2>
+          <p class="discovery-section-desc">
+            Kalender acara resmi yang telah lolos verifikasi temporal, status lifecycle, dan bukti kriptografis.
+          </p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <a href="/create?action=newEvent" class="btn btn-secondary btn-sm">
+            <i class="fa-solid fa-plus"></i> Usulkan Event Baru
+          </a>
+        </div>
+      </div>
+
+      <!-- Events Loading Indicator -->
+      <div id="eventsLoading" style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 26px; margin-bottom: 10px; color: var(--cyan);"></i>
+        <div>Memverifikasi dan memuat event dari Canonical Registry Tikum...</div>
+      </div>
+
+      <!-- Events Empty State -->
+      <div id="eventsEmpty" class="card" style="display: none; text-align: center; padding: 50px 20px;">
+        <i class="fa-solid fa-calendar-xmark" style="font-size: 40px; color: var(--text-dim); margin-bottom: 14px;"></i>
+        <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-main);">Tidak Ada Event Terverifikasi yang Sesuai</h3>
+        <p style="font-size: 13px; color: var(--text-muted); max-width: 520px; margin: 0 auto 20px; line-height: 1.6;">
+          Tikum beroperasi dengan protokol zero-trust. Event yang belum diumumkan secara sah oleh promotor atau jadwal yang telah lewat diblokir otomatis dari halaman publik.
+        </p>
+        <a href="/create?action=newEvent" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Ajukan Verifikasi Event Baru</a>
+      </div>
+
+      <!-- Events Grid (Compact Viagogo/StubHub Density) -->
+      <div id="eventsGrid" class="grid-3" style="display: none;">
+        <!-- Dynamically rendered via Javascript -->
+      </div>
+    </section>
+
+    <!-- Marketplace Ticket Listings Section (Secondary Inventory Protected by Escrow) -->
+    <section id="marketplace" style="margin-top: 50px; margin-bottom: 60px;">
+      <div class="discovery-section-header">
+        <div>
+          <div class="hero-pill" style="margin-bottom: 8px;"><i class="fa-solid fa-ticket"></i> SECONDARY MARKETPLACE INVENTORY</div>
+          <h2 class="discovery-section-title">
+            <i class="fa-solid fa-handshake" style="color: var(--cyan);"></i> Tiket Tersedia dari Pembeli Sah
+          </h2>
+          <p class="discovery-section-desc">
+            Tiket pindah tangan yang terikat pada event resmi terverifikasi dengan proteksi barcode SHA-256 dan rekening bersama (escrow).
           </p>
         </div>
         <div style="display: flex; gap: 8px;">
@@ -121,104 +491,32 @@
       <!-- Listings Loading Indicator -->
       <div id="listingsLoading" style="text-align: center; padding: 30px; color: var(--text-muted);">
         <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 8px; color: var(--cyan);"></i>
-        <div>Memuat listing tiket resmi dari marketplace...</div>
+        <div>Memuat inventaris tiket sekunder...</div>
       </div>
 
       <!-- Listings Empty State -->
       <div id="listingsEmpty" class="card" style="display: none; text-align: center; padding: 40px 20px;">
         <i class="fa-solid fa-ticket-simple" style="font-size: 36px; color: var(--text-dim); margin-bottom: 12px;"></i>
-        <h3 style="font-size: 16px; margin-bottom: 8px;">Belum Ada Tiket Terverifikasi yang Aktif</h3>
+        <h3 style="font-size: 16px; margin-bottom: 8px;">Belum Ada Tiket Resale yang Memenuhi Syarat</h3>
         <p style="font-size: 13px; color: var(--text-muted); max-width: 480px; margin: 0 auto 16px;">
-          Punya tiket yang ingin dipindahtangankan secara aman? Daftarkan tiket Anda untuk diverifikasi oleh Trust Officer Tikum.
+          Seluruh tiket resale wajib terikat pada event yang sah dan terverifikasi. Tidak ada listing liar.
         </p>
         <a href="/create" class="btn btn-sm"><i class="fa-solid fa-plus"></i> Daftarkan Penjualan Tiket</a>
       </div>
 
-      <!-- Listings Grid / Carousel -->
+      <!-- Listings Grid -->
       <div id="listingsGrid" class="grid-3" style="display: none;">
         <!-- Dynamically rendered via Javascript -->
       </div>
     </section>
 
-    <!-- Event Catalog Section -->
-    <section id="events" style="margin-top: 50px;">
-      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
-        <div>
-          <h2 style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">Katalog Event Resmi &amp; Terverifikasi</h2>
-          <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
-            Setiap listing tiket wajib terikat pada event nyata (Jadwal s/d Desember 2026).
-          </p>
-        </div>
-        <a href="/create?action=newEvent" class="btn btn-secondary btn-sm">
-          <i class="fa-solid fa-plus"></i> Event Belum Ada? Daftarkan Event Baru
-        </a>
-      </div>
-
-      <!-- Filter Controls -->
-      <div class="card" style="padding: 16px; margin-bottom: 20px;">
-        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;">
-          <div style="flex: 1; min-width: 240px; position: relative;">
-            <input 
-              type="text" 
-              id="eventSearchInput" 
-              class="form-control" 
-              placeholder="Cari artis, nama event, atau nama venue..."
-              oninput="debounceSearch()"
-            >
-          </div>
-          <div style="min-width: 160px;">
-            <select id="eventCitySelect" class="form-control" onchange="loadEvents()">
-              <option value="">Semua Kota</option>
-              <option value="Jakarta">Jakarta</option>
-              <option value="Bandung">Bandung</option>
-              <option value="Surabaya">Surabaya</option>
-              <option value="Bali">Bali</option>
-              <option value="Tangerang">Tangerang</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Category Pills -->
-        <div class="pill-group" style="margin-bottom: 0;">
-          <button class="pill-btn active" onclick="setCategoryFilter('', this)">Semua Kategori</button>
-          <button class="pill-btn" onclick="setCategoryFilter('KONSER', this)">Konser Musik</button>
-          <button class="pill-btn" onclick="setCategoryFilter('STANDUP', this)">Stand-up Comedy</button>
-          <button class="pill-btn" onclick="setCategoryFilter('FESTIVAL', this)">Festival Musik</button>
-          <button class="pill-btn" onclick="setCategoryFilter('OLAHRAGA', this)">Olahraga</button>
-          <button class="pill-btn" onclick="setCategoryFilter('TEATER', this)">Teater Seni</button>
-          <button class="pill-btn" onclick="setCategoryFilter('LAINNYA', this)">Lainnya</button>
-        </div>
-      </div>
-
-      <!-- Events Loading Indicator -->
-      <div id="eventsLoading" style="text-align: center; padding: 40px; color: var(--text-muted);">
-        <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px; color: var(--cyan);"></i>
-        <div>Memuat katalog event resmi dari database Tikum...</div>
-      </div>
-
-      <!-- Events Empty State -->
-      <div id="eventsEmpty" class="card" style="display: none; text-align: center; padding: 40px 20px;">
-        <i class="fa-solid fa-calendar-xmark" style="font-size: 36px; color: var(--text-dim); margin-bottom: 12px;"></i>
-        <h3 style="font-size: 16px; margin-bottom: 8px;">Tidak Ada Event yang Sesuai</h3>
-        <p style="font-size: 13px; color: var(--text-muted); max-width: 480px; margin: 0 auto 20px;">
-          Event yang Anda cari belum terdaftar di sistem kami. Penjual tiket dapat mendaftarkan event baru secara mandiri.
-        </p>
-        <a href="/create?action=newEvent" class="btn"><i class="fa-solid fa-plus"></i> Daftarkan Event Ini Sekarang</a>
-      </div>
-
-      <!-- Events Grid -->
-      <div id="eventsGrid" class="grid-3" style="display: none;">
-        <!-- Dynamically rendered via Javascript -->
-      </div>
-    </section>
-
     <!-- Truthful Protocol Architecture Section -->
-    <section id="protocol" style="margin-top: 70px;">
+    <section id="protocol" style="margin-top: 60px;">
       <div style="text-align: center; max-width: 720px; margin: 0 auto 30px;">
-        <div class="hero-pill"><i class="fa-solid fa-code-branch"></i> PROTOKOL RESMI</div>
-        <h2 style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Bagaimana Tikum Menjamin Transaksi</h2>
+        <div class="hero-pill"><i class="fa-solid fa-code-branch"></i> PROTOKOL RESMI TIKUM</div>
+        <h2 style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Bagaimana Tikum Menjamin Keaslian</h2>
         <p style="font-size: 14px; color: var(--text-muted);">
-          Arsitektur 4 lapis yang dirancang untuk membongkar praktik penipuan tiket sekunder tanpa mengorbankan privasi.
+          Arsitektur 4 lapis yang dirancang untuk mencegah spekulasi, rumor, dan penipuan tiket di Asia Tenggara.
         </p>
       </div>
 
@@ -226,10 +524,10 @@
         <div class="card">
           <div class="card-title">
             <span class="badge badge-info">Lapis 1</span>
-            Verifikasi Penjual &amp; Barcode Hashing
+            Verifikasi Sumber Otoritatif &amp; Visual Resmi
           </div>
           <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
-            Setiap penjual melewati verifikasi identitas dan batas listing aktif. Barcode dan nomor seri tiket di-hash menggunakan algoritma SHA-256 pada level database. Jika barcode yang sama didaftarkan oleh penjual lain, sistem menolak secara instan untuk mencegah duplikasi.
+            Event dan visual hanya diakui jika berasal langsung dari promotor resmi, manajemen artis, venue, atau mitra ticketing terdaftar. Database atau feed marketplace regional (seperti StubHub/Viagogo) hanya menjadi sinyal discovery, tidak dapat menetapkan status terverifikasi tanpa bukti lokal.
           </p>
         </div>
 
@@ -259,7 +557,7 @@
             Pencairan Dana Berbasis Bukti Nyata Turnstile
           </div>
           <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
-            Dana hanya dicairkan kepada penjual setelah Event PIC mengonfirmasi status <code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code> lengkap dengan dokumentasi foto gerbang. Kebijakan pengembalian dana Tikum sesuai ketentuan Refund Policy dan status transaksi yang berlaku via protokol sengketa kami.
+            Dana hanya dicairkan kepada penjual setelah Event PIC mengonfirmasi status <code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code> lengkap dengan dokumentasi foto gerbang turnstile.
           </p>
         </div>
       </div>
@@ -270,7 +568,7 @@
       <i class="fa-solid fa-circle-info"></i>
       <div>
         <strong>Pernyataan Keterbukaan Sistem:</strong><br>
-        Tikum adalah marketplace tiket terverifikasi oleh Shinerva. Tikum tidak berafiliasi dengan promotor acara resmi. Verifikasi tiket di gerbang venue dilakukan oleh personel lapangan Event PIC Tikum secara langsung, bukan melalui integrasi API turnstile promotor otomatis yang belum dibuka untuk pihak ketiga.
+        Tikum adalah platform penemuan acara resmi dan marketplace tiket terverifikasi oleh Shinerva. Tikum beroperasi dengan prinsip zero-trust provenance independen. Event kadaluarsa, dibatalkan, atau tanpa bukti otoritatif ditolak secara otomatis dari tampilan publik.
       </div>
     </div>
 
@@ -284,7 +582,7 @@
           <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> TIKUM — by SHINERVA
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+          Platform Penemuan Seluruh Event Berbayar &amp; Bertiket di Asia Tenggara.
         </p>
         <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
@@ -326,27 +624,66 @@
   </footer>
 
   <script>
+    const COUNTRY_CITIES = {
+      'Indonesia': ['Jakarta', 'Bandung', 'Surabaya', 'Bali', 'Tangerang', 'Yogyakarta', 'Semarang', 'Medan', 'Solo', 'Makassar', 'Palembang'],
+      'Singapore': ['Singapore'],
+      'Malaysia': ['Kuala Lumpur', 'Penang', 'Johor Bahru', 'Shah Alam', 'Kuching'],
+      'Thailand': ['Bangkok', 'Chiang Mai', 'Phuket', 'Nonthaburi', 'Pattaya'],
+      'Philippines': ['Manila', 'Quezon City', 'Pasay', 'Taguig', 'Cebu City'],
+      'Vietnam': ['Ho Chi Minh City', 'Hanoi', 'Da Nang']
+    };
+
+    const COUNTRY_CURRENCIES = {
+      'Indonesia': 'Rp',
+      'Singapore': 'SGD',
+      'Malaysia': 'MYR',
+      'Thailand': 'THB',
+      'Philippines': 'PHP',
+      'Vietnam': 'VND'
+    };
+
+    const COUNTRY_FLAGS = {
+      'Indonesia': '🇮🇩',
+      'Singapore': '🇸🇬',
+      'Malaysia': '🇲🇾',
+      'Thailand': '🇹🇭',
+      'Philippines': '🇵🇭',
+      'Vietnam': '🇻🇳'
+    };
+
     let currentCategory = '';
     let searchTimeout = null;
 
-    function handleQuickTrack() {
-      const input = document.getElementById('quickTrackInput');
-      const val = (input.value || '').trim();
-      if (!val) {
-        alert('Masukkan ID Transaksi atau Listing terlebih dahulu.');
-        return;
+    function handleCountryChange() {
+      const country = document.getElementById('discoveryCountrySelect').value;
+      const citySelect = document.getElementById('discoveryCitySelect');
+      
+      citySelect.innerHTML = '<option value="">Semua Kota</option>';
+      
+      if (country && COUNTRY_CITIES[country]) {
+        COUNTRY_CITIES[country].forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          citySelect.appendChild(opt);
+        });
+      } else {
+        // All SEA cities
+        const allCities = Object.values(COUNTRY_CITIES).flat();
+        [...new Set(allCities)].sort().forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          citySelect.appendChild(opt);
+        });
       }
-      window.location.href = `/track?id=${encodeURIComponent(val)}`;
-    }
 
-    // Allow Enter key on quick track input
-    document.getElementById('quickTrackInput').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') handleQuickTrack();
-    });
+      loadEvents();
+    }
 
     function setCategoryFilter(category, btn) {
       currentCategory = category;
-      document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       loadEvents();
     }
@@ -356,9 +693,42 @@
       searchTimeout = setTimeout(loadEvents, 250);
     }
 
+    function getCategoryIcon(catGroup, cat) {
+      const g = (catGroup || cat || '').toUpperCase();
+      if (g.includes('MUSIC') || g.includes('CONCERT')) return 'fa-music';
+      if (g.includes('SPORT') || g.includes('FOOTBALL') || g.includes('BASKETBALL')) return 'fa-futbol';
+      if (g.includes('FESTIVAL') || g.includes('EXPO')) return 'fa-tent';
+      if (g.includes('SHOW') || g.includes('COMEDY') || g.includes('THEATER')) return 'fa-masks-theater';
+      if (g.includes('BUSINESS') || g.includes('CONFERENCE')) return 'fa-briefcase';
+      return 'fa-ticket';
+    }
+
+    function formatPrice(val, currency = 'IDR') {
+      if (!val) return 'Tiket Resmi Tersedia';
+      const num = Number(val);
+      if (currency === 'SGD') return `SGD ${num.toLocaleString('en-US')}`;
+      if (currency === 'MYR') return `MYR ${num.toLocaleString('en-US')}`;
+      if (currency === 'THB') return `THB ${num.toLocaleString('en-US')}`;
+      if (currency === 'PHP') return `PHP ${num.toLocaleString('en-US')}`;
+      if (currency === 'VND') return `VND ${num.toLocaleString('vi-VN')}`;
+      return `Rp ${num.toLocaleString('id-ID')}`;
+    }
+
+    function renderFallbackImage(category, title) {
+      const icon = getCategoryIcon(category);
+      return `
+        <div class="event-card-fallback">
+          <i class="fa-solid ${icon}"></i>
+          <span class="event-card-fallback-badge">${escapeHtml(category || 'EVENT')}</span>
+          <span class="event-card-fallback-disclaimer">Tikum UI Placeholder</span>
+        </div>
+      `;
+    }
+
     async function loadEvents() {
       const q = document.getElementById('eventSearchInput').value.trim();
-      const city = document.getElementById('eventCitySelect').value;
+      const country = document.getElementById('discoveryCountrySelect').value;
+      const city = document.getElementById('discoveryCitySelect').value;
       const loadingEl = document.getElementById('eventsLoading');
       const gridEl = document.getElementById('eventsGrid');
       const emptyEl = document.getElementById('eventsEmpty');
@@ -370,16 +740,19 @@
       try {
         const params = new URLSearchParams();
         if (q) params.set('q', q);
+        if (country) params.set('country', country);
         if (city) params.set('city', city);
         if (currentCategory) params.set('category', currentCategory);
 
-        const res = await fetch(`/api/mvp/events?${params.toString()}`);
+        // Fetch from canonical discovery endpoint
+        const res = await fetch(`/api/events?${params.toString()}`);
         if (!res.ok) throw new Error('Gagal mengambil data event dari server');
         const data = await res.json();
 
         loadingEl.style.display = 'none';
 
         const nowMs = Date.now();
+        // Client-side fail-closed verification
         const upcomingEvents = (data.events || []).filter(event => {
           if (event.lifecycle_status && ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED'].includes(event.lifecycle_status)) {
             return false;
@@ -407,76 +780,92 @@
         gridEl.style.display = 'grid';
 
         gridEl.innerHTML = upcomingEvents.map(event => {
-          const isVerified = event.is_verified === true;
-          const isUserCreated = event.source === 'USER_CREATED';
-          
-          const badgeHtml = isVerified 
-            ? `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> TERVERIFIKASI TIKUM</span>`
-            : `<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> EVENT KOMUNITAS</span>`;
+          const name = event.canonical_name || event.title || event.name || 'Event';
+          const cat = event.event_type || event.category || 'EVENT';
+          const catGroup = event.category_group || cat;
+          const countryName = event.country || 'Indonesia';
+          const flag = COUNTRY_FLAGS[countryName] || '🌏';
+          const currency = event.currency || (countryName === 'Singapore' ? 'SGD' : (countryName === 'Malaysia' ? 'MYR' : (countryName === 'Thailand' ? 'THB' : (countryName === 'Philippines' ? 'PHP' : (countryName === 'Vietnam' ? 'VND' : 'IDR')))));
+          const dateStr = event.start_date || event.date || '-';
+          const venueStr = event.venue_name || event.venue || 'Venue';
+          const cityStr = event.city || event.venue_city || 'City';
+          const slug = event.slug || event.event_id || event.id;
+          const minPrice = event.min_price;
+          const hasImage = Boolean(event.image_url && !event.is_fallback);
 
-          const priceHtml = event.min_price 
-            ? `Mulai <strong>Rp ${event.min_price.toLocaleString('id-ID')}</strong>`
-            : `<span style="color: var(--text-dim);">Belum ada listing</span>`;
-
-          const ticketCountHtml = event.active_listings_count > 0
-            ? `<span class="badge badge-info">${event.active_listings_count} Tiket Tersedia</span>`
-            : `<span class="badge badge-slate">0 Tiket</span>`;
-
-          return `
-            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, border-color 0.2s;">
-              <div>
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 8px;">
-                  <span class="badge badge-slate">${event.category || 'EVENT'}</span>
-                  ${badgeHtml}
+          // Visual image rendering with official provenance attribution or safe Tikum UI fallback
+          let mediaHtml = '';
+          if (hasImage) {
+            const srcLabel = event.image_source_type ? event.image_source_type.replace(/_/g, ' ') : 'Official Source';
+            mediaHtml = `
+              <div class="event-card-media">
+                <img src="${escapeHtml(event.image_url)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.onerror=null; this.parentElement.innerHTML=renderFallbackImage('${escapeHtml(cat)}', '${escapeHtml(name)}');" />
+                <div class="event-card-media-overlay">
+                  <span class="event-badge-cat">${escapeHtml(cat)}</span>
+                  <span class="event-badge-country">${flag} ${escapeHtml(countryName)}</span>
                 </div>
-                
-                <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 8px; line-height: 1.3;">
-                  ${escapeHtml(event.name)}
-                </h3>
-                
-                ${event.artists ? `
-                  <div style="font-size: 12px; color: var(--cyan); margin-bottom: 10px;">
-                    <i class="fa-solid fa-music"></i> ${escapeHtml(event.artists)}
-                  </div>
-                ` : ''}
-
-                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">
-                  <i class="fa-regular fa-calendar" style="width: 16px;"></i> ${escapeHtml(event.start_date)}
-                </div>
-
-                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
-                  <i class="fa-solid fa-location-dot" style="width: 16px;"></i> ${escapeHtml(event.venue_name)}, ${escapeHtml(event.venue_city)}
+                <div class="image-provenance-tag">
+                  <i class="fa-solid fa-camera"></i> ${escapeHtml(srcLabel)}
                 </div>
               </div>
+            `;
+          } else {
+            mediaHtml = `
+              <div class="event-card-media">
+                ${renderFallbackImage(cat, name)}
+                <div class="event-card-media-overlay">
+                  <span class="event-badge-cat">${escapeHtml(cat)}</span>
+                  <span class="event-badge-country">${flag} ${escapeHtml(countryName)}</span>
+                </div>
+              </div>
+            `;
+          }
 
-              <div>
-                <div class="price-breakdown" style="padding: 10px 12px; margin: 0 0 14px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
-                    <div>${priceHtml}</div>
-                    <div>${ticketCountHtml}</div>
+          const priceHtml = minPrice
+            ? `<span>Mulai dari</span> ${formatPrice(minPrice, currency)}`
+            : `<span>Akses</span> ${escapeHtml(event.ticketing_partner ? `Tiket Resmi (${event.ticketing_partner})` : 'Tiket Resmi Tersedia')}`;
+
+          const trustBadge = event.is_verified
+            ? `<div class="event-trust-badge"><i class="fa-solid fa-shield-check"></i> Sumber Otoritatif Terverifikasi</div>`
+            : '';
+
+          return `
+            <div class="event-card">
+              ${mediaHtml}
+              <div class="event-card-body">
+                <div>
+                  <h3 class="event-card-title">
+                    <a href="/events/${encodeURIComponent(slug)}">${escapeHtml(name)}</a>
+                  </h3>
+
+                  <div class="event-card-meta">
+                    <div><i class="fa-regular fa-calendar"></i> ${escapeHtml(dateStr)}</div>
+                    <div><i class="fa-solid fa-location-dot"></i> ${escapeHtml(venueStr)}, ${escapeHtml(cityStr)}</div>
+                    ${event.artist ? `<div><i class="fa-solid fa-user"></i> ${escapeHtml(event.artist)}</div>` : ''}
                   </div>
                 </div>
 
-                <div style="display: flex; gap: 8px;">
-                  <a href="/create?eventId=${encodeURIComponent(event.id)}" class="btn btn-sm" style="flex: 1;">
-                    <i class="fa-solid fa-plus"></i> Jual Tiket
-                  </a>
-                  <a href="/track?q=${encodeURIComponent(event.name)}" class="btn btn-secondary btn-sm" title="Lacak riwayat event">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                  </a>
+                <div class="event-card-footer">
+                  ${trustBadge}
+                  <div class="event-price-cta">
+                    <div class="event-price-val">
+                      ${priceHtml}
+                    </div>
+                    <a href="/events/${encodeURIComponent(slug)}" class="btn btn-sm btn-primary">
+                      Lihat Event
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
           `;
         }).join('');
 
-        gridEl.style.display = 'grid';
-
       } catch (err) {
         console.error(err);
         loadingEl.style.display = 'none';
         emptyEl.style.display = 'block';
-        emptyEl.querySelector('h3').innerText = 'Gagal Memuat Katalog';
+        emptyEl.querySelector('h3').innerText = 'Gagal Memuat Katalog Event';
         emptyEl.querySelector('p').innerText = 'Terjadi kendala jaringan saat menghubungi server Tikum. Silakan muat ulang halaman.';
       }
     }
@@ -535,7 +924,6 @@
           return `
             <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; border-color: rgba(6, 182, 212, 0.3); background: rgba(15, 23, 42, 0.85);">
               <div>
-                <!-- Header Tags: Category & Verification -->
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 6px;">
                   <span class="badge badge-cyan" style="font-weight: 700;">${escapeHtml(l.ticket_category || 'TIKET')}</span>
                   <div style="display: flex; gap: 4px;">
@@ -543,12 +931,10 @@
                   </div>
                 </div>
 
-                <!-- Event Title -->
                 <h3 style="font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 8px; line-height: 1.3;">
                   ${escapeHtml(l.event_title || 'Tiket Acara')}
                 </h3>
 
-                <!-- Date & Venue -->
                 <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">
                   <i class="fa-regular fa-calendar" style="width: 16px; color: var(--cyan);"></i> ${escapeHtml(l.event_date || '-')}
                 </div>
@@ -556,23 +942,20 @@
                   <i class="fa-solid fa-location-dot" style="width: 16px; color: var(--cyan);"></i> ${escapeHtml(l.venue_name || '-')}, ${escapeHtml(l.venue_city || 'Jakarta')}
                 </div>
 
-                <!-- Seat / Location Meta -->
                 <div style="background: rgba(30, 41, 59, 0.7); border-radius: 6px; padding: 8px 10px; margin-bottom: 14px; font-size: 12px;">
                   <div style="color: var(--text-dim); font-size: 10px; text-transform: uppercase; font-weight: 600;">Posisi Kursi / Kategori:</div>
                   <div style="color: #fff; font-weight: 700; margin-top: 2px;">${escapeHtml(l.seat_info || '-')}</div>
                 </div>
 
-                <!-- PIC Support Telemetry Badge -->
                 <div style="margin-bottom: 14px;">
                   ${picBadge}
                 </div>
               </div>
 
-              <!-- Price Breakdown & Actions -->
               <div>
                 <div class="price-breakdown" style="padding: 10px 12px; margin-bottom: 14px; font-size: 12px;">
                   <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="color: var(--text-muted);">Harga Asli (Face Value):</span>
+                    <span style="color: var(--text-muted);">Harga Asli:</span>
                     <span class="mono" style="color: var(--text-muted); text-decoration: line-through;">${faceValue}</span>
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
@@ -580,18 +963,17 @@
                     <span class="mono" style="color: #fff; font-weight: 600;">${askingPrice}</span>
                   </div>
                   <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px; margin-top: 6px; display: flex; justify-content: space-between; align-items: baseline;">
-                    <span style="font-weight: 700; color: #fff;">Total Pembeli (All-in):</span>
+                    <span style="font-weight: 700; color: #fff;">Total Pembeli:</span>
                     <strong class="mono" style="color: var(--cyan); font-size: 15px;">${buyerTotal}</strong>
                   </div>
                 </div>
 
-                <!-- Core Marketplace CTAs: Buy Now & Make Offer -->
                 <div style="display: flex; gap: 8px;">
-                  <a href="/pay?id=${encodeURIComponent(l.id)}" class="btn btn-sm" style="flex: 1; text-align: center;">
+                  <a href="/pay?id=${encodeURIComponent(l.id)}" class="btn btn-sm btn-primary" style="flex: 1; text-align: center;">
                     <i class="fa-solid fa-bolt"></i> Beli Langsung
                   </a>
                   <a href="/pay?id=${encodeURIComponent(l.id)}&action=offer" class="btn btn-secondary btn-sm" style="flex: 1; text-align: center;">
-                    <i class="fa-solid fa-handshake"></i> Tawar Harga
+                    <i class="fa-solid fa-handshake"></i> Tawar
                   </a>
                 </div>
               </div>
@@ -608,7 +990,8 @@
       }
     }
 
-    // Load initial listings and events
+    // Initialize country selector & load content
+    handleCountryChange();
     loadListings();
     loadEvents();
   </script>

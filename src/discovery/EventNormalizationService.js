@@ -13,25 +13,104 @@
  */
 
 const EVENT_TYPES = {
+  // MUSIC & ENTERTAINMENT
   CONCERT: 'CONCERT',
+  SOLO_CONCERT: 'SOLO_CONCERT',
+  WORLD_TOUR: 'WORLD_TOUR',
+  FAN_MEETING: 'FAN_MEETING',
+  FAN_CONCERT: 'FAN_CONCERT',
   FESTIVAL: 'FESTIVAL',
+  DJ_EVENT: 'DJ_EVENT',
+  CLUB_EVENT: 'CLUB_EVENT',
+  ORCHESTRA: 'ORCHESTRA',
+  MUSICAL_PERFORMANCE: 'MUSICAL_PERFORMANCE',
+  OPERA: 'OPERA',
+  BALLET: 'BALLET',
+  DANCE_PERFORMANCE: 'DANCE_PERFORMANCE',
+  CULTURAL_PERFORMANCE: 'CULTURAL_PERFORMANCE',
+  KPOP_JPOP_CPOP: 'KPOP_JPOP_CPOP',
+  COMEDY: 'COMEDY',
+  STANDUP_COMEDY: 'STANDUP_COMEDY',
+  VARIETY_SHOW: 'VARIETY_SHOW',
+  THEATER: 'THEATER',
+  BROADWAY_MUSICAL: 'BROADWAY_MUSICAL',
+  FILM_SCREENING: 'FILM_SCREENING',
+  SPECIAL_SCREENING: 'SPECIAL_SCREENING',
+  ENTERTAINMENT_SHOW: 'ENTERTAINMENT_SHOW',
+  MUSIC_GIG: 'MUSIC_GIG',
+
+  // SPORTS
   SPORT: 'SPORT',
   FOOTBALL: 'FOOTBALL',
   BASKETBALL: 'BASKETBALL',
+  VOLLEYBALL: 'VOLLEYBALL',
   BADMINTON: 'BADMINTON',
+  TENNIS: 'TENNIS',
   MOTORSPORT: 'MOTORSPORT',
-  RUNNING: 'RUNNING',
-  COMBAT_SPORT: 'COMBAT_SPORT',
+  FORMULA_RACING: 'FORMULA_RACING',
+  MOTO_RACING: 'MOTO_RACING',
+  BOXING: 'BOXING',
+  MMA: 'MMA',
+  WRESTLING: 'WRESTLING',
   ESPORTS: 'ESPORTS',
-  THEATER: 'THEATER',
-  COMEDY: 'COMEDY',
-  MUSIC_GIG: 'MUSIC_GIG',
-  CONFERENCE: 'CONFERENCE',
+  RUNNING: 'RUNNING',
+  MARATHON: 'MARATHON',
+  CYCLING: 'CYCLING',
+  GOLF: 'GOLF',
+  SWIMMING: 'SWIMMING',
+  COMBAT_SPORT: 'COMBAT_SPORT',
+  SPECTATOR_SPORT: 'SPECTATOR_SPORT',
+
+  // FESTIVALS / EXHIBITIONS / EXPERIENCES
+  FOOD_FESTIVAL: 'FOOD_FESTIVAL',
+  CULTURAL_FESTIVAL: 'CULTURAL_FESTIVAL',
+  ART_FESTIVAL: 'ART_FESTIVAL',
+  FILM_FESTIVAL: 'FILM_FESTIVAL',
+  BOOK_FAIR: 'BOOK_FAIR',
+  TRADE_FAIR: 'TRADE_FAIR',
   EXHIBITION: 'EXHIBITION',
+  ART_EXHIBITION: 'ART_EXHIBITION',
+  TECH_EXHIBITION: 'TECH_EXHIBITION',
+  AUTO_SHOW: 'AUTO_SHOW',
+  ANIME_COMIC_CON: 'ANIME_COMIC_CON',
+  POP_CULTURE_CON: 'POP_CULTURE_CON',
+  THEME_PARK: 'THEME_PARK',
+  ATTRACTION: 'ATTRACTION',
+  IMMERSIVE_EXPERIENCE: 'IMMERSIVE_EXPERIENCE',
+  MUSEUM_EXHIBITION: 'MUSEUM_EXHIBITION',
   FAMILY: 'FAMILY',
+  FAMILY_ENTERTAINMENT: 'FAMILY_ENTERTAINMENT',
+  ZOO_WILDLIFE: 'ZOO_WILDLIFE',
+  WATER_PARK: 'WATER_PARK',
+
+  // BUSINESS / EDUCATION / PROFESSIONAL
+  CONFERENCE: 'CONFERENCE',
+  SUMMIT: 'SUMMIT',
+  SEMINAR: 'SEMINAR',
+  WORKSHOP: 'WORKSHOP',
+  MASTERCLASS: 'MASTERCLASS',
+  TRAINING: 'TRAINING',
+  CERTIFICATION: 'CERTIFICATION',
+  BUSINESS_EVENT: 'BUSINESS_EVENT',
+  NETWORKING: 'NETWORKING',
+  INDUSTRY_EVENT: 'INDUSTRY_EVENT',
+  CREATOR_EVENT: 'CREATOR_EVENT',
+  ACADEMIC_EVENT: 'ACADEMIC_EVENT',
+  PUBLIC_LECTURE: 'PUBLIC_LECTURE',
+
+  // OTHER / UNCATEGORIZED
   CULTURAL: 'CULTURAL',
   RELIGIOUS: 'RELIGIOUS',
   COMMUNITY: 'COMMUNITY',
+  OTHER: 'OTHER'
+};
+
+const CATEGORY_GROUPS = {
+  MUSIC: 'MUSIC',
+  SPORTS: 'SPORTS',
+  FESTIVALS_EXPERIENCES: 'FESTIVALS_EXPERIENCES',
+  SHOWS_COMEDY: 'SHOWS_COMEDY',
+  BUSINESS_EDUCATION: 'BUSINESS_EDUCATION',
   OTHER: 'OTHER'
 };
 
@@ -328,10 +407,274 @@ const KNOWN_VENUES = [
     canonical_name: 'Parking Lot Phinisi Point Makassar',
     city: 'Makassar',
     province: 'Sulawesi Selatan',
+    country: 'Indonesia',
     lat: -5.1517,
     lng: 119.4069,
     capacity_tier: 'ARENA_MEDIUM',
     aliases: ['phinisi point', 'pipo makassar', 'parking lot pipo']
+  },
+
+  // Regional Venues — Singapore
+  {
+    id: 'venue-singapore-national-stadium',
+    canonical_name: 'Singapore National Stadium',
+    city: 'Singapore',
+    province: 'Central Region',
+    country: 'Singapore',
+    lat: 1.3039,
+    lng: 103.8748,
+    capacity_tier: 'STADIUM_MEGA',
+    aliases: ['singapore national stadium', 'national stadium singapore', 'kallang stadium']
+  },
+  {
+    id: 'venue-singapore-indoor-stadium',
+    canonical_name: 'Singapore Indoor Stadium',
+    city: 'Singapore',
+    province: 'Central Region',
+    country: 'Singapore',
+    lat: 1.3008,
+    lng: 103.8752,
+    capacity_tier: 'ARENA_LARGE',
+    aliases: ['singapore indoor stadium', 'indoor stadium singapore']
+  },
+  {
+    id: 'venue-star-theatre-sg',
+    canonical_name: 'The Star Performing Arts Centre (Star Theatre)',
+    city: 'Singapore',
+    province: 'Central Region',
+    country: 'Singapore',
+    lat: 1.3068,
+    lng: 103.7885,
+    capacity_tier: 'HALL_LARGE',
+    aliases: ['star theatre', 'the star performing arts centre', 'star vista theatre']
+  },
+  {
+    id: 'venue-sands-expo-sg',
+    canonical_name: 'Sands Expo and Convention Centre',
+    city: 'Singapore',
+    province: 'Central Region',
+    country: 'Singapore',
+    lat: 1.2834,
+    lng: 103.8591,
+    capacity_tier: 'ARENA_LARGE',
+    aliases: ['sands expo', 'marina bay sands expo', 'mbs expo']
+  },
+  {
+    id: 'venue-esplanade-sg',
+    canonical_name: 'Esplanade – Theatres on the Bay',
+    city: 'Singapore',
+    province: 'Central Region',
+    country: 'Singapore',
+    lat: 1.2898,
+    lng: 103.8558,
+    capacity_tier: 'HALL_LARGE',
+    aliases: ['esplanade', 'theatres on the bay', 'esplanade concert hall']
+  },
+
+  // Regional Venues — Malaysia
+  {
+    id: 'venue-bukit-jalil',
+    canonical_name: 'National Stadium Bukit Jalil',
+    city: 'Kuala Lumpur',
+    province: 'Federal Territory',
+    country: 'Malaysia',
+    lat: 3.0546,
+    lng: 101.6917,
+    capacity_tier: 'STADIUM_MEGA',
+    aliases: ['bukit jalil', 'stadium bukit jalil', 'national stadium bukit jalil', 'stadium nasional bukit jalil']
+  },
+  {
+    id: 'venue-axiata-arena',
+    canonical_name: 'Axiata Arena Bukit Jalil',
+    city: 'Kuala Lumpur',
+    province: 'Federal Territory',
+    country: 'Malaysia',
+    lat: 3.0583,
+    lng: 101.6919,
+    capacity_tier: 'ARENA_LARGE',
+    aliases: ['axiata arena', 'stadium putra', 'axiata arena bukit jalil']
+  },
+  {
+    id: 'venue-mega-star-arena',
+    canonical_name: 'Mega Star Arena KL',
+    city: 'Kuala Lumpur',
+    province: 'Federal Territory',
+    country: 'Malaysia',
+    lat: 3.1200,
+    lng: 101.6780,
+    capacity_tier: 'ARENA_MEDIUM',
+    aliases: ['mega star arena', 'mega star arena kl']
+  },
+  {
+    id: 'venue-zepp-kl',
+    canonical_name: 'Zepp Kuala Lumpur',
+    city: 'Kuala Lumpur',
+    province: 'Federal Territory',
+    country: 'Malaysia',
+    lat: 3.1412,
+    lng: 101.7088,
+    capacity_tier: 'HALL_MEDIUM',
+    aliases: ['zepp kl', 'zepp kuala lumpur']
+  },
+  {
+    id: 'venue-sepang',
+    canonical_name: 'Sepang International Circuit',
+    city: 'Kuala Lumpur',
+    province: 'Selangor',
+    country: 'Malaysia',
+    lat: 2.7606,
+    lng: 101.7378,
+    capacity_tier: 'STADIUM_MEGA',
+    aliases: ['sepang', 'sepang circuit', 'sepang international circuit']
+  },
+
+  // Regional Venues — Thailand
+  {
+    id: 'venue-rajamangala',
+    canonical_name: 'Rajamangala National Stadium',
+    city: 'Bangkok',
+    province: 'Bangkok',
+    country: 'Thailand',
+    lat: 13.7553,
+    lng: 100.6223,
+    capacity_tier: 'STADIUM_MEGA',
+    aliases: ['rajamangala', 'rajamangala stadium', 'rajamangala national stadium']
+  },
+  {
+    id: 'venue-impact-arena',
+    canonical_name: 'Impact Arena, Muang Thong Thani',
+    city: 'Nonthaburi',
+    province: 'Nonthaburi',
+    country: 'Thailand',
+    lat: 13.9114,
+    lng: 100.5484,
+    capacity_tier: 'ARENA_LARGE',
+    aliases: ['impact arena', 'impact muang thong thani', 'impact arena bangkok']
+  },
+  {
+    id: 'venue-impact-challenger',
+    canonical_name: 'Impact Challenger Hall',
+    city: 'Nonthaburi',
+    province: 'Nonthaburi',
+    country: 'Thailand',
+    lat: 13.9125,
+    lng: 100.5501,
+    capacity_tier: 'ARENA_LARGE',
+    aliases: ['impact challenger', 'impact exhibition center']
+  },
+  {
+    id: 'venue-uob-live',
+    canonical_name: 'UOB LIVE at Emsphere',
+    city: 'Bangkok',
+    province: 'Bangkok',
+    country: 'Thailand',
+    lat: 13.7317,
+    lng: 100.5675,
+    capacity_tier: 'ARENA_MEDIUM',
+    aliases: ['uob live', 'uob live emsphere', 'emsphere bangkok']
+  },
+  {
+    id: 'venue-bitec-bangkok',
+    canonical_name: 'BITEC (Bangkok International Trade & Exhibition Centre)',
+    city: 'Bangkok',
+    province: 'Bangkok',
+    country: 'Thailand',
+    lat: 13.6698,
+    lng: 100.6062,
+    capacity_tier: 'ARENA_LARGE',
+    aliases: ['bitec', 'bitec bangna', 'bitec bangkok']
+  },
+
+  // Regional Venues — Philippines
+  {
+    id: 'venue-philippine-arena',
+    canonical_name: 'Philippine Arena',
+    city: 'Manila',
+    province: 'Bulacan',
+    country: 'Philippines',
+    lat: 14.7951,
+    lng: 120.9419,
+    capacity_tier: 'STADIUM_MEGA',
+    aliases: ['philippine arena', 'ciudad de victoria']
+  },
+  {
+    id: 'venue-mall-of-asia-arena',
+    canonical_name: 'SM Mall of Asia Arena',
+    city: 'Manila',
+    province: 'Metro Manila',
+    country: 'Philippines',
+    lat: 14.5322,
+    lng: 120.9850,
+    capacity_tier: 'ARENA_LARGE',
+    aliases: ['moa arena', 'mall of asia arena', 'sm moa arena']
+  },
+  {
+    id: 'venue-smart-araneta',
+    canonical_name: 'Smart Araneta Coliseum',
+    city: 'Manila',
+    province: 'Metro Manila',
+    country: 'Philippines',
+    lat: 14.6219,
+    lng: 121.0531,
+    capacity_tier: 'ARENA_LARGE',
+    aliases: ['araneta coliseum', 'smart araneta coliseum', 'the big dome']
+  },
+  {
+    id: 'venue-new-frontier',
+    canonical_name: 'New Frontier Theater',
+    city: 'Manila',
+    province: 'Metro Manila',
+    country: 'Philippines',
+    lat: 14.6200,
+    lng: 121.0536,
+    capacity_tier: 'HALL_MEDIUM',
+    aliases: ['new frontier theater', 'kia theatre']
+  },
+
+  // Regional Venues — Vietnam
+  {
+    id: 'venue-my-dinh',
+    canonical_name: 'My Dinh National Stadium',
+    city: 'Hanoi',
+    province: 'Red River Delta',
+    country: 'Vietnam',
+    lat: 21.0205,
+    lng: 105.7639,
+    capacity_tier: 'STADIUM_MEGA',
+    aliases: ['my dinh', 'my dinh stadium', 'san van dong my dinh']
+  },
+  {
+    id: 'venue-thong-nhat',
+    canonical_name: 'Thong Nhat Stadium',
+    city: 'Ho Chi Minh City',
+    province: 'Southeast',
+    country: 'Vietnam',
+    lat: 10.7601,
+    lng: 106.6578,
+    capacity_tier: 'STADIUM_REGIONAL',
+    aliases: ['thong nhat stadium', 'san van dong thong nhat']
+  },
+  {
+    id: 'venue-quan-khu-7',
+    canonical_name: 'Quan Khu 7 Stadium',
+    city: 'Ho Chi Minh City',
+    province: 'Southeast',
+    country: 'Vietnam',
+    lat: 10.8016,
+    lng: 106.6669,
+    capacity_tier: 'STADIUM_REGIONAL',
+    aliases: ['quan khu 7', 'san van dong quan khu 7', 'military zone 7 stadium']
+  },
+  {
+    id: 'venue-secc-hcmc',
+    canonical_name: 'Saigon Exhibition and Convention Center (SECC)',
+    city: 'Ho Chi Minh City',
+    province: 'Southeast',
+    country: 'Vietnam',
+    lat: 10.7303,
+    lng: 106.7214,
+    capacity_tier: 'ARENA_LARGE',
+    aliases: ['secc', 'secc hcmc', 'saigon exhibition center']
   }
 ];
 
@@ -405,10 +748,42 @@ const KNOWN_CITIES = {
   pontianak: { city: 'Pontianak', province: 'Kalimantan Barat', timezone: 'Asia/Jakarta' },
 
   // Sulawesi & Papua
-  makassar: { city: 'Makassar', province: 'Sulawesi Selatan', timezone: 'Asia/Makassar' },
-  'ujung pandang': { city: 'Makassar', province: 'Sulawesi Selatan', timezone: 'Asia/Makassar' },
-  manado: { city: 'Manado', province: 'Sulawesi Utara', timezone: 'Asia/Makassar' },
-  jayapura: { city: 'Jayapura', province: 'Papua', timezone: 'Asia/Jayapura' }
+  makassar: { city: 'Makassar', province: 'Sulawesi Selatan', country: 'Indonesia', timezone: 'Asia/Makassar' },
+  'ujung pandang': { city: 'Makassar', province: 'Sulawesi Selatan', country: 'Indonesia', timezone: 'Asia/Makassar' },
+  manado: { city: 'Manado', province: 'Sulawesi Utara', country: 'Indonesia', timezone: 'Asia/Makassar' },
+  jayapura: { city: 'Jayapura', province: 'Papua', country: 'Indonesia', timezone: 'Asia/Jayapura' },
+
+  // Singapore
+  singapore: { city: 'Singapore', province: 'Central Region', country: 'Singapore', timezone: 'Asia/Singapore' },
+  sg: { city: 'Singapore', province: 'Central Region', country: 'Singapore', timezone: 'Asia/Singapore' },
+
+  // Malaysia
+  'kuala lumpur': { city: 'Kuala Lumpur', province: 'Federal Territory', country: 'Malaysia', timezone: 'Asia/Kuala_Lumpur' },
+  kl: { city: 'Kuala Lumpur', province: 'Federal Territory', country: 'Malaysia', timezone: 'Asia/Kuala_Lumpur' },
+  penang: { city: 'George Town', province: 'Penang', country: 'Malaysia', timezone: 'Asia/Kuala_Lumpur' },
+  'george town': { city: 'George Town', province: 'Penang', country: 'Malaysia', timezone: 'Asia/Kuala_Lumpur' },
+  'johor bahru': { city: 'Johor Bahru', province: 'Johor', country: 'Malaysia', timezone: 'Asia/Kuala_Lumpur' },
+
+  // Thailand
+  bangkok: { city: 'Bangkok', province: 'Bangkok', country: 'Thailand', timezone: 'Asia/Bangkok' },
+  bkk: { city: 'Bangkok', province: 'Bangkok', country: 'Thailand', timezone: 'Asia/Bangkok' },
+  nonthaburi: { city: 'Nonthaburi', province: 'Nonthaburi', country: 'Thailand', timezone: 'Asia/Bangkok' },
+  'chiang mai': { city: 'Chiang Mai', province: 'Chiang Mai', country: 'Thailand', timezone: 'Asia/Bangkok' },
+
+  // Philippines
+  manila: { city: 'Manila', province: 'Metro Manila', country: 'Philippines', timezone: 'Asia/Manila' },
+  pasay: { city: 'Manila', province: 'Metro Manila', country: 'Philippines', timezone: 'Asia/Manila' },
+  'quezon city': { city: 'Manila', province: 'Metro Manila', country: 'Philippines', timezone: 'Asia/Manila' },
+  cebu: { city: 'Cebu City', province: 'Cebu', country: 'Philippines', timezone: 'Asia/Manila' },
+
+  // Vietnam
+  'ho chi minh': { city: 'Ho Chi Minh City', province: 'Southeast', country: 'Vietnam', timezone: 'Asia/Ho_Chi_Minh' },
+  'ho chi minh city': { city: 'Ho Chi Minh City', province: 'Southeast', country: 'Vietnam', timezone: 'Asia/Ho_Chi_Minh' },
+  hcmc: { city: 'Ho Chi Minh City', province: 'Southeast', country: 'Vietnam', timezone: 'Asia/Ho_Chi_Minh' },
+  saigon: { city: 'Ho Chi Minh City', province: 'Southeast', country: 'Vietnam', timezone: 'Asia/Ho_Chi_Minh' },
+  hanoi: { city: 'Hanoi', province: 'Red River Delta', country: 'Vietnam', timezone: 'Asia/Ho_Chi_Minh' },
+  'ha noi': { city: 'Hanoi', province: 'Red River Delta', country: 'Vietnam', timezone: 'Asia/Ho_Chi_Minh' },
+  'da nang': { city: 'Da Nang', province: 'South Central Coast', country: 'Vietnam', timezone: 'Asia/Ho_Chi_Minh' }
 };
 
 class EventNormalizationService {
@@ -463,63 +838,191 @@ class EventNormalizationService {
   }
 
   /**
-   * Categorizes raw string into one of the 20 canonical event types.
+   * Categorizes raw string into one of the canonical event types across all paid/ticketed categories.
    */
   static normalizeEventType(rawCategory, title = '') {
     const text = `${rawCategory || ''} ${title || ''}`.toUpperCase();
 
-    if (text.includes('SEPAK BOLA') || text.includes('FOOTBALL') || text.includes('LIGA 1') || text.includes('LIGA 2') || text.includes('PERSIB') || text.includes('PERSIJA') || text.includes('TIMNAS')) {
+    // 1. SPORTS
+    if (text.includes('SEPAK BOLA') || text.includes('FOOTBALL') || text.includes('SOCCER') || text.includes('LIGA 1') || text.includes('LIGA 2') || text.includes('PERSIB') || text.includes('PERSIJA') || text.includes('TIMNAS') || text.includes('EPL') || text.includes('AFF')) {
       return EVENT_TYPES.FOOTBALL;
     }
     if (text.includes('BASKET') || text.includes('IBL') || text.includes('NBA')) {
       return EVENT_TYPES.BASKETBALL;
     }
-    if (text.includes('BADMINTON') || text.includes('BULUTANGKIS') || text.includes('INDONESIA OPEN') || text.includes('INDONESIA MASTERS')) {
+    if (text.includes('VOLLEY') || text.includes('VOLI') || text.includes('PROLIGA')) {
+      return EVENT_TYPES.VOLLEYBALL;
+    }
+    if (text.includes('BADMINTON') || text.includes('BULUTANGKIS') || text.includes('INDONESIA OPEN') || text.includes('INDONESIA MASTERS') || text.includes('BWF')) {
       return EVENT_TYPES.BADMINTON;
     }
-    if (text.includes('MOTO') || text.includes('F1') || text.includes('MANDALIKA') || text.includes('RACING')) {
+    if (text.includes('TENNIS') || text.includes('TENIS') || text.includes('ATP') || text.includes('WTA')) {
+      return EVENT_TYPES.TENNIS;
+    }
+    if (text.includes('F1') || text.includes('FORMULA 1') || text.includes('FORMULA RACING')) {
+      return EVENT_TYPES.FORMULA_RACING;
+    }
+    if (text.includes('MOTOGP') || text.includes('MOTO2') || text.includes('MOTO RACING') || text.includes('MANDALIKA') || text.includes('SEPANG')) {
+      return EVENT_TYPES.MOTO_RACING;
+    }
+    if (text.includes('MOTORSPORT') || text.includes('RACING') || text.includes('BALAP')) {
       return EVENT_TYPES.MOTORSPORT;
     }
-    if (text.includes('MARATHON') || text.includes('RUN') || text.includes('LARI')) {
+    if (text.includes('MARATHON') || text.includes('HALF MARATHON')) {
+      return EVENT_TYPES.MARATHON;
+    }
+    if (text.includes('RUN') || text.includes('LARI') || text.includes('10K') || text.includes('5K') || text.includes('TRAIL RUN')) {
       return EVENT_TYPES.RUNNING;
     }
-    if (text.includes('MMA') || text.includes('BOXING') || text.includes('TINJU') || text.includes('ONE CHAMPIONSHIP')) {
+    if (text.includes('CYCLING') || text.includes('SEPEDA') || text.includes('GRAN FONDO')) {
+      return EVENT_TYPES.CYCLING;
+    }
+    if (text.includes('GOLF')) {
+      return EVENT_TYPES.GOLF;
+    }
+    if (text.includes('SWIMMING') || text.includes('RENANG')) {
+      return EVENT_TYPES.SWIMMING;
+    }
+    if (text.includes('MMA') || text.includes('ONE CHAMPIONSHIP') || text.includes('UFC')) {
+      return EVENT_TYPES.MMA;
+    }
+    if (text.includes('BOXING') || text.includes('TINJU')) {
+      return EVENT_TYPES.BOXING;
+    }
+    if (text.includes('WRESTLING') || text.includes('GULAT') || text.includes('WWE')) {
+      return EVENT_TYPES.WRESTLING;
+    }
+    if (text.includes('COMBAT') || text.includes('BELA DIRI')) {
       return EVENT_TYPES.COMBAT_SPORT;
     }
-    if (text.includes('ESPORT') || text.includes('MPL') || text.includes('VALORANT') || text.includes('DOTA')) {
+    if (text.includes('ESPORT') || text.includes('MPL') || text.includes('VALORANT') || text.includes('DOTA') || text.includes('PUBG') || text.includes('MOBILE LEGENDS')) {
       return EVENT_TYPES.ESPORTS;
     }
-    if (text.includes('SPORT') || text.includes('OLAHRAGA')) {
+    if (text.includes('SPORT') || text.includes('OLAHRAGA') || text.includes('MATCH') || text.includes('PERTANDINGAN')) {
       return EVENT_TYPES.SPORT;
     }
-    if (text.includes('STANDUP') || text.includes('COMEDY') || text.includes('KOMEDI') || text.includes('COMIC')) {
-      return EVENT_TYPES.COMEDY;
+
+    // 2. FESTIVALS, EXHIBITIONS & EXPERIENCES
+    if (text.includes('FOOD FESTIVAL') || text.includes('KULINER') || text.includes('CULINARY')) {
+      return EVENT_TYPES.FOOD_FESTIVAL;
     }
-    if (text.includes('TEATER') || text.includes('THEATER') || text.includes('DRAMA') || text.includes('MUSIKAL')) {
-      return EVENT_TYPES.THEATER;
+    if (text.includes('ANIME') || text.includes('COMIC CON') || text.includes('COSPLAY') || text.includes('POP CULTURE') || text.includes('COMICON')) {
+      return EVENT_TYPES.ANIME_COMIC_CON;
     }
-    if (text.includes('FESTIVAL') || text.includes('FEST')) {
-      return EVENT_TYPES.FESTIVAL;
+    if (text.includes('THEME PARK') || text.includes('DUFAN') || text.includes('UNIVERSAL STUDIOS')) {
+      return EVENT_TYPES.THEME_PARK;
     }
-    if (text.includes('GIG') || text.includes('SHOWCASE') || text.includes('INTIMATE')) {
-      return EVENT_TYPES.MUSIC_GIG;
+    if (text.includes('WATER PARK') || text.includes('WATERPARK') || text.includes('WATERBOM')) {
+      return EVENT_TYPES.WATER_PARK;
     }
-    if (text.includes('KONSER') || text.includes('CONCERT') || text.includes('TOUR') || text.includes('MUSIC')) {
-      return EVENT_TYPES.CONCERT;
+    if (text.includes('ZOO') || text.includes('SAFARI') || text.includes('AQUARIUM') || text.includes('SEA WORLD')) {
+      return EVENT_TYPES.ZOO_WILDLIFE;
     }
-    if (text.includes('CONFERENCE') || text.includes('SUMMIT') || text.includes('SEMINAR')) {
-      return EVENT_TYPES.CONFERENCE;
+    if (text.includes('IMMERSIVE') || text.includes('EXPERIENCE') || text.includes('PENGALAMAN')) {
+      return EVENT_TYPES.IMMERSIVE_EXPERIENCE;
     }
-    if (text.includes('EXPO') || text.includes('EXHIBITION') || text.includes('PAMERAN')) {
+    if (text.includes('AUTO SHOW') || text.includes('GIIAS') || text.includes('IIMS') || text.includes('MOTOR SHOW')) {
+      return EVENT_TYPES.AUTO_SHOW;
+    }
+    if (text.includes('TECH') || text.includes('TEKNOLOGI') || text.includes('INNOVATION EXPO')) {
+      return EVENT_TYPES.TECH_EXHIBITION;
+    }
+    if (text.includes('BOOK FAIR') || text.includes('BIG BAD WOLF') || text.includes('PESTA BUKU')) {
+      return EVENT_TYPES.BOOK_FAIR;
+    }
+    if (text.includes('ART EXHIBITION') || text.includes('PAMERAN SENI') || text.includes('ART JAKARTA') || text.includes('MUSEUM')) {
+      return EVENT_TYPES.ART_EXHIBITION;
+    }
+    if (text.includes('EXPO') || text.includes('EXHIBITION') || text.includes('PAMERAN') || text.includes('FAIR') || text.includes('TRADE FAIR')) {
       return EVENT_TYPES.EXHIBITION;
     }
+    if (text.includes('ATTRACTION') || text.includes('ATRAKSI') || text.includes('OBSERVATION DECK')) {
+      return EVENT_TYPES.ATTRACTION;
+    }
+
+    // 3. SHOWS & COMEDY
+    if (text.includes('STANDUP') || text.includes('COMEDY') || text.includes('KOMEDI') || text.includes('COMIC')) {
+      return EVENT_TYPES.STANDUP_COMEDY;
+    }
+    if (text.includes('VARIETY') || text.includes('TALK SHOW')) {
+      return EVENT_TYPES.VARIETY_SHOW;
+    }
+    if (text.includes('BROADWAY') || text.includes('MUSIKAL') || text.includes('MUSICAL THEATER')) {
+      return EVENT_TYPES.BROADWAY_MUSICAL;
+    }
+    if (text.includes('TEATER') || text.includes('THEATER') || text.includes('DRAMA') || text.includes('SANDIWARA')) {
+      return EVENT_TYPES.THEATER;
+    }
+    if (text.includes('SCREENING') || text.includes('FILM') || text.includes('CINEMA') || text.includes('NOBAR')) {
+      return EVENT_TYPES.FILM_SCREENING;
+    }
+
+    // 4. BUSINESS & EDUCATION
+    if (text.includes('SUMMIT')) {
+      return EVENT_TYPES.SUMMIT;
+    }
+    if (text.includes('WORKSHOP') || text.includes('LOKAKARYA') || text.includes('BOOTCAMP')) {
+      return EVENT_TYPES.WORKSHOP;
+    }
+    if (text.includes('MASTERCLASS')) {
+      return EVENT_TYPES.MASTERCLASS;
+    }
+    if (text.includes('TRAINING') || text.includes('PELATIHAN') || text.includes('SERTIFIKASI') || text.includes('CERTIFICATION')) {
+      return EVENT_TYPES.TRAINING;
+    }
+    if (text.includes('NETWORKING') || text.includes('BUSINESS') || text.includes('BISNIS')) {
+      return EVENT_TYPES.BUSINESS_EVENT;
+    }
+    if (text.includes('CONFERENCE') || text.includes('KONFERENSI') || text.includes('SEMINAR') || text.includes('SIMPOSIUM')) {
+      return EVENT_TYPES.CONFERENCE;
+    }
+    if (text.includes('LECTURE') || text.includes('KULIAH UMUM') || text.includes('ACADEMIC')) {
+      return EVENT_TYPES.ACADEMIC_EVENT;
+    }
+
+    // 5. MUSIC & ENTERTAINMENT
+    if (text.includes('FAN MEETING') || text.includes('FAN CONCERT') || text.includes('FANMEET') || text.includes('FANMEETING')) {
+      return EVENT_TYPES.FAN_MEETING;
+    }
+    if (text.includes('WORLD TOUR') || text.includes('ASIA TOUR') || text.includes('LIVE TOUR')) {
+      return EVENT_TYPES.WORLD_TOUR;
+    }
+    if (text.includes('ORCHESTRA') || text.includes('ORKESTRA') || text.includes('SYMPHONY') || text.includes('PHILHARMONIC')) {
+      return EVENT_TYPES.ORCHESTRA;
+    }
+    if (text.includes('OPERA')) {
+      return EVENT_TYPES.OPERA;
+    }
+    if (text.includes('BALLET') || text.includes('BALE')) {
+      return EVENT_TYPES.BALLET;
+    }
+    if (text.includes('DANCE') || text.includes('TARI') || text.includes('DANCE PERFORMANCE')) {
+      return EVENT_TYPES.DANCE_PERFORMANCE;
+    }
+    if (text.includes('KPOP') || text.includes('K-POP') || text.includes('JPOP') || text.includes('J-POP') || text.includes('CPOP')) {
+      return EVENT_TYPES.KPOP_JPOP_CPOP;
+    }
+    if (text.includes('DJ') || text.includes('EDM') || text.includes('CLUB')) {
+      return EVENT_TYPES.DJ_EVENT;
+    }
+    if (text.includes('FESTIVAL') || text.includes('FEST') || text.includes('PESTAPORA') || text.includes('DWP') || text.includes('SYNCHRONIZE')) {
+      return EVENT_TYPES.FESTIVAL;
+    }
+    if (text.includes('GIG') || text.includes('SHOWCASE') || text.includes('INTIMATE') || text.includes('ACOUSTIC')) {
+      return EVENT_TYPES.MUSIC_GIG;
+    }
+    if (text.includes('KONSER') || text.includes('CONCERT') || text.includes('TOUR') || text.includes('MUSIC') || text.includes('MUSIK')) {
+      return EVENT_TYPES.CONCERT;
+    }
+
+    // 6. OTHERS
     if (text.includes('CULTURE') || text.includes('BUDAYA') || text.includes('WAYANG')) {
       return EVENT_TYPES.CULTURAL;
     }
-    if (text.includes('RELIGI') || text.includes('TABLIGH') || text.includes('RETREAT')) {
+    if (text.includes('RELIGI') || text.includes('TABLIGH') || text.includes('RETREAT') || text.includes('KEBAKTIAN')) {
       return EVENT_TYPES.RELIGIOUS;
     }
-    if (text.includes('FAMILY') || text.includes('KID') || text.includes('ANAK')) {
+    if (text.includes('FAMILY') || text.includes('KID') || text.includes('ANAK') || text.includes('KELUARGA')) {
       return EVENT_TYPES.FAMILY;
     }
     if (text.includes('COMMUNITY') || text.includes('KOMUNITAS')) {
@@ -530,10 +1033,62 @@ class EventNormalizationService {
   }
 
   /**
+   * Maps a fine-grained event type or raw category into one of the 6 canonical category groups.
+   */
+  static mapCategoryToGroup(rawTypeOrCategory) {
+    if (!rawTypeOrCategory) return CATEGORY_GROUPS.OTHER;
+    const t = String(rawTypeOrCategory).toUpperCase().trim();
+
+    if ([
+      'CONCERT', 'SOLO_CONCERT', 'WORLD_TOUR', 'FAN_MEETING', 'FAN_CONCERT', 'FESTIVAL',
+      'MUSIC_FESTIVAL', 'DJ_EVENT', 'CLUB_EVENT', 'ORCHESTRA', 'MUSICAL_PERFORMANCE', 'OPERA', 'BALLET',
+      'DANCE_PERFORMANCE', 'CULTURAL_PERFORMANCE', 'KPOP_JPOP_CPOP', 'MUSIC_GIG', 'MUSIC',
+      'KONSER', 'MUSIK'
+    ].includes(t)) {
+      return CATEGORY_GROUPS.MUSIC;
+    }
+
+    if ([
+      'SPORT', 'FOOTBALL', 'BASKETBALL', 'VOLLEYBALL', 'BADMINTON', 'TENNIS', 'MOTORSPORT',
+      'FORMULA_RACING', 'MOTO_RACING', 'BOXING', 'MMA', 'WRESTLING', 'ESPORTS', 'RUNNING',
+      'MARATHON', 'CYCLING', 'GOLF', 'SWIMMING', 'COMBAT_SPORT', 'SPECTATOR_SPORT', 'OLAHRAGA'
+    ].includes(t)) {
+      return CATEGORY_GROUPS.SPORTS;
+    }
+
+    if ([
+      'FOOD_FESTIVAL', 'CULTURAL_FESTIVAL', 'ART_FESTIVAL', 'FILM_FESTIVAL', 'BOOK_FAIR',
+      'TRADE_FAIR', 'EXHIBITION', 'ART_EXHIBITION', 'TECH_EXHIBITION', 'AUTO_SHOW',
+      'ANIME_COMIC_CON', 'POP_CULTURE_CON', 'THEME_PARK', 'ATTRACTION', 'IMMERSIVE_EXPERIENCE',
+      'MUSEUM_EXHIBITION', 'FAMILY', 'FAMILY_ENTERTAINMENT', 'ZOO_WILDLIFE', 'WATER_PARK',
+      'EXPERIENCE'
+    ].includes(t)) {
+      return CATEGORY_GROUPS.FESTIVALS_EXPERIENCES;
+    }
+
+    if ([
+      'COMEDY', 'STANDUP_COMEDY', 'STANDUP', 'VARIETY_SHOW', 'THEATER', 'BROADWAY_MUSICAL',
+      'FILM_SCREENING', 'SPECIAL_SCREENING', 'ENTERTAINMENT_SHOW', 'TEATER'
+    ].includes(t)) {
+      return CATEGORY_GROUPS.SHOWS_COMEDY;
+    }
+
+    if ([
+      'CONFERENCE', 'SUMMIT', 'SEMINAR', 'WORKSHOP', 'MASTERCLASS', 'TRAINING',
+      'CERTIFICATION', 'BUSINESS_EVENT', 'NETWORKING', 'INDUSTRY_EVENT', 'CREATOR_EVENT',
+      'ACADEMIC_EVENT', 'PUBLIC_LECTURE', 'BUSINESS', 'EDUCATION'
+    ].includes(t)) {
+      return CATEGORY_GROUPS.BUSINESS_EDUCATION;
+    }
+
+    return CATEGORY_GROUPS.OTHER;
+  }
+
+  /**
    * Maps raw venue and city string into canonical venue record.
    * STRICT GROUNDING: Never defaults unmapped cities to Jakarta.
    */
-  static normalizeVenue(rawVenue, rawCity) {
+  static normalizeVenue(rawVenue, rawCity, rawCountry = null) {
     const vStr = String(rawVenue || '').toLowerCase().trim();
     const cStr = String(rawCity || '').toLowerCase().trim();
 
@@ -544,7 +1099,7 @@ class EventNormalizationService {
           venue_name: v.canonical_name,
           city: v.city,
           province: v.province,
-          country: 'Indonesia',
+          country: v.country || rawCountry || 'Indonesia',
           lat: v.lat || null,
           lng: v.lng || null
         };
@@ -556,7 +1111,7 @@ class EventNormalizationService {
             venue_name: v.canonical_name,
             city: v.city,
             province: v.province,
-            country: 'Indonesia',
+            country: v.country || rawCountry || 'Indonesia',
             lat: v.lat || null,
             lng: v.lng || null
           };
@@ -566,18 +1121,20 @@ class EventNormalizationService {
 
     let resolvedCity = null;
     let resolvedProvince = null;
+    let resolvedCountry = rawCountry || null;
 
     for (const [key, val] of Object.entries(KNOWN_CITIES)) {
       if (cStr === key || cStr.includes(key) || vStr.includes(key)) {
         resolvedCity = val.city;
         resolvedProvince = val.province;
+        resolvedCountry = val.country || rawCountry || 'Indonesia';
         break;
       }
     }
 
     if (!resolvedCity) {
       resolvedCity = rawCity ? rawCity.trim() : (rawVenue ? rawVenue.trim() : 'TBA City');
-      resolvedProvince = 'Indonesia';
+      resolvedProvince = resolvedCountry || 'Indonesia';
     }
 
     return {
@@ -585,15 +1142,15 @@ class EventNormalizationService {
       venue_name: rawVenue ? rawVenue.trim() : 'TBA Venue',
       city: resolvedCity,
       province: resolvedProvince || 'Indonesia',
-      country: 'Indonesia',
+      country: resolvedCountry || 'Indonesia',
       lat: null,
       lng: null
     };
   }
 
   /**
-   * Normalizes dates and times to ISO standard with appropriate Indonesia timezone offset:
-   * WIB = +07:00, WITA = +08:00, WIT = +09:00
+   * Normalizes dates and times to ISO standard with appropriate timezone offset:
+   * WIB (+07:00), WITA (+08:00), WIT (+09:00), Singapore / Malaysia / Philippines (+08:00), Thailand / Vietnam (+07:00)
    */
   static normalizeDateTime(dateStr, timeStr = null, timezone = null, cityOrProvince = null) {
     let cleanTz = timezone;
@@ -621,10 +1178,12 @@ class EventNormalizationService {
     cleanTime = `${timeParts[0].padStart(2, '0')}:${(timeParts[1] || '00').padStart(2, '0')}`;
 
     let offset = '+07:00';
-    if (cleanTz === 'Asia/Makassar' || cleanTz === 'WITA') {
+    if (cleanTz === 'Asia/Makassar' || cleanTz === 'WITA' || cleanTz === 'Asia/Singapore' || cleanTz === 'Asia/Kuala_Lumpur' || cleanTz === 'Asia/Manila' || cleanTz === 'SGT' || cleanTz === 'MYT' || cleanTz === 'PHT') {
       offset = '+08:00';
     } else if (cleanTz === 'Asia/Jayapura' || cleanTz === 'WIT') {
       offset = '+09:00';
+    } else if (cleanTz === 'Asia/Bangkok' || cleanTz === 'Asia/Ho_Chi_Minh' || cleanTz === 'ICT' || cleanTz === 'WIB') {
+      offset = '+07:00';
     }
 
     const isoDatetime = `${cleanDate}T${cleanTime}:00${offset}`;
@@ -641,6 +1200,7 @@ class EventNormalizationService {
 module.exports = {
   EventNormalizationService,
   EVENT_TYPES,
+  CATEGORY_GROUPS,
   KNOWN_VENUES,
   KNOWN_CITIES
 };

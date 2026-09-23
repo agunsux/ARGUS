@@ -406,6 +406,22 @@ router.get('/events', (req, res) => {
     if (startDate && eDate && eDate < startDate) return false;
     if (endDate && eDate && eDate > endDate) return false;
 
+    // Country filter (supporting Indonesia, Singapore, Malaysia, Thailand, Philippines, Vietnam and ISO codes)
+    if (req.query.country && req.query.country.trim()) {
+      const cleanCountry = req.query.country.toLowerCase().trim();
+      const countryCodeMap = {
+        'id': 'indonesia',
+        'sg': 'singapore',
+        'my': 'malaysia',
+        'th': 'thailand',
+        'ph': 'philippines',
+        'vn': 'vietnam'
+      };
+      const targetCountry = countryCodeMap[cleanCountry] || cleanCountry;
+      const evCountry = (event.country || 'Indonesia').toLowerCase().trim();
+      if (!evCountry.includes(targetCountry) && evCountry !== targetCountry) return false;
+    }
+
     return true;
   });
 
@@ -1988,10 +2004,12 @@ router.post('/pricing/calculate', async (req, res) => {
   try {
     const {
       ticketPrice,
+      quantity = 1,
       listingId = null,
       buyerId = null,
       sellerId = null,
-      policyVersion = '2026.1-ID-DEFAULT',
+      paymentProcessingFee = 0,
+      policyVersion = 'TIKUM_FEE_POLICY_V1',
       taxPolicyVersion = '2026.1-ID-TAX',
       lockQuote = false
     } = req.body;
@@ -2000,12 +2018,18 @@ router.post('/pricing/calculate', async (req, res) => {
       return res.status(400).json({ error: 'Valid positive ticketPrice is required', code: 'INVALID_TICKET_PRICE' });
     }
 
+    const price = parseInt(ticketPrice, 10);
+    const qty = parseInt(quantity || 1, 10);
+    const pgFee = parseInt(paymentProcessingFee || 0, 10);
+
     if (lockQuote) {
       const quote = await TransactionQuoteService.generateQuote({
         listingId,
-        ticketPrice: parseInt(ticketPrice, 10),
+        ticketPrice: price,
+        quantity: qty,
         buyerId,
         sellerId,
+        paymentProcessingFee: pgFee,
         pricingPolicyVersion: policyVersion,
         taxPolicyVersion: taxPolicyVersion
       });
@@ -2032,32 +2056,43 @@ router.post('/pricing/calculate', async (req, res) => {
     };
 
     const fees = MarketplacePricingEngine.calculateFees({
-      ticketPrice: parseInt(ticketPrice, 10),
+      ticketPrice: price,
+      quantity: qty,
       policyVersion
     });
 
+    const grossTicketValue = fees.gross_ticket_value || (price * qty);
+
     const taxes = TaxEngine.calculateTax({
-      ticketPrice: parseInt(ticketPrice, 10),
+      ticketPrice: grossTicketValue,
       buyerPlatformFee: fees.buyer_fee,
       sellerTaxProfile,
       taxPolicyVersion
     });
 
-    const buyerTotal = parseInt(ticketPrice, 10) + fees.buyer_fee + taxes.total_buyer_tax;
-    const sellerNetPayout = parseInt(ticketPrice, 10) - fees.seller_fee - taxes.total_seller_tax_withholding;
+    const buyerSubtotal = grossTicketValue + fees.buyer_fee;
+    const buyerTotal = buyerSubtotal + pgFee + taxes.total_buyer_tax;
+    const sellerNetPayout = grossTicketValue - fees.seller_fee - taxes.total_seller_tax_withholding;
 
     res.json({
       success: true,
-      ticket_price: parseInt(ticketPrice, 10),
+      ticket_price: price,
+      quantity: qty,
+      gross_ticket_value: grossTicketValue,
       currency: fees.currency,
+      fee_policy_version: fees.policy_version,
       buyer_fee: fees.buyer_fee,
       seller_fee: fees.seller_fee,
       total_platform_fee: fees.total_platform_fee,
+      total_tikum_fee: fees.total_platform_fee,
+      payment_processing_fee: pgFee,
+      buyer_subtotal: buyerSubtotal,
       buyer_tax: taxes.total_buyer_tax,
       seller_tax_withholding: taxes.total_seller_tax_withholding,
       total_tax: taxes.total_tax_collected,
       buyer_total: buyerTotal,
       seller_net_payout: sellerNetPayout,
+      seller_payout: sellerNetPayout,
       pricing_breakdown: fees,
       tax_breakdown: taxes
     });

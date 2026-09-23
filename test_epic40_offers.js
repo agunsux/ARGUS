@@ -531,11 +531,12 @@ async function runTests() {
 
       // Critical Invariant: Fee & amounts must be calculated from negotiatedAmount (1.200.000), NEVER original listing price (1.500.000)
       assert.strictEqual(order.ticket_price, 1200000, 'Order ticket price must be negotiated amount');
-      assert.strictEqual(order.platform_fee, 120000, 'Platform fee must be 10% of negotiated amount (Rp 120.000), NOT 10% of Rp 1.500.000 (Rp 150.000)');
-      assert.strictEqual(order.total_amount, 1320000, 'Total amount must be Rp 1.320.000');
-      assert.strictEqual(escrow.amount, 1200000, 'Escrow held for seller disbursement must equal negotiated ticket price');
-      assert.strictEqual(escrow.total_paid, 1320000, 'Escrow total paid must equal total amount with platform fee');
-      assert.strictEqual(pricing.platformFee, 120000);
+      assert.strictEqual(order.platform_fee, 72000, 'Platform fee must be 6% of negotiated amount (Rp 72.000), NOT 6% of Rp 1.500.000 (Rp 90.000)');
+      assert.strictEqual(order.buyer_subtotal, 1272000, 'Buyer subtotal must be Rp 1.272.000');
+      assert.strictEqual(order.total_amount, 1279920, 'Total amount must be Rp 1.279.920');
+      assert.strictEqual(escrow.amount, 1128000, 'Escrow held for seller disbursement must equal seller net payout (1.200.000 - 72.000)');
+      assert.strictEqual(escrow.total_paid, 1279920, 'Escrow total paid must equal total amount with platform fee & tax');
+      assert.strictEqual(pricing.platformFee, 72000);
 
       // Now execute simulated entry and settlement release to verify seller disbursement
       order.status = ORDER_STATUS.ENTRY_CONFIRMED;
@@ -547,7 +548,7 @@ async function runTests() {
         idempotencyKey: `stl-negotiated-${order.id}`
       });
 
-      assert.strictEqual(settlementResult.settlement.amount, 1200000, 'Disbursed seller amount must strictly equal negotiated offer amount (Rp 1.200.000)');
+      assert.strictEqual(settlementResult.settlement.amount, 1128000, 'Disbursed seller amount must strictly equal negotiated offer net payout (Rp 1.128.000)');
       assert.strictEqual(settlementResult.settlement.status, 'EXECUTED');
     });
 

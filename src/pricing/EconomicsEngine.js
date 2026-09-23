@@ -71,7 +71,7 @@ class EconomicsEngine {
     let verifiedAdmissionCount = 0;
 
     for (const order of filteredOrders) {
-      const ticketPrice = order.ticket_price || 0;
+      const ticketPrice = order.gross_ticket_value || order.ticket_price || 0;
       const buyerFee = order.buyer_fee !== undefined ? order.buyer_fee : (order.platform_fee || 0);
       const sellerFee = order.seller_fee || 0;
       const grossRevenue = buyerFee + sellerFee;

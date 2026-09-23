@@ -298,6 +298,10 @@ class EventVerificationService {
       if (isSocialTier3) {
         failFlags.push('TIER_3_SOCIAL_DISCOVERY_ONLY');
       }
+      const eventCountry = (canonicalEvent.country || 'Indonesia').toLowerCase();
+      if (eventCountry === 'indonesia' || eventCountry === 'id') {
+        failFlags.push('INDONESIA_LOCAL_AUTHORITY_REQUIRED');
+      }
       return {
         verification_status: VERIFICATION_STATUS.UNVERIFIED,
         verification_confidence: Math.min(50, score || (isSocialTier3 ? 30 : 50)),
@@ -305,6 +309,32 @@ class EventVerificationService {
         flags: failFlags,
         freshness_ttl_hours: 48
       };
+    }
+
+    // 3b. Indonesia Specific Rule:
+    // IF country == Indonesia, local promoter / official event / official IG is required for primary verification.
+    // Regional discovery signals (StubHub, Viagogo) cannot verify an Indonesian event.
+    const eventCountry = (canonicalEvent.country || 'Indonesia').toLowerCase();
+    if (eventCountry === 'indonesia' || eventCountry === 'id') {
+      const hasLocalIndoAuthority = sourceRecords.some(s => {
+        const srcMeta = sourceRegistry.getSource(s.source_id) || {};
+        const isAuth = sourceRegistry.isAuthoritativeSource(s.source_id, s.account_handle || s.source_account);
+        if (!isAuth) return false;
+        const c = (srcMeta.country || s.country || '').toLowerCase();
+        const isIndo = c === 'indonesia' || c === 'id';
+        const isArtistDirect = (srcMeta.source_type || '').includes('ARTIST');
+        return isIndo || isArtistDirect;
+      });
+
+      if (!hasLocalIndoAuthority) {
+        return {
+          verification_status: VERIFICATION_STATUS.UNVERIFIED,
+          verification_confidence: 45,
+          conflicts: [],
+          flags: ['INDONESIA_LOCAL_AUTHORITY_REQUIRED', 'REGIONAL_RADAR_NOT_LOCAL_PROOF'],
+          freshness_ttl_hours: 48
+        };
+      }
     }
 
     // 4. Compute Base Confidence
@@ -407,6 +437,19 @@ class EventVerificationService {
       conflicts,
       flags,
       freshness_ttl_hours: Math.round(ttlMs / (1000 * 60 * 60))
+    };
+  }
+
+  /**
+   * Helper alias method for evaluateEvent returning status, is_verified, and reason string.
+   */
+  static verifyEventWithRules(canonicalEvent, sourceRecords = []) {
+    const res = this.evaluateEvent(canonicalEvent, sourceRecords);
+    return {
+      ...res,
+      status: res.verification_status,
+      is_verified: res.verification_status === VERIFICATION_STATUS.VERIFIED || res.verification_status === 'PRIMARY_SOURCE_VERIFIED',
+      reason: (res.flags || []).join(', ')
     };
   }
 }

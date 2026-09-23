@@ -68,8 +68,9 @@ async function runSuite() {
   test('Step 3: Buyer sees 100% transparent pricing upfront (No hidden surprise checkout fees)', () => {
     const pricing = EscrowService.calculatePricing(listing1.price);
     assert.strictEqual(pricing.ticketPrice, 1500000);
-    assert.strictEqual(pricing.platformFee, 150000); // 10% fee
-    assert.strictEqual(pricing.totalAmount, 1650000); // exactly Rp 1.650.000
+    assert.strictEqual(pricing.platformFee, 90000); // Canonical 6% fee
+    assert.strictEqual(pricing.buyer_subtotal, 1590000);
+    assert.strictEqual(pricing.totalAmount, 1599900); // 1.590.000 + 9.900 PPN
   });
 
   // 4. Buyer reserves ticket & creates order
@@ -85,7 +86,7 @@ async function runSuite() {
     assert.strictEqual(order1.status, ORDER_STATUS.PENDING_PAYMENT);
     assert.strictEqual(escrow1.status, ESCROW_STATUS.PENDING_PAYMENT);
     assert.strictEqual(listing1.status, LISTING_STATUS.RESERVED);
-    assert.strictEqual(order1.total_amount, 1650000);
+    assert.strictEqual(order1.total_amount, 1599900);
   });
 
   // 5. Buyer pays -> Payment locked into Escrow
@@ -94,7 +95,7 @@ async function runSuite() {
       orderId: order1.id,
       providerRef: 'midtrans-mock-pay-1234',
       idempotencyKey: 'idem-key-order-1',
-      amountPaid: 1650000
+      amountPaid: order1.buyer_total
     });
 
     assert.strictEqual(payRes.escrow.status, ESCROW_STATUS.ESCROWED);
@@ -152,7 +153,7 @@ async function runSuite() {
     });
 
     assert.strictEqual(setRes.settlement.status, 'EXECUTED');
-    assert.strictEqual(setRes.settlement.amount, 1500000);
+    assert.strictEqual(setRes.settlement.amount, 1410000); // 1.500.000 - 90.000 (6% seller fee)
     assert.strictEqual(setRes.idempotent, false);
 
     // Test idempotency

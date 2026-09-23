@@ -16,34 +16,49 @@
  */
 
 const { state, recordAuditLog } = require('../database');
+const { CanonicalFeeEngine, TIKUM_FEE_POLICY_V1 } = require('./CanonicalFeeEngine');
 
 const DEFAULT_POLICIES = {
+  'TIKUM_FEE_POLICY_V1': {
+    version: 'TIKUM_FEE_POLICY_V1',
+    country_code: 'ID',
+    currency: 'IDR',
+    description: 'Standard Tikum Canonical Fee Policy V1 (6% Buyer + 6% Seller, Min Rp10k, Max Rp300k)',
+    buyer_rate: 0.06,
+    buyer_min_fee: 10000,
+    buyer_max_fee: 300000,
+    seller_rate: 0.06,
+    seller_min_fee: 10000,
+    seller_max_fee: 300000,
+    is_active: true,
+    effective_from: '2026-01-01T00:00:00Z'
+  },
   '2026.1-ID-DEFAULT': {
     version: '2026.1-ID-DEFAULT',
     country_code: 'ID',
     currency: 'IDR',
-    description: 'Standard Indonesia Two-Sided Marketplace Policy (5% + 5%, Min 15k, Max 500k)',
+    description: 'Historical Indonesia Two-Sided Marketplace Policy (5% + 5%, Min 15k, Max 500k)',
     buyer_rate: 0.05,
     buyer_min_fee: 15000,
     buyer_max_fee: 500000,
     seller_rate: 0.05,
     seller_min_fee: 15000,
     seller_max_fee: 500000,
-    is_active: true,
+    is_active: false,
     effective_from: '2026-01-01T00:00:00Z'
   },
   'LEGACY-BUYER-10PCT': {
     version: 'LEGACY-BUYER-10PCT',
     country_code: 'ID',
     currency: 'IDR',
-    description: 'Legacy Pilot Policy: 10% Buyer Fee, 0% Seller Fee (No Min/Max)',
+    description: 'Historical Pilot Policy: 10% Buyer Fee, 0% Seller Fee (No Min/Max)',
     buyer_rate: 0.10,
     buyer_min_fee: 0,
     buyer_max_fee: Infinity,
     seller_rate: 0.00,
     seller_min_fee: 0,
     seller_max_fee: 0,
-    is_active: true,
+    is_active: false,
     effective_from: '2026-01-01T00:00:00Z'
   }
 };
@@ -70,17 +85,16 @@ class MarketplacePricingEngine {
   /**
    * Retrieve active pricing policy by version
    */
-  static getPolicy(version = '2026.1-ID-DEFAULT') {
+  static getPolicy(version = 'TIKUM_FEE_POLICY_V1') {
     this.init();
-    const policy = state.pricing_policies.find(p => p.version === version && p.is_active);
+    const targetVersion = version || 'TIKUM_FEE_POLICY_V1';
+    const policy = state.pricing_policies.find(p => p.version === targetVersion);
     if (!policy) {
       // Fallback to default in-memory definition if state was reset without init
-      if (DEFAULT_POLICIES[version]) {
-        return DEFAULT_POLICIES[version];
+      if (DEFAULT_POLICIES[targetVersion]) {
+        return DEFAULT_POLICIES[targetVersion];
       }
-      const defaultPol = state.pricing_policies.find(p => p.version === '2026.1-ID-DEFAULT');
-      if (defaultPol) return defaultPol;
-      return DEFAULT_POLICIES['2026.1-ID-DEFAULT'];
+      return DEFAULT_POLICIES['TIKUM_FEE_POLICY_V1'];
     }
     return policy;
   }
@@ -158,16 +172,52 @@ class MarketplacePricingEngine {
    * 
    * @param {Object} params
    * @param {number} params.ticketPrice - Final ticket price in integer units (IDR)
-   * @param {string} [params.policyVersion='2026.1-ID-DEFAULT']
+   * @param {number} [params.quantity=1] - Multi-ticket order count
+   * @param {string} [params.policyVersion='TIKUM_FEE_POLICY_V1']
    * @param {string} [params.currency='IDR']
    * @param {string} [params.countryCode='ID']
    */
   static calculateFees({
     ticketPrice,
-    policyVersion = '2026.1-ID-DEFAULT',
+    quantity = 1,
+    policyVersion = 'TIKUM_FEE_POLICY_V1',
     currency = 'IDR',
     countryCode = 'ID'
   }) {
+    const targetPolicy = policyVersion || 'TIKUM_FEE_POLICY_V1';
+
+    // If target is canonical V1, delegate directly to CanonicalFeeEngine
+    if (targetPolicy === 'TIKUM_FEE_POLICY_V1') {
+      const canonical = CanonicalFeeEngine.calculateTicketFees({
+        ticketPrice,
+        quantity,
+        currency,
+        policyVersion: 'TIKUM_FEE_POLICY_V1'
+      });
+      return {
+        policy_version: canonical.fee_policy_version,
+        currency: canonical.currency,
+        country_code: canonical.country_code || countryCode,
+        ticket_price: canonical.ticket_price,
+        quantity: canonical.quantity,
+        gross_ticket_value: canonical.gross_ticket_value,
+        buyer_fee: canonical.buyer_fee,
+        seller_fee: canonical.seller_fee,
+        raw_buyer_fee: canonical.raw_buyer_fee,
+        raw_seller_fee: canonical.raw_seller_fee,
+        buyer_rate: canonical.buyer_rate,
+        seller_rate: canonical.seller_rate,
+        buyer_min_fee: canonical.minimum_fee,
+        buyer_max_fee: canonical.maximum_fee,
+        seller_min_fee: canonical.minimum_fee,
+        seller_max_fee: canonical.maximum_fee,
+        total_platform_fee: canonical.total_tikum_fee,
+        seller_payout: canonical.seller_payout,
+        buyer_subtotal: canonical.buyer_subtotal,
+        buyer_total: canonical.buyer_total
+      };
+    }
+
     const price = parseInt(ticketPrice, 10);
     if (isNaN(price) || price <= 0) {
       const err = new Error(`[INVALID_TICKET_PRICE] Ticket price must be a positive integer, got: ${ticketPrice}`);
@@ -175,7 +225,7 @@ class MarketplacePricingEngine {
       throw err;
     }
 
-    const policy = this.getPolicy(policyVersion);
+    const policy = this.getPolicy(targetPolicy);
 
     // 1. Calculate raw Buyer Fee
     const rawBuyerFee = Math.round(price * policy.buyer_rate);
