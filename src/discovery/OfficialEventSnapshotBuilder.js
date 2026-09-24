@@ -58,7 +58,13 @@ const ALLOWED_HOSTS = new Set([
   'synchronizefestival.com',
   'bigbanginjakarta.com',
   'www.bigbanginjakarta.com',
-  'hub.ekraf.go.id'
+  'hub.ekraf.go.id',
+  'www.songkick.com',
+  'songkick.com',
+  'tickets.songkick.com',
+  'labs.songkick.com',
+  'www.bandsintown.com',
+  'bandsintown.com'
 ]);
 
 // Indonesian target market: Jabodetabek, Java, Sumatera, Sulawesi, Kalimantan, Bali.

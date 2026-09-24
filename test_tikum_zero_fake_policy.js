@@ -269,6 +269,134 @@ async function run() {
     }
   });
 
+  console.log('\n── 4. Concert Discovery Radars: Songkick & Bandsintown (Jakarta & Greater Jakarta) ──');
+
+  await test('SourceRegistry registers Songkick with Greater Jakarta scope & DISCOVERY_ONLY constraints', async () => {
+    const songkick = sourceRegistry.getSource('src-songkick-jakarta');
+    assert.ok(songkick, 'src-songkick-jakarta must be registered');
+    assert.strictEqual(songkick.name, 'Songkick');
+    assert.strictEqual(songkick.type, 'CONCERT_DISCOVERY_RADAR');
+    assert.strictEqual(songkick.category, 'MUSIC');
+    assert.strictEqual(songkick.authority, 'DISCOVERY_ONLY');
+    assert.strictEqual(songkick.verification_role, 'DISCOVERY_ONLY');
+    assert.strictEqual(songkick.can_create_event, true);
+    assert.strictEqual(songkick.can_mark_verified, false);
+    assert.strictEqual(songkick.can_override_official_source, false);
+    assert.strictEqual(songkick.official_url, 'https://www.songkick.com/');
+    assert.strictEqual(songkick.city_feed, 'https://www.songkick.com/metro-areas/29154-indonesia-jakarta');
+    assert.strictEqual(songkick.region, 'Jakarta & Greater Jakarta');
+
+    // Greater Jakarta Scope (Jakarta, Tangerang, Tangerang Selatan, Bekasi, Depok, Bogor)
+    const requiredCities = ['Jakarta', 'Tangerang', 'Tangerang Selatan', 'Bekasi', 'Depok', 'Bogor'];
+    for (const c of requiredCities) {
+      assert.ok(songkick.supported_cities.includes(c), `Songkick missing supported city: ${c}`);
+    }
+
+    // Fail-Closed Invariant: isAuthoritativeSource strictly returns false
+    assert.strictEqual(sourceRegistry.isAuthoritativeSource('src-songkick-jakarta'), false);
+  });
+
+  await test('SourceRegistry registers Bandsintown with Greater Jakarta scope & DISCOVERY_ONLY constraints', async () => {
+    const bandsintown = sourceRegistry.getSource('src-bandsintown-jakarta');
+    assert.ok(bandsintown, 'src-bandsintown-jakarta must be registered');
+    assert.strictEqual(bandsintown.name, 'Bandsintown');
+    assert.strictEqual(bandsintown.type, 'CONCERT_DISCOVERY_RADAR');
+    assert.strictEqual(bandsintown.category, 'MUSIC');
+    assert.strictEqual(bandsintown.authority, 'DISCOVERY_ONLY');
+    assert.strictEqual(bandsintown.verification_role, 'DISCOVERY_ONLY');
+    assert.strictEqual(bandsintown.can_create_event, true);
+    assert.strictEqual(bandsintown.can_mark_verified, false);
+    assert.strictEqual(bandsintown.can_override_official_source, false);
+    assert.strictEqual(bandsintown.official_url, 'https://www.bandsintown.com/');
+    assert.strictEqual(bandsintown.city_feed, 'https://www.bandsintown.com/c/jakarta-indonesia');
+    assert.strictEqual(bandsintown.region, 'Jakarta & Greater Jakarta');
+
+    const requiredCities = ['Jakarta', 'Tangerang', 'Tangerang Selatan', 'Bekasi', 'Depok', 'Bogor'];
+    for (const c of requiredCities) {
+      assert.ok(bandsintown.supported_cities.includes(c), `Bandsintown missing supported city: ${c}`);
+    }
+
+    // Fail-Closed Invariant: isAuthoritativeSource strictly returns false
+    assert.strictEqual(sourceRegistry.isAuthoritativeSource('src-bandsintown-jakarta'), false);
+  });
+
+  await test('Songkick Discovery Radar: My Chemical Romance fails-closed to PENDING_ARTIST_VERIFICATION without artist proof', async () => {
+    // Discovery from Songkick: "My Chemical Romance — Jakarta International Stadium"
+    const songkickObservation = canonicalRegistry.createEvent({
+      event_id: 'ev-can-mcr-radar-test',
+      title: 'My Chemical Romance — Jakarta International Stadium',
+      name: 'My Chemical Romance — Jakarta International Stadium',
+      artists: ['My Chemical Romance'],
+      start_date: '2026-11-28',
+      venue_name: 'Jakarta International Stadium',
+      city: 'Jakarta',
+      category: 'CONCERT',
+      source_id: 'src-songkick-jakarta',
+      source_url: 'https://www.songkick.com/metro-areas/29154-indonesia-jakarta',
+      enforce_zero_fake_policy: true
+    });
+
+    // Zero-Fake Gate: Songkick cannot solely verify
+    assert.strictEqual(songkickObservation.verification_status, VERIFICATION_STATUS.PENDING_ARTIST_VERIFICATION);
+    assert.strictEqual(songkickObservation.is_verified, false, 'Radar discovery alone cannot verify event');
+    assert.strictEqual(songkickObservation.verification_tier, VERIFICATION_TIERS.TIER_C_DISCOVERY_ONLY);
+    assert.ok(songkickObservation.verification_score <= 50);
+    assert.ok(songkickObservation.verification_reasons.includes('CONCERT_DISCOVERY_RADAR_REQUIRES_AUTHORITATIVE_CORROBORATION'));
+    assert.ok(songkickObservation.verification_reasons.includes('ZERO_FAKE_POLICY_PENDING_ARTIST_VERIFICATION'));
+  });
+
+  await test('Songkick + Corroboration Flow: MCR elevates to TIER A Double Official Verified when official sources corroborated', async () => {
+    // Corroboration arrives: Official Artist Website + Official Promoter + Official Ticketing
+    const mcrCorroborated = canonicalRegistry.createEvent({
+      event_id: 'ev-can-mcr-corroborated-test',
+      title: 'My Chemical Romance — Jakarta International Stadium',
+      artists: ['My Chemical Romance'],
+      start_date: '2026-11-28',
+      venue_name: 'Jakarta International Stadium',
+      city: 'Jakarta',
+      category: 'CONCERT',
+      source_id: 'src-songkick-jakarta',
+      artist_official_url: 'https://www.mychemicalromance.com/tour',
+      artist_official_source_type: 'ARTIST_OFFICIAL_WEB',
+      artist_verification_status: 'VERIFIED',
+      promoter_official_url: 'https://pk-ent.com/',
+      promoter_verification_status: 'VERIFIED',
+      official_event_url: 'https://www.mychemicalromance.com/tour',
+      official_ticket_url: 'https://www.loket.com/event/mcr-jakarta-2026',
+      ticketing_verification_status: 'VERIFIED',
+      sources: [
+        { source_id: 'src-songkick-jakarta', tier: 3, source_type: 'CONCERT_DISCOVERY_RADAR' },
+        { source_id: 'src-org-pk-ent', tier: 1, source_type: 'OFFICIAL_PROMOTER_WEB' }
+      ]
+    });
+
+    assert.strictEqual(mcrCorroborated.verification_status, 'VERIFIED');
+    assert.strictEqual(mcrCorroborated.is_verified, true);
+    assert.strictEqual(mcrCorroborated.verification_tier, VERIFICATION_TIERS.TIER_A_DOUBLE_OFFICIAL);
+    assert.ok(mcrCorroborated.verification_score >= 90);
+    assert.strictEqual(mcrCorroborated.artist_verification_status, 'VERIFIED');
+  });
+
+  await test('Greater Jakarta Scope: Songkick event in Tangerang / Tangerang Selatan normalizes correctly and gates fail-closed', async () => {
+    const venueEvent = canonicalRegistry.createEvent({
+      event_id: 'ev-can-greater-jakarta-radar',
+      title: 'Maddix — Live in Tangerang',
+      artists: ['Maddix'],
+      start_date: '2026-11-14',
+      venue_name: 'ICE BSD City',
+      city: 'Tangerang',
+      category: 'CONCERT',
+      source_id: 'src-songkick-jakarta',
+      source_url: 'https://www.songkick.com/metro-areas/29154-indonesia-jakarta',
+      enforce_zero_fake_policy: true
+    });
+
+    assert.strictEqual(venueEvent.city, 'Tangerang');
+    assert.strictEqual(venueEvent.verification_status, VERIFICATION_STATUS.PENDING_ARTIST_VERIFICATION);
+    assert.strictEqual(venueEvent.is_verified, false);
+    assert.strictEqual(venueEvent.verification_tier, VERIFICATION_TIERS.TIER_C_DISCOVERY_ONLY);
+  });
+
   server.close();
 
   console.log('\n================================================================');

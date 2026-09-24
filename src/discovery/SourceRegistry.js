@@ -34,6 +34,7 @@ const SOURCE_TYPES = {
   PROMOTER_OFFICIAL_SOCIAL: 'PROMOTER_OFFICIAL_SOCIAL',
 
   // Secondary / Non-Authoritative Sources (Candidate discovery only - NEVER authoritative proof)
+  CONCERT_DISCOVERY_RADAR: 'CONCERT_DISCOVERY_RADAR',
   TICKETING_PLATFORM: 'TICKETING_PLATFORM',
   SPORTS_ORGANIZATION: 'SPORTS_ORGANIZATION',
   GOVERNMENT: 'GOVERNMENT',
@@ -236,6 +237,88 @@ class SourceRegistry {
         trust_level: TRUST_LEVELS.TIER_1,
         active_status: SOURCE_STATUS.ACTIVE,
         notes: 'Official promoter for NCT 127, SMTOWN, and premier international concerts'
+      },
+      // ==========================================
+      // CONCERT DISCOVERY RADARS: MUSIC (Songkick, Bandsintown)
+      // ==========================================
+      {
+        source_id: 'src-songkick-jakarta',
+        id: 'src-songkick-jakarta',
+        source_name: 'Songkick',
+        name: 'Songkick',
+        source_type: SOURCE_TYPES.CONCERT_DISCOVERY_RADAR,
+        type: 'CONCERT_DISCOVERY_RADAR',
+        tier: 3,
+        authority: 'DISCOVERY_ONLY',
+        authority_level: 'DISCOVERY_ONLY',
+        verification_role: 'DISCOVERY_ONLY',
+        can_create_event: true,
+        can_mark_verified: false,
+        can_verify: false,
+        can_override_official_source: false,
+        region: 'Jakarta & Greater Jakarta',
+        scope: 'Jakarta + Greater Jakarta',
+        metro_area: 'Jakarta and around',
+        metro_area_id: '29154-indonesia-jakarta',
+        supported_cities: ['Jakarta', 'Tangerang', 'Tangerang Selatan', 'Bekasi', 'Depok', 'Bogor'],
+        category: 'MUSIC',
+        official_url: 'https://www.songkick.com/',
+        base_url: 'https://www.songkick.com/',
+        city_feed: 'https://www.songkick.com/metro-areas/29154-indonesia-jakarta',
+        country: 'Indonesia',
+        language: 'en',
+        coverage: 'METRO_JAKARTA_GREATER',
+        adapter: 'GenericAdapter',
+        access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        permission_status: PERMISSION_STATUS.PUBLIC_DATA,
+        terms_reference: 'Concert Discovery Radar (Discovery Only — Cannot Solely Verify)',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        rate_limit: '30 req/min',
+        crawl_frequency: CRAWL_FREQUENCY.DAILY,
+        priority: 3,
+        reliability_score: 0.65,
+        trust_level: TRUST_LEVELS.TIER_3,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Songkick metro concert discovery radar for Jakarta and Greater Jakarta (Jabodetabek). Discovers live music tour dates; requires primary artist, promoter, and ticketing corroboration to verify.'
+      },
+      {
+        source_id: 'src-bandsintown-jakarta',
+        id: 'src-bandsintown-jakarta',
+        source_name: 'Bandsintown',
+        name: 'Bandsintown',
+        source_type: SOURCE_TYPES.CONCERT_DISCOVERY_RADAR,
+        type: 'CONCERT_DISCOVERY_RADAR',
+        tier: 3,
+        authority: 'DISCOVERY_ONLY',
+        authority_level: 'DISCOVERY_ONLY',
+        verification_role: 'DISCOVERY_ONLY',
+        can_create_event: true,
+        can_mark_verified: false,
+        can_verify: false,
+        can_override_official_source: false,
+        region: 'Jakarta & Greater Jakarta',
+        scope: 'Jakarta + Greater Jakarta',
+        metro_area: 'Jakarta and around',
+        supported_cities: ['Jakarta', 'Tangerang', 'Tangerang Selatan', 'Bekasi', 'Depok', 'Bogor'],
+        category: 'MUSIC',
+        official_url: 'https://www.bandsintown.com/',
+        base_url: 'https://www.bandsintown.com/',
+        city_feed: 'https://www.bandsintown.com/c/jakarta-indonesia',
+        country: 'Indonesia',
+        language: 'en',
+        coverage: 'METRO_JAKARTA_GREATER',
+        adapter: 'GenericAdapter',
+        access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        permission_status: PERMISSION_STATUS.PUBLIC_DATA,
+        terms_reference: 'Concert Discovery Radar (Discovery Only — Cannot Solely Verify)',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        rate_limit: '30 req/min',
+        crawl_frequency: CRAWL_FREQUENCY.DAILY,
+        priority: 3,
+        reliability_score: 0.65,
+        trust_level: TRUST_LEVELS.TIER_3,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Bandsintown concert tour date discovery radar for Jakarta and Greater Jakarta (Jabodetabek). Discovers live music tour dates; requires primary artist, promoter, and ticketing corroboration to verify.'
       },
       // ==========================================
       // DISCOVERY RADARS: GOVERNMENT & SPORTS FEDERATIONS
@@ -2380,6 +2463,7 @@ class SourceRegistry {
     }
 
     const source = {
+      ...sourceData,
       source_id: id,
       source_name: name,
       name: name, // compatibility
@@ -2387,6 +2471,19 @@ class SourceRegistry {
       type: sourceData.source_type || sourceData.type || SOURCE_TYPES.OTHER, // compatibility
       tier: tier,
       authority_level: authority,
+      authority: sourceData.authority || authority,
+      verification_role: sourceData.verification_role || (tier === 1 ? 'PRIMARY_AUTHORITY' : 'DISCOVERY_SIGNAL'),
+      can_create_event: sourceData.can_create_event !== undefined ? sourceData.can_create_event : true,
+      can_mark_verified: sourceData.can_mark_verified !== undefined ? sourceData.can_mark_verified : (tier === 1),
+      can_verify: sourceData.can_verify !== undefined ? sourceData.can_verify : (tier === 1),
+      can_override_official_source: sourceData.can_override_official_source !== undefined ? sourceData.can_override_official_source : false,
+      official_url: sourceData.official_url || sourceData.base_url || '',
+      city_feed: sourceData.city_feed || null,
+      region: sourceData.region || null,
+      scope: sourceData.scope || sourceData.region || null,
+      supported_cities: sourceData.supported_cities || (sourceData.city ? [sourceData.city] : []),
+      metro_area: sourceData.metro_area || null,
+      metro_area_id: sourceData.metro_area_id || null,
       source_role: sourceData.source_role || (tier === 1 ? SOURCE_ROLES.PRIMARY_EVENT_SOURCE : (tier === 2 ? SOURCE_ROLES.CORROBORATING_SOURCE : SOURCE_ROLES.DISCOVERY_SIGNAL)),
       authority_scope: sourceData.authority_scope || AUTHORITY_SCOPES.EVENT,
       base_url: sourceData.base_url || '',
@@ -2603,6 +2700,11 @@ class SourceRegistry {
     const src = this.getSource(sourceId);
     if (!src) return false;
     if (src.active_status !== SOURCE_STATUS.ACTIVE && src.active !== true) return false;
+
+    // Fail-Closed: Discovery radars and sources with can_mark_verified === false can NEVER verify events
+    if (src.can_mark_verified === false || src.can_verify === false || src.authority === 'DISCOVERY_ONLY' || src.authority_level === 'DISCOVERY_ONLY' || src.verification_role === 'DISCOVERY_ONLY') {
+      return false;
+    }
 
     // Check if source type is in authoritative list
     const isAuthType = AUTHORITATIVE_SOURCE_TYPES.includes(src.source_type) ||

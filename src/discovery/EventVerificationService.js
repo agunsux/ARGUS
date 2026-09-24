@@ -306,11 +306,20 @@ class EventVerificationService {
     // 3. Fail-Closed: Without authoritative source evidence, event CANNOT be VERIFIED
     let failClosedReason = null;
     const isSocialTier3 = sourceRecords.some(s => (s.tier === 3 || s.trust_level === TRUST_LEVELS.TIER_5 || (s.source_id && s.source_id.includes('social'))));
+    const isConcertRadar = sourceRecords.some(s => (
+      s.source_type === 'CONCERT_DISCOVERY_RADAR' ||
+      s.source_id === 'src-songkick-jakarta' ||
+      s.source_id === 'src-bandsintown-jakarta' ||
+      (s.source_id && (s.source_id.includes('songkick') || s.source_id.includes('bandsintown')))
+    ));
     if (!hasAuthoritative) {
       failClosedReason = 'SECONDARY_SOURCES_ONLY_NO_AUTHORITATIVE_PROOF';
       flags.push('SECONDARY_SOURCES_ONLY_NO_AUTHORITATIVE_PROOF');
       if (isSocialTier3) {
         flags.push('TIER_3_SOCIAL_DISCOVERY_ONLY');
+      }
+      if (isConcertRadar) {
+        flags.push('CONCERT_DISCOVERY_RADAR_REQUIRES_AUTHORITATIVE_CORROBORATION');
       }
       const eventCountry = (canonicalEvent.country || 'Indonesia').toLowerCase();
       if (eventCountry === 'indonesia' || eventCountry === 'id') {
