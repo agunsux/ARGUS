@@ -2,7 +2,10 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0B0B0C">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Tikum — Verified Ticket Marketplace by Shinerva</title>
   <meta name="description" content="Tikum adalah platform penemuan seluruh event berbayar dan bertiket di Indonesia dan Asia Tenggara. Konser, Olahraga, Festival, Teater, Komedi, dan Pameran dengan verifikasi sumber resmi dan perlindungan turnstile.">
   <link rel="canonical" href="https://tikum.app/">
@@ -682,6 +685,13 @@
       top: 10px; right: 10px; background: rgba(0,0,0,.72); color: #fff;
       border: 1px solid rgba(255,255,255,.28);
     }
+    .ln-badge--radar {
+      bottom: 10px; left: 10px;
+      background: linear-gradient(135deg, #0284C7, #0369A1);
+      color: #FFFFFF; font-size: 9px; font-weight: 800; letter-spacing: .05em;
+      border: 1px solid rgba(255,255,255,.3); box-shadow: 0 2px 8px rgba(0,0,0,.5);
+      display: inline-flex; align-items: center; gap: 4px;
+    }
     .ln-attribution {
       max-width: 1200px; margin: 30px auto 52px; padding: 14px 18px;
       border: 1px solid #232326; border-radius: 8px; background: #101012;
@@ -690,11 +700,264 @@
     .ln-attribution strong { color: #E5E7EB; }
     .ln-empty { text-align: center; padding: 64px 24px; color: #9CA3AF; }
 
+    /* Mobile Bottom Navigation Bar */
+    .mobile-bottom-nav {
+      display: none;
+    }
+
     @media (max-width: 768px) {
-      .ln-hero-title { font-size: 28px; }
-      .ln-hero-feature { min-height: 330px; }
-      .poster-card { flex: 0 0 176px; }
-      .ln-nav-links { display: none; }
+      body {
+        padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+      }
+      .site-header {
+        padding: 12px 16px;
+      }
+      .brand-title {
+        font-size: 18px;
+      }
+      .header-actions {
+        gap: 6px;
+      }
+      .header-actions .select-filter {
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+      .btn-auth-header {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+      .btn-user-dropdown {
+        padding: 6px 10px;
+        font-size: 12px;
+        max-width: 130px;
+      }
+      .header-location-badge {
+        display: none !important;
+      }
+      .ln-hero-feature {
+        min-height: 320px;
+      }
+      .ln-hero-inner {
+        padding: 24px 16px 28px;
+      }
+      .ln-hero-title {
+        font-size: clamp(22px, 6vw, 32px);
+        line-height: 1.15;
+        margin-bottom: 8px;
+      }
+      .ln-hero-meta {
+        font-size: 12px;
+        margin-bottom: 16px;
+        line-height: 1.5;
+      }
+      .ln-hero-actions {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+      }
+      .ln-hero-actions .ln-btn {
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+        padding: 11px 12px;
+        font-size: 11px;
+      }
+      .trust-strip {
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 14px;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .trust-strip::-webkit-scrollbar { display: none; }
+      .trust-item {
+        font-size: 12px;
+        white-space: nowrap;
+        gap: 6px;
+      }
+      .trust-item i {
+        font-size: 16px;
+      }
+      .filters-container {
+        padding: 0 16px;
+        margin: 14px auto;
+        gap: 10px;
+      }
+      .search-bar {
+        flex-direction: row !important;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .search-input {
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+      .search-btn {
+        padding: 8px 14px !important;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .filters-row-selects {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+      }
+      .filters-row-selects .select-filter {
+        flex: 1;
+        min-width: 0;
+        padding: 9px 10px;
+        font-size: 13px;
+      }
+      .filter-pills {
+        gap: 8px;
+        padding-bottom: 4px;
+      }
+      .pill {
+        padding: 7px 14px;
+        font-size: 12px;
+      }
+      .ln-section {
+        margin: 22px auto 0;
+      }
+      .ln-section > div:first-child {
+        padding: 0 16px !important;
+      }
+      .ln-section-title {
+        font-size: 18px;
+      }
+      .ln-section-lead {
+        font-size: 12px;
+        margin-bottom: 12px;
+      }
+      .ln-rail {
+        padding: 4px 16px 16px;
+        gap: 12px;
+        scroll-padding: 0 16px;
+      }
+      .poster-card {
+        flex: 0 0 185px;
+        border-radius: 8px;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .poster-card:active {
+        transform: scale(0.97);
+        border-color: var(--primary);
+      }
+      .poster-body {
+        padding: 10px 12px 14px;
+        gap: 4px;
+      }
+      .poster-date {
+        font-size: 10px;
+      }
+      .poster-title {
+        font-size: 13px;
+        line-height: 1.25;
+      }
+      .poster-sub {
+        font-size: 11px;
+      }
+      .poster-price {
+        font-size: 11px;
+      }
+      .ln-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        padding: 0 16px 8px;
+      }
+      .ln-nav-links {
+        display: none;
+      }
+      .ln-attribution {
+        margin: 20px 16px 36px;
+        padding: 12px 14px;
+        font-size: 11px;
+        line-height: 1.6;
+      }
+
+      /* Native-like Bottom Sheet Modals on Mobile */
+      .modal-overlay {
+        align-items: flex-end !important;
+        padding: 0 !important;
+      }
+      .modal-content, .auth-modal-box {
+        max-width: 100% !important;
+        width: 100% !important;
+        border-radius: 18px 18px 0 0 !important;
+        padding: 16px 18px calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+        animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        box-sizing: border-box !important;
+      }
+      @keyframes slideUpSheet {
+        from { transform: translateY(100%); opacity: 0.8; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      .bottom-sheet-handle {
+        width: 38px;
+        height: 4px;
+        background: rgba(255,255,255,0.28);
+        border-radius: 2px;
+        margin: 0 auto 12px;
+      }
+
+      /* Mobile Bottom Navigation */
+      .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 56px;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        background: rgba(14, 14, 16, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        z-index: 999;
+        justify-content: space-around;
+        align-items: center;
+        box-sizing: content-box;
+      }
+      .mobile-nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        color: #9CA3AF;
+        text-decoration: none;
+        background: none;
+        border: none;
+        padding: 6px 0;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        transition: color 0.15s, transform 0.15s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .mobile-nav-item i {
+        font-size: 17px;
+      }
+      .mobile-nav-item.active,
+      .mobile-nav-item:active {
+        color: var(--primary);
+      }
+      .mobile-nav-item:active {
+        transform: scale(0.92);
+      }
+    }
+
+    @media (max-width: 360px) {
+      .ln-grid {
+        grid-template-columns: 1fr;
+      }
+      .poster-card {
+        flex: 0 0 165px;
+      }
     }
   </style>
 </head>
@@ -713,7 +976,7 @@
       <a class="ln-nav-link" href="/faq">Bantuan</a>
     </nav>
     <div class="header-actions" style="display:flex; align-items:center; gap:10px;">
-      <span class="ln-nav-link" style="color:#6B7280; cursor:default;"><i class="fa-solid fa-location-dot"></i> Indonesia</span>
+      <span class="ln-nav-link header-location-badge" style="color:#6B7280; cursor:default;"><i class="fa-solid fa-location-dot"></i> Indonesia</span>
       <div id="authHeaderContainer">
         <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()">Login / Sign Up</button>
       </div>
@@ -748,7 +1011,7 @@
       <div class="pill" data-category="FESTIVAL" onclick="setCategory(this, 'FESTIVAL')">Festival</div>
       <div class="pill" data-category="EXHIBITION" onclick="setCategory(this, 'EXHIBITION')">Pameran</div>
     </div>
-    <div style="display:flex; gap:12px;">
+    <div class="filters-row-selects" style="display:flex; gap:12px;">
       <select id="cityFilter" class="select-filter" onchange="renderAllSections()">
         <option value="">Semua Kota</option>
         <option value="Jakarta">Jakarta</option>
@@ -822,9 +1085,34 @@
     </div>
   </footer>
 
+  <!-- Mobile Bottom Navigation (Visible only on <= 768px screens) -->
+  <nav class="mobile-bottom-nav" aria-label="Navigasi Seluler">
+    <a href="/" class="mobile-nav-item active">
+      <i class="fa-solid fa-house"></i>
+      <span>Beranda</span>
+    </a>
+    <a href="#upcoming" class="mobile-nav-item" onclick="applyNavCategory('MUSIC'); return false;">
+      <i class="fa-solid fa-music"></i>
+      <span>Konser</span>
+    </a>
+    <button type="button" class="mobile-nav-item" onclick="focusSearch()">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <span>Cari</span>
+    </button>
+    <a href="/track" class="mobile-nav-item">
+      <i class="fa-solid fa-ticket"></i>
+      <span>Tiket</span>
+    </a>
+    <button type="button" class="mobile-nav-item" onclick="handleMobileAccountClick()">
+      <i class="fa-solid fa-user"></i>
+      <span>Akun</span>
+    </button>
+  </nav>
+
   <!-- Modal Provenance -->
   <div class="modal-overlay" id="verifModal" onclick="closeModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="bottom-sheet-handle"></div>
       <div class="modal-header">
         <div class="modal-title"><i class="fa-solid fa-shield-check" style="color:var(--primary)"></i> Status Verifikasi</div>
         <button class="btn-close" onclick="closeModal(event)">&times;</button>
@@ -841,6 +1129,7 @@
   <!-- Auth Modal (Passwordless Magic Link) -->
   <div id="authModal" class="modal-overlay" onclick="closeAuthModalOnBackdrop(event)">
     <div class="modal-content auth-modal-box" onclick="event.stopPropagation()">
+      <div class="bottom-sheet-handle"></div>
       <div class="modal-header">
         <div class="modal-title">
           <i class="fa-solid fa-ticket" style="color:var(--primary);"></i> Masuk ke Tikum
@@ -902,9 +1191,35 @@
       document.querySelectorAll('.filter-pills .pill').forEach(p => {
         p.classList.toggle('active', (p.dataset.category || '') === currentCategory);
       });
+      document.querySelectorAll('.mobile-bottom-nav .mobile-nav-item').forEach(item => {
+        const text = (item.textContent || '').trim().toLowerCase();
+        if (cat === 'MUSIC' && text.includes('konser')) {
+          item.classList.add('active');
+        } else if (!cat && text.includes('beranda')) {
+          item.classList.add('active');
+        } else if (text.includes('konser') || text.includes('beranda')) {
+          item.classList.remove('active');
+        }
+      });
       renderAllSections();
       const target = document.getElementById('upcoming');
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function focusSearch() {
+      const el = document.getElementById('searchInput');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => el.focus(), 250);
+      }
+    }
+
+    function handleMobileAccountClick() {
+      if (currentUser) {
+        window.location.href = '/account';
+      } else {
+        openAuthModal();
+      }
     }
 
     // Theming (legacy helper retained for backwards compatibility; the discovery
@@ -1074,11 +1389,19 @@
         ? '<i class="fa-solid fa-certificate"></i> DOUBLE OFFICIAL'
         : (e.verification_tier === 'TIER_B_OFFICIAL_EVENT' ? '<i class="fa-solid fa-shield-halved"></i> EVENT VERIFIED' : '<i class="fa-solid fa-shield-halved"></i> TERVERIFIKASI');
 
+      let radarBadge = '';
+      if (e.discovery_source_id === 'src-songkick-jakarta') {
+        radarBadge = '<div class="ln-badge ln-badge--radar"><i class="fa-solid fa-satellite-dish"></i> Songkick Radar</div>';
+      } else if (e.discovery_source_id === 'src-bandsintown-jakarta') {
+        radarBadge = '<div class="ln-badge ln-badge--radar"><i class="fa-solid fa-satellite-dish"></i> Bandsintown Radar</div>';
+      }
+
       return `
         <a href="/events/${slug}" class="poster-card">
           <div class="poster-media" style="${posterBackground(e)}">
             <div class="ln-badge ln-badge--verified" onclick="showVerifModal(event, '${verifDate}')">${tierBadge}</div>
             <div class="ln-badge ln-badge--status">${status.text}</div>
+            ${radarBadge}
           </div>
           <div class="poster-body">
             <div class="poster-date">${dateStr}</div>
@@ -1140,10 +1463,12 @@
     function renderAttribution() {
       return `
         <div class="ln-attribution">
-          <strong>Atribusi sumber resmi.</strong>
-          Informasi tiket resmi disediakan oleh <strong>Live Nation Asia</strong>, <strong>LOKET</strong>, <strong>BBO Events</strong>
-          dan kanal resmi penyelenggara terkait melalui tautan resmi masing-masing. TIKUM hanya menyimpan data faktual
-          (nama event, tanggal, venue, kota, harga, serta tautan dan poster resmi) dan tidak menyalin materi promosi.
+          <strong>Atribusi sumber resmi &amp; radar penemuan konser.</strong>
+          Informasi tiket resmi disediakan oleh <strong>Live Nation Asia</strong>, <strong>LOKET</strong>, <strong>BBO Events</strong>,
+          dan kanal resmi promotor (Color Asia Live, Plainsong Live, Ismaya Live, Dyandra Global, TEM Presents, PK Entertainment).
+          Kanal radar penemuan konser <strong>Songkick</strong> dan <strong>Bandsintown</strong> (Jakarta &amp; Jabodetabek)
+          digunakan untuk pemantauan agenda tur dan seluruhnya diverifikasi silang dengan situs resmi penampil/promotor sebelum dipublikasikan.
+          TIKUM hanya menyimpan data faktual (nama event, tanggal, venue, kota, harga, serta tautan dan poster resmi) dan tidak menyalin materi promosi.
           Kanal Instagram <strong>@infokonser</strong>, <strong>@livenationasia</strong>, dan <strong>@ticketmasterasia</strong> digunakan
           sebagai sinyal penemuan (Tier 3) dan tidak pernah menjadi dasar verifikasi.
         </div>`;
@@ -1220,10 +1545,19 @@
       const festivals = (sections.festivals || []);
       const sports = (sections.sports || []);
 
+      const radarConcerts = upcoming.filter(e => {
+        return (e.discovery_source_id === 'src-songkick-jakarta' || e.discovery_source_id === 'src-bandsintown-jakarta') ||
+          (Array.isArray(e.corroborating_source_ids) && (
+            e.corroborating_source_ids.includes('src-songkick-jakarta') ||
+            e.corroborating_source_ids.includes('src-bandsintown-jakarta')
+          ));
+      });
+
       renderHeroFeature(justAnnounced[0] || upcoming[0]);
 
       main.innerHTML = [
         renderRail('Baru Diumumkan', 'Pengumuman resmi terbaru dari promotor & penyelenggara terverifikasi', justAnnounced.length ? justAnnounced : upcoming.slice(0, 8)),
+        radarConcerts.length ? renderRail('Radar Konser Jabodetabek (Songkick & Bandsintown)', 'Konser terkurasi dari radar Songkick & Bandsintown yang lolos verifikasi ganda promotor/artis', radarConcerts) : '',
         renderGridSection('Upcoming Shows', 'Seluruh event Indonesia yang sudah terverifikasi sumber resminya', upcoming, { anchor: 'upcomingShows' }),
         lastCall.length ? renderRail('Last Call for Tickets', 'Berlangsung dalam 7 hari ke depan', lastCall) : '',
         concerts.length ? renderRail('Konser', 'Tur dan konser resmi', concerts) : '',

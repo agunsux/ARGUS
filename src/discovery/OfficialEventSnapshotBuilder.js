@@ -64,7 +64,23 @@ const ALLOWED_HOSTS = new Set([
   'tickets.songkick.com',
   'labs.songkick.com',
   'www.bandsintown.com',
-  'bandsintown.com'
+  'bandsintown.com',
+  'colorasialive.com',
+  'www.colorasialive.com',
+  'plainsonglive.com',
+  'www.plainsonglive.com',
+  'thescriptmusic.com',
+  'www.thescriptmusic.com',
+  'thescriptindonesia2026.com',
+  'www.thescriptindonesia2026.com',
+  'menitrust.com',
+  'www.menitrust.com',
+  'toucheamore.com',
+  'www.toucheamore.com',
+  'maddixmusic.com',
+  'www.maddixmusic.com',
+  'ismaya.com',
+  'www.ismaya.com'
 ]);
 
 // Indonesian target market: Jabodetabek, Java, Sumatera, Sulawesi, Kalimantan, Bali.
@@ -185,6 +201,50 @@ const EVIDENCE_RULES = [
     expect_tokens: ['bigbang', 'jakarta', '2027'],
     image_source_type: 'OFFICIAL_EVENT_WEB',
     image_credit: 'BIGBANG 2026-27 in Jakarta (YG Entertainment)'
+  },
+  {
+    id: 'the-script-jakarta-2026',
+    discovery_source_id: 'src-songkick-jakarta',
+    title_includes: ['the script', 'satellites'],
+    city_includes: 'jakarta',
+    authoritative_source_id: 'src-event-thescript-web',
+    evidence_url: 'https://www.thescriptindonesia2026.com/',
+    expect_tokens: ['the script', 'jakarta', 'satellites'],
+    image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_credit: 'The Script Satellites Tour (Color Asia Live & PK Entertainment)'
+  },
+  {
+    id: 'men-i-trust-jakarta-2026',
+    discovery_source_id: 'src-bandsintown-jakarta',
+    title_includes: ['men i trust'],
+    city_includes: 'jakarta',
+    authoritative_source_id: 'src-promoter-plainsong',
+    evidence_url: 'https://plainsonglive.com/',
+    expect_tokens: ['men i trust', 'jakarta'],
+    image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_credit: 'Men I Trust Live in Jakarta (Plainsong Live)'
+  },
+  {
+    id: 'touche-amore-jakarta-2026',
+    discovery_source_id: 'src-songkick-jakarta',
+    title_includes: ['touche amore', 'touché amoré'],
+    city_includes: 'jakarta',
+    authoritative_source_id: 'src-promoter-colorasia',
+    evidence_url: 'https://colorasialive.com/',
+    expect_tokens: ['touche amore', 'jakarta'],
+    image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_credit: 'Touché Amoré Asia Tour Jakarta (Color Asia Live)'
+  },
+  {
+    id: 'maddix-tangerang-2026',
+    discovery_source_id: 'src-bandsintown-jakarta',
+    title_includes: ['maddix'],
+    city_includes: 'tangerang',
+    authoritative_source_id: 'src-promoter-ismaya',
+    evidence_url: 'https://ismaya.com/',
+    expect_tokens: ['maddix', 'tangerang'],
+    image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_credit: 'Maddix Live in Tangerang (Ismaya Live)'
   }
 ];
 
