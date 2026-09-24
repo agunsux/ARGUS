@@ -420,7 +420,9 @@ router.get('/session', authenticate, (req, res) => {
       id: req.user.id,
       name: req.user.name,
       email: req.user.email,
-      role: req.user.role
+      role: req.user.role,
+      status: req.user.status || 'ACTIVE',
+      created_at: req.user.created_at
     },
     session: {
       created_at: req.session.created_at,
@@ -450,11 +452,15 @@ router.post('/logout', (req, res) => {
   // Clear cookie
   res.setHeader('Set-Cookie', 'session_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax');
 
-  if (user) {
-    recordAuditLog('AUTH', user.id, 'SESSION_TERMINATED', 'USER', {
-      user_id: user.id
-    }).catch(() => {});
-  }
+  const actorId = user ? user.id : 'ANONYMOUS';
+  recordAuditLog('AUTH', actorId, 'SESSION_REVOKED', 'SYSTEM', {
+    session_token: token || null,
+    user_id: user ? user.id : null
+  }).catch(() => {});
+
+  recordAuditLog('AUTH', actorId, 'LOGOUT', 'USER', {
+    user_id: user ? user.id : null
+  }).catch(() => {});
 
   res.status(200).json({
     success: true,

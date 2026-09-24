@@ -3,23 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Masuk / Login — TIKUM Authentic Access</title>
-  <meta name="description" content="Masuk ke akun TIKUM atau console operasional ARGUS.">
+  <title>Masuk ke Tikum — Tikum</title>
+  <meta name="description" content="Masuk atau daftar ke akun Tikum menggunakan magic link tanpa kata sandi.">
   <link rel="canonical" href="https://tikum.app/login">
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <style>
+    :root {
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --primary: #059669;
+      --primary-hover: #047857;
+    }
+
+    body.dark-mode {
+      --bg-page: #0b1120;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --primary: #10b981;
+      --primary-hover: #059669;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .auth-header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 24px;
+    }
+
+    .header-container {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-logo {
+      font-weight: 800;
+      font-size: 20px;
+      color: var(--primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .theme-toggle-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .auth-card {
       max-width: 440px;
+      width: 100%;
       margin: 48px auto;
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 32px 24px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-      color: #111827;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 32px 28px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      box-sizing: border-box;
     }
+
     .auth-badge {
       display: inline-flex;
       align-items: center;
@@ -32,49 +101,58 @@
       font-weight: 600;
       margin-bottom: 16px;
     }
+
     .auth-title {
       font-size: 22px;
-      font-weight: 700;
-      color: #111827;
-      margin: 0 0 6px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin: 0 0 8px;
     }
+
     .auth-subtitle {
-      font-size: 13px;
-      color: #6b7280;
-      margin: 0 0 20px;
+      font-size: 14px;
+      color: var(--text-muted);
+      margin: 0 0 24px;
       line-height: 1.5;
     }
+
     .auth-input-group {
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
+
     .auth-input-group label {
       display: block;
       font-size: 13px;
       font-weight: 600;
-      color: #374151;
+      color: var(--text-main);
       margin-bottom: 6px;
     }
+
     .auth-input {
       width: 100%;
-      padding: 10px 14px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
+      padding: 12px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
       font-size: 14px;
       box-sizing: border-box;
+      background: var(--card-bg);
+      color: var(--text-main);
       transition: border-color 0.2s;
     }
+
     .auth-input:focus {
       outline: none;
-      border-color: #059669;
+      border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
     }
+
     .auth-btn {
       width: 100%;
       padding: 12px;
-      background: #059669;
+      background: var(--primary);
       color: #ffffff;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
@@ -82,14 +160,18 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
+      transition: background 0.2s;
     }
+
     .auth-btn:hover {
-      background: #047857;
+      background: var(--primary-hover);
     }
+
     .auth-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
+
     .auth-status-box {
       padding: 12px;
       border-radius: 8px;
@@ -98,230 +180,114 @@
       display: none;
       line-height: 1.5;
     }
+
     .auth-status-box.error {
       background: #fef2f2;
       color: #b91c1c;
       border: 1px solid #fecaca;
       display: block;
     }
-    .auth-status-box.success {
-      background: #ecfdf5;
-      color: #047857;
-      border: 1px solid #a7f3d0;
-      display: block;
-    }
-    .auth-tabs {
-      display: flex;
-      border-bottom: 1px solid #e5e7eb;
-      margin-bottom: 20px;
-    }
-    .auth-tab {
-      flex: 1;
-      text-align: center;
-      padding: 10px 8px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #6b7280;
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      cursor: pointer;
-    }
-    .auth-tab.active {
-      color: #059669;
-      border-bottom-color: #059669;
-    }
-    .auth-user-info {
-      background: #f3f4f6;
-      padding: 14px;
-      border-radius: 8px;
-      font-size: 13px;
-      margin-bottom: 18px;
-      color: #374151;
-    }
   </style>
 </head>
-<body style="background: #f9fafb; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+<body>
 
   <!-- Site Header -->
-  <header style="background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 14px 20px;">
-    <div style="max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
-      <a href="/" style="font-weight: 800; font-size: 18px; color: #059669; text-decoration: none;">
-        TIKUM <span style="font-size: 12px; color: #6b7280; font-weight: 500;">ARGUS Identity</span>
+  <header class="auth-header">
+    <div class="header-container">
+      <a href="/" class="brand-logo">
+        <i class="fa-solid fa-ticket"></i> TIKUM
       </a>
-      <div>
-        <a href="/signup" style="font-size: 14px; color: #059669; font-weight: 600; text-decoration: none; margin-right: 14px;">Daftar Akun</a>
-        <a href="/admin" style="font-size: 13px; color: #4b5563; text-decoration: none;">Admin Console</a>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="/" style="font-size: 14px; color: var(--text-muted); text-decoration: none;">
+          <i class="fa-solid fa-house"></i> Beranda
+        </a>
+        <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
+          <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
+        </button>
       </div>
     </div>
   </header>
 
-  <main style="padding: 20px;">
+  <main style="padding: 20px; flex: 1;">
     <div class="auth-card" id="authCard">
       <div class="auth-badge">
-        <i class="fa-solid fa-shield-halved"></i> Autentikasi Terverifikasi
+        <i class="fa-solid fa-shield-halved"></i> Passwordless Secure Auth
       </div>
 
-      <!-- State: Logged In -->
-      <div id="loggedInView" style="display: none;">
-        <h1 class="auth-title">Akun Anda</h1>
-        <p class="auth-subtitle">Anda sedang masuk dengan sesi aktif terautentikasi.</p>
-        <div class="auth-user-info">
-          <div><strong>Nama:</strong> <span id="userName">-</span></div>
-          <div style="margin-top: 4px;"><strong>Email:</strong> <span id="userEmail">-</span></div>
-          <div style="margin-top: 4px;"><strong>Peran:</strong> <span id="userRole" style="text-transform: uppercase;">-</span></div>
-          <div style="margin-top: 4px;"><strong>ID:</strong> <span id="userId" style="font-family: monospace; font-size: 12px;">-</span></div>
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <button class="auth-btn" id="btnLogout" style="background: #dc2626;">
-            <i class="fa-solid fa-right-from-bracket"></i> Keluar
-          </button>
-          <a href="/admin" id="btnGoAdmin" class="auth-btn" style="background: #1f2937; text-decoration: none; display: none;">
-            <i class="fa-solid fa-gauge"></i> Admin Console
-          </a>
-        </div>
-      </div>
-
-      <!-- State: Login Forms -->
+      <!-- State: Input Email Form -->
       <div id="loginFormView">
-        <h1 class="auth-title">Masuk ke TIKUM</h1>
+        <h1 class="auth-title">Masuk ke Tikum</h1>
         <p class="auth-subtitle">
-          Silakan masuk ke akun pengguna atau console operasional.
+          Masukkan email Anda untuk menerima magic link. Tanpa perlu kata sandi.
         </p>
-
-        <div class="auth-tabs">
-          <button type="button" id="tabPassword" class="auth-tab active" onclick="switchTab('password')">Kata Sandi</button>
-          <button type="button" id="tabMagicLink" class="auth-tab" onclick="switchTab('magic')">Magic Link</button>
-        </div>
 
         <div id="statusBox" class="auth-status-box"></div>
 
-        <!-- Form 1: Password Login -->
-        <form id="passwordLoginForm" onsubmit="handlePasswordLogin(event)">
-          <div class="auth-input-group">
-            <label for="loginEmail">Alamat Email</label>
-            <input type="email" id="loginEmail" class="auth-input" placeholder="nama@email.com" required autocomplete="email">
-          </div>
-
-          <div class="auth-input-group">
-            <label for="loginPassword">Kata Sandi</label>
-            <input type="password" id="loginPassword" class="auth-input" placeholder="Kata sandi Anda" required autocomplete="current-password">
-          </div>
-
-          <button type="submit" class="auth-btn" id="btnLoginSubmit">
-            <i class="fa-solid fa-right-to-bracket"></i> Masuk
-          </button>
-        </form>
-
-        <!-- Form 2: Magic Link -->
-        <form id="magicLinkForm" style="display: none;" onsubmit="handleMagicLink(event)">
+        <form id="magicLinkForm" onsubmit="handleMagicLink(event)">
           <div class="auth-input-group">
             <label for="magicEmail">Alamat Email</label>
             <input type="email" id="magicEmail" class="auth-input" placeholder="nama@email.com" required autocomplete="email">
           </div>
 
           <button type="submit" class="auth-btn" id="btnMagicSubmit">
-            <span>Kirim Tautan Masuk</span>
-            <i class="fa-solid fa-paper-plane"></i>
+            <span>Kirim Magic Link</span>
+            <i class="fa-solid fa-arrow-right"></i>
           </button>
         </form>
 
-        <div style="text-align: center; margin-top: 24px; font-size: 13px; color: #6b7280;">
-          Belum memiliki akun? <a href="/signup" style="color: #059669; font-weight: 600; text-decoration: none;">Daftar akun baru</a>
-        </div>
+        <p style="margin-top: 20px; font-size: 12px; color: var(--text-muted); line-height: 1.5; text-align: center;">
+          Jika Anda belum memiliki akun, akun baru akan otomatis dibuatkan secara aman saat verifikasi pertama.
+        </p>
       </div>
 
       <!-- State: Magic Link Sent -->
       <div id="confirmationView" style="display: none; text-align: center;">
-        <i class="fa-solid fa-envelope-circle-check" style="font-size: 44px; color: #059669; margin-bottom: 12px;"></i>
-        <h2 style="font-size: 20px; font-weight: 700; margin: 0 0 8px;">Periksa Email Anda</h2>
-        <p style="font-size: 13px; color: #6b7280; margin-bottom: 16px;">
-          Tautan masuk telah dikirim ke <strong id="sentEmail">-</strong>.
+        <i class="fa-solid fa-envelope-circle-check" style="font-size: 48px; color: var(--primary); margin-bottom: 16px;"></i>
+        <h2 style="font-size: 20px; font-weight: 800; margin: 0 0 8px;">Cek email Anda</h2>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
+          Kami telah mengirim magic link ke alamat email Anda di <strong id="sentEmail">-</strong>.
         </p>
-        <button class="auth-btn" style="background: #4b5563;" onclick="window.location.reload()">
-          Kembali ke Masuk
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5;">
+          Link berlaku selama 15 menit dan hanya dapat digunakan sekali.
+        </p>
+        <button class="auth-btn" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color);" onclick="resetForm()">
+          Kirim Ulang atau Ganti Email
         </button>
       </div>
     </div>
   </main>
 
   <script>
-    function switchTab(tab) {
-      const tabPwd = document.getElementById('tabPassword');
-      const tabMag = document.getElementById('tabMagicLink');
-      const formPwd = document.getElementById('passwordLoginForm');
-      const formMag = document.getElementById('magicLinkForm');
-      const statusBox = document.getElementById('statusBox');
-
-      statusBox.style.display = 'none';
-
-      if (tab === 'password') {
-        tabPwd.classList.add('active');
-        tabMag.classList.remove('active');
-        formPwd.style.display = 'block';
-        formMag.style.display = 'none';
-      } else {
-        tabMag.classList.add('active');
-        tabPwd.classList.remove('active');
-        formMag.style.display = 'block';
-        formPwd.style.display = 'none';
-      }
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const isDark = localStorage.getItem('tikum_theme') === 'dark';
+    if (isDark) {
+      document.body.classList.add('dark-mode');
+      if (themeToggle) themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>';
     }
 
-    async function handlePasswordLogin(e) {
-      e.preventDefault();
-      const email = document.getElementById('loginEmail').value.trim();
-      const password = document.getElementById('loginPassword').value;
-      const statusBox = document.getElementById('statusBox');
-      const btn = document.getElementById('btnLoginSubmit');
-
-      statusBox.style.display = 'none';
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
-
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || 'Email atau kata sandi salah');
-        }
-
-        statusBox.className = 'auth-status-box success';
-        statusBox.innerText = 'Login berhasil! Mengarahkan...';
-
-        const params = new URLSearchParams(window.location.search);
-        const redirect = params.get('redirect');
-
-        setTimeout(() => {
-          if (redirect) {
-            window.location.href = redirect;
-          } else if (data.user && (data.user.role === 'admin' || data.user.role === 'ADMIN')) {
-            window.location.href = '/admin';
-          } else {
-            window.location.href = '/';
-          }
-        }, 800);
-      } catch (err) {
-        statusBox.className = 'auth-status-box error';
-        statusBox.innerText = err.message;
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Masuk';
-      }
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const activeDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('tikum_theme', activeDark ? 'dark' : 'light');
+        themeToggle.innerHTML = activeDark 
+          ? '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>' 
+          : '<i class="fa-solid fa-moon"></i> <span>Dark Mode</span>';
+      });
     }
 
     async function handleMagicLink(e) {
       e.preventDefault();
-      const email = document.getElementById('magicEmail').value.trim();
+      const emailInput = document.getElementById('magicEmail');
+      const submitBtn = document.getElementById('btnMagicSubmit');
       const statusBox = document.getElementById('statusBox');
-      const btn = document.getElementById('btnMagicSubmit');
+      const email = emailInput.value.trim();
 
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
+      if (!email) return;
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> <span>Mengirim...</span>';
       statusBox.style.display = 'none';
 
       try {
@@ -330,68 +296,45 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })
         });
+
         const data = await res.json();
 
         if (res.ok) {
+          document.getElementById('sentEmail').textContent = email;
           document.getElementById('loginFormView').style.display = 'none';
           document.getElementById('confirmationView').style.display = 'block';
-          document.getElementById('sentEmail').textContent = email;
         } else {
+          statusBox.textContent = data.message || 'Gagal mengirim magic link. Silakan coba lagi.';
           statusBox.className = 'auth-status-box error';
-          statusBox.textContent = data.error || 'Gagal mengirim tautan masuk.';
-          btn.disabled = false;
-          btn.innerHTML = '<span>Kirim Tautan Masuk</span> <i class="fa-solid fa-paper-plane"></i>';
+          statusBox.style.display = 'block';
         }
       } catch (err) {
+        statusBox.textContent = 'Terjadi gangguan koneksi. Pastikan internet Anda aktif.';
         statusBox.className = 'auth-status-box error';
-        statusBox.textContent = 'Terjadi kesalahan jaringan.';
-        btn.disabled = false;
-        btn.innerHTML = '<span>Kirim Tautan Masuk</span> <i class="fa-solid fa-paper-plane"></i>';
+        statusBox.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Kirim Magic Link</span> <i class="fa-solid fa-arrow-right"></i>';
       }
     }
 
-    (async function checkSession() {
-      const params = new URLSearchParams(window.location.search);
-      const statusBox = document.getElementById('statusBox');
+    function resetForm() {
+      document.getElementById('confirmationView').style.display = 'none';
+      document.getElementById('loginFormView').style.display = 'block';
+      document.getElementById('statusBox').style.display = 'none';
+    }
 
-      if (params.get('registered') === 'true') {
-        statusBox.className = 'auth-status-box success';
-        statusBox.textContent = 'Pendaftaran berhasil! Silakan masuk dengan kata sandi Anda.';
-        if (params.get('email')) {
-          document.getElementById('loginEmail').value = params.get('email');
-        }
-      }
-
-      const err = params.get('error');
-      if (err) {
-        statusBox.className = 'auth-status-box error';
-        statusBox.textContent = err === 'TOKEN_EXPIRED' ? 'Tautan kedaluwarsa.' : 'Akses gagal atau tautan tidak valid.';
-      }
-
+    // Auto-check existing session: if already logged in, redirect to /account
+    (async function checkExistingSession() {
       try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch('/api/auth/session');
         if (res.ok) {
           const data = await res.json();
-          if (data.authenticated && data.user) {
-            document.getElementById('loginFormView').style.display = 'none';
-            document.getElementById('loggedInView').style.display = 'block';
-            document.getElementById('userName').textContent = data.user.name || '-';
-            document.getElementById('userEmail').textContent = data.user.email || '-';
-            document.getElementById('userRole').textContent = data.user.role || '-';
-            document.getElementById('userId').textContent = data.user.id || '-';
-            if (data.user.role === 'admin' || data.user.role === 'ADMIN') {
-              document.getElementById('btnGoAdmin').style.display = 'inline-flex';
-            }
+          if (data.authenticated) {
+            window.location.href = '/account';
           }
         }
-      } catch (e) {}
-
-      document.getElementById('btnLogout').addEventListener('click', async () => {
-        try {
-          await fetch('/api/auth/logout', { method: 'POST' });
-        } catch (e) {}
-        window.location.reload();
-      });
+      } catch (_) {}
     })();
   </script>
 </body>

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Akun Saya — Tikum</title>
+  <meta name="description" content="Kelola akun pengguna, transaksi, dan preferensi Tikum.">
+  <link rel="canonical" href="https://tikum.app/account">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    :root {
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --primary: #059669;
+      --primary-hover: #047857;
+      --danger: #dc2626;
+      --danger-hover: #b91c1c;
+      --verified-bg: #ecfdf5;
+      --verified-text: #059669;
+      --verified-border: #a7f3d0;
+    }
+
+    body.dark-mode {
+      --bg-page: #0b1120;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --primary: #10b981;
+      --primary-hover: #059669;
+      --verified-bg: #064e3b;
+      --verified-text: #6ee7b7;
+      --verified-border: #047857;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .account-header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .header-container {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-logo {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .theme-toggle-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .theme-toggle-btn:hover {
+      background: rgba(0,0,0,0.05);
+    }
+
+    .account-main {
+      flex: 1;
+      max-width: 760px;
+      width: 100%;
+      margin: 36px auto;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+
+    .account-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    }
+
+    .profile-hero {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 24px;
+    }
+
+    .avatar-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #059669, #0d9488);
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      box-shadow: 0 4px 10px rgba(5, 150, 105, 0.25);
+    }
+
+    .profile-meta h1 {
+      font-size: 24px;
+      font-weight: 800;
+      margin: 0 0 4px;
+      letter-spacing: -0.3px;
+    }
+
+    .profile-meta p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .info-tile {
+      background: rgba(148, 163, 184, 0.08);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .info-tile-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .info-tile-value {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-verified {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--verified-bg);
+      color: var(--verified-text);
+      border: 1px solid var(--verified-border);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .quick-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .quick-link-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--text-main);
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .quick-link-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .btn-logout {
+      background: var(--danger);
+      color: #ffffff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+
+    .btn-logout:hover {
+      background: var(--danger-hover);
+    }
+
+    .loading-state, .unauth-state {
+      text-align: center;
+      padding: 48px 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="account-header">
+    <div class="header-container">
+      <a href="/" class="brand-logo">
+        <i class="fa-solid fa-ticket"></i> TIKUM
+      </a>
+      <div class="header-actions">
+        <a href="/" style="font-size: 14px; color: var(--text-muted); text-decoration: none; margin-right: 8px;">
+          <i class="fa-solid fa-house"></i> Beranda
+        </a>
+        <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
+          <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="account-main">
+    <!-- Loading State -->
+    <div id="loadingView" class="loading-state">
+      <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 28px; color: var(--primary); margin-bottom: 12px;"></i>
+      <p style="color: var(--text-muted);">Memuat informasi akun...</p>
+    </div>
+
+    <!-- Unauthenticated State -->
+    <div id="unauthView" class="account-card unauth-state" style="display: none;">
+      <i class="fa-solid fa-lock" style="font-size: 40px; color: var(--text-muted); margin-bottom: 16px;"></i>
+      <h2 style="margin: 0 0 8px; font-size: 22px;">Sesi Belum Masuk</h2>
+      <p style="color: var(--text-muted); margin: 0 0 24px; font-size: 14px;">
+        Silakan masuk menggunakan email Anda untuk mengakses akun Tikum.
+      </p>
+      <a href="/login" style="display: inline-block; background: var(--primary); color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+        Masuk ke Tikum
+      </a>
+    </div>
+
+    <!-- Authenticated Account View -->
+    <div id="accountView" class="account-card" style="display: none;">
+      <div class="profile-hero">
+        <div class="avatar-circle" id="userAvatar">U</div>
+        <div class="profile-meta">
+          <h1>Akun Saya</h1>
+          <p id="userEmailText">memuat@email.com</p>
+        </div>
+      </div>
+
+      <!-- Information Tiles -->
+      <div class="info-grid">
+        <div class="info-tile">
+          <div class="info-tile-label">Status Akun</div>
+          <div class="info-tile-value">
+            <span class="badge-verified">
+              <i class="fa-solid fa-shield-check"></i> Verified
+            </span>
+          </div>
+        </div>
+
+        <div class="info-tile">
+          <div class="info-tile-label">Member Since</div>
+          <div class="info-tile-value" id="memberSinceText">
+            <i class="fa-regular fa-calendar-check" style="color: var(--primary);"></i>
+            <span>2026-09-24</span>
+          </div>
+        </div>
+
+        <div class="info-tile">
+          <div class="info-tile-label">Peran Pengguna</div>
+          <div class="info-tile-value" id="userRoleText" style="text-transform: capitalize;">
+            Buyer
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Navigation -->
+      <div class="quick-links">
+        <a href="/track" class="quick-link-btn">
+          <i class="fa-solid fa-ticket" style="color: var(--primary);"></i>
+          <span>Tiket Saya</span>
+        </a>
+        <a href="/offers" class="quick-link-btn">
+          <i class="fa-solid fa-handshake" style="color: var(--primary);"></i>
+          <span>Tawaran Saya</span>
+        </a>
+        <a href="/create" class="quick-link-btn">
+          <i class="fa-solid fa-plus-circle" style="color: var(--primary);"></i>
+          <span>Jual Tiket</span>
+        </a>
+      </div>
+
+      <!-- Actions Bar -->
+      <div class="actions-bar">
+        <span style="font-size: 13px; color: var(--text-muted);">
+          Keamanan terverifikasi dengan proteksi sesi HttpOnly.
+        </span>
+        <button id="btnLogout" class="btn-logout">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const isDark = localStorage.getItem('tikum_theme') === 'dark';
+    if (isDark) {
+      document.body.classList.add('dark-mode');
+      if (themeToggle) themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>';
+    }
+
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const activeDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('tikum_theme', activeDark ? 'dark' : 'light');
+        themeToggle.innerHTML = activeDark 
+          ? '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>' 
+          : '<i class="fa-solid fa-moon"></i> <span>Dark Mode</span>';
+      });
+    }
+
+    // Fetch Session
+    async function loadAccount() {
+      const loadingView = document.getElementById('loadingView');
+      const unauthView = document.getElementById('unauthView');
+      const accountView = document.getElementById('accountView');
+
+      try {
+        const res = await fetch('/api/auth/session', {
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (!res.ok) {
+          loadingView.style.display = 'none';
+          unauthView.style.display = 'block';
+          return;
+        }
+
+        const data = await res.json();
+        if (data.authenticated && data.user) {
+          const user = data.user;
+          document.getElementById('userEmailText').textContent = user.email;
+          document.getElementById('userAvatar').textContent = (user.email || 'U')[0].toUpperCase();
+          
+          if (user.role) {
+            document.getElementById('userRoleText').textContent = user.role;
+          }
+
+          if (user.created_at) {
+            const dateObj = new Date(user.created_at);
+            const formatted = !isNaN(dateObj.getTime()) 
+              ? dateObj.toISOString().split('T')[0] 
+              : user.created_at;
+            document.getElementById('memberSinceText').innerHTML = 
+              `<i class="fa-regular fa-calendar-check" style="color: var(--primary);"></i> <span>${formatted}</span>`;
+          }
+
+          loadingView.style.display = 'none';
+          accountView.style.display = 'block';
+        } else {
+          loadingView.style.display = 'none';
+          unauthView.style.display = 'block';
+        }
+      } catch (err) {
+        console.error('Session load error:', err);
+        loadingView.style.display = 'none';
+        unauthView.style.display = 'block';
+      }
+    }
+
+    // Logout Handler
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.href = '/';
+      } catch (err) {
+        console.error('Logout error:', err);
+        window.location.href = '/';
+      }
+    });
+
+    loadAccount();
+  </script>
+</body>
+</html>

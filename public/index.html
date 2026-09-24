@@ -416,6 +416,177 @@
       color: var(--primary);
     }
 
+    /* Auth Header & Dropdown */
+    .btn-auth-header {
+      padding: 8px 16px;
+      border-radius: 6px;
+      background: var(--primary);
+      color: #FFFFFF;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .btn-auth-header:hover {
+      background: var(--primary-hover);
+    }
+    .user-dropdown-container {
+      position: relative;
+    }
+    .btn-user-dropdown {
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border-light);
+      background: var(--card-light);
+      color: var(--text-light);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      max-width: 220px;
+    }
+    body.dark-mode .btn-user-dropdown {
+      border-color: var(--border-dark);
+      background: var(--card-dark);
+      color: var(--text-dark);
+    }
+    .btn-user-dropdown:hover {
+      border-color: var(--primary);
+    }
+    .user-dropdown-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      background: var(--card-light);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+      width: 210px;
+      z-index: 1000;
+      padding: 6px 0;
+      display: none;
+    }
+    body.dark-mode .user-dropdown-menu {
+      background: var(--card-dark);
+      border-color: var(--border-dark);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: inherit;
+      text-decoration: none;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      box-sizing: border-box;
+      transition: background 0.15s;
+    }
+    .dropdown-item:hover {
+      background: rgba(29, 185, 84, 0.08);
+      color: var(--primary);
+    }
+    .dropdown-item i {
+      width: 16px;
+      color: #6B7280;
+    }
+    .dropdown-item:hover i {
+      color: var(--primary);
+    }
+    .dropdown-divider {
+      height: 1px;
+      background: var(--border-light);
+      margin: 6px 0;
+    }
+    body.dark-mode .dropdown-divider {
+      background: var(--border-dark);
+    }
+    .dropdown-logout {
+      color: #DC2626 !important;
+    }
+    .dropdown-logout i {
+      color: #DC2626 !important;
+    }
+    .dropdown-logout:hover {
+      background: rgba(220, 38, 38, 0.08) !important;
+    }
+
+    /* Auth Modal */
+    .auth-modal-box {
+      max-width: 420px;
+      width: 90%;
+      border-radius: 12px;
+      padding: 28px 24px;
+    }
+    .auth-input-field {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      font-size: 14px;
+      box-sizing: border-box;
+      background: inherit;
+      color: inherit;
+      outline: none;
+      margin-top: 4px;
+    }
+    body.dark-mode .auth-input-field {
+      border-color: var(--border-dark);
+    }
+    .auth-input-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15);
+    }
+    .btn-auth-primary {
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .btn-auth-primary:hover {
+      background: var(--primary-hover);
+    }
+    .btn-auth-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-auth-secondary {
+      padding: 10px 20px;
+      background: transparent;
+      border: 1px solid var(--border-light);
+      color: inherit;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    body.dark-mode .btn-auth-secondary {
+      border-color: var(--border-dark);
+    }
+
     @media (max-width: 768px) {
       .hero h1 { font-size: 28px; }
       .search-bar { flex-direction: column; }
@@ -431,8 +602,11 @@
       <i class="fa-solid fa-ticket brand-logo" style="color:var(--primary); font-size:24px;"></i>
       <div class="brand-title">Tikum</div>
     </a>
-    <div class="header-actions">
-      <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+    <div class="header-actions" style="display:flex; align-items:center; gap:10px;">
+      <div id="authHeaderContainer">
+        <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()">Login / Sign Up</button>
+      </div>
+      <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Dark Mode"><i class="fa-solid fa-moon"></i></button>
       <button class="select-filter" onclick="toggleLang()" id="langToggle" title="Toggle Language">ID</button>
     </div>
   </header>
@@ -548,6 +722,51 @@
         <li><i class="fa-solid fa-check-circle"></i> Izin Lokasi Valid</li>
         <li><i class="fa-solid fa-check-circle"></i> Harga Tiket Sesuai Standar</li>
       </ul>
+    </div>
+  </div>
+
+  <!-- Auth Modal (Passwordless Magic Link) -->
+  <div id="authModal" class="modal-overlay" onclick="closeAuthModalOnBackdrop(event)">
+    <div class="modal-content auth-modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-ticket" style="color:var(--primary);"></i> Masuk ke Tikum
+        </div>
+        <button class="btn-close" onclick="closeAuthModal()">&times;</button>
+      </div>
+
+      <!-- State 1: Input Email -->
+      <div id="authModalInputView">
+        <p style="font-size:14px; margin-bottom:16px; line-height:1.5; color:inherit; opacity:0.85;">
+          Masukkan email Anda untuk menerima magic link.
+        </p>
+        <form id="authModalForm" onsubmit="submitMagicLink(event)">
+          <div style="margin-bottom:16px;">
+            <label for="modalEmailInput" style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Email</label>
+            <input type="email" id="modalEmailInput" class="auth-input-field" placeholder="nama@email.com" required autocomplete="email">
+          </div>
+          <div id="modalAuthError" style="display:none; color:#ef4444; font-size:13px; margin-bottom:12px; line-height:1.4;"></div>
+          <button type="submit" id="btnModalSubmit" class="btn-auth-primary">
+            <span>Kirim Magic Link</span>
+            <i class="fa-solid fa-paper-plane" style="font-size:13px;"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- State 2: Confirmation Sent -->
+      <div id="authModalSuccessView" style="display:none; text-align:center; padding:12px 0;">
+        <div style="width:48px; height:48px; border-radius:50%; background:rgba(29, 185, 84, 0.15); display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px;">
+          <i class="fa-solid fa-envelope-circle-check" style="font-size:24px; color:var(--primary);"></i>
+        </div>
+        <h3 style="font-size:18px; font-weight:700; margin:0 0 8px;">Cek email Anda</h3>
+        <p style="font-size:14px; line-height:1.5; margin:0 0 10px; color:inherit; opacity:0.85;">
+          Kami telah mengirim magic link ke <strong id="modalSentEmail">alamat email Anda</strong>.
+        </p>
+        <p style="font-size:12px; color:#9ca3af; margin:0 0 20px; line-height:1.4;">
+          Link berlaku selama 15 menit dan hanya dapat digunakan sekali.
+        </p>
+        <button class="btn-auth-secondary" onclick="closeAuthModal()">Tutup</button>
+      </div>
     </div>
   </div>
 
@@ -776,8 +995,166 @@
       main.innerHTML = html;
     }
 
+    // ==========================================
+    // Passwordless Magic Link Auth & Session
+    // ==========================================
+    let currentUser = null;
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    async function checkAuthSession() {
+      try {
+        const res = await fetch('/api/auth/session');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.authenticated && data.user) {
+            currentUser = data.user;
+            renderAuthHeader(data.user);
+            return;
+          }
+        }
+      } catch (e) {}
+      currentUser = null;
+      renderAuthHeader(null);
+    }
+
+    function renderAuthHeader(user) {
+      const container = document.getElementById('authHeaderContainer');
+      if (!container) return;
+
+      if (user && user.email) {
+        container.innerHTML = `
+          <div class="user-dropdown-container" id="userDropdownContainer">
+            <button id="userDropdownBtn" class="btn-user-dropdown" onclick="toggleUserDropdown(event)" title="User Profile">
+              <span id="userDropdownEmail">${escapeHtml(user.email)}</span>
+              <i class="fa-solid fa-chevron-down" style="font-size:11px;"></i>
+            </button>
+            <div id="userDropdownMenu" class="user-dropdown-menu">
+              <a href="/track" class="dropdown-item"><i class="fa-solid fa-ticket"></i> My Tickets</a>
+              <a href="/create" class="dropdown-item"><i class="fa-solid fa-plus-circle"></i> My Listings</a>
+              <a href="/offers" class="dropdown-item"><i class="fa-solid fa-tags"></i> Offers</a>
+              <a href="/account" class="dropdown-item"><i class="fa-solid fa-user"></i> Account</a>
+              <div class="dropdown-divider"></div>
+              <button onclick="handleHeaderLogout()" class="dropdown-item dropdown-logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+            </div>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()">Login / Sign Up</button>
+        `;
+      }
+    }
+
+    function toggleUserDropdown(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('userDropdownMenu');
+      if (menu) {
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('userDropdownMenu');
+      const container = document.getElementById('userDropdownContainer');
+      if (menu && container && !container.contains(e.target)) {
+        menu.style.display = 'none';
+      }
+    });
+
+    async function handleHeaderLogout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (e) {}
+      currentUser = null;
+      renderAuthHeader(null);
+      window.location.reload();
+    }
+
+    function openAuthModal() {
+      const modal = document.getElementById('authModal');
+      const inputView = document.getElementById('authModalInputView');
+      const successView = document.getElementById('authModalSuccessView');
+      const errBox = document.getElementById('modalAuthError');
+      const emailInput = document.getElementById('modalEmailInput');
+
+      if (errBox) errBox.style.display = 'none';
+      if (emailInput) emailInput.value = '';
+      if (inputView) inputView.style.display = 'block';
+      if (successView) successView.style.display = 'none';
+      if (modal) modal.style.display = 'flex';
+      if (emailInput) setTimeout(() => emailInput.focus(), 100);
+    }
+
+    function closeAuthModal() {
+      const modal = document.getElementById('authModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function closeAuthModalOnBackdrop(e) {
+      if (e.target.id === 'authModal') {
+        closeAuthModal();
+      }
+    }
+
+    async function submitMagicLink(e) {
+      e.preventDefault();
+      const email = document.getElementById('modalEmailInput').value.trim();
+      const btn = document.getElementById('btnModalSubmit');
+      const errBox = document.getElementById('modalAuthError');
+
+      if (errBox) errBox.style.display = 'none';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
+      }
+
+      try {
+        const res = await fetch('/api/auth/magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          document.getElementById('authModalInputView').style.display = 'none';
+          document.getElementById('authModalSuccessView').style.display = 'block';
+          document.getElementById('modalSentEmail').textContent = email;
+        } else {
+          if (errBox) {
+            errBox.style.display = 'block';
+            errBox.textContent = data.error || 'Gagal mengirim magic link.';
+          }
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>Kirim Magic Link</span> <i class="fa-solid fa-paper-plane" style="font-size:13px;"></i>';
+          }
+        }
+      } catch (err) {
+        if (errBox) {
+          errBox.style.display = 'block';
+          errBox.textContent = 'Terjadi kesalahan jaringan. Silakan coba lagi.';
+        }
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>Kirim Magic Link</span> <i class="fa-solid fa-paper-plane" style="font-size:13px;"></i>';
+        }
+      }
+    }
+
     // Init
-    document.addEventListener('DOMContentLoaded', fetchEvents);
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchEvents();
+      checkAuthSession();
+      if (new URLSearchParams(window.location.search).get('login') === 'true') {
+        openAuthModal();
+      }
+    });
   </script>
 </body>
 </html>

@@ -3,184 +3,335 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daftar Akun Baru — TIKUM / ARGUS</title>
+  <title>Daftar / Masuk ke Tikum — Tikum</title>
+  <meta name="description" content="Daftar akun baru Tikum menggunakan magic link tanpa kata sandi.">
+  <link rel="canonical" href="https://tikum.app/signup">
+  <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    .auth-box {
+    :root {
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --primary: #059669;
+      --primary-hover: #047857;
+    }
+
+    body.dark-mode {
+      --bg-page: #0b1120;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --primary: #10b981;
+      --primary-hover: #059669;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .auth-header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 24px;
+    }
+
+    .header-container {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-logo {
+      font-weight: 800;
+      font-size: 20px;
+      color: var(--primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .theme-toggle-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .auth-card {
       max-width: 440px;
+      width: 100%;
       margin: 48px auto;
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 32px 24px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      color: #111827;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 32px 28px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      box-sizing: border-box;
     }
-    .form-group {
-      margin-bottom: 18px;
+
+    .auth-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: #ecfdf5;
+      color: #059669;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 16px;
     }
-    .form-group label {
+
+    .auth-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin: 0 0 8px;
+    }
+
+    .auth-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin: 0 0 24px;
+      line-height: 1.5;
+    }
+
+    .auth-input-group {
+      margin-bottom: 20px;
+    }
+
+    .auth-input-group label {
       display: block;
       font-size: 13px;
       font-weight: 600;
+      color: var(--text-main);
       margin-bottom: 6px;
-      color: #374151;
     }
-    .form-control {
+
+    .auth-input {
       width: 100%;
-      padding: 10px 14px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
+      padding: 12px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
       font-size: 14px;
       box-sizing: border-box;
+      background: var(--card-bg);
+      color: var(--text-main);
+      transition: border-color 0.2s;
     }
-    .form-control:focus {
+
+    .auth-input:focus {
       outline: none;
-      border-color: #059669;
+      border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
     }
-    .btn-submit {
+
+    .auth-btn {
       width: 100%;
       padding: 12px;
-      background: #059669;
-      color: white;
+      background: var(--primary);
+      color: #ffffff;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s;
     }
-    .btn-submit:hover {
-      background: #047857;
+
+    .auth-btn:hover {
+      background: var(--primary-hover);
     }
-    .btn-submit:disabled {
+
+    .auth-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
-    .alert {
+
+    .auth-status-box {
       padding: 12px;
       border-radius: 8px;
       font-size: 13px;
       margin-bottom: 16px;
       display: none;
+      line-height: 1.5;
     }
-    .alert-danger {
+
+    .auth-status-box.error {
       background: #fef2f2;
       color: #b91c1c;
       border: 1px solid #fecaca;
-    }
-    .alert-success {
-      background: #ecfdf5;
-      color: #047857;
-      border: 1px solid #a7f3d0;
+      display: block;
     }
   </style>
 </head>
-<body style="background: #f9fafb; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+<body>
 
-  <header style="background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 14px 20px;">
-    <div style="max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
-      <a href="/" style="font-weight: 800; font-size: 18px; color: #059669; text-decoration: none;">
-        TIKUM <span style="font-size: 12px; color: #6b7280; font-weight: 500;">ARGUS Identity</span>
+  <!-- Site Header -->
+  <header class="auth-header">
+    <div class="header-container">
+      <a href="/" class="brand-logo">
+        <i class="fa-solid fa-ticket"></i> TIKUM
       </a>
-      <a href="/login" style="font-size: 14px; color: #4b5563; text-decoration: none;">Sudah punya akun? <strong>Masuk</strong></a>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="/" style="font-size: 14px; color: var(--text-muted); text-decoration: none;">
+          <i class="fa-solid fa-house"></i> Beranda
+        </a>
+        <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
+          <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
+        </button>
+      </div>
     </div>
   </header>
 
-  <main style="padding: 20px;">
-    <div class="auth-box">
-      <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 8px;">Daftar Akun Baru</h1>
-      <p style="font-size: 13px; color: #6b7280; margin: 0 0 20px;">
-        Buat akun pengguna TIKUM untuk bertransaksi tiket terverifikasi dengan proteksi escrow.
-      </p>
+  <main style="padding: 20px; flex: 1;">
+    <div class="auth-card">
+      <div class="auth-badge">
+        <i class="fa-solid fa-shield-halved"></i> Passwordless Secure Auth
+      </div>
 
-      <div id="errorBox" class="alert alert-danger"></div>
-      <div id="successBox" class="alert alert-success"></div>
+      <div id="signupFormView">
+        <h1 class="auth-title">Daftar Akun Baru</h1>
+        <p class="auth-subtitle">
+          Masukkan email Anda untuk menerima magic link pendaftaran. Tanpa repot mengingat kata sandi.
+        </p>
 
-      <form id="signupForm" onsubmit="handleSignup(event)">
-        <div class="form-group">
-          <label for="name">Nama Lengkap *</label>
-          <input type="text" id="name" class="form-control" placeholder="Nama Anda" required autocomplete="name">
-        </div>
+        <div id="statusBox" class="auth-status-box"></div>
 
-        <div class="form-group">
-          <label for="email">Alamat Email *</label>
-          <input type="email" id="email" class="form-control" placeholder="nama@email.com" required autocomplete="email">
-        </div>
+        <form onsubmit="handleSignup(event)">
+          <div class="auth-input-group">
+            <label for="signupEmail">Alamat Email</label>
+            <input type="email" id="signupEmail" class="auth-input" placeholder="nama@email.com" required autocomplete="email">
+          </div>
 
-        <div class="form-group">
-          <label for="password">Kata Sandi *</label>
-          <input type="password" id="password" class="form-control" placeholder="Minimal 8 karakter" required minlength="8" autocomplete="new-password">
-          <span style="font-size: 11px; color: #6b7280;">Minimal 8 karakter. Disimpan terenkripsi (bcrypt).</span>
-        </div>
+          <button type="submit" class="auth-btn" id="btnSignupSubmit">
+            <span>Kirim Magic Link</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </form>
 
-        <button type="submit" id="btnSubmit" class="btn-submit">
-          <i class="fa-solid fa-user-plus"></i> Buat Akun
+        <p style="margin-top: 20px; font-size: 12px; color: var(--text-muted); line-height: 1.5; text-align: center;">
+          Sudah memiliki akun? Cukup masukkan email di atas atau kunjungi <a href="/login" style="color: var(--primary); font-weight: 600;">halaman masuk</a>.
+        </p>
+      </div>
+
+      <div id="confirmationView" style="display: none; text-align: center;">
+        <i class="fa-solid fa-envelope-circle-check" style="font-size: 48px; color: var(--primary); margin-bottom: 16px;"></i>
+        <h2 style="font-size: 20px; font-weight: 800; margin: 0 0 8px;">Cek email Anda</h2>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
+          Kami telah mengirim magic link ke alamat email Anda di <strong id="sentEmail">-</strong>.
+        </p>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5;">
+          Link berlaku selama 15 menit dan hanya dapat digunakan sekali.
+        </p>
+        <button class="auth-btn" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color);" onclick="resetForm()">
+          Kirim Ulang atau Ganti Email
         </button>
-      </form>
-
-      <div style="text-align: center; margin-top: 20px; font-size: 13px; color: #6b7280;">
-        Sudah memiliki akun? <a href="/login" style="color: #059669; font-weight: 600; text-decoration: none;">Masuk di sini</a>
       </div>
     </div>
   </main>
 
   <script>
+    const themeToggle = document.getElementById('themeToggle');
+    const isDark = localStorage.getItem('tikum_theme') === 'dark';
+    if (isDark) {
+      document.body.classList.add('dark-mode');
+      if (themeToggle) themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>';
+    }
+
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const activeDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('tikum_theme', activeDark ? 'dark' : 'light');
+        themeToggle.innerHTML = activeDark 
+          ? '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>' 
+          : '<i class="fa-solid fa-moon"></i> <span>Dark Mode</span>';
+      });
+    }
+
     async function handleSignup(e) {
       e.preventDefault();
-      const errBox = document.getElementById('errorBox');
-      const succBox = document.getElementById('successBox');
-      const btn = document.getElementById('btnSubmit');
+      const emailInput = document.getElementById('signupEmail');
+      const submitBtn = document.getElementById('btnSignupSubmit');
+      const statusBox = document.getElementById('statusBox');
+      const email = emailInput.value.trim();
 
-      errBox.style.display = 'none';
-      succBox.style.display = 'none';
+      if (!email) return;
 
-      const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-
-      if (!name || !email || !password) {
-        errBox.innerText = 'Mohon lengkapi semua kolom.';
-        errBox.style.display = 'block';
-        return;
-      }
-
-      if (password.length < 8) {
-        errBox.innerText = 'Kata sandi harus minimal 8 karakter.';
-        errBox.style.display = 'block';
-        return;
-      }
-
-      btn.disabled = true;
-      btn.innerText = 'Mendaftarkan...';
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> <span>Mengirim...</span>';
+      statusBox.style.display = 'none';
 
       try {
-        const res = await fetch('/api/auth/signup', {
+        const res = await fetch('/api/auth/magic-link', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password })
+          body: JSON.stringify({ email })
         });
 
         const data = await res.json();
 
-        if (!res.ok) {
-          throw new Error(data.error || 'Pendaftaran gagal');
+        if (res.ok) {
+          document.getElementById('sentEmail').textContent = email;
+          document.getElementById('signupFormView').style.display = 'none';
+          document.getElementById('confirmationView').style.display = 'block';
+        } else {
+          statusBox.textContent = data.message || 'Gagal mengirim magic link. Silakan coba lagi.';
+          statusBox.className = 'auth-status-box error';
+          statusBox.style.display = 'block';
         }
-
-        succBox.innerText = 'Pendaftaran berhasil! Mengarahkan ke halaman masuk...';
-        succBox.style.display = 'block';
-
-        setTimeout(() => {
-          window.location.href = '/login?registered=true&email=' + encodeURIComponent(email);
-        }, 1500);
       } catch (err) {
-        errBox.innerText = err.message;
-        errBox.style.display = 'block';
-        btn.disabled = false;
-        btn.innerText = 'Buat Akun';
+        statusBox.textContent = 'Terjadi gangguan koneksi. Pastikan internet Anda aktif.';
+        statusBox.className = 'auth-status-box error';
+        statusBox.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Kirim Magic Link</span> <i class="fa-solid fa-arrow-right"></i>';
       }
     }
+
+    function resetForm() {
+      document.getElementById('confirmationView').style.display = 'none';
+      document.getElementById('signupFormView').style.display = 'block';
+      document.getElementById('statusBox').style.display = 'none';
+    }
+
+    (async function checkExistingSession() {
+      try {
+        const res = await fetch('/api/auth/session');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated) {
+            window.location.href = '/account';
+          }
+        }
+      } catch (_) {}
+    })();
   </script>
 </body>
 </html>

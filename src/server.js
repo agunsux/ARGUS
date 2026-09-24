@@ -188,6 +188,7 @@ app.get('/api/business-profile', (req, res) => res.json(businessProfile));
 
 app.get('/signup', (req, res) => res.sendFile(path.join(publicDir, 'signup.html'), sendFileOpts));
 app.get('/login', (req, res) => res.sendFile(path.join(publicDir, 'login.html'), sendFileOpts));
+app.get('/account', (req, res) => res.sendFile(path.join(publicDir, 'account.html'), sendFileOpts));
 app.get('/create', (req, res) => res.sendFile(path.join(publicDir, 'create.html'), sendFileOpts));
 app.get('/pay/:id', (req, res) => res.sendFile(path.join(publicDir, 'pay.html'), sendFileOpts));
 app.get('/pay', (req, res) => res.sendFile(path.join(publicDir, 'pay.html'), sendFileOpts));

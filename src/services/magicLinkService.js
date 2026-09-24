@@ -5,7 +5,7 @@
  * Security Guarantees:
  * 1. Cryptographically secure random tokens (crypto.randomBytes(32)).
  * 2. Tokens stored as SHA-256 hashes (raw tokens are never persisted).
- * 3. 15-minute token expiration.
+ * 3. 15-minute token expiration (MAGIC_LINK_EXPIRY_MINUTES = 15).
  * 4. Single-use replay protection (invalidated immediately upon verification).
  * 5. No user enumeration (identical response for new and existing accounts).
  * 6. Dual-layer rate limiting: Per-IP and Per-Email (process-local).
@@ -21,7 +21,8 @@ const { SessionStore } = require('./sessionStore');
 const { emailService } = require('./emailService');
 
 // Configuration
-const TOKEN_EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
+const MAGIC_LINK_EXPIRY_MINUTES = 15; // Centralized 15-minute token expiry
+const TOKEN_EXPIRY_MS = MAGIC_LINK_EXPIRY_MINUTES * 60 * 1000;
 const IP_RATE_LIMIT_MAX = 10; // Max 10 requests per 15m per IP
 const EMAIL_RATE_LIMIT_MAX = 3; // Max 3 requests per 15m per email
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
@@ -188,13 +189,13 @@ class MagicLinkService {
     }
     state.magic_link_tokens.push(tokenRecord);
 
-    // Audit log (NEVER logs raw token)
+    // Audit log: MAGIC_LINK_REQUESTED (NEVER logs raw token)
     const emailHash = crypto.createHash('sha256').update(normEmail).digest('hex');
     await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_REQUESTED', 'SYSTEM', {
       email_hash: emailHash,
       ip: ip,
       token_id: tokenRecord.id
-    });
+    }).catch(() => {});
 
     const safeRedirect = encodeURIComponent(tokenRecord.redirect_url);
     const magicLinkUrl = `https://tikum.app/api/auth/verify?token=${rawToken}&redirect=${safeRedirect}`;
@@ -209,51 +210,72 @@ class MagicLinkService {
       });
     }
 
+    // Pre-create account for new users or keep existing (Single passwordless identity flow)
+    if (!state.users) state.users = [];
+    let existingUser = state.users.find(u => u.email && u.email.toLowerCase() === normEmail);
+    if (!existingUser) {
+      const newUser = {
+        id: `usr-${uuidv4().substring(0, 8)}`,
+        name: normEmail.split('@')[0],
+        email: normEmail,
+        phone: null,
+        role: 'buyer', // Default safe role: buyer/user, never admin
+        status: 'ACTIVE',
+        password: null, // Passwordless account
+        password_hash: null,
+        auth_provider: 'MAGIC_LINK',
+        created_at: new Date(now).toISOString(),
+        updated_at: new Date(now).toISOString()
+      };
+      state.users.push(newUser);
+    }
+
     // 2. Outbound transactional email dispatch via EmailService
-    // Only in production or if Resend key is configured
     try {
       await emailService.sendEmail({
         to: normEmail,
-        subject: 'Masuk ke TIKUM — Link Akses Cepat',
+        subject: 'Your Tikum login link',
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; padding: 32px 20px; color: #111827;">
             <div style="margin-bottom: 24px;">
-              <span style="font-weight: 800; font-size: 20px; letter-spacing: -0.03em; color: #059669;">TIKUM</span>
-              <span style="color: #6B7280; font-size: 14px; margin-left: 8px;">Authentic Event Access</span>
+              <span style="font-weight: 800; font-size: 20px; letter-spacing: -0.03em; color: #1DB954;">TIKUM</span>
             </div>
-            <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 16px; color: #111827;">Link Masuk Akun Anda</h1>
+            <h1 style="font-size: 20px; font-weight: 700; margin: 0 0 16px; color: #111827;">Masuk ke Tikum</h1>
             <p style="font-size: 15px; line-height: 1.6; color: #4B5563; margin: 0 0 24px;">
-              Klik tombol di bawah ini untuk masuk ke akun TIKUM Anda. Link ini hanya berlaku selama <strong>15 menit</strong> dan hanya dapat digunakan satu kali.
+              Masuk ke akun Tikum Anda dengan tombol berikut.
             </p>
             <div style="margin: 28px 0;">
-              <a href="${magicLinkUrl}" style="background-color: #059669; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block;">
-                Masuk ke TIKUM
+              <a href="${magicLinkUrl}" style="background-color: #1DB954; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: 600; font-size: 15px; display: inline-block;">
+                MASUK KE TIKUM
               </a>
             </div>
-            <p style="font-size: 13px; color: #9CA3AF; line-height: 1.5; margin: 24px 0 0;">
-              Jika Anda tidak meminta link ini, Anda dapat mengabaikan email ini dengan aman. Akun Anda tetap terlindungi.
+            <p style="font-size: 13px; color: #6B7280; line-height: 1.5; margin: 24px 0 8px;">
+              Link ini hanya berlaku selama 15 menit dan hanya dapat digunakan sekali.
+            </p>
+            <p style="font-size: 13px; color: #9CA3AF; line-height: 1.5; margin: 0;">
+              Jika Anda tidak meminta link ini, abaikan email ini.
             </p>
           </div>
         `,
-        text: `Masuk ke TIKUM: Buka link berikut untuk masuk ke akun Anda: ${magicLinkUrl}. Link ini berlaku selama 15 menit dan hanya dapat digunakan 1 kali.`
+        text: `Masuk ke akun Tikum Anda dengan tombol berikut.\n\nMASUK KE TIKUM: ${magicLinkUrl}\n\nLink ini hanya berlaku selama 15 menit dan hanya dapat digunakan sekali.\nJika Anda tidak meminta link ini, abaikan email ini.`
       });
+
+      // Audit log: MAGIC_LINK_SENT
+      await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_SENT', 'SYSTEM', {
+        email_hash: emailHash,
+        ip: ip,
+        token_id: tokenRecord.id
+      }).catch(() => {});
     } catch (sendErr) {
       // Non-blocking: failure to send does not break generic response
     }
 
-    // Generic response preventing email enumeration
-    const result = {
+    // Generic response preventing email enumeration — NEVER leaks raw token
+    return {
       success: true,
       message: 'Jika email Anda terdaftar atau valid, tautan akses telah dikirimkan ke kotak masuk Anda.',
       email: normEmail
     };
-
-    // In test environment only: expose raw token in response so automated test runner can verify the flow
-    if (process.env.NODE_ENV === 'test') {
-      result._test_token = rawToken;
-    }
-
-    return result;
   }
 
   /**
@@ -262,6 +284,10 @@ class MagicLinkService {
    */
   static async verifyMagicLink({ token, ip = '127.0.0.1', userAgent = null }) {
     if (!token || typeof token !== 'string' || token.trim().length === 0) {
+      await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_INVALID', 'SYSTEM', {
+        reason: 'MISSING_TOKEN',
+        ip
+      }).catch(() => {});
       const err = new Error('Token verifikasi tidak valid atau tidak disediakan');
       err.code = 'INVALID_TOKEN';
       err.status = 401;
@@ -271,6 +297,10 @@ class MagicLinkService {
     const cleanToken = token.trim();
     // Validate token format: must be 64-character hex string
     if (!/^[a-f0-9]{64}$/i.test(cleanToken)) {
+      await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_INVALID', 'SYSTEM', {
+        reason: 'MALFORMED_TOKEN',
+        ip
+      }).catch(() => {});
       const err = new Error('Format token verifikasi tidak valid');
       err.code = 'MALFORMED_TOKEN';
       err.status = 401;
@@ -283,6 +313,10 @@ class MagicLinkService {
     // Find token by secure hash
     const record = tokens.find(t => t.token_hash === candidateHash);
     if (!record) {
+      await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_INVALID', 'SYSTEM', {
+        reason: 'TOKEN_NOT_FOUND',
+        ip
+      }).catch(() => {});
       const err = new Error('Token verifikasi tidak ditemukan atau tidak valid');
       err.code = 'INVALID_TOKEN';
       err.status = 401;
@@ -291,10 +325,11 @@ class MagicLinkService {
 
     // Replay protection: check if already used
     if (record.used) {
-      await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_REPLAY_ATTEMPT', 'SYSTEM', {
+      await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_INVALID', 'SYSTEM', {
         token_id: record.id,
+        reason: 'TOKEN_ALREADY_USED',
         ip
-      });
+      }).catch(() => {});
       const err = new Error('Token verifikasi ini sudah pernah digunakan (replay protection)');
       err.code = 'TOKEN_ALREADY_USED';
       err.status = 401;
@@ -304,11 +339,11 @@ class MagicLinkService {
     // Expiration check
     const now = new Date();
     if (new Date(record.expires_at) <= now) {
-      await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_EXPIRED_ATTEMPT', 'SYSTEM', {
+      await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_EXPIRED', 'SYSTEM', {
         token_id: record.id,
         ip
-      });
-      const err = new Error('Token verifikasi telah kedaluwarsa. Silakan minta tautan baru.');
+      }).catch(() => {});
+      const err = new Error('Link sudah kedaluwarsa. Silakan minta magic link baru.');
       err.code = 'TOKEN_EXPIRED';
       err.status = 401;
       throw err;
@@ -322,18 +357,21 @@ class MagicLinkService {
     let user = (state.users || []).find(u => u.email.toLowerCase() === record.email.toLowerCase());
 
     if (!user) {
-      // Self-signup: create new user with default 'buyer' role (NEVER admin)
+      // Self-signup fallback: create new user with default 'buyer' role (NEVER admin)
       user = {
-        id: `user-${uuidv4().substring(0, 8)}`,
+        id: `usr-${uuidv4().substring(0, 8)}`,
         name: record.email.split('@')[0],
         email: record.email,
         phone: null,
         role: 'buyer', // Default safe role
+        status: 'ACTIVE',
         password: null, // Passwordless account
+        password_hash: null,
         auth_provider: 'MAGIC_LINK',
         created_at: now.toISOString(),
         updated_at: now.toISOString()
       };
+      if (!state.users) state.users = [];
       state.users.push(user);
     }
 
@@ -351,19 +389,27 @@ class MagicLinkService {
       state.sessions.push(session);
     }
 
-    // Audit log
-    await recordAuditLog('AUTH', user.id, 'AUTHENTICATION_SUCCESS', 'MAGIC_LINK', {
+    // Audit logs: MAGIC_LINK_VERIFIED and SESSION_CREATED
+    await recordAuditLog('AUTH', user.id, 'MAGIC_LINK_VERIFIED', 'MAGIC_LINK', {
       user_id: user.id,
       role: user.role,
       ip
-    });
+    }).catch(() => {});
+
+    await recordAuditLog('AUTH', user.id, 'SESSION_CREATED', 'MAGIC_LINK', {
+      user_id: user.id,
+      session_token: session.session_token,
+      ip
+    }).catch(() => {});
 
     return {
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        status: user.status || 'ACTIVE',
+        created_at: user.created_at
       },
       session,
       redirectUrl: record.redirect_url || '/'
@@ -373,6 +419,7 @@ class MagicLinkService {
 
 module.exports = {
   MagicLinkService,
+  MAGIC_LINK_EXPIRY_MINUTES,
   TOKEN_EXPIRY_MS,
   IP_RATE_LIMIT_MAX,
   EMAIL_RATE_LIMIT_MAX
