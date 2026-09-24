@@ -267,6 +267,41 @@
     </div>
   </div>
 
+  <!-- Counter Modal for Structured Price Counter-Offer (Seller & Buyer) -->
+  <div id="counterModal" class="modal-overlay">
+    <div class="card" style="max-width: 480px; width: 100%; border-color: var(--cyan); box-shadow: 0 25px 50px rgba(0,0,0,0.8); margin: 0; background: #0f172a;">
+      <div class="hero-pill" style="margin-bottom: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);">
+        <i class="fa-solid fa-arrows-rotate"></i> TAWARAN BALIK / COUNTER-OFFER
+      </div>
+      <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;" id="counterModalTitle">Ajukan Tawaran Balik</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;" id="counterModalDesc">
+        Kirimkan nominal penawaran harga baru secara terstruktur.
+      </p>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label for="counterPriceInput" style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 6px; display: block;">
+          Nominal Tawaran Balik (Rp):
+        </label>
+        <input type="number" id="counterPriceInput" class="form-control" style="width: 100%; padding: 10px 12px; font-size: 14px;" placeholder="Contoh: 1350000">
+        <span id="counterPriceHint" style="font-size: 11px; color: var(--text-dim); display: block; margin-top: 4px;"></span>
+      </div>
+
+      <div class="notice-box notice-info" style="font-size: 11px; margin-bottom: 16px;">
+        <i class="fa-solid fa-shield-halved"></i>
+        <div>
+          Batas tawar-menawar maksimal 5 kali per listing. Tidak ada fitur chat teks bebas (hanya harga terstruktur).
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="closeCounterModal()">Batal</button>
+        <button id="btnConfirmCounter" class="btn btn-primary" onclick="confirmSubmitCounter()">
+          <i class="fa-solid fa-paper-plane"></i> Kirim Tawaran Balik
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Site Footer -->
   <footer class="site-footer" style="margin-top: auto;">
     <div class="footer-container">
@@ -443,9 +478,12 @@
     function renderOfferCard(offer) {
       const discountPct = Math.round(((offer.original_price - offer.offer_amount) / offer.original_price) * 100);
       const isPending = offer.status === 'PENDING';
+      const isCountered = offer.status === 'COUNTERED';
       const isAccepted = offer.status === 'ACCEPTED';
       const isDeclined = offer.status === 'DECLINED';
       const isSuperseded = offer.status === 'SUPERSEDED';
+      const isLimitReached = offer.is_limit_reached || offer.negotiation_status === 'NEGOTIATION_LIMIT_REACHED' || (offer.proposal_count >= 5);
+      const counterBadge = offer.ui_counter_text || `Tawaran ${offer.sequence_number || 1}/5`;
 
       if (activeRole === 'buyer') {
         return `
@@ -459,11 +497,24 @@
                   <i class="fa-solid fa-couch"></i> ${offer.seat_info || 'General Admission'} &bull; ID Listing: <code class="mono" style="color: var(--cyan);">${offer.listing_id}</code>
                 </div>
               </div>
-              <div style="display: flex; gap: 6px; align-items: center;">
+              <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700;">
+                  <i class="fa-solid fa-scale-balanced"></i> ${counterBadge}
+                </span>
                 ${renderStatusBadge(offer.status)}
                 ${isPending ? `<span class="countdown-pill"><i class="fa-solid fa-hourglass-half"></i> Sisa ${calculateTtlText(offer.expires_at)}</span>` : ''}
               </div>
             </div>
+
+            ${isLimitReached ? `
+              <div class="notice-box notice-warning" style="font-size: 12px; margin-bottom: 12px; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.4); color: #fde68a;">
+                <i class="fa-solid fa-triangle-exclamation" style="color: #fbbf24;"></i>
+                <div>
+                  <strong style="color: #fbbf24;">Batas tawar-menawar tercapai (5/5).</strong><br>
+                  Negosiasi untuk listing ini sudah berakhir.
+                </div>
+              </div>
+            ` : ''}
 
             <div style="background: #090d16; border: 1px solid #1e293b; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
               <div class="grid-2" style="font-size: 13px;">
@@ -476,6 +527,12 @@
                   <strong class="mono" style="color: #60a5fa; font-size: 15px;">Rp ${offer.offer_amount.toLocaleString('id-ID')}</strong>
                 </div>
               </div>
+              ${isCountered && offer.counter_amount ? `
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #334155; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: #94a3b8; font-size: 12px;"><i class="fa-solid fa-arrows-rotate" style="color: #38bdf8;"></i> Tawaran Balik Penjual:</span>
+                  <strong class="mono" style="color: #38bdf8; font-size: 15px;">Rp ${offer.counter_amount.toLocaleString('id-ID')}</strong>
+                </div>
+              ` : ''}
             </div>
 
             ${isAccepted ? `
@@ -489,6 +546,29 @@
                 <a href="/pay/${offer.listing_id}" class="btn btn-success btn-sm">
                   <i class="fa-solid fa-credit-card"></i> Bayar Sekarang (Harga Negosiasi)
                 </a>
+              </div>
+            ` : ''}
+
+            ${isCountered ? `
+              <div class="notice-box notice-info" style="font-size: 12px; margin-bottom: 12px; background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.4);">
+                <i class="fa-solid fa-arrows-rotate" style="color: #60a5fa;"></i>
+                <div>
+                  <strong>Penjual Mengajukan Tawaran Balik:</strong> Rp ${(offer.counter_amount || 0).toLocaleString('id-ID')}. Anda dapat menyetujui tawaran balik ini atau mengajukan penawaran baru.
+                </div>
+              </div>
+              <div style="display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                ${!isLimitReached ? `
+                  <button class="btn btn-outline btn-sm" onclick="openCounterModal('${offer.id}', ${offer.counter_amount || offer.offer_amount}, ${offer.original_price}, 'BUYER')">
+                    <i class="fa-solid fa-arrows-rotate"></i> Tawar Balik
+                  </button>
+                ` : `
+                  <button class="btn btn-outline btn-sm" disabled title="Batas tawar-menawar tercapai (5/5)">
+                    <i class="fa-solid fa-ban"></i> Tawar Balik (Limit 5/5)
+                  </button>
+                `}
+                <button class="btn btn-success btn-sm" onclick="acceptCounterOffer('${offer.id}')">
+                  <i class="fa-solid fa-check"></i> Setujui Harga Penjual (Rp ${(offer.counter_amount || 0).toLocaleString('id-ID')})
+                </button>
               </div>
             ` : ''}
 
@@ -517,6 +597,14 @@
                 </button>
               </div>
             ` : ''}
+
+            ${isLimitReached && !isAccepted ? `
+              <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+                <a href="/pay/${offer.listing_id}" class="btn btn-secondary btn-sm">
+                  <i class="fa-solid fa-cart-shopping"></i> Beli dengan Harga Normal (Rp ${offer.original_price.toLocaleString('id-ID')})
+                </a>
+              </div>
+            ` : ''}
           </div>
         `;
       }
@@ -533,11 +621,24 @@
                 <i class="fa-solid fa-couch"></i> ${offer.seat_info || 'General Admission'} &bull; Pembeli: <strong style="color: #fff;"><i class="fa-solid fa-user-secret"></i> ${offer.buyer?.masked_name || 'Pembeli Terverifikasi'}</strong>
               </div>
             </div>
-            <div style="display: flex; gap: 6px; align-items: center;">
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700;">
+                <i class="fa-solid fa-scale-balanced"></i> ${counterBadge}
+              </span>
               ${renderStatusBadge(offer.status)}
               ${isPending ? `<span class="countdown-pill"><i class="fa-solid fa-hourglass-half"></i> Sisa ${calculateTtlText(offer.expires_at)}</span>` : ''}
             </div>
           </div>
+
+          ${isLimitReached ? `
+            <div class="notice-box notice-warning" style="font-size: 12px; margin-bottom: 12px; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.4); color: #fde68a;">
+              <i class="fa-solid fa-triangle-exclamation" style="color: #fbbf24;"></i>
+              <div>
+                <strong style="color: #fbbf24;">Batas tawar-menawar tercapai (5/5).</strong><br>
+                Negosiasi untuk listing ini sudah berakhir. Anda dapat menerima tawaran ini, menolaknya, atau membiarkannya kedaluwarsa.
+              </div>
+            </div>
+          ` : ''}
 
           <div style="background: #090d16; border: 1px solid #1e293b; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
             <div class="grid-2" style="font-size: 13px;">
@@ -553,10 +654,19 @@
           </div>
 
           ${isPending ? `
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
               <button class="btn btn-danger btn-sm" onclick="openDeclineModal('${offer.id}')">
                 <i class="fa-solid fa-xmark"></i> Tolak Tawaran
               </button>
+              ${!isLimitReached ? `
+                <button class="btn btn-outline btn-sm" onclick="openCounterModal('${offer.id}', ${offer.offer_amount}, ${offer.original_price}, 'SELLER')">
+                  <i class="fa-solid fa-arrows-rotate"></i> Tawar Balik
+                </button>
+              ` : `
+                <button class="btn btn-outline btn-sm" disabled title="Batas tawar-menawar tercapai (5/5). Tidak boleh membuat counter-offer ke-6.">
+                  <i class="fa-solid fa-ban"></i> Tawar Balik (Limit 5/5)
+                </button>
+              `}
               <button class="btn btn-success btn-sm" onclick="openAcceptModal('${offer.id}', ${offer.offer_amount})">
                 <i class="fa-solid fa-check"></i> Terima Tawaran (Rp ${offer.offer_amount.toLocaleString('id-ID')})
               </button>
@@ -679,6 +789,93 @@
         fetchOffers();
       } catch (err) {
         alert(`Gagal menarik tawaran: ${err.message}`);
+      }
+    }
+
+    let counterOfferContext = null;
+
+    function openCounterModal(offerId, currentAmount, listingPrice, role) {
+      counterOfferContext = { offerId, currentAmount, listingPrice, role };
+      const title = role === 'SELLER' ? 'Ajukan Tawaran Balik (Penjual)' : 'Ajukan Tawaran Balik (Pembeli)';
+      const desc = role === 'SELLER'
+        ? `Tawaran pembeli saat ini adalah Rp ${currentAmount.toLocaleString('id-ID')}. Masukkan nominal tawaran balik (di atas Rp ${currentAmount.toLocaleString('id-ID')} dan maksimal Rp ${listingPrice.toLocaleString('id-ID')}).`
+        : `Tawaran penjual saat ini adalah Rp ${currentAmount.toLocaleString('id-ID')}. Masukkan nominal tawaran baru (di atas tawaran Anda sebelumnya dan di bawah Rp ${currentAmount.toLocaleString('id-ID')}).`;
+      
+      document.getElementById('counterModalTitle').innerText = title;
+      document.getElementById('counterModalDesc').innerText = desc;
+      document.getElementById('counterPriceInput').value = '';
+      document.getElementById('counterPriceHint').innerText = role === 'SELLER'
+        ? `Rentang yang valid: Rp ${(currentAmount + 1).toLocaleString('id-ID')} - Rp ${listingPrice.toLocaleString('id-ID')}`
+        : `Maksimal di bawah: Rp ${currentAmount.toLocaleString('id-ID')}`;
+      document.getElementById('counterModal').style.display = 'flex';
+    }
+
+    function closeCounterModal() {
+      document.getElementById('counterModal').style.display = 'none';
+      counterOfferContext = null;
+    }
+
+    async function confirmSubmitCounter() {
+      if (!counterOfferContext) return;
+      const amountVal = parseInt(document.getElementById('counterPriceInput').value, 10);
+      if (!amountVal || amountVal <= 0) {
+        alert('Harap masukkan nominal tawaran balik yang valid.');
+        return;
+      }
+
+      const btn = document.getElementById('btnConfirmCounter');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
+
+      try {
+        const res = await fetch(`/api/offers/${counterOfferContext.offerId}/counter`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': currentUserId
+          },
+          body: JSON.stringify({
+            counter_amount: amountVal
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal mengirim tawaran balik');
+        }
+
+        closeCounterModal();
+        alert('Tawaran balik berhasil dikirim!');
+        fetchOffers();
+      } catch (err) {
+        alert(`Gagal: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Kirim Tawaran Balik';
+      }
+    }
+
+    async function acceptCounterOffer(offerId) {
+      if (!confirm('Apakah Anda setuju dengan harga tawaran balik dari penjual? Pesanan akan dibuat untuk Anda.')) return;
+
+      try {
+        const res = await fetch(`/api/offers/${offerId}/accept-counter`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': currentUserId
+          }
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal menyetujui tawaran balik');
+        }
+
+        alert('Tawaran balik disetujui! Silakan selesaikan pembayaran.');
+        fetchOffers();
+      } catch (err) {
+        alert(`Gagal: ${err.message}`);
       }
     }
 

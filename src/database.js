@@ -1320,6 +1320,11 @@ function resetDatabase() {
   ];
 
   state.offers = [];
+  state.negotiations = [];
+  try {
+    const { resetNegotiationRateLimits } = require('./api/offerRouter');
+    if (resetNegotiationRateLimits) resetNegotiationRateLimits();
+  } catch (e) {}
   state.offer_audit_logs = [];
   state.notifications = [];
   state.promoter_imports = [];

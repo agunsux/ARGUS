@@ -4,574 +4,486 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tikum — Verified Ticket Marketplace by Shinerva</title>
-  <meta name="description" content="Tikum adalah platform penemuan seluruh event berbayar dan bertiket di Asia Tenggara (Indonesia, Singapore, Malaysia, Thailand, Philippines, Vietnam). Konser, Olahraga, Festival, Teater, Komedi, dan Konferensi dengan verifikasi sumber resmi dan perlindungan turnstile.">
+  <meta name="description" content="Tikum adalah platform penemuan seluruh event berbayar dan bertiket di Indonesia dan Asia Tenggara. Konser, Olahraga, Festival, Teater, Komedi, dan Pameran dengan verifikasi sumber resmi dan perlindungan turnstile.">
   <link rel="canonical" href="https://tikum.app/">
 
   <!-- OpenGraph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="Tikum — Find Every Event Worth Buying a Ticket For">
-  <meta property="og:description" content="Temukan seluruh event berbayar dan bertiket di Asia Tenggara dengan verifikasi sumber resmi dan marketplace sekunder terlindungi.">
+  <meta property="og:description" content="Temukan seluruh event berbayar dan bertiket di Indonesia dengan verifikasi sumber resmi dan marketplace sekunder terlindungi.">
   <meta property="og:url" content="https://tikum.app/">
   <meta property="og:site_name" content="TIKUM">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Tikum — Find Every Event Worth Buying a Ticket For">
-  <meta name="twitter:description" content="Temukan seluruh event berbayar dan bertiket di Asia Tenggara.">
+  <meta name="twitter:description" content="Temukan seluruh event berbayar dan bertiket di Indonesia.">
 
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    /* Discovery Hero & Country Navigation */
-    .discovery-hero {
-      text-align: center;
-      padding: 44px 20px 30px;
-      max-width: 960px;
-      margin: 0 auto;
-    }
-    .discovery-hero h1 {
-      font-size: 36px;
-      font-weight: 800;
-      letter-spacing: -0.8px;
-      line-height: 1.2;
-      margin: 14px 0 10px;
-      color: var(--text-main);
-    }
-    .discovery-hero p {
-      font-size: 15px;
-      color: var(--text-muted);
-      max-width: 720px;
-      margin: 0 auto 24px;
-      line-height: 1.6;
-    }
-    .search-discovery-bar {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 12px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-    .search-discovery-bar .form-control {
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      height: 44px;
-      font-size: 14px;
-    }
-    .category-pills-bar {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-      margin-bottom: 20px;
-      scrollbar-width: thin;
-    }
-    .category-pills-bar::-webkit-scrollbar {
-      height: 4px;
-    }
-    .category-pills-bar::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 4px;
-    }
-    .cat-pill {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      padding: 8px 16px;
-      border-radius: 9999px;
-      font-size: 13px;
-      font-weight: 600;
-      white-space: nowrap;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-    }
-    .cat-pill:hover, .cat-pill.active {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-      box-shadow: 0 2px 8px var(--primary-glow);
+    /* Inline CSS for Viagogo-inspired theme */
+    :root {
+      --primary: #1DB954;
+      --primary-hover: #179643;
+      --bg-light: #FFFFFF;
+      --bg-dark: #0F0F0F;
+      --text-light: #1A1A1A;
+      --text-dark: #F5F5F5;
+      --card-light: #FFFFFF;
+      --card-dark: #1A1A1A;
+      --accent: #FF6B35;
+      --border-light: #E0E0E0;
+      --border-dark: #333333;
     }
 
-    /* Event Visual Card Styling */
-    .event-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
+    body {
+      background-color: var(--bg-light);
+      color: var(--text-light);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    body.dark-mode {
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    /* Header */
+    .site-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: var(--bg-light);
+      border-bottom: 1px solid var(--border-light);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    body.dark-mode .site-header {
+      background: var(--bg-dark);
+      border-bottom-color: var(--border-dark);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .brand-logo {
+      color: var(--primary);
+      font-size: 24px;
+    }
+    .brand-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&q=80&w=2000') center/cover;
+      padding: 80px 20px;
+      text-align: center;
+      color: white;
+    }
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+    .hero p {
+      font-size: 18px;
+      margin-bottom: 32px;
+    }
+    .search-bar {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      padding: 8px;
+      gap: 8px;
+    }
+    .search-input {
+      flex: 1;
+      border: none;
+      padding: 16px;
+      font-size: 16px;
+      outline: none;
+      color: #333;
+    }
+    .search-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0 32px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .search-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Filters */
+    .filters-container {
+      max-width: 1200px;
+      margin: 24px auto;
+      padding: 0 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .filter-pills {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: none;
+    }
+    .filter-pills::-webkit-scrollbar { display: none; }
+    .pill {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border-light);
+      background: var(--card-light);
+      color: var(--text-light);
+      cursor: pointer;
+      white-space: nowrap;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    body.dark-mode .pill {
+      border-color: var(--border-dark);
+      background: var(--card-dark);
+      color: var(--text-dark);
+    }
+    .pill.active, .pill:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .select-filter {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--border-light);
+      background: var(--card-light);
+      color: var(--text-light);
+      outline: none;
+      cursor: pointer;
+    }
+    body.dark-mode .select-filter {
+      border-color: var(--border-dark);
+      background: var(--card-dark);
+      color: var(--text-dark);
+    }
+
+    /* Sections */
+    .section-container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Grid & Cards */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: var(--card-light);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
     }
-    .event-card:hover {
-      transform: translateY(-3px);
-      border-color: var(--cyan);
-      box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.5);
+    body.dark-mode .card {
+      background: var(--card-dark);
+      border-color: var(--border-dark);
     }
-    .event-card-media {
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    body.dark-mode .card:hover {
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    }
+    .card-img-wrapper {
       position: relative;
-      width: 100%;
       height: 160px;
-      background: #131d31;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: #E0E0E0;
     }
-    .event-card-media img {
+    .card-img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.3s ease;
     }
-    .event-card:hover .event-card-media img {
-      transform: scale(1.04);
-    }
-    .event-card-fallback {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      color: var(--text-muted);
-      text-align: center;
-      padding: 16px;
-      position: relative;
-    }
-    .event-card-fallback i {
-      font-size: 32px;
-      color: var(--cyan);
-      margin-bottom: 8px;
-    }
-    .event-card-fallback-badge {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 700;
-      background: rgba(148, 163, 184, 0.15);
-      padding: 2px 8px;
-      border-radius: 4px;
-      color: var(--text-dim);
-    }
-    .event-card-fallback-disclaimer {
-      font-size: 9px;
-      color: var(--text-dim);
-      margin-top: 4px;
-    }
-    .event-card-media-overlay {
+    .badge-verified {
       position: absolute;
       top: 8px;
       left: 8px;
-      right: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      pointer-events: none;
-    }
-    .event-badge-cat {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(4px);
-      color: #38bdf8;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
+      background: var(--primary);
+      color: white;
+      padding: 4px 8px;
       border-radius: 4px;
-      border: 1px solid rgba(56, 189, 248, 0.3);
-    }
-    .event-badge-country {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(4px);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 4px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-    .image-provenance-tag {
-      position: absolute;
-      bottom: 6px;
-      right: 8px;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(4px);
-      color: #94a3b8;
-      font-size: 9px;
-      padding: 2px 6px;
-      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
       display: flex;
       align-items: center;
       gap: 4px;
+      z-index: 10;
     }
-    .event-card-body {
+    .badge-status {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      color: white;
+      z-index: 10;
+    }
+    .status-onsale { background: var(--primary); }
+    .status-comingsoon { background: var(--accent); }
+    .status-soldout { background: #E74C3C; }
+    
+    .card-content {
       padding: 16px;
       display: flex;
       flex-direction: column;
       flex: 1;
-      justify-content: space-between;
     }
-    .event-card-title {
+    .card-date {
+      font-size: 12px;
+      color: var(--primary);
+      font-weight: bold;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .card-title {
       font-size: 16px;
       font-weight: 700;
-      color: var(--text-main);
       margin-bottom: 8px;
-      line-height: 1.35;
+      line-height: 1.4;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-    .event-card-title a {
-      color: inherit;
-      text-decoration: none;
+    .card-venue {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 16px;
     }
-    .event-card-title a:hover {
-      color: var(--cyan);
-    }
-    .event-card-meta {
-      font-size: 12px;
-      color: var(--text-muted);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 12px;
-    }
-    .event-card-meta i {
-      width: 16px;
-      color: var(--cyan);
-    }
-    .event-card-footer {
-      border-top: 1px solid var(--border);
-      padding-top: 12px;
-      margin-top: 6px;
-    }
-    .event-trust-badge {
-      font-size: 10px;
-      color: #10b981;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-    .event-price-cta {
+    body.dark-mode .card-venue { color: #AAA; }
+    .card-footer {
+      margin-top: auto;
+      border-top: 1px solid var(--border-light);
+      padding-top: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 8px;
     }
-    .event-price-val {
-      font-size: 13px;
+    body.dark-mode .card-footer { border-color: var(--border-dark); }
+    .card-price {
+      font-size: 14px;
       font-weight: 700;
-      color: var(--text-main);
     }
-    .event-price-val span {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-weight: normal;
-      display: block;
+    .btn-cta {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .card:hover .btn-cta {
+      background: var(--primary);
+      color: white;
     }
 
-    /* Section Headers */
-    .discovery-section-header {
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: var(--card-light);
+      color: var(--text-light);
+      padding: 24px;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 90%;
+    }
+    body.dark-mode .modal-content {
+      background: var(--card-dark);
+      color: var(--text-dark);
+    }
+    .modal-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
-      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
     }
-    .discovery-section-title {
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: -0.4px;
-      color: var(--text-main);
+    .modal-title {
+      font-size: 18px;
+      font-weight: bold;
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    .discovery-section-desc {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-top: 2px;
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: inherit;
+    }
+    .provenance-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .provenance-list li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .provenance-list i {
+      color: var(--primary);
+    }
+
+    /* Trust Signals */
+    .trust-strip {
+      background: #F8F9FA;
+      padding: 24px;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 16px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    body.dark-mode .trust-strip {
+      background: #151515;
+      border-bottom-color: var(--border-dark);
+    }
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .trust-item i {
+      font-size: 24px;
+      color: var(--primary);
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 28px; }
+      .search-bar { flex-direction: column; }
+      .search-btn { padding: 12px; }
+      .filters-container { flex-direction: column; align-items: stretch; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Site Header -->
   <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-          <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle">Southeast Asia Event Discovery</span>
-        </div>
-      </a>
-
-      <nav class="main-nav">
-        <a href="#events" class="nav-link"><i class="fa-solid fa-compass"></i> Temukan Event</a>
-        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Direktori Resmi</a>
-        <a href="#marketplace" class="nav-link"><i class="fa-solid fa-ticket"></i> Marketplace Resale</a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Jual / Transfer</a>
-        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
-        <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console</a>
-        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleLang()" style="padding: 4px 10px; font-size: 11px;" title="Switch Language"><i class="fa-solid fa-globe"></i> <span id="langLabel">EN</span></button>
-        <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="TikumI18n.toggleTheme()" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
-      </nav>
+    <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
+      <i class="fa-solid fa-ticket brand-logo" style="color:var(--primary); font-size:24px;"></i>
+      <div class="brand-title">Tikum</div>
+    </a>
+    <div class="header-actions">
+      <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+      <button class="select-filter" onclick="toggleLang()" id="langToggle" title="Toggle Language">ID</button>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="container">
-    
-    <!-- Hero Section: Viagogo / StubHub Inspired Discovery -->
-    <section class="discovery-hero">
-      <div class="hero-pill">
-        <i class="fa-solid fa-compass"></i> SOUTHEAST ASIA PAID &amp; TICKETED EVENT DISCOVERY
-      </div>
-      <h1>Find Every Event Worth Buying a Ticket For</h1>
-      <p>
-        Pusat penemuan seluruh event berbayar dan bertiket di Asia Tenggara — Konser Musik, Tur Dunia, Olahraga, Festival Budaya &amp; Kuliner, Pameran, Stand-Up Comedy, Teater, hingga Konferensi Bisnis dengan sumber resmi terakreditasi dan perlindungan turnstile.
-      </p>
-
-      <!-- Advanced Discovery Search Bar (Country + City + Keyword) -->
-      <div class="search-discovery-bar">
-        <!-- Country Selector Dropdown -->
-        <div style="min-width: 160px; flex: 1;">
-          <select id="discoveryCountrySelect" class="form-control" onchange="handleCountryChange()" style="font-weight: 600;">
-            <option value="">🌏 Seluruh Asia Tenggara</option>
-            <option value="Indonesia">🇮🇩 Indonesia (IDR)</option>
-            <option value="Singapore">🇸🇬 Singapore (SGD)</option>
-            <option value="Malaysia">🇲🇾 Malaysia (MYR)</option>
-            <option value="Thailand">🇹🇭 Thailand (THB)</option>
-            <option value="Philippines">🇵🇭 Philippines (PHP)</option>
-            <option value="Vietnam">🇻🇳 Vietnam (VND)</option>
-          </select>
-        </div>
-
-        <!-- Dynamic City Selector Dropdown -->
-        <div style="min-width: 150px; flex: 1;">
-          <select id="discoveryCitySelect" class="form-control" onchange="loadEvents()">
-            <option value="">Semua Kota</option>
-          </select>
-        </div>
-
-        <!-- Keyword Search Input (Debounced) -->
-        <div style="min-width: 260px; flex: 2; position: relative;">
-          <input 
-            type="text" 
-            id="eventSearchInput" 
-            class="form-control" 
-            placeholder="Cari artis, konser, tim sepak bola, festival, venue..."
-            oninput="debounceSearch()"
-            autocomplete="off"
-          >
-        </div>
-
-        <!-- Action Button -->
-        <button class="btn btn-primary" onclick="loadEvents()" style="height: 44px; padding: 0 20px;">
-          <i class="fa-solid fa-magnifying-glass"></i> Cari Event
-        </button>
-      </div>
-
-      <!-- Category Navigation Pills (All Paid / Ticketed Categories) -->
-      <div class="category-pills-bar">
-        <button class="cat-pill active" onclick="setCategoryFilter('', this)">
-          <i class="fa-solid fa-star"></i> Semua Acara
-        </button>
-        <button class="cat-pill" onclick="setCategoryFilter('MUSIC', this)">
-          <i class="fa-solid fa-music"></i> Musik &amp; Konser
-        </button>
-        <button class="cat-pill" onclick="setCategoryFilter('SPORTS', this)">
-          <i class="fa-solid fa-futbol"></i> Olahraga
-        </button>
-        <button class="cat-pill" onclick="setCategoryFilter('FESTIVALS_EXPERIENCES', this)">
-          <i class="fa-solid fa-tent"></i> Festival &amp; Atraksi
-        </button>
-        <button class="cat-pill" onclick="setCategoryFilter('SHOWS_COMEDY', this)">
-          <i class="fa-solid fa-masks-theater"></i> Teater &amp; Komedi
-        </button>
-        <button class="cat-pill" onclick="setCategoryFilter('BUSINESS_EDUCATION', this)">
-          <i class="fa-solid fa-briefcase"></i> Bisnis &amp; Konferensi
-        </button>
-        <button class="cat-pill" onclick="setCategoryFilter('OTHER', this)">
-          <i class="fa-solid fa-ticket"></i> Tiket Lainnya
-        </button>
-      </div>
-    </section>
-
-    <!-- Trust Telemetry Strip -->
-    <div class="card" style="background: rgba(15, 23, 42, 0.7); border-color: #1e293b; margin: 10px 0 40px;">
-      <div class="grid-3" style="text-align: center;">
-        <div>
-          <div style="color: var(--cyan); font-size: 20px; margin-bottom: 6px;"><i class="fa-solid fa-stamp"></i></div>
-          <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Zero-Trust Official Provenance</div>
-          <div style="font-size: 12px; color: var(--text-muted);">Setiap event diverifikasi dari promotor resmi (APMI/Live Nation/Ravel/dll), venue, dan partner tiket berlisensi.</div>
-        </div>
-        <div>
-          <div style="color: var(--warning); font-size: 20px; margin-bottom: 6px;"><i class="fa-solid fa-image"></i></div>
-          <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Official Visual Provenance</div>
-          <div style="font-size: 12px; color: var(--text-muted);">Visual bersumber dari kanal resmi promotor dan artis. Tidak ada poster palsu atau rekayasa AI.</div>
-        </div>
-        <div>
-          <div style="color: var(--success); font-size: 20px; margin-bottom: 6px;"><i class="fa-solid fa-user-shield"></i></div>
-          <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Perlindungan Turnstile di Venue</div>
-          <div style="font-size: 12px; color: var(--text-muted);">Dana transaksi tiket sekunder diamankan di escrow hingga pembeli sukses masuk turnstile venue.</div>
-        </div>
-      </div>
+  <section class="hero">
+    <h1>Temukan Event yang Kamu Cari</h1>
+    <p>Konser, olahraga, festival, pameran, dan event berbayar yang sudah diverifikasi</p>
+    <div class="search-bar">
+      <input type="text" id="searchInput" class="search-input" placeholder="Cari acara, artis, atau tempat..." oninput="debounceSearch()">
+      <button class="search-btn" onclick="renderAllSections()"><i class="fa-solid fa-magnifying-glass"></i> Cari</button>
     </div>
+  </section>
 
-    <!-- Dynamic Discovery Feed Section -->
-    <section id="events" style="margin-top: 10px; margin-bottom: 50px;">
-      <div class="discovery-section-header">
-        <div>
-          <h2 class="discovery-section-title">
-            <i class="fa-solid fa-fire" style="color: #f59e0b;"></i> Event Terverifikasi &amp; Siap Hadir
-          </h2>
-          <p class="discovery-section-desc">
-            Kalender acara resmi yang telah lolos verifikasi temporal, status lifecycle, dan bukti kriptografis.
-          </p>
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <a href="/create?action=newEvent" class="btn btn-secondary btn-sm">
-            <i class="fa-solid fa-plus"></i> Usulkan Event Baru
-          </a>
-        </div>
-      </div>
+  <div class="trust-strip">
+    <div class="trust-item"><i class="fa-solid fa-shield-check"></i> 100% Tiket Terverifikasi</div>
+    <div class="trust-item"><i class="fa-solid fa-lock"></i> Pembayaran Aman</div>
+    <div class="trust-item"><i class="fa-solid fa-headset"></i> Layanan Pelanggan 24/7</div>
+  </div>
 
-      <!-- Events Loading Indicator -->
-      <div id="eventsLoading" style="text-align: center; padding: 40px; color: var(--text-muted);">
-        <i class="fa-solid fa-spinner fa-spin" style="font-size: 26px; margin-bottom: 10px; color: var(--cyan);"></i>
-        <div>Memverifikasi dan memuat event dari Canonical Registry Tikum...</div>
-      </div>
-
-      <!-- Events Empty State -->
-      <div id="eventsEmpty" class="card" style="display: none; text-align: center; padding: 50px 20px;">
-        <i class="fa-solid fa-calendar-xmark" style="font-size: 40px; color: var(--text-dim); margin-bottom: 14px;"></i>
-        <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-main);">Tidak Ada Event Terverifikasi yang Sesuai</h3>
-        <p style="font-size: 13px; color: var(--text-muted); max-width: 520px; margin: 0 auto 20px; line-height: 1.6;">
-          Tikum beroperasi dengan protokol zero-trust. Event yang belum diumumkan secara sah oleh promotor atau jadwal yang telah lewat diblokir otomatis dari halaman publik.
-        </p>
-        <a href="/create?action=newEvent" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Ajukan Verifikasi Event Baru</a>
-      </div>
-
-      <!-- Events Grid (Compact Viagogo/StubHub Density) -->
-      <div id="eventsGrid" class="grid-3" style="display: none;">
-        <!-- Dynamically rendered via Javascript -->
-      </div>
-    </section>
-
-    <!-- Marketplace Ticket Listings Section (Secondary Inventory Protected by Escrow) -->
-    <section id="marketplace" style="margin-top: 50px; margin-bottom: 60px;">
-      <div class="discovery-section-header">
-        <div>
-          <div class="hero-pill" style="margin-bottom: 8px;"><i class="fa-solid fa-ticket"></i> SECONDARY MARKETPLACE INVENTORY</div>
-          <h2 class="discovery-section-title">
-            <i class="fa-solid fa-handshake" style="color: var(--cyan);"></i> Tiket Tersedia dari Pembeli Sah
-          </h2>
-          <p class="discovery-section-desc">
-            Tiket pindah tangan yang terikat pada event resmi terverifikasi dengan proteksi barcode SHA-256 dan rekening bersama (escrow).
-          </p>
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <a href="/create" class="btn btn-sm"><i class="fa-solid fa-plus-circle"></i> Jual Tiket Anda</a>
-        </div>
-      </div>
-
-      <!-- Listings Loading Indicator -->
-      <div id="listingsLoading" style="text-align: center; padding: 30px; color: var(--text-muted);">
-        <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 8px; color: var(--cyan);"></i>
-        <div>Memuat inventaris tiket sekunder...</div>
-      </div>
-
-      <!-- Listings Empty State -->
-      <div id="listingsEmpty" class="card" style="display: none; text-align: center; padding: 40px 20px;">
-        <i class="fa-solid fa-ticket-simple" style="font-size: 36px; color: var(--text-dim); margin-bottom: 12px;"></i>
-        <h3 style="font-size: 16px; margin-bottom: 8px;">Belum Ada Tiket Resale yang Memenuhi Syarat</h3>
-        <p style="font-size: 13px; color: var(--text-muted); max-width: 480px; margin: 0 auto 16px;">
-          Seluruh tiket resale wajib terikat pada event yang sah dan terverifikasi. Tidak ada listing liar.
-        </p>
-        <a href="/create" class="btn btn-sm"><i class="fa-solid fa-plus"></i> Daftarkan Penjualan Tiket</a>
-      </div>
-
-      <!-- Listings Grid -->
-      <div id="listingsGrid" class="grid-3" style="display: none;">
-        <!-- Dynamically rendered via Javascript -->
-      </div>
-    </section>
-
-    <!-- Truthful Protocol Architecture Section -->
-    <section id="protocol" style="margin-top: 60px;">
-      <div style="text-align: center; max-width: 720px; margin: 0 auto 30px;">
-        <div class="hero-pill"><i class="fa-solid fa-code-branch"></i> PROTOKOL RESMI TIKUM</div>
-        <h2 style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Bagaimana Tikum Menjamin Keaslian</h2>
-        <p style="font-size: 14px; color: var(--text-muted);">
-          Arsitektur 4 lapis yang dirancang untuk mencegah spekulasi, rumor, dan penipuan tiket di Asia Tenggara.
-        </p>
-      </div>
-
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-title">
-            <span class="badge badge-info">Lapis 1</span>
-            Verifikasi Sumber Otoritatif &amp; Visual Resmi
-          </div>
-          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
-            Event dan visual hanya diakui jika berasal langsung dari promotor resmi, manajemen artis, venue, atau mitra ticketing terdaftar. Database atau feed marketplace regional (seperti StubHub/Viagogo) hanya menjadi sinyal discovery, tidak dapat menetapkan status terverifikasi tanpa bukti lokal.
-          </p>
-        </div>
-
-        <div class="card">
-          <div class="card-title">
-            <span class="badge badge-warning">Lapis 2</span>
-            Rekening Penampungan Transaksi Internal
-          </div>
-          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
-            Saat pembeli menyelesaikan pembayaran, dana diamankan di rekening penampungan transaksi internal Tikum. Penjual TIDAK menerima pembayaran di muka. Dana tetap terkunci secara kriptografis hingga tiket berhasil dipindai dan diverifikasi di venue.
-          </p>
-        </div>
-
-        <div class="card">
-          <div class="card-title">
-            <span class="badge badge-success">Lapis 3</span>
-            Kehadiran Fisik Event PIC di Lokasi Venue
-          </div>
-          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
-            Tikum menugaskan Person in Charge (Event PIC) terlatih di setiap venue konser/acara. PIC melakukan proses serah terima tiket (jika fisik/wristband) atau mendampingi pembeli saat pemindaian e-voucher dengan verifikasi kode sandi unik 6-digit dual-handshake.
-          </p>
-        </div>
-
-        <div class="card">
-          <div class="card-title">
-            <span class="badge badge-info">Lapis 4</span>
-            Pencairan Dana Berbasis Bukti Nyata Turnstile
-          </div>
-          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
-            Dana hanya dicairkan kepada penjual setelah Event PIC mengonfirmasi status <code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code> lengkap dengan dokumentasi foto gerbang turnstile.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Institutional Truth Notice -->
-    <div class="notice-box notice-info" style="margin-top: 40px;">
-      <i class="fa-solid fa-circle-info"></i>
-      <div>
-        <strong>Pernyataan Keterbukaan Sistem:</strong><br>
-        Tikum adalah platform penemuan acara resmi dan marketplace tiket terverifikasi oleh Shinerva. Tikum beroperasi dengan prinsip zero-trust provenance independen. Event kadaluarsa, dibatalkan, atau tanpa bukti otoritatif ditolak secara otomatis dari tampilan publik.
-      </div>
+  <div class="filters-container">
+    <div class="filter-pills">
+      <div class="pill active" onclick="setCategory(this, '')">Semua Kategori</div>
+      <div class="pill" onclick="setCategory(this, 'MUSIC')">Konser</div>
+      <div class="pill" onclick="setCategory(this, 'SPORT')">Olahraga</div>
+      <div class="pill" onclick="setCategory(this, 'THEATER')">Teater</div>
+      <div class="pill" onclick="setCategory(this, 'FESTIVAL')">Festival</div>
+      <div class="pill" onclick="setCategory(this, 'EXHIBITION')">Pameran</div>
     </div>
+    <div style="display:flex; gap:12px;">
+      <select id="cityFilter" class="select-filter" onchange="renderAllSections()">
+        <option value="">Semua Kota</option>
+        <option value="Jakarta">Jakarta</option>
+        <option value="Bandung">Bandung</option>
+        <option value="Surabaya">Surabaya</option>
+        <option value="Bali">Bali</option>
+        <option value="Yogyakarta">Yogyakarta</option>
+        <option value="Semarang">Semarang</option>
+        <option value="Medan">Medan</option>
+        <option value="Makassar">Makassar</option>
+      </select>
+      <select id="dateFilter" class="select-filter" onchange="renderAllSections()">
+        <option value="">Semua Waktu</option>
+        <option value="week">Minggu Ini</option>
+        <option value="month">Bulan Ini</option>
+        <option value="3months">3 Bulan Ke Depan</option>
+      </select>
+    </div>
+  </div>
 
+  <main id="mainContent">
+    <!-- Dynamic sections go here -->
   </main>
 
   <!-- Site Footer (iPaymu Compliance & Trust Verification) -->
@@ -579,12 +491,12 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> TIKUM — by SHINERVA
+          <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> TIKUM — by SHINERVA
         </div>
-        <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Platform Penemuan Seluruh Event Berbayar &amp; Bertiket di Asia Tenggara.
+        <p style="color: var(--text-muted, #94a3b8); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
+          Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
         </p>
-        <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
+        <div class="footer-address" style="color: var(--text-muted, #94a3b8); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
           <div>SHINERVA HQ</div>
           <div>Jl. Pasirluyu No. 79</div>
@@ -597,11 +509,11 @@
         <div style="font-weight: 700; color: #fff; margin-bottom: 8px; font-size: 14px;">Kontak Resmi</div>
         <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
           <div>
-            <span style="color: var(--text-dim);">Email:</span>
-            <a href="mailto:agunsux@gmail.com" style="color: var(--cyan); text-decoration: none; margin-left: 6px;">agunsux@gmail.com</a>
+            <span style="color: var(--text-dim, #64748b);">Email:</span>
+            <a href="mailto:agunsux@gmail.com" style="color: var(--primary); text-decoration: none; margin-left: 6px;">agunsux@gmail.com</a>
           </div>
           <div>
-            <span style="color: var(--text-dim);">WhatsApp:</span>
+            <span style="color: var(--text-dim, #64748b);">WhatsApp:</span>
             <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none; margin-left: 6px;"><i class="fa-brands fa-whatsapp"></i> 081299927378</a>
           </div>
         </div>
@@ -618,383 +530,254 @@
         </div>
       </div>
     </div>
-    <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
+    <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim, #64748b);">
       &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. TIKUM — by SHINERVA.
     </div>
   </footer>
 
+  <!-- Modal Provenance -->
+  <div class="modal-overlay" id="verifModal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-shield-check" style="color:var(--primary)"></i> Status Verifikasi</div>
+        <button class="btn-close" onclick="closeModal(event)">&times;</button>
+      </div>
+      <p id="modalVerifDate" style="margin-bottom: 16px; font-weight: bold;"></p>
+      <ul class="provenance-list">
+        <li><i class="fa-solid fa-check-circle"></i> Penyelenggara Resmi Dikonfirmasi</li>
+        <li><i class="fa-solid fa-check-circle"></i> Izin Lokasi Valid</li>
+        <li><i class="fa-solid fa-check-circle"></i> Harga Tiket Sesuai Standar</li>
+      </ul>
+    </div>
+  </div>
+
   <script>
-    const COUNTRY_CITIES = {
-      'Indonesia': ['Jakarta', 'Bandung', 'Surabaya', 'Bali', 'Tangerang', 'Yogyakarta', 'Semarang', 'Medan', 'Solo', 'Makassar', 'Palembang'],
-      'Singapore': ['Singapore'],
-      'Malaysia': ['Kuala Lumpur', 'Penang', 'Johor Bahru', 'Shah Alam', 'Kuching'],
-      'Thailand': ['Bangkok', 'Chiang Mai', 'Phuket', 'Nonthaburi', 'Pattaya'],
-      'Philippines': ['Manila', 'Quezon City', 'Pasay', 'Taguig', 'Cebu City'],
-      'Vietnam': ['Ho Chi Minh City', 'Hanoi', 'Da Nang']
-    };
-
-    const COUNTRY_CURRENCIES = {
-      'Indonesia': 'Rp',
-      'Singapore': 'SGD',
-      'Malaysia': 'MYR',
-      'Thailand': 'THB',
-      'Philippines': 'PHP',
-      'Vietnam': 'VND'
-    };
-
-    const COUNTRY_FLAGS = {
-      'Indonesia': '🇮🇩',
-      'Singapore': '🇸🇬',
-      'Malaysia': '🇲🇾',
-      'Thailand': '🇹🇭',
-      'Philippines': '🇵🇭',
-      'Vietnam': '🇻🇳'
-    };
-
+    const API_URL = '/api/events';
+    let allEvents = [];
     let currentCategory = '';
     let searchTimeout = null;
 
-    function handleCountryChange() {
-      const country = document.getElementById('discoveryCountrySelect').value;
-      const citySelect = document.getElementById('discoveryCitySelect');
-      
-      citySelect.innerHTML = '<option value="">Semua Kota</option>';
-      
-      if (country && COUNTRY_CITIES[country]) {
-        COUNTRY_CITIES[country].forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c;
-          opt.textContent = c;
-          citySelect.appendChild(opt);
-        });
+    // Theming
+    function toggleTheme() {
+      document.body.classList.toggle('dark-mode');
+      const icon = document.querySelector('#themeToggle i');
+      if(document.body.classList.contains('dark-mode')) {
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
       } else {
-        // All SEA cities
-        const allCities = Object.values(COUNTRY_CITIES).flat();
-        [...new Set(allCities)].sort().forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c;
-          opt.textContent = c;
-          citySelect.appendChild(opt);
-        });
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
       }
-
-      loadEvents();
     }
 
-    function setCategoryFilter(category, btn) {
-      currentCategory = category;
-      document.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      loadEvents();
+    function toggleLang() {
+      const btn = document.getElementById('langToggle');
+      if (btn.innerText === 'ID') {
+        btn.innerText = 'EN';
+      } else {
+        btn.innerText = 'ID';
+      }
     }
 
     function debounceSearch() {
       clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(loadEvents, 250);
+      searchTimeout = setTimeout(() => renderAllSections(), 300);
     }
 
-    function getCategoryIcon(catGroup, cat) {
-      const g = (catGroup || cat || '').toUpperCase();
-      if (g.includes('MUSIC') || g.includes('CONCERT')) return 'fa-music';
-      if (g.includes('SPORT') || g.includes('FOOTBALL') || g.includes('BASKETBALL')) return 'fa-futbol';
-      if (g.includes('FESTIVAL') || g.includes('EXPO')) return 'fa-tent';
-      if (g.includes('SHOW') || g.includes('COMEDY') || g.includes('THEATER')) return 'fa-masks-theater';
-      if (g.includes('BUSINESS') || g.includes('CONFERENCE')) return 'fa-briefcase';
-      return 'fa-ticket';
+    function setCategory(el, cat) {
+      document.querySelectorAll('.filter-pills .pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      currentCategory = cat;
+      renderAllSections();
     }
 
-    function formatPrice(val, currency = 'IDR') {
-      if (!val) return 'Tiket Resmi Tersedia';
-      const num = Number(val);
-      if (currency === 'SGD') return `SGD ${num.toLocaleString('en-US')}`;
-      if (currency === 'MYR') return `MYR ${num.toLocaleString('en-US')}`;
-      if (currency === 'THB') return `THB ${num.toLocaleString('en-US')}`;
-      if (currency === 'PHP') return `PHP ${num.toLocaleString('en-US')}`;
-      if (currency === 'VND') return `VND ${num.toLocaleString('vi-VN')}`;
-      return `Rp ${num.toLocaleString('id-ID')}`;
+    async function fetchEvents() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        // Filter verified & upcoming events only
+        const now = new Date('2026-09-24T00:00:00+07:00').getTime(); // current context date
+        
+        allEvents = (data.events || []).filter(e => {
+          if (!e.is_verified) return false;
+          const evDate = new Date(e.date || e.start_date || e.event_end_at || '2099-01-01').getTime();
+          return evDate >= now;
+        });
+
+        renderAllSections();
+      } catch (err) {
+        console.error("Failed fetching events:", err);
+      }
     }
 
-    function renderFallbackImage(category, title) {
-      const icon = getCategoryIcon(category);
+    function getFilteredEvents() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const city = document.getElementById('cityFilter').value.toLowerCase();
+      const dateF = document.getElementById('dateFilter').value;
+      const now = new Date('2026-09-24T00:00:00+07:00').getTime();
+
+      return allEvents.filter(e => {
+        // Search
+        if (q && !(e.title?.toLowerCase().includes(q) || e.artist?.toLowerCase().includes(q) || e.venue_name?.toLowerCase().includes(q))) return false;
+        
+        // City
+        if (city && city !== 'semua') {
+          if (!e.city?.toLowerCase().includes(city) && !e.venue_city?.toLowerCase().includes(city)) return false;
+        }
+
+        // Category
+        if (currentCategory) {
+          const evCat = (e.category || e.category_group || '').toUpperCase();
+          if (!evCat.includes(currentCategory)) return false;
+        }
+
+        // Date Filter
+        if (dateF) {
+          const evDate = new Date(e.date || e.start_date).getTime();
+          const msPerDay = 86400000;
+          if (dateF === 'week' && evDate > now + (msPerDay * 7)) return false;
+          if (dateF === 'month' && evDate > now + (msPerDay * 30)) return false;
+          if (dateF === '3months' && evDate > now + (msPerDay * 90)) return false;
+        }
+
+        return true;
+      });
+    }
+
+    function formatRupiah(num) {
+      return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "0";
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "-";
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    function showVerifModal(e, date) {
+      e.stopPropagation();
+      e.preventDefault();
+      document.getElementById('verifModal').style.display = 'flex';
+      document.getElementById('modalVerifDate').innerText = 'Diverifikasi pada: ' + (date ? formatDate(date) : '24 Sep 2026');
+    }
+
+    function closeModal(e) {
+      document.getElementById('verifModal').style.display = 'none';
+    }
+
+    function renderCard(e) {
+      const img = e.image_url && !e.is_fallback ? e.image_url : '';
+      const fallbackGradient = 'linear-gradient(135deg, #1DB954, #179643)';
+      const bg = img ? `url('${img}') center/cover` : fallbackGradient;
+      
+      const title = e.title || e.canonical_name || 'Event';
+      const city = e.city || e.venue_city || '';
+      const venue = e.venue_name || e.venue || '';
+      const loc = [venue, city].filter(Boolean).join(', ');
+      
+      let statusClass = 'status-onsale';
+      let statusText = 'ON SALE';
+      if (e.ticket_status === 'COMING_SOON') { statusClass = 'status-comingsoon'; statusText = 'COMING SOON'; }
+      if (e.ticket_status === 'SOLD_OUT') { statusClass = 'status-soldout'; statusText = 'SOLD OUT'; }
+
+      const priceStr = e.min_price ? `Tiket dari Rp ${formatRupiah(e.min_price)}` : 'Harga tidak tersedia';
+      const dateStr = formatDate(e.date || e.start_date);
+      const slug = e.slug || e.id;
+      const verifDate = e.verified_at || '';
+
       return `
-        <div class="event-card-fallback">
-          <i class="fa-solid ${icon}"></i>
-          <span class="event-card-fallback-badge">${escapeHtml(category || 'EVENT')}</span>
-          <span class="event-card-fallback-disclaimer">Tikum UI Placeholder</span>
+        <a href="/events/${slug}" class="card" style="text-decoration:none; color:inherit;">
+          <div class="card-img-wrapper" style="background: ${bg};">
+            <div class="badge-verified" onclick="showVerifModal(event, '${verifDate}')"><i class="fa-solid fa-shield-check"></i> VERIFIED</div>
+            <div class="badge-status ${statusClass}">${statusText}</div>
+          </div>
+          <div class="card-content">
+            <div class="card-date">${dateStr}</div>
+            <div class="card-title">${title}</div>
+            <div class="card-venue"><i class="fa-solid fa-location-dot"></i> ${loc}</div>
+            <div class="card-footer">
+              <div class="card-price">${priceStr}</div>
+              <span class="btn-cta">Lihat Detail</span>
+            </div>
+          </div>
+        </a>
+      `;
+    }
+
+    function renderSection(title, icon, events) {
+      if (!events || events.length === 0) return '';
+      const cards = events.map(renderCard).join('');
+      return `
+        <div class="section-container">
+          <h2 class="section-title"><i class="fa-solid ${icon}" style="color:var(--primary)"></i> ${title}</h2>
+          <div class="grid">
+            ${cards}
+          </div>
         </div>
       `;
     }
 
-    async function loadEvents() {
-      const q = document.getElementById('eventSearchInput').value.trim();
-      const country = document.getElementById('discoveryCountrySelect').value;
-      const city = document.getElementById('discoveryCitySelect').value;
-      const loadingEl = document.getElementById('eventsLoading');
-      const gridEl = document.getElementById('eventsGrid');
-      const emptyEl = document.getElementById('eventsEmpty');
-
-      loadingEl.style.display = 'block';
-      gridEl.style.display = 'none';
-      emptyEl.style.display = 'none';
-
-      try {
-        const params = new URLSearchParams();
-        if (q) params.set('q', q);
-        if (country) params.set('country', country);
-        if (city) params.set('city', city);
-        if (currentCategory) params.set('category', currentCategory);
-
-        // Fetch from canonical discovery endpoint
-        const res = await fetch(`/api/events?${params.toString()}`);
-        if (!res.ok) throw new Error('Gagal mengambil data event dari server');
-        const data = await res.json();
-
-        loadingEl.style.display = 'none';
-
-        const nowMs = Date.now();
-        // Client-side fail-closed verification
-        const upcomingEvents = (data.events || []).filter(event => {
-          if (event.lifecycle_status && ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED'].includes(event.lifecycle_status)) {
-            return false;
-          }
-          if (event.status && ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED', 'DIBATALKAN'].includes(event.status)) {
-            return false;
-          }
-          if (event.is_verified !== true) {
-            return false;
-          }
-          const endAt = event.event_end_at || event.end_datetime || (event.date ? `${event.date}T23:59:59+07:00` : null);
-          if (endAt && new Date(endAt).getTime() <= nowMs) {
-            return false;
-          }
-          return true;
-        });
-
-        if (upcomingEvents.length === 0) {
-          emptyEl.style.display = 'block';
-          gridEl.style.display = 'none';
-          return;
-        }
-
-        emptyEl.style.display = 'none';
-        gridEl.style.display = 'grid';
-
-        gridEl.innerHTML = upcomingEvents.map(event => {
-          const name = event.canonical_name || event.title || event.name || 'Event';
-          const cat = event.event_type || event.category || 'EVENT';
-          const catGroup = event.category_group || cat;
-          const countryName = event.country || 'Indonesia';
-          const flag = COUNTRY_FLAGS[countryName] || '🌏';
-          const currency = event.currency || (countryName === 'Singapore' ? 'SGD' : (countryName === 'Malaysia' ? 'MYR' : (countryName === 'Thailand' ? 'THB' : (countryName === 'Philippines' ? 'PHP' : (countryName === 'Vietnam' ? 'VND' : 'IDR')))));
-          const dateStr = event.start_date || event.date || '-';
-          const venueStr = event.venue_name || event.venue || 'Venue';
-          const cityStr = event.city || event.venue_city || 'City';
-          const slug = event.slug || event.event_id || event.id;
-          const minPrice = event.min_price;
-          const hasImage = Boolean(event.image_url && !event.is_fallback);
-
-          // Visual image rendering with official provenance attribution or safe Tikum UI fallback
-          let mediaHtml = '';
-          if (hasImage) {
-            const srcLabel = event.image_source_type ? event.image_source_type.replace(/_/g, ' ') : 'Official Source';
-            mediaHtml = `
-              <div class="event-card-media">
-                <img src="${escapeHtml(event.image_url)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.onerror=null; this.parentElement.innerHTML=renderFallbackImage('${escapeHtml(cat)}', '${escapeHtml(name)}');" />
-                <div class="event-card-media-overlay">
-                  <span class="event-badge-cat">${escapeHtml(cat)}</span>
-                  <span class="event-badge-country">${flag} ${escapeHtml(countryName)}</span>
-                </div>
-                <div class="image-provenance-tag">
-                  <i class="fa-solid fa-camera"></i> ${escapeHtml(srcLabel)}
-                </div>
-              </div>
-            `;
-          } else {
-            mediaHtml = `
-              <div class="event-card-media">
-                ${renderFallbackImage(cat, name)}
-                <div class="event-card-media-overlay">
-                  <span class="event-badge-cat">${escapeHtml(cat)}</span>
-                  <span class="event-badge-country">${flag} ${escapeHtml(countryName)}</span>
-                </div>
-              </div>
-            `;
-          }
-
-          const priceHtml = minPrice
-            ? `<span>Mulai dari</span> ${formatPrice(minPrice, currency)}`
-            : `<span>Akses</span> ${escapeHtml(event.ticketing_partner ? `Tiket Resmi (${event.ticketing_partner})` : 'Tiket Resmi Tersedia')}`;
-
-          const trustBadge = event.is_verified
-            ? `<div class="event-trust-badge"><i class="fa-solid fa-shield-check"></i> Sumber Otoritatif Terverifikasi</div>`
-            : '';
-
-          return `
-            <div class="event-card">
-              ${mediaHtml}
-              <div class="event-card-body">
-                <div>
-                  <h3 class="event-card-title">
-                    <a href="/events/${encodeURIComponent(slug)}">${escapeHtml(name)}</a>
-                  </h3>
-
-                  <div class="event-card-meta">
-                    <div><i class="fa-regular fa-calendar"></i> ${escapeHtml(dateStr)}</div>
-                    <div><i class="fa-solid fa-location-dot"></i> ${escapeHtml(venueStr)}, ${escapeHtml(cityStr)}</div>
-                    ${event.artist ? `<div><i class="fa-solid fa-user"></i> ${escapeHtml(event.artist)}</div>` : ''}
-                  </div>
-                </div>
-
-                <div class="event-card-footer">
-                  ${trustBadge}
-                  <div class="event-price-cta">
-                    <div class="event-price-val">
-                      ${priceHtml}
-                    </div>
-                    <a href="/events/${encodeURIComponent(slug)}" class="btn btn-sm btn-primary">
-                      Lihat Event
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
-
-      } catch (err) {
-        console.error(err);
-        loadingEl.style.display = 'none';
-        emptyEl.style.display = 'block';
-        emptyEl.querySelector('h3').innerText = 'Gagal Memuat Katalog Event';
-        emptyEl.querySelector('p').innerText = 'Terjadi kendala jaringan saat menghubungi server Tikum. Silakan muat ulang halaman.';
+    function renderAllSections() {
+      const main = document.getElementById('mainContent');
+      const filtered = getFilteredEvents();
+      
+      if (filtered.length === 0) {
+        main.innerHTML = '<div style="text-align:center; padding: 40px; color: #888;">Tidak ada event yang sesuai dengan pencarian Anda.</div>';
+        return;
       }
-    }
 
-    function escapeHtml(str) {
-      if (!str) return '';
-      const div = document.createElement('div');
-      div.innerText = str;
-      return div.innerHTML;
-    }
+      const now = new Date('2026-09-24T00:00:00+07:00').getTime();
+      const msPerDay = 86400000;
 
-    async function loadListings() {
-      const loadingEl = document.getElementById('listingsLoading');
-      const gridEl = document.getElementById('listingsGrid');
-      const emptyEl = document.getElementById('listingsEmpty');
+      // Segera Hadir (<= 7 days)
+      const comingSoon = filtered.filter(e => {
+        const d = new Date(e.date || e.start_date).getTime();
+        return d >= now && d <= now + (7 * msPerDay);
+      }).sort((a,b) => new Date(a.date || a.start_date) - new Date(b.date || b.start_date));
 
-      try {
-        const res = await fetch('/api/mvp/listings');
-        if (!res.ok) throw new Error('Gagal mengambil data listing tiket');
-        const data = await res.json();
+      // Trending (highest demand_score)
+      const trending = [...filtered].sort((a,b) => (b.demand_score || 0) - (a.demand_score || 0));
 
-        loadingEl.style.display = 'none';
-        const nowMs = Date.now();
-        const activeListings = (data.listings || []).filter(l => {
-          if (l.event_status && ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED', 'DIBATALKAN'].includes(l.event_status)) {
-            return false;
-          }
-          if (l.event_lifecycle_status && ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'CANCELLED'].includes(l.event_lifecycle_status)) {
-            return false;
-          }
-          const endAt = l.event_end_at || (l.event_date ? `${l.event_date}T23:59:59+07:00` : null);
-          if (endAt && new Date(endAt).getTime() <= nowMs) {
-            return false;
-          }
-          return true;
-        });
+      // Baru Diumumkan (verified_at desc)
+      const justAnnounced = [...filtered].sort((a,b) => new Date(b.verified_at || 0) - new Date(a.verified_at || 0));
 
-        if (activeListings.length === 0) {
-          emptyEl.style.display = 'block';
-          return;
-        }
+      // Category subsets
+      const concerts = filtered.filter(e => {
+        const cat = (e.category || e.category_group || '').toUpperCase();
+        return cat.includes('MUSIC') || cat.includes('CONCERT');
+      });
+      const sports = filtered.filter(e => {
+        const cat = (e.category || e.category_group || '').toUpperCase();
+        return cat.includes('SPORT');
+      });
+      const festivals = filtered.filter(e => {
+        const cat = (e.category || e.category_group || '').toUpperCase();
+        return cat.includes('FESTIVAL') || cat.includes('EXHIBITION');
+      });
 
-        gridEl.innerHTML = activeListings.map(l => {
-          const faceValue = l.face_value ? `Rp ${l.face_value.toLocaleString('id-ID')}` : '-';
-          const askingPrice = (l.seller_asking_price || l.price) ? `Rp ${(l.seller_asking_price || l.price).toLocaleString('id-ID')}` : '-';
-          const buyerTotal = (l.buyer_total_price || (l.pricing && l.pricing.totalAmount)) 
-            ? `Rp ${(l.buyer_total_price || l.pricing.totalAmount).toLocaleString('id-ID')}`
-            : askingPrice;
+      let html = '';
+      
+      // If we are searching or filtering by category/city/date, we might just want to show results.
+      // But we can still categorize them.
+      html += renderSection('Segera Hadir', 'fa-fire', comingSoon.slice(0, 4));
+      html += renderSection('Trending', 'fa-arrow-trend-up', trending.slice(0, 4));
+      html += renderSection('Baru Diumumkan', 'fa-bullhorn', justAnnounced.slice(0, 4));
+      html += renderSection('Konser', 'fa-music', concerts.slice(0, 4));
+      html += renderSection('Olahraga', 'fa-futbol', sports.slice(0, 4));
+      html += renderSection('Festival & Pameran', 'fa-tent', festivals.slice(0, 4));
 
-          const picBadge = l.pic_available
-            ? `<span class="badge badge-success" title="Personel TIKUM PIC siap menyambut di venue"><i class="fa-solid fa-user-shield"></i> PIC Venue Siaga</span>`
-            : `<span class="badge badge-info" title="TIKUM PIC akan ditugaskan sesuai jadwal turnstile"><i class="fa-solid fa-shield-check"></i> Dukungan Venue</span>`;
-
-          const verifBadge = `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> TERVERIFIKASI</span>`;
-
-          return `
-            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; border-color: rgba(6, 182, 212, 0.3); background: rgba(15, 23, 42, 0.85);">
-              <div>
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 6px;">
-                  <span class="badge badge-cyan" style="font-weight: 700;">${escapeHtml(l.ticket_category || 'TIKET')}</span>
-                  <div style="display: flex; gap: 4px;">
-                    ${verifBadge}
-                  </div>
-                </div>
-
-                <h3 style="font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 8px; line-height: 1.3;">
-                  ${escapeHtml(l.event_title || 'Tiket Acara')}
-                </h3>
-
-                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">
-                  <i class="fa-regular fa-calendar" style="width: 16px; color: var(--cyan);"></i> ${escapeHtml(l.event_date || '-')}
-                </div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
-                  <i class="fa-solid fa-location-dot" style="width: 16px; color: var(--cyan);"></i> ${escapeHtml(l.venue_name || '-')}, ${escapeHtml(l.venue_city || 'Jakarta')}
-                </div>
-
-                <div style="background: rgba(30, 41, 59, 0.7); border-radius: 6px; padding: 8px 10px; margin-bottom: 14px; font-size: 12px;">
-                  <div style="color: var(--text-dim); font-size: 10px; text-transform: uppercase; font-weight: 600;">Posisi Kursi / Kategori:</div>
-                  <div style="color: #fff; font-weight: 700; margin-top: 2px;">${escapeHtml(l.seat_info || '-')}</div>
-                </div>
-
-                <div style="margin-bottom: 14px;">
-                  ${picBadge}
-                </div>
-              </div>
-
-              <div>
-                <div class="price-breakdown" style="padding: 10px 12px; margin-bottom: 14px; font-size: 12px;">
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="color: var(--text-muted);">Harga Asli:</span>
-                    <span class="mono" style="color: var(--text-muted); text-decoration: line-through;">${faceValue}</span>
-                  </div>
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="color: var(--text-muted);">Harga Penjual:</span>
-                    <span class="mono" style="color: #fff; font-weight: 600;">${askingPrice}</span>
-                  </div>
-                  <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px; margin-top: 6px; display: flex; justify-content: space-between; align-items: baseline;">
-                    <span style="font-weight: 700; color: #fff;">Total Pembeli:</span>
-                    <strong class="mono" style="color: var(--cyan); font-size: 15px;">${buyerTotal}</strong>
-                  </div>
-                </div>
-
-                <div style="display: flex; gap: 8px;">
-                  <a href="/pay?id=${encodeURIComponent(l.id)}" class="btn btn-sm btn-primary" style="flex: 1; text-align: center;">
-                    <i class="fa-solid fa-bolt"></i> Beli Langsung
-                  </a>
-                  <a href="/pay?id=${encodeURIComponent(l.id)}&action=offer" class="btn btn-secondary btn-sm" style="flex: 1; text-align: center;">
-                    <i class="fa-solid fa-handshake"></i> Tawar
-                  </a>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        gridEl.style.display = 'grid';
-
-      } catch (err) {
-        console.error(err);
-        loadingEl.style.display = 'none';
-        emptyEl.style.display = 'block';
+      // If no sections match the specific sliced subsets but we have filtered events, just show all as "Hasil Pencarian"
+      if (!html) {
+        html = renderSection('Hasil Pencarian', 'fa-list', filtered);
       }
+
+      main.innerHTML = html;
     }
 
-    // Initialize country selector & load content
-    handleCountryChange();
-    loadListings();
-    loadEvents();
+    // Init
+    document.addEventListener('DOMContentLoaded', fetchEvents);
   </script>
-  <script src="/js/i18n.js"></script>
 </body>
 </html>

@@ -11,7 +11,18 @@ const OFFER_STATUS = {
   EXPIRED: 'EXPIRED',
   WITHDRAWN: 'WITHDRAWN',
   SUPERSEDED: 'SUPERSEDED',
-  COUNTERED: 'COUNTERED'
+  COUNTERED: 'COUNTERED',
+  NEGOTIATION_LIMIT_REACHED: 'NEGOTIATION_LIMIT_REACHED'
+};
+
+const NEGOTIATION_MAX_PROPOSALS = 5;
+
+const NEGOTIATION_STATUS = {
+  ACTIVE: 'ACTIVE',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  CANCELLED_BY_BUYER: 'CANCELLED_BY_BUYER',
+  NEGOTIATION_LIMIT_REACHED: 'NEGOTIATION_LIMIT_REACHED'
 };
 
 const DECLINE_REASONS = {
@@ -56,6 +67,36 @@ function maskName(name) {
 }
 
 class OfferService {
+  /**
+   * Helper to resolve or create a negotiation session
+   */
+  static getOrCreateNegotiation({ listingId, buyerId, sellerId, listingPrice, eventId, ticketId }) {
+    if (!state.negotiations) state.negotiations = [];
+    let neg = state.negotiations.find(n => n.listing_id === listingId && n.buyer_id === buyerId && n.status !== NEGOTIATION_STATUS.ACCEPTED);
+    if (!neg) {
+      neg = {
+        id: `neg-${listingId}-${buyerId}`,
+        listing_id: listingId,
+        ticket_id: ticketId,
+        event_id: eventId,
+        buyer_id: buyerId,
+        seller_id: sellerId,
+        listing_price: listingPrice,
+        proposal_count: 0,
+        max_proposals: NEGOTIATION_MAX_PROPOSALS,
+        status: NEGOTIATION_STATUS.ACTIVE,
+        current_amount: null,
+        current_turn: 'BUYER',
+        active_offer_id: null,
+        proposals: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      state.negotiations.push(neg);
+    }
+    return neg;
+  }
+
   /**
    * Submit a structured offer on an active listing
    */
@@ -126,131 +167,196 @@ class OfferService {
       throw err;
     }
 
-    const now = Date.now();
+    // Acquire atomic mutex on listing to prevent race conditions exceeding 5 proposals
+    const releaseLock = await listingMutex.acquire(listingId);
+    try {
+      const now = Date.now();
 
-    // 6. Anti-Spam: Rule A - Max 1 pending offer per buyer per listing
-    const existingListingOffer = state.offers.find(o => 
-      o.listing_id === listingId && 
-      o.buyer_id === buyerId && 
-      o.status === OFFER_STATUS.PENDING
-    );
-    if (existingListingOffer) {
-      const err = new Error('You already have an active pending offer on this listing');
-      err.code = 'ACTIVE_OFFER_EXISTS';
-      err.statusCode = 409;
-      throw err;
-    }
+      // Negotiation engine check
+      const negotiation = OfferService.getOrCreateNegotiation({
+        listingId,
+        buyerId,
+        sellerId: listing.seller_id,
+        listingPrice: listing.price,
+        eventId: listing.event_id,
+        ticketId: listing.ticket_id
+      });
 
-    // 7. Anti-Spam: Rule B - Max 5 active pending offers across entire platform
-    const activeBuyerOffers = state.offers.filter(o => 
-      o.buyer_id === buyerId && 
-      o.status === OFFER_STATUS.PENDING
-    );
-    if (activeBuyerOffers.length >= 5) {
-      const err = new Error('Maximum active pending offers (5) reached. Withdraw or wait for responses before making new offers.');
-      err.code = 'MAX_PENDING_OFFERS_EXCEEDED';
-      err.statusCode = 429;
-      throw err;
-    }
+      if (negotiation.status === NEGOTIATION_STATUS.ACCEPTED) {
+        const err = new Error('Negosiasi telah disepakati (ACCEPTED).');
+        err.code = 'NEGOTIATION_ALREADY_ACCEPTED';
+        err.statusCode = 400;
+        throw err;
+      }
 
-    // 8. Anti-Spam: Rule C - Max 10 new offers per 24 hours
-    const oneDayAgo = now - 24 * 60 * 60 * 1000;
-    const offersIn24h = state.offers.filter(o => 
-      o.buyer_id === buyerId && 
-      new Date(o.created_at).getTime() >= oneDayAgo
-    );
-    if (offersIn24h.length >= 10) {
-      const err = new Error('Daily offer submission limit (10 offers / 24 hours) exceeded. Please try again later.');
-      err.code = 'DAILY_OFFER_LIMIT_EXCEEDED';
-      err.statusCode = 429;
-      throw err;
-    }
+      if (negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS || negotiation.status === NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED) {
+        const err = new Error('Batas tawar-menawar tercapai (5/5). Negosiasi untuk listing ini sudah berakhir.');
+        err.code = 'NEGOTIATION_LIMIT_REACHED';
+        err.statusCode = 400;
+        throw err;
+      }
 
-    // 9. Anti-Spam: Rule D - 6-hour cooldown after rejection on this listing
-    const sixHoursAgo = now - 6 * 60 * 60 * 1000;
-    const recentDeclined = state.offers
-      .filter(o => 
+      // 6. Anti-Spam: Rule A - Max 1 pending offer per buyer per listing
+      const existingListingOffer = state.offers.find(o => 
         o.listing_id === listingId && 
         o.buyer_id === buyerId && 
-        o.status === OFFER_STATUS.DECLINED &&
-        new Date(o.decided_at || o.created_at).getTime() >= sixHoursAgo
-      )
-      .sort((a, b) => new Date(b.decided_at || b.created_at) - new Date(a.decided_at || a.created_at))[0];
+        o.status === OFFER_STATUS.PENDING
+      );
+      if (existingListingOffer) {
+        const err = new Error('You already have an active pending offer on this listing');
+        err.code = 'ACTIVE_OFFER_EXISTS';
+        err.statusCode = 409;
+        throw err;
+      }
 
-    if (recentDeclined) {
-      const remainingMinutes = Math.ceil((sixHoursAgo + 6 * 60 * 60 * 1000 - now) / 60000);
-      const err = new Error(`Your previous offer was declined. A 6-hour cooldown applies on this listing before re-offering.`);
-      err.code = 'COOLDOWN_ACTIVE';
-      err.statusCode = 429;
-      err.remainingCooldownMinutes = remainingMinutes;
-      throw err;
-    }
+      // 7. Anti-Spam: Rule B - Max 5 active pending offers across entire platform
+      const activeBuyerOffers = state.offers.filter(o => 
+        o.buyer_id === buyerId && 
+        o.status === OFFER_STATUS.PENDING
+      );
+      if (activeBuyerOffers.length >= 5) {
+        const err = new Error('Maximum active pending offers (5) reached. Withdraw or wait for responses before making new offers.');
+        err.code = 'MAX_PENDING_OFFERS_EXCEEDED';
+        err.statusCode = 429;
+        throw err;
+      }
 
-    // 10. Create Offer Record
-    const offerId = `ofr-${uuidv4()}`;
-    const ttlHours = parseInt(process.env.ARGUS_OFFER_TTL_HOURS || '24', 10);
-    const expiresAt = new Date(now + ttlHours * 60 * 60 * 1000).toISOString();
+      // 8. Anti-Spam: Rule C - Max 10 new offers per 24 hours
+      const oneDayAgo = now - 24 * 60 * 60 * 1000;
+      const offersIn24h = state.offers.filter(o => 
+        o.buyer_id === buyerId && 
+        new Date(o.created_at).getTime() >= oneDayAgo
+      );
+      if (offersIn24h.length >= 10) {
+        const err = new Error('Daily offer submission limit (10 offers / 24 hours) exceeded. Please try again later.');
+        err.code = 'DAILY_OFFER_LIMIT_EXCEEDED';
+        err.statusCode = 429;
+        throw err;
+      }
 
-    const offer = {
-      id: offerId,
-      listing_id: listingId,
-      ticket_id: listing.ticket_id,
-      event_id: listing.event_id,
-      buyer_id: buyerId,
-      seller_id: listing.seller_id,
-      original_price: listing.price,
-      offer_amount: parsedAmount,
-      status: OFFER_STATUS.PENDING,
-      decline_reason: null,
-      created_at: new Date(now).toISOString(),
-      expires_at: expiresAt,
-      decided_at: null,
-      withdrawn_at: null,
-      superseded_at: null
-    };
+      // 9. Anti-Spam: Rule D - 6-hour cooldown after rejection on this listing
+      const sixHoursAgo = now - 6 * 60 * 60 * 1000;
+      const recentDeclined = state.offers
+        .filter(o => 
+          o.listing_id === listingId && 
+          o.buyer_id === buyerId && 
+          o.status === OFFER_STATUS.DECLINED &&
+          new Date(o.decided_at || o.created_at).getTime() >= sixHoursAgo
+        )
+        .sort((a, b) => new Date(b.decided_at || b.created_at) - new Date(a.decided_at || a.created_at))[0];
 
-    state.offers.push(offer);
+      if (recentDeclined) {
+        const remainingMinutes = Math.ceil((sixHoursAgo + 6 * 60 * 60 * 1000 - now) / 60000);
+        const err = new Error(`Your previous offer was declined. A 6-hour cooldown applies on this listing before re-offering.`);
+        err.code = 'COOLDOWN_ACTIVE';
+        err.statusCode = 429;
+        err.remainingCooldownMinutes = remainingMinutes;
+        throw err;
+      }
 
-    // 11. Immutable Audit Log
-    await recordOfferAuditLog({
-      offerId,
-      actorId: buyerId,
-      actorRole: 'BUYER',
-      fromStatus: null,
-      toStatus: OFFER_STATUS.PENDING,
-      ipAddress,
-      metadata: {
+      // Increment negotiation proposal count atomically
+      negotiation.proposal_count += 1;
+      const seq = negotiation.proposal_count;
+      if (negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS) {
+        negotiation.status = NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED;
+      }
+      negotiation.current_amount = parsedAmount;
+      negotiation.current_turn = 'SELLER';
+      negotiation.updated_at = new Date(now).toISOString();
+
+      // 10. Create Offer Record
+      const offerId = `ofr-${uuidv4()}`;
+      negotiation.active_offer_id = offerId;
+      const ttlHours = parseInt(process.env.ARGUS_OFFER_TTL_HOURS || '24', 10);
+      const expiresAt = new Date(now + ttlHours * 60 * 60 * 1000).toISOString();
+
+      const offer = {
+        id: offerId,
         listing_id: listingId,
+        ticket_id: listing.ticket_id,
+        event_id: listing.event_id,
+        buyer_id: buyerId,
+        seller_id: listing.seller_id,
         original_price: listing.price,
         offer_amount: parsedAmount,
-        expires_at: expiresAt
-      }
-    });
+        status: OFFER_STATUS.PENDING,
+        decline_reason: null,
+        created_at: new Date(now).toISOString(),
+        expires_at: expiresAt,
+        decided_at: null,
+        withdrawn_at: null,
+        superseded_at: null,
+        sequence_number: seq,
+        proposal_count: negotiation.proposal_count,
+        max_proposals: NEGOTIATION_MAX_PROPOSALS,
+        negotiation_id: negotiation.id,
+        negotiation_status: negotiation.status,
+        ui_counter_text: `Tawaran ${seq}/${NEGOTIATION_MAX_PROPOSALS}`,
+        ui_limit_text: negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS
+          ? `Batas tawar-menawar tercapai (${NEGOTIATION_MAX_PROPOSALS}/${NEGOTIATION_MAX_PROPOSALS}). Negosiasi untuk listing ini sudah berakhir.`
+          : null
+      };
 
-    // 12. Notify Seller
-    const event = state.events.find(e => e.id === listing.event_id);
-    const ticket = state.tickets.find(t => t.id === listing.ticket_id);
-    const eventTitle = event ? event.title : 'Event';
-    const seatInfo = ticket ? ticket.seat_info : '';
+      state.offers.push(offer);
 
-    state.notifications.push({
-      id: `notif-${uuidv4()}`,
-      user_id: listing.seller_id,
-      title: 'Tawaran Baru Diterima',
-      message: `Ada tawaran baru Rp ${parsedAmount.toLocaleString('id-ID')} untuk tiket ${eventTitle} (${seatInfo}).`,
-      type: 'OFFER_RECEIVED',
-      metadata: { offer_id: offerId, listing_id: listingId },
-      is_read: false,
-      created_at: new Date().toISOString()
-    });
+      negotiation.proposals.push({
+        proposal_id: offerId,
+        sequence_number: seq,
+        actor_id: buyerId,
+        actorRole: 'BUYER',
+        type: 'OFFER',
+        amount: parsedAmount,
+        status: OFFER_STATUS.PENDING,
+        created_at: new Date(now).toISOString()
+      });
 
-    // Non-blocking secondary effect: Offer received email
-    const seller = state.users.find(u => u.id === listing.seller_id);
-    emailService.sendOfferReceivedEmail({ offer, seller, listing, event }).catch(err => {
-      console.warn('[OfferService:OfferReceivedEmail] Secondary effect error:', err.message);
-    });
+      // 11. Immutable Audit Log
+      await recordOfferAuditLog({
+        offerId,
+        actorId: buyerId,
+        actorRole: 'BUYER',
+        fromStatus: null,
+        toStatus: OFFER_STATUS.PENDING,
+        ipAddress,
+        metadata: {
+          listing_id: listingId,
+          original_price: listing.price,
+          offer_amount: parsedAmount,
+          expires_at: expiresAt,
+          sequence_number: seq,
+          proposal_count: negotiation.proposal_count,
+          negotiation_id: negotiation.id,
+          negotiation_status: negotiation.status
+        }
+      });
 
-    return offer;
+      // 12. Notify Seller
+      const event = state.events.find(e => e.id === listing.event_id);
+      const ticket = state.tickets.find(t => t.id === listing.ticket_id);
+      const eventTitle = event ? event.title : 'Event';
+      const seatInfo = ticket ? ticket.seat_info : '';
+
+      state.notifications.push({
+        id: `notif-${uuidv4()}`,
+        user_id: listing.seller_id,
+        title: 'Tawaran Baru Diterima',
+        message: `Ada tawaran baru (${offer.ui_counter_text}) Rp ${parsedAmount.toLocaleString('id-ID')} untuk tiket ${eventTitle} (${seatInfo}).`,
+        type: 'OFFER_RECEIVED',
+        metadata: { offer_id: offerId, listing_id: listingId, sequence_number: seq },
+        is_read: false,
+        created_at: new Date().toISOString()
+      });
+
+      // Non-blocking secondary effect: Offer received email
+      const seller = state.users.find(u => u.id === listing.seller_id);
+      emailService.sendOfferReceivedEmail({ offer, seller, listing, event }).catch(err => {
+        console.warn('[OfferService:OfferReceivedEmail] Secondary effect error:', err.message);
+      });
+
+      return offer;
+    } finally {
+      releaseLock();
+    }
   }
 
   /**
@@ -327,6 +433,19 @@ class OfferService {
       offer.status = OFFER_STATUS.ACCEPTED;
       offer.decided_at = new Date().toISOString();
 
+      // 1b. Update negotiation status to ACCEPTED
+      const negotiation = OfferService.getOrCreateNegotiation({
+        listingId: offer.listing_id,
+        buyerId: offer.buyer_id,
+        sellerId: offer.seller_id,
+        listingPrice: listing.price,
+        eventId: listing.event_id,
+        ticketId: listing.ticket_id
+      });
+      negotiation.status = NEGOTIATION_STATUS.ACCEPTED;
+      negotiation.current_turn = null;
+      negotiation.updated_at = new Date().toISOString();
+
       // 2. Create order with custom negotiated amount (2-hour payment deadline)
       const { order, escrow, pricing } = await EscrowService.createOrder({
         buyerId: offer.buyer_id,
@@ -381,7 +500,8 @@ class OfferService {
           order_id: order.id,
           offer_amount: offer.offer_amount,
           platform_fee: pricing.platformFee,
-          total_amount: pricing.totalAmount
+          total_amount: pricing.totalAmount,
+          negotiation_status: negotiation.status
         }
       });
 
@@ -458,6 +578,28 @@ class OfferService {
     offer.decline_reason = declineReason;
     offer.decided_at = new Date().toISOString();
 
+    const negotiation = state.negotiations ? state.negotiations.find(n => n.listing_id === offer.listing_id && n.buyer_id === offer.buyer_id && n.status !== NEGOTIATION_STATUS.ACCEPTED) : null;
+    if (negotiation) {
+      if (negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS) {
+        negotiation.status = NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED;
+      } else {
+        negotiation.status = NEGOTIATION_STATUS.REJECTED;
+      }
+      negotiation.current_turn = null;
+      negotiation.updated_at = new Date().toISOString();
+      negotiation.proposals.push({
+        proposal_id: `prop-${uuidv4()}`,
+        sequence_number: negotiation.proposal_count,
+        actor_id: sellerId,
+        actorRole: 'SELLER',
+        type: 'REJECTION',
+        amount: offer.offer_amount,
+        status: OFFER_STATUS.DECLINED,
+        decline_reason: declineReason,
+        created_at: new Date().toISOString()
+      });
+    }
+
     // Audit Log
     await recordOfferAuditLog({
       offerId: offer.id,
@@ -466,7 +608,11 @@ class OfferService {
       fromStatus: OFFER_STATUS.PENDING,
       toStatus: OFFER_STATUS.DECLINED,
       ipAddress,
-      metadata: { decline_reason: declineReason }
+      metadata: {
+        decline_reason: declineReason,
+        negotiation_status: negotiation ? negotiation.status : null,
+        proposal_count: negotiation ? negotiation.proposal_count : null
+      }
     });
 
     // Notify Buyer
@@ -525,87 +671,306 @@ class OfferService {
       throw err;
     }
 
-    if (offer.status !== OFFER_STATUS.PENDING) {
-      const err = new Error(`Cannot counter offer: status is ${offer.status}`);
-      err.code = 'OFFER_NOT_PENDING';
-      err.statusCode = 400;
-      throw err;
-    }
-
-    const listing = state.listings.find(l => l.id === offer.listing_id);
-    if (!listing || listing.status !== LISTING_STATUS.ACTIVE) {
-      const err = new Error('Listing is no longer active');
-      err.code = 'LISTING_NOT_ACTIVE';
-      err.statusCode = 400;
-      throw err;
-    }
-
-    const parsedAmount = parseInt(counterAmount, 10);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      const err = new Error('Counter offer amount must be a valid positive integer');
-      err.code = 'INVALID_COUNTER_AMOUNT';
-      err.statusCode = 400;
-      throw err;
-    }
-
-    if (parsedAmount <= offer.offer_amount) {
-      const err = new Error(`Counter-offer must be higher than the buyer's original offer (Rp ${offer.offer_amount.toLocaleString('id-ID')})`);
-      err.code = 'COUNTER_AMOUNT_TOO_LOW';
-      err.statusCode = 400;
-      throw err;
-    }
-
-    if (parsedAmount > listing.price) {
-      const err = new Error(`Counter-offer cannot exceed original listing price (Rp ${listing.price.toLocaleString('id-ID')})`);
-      err.code = 'COUNTER_AMOUNT_EXCEEDS_LISTING';
-      err.statusCode = 400;
-      throw err;
-    }
-
-    offer.status = OFFER_STATUS.COUNTERED;
-    offer.counter_amount = parsedAmount;
-    offer.countered_at = new Date().toISOString();
-
-    // Audit Log
-    await recordOfferAuditLog({
-      offerId: offer.id,
-      actorId: sellerId,
-      actorRole: 'SELLER',
-      fromStatus: OFFER_STATUS.PENDING,
-      toStatus: OFFER_STATUS.COUNTERED,
-      ipAddress,
-      metadata: {
-        original_offer_amount: offer.offer_amount,
-        counter_amount: parsedAmount
+    const releaseLock = await listingMutex.acquire(offer.listing_id);
+    try {
+      const listing = state.listings.find(l => l.id === offer.listing_id);
+      if (!listing || listing.status !== LISTING_STATUS.ACTIVE) {
+        const err = new Error('Listing is no longer active');
+        err.code = 'LISTING_NOT_ACTIVE';
+        err.statusCode = 400;
+        throw err;
       }
-    });
 
-    // Notify Buyer
-    state.notifications.push({
-      id: `notif-${uuidv4()}`,
-      user_id: offer.buyer_id,
-      title: 'Penjual Mengajukan Penawaran Balik',
-      message: `Penjual mengajukan tawaran balik Rp ${parsedAmount.toLocaleString('id-ID')} untuk tiket ini.`,
-      type: 'OFFER_COUNTERED',
-      metadata: { offer_id: offer.id, counter_amount: parsedAmount },
-      is_read: false,
-      created_at: new Date().toISOString()
-    });
+      const negotiation = OfferService.getOrCreateNegotiation({
+        listingId: offer.listing_id,
+        buyerId: offer.buyer_id,
+        sellerId: offer.seller_id,
+        listingPrice: listing.price,
+        eventId: listing.event_id,
+        ticketId: listing.ticket_id
+      });
 
-    // Non-blocking secondary effect: Counter offer email
-    const counterBuyer = state.users.find(u => u.id === offer.buyer_id);
-    const counterListing = state.listings.find(l => l.id === offer.listing_id);
-    const counterEvent = counterListing ? state.events.find(e => e.id === counterListing.event_id) : null;
-    emailService.sendCounterOfferEmail({
-      offer,
-      buyer: counterBuyer,
-      counterPrice: parsedAmount,
-      event: counterEvent
-    }).catch(err => {
-      console.warn('[OfferService:CounterOfferEmail] Secondary effect error:', err.message);
-    });
+      if (negotiation.status === NEGOTIATION_STATUS.ACCEPTED) {
+        const err = new Error('Negosiasi telah disepakati (ACCEPTED).');
+        err.code = 'NEGOTIATION_ALREADY_ACCEPTED';
+        err.statusCode = 400;
+        throw err;
+      }
 
-    return offer;
+      if (negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS || negotiation.status === NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED) {
+        const err = new Error('Batas tawar-menawar tercapai (5/5). Negosiasi untuk listing ini sudah berakhir.');
+        err.code = 'NEGOTIATION_LIMIT_REACHED';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      if (offer.status !== OFFER_STATUS.PENDING) {
+        const err = new Error(`Cannot counter offer: status is ${offer.status}`);
+        err.code = 'OFFER_NOT_PENDING';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      const parsedAmount = parseInt(counterAmount, 10);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        const err = new Error('Counter offer amount must be a valid positive integer');
+        err.code = 'INVALID_COUNTER_AMOUNT';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      if (parsedAmount <= offer.offer_amount) {
+        const err = new Error(`Counter-offer must be higher than the buyer's original offer (Rp ${offer.offer_amount.toLocaleString('id-ID')})`);
+        err.code = 'COUNTER_AMOUNT_TOO_LOW';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      if (parsedAmount > listing.price) {
+        const err = new Error(`Counter-offer cannot exceed original listing price (Rp ${listing.price.toLocaleString('id-ID')})`);
+        err.code = 'COUNTER_AMOUNT_EXCEEDS_LISTING';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      negotiation.proposal_count += 1;
+      const seq = negotiation.proposal_count;
+      if (negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS) {
+        negotiation.status = NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED;
+      }
+      negotiation.current_amount = parsedAmount;
+      negotiation.current_turn = 'BUYER';
+      negotiation.updated_at = new Date().toISOString();
+
+      offer.status = OFFER_STATUS.COUNTERED;
+      offer.counter_amount = parsedAmount;
+      offer.countered_at = new Date().toISOString();
+      offer.sequence_number = seq;
+      offer.proposal_count = negotiation.proposal_count;
+      offer.max_proposals = NEGOTIATION_MAX_PROPOSALS;
+      offer.negotiation_id = negotiation.id;
+      offer.negotiation_status = negotiation.status;
+      offer.ui_counter_text = `Tawaran ${seq}/${NEGOTIATION_MAX_PROPOSALS}`;
+      offer.ui_limit_text = negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS
+        ? `Batas tawar-menawar tercapai (${NEGOTIATION_MAX_PROPOSALS}/${NEGOTIATION_MAX_PROPOSALS}). Negosiasi untuk listing ini sudah berakhir.`
+        : null;
+
+      negotiation.proposals.push({
+        proposal_id: `prop-${uuidv4()}`,
+        sequence_number: seq,
+        actor_id: sellerId,
+        actorRole: 'SELLER',
+        type: 'COUNTER_OFFER',
+        amount: parsedAmount,
+        status: OFFER_STATUS.COUNTERED,
+        created_at: new Date().toISOString()
+      });
+
+      // Audit Log
+      await recordOfferAuditLog({
+        offerId: offer.id,
+        actorId: sellerId,
+        actorRole: 'SELLER',
+        fromStatus: OFFER_STATUS.PENDING,
+        toStatus: OFFER_STATUS.COUNTERED,
+        ipAddress,
+        metadata: {
+          original_offer_amount: offer.offer_amount,
+          counter_amount: parsedAmount,
+          sequence_number: seq,
+          proposal_count: negotiation.proposal_count,
+          negotiation_id: negotiation.id,
+          negotiation_status: negotiation.status
+        }
+      });
+
+      // Notify Buyer
+      state.notifications.push({
+        id: `notif-${uuidv4()}`,
+        user_id: offer.buyer_id,
+        title: 'Penjual Mengajukan Penawaran Balik',
+        message: `Penjual mengajukan tawaran balik (${offer.ui_counter_text}) Rp ${parsedAmount.toLocaleString('id-ID')} untuk tiket ini.`,
+        type: 'OFFER_COUNTERED',
+        metadata: { offer_id: offer.id, counter_amount: parsedAmount, sequence_number: seq },
+        is_read: false,
+        created_at: new Date().toISOString()
+      });
+
+      // Non-blocking secondary effect: Counter offer email
+      const counterBuyer = state.users.find(u => u.id === offer.buyer_id);
+      const counterListing = state.listings.find(l => l.id === offer.listing_id);
+      const counterEvent = counterListing ? state.events.find(e => e.id === counterListing.event_id) : null;
+      emailService.sendCounterOfferEmail({
+        offer,
+        buyer: counterBuyer,
+        counterPrice: parsedAmount,
+        event: counterEvent
+      }).catch(err => {
+        console.warn('[OfferService:CounterOfferEmail] Secondary effect error:', err.message);
+      });
+
+      return offer;
+    } finally {
+      releaseLock();
+    }
+  }
+
+  /**
+   * Buyer makes a counter-offer to the seller's counter-offer
+   */
+  static async buyerCounterOffer({ offerId, buyerId, counterAmount, message = null, note = null, ipAddress = '127.0.0.1' }) {
+    // 1. Strict anti-chat enforcement: Reject free-text messages/notes
+    if ((message && typeof message === 'string' && message.trim().length > 0) ||
+        (note && typeof note === 'string' && note.trim().length > 0)) {
+      const err = new Error('Tikum strictly prohibits free-text chat or messages in counter-offers. Only structured price counter-offers are supported.');
+      err.code = 'FREE_TEXT_NOT_ALLOWED';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const offer = state.offers.find(o => o.id === offerId);
+    if (!offer) {
+      const err = new Error('Offer not found');
+      err.code = 'OFFER_NOT_FOUND';
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (offer.buyer_id !== buyerId) {
+      const err = new Error('Forbidden: Only the buyer can make a counter-offer');
+      err.code = 'UNAUTHORIZED_ACTION';
+      err.statusCode = 403;
+      throw err;
+    }
+
+    const releaseLock = await listingMutex.acquire(offer.listing_id);
+    try {
+      const listing = state.listings.find(l => l.id === offer.listing_id);
+      if (!listing || listing.status !== LISTING_STATUS.ACTIVE) {
+        const err = new Error('Listing is no longer active');
+        err.code = 'LISTING_NOT_ACTIVE';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      const negotiation = OfferService.getOrCreateNegotiation({
+        listingId: offer.listing_id,
+        buyerId: offer.buyer_id,
+        sellerId: offer.seller_id,
+        listingPrice: listing.price,
+        eventId: listing.event_id,
+        ticketId: listing.ticket_id
+      });
+
+      if (negotiation.status === NEGOTIATION_STATUS.ACCEPTED) {
+        const err = new Error('Negosiasi telah disepakati (ACCEPTED).');
+        err.code = 'NEGOTIATION_ALREADY_ACCEPTED';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      if (negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS || negotiation.status === NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED) {
+        const err = new Error('Batas tawar-menawar tercapai (5/5). Negosiasi untuk listing ini sudah berakhir.');
+        err.code = 'NEGOTIATION_LIMIT_REACHED';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      if (offer.status !== OFFER_STATUS.COUNTERED) {
+        const err = new Error(`Cannot counter offer: current status is ${offer.status}. You can only counter when seller made a counter-offer.`);
+        err.code = 'OFFER_NOT_COUNTERED';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      const parsedAmount = parseInt(counterAmount, 10);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        const err = new Error('Counter offer amount must be a valid positive integer');
+        err.code = 'INVALID_COUNTER_AMOUNT';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      if (parsedAmount <= offer.offer_amount) {
+        const err = new Error(`New buyer counter must be higher than previous offer amount (Rp ${offer.offer_amount.toLocaleString('id-ID')})`);
+        err.code = 'COUNTER_AMOUNT_TOO_LOW';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      const sellerCounter = offer.counter_amount || listing.price;
+      if (parsedAmount >= sellerCounter) {
+        const err = new Error(`New buyer counter (Rp ${parsedAmount.toLocaleString('id-ID')}) must be less than seller counter (Rp ${sellerCounter.toLocaleString('id-ID')}). Use accept counter to agree to seller's price.`);
+        err.code = 'COUNTER_EXCEEDS_SELLER_PRICE';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      negotiation.proposal_count += 1;
+      const seq = negotiation.proposal_count;
+      if (negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS) {
+        negotiation.status = NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED;
+      }
+      negotiation.current_amount = parsedAmount;
+      negotiation.current_turn = 'SELLER';
+      negotiation.updated_at = new Date().toISOString();
+
+      offer.status = OFFER_STATUS.PENDING;
+      offer.offer_amount = parsedAmount;
+      offer.counter_amount = null;
+      offer.sequence_number = seq;
+      offer.proposal_count = negotiation.proposal_count;
+      offer.max_proposals = NEGOTIATION_MAX_PROPOSALS;
+      offer.negotiation_id = negotiation.id;
+      offer.negotiation_status = negotiation.status;
+      offer.ui_counter_text = `Tawaran ${seq}/${NEGOTIATION_MAX_PROPOSALS}`;
+      offer.ui_limit_text = negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS
+        ? `Batas tawar-menawar tercapai (${NEGOTIATION_MAX_PROPOSALS}/${NEGOTIATION_MAX_PROPOSALS}). Negosiasi untuk listing ini sudah berakhir.`
+        : null;
+
+      negotiation.proposals.push({
+        proposal_id: `prop-${uuidv4()}`,
+        sequence_number: seq,
+        actor_id: buyerId,
+        actorRole: 'BUYER',
+        type: 'COUNTER_OFFER',
+        amount: parsedAmount,
+        status: OFFER_STATUS.PENDING,
+        created_at: new Date().toISOString()
+      });
+
+      await recordOfferAuditLog({
+        offerId: offer.id,
+        actorId: buyerId,
+        actorRole: 'BUYER',
+        fromStatus: OFFER_STATUS.COUNTERED,
+        toStatus: OFFER_STATUS.PENDING,
+        ipAddress,
+        metadata: {
+          previous_seller_counter: sellerCounter,
+          new_buyer_counter: parsedAmount,
+          sequence_number: seq,
+          proposal_count: negotiation.proposal_count,
+          negotiation_id: negotiation.id,
+          negotiation_status: negotiation.status
+        }
+      });
+
+      state.notifications.push({
+        id: `notif-${uuidv4()}`,
+        user_id: offer.seller_id,
+        title: 'Pembeli Mengajukan Tawaran Balik',
+        message: `Pembeli mengajukan tawaran balik (${offer.ui_counter_text}) Rp ${parsedAmount.toLocaleString('id-ID')}.`,
+        type: 'OFFER_RECEIVED',
+        metadata: { offer_id: offer.id, listing_id: offer.listing_id, sequence_number: seq },
+        is_read: false,
+        created_at: new Date().toISOString()
+      });
+
+      return offer;
+    } finally {
+      releaseLock();
+    }
   }
 
   /**
@@ -647,6 +1012,18 @@ class OfferService {
       offer.status = OFFER_STATUS.ACCEPTED;
       offer.decided_at = new Date().toISOString();
 
+      const negotiation = OfferService.getOrCreateNegotiation({
+        listingId: offer.listing_id,
+        buyerId: offer.buyer_id,
+        sellerId: offer.seller_id,
+        listingPrice: listing.price,
+        eventId: listing.event_id,
+        ticketId: listing.ticket_id
+      });
+      negotiation.status = NEGOTIATION_STATUS.ACCEPTED;
+      negotiation.current_turn = null;
+      negotiation.updated_at = new Date().toISOString();
+
       const agreedAmount = offer.counter_amount || offer.offer_amount;
       const { order, escrow, pricing } = await EscrowService.createOrder({
         buyerId: offer.buyer_id,
@@ -677,7 +1054,8 @@ class OfferService {
         metadata: {
           order_id: order.id,
           agreed_amount: agreedAmount,
-          total_amount: pricing.totalAmount
+          total_amount: pricing.totalAmount,
+          negotiation_status: negotiation.status
         }
       });
 
@@ -727,6 +1105,27 @@ class OfferService {
     offer.status = OFFER_STATUS.WITHDRAWN;
     offer.withdrawn_at = new Date().toISOString();
 
+    const negotiation = state.negotiations ? state.negotiations.find(n => n.listing_id === offer.listing_id && n.buyer_id === offer.buyer_id && n.status !== NEGOTIATION_STATUS.ACCEPTED) : null;
+    if (negotiation) {
+      if (negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS) {
+        negotiation.status = NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED;
+      } else {
+        negotiation.status = NEGOTIATION_STATUS.CANCELLED_BY_BUYER;
+      }
+      negotiation.current_turn = null;
+      negotiation.updated_at = new Date().toISOString();
+      negotiation.proposals.push({
+        proposal_id: `prop-${uuidv4()}`,
+        sequence_number: negotiation.proposal_count,
+        actor_id: buyerId,
+        actorRole: 'BUYER',
+        type: 'WITHDRAWAL',
+        amount: offer.offer_amount,
+        status: OFFER_STATUS.WITHDRAWN,
+        created_at: new Date().toISOString()
+      });
+    }
+
     // Audit Log
     await recordOfferAuditLog({
       offerId: offer.id,
@@ -735,7 +1134,10 @@ class OfferService {
       fromStatus: OFFER_STATUS.PENDING,
       toStatus: OFFER_STATUS.WITHDRAWN,
       ipAddress,
-      metadata: {}
+      metadata: {
+        negotiation_status: negotiation ? negotiation.status : null,
+        proposal_count: negotiation ? negotiation.proposal_count : null
+      }
     });
 
     return offer;
@@ -783,6 +1185,50 @@ class OfferService {
   }
 
   /**
+   * Helper to retrieve negotiation status for a listing
+   */
+  static getNegotiationStatus({ listingId, buyerId, sellerId }) {
+    if (!state.negotiations) return null;
+    const neg = state.negotiations.find(n => n.listing_id === listingId && (n.buyer_id === buyerId || (sellerId && n.seller_id === sellerId)));
+    if (!neg) return null;
+    const listing = state.listings.find(l => l.id === listingId);
+    const isLimitReached = neg.proposal_count >= NEGOTIATION_MAX_PROPOSALS || neg.status === NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED;
+    return {
+      negotiation_id: neg.id,
+      listing_id: neg.listing_id,
+      buyer_id: neg.buyer_id,
+      seller_id: neg.seller_id,
+      proposal_count: neg.proposal_count,
+      max_proposals: neg.max_proposals || NEGOTIATION_MAX_PROPOSALS,
+      status: neg.status,
+      current_turn: neg.current_turn,
+      current_amount: neg.current_amount,
+      listing_price: neg.listing_price || (listing ? listing.price : null),
+      can_negotiate: !isLimitReached && neg.status !== NEGOTIATION_STATUS.ACCEPTED,
+      is_limit_reached: isLimitReached,
+      ui_counter_text: `Tawaran ${neg.proposal_count}/${neg.max_proposals || NEGOTIATION_MAX_PROPOSALS}`,
+      ui_limit_text: isLimitReached
+        ? `Batas tawar-menawar tercapai (${NEGOTIATION_MAX_PROPOSALS}/${NEGOTIATION_MAX_PROPOSALS}). Negosiasi untuk listing ini sudah berakhir.`
+        : null,
+      can_direct_buy: listing ? listing.status === LISTING_STATUS.ACTIVE : false,
+      proposals: neg.proposals || []
+    };
+  }
+
+  /**
+   * Helper to retrieve negotiation by offerId
+   */
+  static getNegotiationByOfferId(offerId) {
+    const offer = state.offers.find(o => o.id === offerId);
+    if (!offer) return null;
+    return OfferService.getNegotiationStatus({
+      listingId: offer.listing_id,
+      buyerId: offer.buyer_id,
+      sellerId: offer.seller_id
+    });
+  }
+
+  /**
    * Retrieve offers for a specific user (either role='buyer' or role='seller')
    * Strips all PII (phone, email, NIK) when viewed by seller or other parties
    */
@@ -797,6 +1243,10 @@ class OfferService {
         const listing = state.listings.find(l => l.id === o.listing_id);
         const event = state.events.find(e => e.id === o.event_id);
         const ticket = state.tickets.find(t => t.id === o.ticket_id);
+        const neg = state.negotiations ? state.negotiations.find(n => n.listing_id === o.listing_id && n.buyer_id === o.buyer_id) : null;
+        const seq = o.sequence_number || (neg ? neg.proposal_count : 1);
+        const count = neg ? neg.proposal_count : (o.proposal_count || seq);
+        const limitReached = count >= NEGOTIATION_MAX_PROPOSALS || (neg && neg.status === NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED);
 
         return {
           id: o.id,
@@ -808,6 +1258,7 @@ class OfferService {
           seat_info: ticket ? ticket.seat_info : '',
           original_price: o.original_price,
           offer_amount: o.offer_amount,
+          counter_amount: o.counter_amount,
           status: o.status,
           decline_reason: o.decline_reason,
           decline_reason_label: o.decline_reason && DECLINE_REASONS[o.decline_reason] ? DECLINE_REASONS[o.decline_reason].label : null,
@@ -816,7 +1267,15 @@ class OfferService {
           decided_at: o.decided_at,
           withdrawn_at: o.withdrawn_at,
           superseded_at: o.superseded_at,
-          // STRICT PRIVACY PROTECTION: Strip phone, email, NIK; only mask name
+          sequence_number: seq,
+          proposal_count: count,
+          max_proposals: NEGOTIATION_MAX_PROPOSALS,
+          negotiation_id: neg ? neg.id : (o.negotiation_id || null),
+          negotiation_status: neg ? neg.status : (limitReached ? NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED : NEGOTIATION_STATUS.ACTIVE),
+          is_limit_reached: limitReached,
+          ui_counter_text: `Tawaran ${seq}/${NEGOTIATION_MAX_PROPOSALS}`,
+          ui_limit_text: limitReached ? `Batas tawar-menawar tercapai (${NEGOTIATION_MAX_PROPOSALS}/${NEGOTIATION_MAX_PROPOSALS}). Negosiasi untuk listing ini sudah berakhir.` : null,
+          can_counter: !limitReached && o.status === OFFER_STATUS.PENDING,
           buyer: {
             id: o.buyer_id,
             masked_name: buyer ? maskName(buyer.name) : 'Pembeli'
@@ -832,6 +1291,10 @@ class OfferService {
       const event = state.events.find(e => e.id === o.event_id);
       const ticket = state.tickets.find(t => t.id === o.ticket_id);
       const order = state.orders.find(ord => ord.listing_id === o.listing_id && ord.buyer_id === userId);
+      const neg = state.negotiations ? state.negotiations.find(n => n.listing_id === o.listing_id && n.buyer_id === o.buyer_id) : null;
+      const seq = o.sequence_number || (neg ? neg.proposal_count : 1);
+      const count = neg ? neg.proposal_count : (o.proposal_count || seq);
+      const limitReached = count >= NEGOTIATION_MAX_PROPOSALS || (neg && neg.status === NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED);
 
       return {
         id: o.id,
@@ -843,6 +1306,7 @@ class OfferService {
         seat_info: ticket ? ticket.seat_info : '',
         original_price: o.original_price,
         offer_amount: o.offer_amount,
+        counter_amount: o.counter_amount,
         status: o.status,
         decline_reason: o.decline_reason,
         decline_reason_label: o.decline_reason && DECLINE_REASONS[o.decline_reason] ? DECLINE_REASONS[o.decline_reason].label : null,
@@ -851,6 +1315,16 @@ class OfferService {
         decided_at: o.decided_at,
         withdrawn_at: o.withdrawn_at,
         superseded_at: o.superseded_at,
+        sequence_number: seq,
+        proposal_count: count,
+        max_proposals: NEGOTIATION_MAX_PROPOSALS,
+        negotiation_id: neg ? neg.id : (o.negotiation_id || null),
+        negotiation_status: neg ? neg.status : (limitReached ? NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED : NEGOTIATION_STATUS.ACTIVE),
+        is_limit_reached: limitReached,
+        ui_counter_text: `Tawaran ${seq}/${NEGOTIATION_MAX_PROPOSALS}`,
+        ui_limit_text: limitReached ? `Batas tawar-menawar tercapai (${NEGOTIATION_MAX_PROPOSALS}/${NEGOTIATION_MAX_PROPOSALS}). Negosiasi untuk listing ini sudah berakhir.` : null,
+        can_counter: !limitReached && o.status === OFFER_STATUS.COUNTERED,
+        can_direct_buy: listing ? listing.status === LISTING_STATUS.ACTIVE : false,
         order: order ? {
           id: order.id,
           total_amount: order.total_amount,
@@ -866,12 +1340,29 @@ class OfferService {
    * Helper to inspect audit log for an offer
    */
   static getOfferAuditLogs(offerId) {
-    return state.offer_audit_logs.filter(log => log.offer_id === offerId);
+    return state.offer_audit_logs
+      .filter(log => log.offer_id === offerId)
+      .map(log => {
+        let meta = log.metadata;
+        if (typeof meta === 'string') {
+          try {
+            meta = JSON.parse(meta);
+          } catch (e) {
+            // keep as string
+          }
+        }
+        return {
+          ...log,
+          metadata: meta
+        };
+      });
   }
 }
 
 module.exports = {
   OfferService,
   OFFER_STATUS,
-  DECLINE_REASONS
+  DECLINE_REASONS,
+  NEGOTIATION_MAX_PROPOSALS,
+  NEGOTIATION_STATUS
 };

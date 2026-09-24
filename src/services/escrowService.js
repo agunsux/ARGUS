@@ -240,6 +240,7 @@ class EscrowService {
       // Canonical Immutable Fee Snapshot (Requirement 6)
       fee_policy_version: quote.fee_policy_version || quote.pricing_breakdown?.policy_version || 'TIKUM_FEE_POLICY_V1',
       ticket_price: quote.ticket_price,
+      price: quote.ticket_price,
       quantity: quote.quantity || 1,
       gross_ticket_value: quote.gross_ticket_value || quote.ticket_price,
       buyer_fee: quote.buyer_fee !== undefined ? quote.buyer_fee : quote.buyer_platform_fee,

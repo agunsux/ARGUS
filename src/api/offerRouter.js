@@ -1,8 +1,39 @@
 const express = require('express');
 const router = express.Router();
 const { state } = require('../database');
-const { OfferService, OFFER_STATUS, DECLINE_REASONS } = require('../services/offerService');
+const { OfferService, OFFER_STATUS, DECLINE_REASONS, NEGOTIATION_MAX_PROPOSALS, NEGOTIATION_STATUS } = require('../services/offerService');
 const { SessionStore } = require('../services/sessionStore');
+
+// In-memory rate limiting map for negotiation mutations (max 30 requests per minute per user/IP)
+const negotiationRateLimitMap = new Map();
+
+function resetNegotiationRateLimits() {
+  negotiationRateLimitMap.clear();
+}
+
+function checkNegotiationRateLimit(req, res, next) {
+  const userId = req.user?.id || req.ip || '127.0.0.1';
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const maxRequests = 30;
+
+  let record = negotiationRateLimitMap.get(userId);
+  if (!record || now > record.resetTime) {
+    record = { count: 1, resetTime: now + windowMs };
+    negotiationRateLimitMap.set(userId, record);
+    return next();
+  }
+
+  record.count++;
+  if (record.count > maxRequests) {
+    return res.status(429).json({
+      error: 'Terlalu banyak request negosiasi. Harap tunggu 1 menit sebelum mencoba kembali.',
+      code: 'NEGOTIATION_RATE_LIMIT_EXCEEDED'
+    });
+  }
+
+  next();
+}
 
 /**
  * Authentication resolver supporting sessions and test mode headers
@@ -61,6 +92,60 @@ function requireAuth(req, res, next) {
   }
   next();
 }
+
+/**
+ * GET /listings/:listingId/negotiation
+ * Retrieve current negotiation state for a listing
+ */
+router.get(['/listings/:listingId/negotiation', '/listings/:id/negotiation'], requireAuth, (req, res) => {
+  const listingId = req.params.listingId || req.params.id;
+  const currentUserId = req.user.id;
+  const negotiation = OfferService.getNegotiationStatus({
+    listingId,
+    buyerId: currentUserId,
+    sellerId: currentUserId
+  });
+
+  if (!negotiation) {
+    const listing = state.listings.find(l => l.id === listingId);
+    return res.status(200).json({
+      negotiation_id: null,
+      listing_id: listingId,
+      proposal_count: 0,
+      max_proposals: NEGOTIATION_MAX_PROPOSALS,
+      status: 'NEW',
+      can_negotiate: true,
+      is_limit_reached: false,
+      ui_counter_text: `Tawaran 0/${NEGOTIATION_MAX_PROPOSALS}`,
+      ui_limit_text: null,
+      can_direct_buy: listing ? listing.status === 'ACTIVE' : false,
+      proposals: []
+    });
+  }
+
+  res.status(200).json({
+    ...negotiation
+  });
+});
+
+/**
+ * GET /offers/:offerId/negotiation
+ * Retrieve negotiation state for an offer
+ */
+router.get('/offers/:offerId/negotiation', requireAuth, (req, res) => {
+  const offerId = req.params.offerId;
+  const negotiation = OfferService.getNegotiationByOfferId(offerId);
+  if (!negotiation) {
+    return res.status(404).json({
+      error: 'Negosiasi tidak ditemukan untuk offer ini',
+      code: 'NEGOTIATION_NOT_FOUND'
+    });
+  }
+
+  res.status(200).json({
+    ...negotiation
+  });
+});
 
 /**
  * POST /listings/:listingId/offers
@@ -183,18 +268,76 @@ router.post('/offers/:offerId/decline', requireAuth, async (req, res) => {
 
 /**
  * POST /offers/:offerId/counter
- * Seller submits counter-offer
+ * Seller or Buyer submits a counter-offer
  */
-router.post('/offers/:offerId/counter', requireAuth, async (req, res) => {
+router.post('/offers/:offerId/counter', requireAuth, checkNegotiationRateLimit, async (req, res) => {
   const offerId = req.params.offerId;
-  const sellerId = req.user.id;
+  const currentUserId = req.user.id;
   const { counter_amount, counterAmount, message, note } = req.body;
   const amount = counter_amount !== undefined ? counter_amount : counterAmount;
 
   try {
-    const offer = await OfferService.counterOffer({
+    const offer = state.offers.find(o => o.id === offerId);
+    if (!offer) {
+      return res.status(404).json({ error: 'Offer not found', code: 'OFFER_NOT_FOUND' });
+    }
+
+    let updatedOffer;
+    if (offer.seller_id === currentUserId) {
+      // Seller counters buyer's offer
+      updatedOffer = await OfferService.counterOffer({
+        offerId,
+        sellerId: currentUserId,
+        counterAmount: amount,
+        message,
+        note,
+        ipAddress: req.ip || '127.0.0.1'
+      });
+    } else if (offer.buyer_id === currentUserId) {
+      // Buyer counters seller's counter-offer
+      updatedOffer = await OfferService.buyerCounterOffer({
+        offerId,
+        buyerId: currentUserId,
+        counterAmount: amount,
+        message,
+        note,
+        ipAddress: req.ip || '127.0.0.1'
+      });
+    } else {
+      return res.status(403).json({
+        error: 'Forbidden: Hanya pembeli atau penjual terkait yang dapat mengajukan tawaran balik',
+        code: 'UNAUTHORIZED_ACTION'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Tawaran balik berhasil dikirim.',
+      offer: updatedOffer
+    });
+  } catch (err) {
+    const status = err.statusCode || 400;
+    res.status(status).json({
+      error: err.message,
+      code: err.code || 'OFFER_COUNTER_FAILED'
+    });
+  }
+});
+
+/**
+ * POST /offers/:offerId/buyer-counter
+ * Explicit route for Buyer countering a seller's counter-offer
+ */
+router.post('/offers/:offerId/buyer-counter', requireAuth, checkNegotiationRateLimit, async (req, res) => {
+  const offerId = req.params.offerId;
+  const buyerId = req.user.id;
+  const { counter_amount, counterAmount, message, note } = req.body;
+  const amount = counter_amount !== undefined ? counter_amount : counterAmount;
+
+  try {
+    const offer = await OfferService.buyerCounterOffer({
       offerId,
-      sellerId,
+      buyerId,
       counterAmount: amount,
       message,
       note,
@@ -203,7 +346,7 @@ router.post('/offers/:offerId/counter', requireAuth, async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Tawaran balik berhasil dikirim ke pembeli.',
+      message: 'Tawaran baru dari pembeli berhasil dikirim ke penjual.',
       offer
     });
   } catch (err) {
@@ -333,4 +476,6 @@ router.post('/notifications/:id/read', requireAuth, (req, res) => {
   res.status(200).json({ success: true });
 });
 
+router.resetNegotiationRateLimits = resetNegotiationRateLimits;
 module.exports = router;
+module.exports.resetNegotiationRateLimits = resetNegotiationRateLimits;

@@ -712,6 +712,7 @@ function handleGetEvents(req, res) {
       const evStatus = (e.status || '').toUpperCase();
       const evLifecycle = (e.lifecycle_status || '').toUpperCase();
       if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
+      if ((e.start_date || e.date || '') < '2026-09-24') return false;
       if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
       if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
           ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
@@ -759,7 +760,12 @@ function handleGetEvents(req, res) {
       ...e,
       distance_km: dist,
       active_listings_count: activeListings.length,
-      min_price: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null
+      price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : (e.min_price || null),
+      price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : (e.max_price || null),
+      demand_score: e.popularity_score || 0,
+      ticketing_status: e.status === 'SOLD_OUT' ? 'SOLD_OUT' : (e.official_ticket_url ? 'ON_SALE' : 'UPCOMING'),
+      start_time: e.start_time || (e.event_start_at ? e.event_start_at.split('T')[1]?.substring(0, 5) : null),
+      end_time: e.end_time || (e.event_end_at ? e.event_end_at.split('T')[1]?.substring(0, 5) : null)
     };
   });
 
@@ -821,11 +827,12 @@ router.get('/api/discovery/events', handleGetEvents);
 /**
  * GET /api/events/home-feed
  * Delivers structured landing sections:
- * - upcoming_nearest
- * - trending_popular
- * - near_you
- * - this_weekend
- * - local_gems
+ * - coming_soon
+ * - trending
+ * - just_announced
+ * - concerts
+ * - sports
+ * - festivals
  */
 router.get('/api/events/home-feed', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -833,12 +840,17 @@ router.get('/api/events/home-feed', (req, res) => {
   res.setHeader('Expires', '0');
 
   const now = new Date();
+  const contextDate = '2026-09-24';
   const { city, lat, lng, country, category } = req.query;
 
   let allEvents = canonicalRegistry.getAllEvents().filter(e => {
     const evStatus = (e.status || '').toUpperCase();
     const evLifecycle = (e.lifecycle_status || '').toUpperCase();
     if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
+    
+    // Filter out dates before 2026-09-24
+    if ((e.start_date || e.date || '') < contextDate) return false;
+    
     if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
     if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
         ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
@@ -876,6 +888,20 @@ router.get('/api/events/home-feed', (req, res) => {
     });
   }
 
+  // Enrich events with required properties
+  allEvents = allEvents.map(e => {
+    const activeListings = getActiveResaleListings(e.event_id);
+    return {
+      ...e,
+      price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : (e.min_price || null),
+      price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : (e.max_price || null),
+      demand_score: e.popularity_score || 0,
+      ticketing_status: e.status === 'SOLD_OUT' ? 'SOLD_OUT' : (e.official_ticket_url ? 'ON_SALE' : 'UPCOMING'),
+      start_time: e.start_time || (e.event_start_at ? e.event_start_at.split('T')[1]?.substring(0, 5) : null),
+      end_time: e.end_time || (e.event_end_at ? e.event_end_at.split('T')[1]?.substring(0, 5) : null)
+    };
+  });
+
   // 1. Upcoming Nearest (Chronological)
   const upcoming = [...allEvents]
     .filter(e => e.verification_status !== 'CANCELLED' && e.verification_status !== 'EXPIRED')
@@ -885,7 +911,7 @@ router.get('/api/events/home-feed', (req, res) => {
   // 2. Trending Popular
   const popular = [...allEvents]
     .filter(e => e.verification_status !== 'CANCELLED' && e.verification_status !== 'EXPIRED')
-    .sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0))
+    .sort((a, b) => (b.popularity_score || b.demand_score || 0) - (a.popularity_score || a.demand_score || 0))
     .slice(0, 12);
 
   // 3. Near You (Filtered by user city or coordinates)
@@ -918,18 +944,36 @@ router.get('/api/events/home-feed', (req, res) => {
     return diffDays >= 0 && diffDays <= 4;
   }).slice(0, 8);
 
-  // 5. Local Gems (Deterministic regional high-quality concerts/events)
+  // 5. Local Gems
   const localGems = allEvents
     .filter(e => e.is_local_gem)
     .sort((a, b) => (b.local_gems_score || 0) - (a.local_gems_score || 0))
     .slice(0, 8);
 
   // 6. Category Specific Sections (All Paid / Ticketed Categories)
-  const musicEvents = allEvents.filter(e => (e.category_group === 'MUSIC' || (e.category || '').toUpperCase().includes('CONCERT') || (e.category || '').toUpperCase().includes('MUSIC'))).slice(0, 8);
-  const sportsEvents = allEvents.filter(e => (e.category_group === 'SPORTS' || (e.category || '').toUpperCase().includes('SPORT'))).slice(0, 8);
-  const festivalEvents = allEvents.filter(e => (e.category_group === 'FESTIVALS_EXPERIENCES' || (e.category || '').toUpperCase().includes('FESTIVAL'))).slice(0, 8);
-  const comedyShows = allEvents.filter(e => (e.category_group === 'SHOWS_COMEDY' || (e.category || '').toUpperCase().includes('COMEDY') || (e.category || '').toUpperCase().includes('THEATER'))).slice(0, 8);
-  const businessEvents = allEvents.filter(e => (e.category_group === 'BUSINESS_EDUCATION' || (e.category || '').toUpperCase().includes('CONFERENCE'))).slice(0, 8);
+  const musicEvents = allEvents.filter(e => (e.category_group === 'MUSIC' || (e.category || '').toUpperCase().includes('CONCERT') || (e.category || '').toUpperCase().includes('MUSIC') || (e.category || '').toUpperCase() === 'KONSER')).slice(0, 8);
+  const sportsEvents = allEvents.filter(e => (e.category_group === 'SPORTS' || (e.category || '').toUpperCase().includes('SPORT') || (e.category || '').toUpperCase() === 'OLAHRAGA' || (e.event_type || '').toUpperCase() === 'BADMINTON')).slice(0, 8);
+  const festivalEvents = allEvents.filter(e => (e.category_group === 'FESTIVALS_EXPERIENCES' || (e.category || '').toUpperCase().includes('FESTIVAL') || (e.category || '').toUpperCase() === 'PAMERAN')).slice(0, 8);
+  const comedyShows = allEvents.filter(e => (e.category_group === 'SHOWS_COMEDY' || (e.category || '').toUpperCase().includes('COMEDY') || (e.category || '').toUpperCase().includes('THEATER') || (e.category || '').toUpperCase() === 'STANDUP' || (e.category || '').toUpperCase() === 'TEATER')).slice(0, 8);
+  const businessEvents = allEvents.filter(e => (e.category_group === 'BUSINESS_EDUCATION' || (e.category || '').toUpperCase().includes('CONFERENCE') || (e.category || '').toUpperCase() === 'SEMINAR')).slice(0, 8);
+
+  const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
+
+  const coming_soon = [...allEvents]
+    .filter(e => (e.start_date || e.date) <= sevenDaysFromNow)
+    .sort((a, b) => (a.start_date || a.date || '9999').localeCompare(b.start_date || b.date || '9999'));
+
+  const trending = [...allEvents]
+    .sort((a, b) => (b.demand_score || 0) - (a.demand_score || 0))
+    .slice(0, 8);
+
+  const just_announced = [...allEvents]
+    .sort((a, b) => new Date(b.verified_at || 0) - new Date(a.verified_at || 0))
+    .slice(0, 8);
+
+  const concerts = musicEvents;
+  const sports = sportsEvents;
+  const festivals = festivalEvents;
 
   res.json({
     success: true,
@@ -951,8 +995,19 @@ router.get('/api/events/home-feed', (req, res) => {
       sports: sportsEvents,
       festivals_experiences: festivalEvents,
       shows_comedy: comedyShows,
-      business_education: businessEvents
-    }
+      business_education: businessEvents,
+      coming_soon,
+      trending,
+      just_announced,
+      concerts,
+      festivals
+    },
+    coming_soon,
+    trending,
+    just_announced,
+    concerts,
+    sports,
+    festivals
   });
 });
 
