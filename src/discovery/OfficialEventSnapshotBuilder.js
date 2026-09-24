@@ -42,9 +42,23 @@ const ALLOWED_HOSTS = new Set([
   'www.pestapora.com',
   'www.djakartawarehouse.com',
   'djakartawarehouse.com',
+  'dwpfest.com',
+  'www.dwpfest.com',
   'www.lanyinjakarta2026.com',
   'www.theweekndinjakarta.com',
-  'maroon5jakarta2027.com'
+  'maroon5jakarta2027.com',
+  'weverse.io',
+  'www.weverse.io',
+  'ygfamily.com',
+  'www.ygfamily.com',
+  'dyandraglobal.com',
+  'www.dyandraglobal.com',
+  'dyandraglobalstore.com',
+  'www.synchronizefestival.com',
+  'synchronizefestival.com',
+  'bigbanginjakarta.com',
+  'www.bigbanginjakarta.com',
+  'hub.ekraf.go.id'
 ]);
 
 // Indonesian target market: Jabodetabek, Java, Sumatera, Sulawesi, Kalimantan, Bali.
@@ -124,6 +138,47 @@ const EVIDENCE_RULES = [
     expect_tokens: ['maroon 5', 'jakarta'],
     image_source_type: 'OFFICIAL_EVENT_WEB',
     image_credit: 'Maroon 5 Asia 2027 in Jakarta (TEM Presents)'
+  },
+  {
+    id: 'nct-127-jakarta-2026',
+    discovery_source_id: 'src-weverse',
+    title_includes: ['nct 127', 'the redline'],
+    authoritative_source_id: 'src-weverse',
+    evidence_url: 'https://weverse.io/nct127/notice/37278',
+    expect_tokens: ['nct 127', 'jakarta', 'indonesia arena'],
+    image_source_type: 'OFFICIAL_ARTIST_WEB',
+    image_credit: 'SM Entertainment / Weverse / Dyandra Global'
+  },
+  {
+    id: 'babymonster-jakarta-2026',
+    discovery_source_id: 'src-weverse',
+    title_includes: ['babymonster', 'choom'],
+    authoritative_source_id: 'src-weverse',
+    evidence_url: 'https://weverse.io/babymonster/notice/35647',
+    expect_tokens: ['babymonster', 'jakarta', 'indonesia arena'],
+    image_source_type: 'OFFICIAL_ARTIST_WEB',
+    image_credit: 'YG Entertainment / Weverse'
+  },
+  {
+    id: 'synchronize-2026',
+    discovery_source_id: 'src-loket',
+    title_includes: ['synchronize'],
+    authoritative_source_id: 'src-event-synchronize-web',
+    evidence_url: 'https://www.synchronizefestival.com/tickets',
+    expect_tokens: ['synchronize', '2026'],
+    image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_credit: 'Synchronize Festival / Demajors'
+  },
+  {
+    id: 'bigbang-jakarta-2027',
+    discovery_source_id: 'src-yg-entertainment',
+    title_includes: ['bigbang'],
+    city_includes: 'jakarta',
+    authoritative_source_id: 'src-event-bigbangjakarta-web',
+    evidence_url: 'https://bigbanginjakarta.com/',
+    expect_tokens: ['bigbang', 'jakarta', '2027'],
+    image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_credit: 'BIGBANG 2026-27 in Jakarta (YG Entertainment)'
   }
 ];
 

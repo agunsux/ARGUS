@@ -90,7 +90,23 @@ class RealSourceSeedService {
       image_source_url: isAuthoritative ? (record.image_source_url || null) : null,
       image_credit: isAuthoritative ? (record.image_credit || null) : null,
       image_license: isAuthoritative ? (record.image_license_status || 'OFFICIAL_EVENT_PROMO') : null,
-      image_scope: isAuthoritative ? 'LOCAL_EVENT' : null
+      image_scope: isAuthoritative ? 'LOCAL_EVENT' : null,
+
+      // Tikum Zero-Fake 14 Schema Attributes
+      artist_official_url: record.artist_official_url || null,
+      artist_official_source_type: record.artist_official_source_type || null,
+      artist_verification_status: record.artist_verification_status || null,
+      promoter_official_url: record.promoter_official_url || null,
+      promoter_verification_status: record.promoter_verification_status || null,
+      event_official_url: record.event_official_url || record.official_event_url || null,
+      event_verification_status: record.event_verification_status || null,
+      ticketing_official_url: record.ticketing_official_url || record.official_ticket_url || null,
+      ticketing_verification_status: record.ticketing_verification_status || null,
+      venue_verification_status: record.venue_verification_status || null,
+      verification_tier: record.verification_tier || null,
+      verification_score: record.verification_score || null,
+      last_verified_at: record.last_verified_at || null,
+      next_verification_at: record.next_verification_at || null
     };
   }
 
@@ -101,6 +117,7 @@ class RealSourceSeedService {
     const discoverySource = record.discovery_source_id || '';
     if (discoverySource === 'src-livenation') return 'src-ig-livenationasia';
     if (discoverySource === 'src-loket' || discoverySource === 'src-bbo') return 'src-ig-infokonser';
+    if (discoverySource === 'src-weverse' || discoverySource === 'src-yg-entertainment' || discoverySource === 'src-promoter-dyandra') return 'src-ig-infokonser';
     return null;
   }
   /**

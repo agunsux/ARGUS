@@ -355,7 +355,23 @@ class CanonicalEventRegistry {
       verification_confidence: eventData.verification_confidence || 0,
       verification_reasons: eventData.verification_reasons || [],
       is_verified: false,
-      conflicts: []
+      conflicts: [],
+
+      // Pre-evaluation Tikum Zero-Fake inputs
+      artist_official_url: eventData.artist_official_url || null,
+      artist_official_source_type: eventData.artist_official_source_type || null,
+      artist_verification_status: eventData.artist_verification_status || null,
+      promoter_official_url: eventData.promoter_official_url || null,
+      promoter_verification_status: eventData.promoter_verification_status || null,
+      event_official_url: eventData.event_official_url || eventData.official_event_url || null,
+      event_verification_status: eventData.event_verification_status || null,
+      ticketing_official_url: eventData.ticketing_official_url || eventData.official_ticket_url || null,
+      ticketing_verification_status: eventData.ticketing_verification_status || null,
+      venue_verification_status: eventData.venue_verification_status || null,
+      verification_tier: eventData.verification_tier || null,
+      verification_score: eventData.verification_score || 0,
+      enforce_zero_fake_policy: eventData.enforce_zero_fake_policy || false,
+      require_artist_verification: eventData.require_artist_verification || false
     };
 
     // Evaluate verification through the strict fail-closed engine.
@@ -367,6 +383,28 @@ class CanonicalEventRegistry {
     canonicalEvent.conflicts = evalResult.conflicts || [];
     canonicalEvent.verification_reasons = evalResult.flags || [];
     canonicalEvent.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED || evalResult.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+
+    // Tikum Zero-Fake 14 Schema Attributes
+    canonicalEvent.artist_official_url = evalResult.artist_official_url || eventData.artist_official_url || null;
+    canonicalEvent.artist_official_source_type = evalResult.artist_official_source_type || eventData.artist_official_source_type || null;
+    canonicalEvent.artist_verification_status = evalResult.artist_verification_status || eventData.artist_verification_status || 'UNVERIFIED';
+
+    canonicalEvent.promoter_official_url = evalResult.promoter_official_url || eventData.promoter_official_url || null;
+    canonicalEvent.promoter_verification_status = evalResult.promoter_verification_status || eventData.promoter_verification_status || 'UNVERIFIED';
+
+    canonicalEvent.event_official_url = evalResult.event_official_url || eventData.event_official_url || canonicalEvent.official_event_url || null;
+    canonicalEvent.event_verification_status = evalResult.event_verification_status || eventData.event_verification_status || 'UNVERIFIED';
+
+    canonicalEvent.ticketing_official_url = evalResult.ticketing_official_url || eventData.ticketing_official_url || canonicalEvent.official_ticket_url || null;
+    canonicalEvent.ticketing_verification_status = evalResult.ticketing_verification_status || eventData.ticketing_verification_status || 'UNVERIFIED';
+
+    canonicalEvent.venue_verification_status = evalResult.venue_verification_status || eventData.venue_verification_status || 'UNVERIFIED';
+
+    canonicalEvent.verification_tier = evalResult.verification_tier || eventData.verification_tier || 'TIER_C_DISCOVERY_ONLY';
+    canonicalEvent.verification_score = typeof evalResult.verification_score === 'number' ? evalResult.verification_score : (eventData.verification_score || 0);
+
+    canonicalEvent.last_verified_at = evalResult.last_verified_at || eventData.last_verified_at || verifiedAt;
+    canonicalEvent.next_verification_at = evalResult.next_verification_at || eventData.next_verification_at || null;
 
     // Ground-Truth Popularity Scoring
     const popResult = PopularityEngine.calculatePopularity(canonicalEvent, eventData.popularity_signals || {});
@@ -747,6 +785,25 @@ class CanonicalEventRegistry {
     event.expires_at = this.computeExpirationDate(event.start_date, new Date(now));
     event.update_priority = this.computeUpdatePriority(event.start_date);
 
+    const reEval = EventVerificationService.evaluateEvent(event, event.sources || []);
+    event.verification_status = reEval.verification_status;
+    event.verification_confidence = reEval.verification_confidence;
+    event.is_verified = (reEval.verification_status === VERIFICATION_STATUS.VERIFIED || reEval.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+    event.artist_official_url = reEval.artist_official_url || event.artist_official_url;
+    event.artist_official_source_type = reEval.artist_official_source_type || event.artist_official_source_type;
+    event.artist_verification_status = reEval.artist_verification_status || event.artist_verification_status;
+    event.promoter_official_url = reEval.promoter_official_url || event.promoter_official_url;
+    event.promoter_verification_status = reEval.promoter_verification_status || event.promoter_verification_status;
+    event.event_official_url = reEval.event_official_url || event.event_official_url;
+    event.event_verification_status = reEval.event_verification_status || event.event_verification_status;
+    event.ticketing_official_url = reEval.ticketing_official_url || event.ticketing_official_url;
+    event.ticketing_verification_status = reEval.ticketing_verification_status || event.ticketing_verification_status;
+    event.venue_verification_status = reEval.venue_verification_status || event.venue_verification_status;
+    event.verification_tier = reEval.verification_tier || event.verification_tier;
+    event.verification_score = typeof reEval.verification_score === 'number' ? reEval.verification_score : event.verification_score;
+    event.last_verified_at = reEval.last_verified_at || event.last_verified_at;
+    event.next_verification_at = reEval.next_verification_at || event.next_verification_at;
+
     return { event, changes };
   }
 
@@ -763,6 +820,8 @@ class CanonicalEventRegistry {
     const evalResult = EventVerificationService.evaluateEvent(event, event.sources || []);
     event.verification_status = evalResult.verification_status;
     event.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED || evalResult.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+    event.verification_tier = evalResult.verification_tier;
+    event.verification_score = evalResult.verification_score;
   }
 
   addSourceRecord(eventId, sourceRecord) {

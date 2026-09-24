@@ -717,6 +717,7 @@
       <div id="authHeaderContainer">
         <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()">Login / Sign Up</button>
       </div>
+      <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Dark Mode"><i class="fa-solid fa-moon"></i></button>
       <button class="select-filter" onclick="toggleLang()" id="langToggle" title="Toggle Language">ID</button>
     </div>
   </header>
@@ -1069,11 +1070,14 @@
       const dateStr = formatDate(e.date || e.start_date);
       const slug = e.slug || e.event_id || e.id;
       const verifDate = e.verified_at || '';
+      const tierBadge = e.verification_tier === 'TIER_A_DOUBLE_OFFICIAL'
+        ? '<i class="fa-solid fa-certificate"></i> DOUBLE OFFICIAL'
+        : (e.verification_tier === 'TIER_B_OFFICIAL_EVENT' ? '<i class="fa-solid fa-shield-halved"></i> EVENT VERIFIED' : '<i class="fa-solid fa-shield-halved"></i> TERVERIFIKASI');
 
       return `
         <a href="/events/${slug}" class="poster-card">
           <div class="poster-media" style="${posterBackground(e)}">
-            <div class="ln-badge ln-badge--verified" onclick="showVerifModal(event, '${verifDate}')"><i class="fa-solid fa-shield-halved"></i> TERVERIFIKASI</div>
+            <div class="ln-badge ln-badge--verified" onclick="showVerifModal(event, '${verifDate}')">${tierBadge}</div>
             <div class="ln-badge ln-badge--status">${status.text}</div>
           </div>
           <div class="poster-body">

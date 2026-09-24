@@ -18,11 +18,27 @@
 
 const { TRUST_LEVELS, sourceRegistry } = require('./SourceRegistry');
 
+const VERIFICATION_TIERS = {
+  TIER_A_DOUBLE_OFFICIAL: 'TIER_A_DOUBLE_OFFICIAL',
+  TIER_B_OFFICIAL_EVENT: 'TIER_B_OFFICIAL_EVENT',
+  TIER_C_DISCOVERY_ONLY: 'TIER_C_DISCOVERY_ONLY'
+};
+
+const ARTIST_SOURCE_TYPES = {
+  WEVERSE: 'WEVERSE',
+  ARTIST_OFFICIAL_WEB: 'ARTIST_OFFICIAL_WEB',
+  MANAGEMENT_LABEL_OFFICIAL: 'MANAGEMENT_LABEL_OFFICIAL',
+  OFFICIAL_SOCIAL: 'OFFICIAL_SOCIAL',
+  NONE: 'NONE',
+  NOT_APPLICABLE: 'NOT_APPLICABLE'
+};
+
 const VERIFICATION_STATUS = {
   UNVERIFIED: 'UNVERIFIED',
   DISCOVERED: 'UNVERIFIED', // backward compatibility alias
   PARTIALLY_VERIFIED: 'PARTIALLY_VERIFIED',
   PENDING_REVIEW: 'PARTIALLY_VERIFIED', // backward compatibility alias
+  PENDING_ARTIST_VERIFICATION: 'PENDING_ARTIST_VERIFICATION',
   PRIMARY_SOURCE_VERIFIED: 'PRIMARY_SOURCE_VERIFIED',
   VERIFIED: 'VERIFIED',
   CONFLICTED: 'CONFLICTED',
@@ -280,60 +296,47 @@ class EventVerificationService {
     }
 
     // If authoritative source conflict exists:
+    let isConflicted = false;
     if (conflicts.length > 0) {
       flags.push('AUTHORITATIVE_DATA_CONFLICT_DETECTED');
-      return {
-        verification_status: VERIFICATION_STATUS.CONFLICTED,
-        verification_confidence: 45,
-        conflicts,
-        flags: ['CONFLICT_BLOCKS_VERIFICATION'],
-        freshness_ttl_hours: 48
-      };
+      flags.push('CONFLICT_BLOCKS_VERIFICATION');
+      isConflicted = true;
     }
 
     // 3. Fail-Closed: Without authoritative source evidence, event CANNOT be VERIFIED
+    let failClosedReason = null;
+    const isSocialTier3 = sourceRecords.some(s => (s.tier === 3 || s.trust_level === TRUST_LEVELS.TIER_5 || (s.source_id && s.source_id.includes('social'))));
     if (!hasAuthoritative) {
-      const isSocialTier3 = sourceRecords.some(s => (s.tier === 3 || s.trust_level === TRUST_LEVELS.TIER_5 || (s.source_id && s.source_id.includes('social'))));
-      const failFlags = ['SECONDARY_SOURCES_ONLY_NO_AUTHORITATIVE_PROOF'];
+      failClosedReason = 'SECONDARY_SOURCES_ONLY_NO_AUTHORITATIVE_PROOF';
+      flags.push('SECONDARY_SOURCES_ONLY_NO_AUTHORITATIVE_PROOF');
       if (isSocialTier3) {
-        failFlags.push('TIER_3_SOCIAL_DISCOVERY_ONLY');
+        flags.push('TIER_3_SOCIAL_DISCOVERY_ONLY');
       }
       const eventCountry = (canonicalEvent.country || 'Indonesia').toLowerCase();
       if (eventCountry === 'indonesia' || eventCountry === 'id') {
-        failFlags.push('INDONESIA_LOCAL_AUTHORITY_REQUIRED');
+        flags.push('INDONESIA_LOCAL_AUTHORITY_REQUIRED');
       }
-      return {
-        verification_status: VERIFICATION_STATUS.UNVERIFIED,
-        verification_confidence: Math.min(50, score || (isSocialTier3 ? 30 : 50)),
-        conflicts: [],
-        flags: failFlags,
-        freshness_ttl_hours: 48
-      };
-    }
+    } else {
+      // 3b. Indonesia Specific Rule:
+      // IF country == Indonesia, local promoter / official event / official IG is required for primary verification.
+      // Regional discovery signals (StubHub, Viagogo) cannot verify an Indonesian event.
+      const eventCountry = (canonicalEvent.country || 'Indonesia').toLowerCase();
+      if (eventCountry === 'indonesia' || eventCountry === 'id') {
+        const hasLocalIndoAuthority = sourceRecords.some(s => {
+          const srcMeta = sourceRegistry.getSource(s.source_id) || {};
+          const isAuth = sourceRegistry.isAuthoritativeSource(s.source_id, s.account_handle || s.source_account);
+          if (!isAuth) return false;
+          const c = (srcMeta.country || s.country || '').toLowerCase();
+          const isIndo = c === 'indonesia' || c === 'id';
+          const isArtistDirect = (srcMeta.source_type || '').includes('ARTIST');
+          return isIndo || isArtistDirect;
+        });
 
-    // 3b. Indonesia Specific Rule:
-    // IF country == Indonesia, local promoter / official event / official IG is required for primary verification.
-    // Regional discovery signals (StubHub, Viagogo) cannot verify an Indonesian event.
-    const eventCountry = (canonicalEvent.country || 'Indonesia').toLowerCase();
-    if (eventCountry === 'indonesia' || eventCountry === 'id') {
-      const hasLocalIndoAuthority = sourceRecords.some(s => {
-        const srcMeta = sourceRegistry.getSource(s.source_id) || {};
-        const isAuth = sourceRegistry.isAuthoritativeSource(s.source_id, s.account_handle || s.source_account);
-        if (!isAuth) return false;
-        const c = (srcMeta.country || s.country || '').toLowerCase();
-        const isIndo = c === 'indonesia' || c === 'id';
-        const isArtistDirect = (srcMeta.source_type || '').includes('ARTIST');
-        return isIndo || isArtistDirect;
-      });
-
-      if (!hasLocalIndoAuthority) {
-        return {
-          verification_status: VERIFICATION_STATUS.UNVERIFIED,
-          verification_confidence: 45,
-          conflicts: [],
-          flags: ['INDONESIA_LOCAL_AUTHORITY_REQUIRED', 'REGIONAL_RADAR_NOT_LOCAL_PROOF'],
-          freshness_ttl_hours: 48
-        };
+        if (!hasLocalIndoAuthority) {
+          failClosedReason = 'INDONESIA_LOCAL_AUTHORITY_REQUIRED';
+          flags.push('INDONESIA_LOCAL_AUTHORITY_REQUIRED');
+          flags.push('REGIONAL_RADAR_NOT_LOCAL_PROOF');
+        }
       }
     }
 
@@ -372,7 +375,13 @@ class EventVerificationService {
 
     // Cap confidence at 95%
     let confidence = Math.min(95, Math.max(10, score));
-    if (hasAuthoritativeSocial) {
+    if (isConflicted) {
+      confidence = 45;
+    } else if (!hasAuthoritative) {
+      confidence = Math.min(50, score || (isSocialTier3 ? 30 : 50));
+    } else if (failClosedReason) {
+      confidence = 45;
+    } else if (hasAuthoritativeSocial) {
       // Direct announcement from a verified official promoter/artist/event IG account
       // is primary evidence and carries high confidence even without corroboration.
       confidence = Math.min(95, Math.max(85, confidence));
@@ -380,11 +389,13 @@ class EventVerificationService {
 
     // Determine verification status
     let status = VERIFICATION_STATUS.UNVERIFIED;
-    if (canonicalEvent.status === 'CANCELLED') {
+    if (isConflicted) {
+      status = VERIFICATION_STATUS.CONFLICTED;
+    } else if (canonicalEvent.status === 'CANCELLED') {
       status = VERIFICATION_STATUS.CANCELLED;
     } else if (canonicalEvent.status === 'POSTPONED') {
       status = VERIFICATION_STATUS.POSTPONED;
-    } else if (hasAuthoritative && confidence >= 65) {
+    } else if (hasAuthoritative && !failClosedReason && confidence >= 65) {
       // Direct official announcement from a verified IG / official event channel is a primary proof.
       status = hasAuthoritativeSocial
         ? VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED
@@ -431,12 +442,145 @@ class EventVerificationService {
       }
     }
 
+    // 9. Tikum Zero-Fake Event Policy & 14 Schema Attributes Computation
+    const isFestival = (
+      (canonicalEvent.category || '').toUpperCase() === 'FESTIVAL' ||
+      (canonicalEvent.category_group || '').toUpperCase() === 'FESTIVALS_EXPERIENCES' ||
+      /festival|fest|expo|fair|pekan|bazaar/i.test(canonicalEvent.title || canonicalEvent.name || '')
+    );
+    const isNonMusic = ['SPORT', 'SPORTS', 'THEATER', 'EXHIBITION', 'BUSINESS_EDUCATION', 'SHOWS_COMEDY'].includes((canonicalEvent.category || '').toUpperCase());
+
+    // Resolve artist evidence
+    let artistOfficialUrl = canonicalEvent.artist_official_url || null;
+    let artistSourceType = canonicalEvent.artist_official_source_type || null;
+    let artistVerifStatus = canonicalEvent.artist_verification_status || null;
+
+    if (!artistOfficialUrl) {
+      for (const s of sourceRecords) {
+        const sType = String(s.source_type || '').toUpperCase();
+        if (sType.includes('ARTIST') || sType.includes('WEVERSE') || sType.includes('MANAGEMENT')) {
+          artistOfficialUrl = s.source_url || s.official_url || null;
+          artistSourceType = sType.includes('WEVERSE') ? ARTIST_SOURCE_TYPES.WEVERSE :
+                             (sType.includes('MANAGEMENT') ? ARTIST_SOURCE_TYPES.MANAGEMENT_LABEL_OFFICIAL : ARTIST_SOURCE_TYPES.ARTIST_OFFICIAL_WEB);
+          break;
+        }
+      }
+    }
+
+    if (isFestival || isNonMusic) {
+      artistVerifStatus = 'NOT_APPLICABLE';
+      if (!artistSourceType) artistSourceType = ARTIST_SOURCE_TYPES.NOT_APPLICABLE;
+    } else {
+      if (artistOfficialUrl && (hasAuthoritative || canonicalEvent.artist_verification_status === 'VERIFIED')) {
+        artistVerifStatus = 'VERIFIED';
+        if (!artistSourceType) {
+          if (artistOfficialUrl.includes('weverse.io')) {
+            artistSourceType = ARTIST_SOURCE_TYPES.WEVERSE;
+          } else if (artistOfficialUrl.includes('ygfamily.com') || artistOfficialUrl.includes('label') || artistOfficialUrl.includes('management')) {
+            artistSourceType = ARTIST_SOURCE_TYPES.MANAGEMENT_LABEL_OFFICIAL;
+          } else if (artistOfficialUrl.includes('instagram.com')) {
+            artistSourceType = ARTIST_SOURCE_TYPES.OFFICIAL_SOCIAL;
+          } else {
+            artistSourceType = ARTIST_SOURCE_TYPES.ARTIST_OFFICIAL_WEB;
+          }
+        }
+      } else if (canonicalEvent.artist_verification_status === 'PENDING_ARTIST_VERIFICATION' || canonicalEvent.require_artist_verification || canonicalEvent.enforce_zero_fake_policy) {
+        artistVerifStatus = 'PENDING_ARTIST_VERIFICATION';
+      } else if (artistVerifStatus !== 'VERIFIED') {
+        artistVerifStatus = 'UNVERIFIED';
+      }
+    }
+
+    // Resolve promoter evidence
+    let promoterOfficialUrl = canonicalEvent.promoter_official_url || null;
+    let promoterVerifStatus = 'UNVERIFIED';
+    for (const s of sourceRecords) {
+      const sType = String(s.source_type || '').toUpperCase();
+      const isProm = sType.includes('PROMOTER') || (s.source_id && s.source_id.includes('promoter'));
+      if (isProm && sourceRegistry.isAuthoritativeSource(s.source_id, s.account_handle || s.source_account)) {
+        promoterVerifStatus = 'VERIFIED';
+        if (!promoterOfficialUrl) promoterOfficialUrl = s.source_url || null;
+      }
+    }
+    if (canonicalEvent.promoter_official_url && (hasAuthoritative || promoterVerifStatus === 'VERIFIED')) {
+      promoterVerifStatus = 'VERIFIED';
+    }
+
+    // Resolve event official url & verification
+    let eventOfficialUrl = canonicalEvent.event_official_url || canonicalEvent.official_event_url || null;
+    let eventVerifStatus = (eventOfficialUrl && /^https?:\/\//i.test(eventOfficialUrl) && (hasAuthoritative || canonicalEvent.event_verification_status === 'VERIFIED'))
+      ? 'VERIFIED'
+      : (canonicalEvent.event_verification_status || 'UNVERIFIED');
+
+    // Resolve ticketing evidence
+    let ticketingOfficialUrl = canonicalEvent.ticketing_official_url || canonicalEvent.official_ticket_url || null;
+    let ticketingVerifStatus = (ticketingOfficialUrl && /^https?:\/\//i.test(ticketingOfficialUrl)) ? 'VERIFIED' : (canonicalEvent.ticketing_verification_status || 'UNVERIFIED');
+
+    // Resolve venue operational evidence
+    let venueVerifStatus = (canonicalEvent.venue_name && (canonicalEvent.city || canonicalEvent.venue_city)) ? 'VERIFIED' : 'UNVERIFIED';
+
+    // Zero-fake policy gate: if concert has explicit PENDING_ARTIST_VERIFICATION or is uncorroborated discovery radar
+    if (!isFestival && !isNonMusic && (artistVerifStatus === 'PENDING_ARTIST_VERIFICATION' || (!artistOfficialUrl && canonicalEvent.enforce_zero_fake_policy))) {
+      status = VERIFICATION_STATUS.PENDING_ARTIST_VERIFICATION;
+      artistVerifStatus = 'PENDING_ARTIST_VERIFICATION';
+      flags.push('ZERO_FAKE_POLICY_PENDING_ARTIST_VERIFICATION');
+      flags.push('CONCERT_REQUIRES_OFFICIAL_ARTIST_PROOF');
+    }
+
+    // Determine Verification Tier and Score
+    let verificationTier = VERIFICATION_TIERS.TIER_C_DISCOVERY_ONLY;
+    let verificationScore = 0;
+
+    const isVerifiedStatus = (status === VERIFICATION_STATUS.VERIFIED || status === VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED);
+
+    if (isVerifiedStatus) {
+      if (artistVerifStatus === 'VERIFIED' && (promoterVerifStatus === 'VERIFIED' || eventVerifStatus === 'VERIFIED') && (ticketingVerifStatus === 'VERIFIED' || venueVerifStatus === 'VERIFIED')) {
+        verificationTier = VERIFICATION_TIERS.TIER_A_DOUBLE_OFFICIAL;
+        verificationScore = Math.max(90, Math.min(98, confidence + 5));
+      } else if ((eventVerifStatus === 'VERIFIED' || promoterVerifStatus === 'VERIFIED') && (ticketingVerifStatus === 'VERIFIED' || venueVerifStatus === 'VERIFIED')) {
+        verificationTier = VERIFICATION_TIERS.TIER_B_OFFICIAL_EVENT;
+        verificationScore = Math.max(80, Math.min(89, confidence));
+      } else {
+        verificationTier = VERIFICATION_TIERS.TIER_B_OFFICIAL_EVENT;
+        verificationScore = Math.max(75, Math.min(85, confidence));
+      }
+    } else {
+      verificationTier = VERIFICATION_TIERS.TIER_C_DISCOVERY_ONLY;
+      verificationScore = Math.min(50, Math.max(10, score));
+    }
+
+    const nowIso = new Date().toISOString();
+    const lastVerifiedAt = canonicalEvent.last_verified_at || canonicalEvent.verified_at || nowIso;
+    const nextVerificationAt = new Date(new Date(lastVerifiedAt).getTime() + ttlMs).toISOString();
+
     return {
       verification_status: status,
       verification_confidence: confidence,
       conflicts,
       flags,
-      freshness_ttl_hours: Math.round(ttlMs / (1000 * 60 * 60))
+      freshness_ttl_hours: Math.round(ttlMs / (1000 * 60 * 60)),
+
+      // 14 Mandatory Tikum Zero-Fake Attributes
+      artist_official_url: artistOfficialUrl,
+      artist_official_source_type: artistSourceType,
+      artist_verification_status: artistVerifStatus,
+
+      promoter_official_url: promoterOfficialUrl,
+      promoter_verification_status: promoterVerifStatus,
+
+      event_official_url: eventOfficialUrl,
+      event_verification_status: eventVerifStatus,
+
+      ticketing_official_url: ticketingOfficialUrl,
+      ticketing_verification_status: ticketingVerifStatus,
+
+      venue_verification_status: venueVerifStatus,
+
+      verification_tier: verificationTier,
+      verification_score: verificationScore,
+
+      last_verified_at: lastVerifiedAt,
+      next_verification_at: nextVerificationAt
     };
   }
 
@@ -457,6 +601,8 @@ class EventVerificationService {
 module.exports = {
   EventVerificationService,
   VERIFICATION_STATUS,
+  VERIFICATION_TIERS,
+  ARTIST_SOURCE_TYPES,
   FRESHNESS_WINDOW_MS,
   getFreshnessTtlMs
 };
