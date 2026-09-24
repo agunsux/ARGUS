@@ -290,6 +290,10 @@ class EventSEOService {
   <style>
     .event-seo-container { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
     .event-hero { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 28px; margin-bottom: 24px; }
+    .event-poster { margin: 0 0 20px; border-radius: 10px; overflow: hidden; border: 1px solid #1e293b; background: #0b1120; }
+    .event-poster img { display: block; width: 100%; height: auto; max-height: 420px; object-fit: cover; }
+    .event-poster figcaption { padding: 8px 12px; font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .event-poster figcaption a { color: inherit; text-decoration: underline; }
     .event-meta-strip { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0; color: #94a3b8; font-size: 14px; }
     .event-meta-item { display: flex; align-items: center; gap: 8px; }
     .official-ticket-box { background: #131d31; border: 1px solid #2563eb; border-radius: 10px; padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
@@ -339,6 +343,16 @@ class EventSEOService {
     </nav>
 
     <article class="event-hero">
+      ${event.image_url && event.is_fallback_image !== true ? `
+        <figure class="event-poster">
+          <img src="${event.image_url}" alt="Poster resmi ${event.canonical_name}" loading="lazy"
+               onerror="this.parentElement.style.display='none'">
+          <figcaption>
+            Poster resmi${event.image_credit ? ` — ${event.image_credit}` : ''}
+            ${event.image_source_url ? ` · <a href="${event.image_source_url}" target="_blank" rel="noopener noreferrer nofollow">sumber resmi</a>` : ''}
+          </figcaption>
+        </figure>
+      ` : ''}
       <div class="badge-row">
         <span class="badge badge-primary">${category}</span>
         ${isVerified ? `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Terverifikasi Tikum (${confidence}%)</span>` : `<span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Dalam Verifikasi (${confidence}%)</span>`}
@@ -359,6 +373,17 @@ class EventSEOService {
     <section>
       <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-ticket"></i> Kanal Tiket Resmi</h2>
       ${officialTicketHtml}
+    </section>
+
+    <!-- Section 1b: Official source attribution (compliance policy §6.3) -->
+    <section style="margin-top: 16px;">
+      <p style="font-size: 11px; line-height: 1.8; color: #94a3b8; background: #0b1120; border: 1px solid #1e293b; border-radius: 8px; padding: 12px 14px;">
+        <strong style="color:#cbd5e1;">Atribusi sumber resmi.</strong>
+        Data faktual event ini dihimpun dari kanal publik resmi penyelenggara dan mitra ticketing
+        ${event.source_url ? `(<a href="${event.source_url}" target="_blank" rel="noopener noreferrer nofollow" style="color:#38bdf8;">sumber</a>)` : ''}
+        ${event.verification_status ? `dan diverifikasi melalui kanal otoritatif resmi (status: ${event.verification_status}${event.verification_confidence ? `, keyakinan ${event.verification_confidence}%` : ''}).` : '.'}
+        Tikum tidak menyalin materi promosi; hanya menyimpan nama event, jadwal, venue, kota, harga, tautan resmi, serta poster resmi dengan kredit penyelenggara.
+      </p>
     </section>
 
     <!-- Section 2: Tikum Secondary Resale Market -->

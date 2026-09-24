@@ -153,7 +153,20 @@ class EventIngestionPipeline {
       official_event_url: sanitizedPayload.official_event_url || sanitizedPayload.official_link || null,
       organizer_name: sanitizedPayload.organizer_name || (source.tier === 1 ? source.source_name : 'Promoter'),
       artists: Array.isArray(sanitizedPayload.artists) ? sanitizedPayload.artists : (sanitizedPayload.artist ? [sanitizedPayload.artist] : []),
-      status: sanitizedPayload.status || 'UPCOMING'
+      status: sanitizedPayload.status || 'UPCOMING',
+
+      // Visual Provenance propagation (official poster only; never fabricated).
+      // Consumed by EventVisualProvenanceService during canonical creation.
+      image_url: sanitizedPayload.image_url || sanitizedPayload.poster_url || sanitizedPayload.event_image || null,
+      image_source_type: sanitizedPayload.image_source_type || null,
+      image_source_url: sanitizedPayload.image_source_url || null,
+      image_source_account: sanitizedPayload.image_source_account || sanitizedPayload.source_account || null,
+      image_source_tier: sanitizedPayload.image_source_tier !== undefined ? sanitizedPayload.image_source_tier : null,
+      image_credit: sanitizedPayload.image_credit || null,
+      image_license: sanitizedPayload.image_license || sanitizedPayload.image_license_status || null,
+      image_scope: sanitizedPayload.image_scope || null,
+      min_price: sanitizedPayload.min_price || sanitizedPayload.ticket_price_min || null,
+      max_price: sanitizedPayload.max_price || null
     };
 
     // Stage 5: IDEMPOTENCY CHECK

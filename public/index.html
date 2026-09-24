@@ -593,47 +593,159 @@
       .search-btn { padding: 12px; }
       .filters-container { flex-direction: column; align-items: stretch; }
     }
+
+    /* ==================================================================
+       Live Nation Asia-inspired discovery surface
+       (dark-first poster-led rails; reference: https://www.livenation.asia/)
+       ================================================================== */
+    body { background: #0B0B0C; color: #F5F5F5; }
+    .ln-nav-links { display: flex; gap: 18px; align-items: center; }
+    .ln-nav-link {
+      color: #E5E7EB; text-decoration: none; font-size: 12px; font-weight: 800;
+      letter-spacing: .06em; text-transform: uppercase;
+    }
+    .ln-nav-link:hover { color: var(--primary); }
+
+    .ln-hero-feature {
+      position: relative; min-height: 430px; display: flex; align-items: flex-end;
+      background-color: #101012; background-size: cover; background-position: center 25%;
+    }
+    .ln-hero-feature::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.6) 45%, rgba(11,11,12,.96) 100%);
+    }
+    .ln-hero-inner {
+      position: relative; z-index: 2; padding: 34px 24px 38px;
+      max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box;
+    }
+    .ln-kicker {
+      color: var(--primary); font-weight: 900; letter-spacing: .16em;
+      text-transform: uppercase; font-size: 11px; margin-bottom: 10px;
+    }
+    .ln-hero-title { font-size: 44px; line-height: 1.05; font-weight: 900; margin: 0 0 12px; }
+    .ln-hero-meta { color: #D1D5DB; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+    .ln-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .ln-btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px;
+      border-radius: 4px; font-weight: 800; font-size: 12px; letter-spacing: .07em;
+      text-transform: uppercase; text-decoration: none; border: none; cursor: pointer;
+    }
+    .ln-btn-primary { background: var(--primary); color: #04220F; }
+    .ln-btn-primary:hover { background: var(--primary-hover); }
+    .ln-btn-ghost { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.3); }
+    .ln-btn-ghost:hover { background: rgba(255,255,255,.2); }
+
+    .ln-section { max-width: 1200px; margin: 34px auto 0; }
+    .ln-section-title {
+      font-size: 21px; font-weight: 900; letter-spacing: .02em;
+      text-transform: uppercase; margin: 0 0 4px;
+    }
+    .ln-section-lead { color: #9CA3AF; font-size: 13px; margin: 0 0 16px; }
+
+    .ln-rail {
+      display: flex; gap: 16px; overflow-x: auto; padding: 4px 24px 16px;
+      scroll-snap-type: x mandatory;
+    }
+    .ln-rail::-webkit-scrollbar { height: 8px; }
+    .ln-rail::-webkit-scrollbar-thumb { background: #2A2A2E; border-radius: 8px; }
+    .ln-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 18px; padding: 0 24px 8px;
+    }
+
+    .poster-card {
+      flex: 0 0 236px; scroll-snap-align: start; background: #141416;
+      border: 1px solid #232326; border-radius: 10px; overflow: hidden;
+      text-decoration: none; color: inherit; display: flex; flex-direction: column;
+      position: relative; transition: transform .18s ease, border-color .18s ease;
+    }
+    .poster-card:hover { transform: translateY(-4px); border-color: var(--primary); }
+    .poster-media {
+      position: relative; width: 100%; aspect-ratio: 4 / 5;
+      background: linear-gradient(135deg, #1DB954, #0E6B33);
+      background-size: cover; background-position: center;
+    }
+    .poster-body { padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+    .poster-date { font-size: 11px; color: var(--primary); font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .poster-title {
+      font-size: 14px; font-weight: 800; line-height: 1.3;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .poster-sub { font-size: 12px; color: #9CA3AF; line-height: 1.4; }
+    .poster-price { margin-top: auto; font-size: 12px; font-weight: 800; color: #E5E7EB; }
+    .ln-badge {
+      position: absolute; z-index: 3; font-size: 10px; font-weight: 900;
+      letter-spacing: .08em; padding: 4px 8px; border-radius: 3px; text-transform: uppercase;
+    }
+    .ln-badge--verified { top: 10px; left: 10px; background: var(--primary); color: #04220F; }
+    .ln-badge--status {
+      top: 10px; right: 10px; background: rgba(0,0,0,.72); color: #fff;
+      border: 1px solid rgba(255,255,255,.28);
+    }
+    .ln-attribution {
+      max-width: 1200px; margin: 30px auto 52px; padding: 14px 18px;
+      border: 1px solid #232326; border-radius: 8px; background: #101012;
+      color: #9CA3AF; font-size: 12px; line-height: 1.8;
+    }
+    .ln-attribution strong { color: #E5E7EB; }
+    .ln-empty { text-align: center; padding: 64px 24px; color: #9CA3AF; }
+
+    @media (max-width: 768px) {
+      .ln-hero-title { font-size: 28px; }
+      .ln-hero-feature { min-height: 330px; }
+      .poster-card { flex: 0 0 176px; }
+      .ln-nav-links { display: none; }
+    }
   </style>
 </head>
 <body>
 
-  <header class="site-header">
+  <header class="site-header" style="background:#0B0B0C; border-bottom:1px solid #232326;">
     <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
       <i class="fa-solid fa-ticket brand-logo" style="color:var(--primary); font-size:24px;"></i>
       <div class="brand-title">Tikum</div>
     </a>
+    <nav class="ln-nav-links">
+      <a class="ln-nav-link" href="#upcoming">Upcoming Shows</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('MUSIC'); return false;">Konser</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('FESTIVAL'); return false;">Festival</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('SPORT'); return false;">Olahraga</a>
+      <a class="ln-nav-link" href="/faq">Bantuan</a>
+    </nav>
     <div class="header-actions" style="display:flex; align-items:center; gap:10px;">
+      <span class="ln-nav-link" style="color:#6B7280; cursor:default;"><i class="fa-solid fa-location-dot"></i> Indonesia</span>
       <div id="authHeaderContainer">
         <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()">Login / Sign Up</button>
       </div>
-      <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Dark Mode"><i class="fa-solid fa-moon"></i></button>
       <button class="select-filter" onclick="toggleLang()" id="langToggle" title="Toggle Language">ID</button>
     </div>
   </header>
 
-  <section class="hero">
-    <h1>Temukan Event yang Kamu Cari</h1>
-    <p>Konser, olahraga, festival, pameran, dan event berbayar yang sudah diverifikasi</p>
-    <div class="search-bar">
-      <input type="text" id="searchInput" class="search-input" placeholder="Cari acara, artis, atau tempat..." oninput="debounceSearch()">
-      <button class="search-btn" onclick="renderAllSections()"><i class="fa-solid fa-magnifying-glass"></i> Cari</button>
-    </div>
-  </section>
+  <!-- Featured event hero (Live Nation Asia style: poster-led "Just Announced") -->
+  <section id="heroFeature" class="ln-hero-feature"></section>
 
-  <div class="trust-strip">
-    <div class="trust-item"><i class="fa-solid fa-shield-check"></i> 100% Tiket Terverifikasi</div>
-    <div class="trust-item"><i class="fa-solid fa-lock"></i> Pembayaran Aman</div>
-    <div class="trust-item"><i class="fa-solid fa-headset"></i> Layanan Pelanggan 24/7</div>
+  <div class="trust-strip" style="background:#101012; border-bottom:1px solid #232326;">
+    <div class="trust-item"><i class="fa-solid fa-circle-check"></i> 100% Tiket Terverifikasi</div>
+    <div class="trust-item"><i class="fa-solid fa-lock"></i> Escrow Pembayaran Aman</div>
+    <div class="trust-item"><i class="fa-solid fa-user-shield"></i> PIC Fisik di Gerbang Venue</div>
   </div>
 
-  <div class="filters-container">
+  <!-- Search & discovery controls -->
+  <div class="filters-container" style="padding-top:20px;">
+    <div class="search-bar" style="flex:1; min-width:280px; background:#141416; border:1px solid #232326; border-radius:6px; margin:0; padding:6px;">
+      <input type="text" id="searchInput" class="search-input" placeholder="Cari artis, event, atau venue..." oninput="debounceSearch()" style="background:transparent; color:#F5F5F5;">
+      <button class="search-btn ln-btn ln-btn-primary" onclick="renderAllSections()"><i class="fa-solid fa-magnifying-glass"></i> Cari</button>
+    </div>
+  </div>
+
+  <div class="filters-container" id="upcoming">
     <div class="filter-pills">
-      <div class="pill active" onclick="setCategory(this, '')">Semua Kategori</div>
-      <div class="pill" onclick="setCategory(this, 'MUSIC')">Konser</div>
-      <div class="pill" onclick="setCategory(this, 'SPORT')">Olahraga</div>
-      <div class="pill" onclick="setCategory(this, 'THEATER')">Teater</div>
-      <div class="pill" onclick="setCategory(this, 'FESTIVAL')">Festival</div>
-      <div class="pill" onclick="setCategory(this, 'EXHIBITION')">Pameran</div>
+      <div class="pill active" data-category="" onclick="setCategory(this, '')">Semua Kategori</div>
+      <div class="pill" data-category="MUSIC" onclick="setCategory(this, 'MUSIC')">Konser</div>
+      <div class="pill" data-category="SPORT" onclick="setCategory(this, 'SPORT')">Olahraga</div>
+      <div class="pill" data-category="THEATER" onclick="setCategory(this, 'THEATER')">Teater</div>
+      <div class="pill" data-category="FESTIVAL" onclick="setCategory(this, 'FESTIVAL')">Festival</div>
+      <div class="pill" data-category="EXHIBITION" onclick="setCategory(this, 'EXHIBITION')">Pameran</div>
     </div>
     <div style="display:flex; gap:12px;">
       <select id="cityFilter" class="select-filter" onchange="renderAllSections()">
@@ -771,16 +883,36 @@
   </div>
 
   <script>
-    const API_URL = '/api/events';
+    const FEED_URL = '/api/events/home-feed';
+    const CATALOG_URL = '/api/events';
     let allEvents = [];
+    let homeFeed = null;
     let currentCategory = '';
     let searchTimeout = null;
 
-    // Theming
+    // Dark-first surface (matches the Live Nation Asia-inspired poster layout)
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.classList.add('dark-mode');
+    });
+
+    // Nav shortcut: apply a category filter and scroll to the listings.
+    function applyNavCategory(cat) {
+      currentCategory = cat || '';
+      document.querySelectorAll('.filter-pills .pill').forEach(p => {
+        p.classList.toggle('active', (p.dataset.category || '') === currentCategory);
+      });
+      renderAllSections();
+      const target = document.getElementById('upcoming');
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Theming (legacy helper retained for backwards compatibility; the discovery
+    // surface is dark-first and no longer exposes a theme switch).
     function toggleTheme() {
       document.body.classList.toggle('dark-mode');
       const icon = document.querySelector('#themeToggle i');
-      if(document.body.classList.contains('dark-mode')) {
+      if (!icon) return;
+      if (document.body.classList.contains('dark-mode')) {
         icon.classList.remove('fa-moon');
         icon.classList.add('fa-sun');
       } else {
@@ -810,43 +942,68 @@
       renderAllSections();
     }
 
+    /**
+     * Loads the verified upcoming supply.
+     * The API is the fail-closed authority (verified + evidenced + future-dated),
+     * so the client never re-implements the trust gate.
+     */
     async function fetchEvents() {
       try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        // Filter verified & upcoming events only
-        const now = new Date('2026-09-24T00:00:00+07:00').getTime(); // current context date
-        
-        allEvents = (data.events || []).filter(e => {
-          if (!e.is_verified) return false;
-          const evDate = new Date(e.date || e.start_date || e.event_end_at || '2099-01-01').getTime();
-          return evDate >= now;
-        });
-
-        renderAllSections();
+        const res = await fetch(FEED_URL, { headers: { Accept: 'application/json' } });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success) {
+            homeFeed = data;
+            const sections = data.sections || {};
+            allEvents = sections.upcoming_nearest && sections.upcoming_nearest.length
+              ? sections.upcoming_nearest
+              : (data.feed || []);
+          }
+        }
       } catch (err) {
-        console.error("Failed fetching events:", err);
+        console.error('Failed fetching home feed:', err);
       }
+
+      if (!allEvents.length) {
+        try {
+          const res = await fetch(CATALOG_URL, { headers: { Accept: 'application/json' } });
+          const data = await res.json();
+          allEvents = data.events || [];
+        } catch (err) {
+          console.error('Failed fetching event catalog:', err);
+          allEvents = [];
+        }
+      }
+
+      renderAllSections();
     }
 
     function getFilteredEvents() {
       const q = document.getElementById('searchInput').value.toLowerCase();
       const city = document.getElementById('cityFilter').value.toLowerCase();
       const dateF = document.getElementById('dateFilter').value;
-      const now = new Date('2026-09-24T00:00:00+07:00').getTime();
+      const now = Date.now();
 
       return allEvents.filter(e => {
         // Search
-        if (q && !(e.title?.toLowerCase().includes(q) || e.artist?.toLowerCase().includes(q) || e.venue_name?.toLowerCase().includes(q))) return false;
-        
-        // City
-        if (city && city !== 'semua') {
-          if (!e.city?.toLowerCase().includes(city) && !e.venue_city?.toLowerCase().includes(city)) return false;
+        if (q) {
+          const haystack = [
+            e.title, e.canonical_name, e.venue_name, e.city,
+            Array.isArray(e.artists) ? e.artists.join(' ') : e.artist
+          ].filter(Boolean).join(' ').toLowerCase();
+          if (!haystack.includes(q)) return false;
         }
 
-        // Category
+        // City
+        if (city && city !== 'semua') {
+          const evCity = (e.city || e.venue_city || '').toLowerCase();
+          if (!evCity.includes(city)) return false;
+        }
+
+        // Category (supports canonical event types and broad category groups)
         if (currentCategory) {
-          const evCat = (e.category || e.category_group || '').toUpperCase();
+          const evCat = [e.category, e.category_group, e.event_type]
+            .filter(Boolean).join(' ').toUpperCase();
           if (!evCat.includes(currentCategory)) return false;
         }
 
@@ -886,114 +1043,192 @@
       document.getElementById('verifModal').style.display = 'none';
     }
 
-    function renderCard(e) {
-      const img = e.image_url && !e.is_fallback ? e.image_url : '';
-      const fallbackGradient = 'linear-gradient(135deg, #1DB954, #179643)';
-      const bg = img ? `url('${img}') center/cover` : fallbackGradient;
-      
+    // Colour status for the poster badge (live ticket state when known).
+    function resolveStatus(e) {
+      if (e.ticket_status === 'SOLD_OUT' || e.status === 'SOLD_OUT') return { css: 'status-soldout', text: 'SOLD OUT' };
+      if (e.ticket_status === 'COMING_SOON') return { css: 'status-comingsoon', text: 'COMING SOON' };
+      if (e.official_ticket_url) return { css: 'status-onsale', text: 'ON SALE' };
+      return { css: 'status-comingsoon', text: 'SEGERA' };
+    }
+
+    function posterBackground(e) {
+      const img = e.image_url && e.is_fallback_image !== true && e.image_status !== 'FALLBACK' ? e.image_url : '';
+      return img ? `background-image:url('${img}');` : '';
+    }
+
+    /**
+     * Poster-led card (Live Nation Asia style): artwork first, facts underneath.
+     */
+    function renderPosterCard(e) {
+      const status = resolveStatus(e);
       const title = e.title || e.canonical_name || 'Event';
       const city = e.city || e.venue_city || '';
       const venue = e.venue_name || e.venue || '';
-      const loc = [venue, city].filter(Boolean).join(', ');
-      
-      let statusClass = 'status-onsale';
-      let statusText = 'ON SALE';
-      if (e.ticket_status === 'COMING_SOON') { statusClass = 'status-comingsoon'; statusText = 'COMING SOON'; }
-      if (e.ticket_status === 'SOLD_OUT') { statusClass = 'status-soldout'; statusText = 'SOLD OUT'; }
-
-      const priceStr = e.min_price ? `Tiket dari Rp ${formatRupiah(e.min_price)}` : 'Harga tidak tersedia';
+      const loc = [venue, city].filter(Boolean).join(' · ');
+      const priceStr = e.min_price ? `Dari Rp ${formatRupiah(e.min_price)}` : '';
       const dateStr = formatDate(e.date || e.start_date);
-      const slug = e.slug || e.id;
+      const slug = e.slug || e.event_id || e.id;
       const verifDate = e.verified_at || '';
 
       return `
-        <a href="/events/${slug}" class="card" style="text-decoration:none; color:inherit;">
-          <div class="card-img-wrapper" style="background: ${bg};">
-            <div class="badge-verified" onclick="showVerifModal(event, '${verifDate}')"><i class="fa-solid fa-shield-check"></i> VERIFIED</div>
-            <div class="badge-status ${statusClass}">${statusText}</div>
+        <a href="/events/${slug}" class="poster-card">
+          <div class="poster-media" style="${posterBackground(e)}">
+            <div class="ln-badge ln-badge--verified" onclick="showVerifModal(event, '${verifDate}')"><i class="fa-solid fa-shield-halved"></i> TERVERIFIKASI</div>
+            <div class="ln-badge ln-badge--status">${status.text}</div>
           </div>
-          <div class="card-content">
-            <div class="card-date">${dateStr}</div>
-            <div class="card-title">${title}</div>
-            <div class="card-venue"><i class="fa-solid fa-location-dot"></i> ${loc}</div>
-            <div class="card-footer">
-              <div class="card-price">${priceStr}</div>
-              <span class="btn-cta">Lihat Detail</span>
-            </div>
+          <div class="poster-body">
+            <div class="poster-date">${dateStr}</div>
+            <div class="poster-title">${title}</div>
+            <div class="poster-sub">${loc}</div>
+            ${priceStr ? `<div class="poster-price">${priceStr}</div>` : ''}
           </div>
         </a>
       `;
     }
 
-    function renderSection(title, icon, events) {
-      if (!events || events.length === 0) return '';
-      const cards = events.map(renderCard).join('');
-      return `
-        <div class="section-container">
-          <h2 class="section-title"><i class="fa-solid ${icon}" style="color:var(--primary)"></i> ${title}</h2>
-          <div class="grid">
-            ${cards}
-          </div>
-        </div>
-      `;
-    }
-
-    function renderAllSections() {
-      const main = document.getElementById('mainContent');
-      const filtered = getFilteredEvents();
-      
-      if (filtered.length === 0) {
-        main.innerHTML = '<div style="text-align:center; padding: 40px; color: #888;">Tidak ada event yang sesuai dengan pencarian Anda.</div>';
+    /**
+     * Featured hero: the most recently verified announcement.
+     */
+    function renderHeroFeature(e) {
+      const mount = document.getElementById('heroFeature');
+      if (!mount) return;
+      if (!e) {
+        mount.innerHTML = `
+          <div class="ln-hero-inner">
+            <div class="ln-kicker">Tikum — Verified Ticket Marketplace</div>
+            <h1 class="ln-hero-title">Belum ada event terverifikasi</h1>
+            <p class="ln-hero-meta">Katalog Upcoming akan muncul di sini setelah ada pengumuman resmi dari promotor atau penyelenggara terverifikasi.</p>
+          </div>`;
+        mount.style.backgroundImage = '';
         return;
       }
 
-      const now = new Date('2026-09-24T00:00:00+07:00').getTime();
-      const msPerDay = 86400000;
+      const title = e.title || e.canonical_name || 'Event';
+      const city = e.city || e.venue_city || '';
+      const venue = e.venue_name || e.venue || '';
+      const slug = e.slug || e.event_id || e.id;
+      const verif = e.verified_at ? formatDate(e.verified_at) : '';
 
-      // Segera Hadir (<= 7 days)
-      const comingSoon = filtered.filter(e => {
-        const d = new Date(e.date || e.start_date).getTime();
-        return d >= now && d <= now + (7 * msPerDay);
-      }).sort((a,b) => new Date(a.date || a.start_date) - new Date(b.date || b.start_date));
+      mount.style.backgroundImage = (e.image_url && e.is_fallback_image !== true && e.image_status !== 'FALLBACK')
+        ? `url('${e.image_url}')`
+        : '';
 
-      // Trending (highest demand_score)
-      const trending = [...filtered].sort((a,b) => (b.demand_score || 0) - (a.demand_score || 0));
+      mount.innerHTML = `
+        <div class="ln-hero-inner">
+          <div class="ln-kicker">Baru Diumumkan · Terverifikasi Resmi</div>
+          <h1 class="ln-hero-title">${title}</h1>
+          <p class="ln-hero-meta">
+            <i class="fa-regular fa-calendar"></i> ${formatDate(e.date || e.start_date)}
+            &nbsp;·&nbsp; <i class="fa-solid fa-location-dot"></i> ${[venue, city].filter(Boolean).join(', ')}
+            ${verif ? `&nbsp;·&nbsp; <i class="fa-solid fa-shield-halved" style="color:var(--primary)"></i> Diverifikasi ${verif}` : ''}
+          </p>
+          <div class="ln-hero-actions">
+            <a class="ln-btn ln-btn-primary" href="/events/${slug}"><i class="fa-solid fa-ticket"></i> Lihat Detail</a>
+            ${e.official_ticket_url ? `<a class="ln-btn ln-btn-ghost" href="${e.official_ticket_url}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i> Tiket Resmi</a>` : ''}
+          </div>
+        </div>`;
+    }
 
-      // Baru Diumumkan (verified_at desc)
-      const justAnnounced = [...filtered].sort((a,b) => new Date(b.verified_at || 0) - new Date(a.verified_at || 0));
+    /**
+     * Official attribution required by the compliance policy for every event
+     * surface that depends on promoter / ticketing partner data.
+     */
+    function renderAttribution() {
+      return `
+        <div class="ln-attribution">
+          <strong>Atribusi sumber resmi.</strong>
+          Informasi tiket resmi disediakan oleh <strong>Live Nation Asia</strong>, <strong>LOKET</strong>, <strong>BBO Events</strong>
+          dan kanal resmi penyelenggara terkait melalui tautan resmi masing-masing. TIKUM hanya menyimpan data faktual
+          (nama event, tanggal, venue, kota, harga, serta tautan dan poster resmi) dan tidak menyalin materi promosi.
+          Kanal Instagram <strong>@infokonser</strong>, <strong>@livenationasia</strong>, dan <strong>@ticketmasterasia</strong> digunakan
+          sebagai sinyal penemuan (Tier 3) dan tidak pernah menjadi dasar verifikasi.
+        </div>`;
+    }
 
-      // Category subsets
-      const concerts = filtered.filter(e => {
-        const cat = (e.category || e.category_group || '').toUpperCase();
-        return cat.includes('MUSIC') || cat.includes('CONCERT');
-      });
-      const sports = filtered.filter(e => {
-        const cat = (e.category || e.category_group || '').toUpperCase();
-        return cat.includes('SPORT');
-      });
-      const festivals = filtered.filter(e => {
-        const cat = (e.category || e.category_group || '').toUpperCase();
-        return cat.includes('FESTIVAL') || cat.includes('EXHIBITION');
-      });
+    function renderRail(title, lead, events, opts = {}) {
+      if (!events || events.length === 0) return '';
+      const cards = events.map(renderPosterCard).join('');
+      return `
+        <section class="ln-section" ${opts.anchor ? `id="${opts.anchor}"` : ''}>
+          <div style="padding:0 24px;">
+            <h2 class="ln-section-title">${title}</h2>
+            ${lead ? `<p class="ln-section-lead">${lead}</p>` : ''}
+          </div>
+          <div class="ln-rail">
+            ${cards}
+          </div>
+        </section>
+      `;
+    }
 
-      let html = '';
-      
-      // If we are searching or filtering by category/city/date, we might just want to show results.
-      // But we can still categorize them.
-      html += renderSection('Segera Hadir', 'fa-fire', comingSoon.slice(0, 4));
-      html += renderSection('Trending', 'fa-arrow-trend-up', trending.slice(0, 4));
-      html += renderSection('Baru Diumumkan', 'fa-bullhorn', justAnnounced.slice(0, 4));
-      html += renderSection('Konser', 'fa-music', concerts.slice(0, 4));
-      html += renderSection('Olahraga', 'fa-futbol', sports.slice(0, 4));
-      html += renderSection('Festival & Pameran', 'fa-tent', festivals.slice(0, 4));
+    function renderGridSection(title, lead, events, opts = {}) {
+      if (!events || events.length === 0) return '';
+      const cards = events.map(renderPosterCard).join('');
+      return `
+        <section class="ln-section" ${opts.anchor ? `id="${opts.anchor}"` : ''}>
+          <div style="padding:0 24px;">
+            <h2 class="ln-section-title">${title}</h2>
+            ${lead ? `<p class="ln-section-lead">${lead}</p>` : ''}
+          </div>
+          <div class="ln-grid">
+            ${cards}
+          </div>
+        </section>
+      `;
+    }
 
-      // If no sections match the specific sliced subsets but we have filtered events, just show all as "Hasil Pencarian"
-      if (!html) {
-        html = renderSection('Hasil Pencarian', 'fa-list', filtered);
+    /**
+     * Live Nation Asia-inspired composition:
+     *   hero feature -> "Baru Diumumkan" rail -> "Upcoming Shows" grid ->
+     *   "Last Call for Tickets" rail -> category rails -> official attribution.
+     * When any filter/search is active the surface collapses to a result grid.
+     */
+    function renderAllSections() {
+      const main = document.getElementById('mainContent');
+      const filtered = getFilteredEvents();
+
+      const searchValue = (document.getElementById('searchInput').value || '').trim();
+      const cityValue = document.getElementById('cityFilter').value;
+      const dateValue = document.getElementById('dateFilter').value;
+      const filtersActive = Boolean(searchValue || currentCategory || cityValue || dateValue);
+
+      if (filtersActive) {
+        renderHeroFeature(null);
+        if (!filtered.length) {
+          main.innerHTML = '<div class="ln-empty"><i class="fa-solid fa-magnifying-glass" style="font-size:26px; display:block; margin-bottom:12px;"></i>Tidak ada event terverifikasi yang sesuai dengan pencarian Anda.</div>';
+          return;
+        }
+        main.innerHTML = renderGridSection('Hasil Pencarian', `${filtered.length} event terverifikasi ditemukan`, filtered);
+        return;
       }
 
-      main.innerHTML = html;
+      const sections = (homeFeed && homeFeed.sections) || {};
+      const upcoming = (sections.upcoming_nearest && sections.upcoming_nearest.length ? sections.upcoming_nearest : filtered);
+      if (!upcoming.length) {
+        renderHeroFeature(null);
+        main.innerHTML = '<div class="ln-empty">Belum ada event terverifikasi yang akan datang.</div>';
+        return;
+      }
+
+      const justAnnounced = (sections.just_announced || []).slice(0, 10);
+      const lastCall = (sections.coming_soon || []);
+      const concerts = (sections.concerts || []);
+      const festivals = (sections.festivals || []);
+      const sports = (sections.sports || []);
+
+      renderHeroFeature(justAnnounced[0] || upcoming[0]);
+
+      main.innerHTML = [
+        renderRail('Baru Diumumkan', 'Pengumuman resmi terbaru dari promotor & penyelenggara terverifikasi', justAnnounced.length ? justAnnounced : upcoming.slice(0, 8)),
+        renderGridSection('Upcoming Shows', 'Seluruh event Indonesia yang sudah terverifikasi sumber resminya', upcoming, { anchor: 'upcomingShows' }),
+        lastCall.length ? renderRail('Last Call for Tickets', 'Berlangsung dalam 7 hari ke depan', lastCall) : '',
+        concerts.length ? renderRail('Konser', 'Tur dan konser resmi', concerts) : '',
+        festivals.length ? renderRail('Festival & Pameran', 'Festival musik, budaya, dan pameran', festivals) : '',
+        sports.length ? renderRail('Olahraga', 'Pertandingan dan kejuaraan resmi', sports) : '',
+        renderAttribution()
+      ].join('');
     }
+
 
     // ==========================================
     // Passwordless Magic Link Auth & Session

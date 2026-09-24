@@ -74,14 +74,29 @@ interface EventSourceRecord {
 | `src-venue-gbk` | PPK GBK (Gelora Bung Karno) | 1 | Venue Authority | `VenueAdapter` | **IMPLEMENTED & ACTIVE** |
 | `src-league-ibl` | IBL Indonesia (Basketball League) | 1 | Sports Org | `VenueAdapter` | **IMPLEMENTED & ACTIVE** |
 | `src-argus-verified-seed` | ARGUS Verified Seed Fixture | 1 | Curated Seed | `PromoterAdapter` | **IMPLEMENTED & ACTIVE** |
-| `src-tiket-com` | tiket.com | 2 | Ticketing Platform | `TiketComAdapter` | **READY (PASSIVE / FIXTURE)** |
-| `src-loket` | LOKET | 2 | Ticketing Platform | `LoketAdapter` | **READY (PASSIVE / FIXTURE)** |
-| `src-goers` | GOERS | 2 | Ticketing Platform | `GoersAdapter` | **READY (PASSIVE / FIXTURE)** |
+| `src-tiket-com` | tiket.com | 2 | Ticketing Platform | `TiketComAdapter` | **PARTNER FEED ONLY** (listing/sitemap return HTTP 403 edge WAF) |
+| `src-loket` | LOKET | 2 | Ticketing Platform | `LoketAdapter` | **ACTIVE — PERMITTED_CRAWL** (schema.org/Event JSON-LD) |
+| `src-bbo` | BBO Events (bbo.co.id) | 2 | Event Listing | `BboAdapter` | **ACTIVE — PERMITTED_CRAWL** (discovery observations only; year not published) |
+| `src-goers` | GOERS | 2 | Ticketing Platform | `GoersAdapter` | **PARTNER FEED ONLY** (/events + sitemap HTTP 403 Cloudflare WAF; SPA shell) |
 | `src-disc-bandsintown` | Bandsintown API | 2 | Discovery API | `EventSourceAdapter` | **READY (PASSIVE / FIXTURE)** |
-| `src-ticketmaster` | Ticketmaster Developer API | 2 | Ticketing Platform | `TicketmasterAdapter`| **REQUIRES AUTHORIZED KEY** |
-| `src-livenation` | Live Nation Global Tours | 1 | Promoter | `LiveNationAdapter` | **UNSUPPORTED / MANUAL ONLY** |
+| `src-ticketmaster` | Ticketmaster Developer API | 2 | Ticketing Platform | `TicketmasterAdapter`| **REQUIRES AUTHORIZED KEY** (ticketmaster.asia DNS dead; SG host HTTP 401) |
+| `src-livenation` | Live Nation Asia (livenation.asia) | 1 | Promoter | `LiveNationAdapter` | **ACTIVE — PERMITTED_CRAWL** (`@livenationasia`) |
+| `src-event-pestapora-web` | Pestapora Official Website | 1 | Official Event Web | `PromoterAdapter` | **ACTIVE — authority for Pestapora 2026** |
+| `src-event-dwp-web` | Djakarta Warehouse Project | 1 | Official Event Web | `PromoterAdapter` | **ACTIVE — authority for DWP 2026** |
+| `src-event-theweekndinjakarta-web` | The Weeknd in Jakarta | 1 | Official Event Web | `PromoterAdapter` | **ACTIVE — authority (JIS, 26 Sep 2026)** |
+| `src-event-lanyinjakarta-web` | LANY in Jakarta 2026 | 1 | Official Event Web | `PromoterAdapter` | **ACTIVE — authority (Indonesia Arena, 29–30 Oct 2026)** |
+| `src-event-maroon5jakarta-web` | Maroon 5 Asia 2027 Jakarta | 1 | Official Event Web | `PromoterAdapter` | **ACTIVE — authority (JIS, 5 Feb 2027)** |
+| `src-artatix` | Artatix | 2 | Ticketing Platform | `ArtatixAdapter` | **PARTNER FEED ONLY** (no robots.txt; `/explore` is a client-rendered SPA) |
+| `src-ig-infokonser` | Info Konser Indonesia | 3 | Social Discovery | `SocialDiscoveryAdapter` | **SIGNAL ONLY** (login-gated; Meta ToS prohibit automation) |
+| `src-ig-livenationasia` | Live Nation Asia IG | 3 | Social Discovery | `SocialDiscoveryAdapter` | **SIGNAL ONLY** (cannot verify) |
+| `src-ig-ticketmasterasia` | Ticketmaster Asia IG | 3 | Social Discovery | `SocialDiscoveryAdapter` | **SIGNAL ONLY** (cannot verify) |
 | `src-promoter-social-signal`| Verified Promoter Instagram | 3 | Social Channel | `SocialDiscoveryAdapter` | **IMPLEMENTED (SIGNAL ONLY)**|
 | `src-community-submission` | TIKUM User Submission | 3 | Community | `EventSourceAdapter` | **MANUAL REVIEW ONLY** |
+
+> **Compliance note (audited 2026-09-24):** `TIKUM WILL NEVER scrape Instagram.` The three
+> Instagram handles registered above are Tier 3 **discovery signals** only — they establish
+> provenance and populate the operator verification queue, and can never establish verification.
+> See `docs/OFFICIAL_EVENT_SUPPLY.md` for the full audit matrix and the evidence rules.
 
 ---
 

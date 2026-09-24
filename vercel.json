@@ -26,6 +26,7 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "ARGUS_REAL_SOURCE_SEED": "true"
   }
 }

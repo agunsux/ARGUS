@@ -794,6 +794,35 @@ class CanonicalEventRegistry {
     event.source_count = event.sources.length;
     event.updated_at = new Date().toISOString();
 
+    // Visual provenance re-resolution: when new evidence carrying official poster
+    // art arrives, the official image supersedes a missing or placeholder visual.
+    // Mirrors the verification re-evaluation below (evidence-driven, never fabricated).
+    if (sourceRecord.image_url || sourceRecord.poster_url || sourceRecord.event_image) {
+      try {
+        const visual = EventVisualProvenanceService.resolveEventImage(event, event.sources);
+        if (visual && visual.image_url && visual.is_fallback !== true) {
+          event.image_url = visual.image_url;
+          event.thumbnail_url = visual.thumbnail_url;
+          event.image_source_type = visual.image_source_type;
+          event.image_source_url = visual.image_source_url;
+          event.image_source_account = visual.image_source_account;
+          event.image_source_tier = visual.image_source_tier;
+          event.image_last_checked_at = visual.image_last_checked_at;
+          event.image_evidence_hash = visual.image_evidence_hash;
+          event.image_license_status = visual.image_license_status;
+          event.image_status = visual.image_status;
+          event.image_scope = visual.image_scope;
+          event.image_credit = visual.image_credit;
+          event.is_fallback_image = false;
+          event.fallback_meta = null;
+          event.event_image = visual.image_url;
+          event.poster_url = visual.image_url;
+        }
+      } catch (_) {
+        // Visual provenance failure must never block canonical reconciliation.
+      }
+    }
+
     // Re-evaluate verification
     const evalResult = EventVerificationService.evaluateEvent(event, event.sources);
     if (event.status !== 'CANCELLED' && event.status !== 'POSTPONED') {

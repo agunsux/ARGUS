@@ -118,12 +118,23 @@ async function runAll() {
     const goersAdapter = new GoersAdapter('src-goers', { feedUrl: null });
 
     const r1 = await tiketAdapter.discover();
-    const r2 = await loketAdapter.discover();
     const r3 = await goersAdapter.discover();
 
     assert.strictEqual(r1.status, 'READY_PASSIVE');
-    assert.strictEqual(r2.status, 'READY_PASSIVE');
     assert.strictEqual(r3.status, 'READY_PASSIVE');
+
+    // LOKET is an audited PERMITTED_CRAWL source: the partner feed remains the
+    // passive fallback, while the snapshot-backed discovery surface may only ever
+    // return claims that carry real, reconstructable provenance.
+    const loketFeed = await loketAdapter.discoverFromFeed();
+    assert.strictEqual(loketFeed.status, 'READY_PASSIVE');
+
+    const loketSnapshotClaims = await loketAdapter.discover();
+    assert.ok(Array.isArray(loketSnapshotClaims));
+    for (const claim of loketSnapshotClaims) {
+      assert.ok(claim.source_url && /^https?:\/\//i.test(claim.source_url), 'Snapshot claim must carry a real source URL');
+      assert.strictEqual(claim.source_id, 'src-loket');
+    }
   });
 
   console.log('\n── 3. Real Acquisition & Provenance Chain ──');

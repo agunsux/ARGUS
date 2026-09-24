@@ -1,0 +1,126 @@
+{
+  "schema": "tikum.social_discovery_signals.v1",
+  "generated_at": "2026-09-24T17:55:00.000Z",
+  "generator": "operator-manual-entry (docs/EVENT_SOURCE_REGISTRY.md policy)",
+  "policy": {
+    "platform": "INSTAGRAM",
+    "automated_collection": false,
+    "reason": "Instagram profiles are login-gated and the Meta Terms of Service prohibit automated collection. TIKUM performs no scraping, no login, no anti-bot circumvention, no proxy rotation and no private-endpoint access.",
+    "authority": "TIER_3_DISCOVERY_SIGNAL_ONLY",
+    "invariant": "Tier 3 can DISCOVER. Tier 3 can NEVER verify. Verification is established exclusively by an official Indonesian authority channel (promoter / organizer / official event website / venue).",
+    "tikum_policy_reference": "SCRAPING_AND_COMPLIANCE_POLICY.md, PROMOTER_SOURCE_POLICY.md"
+  },
+  "handles": [
+    {
+      "source_id": "src-ig-infokonser",
+      "account_handle": "@infokonser",
+      "profile_url": "https://www.instagram.com/infokonser/",
+      "source_type": "DISCOVERY_PLATFORM",
+      "tier": 3,
+      "authority_level": "MEDIUM",
+      "role": "DISCOVERY_SIGNAL",
+      "coverage": "Indonesia (national)",
+      "permission_status": "MANUAL_REVIEW",
+      "capture_status": "HANDLE_REGISTERED_NO_POST_CAPTURED",
+      "automated_collection": false,
+      "notes": "Primary Indonesian local concert discovery channel. Monitored as a candidate feeder only; every announcement must be corroborated by an official Indonesian promoter, organizer, venue or official event website."
+    },
+    {
+      "source_id": "src-ig-livenationasia",
+      "account_handle": "@livenationasia",
+      "profile_url": "https://www.instagram.com/livenationasia/",
+      "source_type": "DISCOVERY_PLATFORM",
+      "tier": 3,
+      "authority_level": "MEDIUM",
+      "role": "DISCOVERY_SIGNAL",
+      "coverage": "Asia regional",
+      "permission_status": "MANUAL_REVIEW",
+      "capture_status": "HANDLE_REGISTERED_NO_POST_CAPTURED",
+      "automated_collection": false,
+      "official_equivalent_source_id": "src-livenation",
+      "notes": "Official Instagram channel of the Live Nation Asia promoter. Announcements are corroborated against the official public calendar at livenation.asia (src-livenation) and the official Indonesian event websites."
+    },
+    {
+      "source_id": "src-ig-ticketmasterasia",
+      "account_handle": "@ticketmasterasia",
+      "profile_url": "https://www.instagram.com/ticketmasterasia/",
+      "source_type": "DISCOVERY_PLATFORM",
+      "tier": 3,
+      "authority_level": "MEDIUM",
+      "role": "DISCOVERY_SIGNAL",
+      "coverage": "Asia regional",
+      "permission_status": "MANUAL_REVIEW",
+      "capture_status": "HANDLE_REGISTERED_NO_POST_CAPTURED",
+      "automated_collection": false,
+      "official_equivalent_source_id": "src-ticketmaster",
+      "notes": "Official Instagram channel of Ticketmaster Asia. ticketmaster.asia does not resolve (DNS) and regional Ticketmaster hosts return HTTP 401, so verification requires the licensed Ticketmaster Discovery API (TICKETMASTER_API_KEY). Until that credential is provisioned, this handle can only feed the admin verification queue."
+    }
+  ],
+  "signals": [
+    {
+      "signal_id": "sig-infokonser-pestapora-2026",
+      "source_id": "src-ig-infokonser",
+      "account_handle": "@infokonser",
+      "profile_url": "https://www.instagram.com/infokonser/",
+      "event_key": "Pestapora 2026",
+      "corroboration_rule_id": "pestapora-2026",
+      "capture_status": "HANDLE_REGISTERED_NO_POST_CAPTURED",
+      "post_url": null,
+      "observed_at": null,
+      "can_verify": false,
+      "note": "Discovery channel linkage. No post content captured (Instagram login-gated; Meta ToS prohibit automation). Public verification comes from src-event-pestapora-web."
+    },
+    {
+      "signal_id": "sig-infokonser-dwp-2026",
+      "source_id": "src-ig-infokonser",
+      "account_handle": "@infokonser",
+      "profile_url": "https://www.instagram.com/infokonser/",
+      "event_key": "DWP 2026",
+      "corroboration_rule_id": "dwp-2026",
+      "capture_status": "HANDLE_REGISTERED_NO_POST_CAPTURED",
+      "post_url": null,
+      "observed_at": null,
+      "can_verify": false,
+      "note": "Discovery channel linkage. No post content captured. Public verification comes from src-event-dwp-web."
+    },
+    {
+      "signal_id": "sig-livenationasia-lany-jakarta-2026",
+      "source_id": "src-ig-livenationasia",
+      "account_handle": "@livenationasia",
+      "profile_url": "https://www.instagram.com/livenationasia/",
+      "event_key": "LANY: soft world tour (Jakarta)",
+      "corroboration_rule_id": "lany-jakarta-2026",
+      "capture_status": "HANDLE_REGISTERED_NO_POST_CAPTURED",
+      "post_url": null,
+      "observed_at": null,
+      "can_verify": false,
+      "note": "Discovery channel linkage. Public verification comes from src-event-lanyinjakarta-web, corroborated by src-livenation and the official ticket page on livenation.asia."
+    },
+    {
+      "signal_id": "sig-livenationasia-the-weeknd-jakarta-2026",
+      "source_id": "src-ig-livenationasia",
+      "account_handle": "@livenationasia",
+      "profile_url": "https://www.instagram.com/livenationasia/",
+      "event_key": "The Weeknd: After Hours Til Dawn Tour (Jakarta)",
+      "corroboration_rule_id": "the-weeknd-jakarta-2026",
+      "capture_status": "HANDLE_REGISTERED_NO_POST_CAPTURED",
+      "post_url": null,
+      "observed_at": null,
+      "can_verify": false,
+      "note": "Discovery channel linkage. Public verification comes from src-event-theweekndinjakarta-web, corroborated by src-livenation."
+    },
+    {
+      "signal_id": "sig-livenationasia-maroon-5-jakarta-2027",
+      "source_id": "src-ig-livenationasia",
+      "account_handle": "@livenationasia",
+      "profile_url": "https://www.instagram.com/livenationasia/",
+      "event_key": "Maroon 5 Asia 2027 in Jakarta",
+      "corroboration_rule_id": "maroon-5-jakarta-2027",
+      "capture_status": "HANDLE_REGISTERED_NO_POST_CAPTURED",
+      "post_url": null,
+      "observed_at": null,
+      "can_verify": false,
+      "note": "Discovery channel linkage. Public verification comes from src-event-maroon5jakarta-web, corroborated by src-livenation."
+    }
+  ]
+}

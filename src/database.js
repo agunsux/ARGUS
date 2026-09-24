@@ -1797,10 +1797,33 @@ function bootstrapAdminUser() {
 }
 
 /**
+ * Boot-time seeding of the official real-source supply.
+ *
+ * Materialises the committed official-source snapshot (Live Nation Asia, LOKET,
+ * BBO observations) into verified canonical events through the real ingestion
+ * pipeline. Strictly gated so deterministic test baselines are unaffected.
+ */
+async function seedOfficialEventSupply() {
+  try {
+    const { RealSourceSeedService } = require('./discovery/RealSourceSeedService');
+    if (!RealSourceSeedService.isEnabled()) {
+      return null;
+    }
+    const service = new RealSourceSeedService();
+    const report = await service.seed();
+    return report;
+  } catch (err) {
+    console.error('[RealSourceSeed] Bootstrap seeding failed:', err && err.message ? err.message : err);
+    return null;
+  }
+}
+
+/**
  * Mock database initialization
  */
 async function initializeDatabase() {
   bootstrapAdminUser();
+  await seedOfficialEventSupply();
   return Promise.resolve();
 }
 
