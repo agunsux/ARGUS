@@ -482,6 +482,11 @@ class EventTemporalLifecycleEngine {
       if (!event.expired_at) {
         event.expired_at = (now instanceof Date ? now : new Date(now)).toISOString();
       }
+    } else {
+      if (event.is_verified && newStatus !== LIFECYCLE_STATUS.CANCELLED) {
+        event.public_visibility = true;
+        event.expired_at = null;
+      }
     }
 
     event.last_lifecycle_evaluated_at = (now instanceof Date ? now : new Date(now)).toISOString();

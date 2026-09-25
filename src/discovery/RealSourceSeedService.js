@@ -185,8 +185,8 @@ class RealSourceSeedService {
           RealSourceSeedService.buildPayload(record, 'authoritative'),
           record.authoritative_source_id,
           {
-            observed_at: record.authoritative_retrieved_at || new Date().toISOString(),
-            published_at: record.discovery_retrieved_at || null,
+            observed_at: new Date().toISOString(),
+            published_at: record.authoritative_retrieved_at || record.discovery_retrieved_at || null,
             observation_id: `seed-auth-${record.corroboration_rule_id}`
           }
         );
@@ -196,7 +196,7 @@ class RealSourceSeedService {
           RealSourceSeedService.buildPayload(record, 'discovery'),
           record.discovery_source_id,
           {
-            observed_at: record.discovery_retrieved_at || new Date().toISOString(),
+            observed_at: new Date().toISOString(),
             published_at: record.discovery_retrieved_at || null,
             observation_id: `seed-disc-${record.corroboration_rule_id}`
           }

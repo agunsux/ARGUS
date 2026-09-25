@@ -79,8 +79,20 @@ class ListingService {
       throw err;
     }
 
-    const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
-    if (!EventTemporalLifecycleEngine.isEventUpcoming(event)) {
+    const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('../discovery/EventTemporalLifecycleEngine');
+    const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
+    const endMs = new Date(temporal.event_end_at).getTime();
+    const rawStatus = (event.status || event.lifecycle_status || '').toUpperCase();
+    const isConcluded = endMs <= Date.now() || [
+      LIFECYCLE_STATUS.COMPLETED,
+      LIFECYCLE_STATUS.ARCHIVED,
+      LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS,
+      LIFECYCLE_STATUS.CANCELLED,
+      'EXPIRED',
+      'DIBATALKAN'
+    ].includes(rawStatus);
+
+    if (isConcluded) {
       const err = new Error(`Cannot list ticket for concluded/expired event '${eventId}'`);
       err.code = 'EVENT_CONCLUDED';
       throw err;
@@ -263,15 +275,26 @@ class ListingService {
         const event = state.events.find(e => e.id === l.event_id);
         if (!event) return false;
 
-        const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
-        if (!EventTemporalLifecycleEngine.isEventUpcoming(event)) {
-          return false;
-        }
-
+        const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('../discovery/EventTemporalLifecycleEngine');
+        const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
+        const endMs = new Date(temporal.event_end_at).getTime();
         const evStatus = (event.status || '').toUpperCase();
         const evLifecycle = (event.lifecycle_status || '').toUpperCase();
-        if (['CANCELLED', 'DIBATALKAN', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'LIVE'].includes(evLifecycle) ||
-            ['CANCELLED', 'DIBATALKAN', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'LIVE'].includes(evStatus)) {
+        if (endMs <= Date.now() || [
+          LIFECYCLE_STATUS.COMPLETED,
+          LIFECYCLE_STATUS.ARCHIVED,
+          LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS,
+          LIFECYCLE_STATUS.CANCELLED,
+          'EXPIRED',
+          'DIBATALKAN'
+        ].includes(evLifecycle) || [
+          LIFECYCLE_STATUS.COMPLETED,
+          LIFECYCLE_STATUS.ARCHIVED,
+          LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS,
+          LIFECYCLE_STATUS.CANCELLED,
+          'EXPIRED',
+          'DIBATALKAN'
+        ].includes(evStatus)) {
           return false;
         }
 
