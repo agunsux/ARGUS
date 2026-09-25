@@ -440,6 +440,9 @@ class CanonicalEventRegistry {
       canonicalEvent.event_status = 'LIVE';
     }
 
+    const isTerminalState = (resolvedLifecycle === LIFECYCLE_STATUS.COMPLETED || resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED || resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS || resolvedLifecycle === LIFECYCLE_STATUS.CANCELLED || canonicalEvent.status === 'CANCELLED');
+    canonicalEvent.public_visibility = Boolean(canonicalEvent.is_verified && !isTerminalState);
+
     this.events.set(eventId, canonicalEvent);
     this.slugMap.set(slug, eventId);
 
@@ -512,18 +515,27 @@ class CanonicalEventRegistry {
       const existingSrc = sourceRegistry.getSource(existingFieldSrc) || {};
       const existingTier = existingSrc.tier || 2;
       const isExplicitReschedule = incomingRecord.status === 'RESCHEDULED' || event.status === 'RESCHEDULED';
-
-      // Only allow overwrite if incoming is strictly higher tier (Tier 1 vs Tier 2), or explicit authoritative reschedule
-      const canOverwrite = (incomingTier < existingTier) || (incomingTier === existingTier && isExplicitReschedule && isFresherThan(event.field_provenance.start_date));
+      const isAuthoritative = sourceRegistry.isAuthoritativeSource(sourceId) || incomingTier === 1;
+      const canOverwrite = (incomingTier < existingTier) || (incomingTier === existingTier && (isExplicitReschedule || isAuthoritative) && isFresherThan(event.field_provenance?.start_date));
 
       if (canOverwrite) {
         const oldDate = event.start_date;
         event.start_date = incomingDate;
         event.date = incomingDate;
+        event.end_date = incomingRecord.end_date || incomingDate;
         event.start_at = incomingRecord.start_datetime || `${incomingDate}T19:00:00+07:00`;
         event.start_datetime = event.start_at;
+        event.event_start_at = event.start_at;
+        event.end_at = incomingRecord.end_datetime || `${incomingDate}T23:00:00+07:00`;
+        event.end_datetime = event.end_at;
+        event.event_end_at = event.end_at;
 
-        const changeType = (incomingRecord.status === 'RESCHEDULED' || event.status === 'RESCHEDULED' || oldDate) ? 'RESCHEDULED' : 'DATE_CHANGED';
+        event.lifecycle_status = EventTemporalLifecycleEngine.resolveLifecycleStatus(event);
+        if (event.is_verified) {
+          event.public_visibility = true;
+        }
+
+        const changeType = (incomingRecord.status === 'RESCHEDULED' || event.status === 'RESCHEDULED') ? 'RESCHEDULED' : 'DATE_RESCHEDULED';
         if (incomingRecord.status === 'RESCHEDULED' || changeType === 'RESCHEDULED') {
           event.status = 'RESCHEDULED';
           event.event_status = 'RESCHEDULED';
@@ -694,36 +706,36 @@ class CanonicalEventRegistry {
     }
 
     // 3. Cancellation Check
-    if (incomingRecord.status === 'CANCELLED' && event.status !== 'CANCELLED') {
-      if (isFresherThan(event.field_provenance.status)) {
-        const oldStatus = event.status;
-        event.status = 'CANCELLED';
-        event.event_status = 'CANCELLED';
-        event.verification_status = VERIFICATION_STATUS.CANCELLED;
-        event.is_verified = false;
+    if (incomingRecord.status === 'CANCELLED') {
+      const oldStatus = event.status;
+      event.status = 'CANCELLED';
+      event.event_status = 'CANCELLED';
+      event.lifecycle_status = LIFECYCLE_STATUS.CANCELLED;
+      event.public_visibility = false;
+      event.verification_status = VERIFICATION_STATUS.CANCELLED;
+      event.is_verified = false;
 
-        event.event_history.push({
-          timestamp: now,
-          change_type: 'CANCELLED',
-          field: 'status',
-          old_value: oldStatus,
-          new_value: 'CANCELLED',
-          source_id: sourceId,
-          observed_at: observedAt,
-          published_at: publishedAt,
-          reason: 'Authoritative source announced event cancellation'
-        });
-        changes.push('CANCELLED');
+      event.event_history.push({
+        timestamp: now,
+        change_type: 'CANCELLED',
+        field: 'status',
+        old_value: oldStatus,
+        new_value: 'CANCELLED',
+        source_id: sourceId,
+        observed_at: observedAt,
+        published_at: publishedAt,
+        reason: 'Official source announced event cancellation'
+      });
+      changes.push('CANCELLED');
 
-        event.field_provenance.status = {
-          value: 'CANCELLED',
-          source_id: sourceId,
-          source_url: postUrl,
-          observed_at: observedAt,
-          published_at: publishedAt,
-          confidence: 'HIGH'
-        };
-      }
+      event.field_provenance.status = {
+        value: 'CANCELLED',
+        source_id: sourceId,
+        source_url: postUrl,
+        observed_at: observedAt,
+        published_at: publishedAt,
+        confidence: 'HIGH'
+      };
     }
 
     // 4. Postponement Check
@@ -785,24 +797,32 @@ class CanonicalEventRegistry {
     event.expires_at = this.computeExpirationDate(event.start_date, new Date(now));
     event.update_priority = this.computeUpdatePriority(event.start_date);
 
-    const reEval = EventVerificationService.evaluateEvent(event, event.sources || []);
-    event.verification_status = reEval.verification_status;
-    event.verification_confidence = reEval.verification_confidence;
-    event.is_verified = (reEval.verification_status === VERIFICATION_STATUS.VERIFIED || reEval.verification_status === 'PRIMARY_SOURCE_VERIFIED');
-    event.artist_official_url = reEval.artist_official_url || event.artist_official_url;
-    event.artist_official_source_type = reEval.artist_official_source_type || event.artist_official_source_type;
-    event.artist_verification_status = reEval.artist_verification_status || event.artist_verification_status;
-    event.promoter_official_url = reEval.promoter_official_url || event.promoter_official_url;
-    event.promoter_verification_status = reEval.promoter_verification_status || event.promoter_verification_status;
-    event.event_official_url = reEval.event_official_url || event.event_official_url;
-    event.event_verification_status = reEval.event_verification_status || event.event_verification_status;
-    event.ticketing_official_url = reEval.ticketing_official_url || event.ticketing_official_url;
-    event.ticketing_verification_status = reEval.ticketing_verification_status || event.ticketing_verification_status;
-    event.venue_verification_status = reEval.venue_verification_status || event.venue_verification_status;
-    event.verification_tier = reEval.verification_tier || event.verification_tier;
-    event.verification_score = typeof reEval.verification_score === 'number' ? reEval.verification_score : event.verification_score;
-    event.last_verified_at = reEval.last_verified_at || event.last_verified_at;
-    event.next_verification_at = reEval.next_verification_at || event.next_verification_at;
+    if (event.status !== 'CANCELLED' && event.lifecycle_status !== LIFECYCLE_STATUS.CANCELLED) {
+      const reEval = EventVerificationService.evaluateEvent(event, event.sources || []);
+      event.verification_status = reEval.verification_status;
+      event.verification_confidence = reEval.verification_confidence;
+      event.is_verified = (reEval.verification_status === VERIFICATION_STATUS.VERIFIED || reEval.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+      event.artist_official_url = reEval.artist_official_url || event.artist_official_url;
+      event.artist_official_source_type = reEval.artist_official_source_type || event.artist_official_source_type;
+      event.artist_verification_status = reEval.artist_verification_status || event.artist_verification_status;
+      event.promoter_official_url = reEval.promoter_official_url || event.promoter_official_url;
+      event.promoter_verification_status = reEval.promoter_verification_status || event.promoter_verification_status;
+      event.event_official_url = reEval.event_official_url || event.event_official_url;
+      event.event_verification_status = reEval.event_verification_status || event.event_verification_status;
+      event.ticketing_official_url = reEval.ticketing_official_url || event.ticketing_official_url;
+      event.ticketing_verification_status = reEval.ticketing_verification_status || event.ticketing_verification_status;
+      event.venue_verification_status = reEval.venue_verification_status || event.venue_verification_status;
+      event.verification_tier = reEval.verification_tier || event.verification_tier;
+      event.verification_score = typeof reEval.verification_score === 'number' ? reEval.verification_score : event.verification_score;
+      event.last_verified_at = reEval.last_verified_at || event.last_verified_at;
+      event.next_verification_at = reEval.next_verification_at || event.next_verification_at;
+    } else {
+      event.verification_status = VERIFICATION_STATUS.CANCELLED;
+      event.is_verified = false;
+      event.public_visibility = false;
+      event.lifecycle_status = LIFECYCLE_STATUS.CANCELLED;
+      event.status = 'CANCELLED';
+    }
 
     return { event, changes };
   }
@@ -924,6 +944,9 @@ class CanonicalEventRegistry {
       event.status = 'LIVE';
       event.event_status = 'LIVE';
     }
+
+    const isTerminalState = (resolvedLifecycle === LIFECYCLE_STATUS.COMPLETED || resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED || resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS || resolvedLifecycle === LIFECYCLE_STATUS.CANCELLED || event.status === 'CANCELLED');
+    event.public_visibility = Boolean(event.is_verified && !isTerminalState);
 
     return event;
   }
@@ -1080,22 +1103,30 @@ class CanonicalEventRegistry {
   /**
    * Refreshes freshness and evaluates STALE / EXPIRED lifecycle transitions
    */
-  refreshFreshness() {
+  refreshFreshness(now = new Date()) {
+    const nowObj = (now instanceof Date) ? now : new Date(now);
     let staleCount = 0;
     let expiredCount = 0;
 
     for (const event of this.events.values()) {
-      const evalResult = EventVerificationService.evaluateEvent(event, event.sources || []);
-      if (evalResult.verification_status !== event.verification_status) {
-        if (evalResult.verification_status === VERIFICATION_STATUS.STALE) {
-          staleCount++;
+      EventTemporalLifecycleEngine.reconcileEvent(event, nowObj);
+      const evalResult = EventVerificationService.evaluateEvent(event, event.sources || [], { now: nowObj });
+      if (evalResult.verification_status === VERIFICATION_STATUS.STALE) {
+        staleCount++;
+        const hasAuthoritative = (event.sources || []).some(s => sourceRegistry.isAuthoritativeSource(s.source_id));
+        if (hasAuthoritative) {
+          event.last_verified_at = nowObj.toISOString();
+          event.verification_status = VERIFICATION_STATUS.VERIFIED;
+          event.is_verified = true;
+        } else {
           event.verification_status = VERIFICATION_STATUS.STALE;
           event.is_verified = false;
-        } else if (evalResult.verification_status === VERIFICATION_STATUS.EXPIRED) {
-          expiredCount++;
-          event.verification_status = VERIFICATION_STATUS.EXPIRED;
-          event.is_verified = false;
         }
+      } else if (evalResult.verification_status === VERIFICATION_STATUS.EXPIRED) {
+        expiredCount++;
+        event.verification_status = VERIFICATION_STATUS.EXPIRED;
+        event.is_verified = false;
+        event.public_visibility = false;
       }
     }
 

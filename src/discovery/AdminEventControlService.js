@@ -10,6 +10,7 @@
 const { canonicalRegistry } = require('./CanonicalEventRegistry');
 const { VERIFICATION_STATUS } = require('./EventVerificationService');
 const { sourceRegistry } = require('./SourceRegistry');
+const { ingestionScheduler } = require('./EventIngestionScheduler');
 const { recordAuditLog } = require('../database');
 
 class AdminEventControlService {
@@ -17,7 +18,9 @@ class AdminEventControlService {
    * Returns comprehensive event intelligence dashboard.
    * Real database state only — zero dummy/mock metrics.
    */
-  static getControlDashboard() {
+  static getControlDashboard(now = new Date()) {
+    const nowObj = (now instanceof Date) ? now : new Date(now);
+    const nowIso = nowObj.toISOString();
     const allEvents = canonicalRegistry.getAllEvents();
     const allSources = sourceRegistry.getAllSources();
 
@@ -28,6 +31,7 @@ class AdminEventControlService {
     );
     const partiallyVerified = allEvents.filter(e => e.verification_status === VERIFICATION_STATUS.PARTIALLY_VERIFIED);
     const verified = allEvents.filter(e => 
+      e.is_verified === true ||
       e.verification_status === VERIFICATION_STATUS.VERIFIED ||
       e.verification_status === 'PRIMARY_SOURCE_VERIFIED'
     );
@@ -37,8 +41,11 @@ class AdminEventControlService {
       (Array.isArray(e.conflicts) && e.conflicts.length > 0)
     );
     const expired = allEvents.filter(e => 
+      e.lifecycle_status === 'EXPIRED' ||
+      e.lifecycle_status === 'ARCHIVED' ||
       e.verification_status === VERIFICATION_STATUS.EXPIRED ||
-      e.verification_status === 'STALE'
+      e.verification_status === 'STALE' ||
+      e.public_visibility === false
     );
     const changed = allEvents.filter(e => e.verification_status === VERIFICATION_STATUS.CHANGED);
     const cancelled = allEvents.filter(e => e.verification_status === VERIFICATION_STATUS.CANCELLED);
@@ -58,6 +65,23 @@ class AdminEventControlService {
     }));
 
     return {
+      timestamp: nowIso,
+      timezone: 'Asia/Jakarta',
+      counts: {
+        total_canonical: allEvents.length,
+        verified: verified.length,
+        expired: expired.length,
+        unverified: unverified.length,
+        conflicts: conflicts.length,
+        total_sources: allSources.length
+      },
+      daily_counters: {
+        discovered_today: allEvents.filter(e => (e.created_at || '').startsWith(nowIso.substring(0, 10))).length,
+        verified_today: verified.filter(e => (e.verified_at || e.last_verified_at || '').startsWith(nowIso.substring(0, 10))).length,
+        expired_today: expired.length
+      },
+      source_sync_jobs: ingestionScheduler.getSourceSyncJobs(),
+      events: allEvents,
       summary: {
         total_events: allEvents.length,
         verified_count: verified.length,

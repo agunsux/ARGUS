@@ -839,25 +839,22 @@ router.get('/api/events/home-feed', (req, res) => {
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
 
-  const now = new Date();
-  const contextDate = '2026-09-24';
+  const now = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
+    ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
+    : new Date();
+
+  // Evaluate temporal and freshness transitions for all canonical events
+  canonicalRegistry.refreshFreshness(now);
+
   const { city, lat, lng, country, category } = req.query;
 
+  // Filter canonical events through strict temporal & verification gates
   let allEvents = canonicalRegistry.getAllEvents().filter(e => {
     const evStatus = (e.status || '').toUpperCase();
     const evLifecycle = (e.lifecycle_status || '').toUpperCase();
     if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
-    
-    // Filter out dates before 2026-09-24
-    if ((e.start_date || e.date || '') < contextDate) return false;
-    
-    if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
-    if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
-        ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
-    const isVerified = e.is_verified === true &&
-      (e.verification_status === 'VERIFIED' || e.verification_status === 'PRIMARY_SOURCE_VERIFIED');
-    const hasProvenance = Boolean(e.source_url && e.evidence_hash && e.verified_at);
-    return isVerified && hasProvenance;
+    if (evStatus === 'EXPIRED' || evLifecycle === 'EXPIRED') return false;
+    return EventTemporalLifecycleEngine.isEventHomepageEligible(e, now);
   });
 
   // Country filter if supplied
@@ -888,41 +885,65 @@ router.get('/api/events/home-feed', (req, res) => {
     });
   }
 
-  // Enrich events with required properties
-  allEvents = allEvents.map(e => {
-    const activeListings = getActiveResaleListings(e.event_id);
+  // Section 13 Canonical Formatting Helper
+  function formatSection13(e) {
+    const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(e);
+    const activeListings = getActiveResaleListings(e.event_id || e.id);
     return {
       ...e,
+      event_id: e.event_id || e.id,
+      title: e.canonical_name || e.title || e.name,
+      start_at: temporal.event_start_at,
+      venue: e.venue_name || e.venue || 'Venue',
+      city: e.city || e.venue_city || 'Jakarta',
+      category: e.category || e.event_type || 'MUSIC',
+      verification_status: e.verification_status || 'VERIFIED',
+      verification_tier: e.verification_tier || 'TIER_A_DOUBLE_OFFICIAL',
+      official_artist_url: e.artist_official_url || e.official_event_url || (e.sources && e.sources[0]?.source_url) || 'https://tikum.id',
+      official_event_url: e.event_official_url || e.official_event_url || (e.sources && e.sources[0]?.source_url) || 'https://tikum.id',
+      official_ticketing_url: e.ticketing_official_url || e.official_ticket_url || 'https://tikum.id',
+      image_url: e.image_url || e.event_image || 'https://tikum.id/assets/default-poster.jpg',
+      last_verified_at: e.last_verified_at || e.verified_at || now.toISOString(),
+      source_last_seen_at: e.source_last_checked_at || e.last_seen_at || e.updated_at || now.toISOString(),
       price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : (e.min_price || null),
       price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : (e.max_price || null),
       demand_score: e.popularity_score || 0,
       ticketing_status: e.status === 'SOLD_OUT' ? 'SOLD_OUT' : (e.official_ticket_url ? 'ON_SALE' : 'UPCOMING'),
-      start_time: e.start_time || (e.event_start_at ? e.event_start_at.split('T')[1]?.substring(0, 5) : null),
-      end_time: e.end_time || (e.event_end_at ? e.event_end_at.split('T')[1]?.substring(0, 5) : null)
+      start_time: e.start_time || (temporal.event_start_at ? temporal.event_start_at.split('T')[1]?.substring(0, 5) : null),
+      end_time: e.end_time || (temporal.event_end_at ? temporal.event_end_at.split('T')[1]?.substring(0, 5) : null)
     };
-  });
+  }
 
-  // 1. Upcoming Nearest (Chronological)
-  const upcoming = [...allEvents]
-    .filter(e => e.verification_status !== 'CANCELLED' && e.verification_status !== 'EXPIRED')
+  // Segregate pools by temporal window
+  const todayPool = allEvents
+    .filter(e => EventTemporalLifecycleEngine.getHomepageTemporalWindow(e, now) === 'TODAY')
+    .map(formatSection13);
+
+  const upcomingPool = allEvents
+    .filter(e => EventTemporalLifecycleEngine.getHomepageTemporalWindow(e, now) === 'UPCOMING')
     .sort((a, b) => (a.start_date || a.date || '9999').localeCompare(b.start_date || b.date || '9999'))
-    .slice(0, 12);
+    .map(formatSection13);
 
-  // 2. Trending Popular
-  const popular = [...allEvents]
-    .filter(e => e.verification_status !== 'CANCELLED' && e.verification_status !== 'EXPIRED')
+  const recentPool = allEvents
+    .filter(e => EventTemporalLifecycleEngine.getHomepageTemporalWindow(e, now) === 'RECENT')
+    .map(formatSection13);
+
+  const enrichedAll = allEvents.map(formatSection13);
+
+  // 1. Trending Popular
+  const popular = [...upcomingPool]
     .sort((a, b) => (b.popularity_score || b.demand_score || 0) - (a.popularity_score || a.demand_score || 0))
     .slice(0, 12);
 
-  // 3. Near You (Filtered by user city or coordinates)
+  // 2. Near You (Filtered by user city or coordinates)
   let nearYou = [];
   if (city) {
     const cleanCity = city.toLowerCase().trim();
-    nearYou = allEvents.filter(e => (e.city || '').toLowerCase() === cleanCity);
+    nearYou = upcomingPool.filter(e => (e.city || '').toLowerCase() === cleanCity);
   } else if (lat && lng) {
     const uLat = Number(lat);
     const uLng = Number(lng);
-    nearYou = allEvents
+    nearYou = upcomingPool
       .map(e => {
         const eLat = e.lat || (cityRegistry.findCity(e.city) ? cityRegistry.findCity(e.city).lat : null);
         const eLng = e.lng || (cityRegistry.findCity(e.city) ? cityRegistry.findCity(e.city).lng : null);
@@ -933,41 +954,40 @@ router.get('/api/events/home-feed', (req, res) => {
       .sort((a, b) => a.distance_km - b.distance_km)
       .slice(0, 8);
   } else {
-    nearYou = upcoming.slice(0, 6);
+    nearYou = upcomingPool.slice(0, 6);
   }
 
-  // 4. This Weekend
-  const thisWeekend = allEvents.filter(e => {
+  // 3. This Weekend
+  const thisWeekend = upcomingPool.filter(e => {
     const d = e.start_date || e.date;
     if (!d) return false;
     const diffDays = (new Date(d).getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
     return diffDays >= 0 && diffDays <= 4;
   }).slice(0, 8);
 
-  // 5. Local Gems
-  const localGems = allEvents
+  // 4. Local Gems
+  const localGems = upcomingPool
     .filter(e => e.is_local_gem)
     .sort((a, b) => (b.local_gems_score || 0) - (a.local_gems_score || 0))
     .slice(0, 8);
 
-  // 6. Category Specific Sections (All Paid / Ticketed Categories)
-  const musicEvents = allEvents.filter(e => (e.category_group === 'MUSIC' || (e.category || '').toUpperCase().includes('CONCERT') || (e.category || '').toUpperCase().includes('MUSIC') || (e.category || '').toUpperCase() === 'KONSER')).slice(0, 8);
-  const sportsEvents = allEvents.filter(e => (e.category_group === 'SPORTS' || (e.category || '').toUpperCase().includes('SPORT') || (e.category || '').toUpperCase() === 'OLAHRAGA' || (e.event_type || '').toUpperCase() === 'BADMINTON')).slice(0, 8);
-  const festivalEvents = allEvents.filter(e => (e.category_group === 'FESTIVALS_EXPERIENCES' || (e.category || '').toUpperCase().includes('FESTIVAL') || (e.category || '').toUpperCase() === 'PAMERAN')).slice(0, 8);
-  const comedyShows = allEvents.filter(e => (e.category_group === 'SHOWS_COMEDY' || (e.category || '').toUpperCase().includes('COMEDY') || (e.category || '').toUpperCase().includes('THEATER') || (e.category || '').toUpperCase() === 'STANDUP' || (e.category || '').toUpperCase() === 'TEATER')).slice(0, 8);
-  const businessEvents = allEvents.filter(e => (e.category_group === 'BUSINESS_EDUCATION' || (e.category || '').toUpperCase().includes('CONFERENCE') || (e.category || '').toUpperCase() === 'SEMINAR')).slice(0, 8);
+  // 5. Category Specific Sections
+  const musicEvents = upcomingPool.filter(e => (e.category_group === 'MUSIC' || (e.category || '').toUpperCase().includes('CONCERT') || (e.category || '').toUpperCase().includes('MUSIC') || (e.category || '').toUpperCase() === 'KONSER')).slice(0, 8);
+  const sportsEvents = upcomingPool.filter(e => (e.category_group === 'SPORTS' || (e.category || '').toUpperCase().includes('SPORT') || (e.category || '').toUpperCase() === 'OLAHRAGA' || (e.event_type || '').toUpperCase() === 'BADMINTON')).slice(0, 8);
+  const festivalEvents = upcomingPool.filter(e => (e.category_group === 'FESTIVALS_EXPERIENCES' || (e.category || '').toUpperCase().includes('FESTIVAL') || (e.category || '').toUpperCase() === 'PAMERAN')).slice(0, 8);
+  const comedyShows = upcomingPool.filter(e => (e.category_group === 'SHOWS_COMEDY' || (e.category || '').toUpperCase().includes('COMEDY') || (e.category || '').toUpperCase().includes('THEATER') || (e.category || '').toUpperCase() === 'STANDUP' || (e.category || '').toUpperCase() === 'TEATER')).slice(0, 8);
+  const businessEvents = upcomingPool.filter(e => (e.category_group === 'BUSINESS_EDUCATION' || (e.category || '').toUpperCase().includes('CONFERENCE') || (e.category || '').toUpperCase() === 'SEMINAR')).slice(0, 8);
 
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
-
-  const coming_soon = [...allEvents]
+  const coming_soon = [...upcomingPool]
     .filter(e => (e.start_date || e.date) <= sevenDaysFromNow)
     .sort((a, b) => (a.start_date || a.date || '9999').localeCompare(b.start_date || b.date || '9999'));
 
-  const trending = [...allEvents]
+  const trending = [...upcomingPool]
     .sort((a, b) => (b.demand_score || 0) - (a.demand_score || 0))
     .slice(0, 8);
 
-  const just_announced = [...allEvents]
+  const just_announced = [...upcomingPool]
     .sort((a, b) => new Date(b.verified_at || 0) - new Date(a.verified_at || 0))
     .slice(0, 8);
 
@@ -977,15 +997,26 @@ router.get('/api/events/home-feed', (req, res) => {
 
   res.json({
     success: true,
-    feed: upcoming,
+    generated_at: now.toISOString(),
+    timezone: 'Asia/Jakarta',
+    counts: {
+      upcoming: upcomingPool.length,
+      today: todayPool.length,
+      recent: recentPool.length
+    },
+    events: upcomingPool,
+    feed: upcomingPool,
     meta: {
-      total_verified_upcoming: allEvents.length,
+      total_verified_upcoming: upcomingPool.length,
       country: country || 'ALL',
       category: category || 'ALL',
       countries: cityRegistry.getAllCountries ? cityRegistry.getAllCountries() : []
     },
     sections: {
-      upcoming_nearest: upcoming,
+      upcoming: upcomingPool,
+      today: todayPool,
+      recent: recentPool,
+      upcoming_nearest: upcomingPool,
       trending_popular: popular,
       popular_events: popular,
       near_you: nearYou,

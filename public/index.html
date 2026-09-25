@@ -992,6 +992,7 @@
     <div class="trust-item"><i class="fa-solid fa-circle-check"></i> 100% Tiket Terverifikasi</div>
     <div class="trust-item"><i class="fa-solid fa-lock"></i> Escrow Pembayaran Aman</div>
     <div class="trust-item"><i class="fa-solid fa-user-shield"></i> PIC Fisik di Gerbang Venue</div>
+    <div class="trust-item" id="feedFreshnessItem" style="display:none;"><i class="fa-solid fa-bolt" style="color:#10b981;"></i> <span id="feedFreshnessText">Live Auto-Refresh (H+2 Expiry Engine)</span></div>
   </div>
 
   <!-- Search & discovery controls -->
@@ -1271,9 +1272,12 @@
           if (data && data.success) {
             homeFeed = data;
             const sections = data.sections || {};
-            allEvents = sections.upcoming_nearest && sections.upcoming_nearest.length
-              ? sections.upcoming_nearest
-              : (data.feed || []);
+            allEvents = sections.upcoming && sections.upcoming.length
+              ? sections.upcoming
+              : (sections.upcoming_nearest && sections.upcoming_nearest.length
+                ? sections.upcoming_nearest
+                : (data.events && data.events.length ? data.events : (data.feed || [])));
+            updateFreshnessBadge(data);
           }
         }
       } catch (err) {
@@ -1292,6 +1296,18 @@
       }
 
       renderAllSections();
+    }
+
+    function updateFreshnessBadge(data) {
+      const el = document.getElementById('feedFreshnessItem');
+      const textEl = document.getElementById('feedFreshnessText');
+      if (!el || !textEl) return;
+      if (data && data.generated_at) {
+        el.style.display = 'flex';
+        const d = new Date(data.generated_at);
+        const timeStr = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        textEl.textContent = `Live Feed Active • Diperbarui ${timeStr} WIB`;
+      }
     }
 
     function getFilteredEvents() {

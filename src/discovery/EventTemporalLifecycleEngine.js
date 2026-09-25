@@ -33,6 +33,8 @@ async function logAudit(...args) {
   } catch (_) {}
 }
 
+const HOMEPAGE_EVENT_GRACE_DAYS = 2;
+
 const LIFECYCLE_STATUS = {
   UPCOMING: 'UPCOMING',
   LIVE: 'LIVE',
@@ -41,7 +43,8 @@ const LIFECYCLE_STATUS = {
   ARCHIVED: 'ARCHIVED',
   ARCHIVED_WITH_OPEN_OPERATIONS: 'ARCHIVED_WITH_OPEN_OPERATIONS',
   CANCELLED: 'CANCELLED',
-  POSTPONED: 'POSTPONED'
+  POSTPONED: 'POSTPONED',
+  EXPIRED: 'EXPIRED'
 };
 
 const TERMINAL_ORDER_STATUSES = new Set([
@@ -385,6 +388,60 @@ class EventTemporalLifecycleEngine {
   }
 
   /**
+   * Evaluates the event's temporal position relative to homepage display windows:
+   * - 'UPCOMING': event has not started yet (now < start_at)
+   * - 'TODAY': event is taking place today / currently live (start_at <= now <= end_at)
+   * - 'RECENT': event concluded within H+2 grace period (end_at < now <= end_at + 2 days)
+   * - 'EXPIRED': event concluded past H+2 grace period (now > end_at + 2 days)
+   */
+  static getHomepageTemporalWindow(event, now = new Date()) {
+    if (!event) return 'EXPIRED';
+    const temporal = this.computeTemporalAttributes(event);
+    const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
+    const startMs = new Date(temporal.event_start_at).getTime();
+    const endMs = new Date(temporal.event_end_at).getTime();
+    const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
+
+    if (nowMs < startMs) {
+      return 'UPCOMING';
+    }
+    if (nowMs >= startMs && nowMs <= endMs) {
+      return 'TODAY';
+    }
+    if (nowMs > endMs && nowMs <= endMs + graceMs) {
+      return 'RECENT';
+    }
+    return 'EXPIRED';
+  }
+
+  /**
+   * Deterministic server-side predicate: is this event eligible for homepage visibility?
+   * Requires:
+   * 1. Verified status (VERIFIED or PRIMARY_SOURCE_VERIFIED)
+   * 2. public_visibility !== false
+   * 3. Lifecycle not CANCELLED or EXPIRED
+   * 4. Temporal window is not EXPIRED (i.e. UPCOMING, TODAY, or RECENT within H+2 grace)
+   */
+  static isEventHomepageEligible(event, now = new Date()) {
+    if (!event) return false;
+    const isVerified = Boolean(
+      event.is_verified ||
+      event.verification_status === 'VERIFIED' ||
+      event.verification_status === 'PRIMARY_SOURCE_VERIFIED'
+    );
+    if (!isVerified) return false;
+    if (event.public_visibility === false) return false;
+
+    const rawStatus = (event.lifecycle_status || event.status || '').toUpperCase();
+    if (rawStatus === 'CANCELLED' || rawStatus === 'DIBATALKAN' || rawStatus === 'EXPIRED') {
+      return false;
+    }
+
+    const window = this.getHomepageTemporalWindow(event, now);
+    return window !== 'EXPIRED';
+  }
+
+  /**
    * Reconciles a single event's temporal lifecycle state.
    * If state changes, emits structured audit log and expires active listings if concluded.
    */
@@ -416,7 +473,18 @@ class EventTemporalLifecycleEngine {
       event.status = 'LIVE';
     }
 
-    event.last_lifecycle_evaluated_at = now.toISOString();
+    // Expiry rule: H+2 grace period past end_at hides from public homepage and marks expired_at
+    const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
+    const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
+    const endMs = new Date(temporal.event_end_at).getTime();
+    if (nowMs > endMs + graceMs) {
+      event.public_visibility = false;
+      if (!event.expired_at) {
+        event.expired_at = (now instanceof Date ? now : new Date(now)).toISOString();
+      }
+    }
+
+    event.last_lifecycle_evaluated_at = (now instanceof Date ? now : new Date(now)).toISOString();
 
     // If transitioned to a concluded state, expire active listings for this event
     if (previousStatus !== newStatus && (
@@ -595,6 +663,7 @@ class EventTemporalLifecycleEngine {
 module.exports = {
   EventTemporalLifecycleEngine,
   LIFECYCLE_STATUS,
+  HOMEPAGE_EVENT_GRACE_DAYS,
   TERMINAL_ORDER_STATUSES,
   NON_TERMINAL_ORDER_STATUSES,
   TERMINAL_ESCROW_STATUSES,

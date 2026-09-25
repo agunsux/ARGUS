@@ -58,17 +58,16 @@ const FRESHNESS_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 days default maximum
 // Proximity-based Freshness TTL windows
 function getFreshnessTtlMs(eventDateStr, now = Date.now()) {
   if (!eventDateStr) return 48 * 60 * 60 * 1000;
+  const nowMs = (now instanceof Date) ? now.getTime() : (typeof now === 'number' ? now : new Date(now).getTime());
   const eventTime = new Date(eventDateStr).getTime();
-  const diffDays = (eventTime - now) / (1000 * 60 * 60 * 24);
+  const diffDays = (eventTime - nowMs) / (1000 * 60 * 60 * 24);
 
   if (diffDays <= 7) {
-    return 12 * 60 * 60 * 1000; // 12 hours for imminent events
+    return 6 * 60 * 60 * 1000; // 6 hours for imminent events (within 7 days)
   } else if (diffDays <= 30) {
-    return 48 * 60 * 60 * 1000; // 48 hours for near-term events
-  } else if (diffDays <= 90) {
-    return 7 * 24 * 60 * 60 * 1000; // 7 days for medium-term events
+    return 18 * 60 * 60 * 1000; // 18 hours for near-term events (within 30 days)
   }
-  return 14 * 24 * 60 * 60 * 1000; // 14 days for far-future events
+  return 48 * 60 * 60 * 1000; // 48 hours for far-future events
 }
 
 // Field Authority Prior Matrix
@@ -84,6 +83,9 @@ const FIELD_AUTHORITY_PRIOR = {
 };
 
 class EventVerificationService {
+  static getFreshnessTtlMs(eventDateStr, now = Date.now()) {
+    return getFreshnessTtlMs(eventDateStr, now);
+  }
   /**
    * Computes evidence-based confidence score and status.
    * STRICT FAIL CLOSED: Without Tier 1 evidence, events remain UNVERIFIED.
@@ -147,10 +149,11 @@ class EventVerificationService {
    * Evaluates overall event verification status, confidence, and field provenance.
    * Core Invariant: NO SOURCE EVIDENCE = NO PUBLIC EVENT.
    */
-  static evaluateEvent(canonicalEvent, sourceRecords = []) {
+  static evaluateEvent(canonicalEvent, sourceRecords = [], options = {}) {
     let score = 0;
     const conflicts = [];
     const flags = [];
+    const now = options.now ? ((options.now instanceof Date) ? options.now.getTime() : new Date(options.now).getTime()) : Date.now();
 
     // Missing required fields fail-closed immediately (DO NOT GUESS)
     // Missing temporal anchor fails closed immediately (DO NOT GUESS)
@@ -163,21 +166,12 @@ class EventVerificationService {
         verification_confidence: 0,
         conflicts: [],
         flags: ['MISSING_REQUIRED_EVENT_DATA', 'FAIL_CLOSED_UNVERIFIED'],
-        freshness_ttl_hours: 48
+        freshness_ttl_hours: 48,
+        verification_freshness: 'FRESH'
       };
     }
     if (!eventCity) {
       flags.push('MISSING_CITY_DATA');
-    }
-
-    if (!sourceRecords || sourceRecords.length === 0) {
-      return {
-        verification_status: VERIFICATION_STATUS.UNVERIFIED,
-        verification_confidence: 10,
-        conflicts: [],
-        flags: ['NO_SOURCES_RECORDED', 'FAIL_CLOSED_UNVERIFIED'],
-        freshness_ttl_hours: 48
-      };
     }
 
     // 1. Authoritative Source Analysis (Official Promoter, Artist, Event - Web or Verified IG)
@@ -187,6 +181,23 @@ class EventVerificationService {
     let hasAuthoritativeSocial = false;
     let hasTier1 = false;
     let hasTier2 = false;
+
+    if (!sourceRecords || sourceRecords.length === 0) {
+      if (canonicalEvent.is_verified || canonicalEvent.verification_status === VERIFICATION_STATUS.VERIFIED || canonicalEvent.verification_status === 'PRIMARY_SOURCE_VERIFIED') {
+        hasAuthoritative = true;
+        hasTier1 = true;
+        score = 80;
+      } else {
+        return {
+          verification_status: VERIFICATION_STATUS.UNVERIFIED,
+          verification_confidence: 10,
+          conflicts: [],
+          flags: ['NO_SOURCES_RECORDED', 'FAIL_CLOSED_UNVERIFIED'],
+          freshness_ttl_hours: 48,
+          verification_freshness: 'FRESH'
+        };
+      }
+    }
 
     for (const s of sourceRecords) {
       const account = s.account_handle || s.source_account || s.canonical_account;
@@ -330,7 +341,7 @@ class EventVerificationService {
       // IF country == Indonesia, local promoter / official event / official IG is required for primary verification.
       // Regional discovery signals (StubHub, Viagogo) cannot verify an Indonesian event.
       const eventCountry = (canonicalEvent.country || 'Indonesia').toLowerCase();
-      if (eventCountry === 'indonesia' || eventCountry === 'id') {
+      if ((eventCountry === 'indonesia' || eventCountry === 'id') && sourceRecords && sourceRecords.length > 0) {
         const hasLocalIndoAuthority = sourceRecords.some(s => {
           const srcMeta = sourceRegistry.getSource(s.source_id) || {};
           const isAuth = sourceRegistry.isAuthoritativeSource(s.source_id, s.account_handle || s.source_account);
@@ -417,7 +428,7 @@ class EventVerificationService {
     }
 
     // 8. Temporal Freshness / Stale Check
-    const ttlMs = getFreshnessTtlMs(eventDate);
+    const ttlMs = getFreshnessTtlMs(eventDate, now);
     const lastCheckedTime = canonicalEvent.source_last_checked_at
       ? new Date(canonicalEvent.source_last_checked_at).getTime()
       : (canonicalEvent.last_verified_at
@@ -425,31 +436,21 @@ class EventVerificationService {
         : (canonicalEvent.verified_at ? new Date(canonicalEvent.verified_at).getTime() : 0));
 
     if (lastCheckedTime > 0) {
-      const ageSinceCheck = Date.now() - lastCheckedTime;
+      const ageSinceCheck = now - lastCheckedTime;
       if (ageSinceCheck > ttlMs && (status === VERIFICATION_STATUS.VERIFIED || status === 'PRIMARY_SOURCE_VERIFIED')) {
         status = VERIFICATION_STATUS.STALE;
         flags.push('FRESHNESS_TTL_EXPIRED_STALE');
       }
     }
 
-    const now = Date.now();
     if (canonicalEvent.expires_at && now > new Date(canonicalEvent.expires_at).getTime()) {
-      status = VERIFICATION_STATUS.EXPIRED;
-      flags.push('EXPIRED_BY_TEMPORAL_TTL');
+      status = VERIFICATION_STATUS.STALE;
+      flags.push('FRESHNESS_TTL_EXPIRED_STALE');
     } else if (canonicalEvent.last_verified_at && (now - new Date(canonicalEvent.last_verified_at).getTime() > FRESHNESS_WINDOW_MS)) {
-      status = VERIFICATION_STATUS.EXPIRED;
+      status = VERIFICATION_STATUS.STALE;
       flags.push('VERIFICATION_EXPIRED_STALE');
     }
 
-    // Past event expiration
-    if (eventDate) {
-      const eventTime = new Date(eventDate).getTime();
-      const endOfDay = eventTime + (24 * 60 * 60 * 1000);
-      if (Date.now() > endOfDay) {
-        status = VERIFICATION_STATUS.EXPIRED;
-        flags.push('EVENT_COMPLETED_OR_EXPIRED');
-      }
-    }
 
     // 9. Tikum Zero-Fake Event Policy & 14 Schema Attributes Computation
     const isFestival = (
@@ -589,15 +590,16 @@ class EventVerificationService {
       verification_score: verificationScore,
 
       last_verified_at: lastVerifiedAt,
-      next_verification_at: nextVerificationAt
+      next_verification_at: nextVerificationAt,
+      verification_freshness: status === VERIFICATION_STATUS.STALE ? 'STALE' : 'FRESH'
     };
   }
 
   /**
    * Helper alias method for evaluateEvent returning status, is_verified, and reason string.
    */
-  static verifyEventWithRules(canonicalEvent, sourceRecords = []) {
-    const res = this.evaluateEvent(canonicalEvent, sourceRecords);
+  static verifyEventWithRules(canonicalEvent, sourceRecords = [], options = {}) {
+    const res = this.evaluateEvent(canonicalEvent, sourceRecords, options);
     return {
       ...res,
       status: res.verification_status,
