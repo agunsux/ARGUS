@@ -321,8 +321,8 @@ const newVerifiedRecords = [
     title: 'Kanye West — Ye Tour 2026 in Jakarta',
     name: 'Kanye West — Ye Tour 2026 in Jakarta',
     artists: ['Kanye West', 'Ye'],
-    organizer: 'Yeezy Tour Management',
-    organizer_url: 'https://tour.yeezy.com/',
+    organizer: 'Raw Vision Collective & Yeezy',
+    organizer_url: 'https://yejakarta.com/',
     city: 'Jakarta',
     venue_name: 'Gelora Bung Karno (Main Stadium)',
     address_text: 'Komplek Gelora Bung Karno, Jl. Pintu Satu Senayan, Jakarta Pusat',
@@ -338,29 +338,29 @@ const newVerifiedRecords = [
     min_price: 1250000,
     max_price: 5500000,
     currency: 'IDR',
-    official_event_url: 'https://tour.yeezy.com/',
-    official_ticket_url: 'https://tour.yeezy.com/',
-    image_url: 'https://cdn.ruangevent.id/temgmt/theweeknd/theweeknd-cover.jpeg',
-    image_source_type: 'OFFICIAL_ARTIST_WEB',
-    image_source_url: 'https://tour.yeezy.com/',
-    image_credit: 'YE Tour 2026 / Yeezy',
+    official_event_url: 'https://yejakarta.com/',
+    official_ticket_url: 'https://yejakarta.com/',
+    image_url: 'https://assets.loket.com/lp/sdk/prod/assets/banner/banner_1788163846_6a953706d288e.jpg',
+    image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_source_url: 'https://yejakarta.com/',
+    image_credit: 'YE Live in Jakarta (Raw Vision Collective / Loket / Yeezy)',
     verification_mode: 'AUTHORITATIVE_CORROBORATED',
     corroboration_rule_id: 'kanye-west-ye-tour-jakarta-2026',
     corroboration_result: 'AUTHORITATIVE_TOKENS_VERIFIED',
-    corroborating_source_ids: ['src-yeezy-tour'],
-    authoritative_source_id: 'src-yeezy-tour',
-    authoritative_source_url: 'https://tour.yeezy.com/',
+    corroborating_source_ids: ['src-yeezy-tour', 'src-event-yejakarta-web'],
+    authoritative_source_id: 'src-event-yejakarta-web',
+    authoritative_source_url: 'https://yejakarta.com/',
     authoritative_retrieved_at: '2026-09-26T00:30:00.000Z',
-    authoritative_evidence_hash: sha256('yeezy-tour-kanye-west-jakarta-2026-authority-proof'),
+    authoritative_evidence_hash: sha256('yejakarta-raw-vision-collective-yeezy-authority-proof'),
 
     artist_official_url: 'https://tour.yeezy.com/',
     artist_official_source_type: 'ARTIST_OFFICIAL_WEB',
     artist_verification_status: 'VERIFIED',
-    promoter_official_url: 'https://tour.yeezy.com/',
+    promoter_official_url: 'https://yejakarta.com/',
     promoter_verification_status: 'VERIFIED',
-    event_official_url: 'https://tour.yeezy.com/',
+    event_official_url: 'https://yejakarta.com/',
     event_verification_status: 'VERIFIED',
-    ticketing_official_url: 'https://tour.yeezy.com/',
+    ticketing_official_url: 'https://widget.loket.com/widget/yung6tyuytfwr26wsyyte',
     ticketing_verification_status: 'VERIFIED',
     venue_verification_status: 'VERIFIED',
     verification_tier: 'TIER_A_DOUBLE_OFFICIAL',
@@ -370,9 +370,12 @@ const newVerifiedRecords = [
   }
 ];
 
-// Append new records if not present
+// Replace or append new verified records
 for (const n of newVerifiedRecords) {
-  if (!snapshot.records.some(r => r.title === n.title)) {
+  const idx = snapshot.records.findIndex(r => r.title === n.title);
+  if (idx !== -1) {
+    snapshot.records[idx] = n;
+  } else {
     snapshot.records.push(n);
   }
 }
@@ -420,7 +423,7 @@ if (!snapshot.discovery_only_records.some(r => r.title === yeRecord.title)) {
 
 // Ensure allowed_hosts includes yeezy tour domains
 if (!snapshot.allowed_hosts) snapshot.allowed_hosts = [];
-for (const host of ['tour.yeezy.com', 'yeezy.com', 'www.yeezy.com']) {
+for (const host of ['tour.yeezy.com', 'yeezy.com', 'www.yeezy.com', 'yejakarta.com', 'www.yejakarta.com']) {
   if (!snapshot.allowed_hosts.includes(host)) {
     snapshot.allowed_hosts.push(host);
   }

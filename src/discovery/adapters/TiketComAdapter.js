@@ -94,11 +94,24 @@ class TiketComAdapter extends EventSourceAdapter {
       ticket_status: s.ticket_status || (s.status === 'SOLD_OUT' ? 'SOLD_OUT' : (s.official_ticket_url ? 'ON_SALE' : 'UPCOMING')),
       min_price: s.min_price !== undefined && s.min_price !== null ? Number(s.min_price) : (s.price_min !== undefined ? Number(s.price_min) : null),
       max_price: s.max_price !== undefined && s.max_price !== null ? Number(s.max_price) : (s.price_max !== undefined ? Number(s.price_max) : null),
+      price: s.min_price !== undefined && s.min_price !== null ? Number(s.min_price) : (s.max_price !== undefined && s.max_price !== null ? Number(s.max_price) : (s.price !== undefined ? Number(s.price) : null)),
       ticket_price: s.ticket_price || (s.min_price ? String(s.min_price) : null),
       currency: s.currency || 'IDR',
       image_url: s.image_url || s.image || s.poster_url || null,
+      imageUrl: s.image_url || s.image || s.poster_url || null,
       image_source_type: s.image_source_type || 'OFFICIAL_TICKETING',
       image_credit: s.image_credit || 'tiket.com',
+      eventUrl: s.official_ticket_url || s.ticket_url || s.official_event_url || s.url || null,
+      source: this.sourceId,
+      sourceEventId: s.source_event_id || s.id || s.eventId || s.slug || null,
+      startDate: startDate,
+      endDate: endDate,
+      venueName: s.venue_name || s.venue || null,
+      normalizedVenueName: s.venue_name || s.venue || null,
+      organizerName: s.organizer_name || s.organizer || s.promoter || null,
+      normalizedOrganizerName: s.organizer_name || s.organizer || s.promoter || null,
+      sourceFetchedAt: s.source_last_checked_at || s.retrieved_at || new Date().toISOString(),
+      sourceMetadata: s.raw_source_metadata || s.raw || raw || null,
       source_publication_timestamp: s.source_publication_timestamp || s.published_at || s.discovery_retrieved_at || null,
       source_last_checked_at: s.source_last_checked_at || s.retrieved_at || new Date().toISOString(),
       raw_source_metadata: s.raw_source_metadata || s.raw || raw || null,
@@ -107,6 +120,10 @@ class TiketComAdapter extends EventSourceAdapter {
   }
 }
 
+const TiketAdapter = TiketComAdapter;
+
 module.exports = {
-  TiketComAdapter
+  TiketComAdapter,
+  TiketAdapter
 };
+

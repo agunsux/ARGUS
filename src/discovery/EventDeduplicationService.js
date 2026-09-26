@@ -67,28 +67,42 @@ class EventDeduplicationService {
   static findDuplicateCandidate(incomingRecord, existingCanonicalEvents) {
     const incomingNormTitle = EventNormalizationService.normalizeTitle(incomingRecord.name || incomingRecord.title || incomingRecord.canonical_name);
     const incomingDate = incomingRecord.start_date || (incomingRecord.start_datetime ? incomingRecord.start_datetime.substring(0, 10) : incomingRecord.date);
-    const incomingVenue = incomingRecord.venue_id || (incomingRecord.venue_name || incomingRecord.venue || '').toLowerCase().trim();
+    const incomingVenueName = (incomingRecord.venue_name || incomingRecord.venue || '').toLowerCase().trim();
     const incomingCity = (incomingRecord.city || incomingRecord.venue_city || '').toLowerCase().trim();
     const incomingArtists = (Array.isArray(incomingRecord.artists) ? incomingRecord.artists : (incomingRecord.artist ? [incomingRecord.artist] : [])).map(a => a.toLowerCase().trim());
     const isExplicitReschedule = incomingRecord.status === 'RESCHEDULED' || incomingRecord.is_reschedule === true;
 
     for (const canonical of existingCanonicalEvents) {
       const canonicalDate = canonical.start_date || (canonical.start_datetime ? canonical.start_datetime.substring(0, 10) : canonical.date);
-      const canonicalVenue = canonical.venue_id || (canonical.venue_name || canonical.venue || '').toLowerCase().trim();
+      const canonicalVenueName = (canonical.venue_name || canonical.venue || '').toLowerCase().trim();
       const canonicalCity = (canonical.city || canonical.venue_city || '').toLowerCase().trim();
       const canonicalNormTitle = EventNormalizationService.normalizeTitle(canonical.canonical_name || canonical.name || canonical.title);
       const canonicalArtists = (Array.isArray(canonical.artists) ? canonical.artists : (canonical.artist ? [canonical.artist] : [])).map(a => a.toLowerCase().trim());
 
       // ==========================================
       // 1. MULTI-CITY TOUR DISAMBIGUATION
-      // Same artist in different cities on different dates are separate tour stops
+      // Same artist in different cities are separate tour stops
       // ==========================================
-      if (incomingCity && canonicalCity && incomingCity !== canonicalCity) {
+      if (incomingCity && canonicalCity && incomingCity.toLowerCase().trim() !== canonicalCity.toLowerCase().trim()) {
         continue; // Different city -> distinct tour stop
       }
 
       // ==========================================
-      // 2. EXACT EXTERNAL SOURCE IDENTIFIER MATCH
+      // 2. EVENT TYPE & YEAR ANTI-OVERMERGE GUARDS
+      // Do NOT merge: Concert with Fan Meeting, Festival 2026 with Festival 2027
+      // ==========================================
+      if (hasConflictingEventType(incomingNormTitle, canonicalNormTitle)) {
+        continue; // Concert vs Fan Meeting are distinct events
+      }
+
+      const yearIn = extractYear(incomingNormTitle);
+      const yearCan = extractYear(canonicalNormTitle);
+      if (yearIn && yearCan && yearIn !== yearCan) {
+        continue; // Different festival/tour years are distinct events
+      }
+
+      // ==========================================
+      // 3. EXACT EXTERNAL SOURCE IDENTIFIER MATCH
       // ==========================================
       if (canonical.sources && Array.isArray(canonical.sources)) {
         const matchingSource = canonical.sources.find(s => 
@@ -108,34 +122,50 @@ class EventDeduplicationService {
 
       const isSameDate = incomingDate && canonicalDate && incomingDate === canonicalDate;
       const isSameVenue = (incomingRecord.venue_id && canonical.venue_id && incomingRecord.venue_id === canonical.venue_id) ||
-                          (incomingVenue && canonicalVenue && (incomingVenue.includes(canonicalVenue) || canonicalVenue.includes(incomingVenue)));
+                          (incomingVenueName && canonicalVenueName && (incomingVenueName.includes(canonicalVenueName) || canonicalVenueName.includes(incomingVenueName)));
       const titleSim = this.calculateTokenSimilarity(incomingNormTitle, canonicalNormTitle);
 
       // ==========================================
-      // 3. DATE DISCREPANCY vs MULTI-NIGHT RESIDENCY SEPARATION
-      // CRITICAL INVARIANT: Distinct show dates for concerts (e.g. LANY 29 Oct vs 30 Oct)
-      // MUST NOT collapse into one event unless explicitly marked as a RESCHEDULE!
+      // 4. DATE DISCREPANCY & STRICT MULTI-NIGHT SEPARATION
+      // CRITICAL INVARIANT: Distinct show dates (e.g. 2026-10-10 vs 2026-10-11,
+      // or LANY 29 Oct vs 30 Oct) MUST NOT collapse into one event unless explicitly marked as a RESCHEDULE!
       // ==========================================
       if (incomingDate && canonicalDate && incomingDate !== canonicalDate) {
         if (!isExplicitReschedule) {
-          // Check for residency / multi-night indicators:
           const incomingHasResidency = hasResidencyIndicator(incomingNormTitle);
           const canonicalHasResidency = hasResidencyIndicator(canonicalNormTitle);
           const incomingDayNum = extractDayOrNight(incomingNormTitle);
           const canonicalDayNum = extractDayOrNight(canonicalNormTitle);
 
-          // If day numbers differ (e.g. Day 1 vs Day 2) or residency tags indicate separate shows
-          if ((incomingDayNum && canonicalDayNum && incomingDayNum !== canonicalDayNum) ||
-              (incomingHasResidency && !canonicalHasResidency && incomingDayNum !== '1') ||
-              (!incomingHasResidency && canonicalHasResidency && canonicalDayNum !== '1') ||
-              (incomingHasResidency && canonicalHasResidency)) {
+          const isDistinctResidency = (incomingDayNum && canonicalDayNum && incomingDayNum !== canonicalDayNum) ||
+            (incomingHasResidency && !canonicalHasResidency && incomingDayNum !== '1') ||
+            (!incomingHasResidency && canonicalHasResidency && canonicalDayNum !== '1') ||
+            (incomingHasResidency && canonicalHasResidency);
+
+          if (isDistinctResidency) {
             continue; // Distinct residency show, do not collapse!
           }
+
+          // Same venue + exact same title with small date discrepancy = date conflict across sources
+          const isExactTitle = incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase();
+          if (isSameVenue && (isExactTitle || titleSim >= 0.85)) {
+            const dateDiffDays = Math.abs(new Date(incomingDate).getTime() - new Date(canonicalDate).getTime()) / (1000 * 60 * 60 * 24);
+            if (dateDiffDays <= 30) {
+              return {
+                isMatch: true,
+                confidence: 85,
+                matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT',
+                canonicalEvent: canonical
+              };
+            }
+          }
+
+          continue; // Different dates = separate events
         }
       }
 
       // ==========================================
-      // 4. MULTI-HALL SPATIAL COLLISION DISAMBIGUATION
+      // 5. MULTI-HALL SPATIAL COLLISION DISAMBIGUATION
       // Same Venue + Same Date, but distinct non-overlapping acts in different halls
       // ==========================================
       if (isSameDate && isSameVenue && titleSim < 0.25) {
@@ -147,7 +177,7 @@ class EventDeduplicationService {
       }
 
       // ==========================================
-      // 5. DETERMINISTIC & PROBABILISTIC MATCHING (SAME DATE)
+      // 6. DETERMINISTIC & PROBABILISTIC MATCHING (SAME DATE)
       // ==========================================
       if (isSameDate) {
         // Exact match
@@ -198,56 +228,27 @@ class EventDeduplicationService {
       }
 
       // ==========================================
-      // 6. CONFLICT DETECTION: Same Title & Venue with Different Dates
+      // 7. EXPLICIT RESCHEDULE ONLY ACROSS DATES
       // ==========================================
-      if (isSameVenue && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || titleSim >= 0.75)) {
-        if (incomingDate && canonicalDate && incomingDate !== canonicalDate) {
-          const dateDiffDays = Math.abs(new Date(incomingDate).getTime() - new Date(canonicalDate).getTime()) / (1000 * 60 * 60 * 24);
-          if (dateDiffDays <= 120 || isExplicitReschedule) {
-            return {
-              isMatch: true,
-              confidence: 85,
-              matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT',
-              canonicalEvent: canonical
-            };
-          }
-        }
+      if (isExplicitReschedule && (isSameVenue || isSameCityOrMetro(incomingCity, canonicalCity)) && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || titleSim >= 0.75)) {
+        return {
+          isMatch: true,
+          confidence: 95,
+          matchReason: 'EXPLICIT_RESCHEDULE_SAME_EVENT',
+          canonicalEvent: canonical
+        };
       }
 
-      // ==========================================
-      // 7. RESCHEDULE & SAME-CITY EVENT UPDATES (ACROSS DATES)
-      // ==========================================
-      const isExactTitle = incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase();
-      const isHighTitleSim = titleSim >= 0.80;
-
-      if (isSameCityOrMetro(incomingCity, canonicalCity) && (isExactTitle || isHighTitleSim)) {
-        if (incomingDate && canonicalDate && incomingDate !== canonicalDate) {
-          const dateDiffDays = Math.abs(new Date(incomingDate).getTime() - new Date(canonicalDate).getTime()) / (1000 * 60 * 60 * 24);
-          if (dateDiffDays <= 120 || isExplicitReschedule) {
-            const isSameOrganizer = incomingRecord.organizer_name && canonical.organizer_name &&
-              incomingRecord.organizer_name.toLowerCase().trim() === canonical.organizer_name.toLowerCase().trim();
-            const isSameSource = incomingRecord.source_id && canonical.sources &&
-              canonical.sources.some(s => s.source_id === incomingRecord.source_id);
-
-            if (isExplicitReschedule || isSameOrganizer || isSameSource) {
-              return {
-                isMatch: true,
-                confidence: isExplicitReschedule ? 95 : 88,
-                matchReason: isExplicitReschedule ? 'EXPLICIT_RESCHEDULE_SAME_EVENT' : 'PROMOTER_EVENT_UPDATE_SAME_CITY',
-                canonicalEvent: canonical
-              };
-            }
-
-            if (isExactTitle) {
-              return {
-                isMatch: true,
-                confidence: 88,
-                matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT_IN_CITY',
-                canonicalEvent: canonical
-              };
-            }
-          }
-        }
+      // 7b. Unverified Seed Date Resolution
+      // Upgrades legacy unverified/untrusted placeholder claims with authoritative proof for same tour/venue
+      const isCanonicalUnverified = canonical.is_verified !== true || (canonical.sources && canonical.sources.every(s => s.source_id === 'src-legacy-seed' || s.tier >= 4));
+      if (isCanonicalUnverified && isSameVenue && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || titleSim >= 0.75)) {
+        return {
+          isMatch: true,
+          confidence: 90,
+          matchReason: 'UNVERIFIED_SEED_DATE_RESOLUTION',
+          canonicalEvent: canonical
+        };
       }
 
       // 8. Multi-Day Festival Edition Match
@@ -304,6 +305,28 @@ function extractDayOrNight(title) {
   return m ? m[1] : null;
 }
 
+function extractYear(str) {
+  if (!str) return null;
+  const m = String(str).match(/\b(202\d)\b/);
+  return m ? m[1] : null;
+}
+
+function hasConflictingEventType(titleA, titleB) {
+  if (!titleA || !titleB) return false;
+  const isConcertA = /concert|konser|live\s*in|world\s*tour|stadium\s*tour/i.test(titleA);
+  const isConcertB = /concert|konser|live\s*in|world\s*tour|stadium\s*tour/i.test(titleB);
+  const isFanMeetingA = /fan\s*meeting|fanmeet|gathering/i.test(titleA);
+  const isFanMeetingB = /fan\s*meeting|fanmeet|gathering/i.test(titleB);
+
+  if ((isConcertA && isFanMeetingB) || (isFanMeetingA && isConcertB)) {
+    return true; // Discrepancy between Concert and Fan Meeting
+  }
+  return false;
+}
+
 module.exports = {
-  EventDeduplicationService
+  EventDeduplicationService,
+  extractYear,
+  hasConflictingEventType
 };
+

@@ -539,14 +539,14 @@ class SourceRegistry {
         country_code: 'ID',
         language: 'en',
         coverage: 'METRO_JAKARTA_GREATER',
-        adapter: 'GenericAdapter',
+        adapter: 'SongkickAdapter',
         access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
         permission_status: PERMISSION_STATUS.PUBLIC_DATA,
         terms_reference: 'Tier-1 Concert Discovery Platform',
         robots_policy: 'HONOR_ROBOTS_TXT',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
-        priority: 'HIGH',
+        priority: 6,
         reliability_score: 0.9,
         trust_level: TRUST_LEVELS.TIER_1,
         active_status: SOURCE_STATUS.ACTIVE,
@@ -573,8 +573,9 @@ class SourceRegistry {
         category: 'MUSIC',
         official_url: 'https://www.songkick.com/',
         base_url: 'https://www.songkick.com/',
+        adapter: 'SongkickAdapter',
         trust_level: TRUST_LEVELS.TIER_1,
-        priority: 'HIGH',
+        priority: 6,
         reliability_score: 0.9,
         active_status: SOURCE_STATUS.ACTIVE,
         notes: 'Songkick.com Tier-1 source alias.'
@@ -607,14 +608,14 @@ class SourceRegistry {
         country_code: 'ID',
         language: 'en',
         coverage: 'METRO_JAKARTA_GREATER',
-        adapter: 'GenericAdapter',
+        adapter: 'BandsintownAdapter',
         access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
         permission_status: PERMISSION_STATUS.PUBLIC_DATA,
         terms_reference: 'Tier-1 Concert Discovery Platform',
         robots_policy: 'HONOR_ROBOTS_TXT',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
-        priority: 'HIGH',
+        priority: 5,
         reliability_score: 0.9,
         trust_level: TRUST_LEVELS.TIER_1,
         active_status: SOURCE_STATUS.ACTIVE,
@@ -641,8 +642,9 @@ class SourceRegistry {
         category: 'MUSIC',
         official_url: 'https://www.bandsintown.com/',
         base_url: 'https://www.bandsintown.com/',
+        adapter: 'BandsintownAdapter',
         trust_level: TRUST_LEVELS.TIER_1,
-        priority: 'HIGH',
+        priority: 5,
         reliability_score: 0.9,
         active_status: SOURCE_STATUS.ACTIVE,
         notes: 'Bandsintown.com Tier-1 source alias.'
@@ -1328,24 +1330,73 @@ class SourceRegistry {
         notes: 'Major primary ticketing platform for festivals and indie gigs. Tier-1 commercial ticketing platform.'
       },
       // ==========================================
-      // TIER 2: TRUSTED COMMERCIAL & TICKETING PLATFORMS
+      // TIER 1: PRIMARY TRUSTED TICKETING & EVENT SOURCES (LOKET, TIKET.COM, GOERS, BBO)
       // ==========================================
       {
-        source_id: 'src-bbo',
-        source_name: 'BBO Events (bbo.co.id)',
-        source_type: SOURCE_TYPES.OFFICIAL_TICKETING_PLATFORM,
-        tier: 2,
-        authority_level: 'MEDIUM',
-        source_role: SOURCE_ROLES.CORROBORATING_SOURCE,
-        base_url: 'https://bbo.co.id/feature-bbo-events.html',
+        source_id: 'src-goers',
+        id: 'src-goers',
+        source_name: 'GOERS',
+        name: 'GOERS',
+        source_type: SOURCE_TYPES.TICKETING_PLATFORM,
+        type: 'TICKETING_PLATFORM',
+        tier: 1,
+        authority_level: 'HIGH',
+        authority: 'AUTHORITATIVE',
+        verification_role: 'PRIMARY_AUTHORITY',
+        source_role: SOURCE_ROLES.TRANSACTION_SOURCE,
+        authority_role: AUTHORITY_RELATIONSHIPS.OFFICIAL_TICKET_SELLER,
+        can_create_event: true,
+        can_mark_verified: true,
+        can_verify: true,
+        can_override_official_source: false,
+        base_url: 'https://goersapp.com',
+        official_url: 'https://goersapp.com',
         country: 'Indonesia',
+        country_code: 'ID',
+        language: 'id',
+        coverage: 'NATIONAL',
+        category: 'MUSIC',
+        adapter: 'GoersAdapter',
+        access_method: ACCESS_METHODS.FEED,
+        permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
+        trust_level: TRUST_LEVELS.TIER_1,
+        active_status: SOURCE_STATUS.ACTIVE,
+        terms_reference: 'Public Structured Event Feed',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        rate_limit: '30 req/min',
+        crawl_frequency: CRAWL_FREQUENCY.DAILY,
+        priority: 3,
+        reliability_score: 0.95,
+        notes: 'Trusted primary event source #3. Key ticketing platform for nightlife, concerts, lifestyle, and regional events.'
+      },
+      {
+        source_id: 'src-bbo',
+        id: 'src-bbo',
+        source_name: 'BBO Events (bbo.co.id)',
+        name: 'BBO Events',
+        source_type: SOURCE_TYPES.OFFICIAL_TICKETING_PLATFORM,
+        type: 'OFFICIAL_TICKETING_PLATFORM',
+        tier: 1,
+        authority_level: 'HIGH',
+        authority: 'AUTHORITATIVE',
+        verification_role: 'PRIMARY_AUTHORITY',
+        source_role: SOURCE_ROLES.TRANSACTION_SOURCE,
+        authority_role: AUTHORITY_RELATIONSHIPS.OFFICIAL_TICKET_SELLER,
+        can_create_event: true,
+        can_mark_verified: true,
+        can_verify: true,
+        can_override_official_source: false,
+        base_url: 'https://bbo.co.id/feature-bbo-events.html',
+        official_url: 'https://bbo.co.id',
+        country: 'Indonesia',
+        country_code: 'ID',
         language: 'id',
         coverage: 'NATIONAL',
         category: 'MULTI_DISCIPLINARY',
         adapter: 'BboAdapter',
         access_method: ACCESS_METHODS.PERMITTED_CRAWL,
         permission_status: PERMISSION_STATUS.PERMITTED_CRAWL,
-        trust_level: TRUST_LEVELS.TIER_2,
+        trust_level: TRUST_LEVELS.TIER_1,
         active_status: SOURCE_STATUS.ACTIVE,
         terms_reference: 'Public Event Listing / robots.txt User-agent: * => Disallow: (empty directive = crawling permitted) (audited)',
         robots_policy: 'HONOR_ROBOTS_TXT',
@@ -1353,30 +1404,13 @@ class SourceRegistry {
         terms_url: 'https://bbo.co.id/term-and-conditions.html',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
-        priority: 2,
-        reliability_score: 0.8,
-        notes: 'Indonesian event listing & ticketing portal. Audited: https://bbo.co.id/feature-bbo-events.html is server-rendered with event cards (title, poster from storage.googleapis.com/bbo-images, day/month, description) and city coverage across Jabodetabek, Bandung, Java, Sumatera (incl. Bandar Lampung, Batam) and Surabaya. Card dates omit the calendar year, so events remain UNVERIFIED unless the year is independently resolvable (fail-closed).'
+        priority: 4,
+        reliability_score: 0.9,
+        notes: 'Trusted primary event source #4. Indonesian event listing & ticketing portal across Jabodetabek, Bandung, Java, Sumatera, and Surabaya.'
       },
-      {
-        source_id: 'src-goers',
-        source_name: 'GOERS',
-        source_type: SOURCE_TYPES.OFFICIAL_TICKETING_PLATFORM,
-        tier: 2,
-        authority_level: 'MEDIUM',
-        base_url: 'https://goersapp.com',
-        country: 'Indonesia',
-        language: 'id',
-        coverage: 'NATIONAL',
-        category: 'MUSIC',
-        adapter: 'GoersAdapter',
-        access_method: ACCESS_METHODS.FEED,
-        permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
-        trust_level: TRUST_LEVELS.TIER_2,
-        active_status: SOURCE_STATUS.ACTIVE,
-        terms_reference: 'Public Structured Event Feed',
-        robots_policy: 'HONOR_ROBOTS_TXT',
-        notes: 'Key ticketing platform for nightlife, lifestyle, and regional events. AUDITED: robots.txt is permissive, but /events and /sitemap.xml return HTTP 403 (Cloudflare WAF) and the public homepage is a JavaScript SPA shell with no server-rendered event data. Bypassing the WAF is prohibited, therefore ingestion requires the official partner feed (GOERS_FEED_URL).'
-      },
+      // ==========================================
+      // TIER 2: REGIONAL & SPECIALIZED PLATFORMS
+      // ==========================================
       {
         source_id: 'src-dewatiket',
         source_name: 'Dewatiket',
@@ -2361,6 +2395,32 @@ class SourceRegistry {
         notes: 'Official Event Instagram for Joyland Festival'
       },
       {
+        source_id: 'src-event-yejakarta-web',
+        source_name: 'YE Live in Jakarta Official Event Website',
+        source_owner: 'Raw Vision Collective / Yeezy',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT_WEB,
+        tier: 1,
+        authority_level: 'HIGH',
+        source_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
+        base_url: 'https://yejakarta.com',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'JAKARTA',
+        category: 'CONCERT',
+        adapter: 'PromoterAdapter',
+        access_method: ACCESS_METHODS.PERMITTED_CRAWL,
+        permission_status: PERMISSION_STATUS.PERMITTED_CRAWL,
+        trust_level: TRUST_LEVELS.TIER_S,
+        active_status: SOURCE_STATUS.ACTIVE,
+        terms_reference: 'Official Event Website for YE Live in Jakarta 2026',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        rate_limit: '30 req/min',
+        crawl_frequency: CRAWL_FREQUENCY.DAILY,
+        priority: 1,
+        reliability_score: 1.0,
+        notes: 'Official Indonesian event website for YE Live in Jakarta at Gelora Bung Karno'
+      },
+      {
         source_id: 'src-event-theweekndinjakarta-web',
         source_name: 'The Weeknd in Jakarta Official Event Website',
         source_owner: 'TEM Presents / Live Nation Asia',
@@ -3139,17 +3199,59 @@ class SourceRegistry {
     };
   }
 
+  isTrustedPrimarySource(sourceId) {
+    if (!sourceId) return false;
+    const clean = String(sourceId).toLowerCase().trim();
+    return TRUSTED_PRIMARY_SOURCES.includes(clean) || TRUSTED_SOURCE_PRIORITY[clean] !== undefined;
+  }
+
+  getSourcePriority(sourceId) {
+    if (!sourceId) return 99;
+    const clean = String(sourceId).toLowerCase().trim();
+    return TRUSTED_SOURCE_PRIORITY[clean] || 99;
+  }
+
   reset() {
     this.sources.clear();
     this._initializeDefaultSources();
   }
 }
 
+const TRUSTED_PRIMARY_SOURCES = [
+  'src-loket',
+  'src-tiket-com',
+  'src-goers',
+  'src-bbo',
+  'src-bandsintown-jakarta',
+  'src-songkick-jakarta'
+];
+
+const TRUSTED_SOURCE_PRIORITY = {
+  'src-loket': 1,
+  'loket': 1,
+  'src-tiket-com': 2,
+  'src-tiket': 2,
+  'tiket': 2,
+  'tiket.com': 2,
+  'src-goers': 3,
+  'goers': 3,
+  'src-bbo': 4,
+  'bbo': 4,
+  'src-bandsintown-jakarta': 5,
+  'src-bandsintown': 5,
+  'bandsintown': 5,
+  'src-songkick-jakarta': 6,
+  'src-songkick': 6,
+  'songkick': 6
+};
+
 const sourceRegistryInstance = new SourceRegistry();
 
 module.exports = {
   SourceRegistry,
   sourceRegistry: sourceRegistryInstance,
+  TRUSTED_PRIMARY_SOURCES,
+  TRUSTED_SOURCE_PRIORITY,
   SOURCE_TYPES,
   AUTHORITATIVE_SOURCE_TYPES,
   SOURCE_ROLES,
@@ -3161,3 +3263,4 @@ module.exports = {
   ACCESS_METHODS,
   AUTHORITY_RELATIONSHIPS
 };
+

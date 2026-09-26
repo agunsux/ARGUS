@@ -654,7 +654,7 @@ async function runSuite() {
     }
   });
 
-  await test('Test 31: Kanye West — Ye Tour in Jakarta corroborated by official artist website https://tour.yeezy.com/ achieves TIER_A_DOUBLE_OFFICIAL and VERIFIED status', async () => {
+  await test('Test 31: Kanye West — Ye Tour in Jakarta corroborated by official artist website https://tour.yeezy.com/ and https://yejakarta.com/ achieves TIER_A_DOUBLE_OFFICIAL and VERIFIED status', async () => {
     const kanyeObs = await ingestionPipeline.ingestEvent({
       name: 'Kanye West — Ye Tour 2026 in Jakarta',
       title: 'Kanye West — Ye Tour 2026 in Jakarta',
@@ -663,10 +663,14 @@ async function runSuite() {
       city: 'Jakarta',
       start_date: '2026-10-24',
       category: 'CONCERT',
-      official_event_url: 'https://tour.yeezy.com/',
-      official_ticket_url: 'https://tour.yeezy.com/',
+      official_event_url: 'https://yejakarta.com/',
+      official_ticket_url: 'https://yejakarta.com/',
       artist_official_url: 'https://tour.yeezy.com/',
-      artist_verification_status: 'VERIFIED'
+      artist_verification_status: 'VERIFIED',
+      image_url: 'https://assets.loket.com/lp/sdk/prod/assets/banner/banner_1788163846_6a953706d288e.jpg',
+      image_source_type: 'OFFICIAL_EVENT_WEB',
+      image_source_url: 'https://yejakarta.com/',
+      image_credit: 'YE Live in Jakarta (Raw Vision Collective / Loket / Yeezy)'
     }, 'src-yeezy-tour');
 
     const canonicalKanye = kanyeObs.canonical_event;
@@ -676,6 +680,7 @@ async function runSuite() {
     assert.strictEqual(canonicalKanye.artist_official_url, 'https://tour.yeezy.com/');
     assert.strictEqual(canonicalKanye.artist_verification_status, 'VERIFIED');
     assert.strictEqual(canonicalKanye.verification_tier, 'TIER_A_DOUBLE_OFFICIAL');
+    assert.strictEqual(canonicalKanye.image_url, 'https://assets.loket.com/lp/sdk/prod/assets/banner/banner_1788163846_6a953706d288e.jpg');
     assert.strictEqual(canonicalKanye.homepage_visibility, true);
     assert.strictEqual(canonicalKanye.public_upcoming, true);
   });

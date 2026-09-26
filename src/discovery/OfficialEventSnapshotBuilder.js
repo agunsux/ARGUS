@@ -83,7 +83,9 @@ const ALLOWED_HOSTS = new Set([
   'www.ismaya.com',
   'tour.yeezy.com',
   'yeezy.com',
-  'www.yeezy.com'
+  'www.yeezy.com',
+  'yejakarta.com',
+  'www.yejakarta.com'
 ]);
 
 // Indonesian target market: Jabodetabek, Java, Sumatera, Sulawesi, Kalimantan, Bali.
@@ -254,11 +256,13 @@ const EVIDENCE_RULES = [
     discovery_source_id: 'src-yeezy-tour',
     title_includes: ['ye', 'kanye west'],
     city_includes: 'jakarta',
-    authoritative_source_id: 'src-yeezy-tour',
-    evidence_url: 'https://tour.yeezy.com/',
-    expect_tokens: ['ye', 'tour', '2026'],
-    image_source_type: 'OFFICIAL_ARTIST_WEB',
-    image_credit: 'YE Tour 2026 / Yeezy'
+    authoritative_source_id: 'src-event-yejakarta-web',
+    evidence_url: 'https://yejakarta.com/',
+    expect_tokens: ['ye', 'jakarta'],
+    image_url: 'https://assets.loket.com/lp/sdk/prod/assets/banner/banner_1788163846_6a953706d288e.jpg',
+    image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_source_url: 'https://yejakarta.com/',
+    image_credit: 'YE Live in Jakarta (Raw Vision Collective / Loket / Yeezy)'
   }
 ];
 

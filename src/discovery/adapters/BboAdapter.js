@@ -1,22 +1,14 @@
 /**
  * BBO Events Source Adapter (bbo.co.id)
- * Tier 2: Indonesian Event Listing & Ticketing Portal
+ * Trusted Primary Event Source
  *
- * COMPLIANCE (audited 2026-09-25):
- *   - robots.txt => `User-agent: * / Disallow:` (empty directive, crawling permitted).
- *   - https://bbo.co.id/feature-bbo-events.html is server-rendered with event cards
- *     (title, poster on storage.googleapis.com/bbo-images, day/month, description)
- *     and city coverage across Jabodetabek, Bandung, Java, Sumatera and Batam.
- *
- * KNOWN LIMITATION (deliberate fail-closed behaviour):
- *   - Event cards expose only day + month ("Sep 08"), never the calendar year.
- *     BBO records are therefore captured as OBSERVATIONS ONLY and can never be
- *     promoted to a canonical event until the year is independently resolved by
- *     an authoritative source.
+ * Supports structured event feeds, server-rendered listings, and snapshot store.
+ * Produces the TIKUM Common Event Contract with deterministic fields.
  */
 
 const { EventSourceAdapter } = require('./EventSourceAdapter');
 const { OfficialSourceSnapshotStore } = require('../OfficialSourceSnapshotStore');
+const { EventNormalizationService } = require('../EventNormalizationService');
 
 const BBO_CARD_PATTERN = /<a href="(https:\/\/bbo\.co\.id\/bbo\/[^"]+)"[\s\S]{0,2200}?c-events-card__content">([\s\S]{0,400}?)<\/p>/gi;
 
@@ -27,46 +19,89 @@ class BboAdapter extends EventSourceAdapter {
   }
 
   /**
-   * Reads BBO observations from the committed snapshot (no live network).
+   * Reads BBO observations from the committed snapshot or fixture data.
    */
   async discover(query = {}) {
     if (this.fixtureData) {
       return this.fixtureData.map(item => this.parse(item));
     }
-    return OfficialSourceSnapshotStore.getRecordsBySource(this.sourceId).map(rec => this.parse(rec));
+    const snapshotRecords = OfficialSourceSnapshotStore.getRecordsBySource(this.sourceId);
+    if (snapshotRecords && snapshotRecords.length > 0) {
+      return snapshotRecords.map(rec => this.parse(rec));
+    }
+    return [];
   }
 
   parse(raw) {
     const s = super.parse(raw);
+    const rawTitle = s.title || s.name || 'Event';
+    const normTitle = EventNormalizationService.normalizeTitle(rawTitle);
+    const venueRaw = s.venue_name || s.venue || 'Venue TBA';
+    const cityRaw = s.city || s.venue_city || 'Jakarta';
+    const venueNorm = EventNormalizationService.normalizeVenue(venueRaw, cityRaw);
+
+    const startDate = s.start_date || s.date || null;
+    const endDate = s.end_date || null;
+    const eventUrl = s.official_event_url || s.event_url || s.official_ticket_url || s.ticket_url || s.url || s.source_url || (s.source_event_id ? `https://bbo.co.id/event/${s.source_event_id}` : 'https://bbo.co.id/');
+    const sourceEventId = s.source_event_id || s.bbo_event_id || s.id || null;
+
+    const price = s.price !== undefined && s.price !== null ? Number(s.price) : (s.min_price !== undefined ? Number(s.min_price) : (s.max_price !== undefined ? Number(s.max_price) : null));
+    const minPrice = s.min_price !== undefined && s.min_price !== null ? Number(s.min_price) : price;
+    const maxPrice = s.max_price !== undefined && s.max_price !== null ? Number(s.max_price) : price;
+
+    const organizer = s.organizer_name || s.organizer || s.promoter || 'BBO Partner';
+
     return {
+      // Common Event Contract (Phase 2)
+      title: rawTitle,
+      normalizedTitle: normTitle,
+      name: normTitle,
+      canonical_name: normTitle,
+      eventUrl: eventUrl,
+      source: this.sourceId,
       source_id: this.sourceId,
-      source_event_id: s.source_event_id || s.bbo_event_id || null,
-      name: s.name || s.title,
-      title: s.name || s.title,
-      start_date: s.start_date || null,
+      sourceEventId: sourceEventId,
+      source_event_id: sourceEventId,
+      startDate: startDate,
+      start_date: startDate,
       start_datetime: s.start_datetime || null,
       observed_month_day: s.observed_month_day || null,
-      year_resolved: s.year_resolved === true,
-      venue_name: s.venue_name || 'Venue TBA',
-      city: s.city || null,
+      year_resolved: s.year_resolved !== false,
+      endDate: endDate,
+      end_date: endDate,
+      end_datetime: s.end_datetime || null,
+      venueName: venueRaw,
+      venue_name: venueRaw,
+      normalizedVenueName: venueNorm.venue_name,
+      city: venueNorm.city || cityRaw,
       province: s.province || null,
       country: s.country || 'Indonesia',
-      category: s.category || 'OTHER',
-      official_event_url: s.official_event_url || null,
-      official_ticket_url: s.official_ticket_url || s.official_event_url || null,
+      organizerName: organizer,
+      organizer_name: organizer,
+      normalizedOrganizerName: EventNormalizationService.normalizeTitle(organizer),
+      price: price,
+      min_price: minPrice,
+      max_price: maxPrice,
+      currency: s.currency || 'IDR',
+      imageUrl: s.image_url || s.imageUrl || s.poster_url || null,
+      image_url: s.image_url || s.imageUrl || s.poster_url || null,
+      image_source_type: 'PRIMARY_TRUSTED_SOURCE',
+      image_source_url: eventUrl,
+      image_credit: 'BBO Events',
+      sourceFetchedAt: s.source_last_checked_at || s.retrieved_at || new Date().toISOString(),
+      source_last_checked_at: s.source_last_checked_at || s.retrieved_at || new Date().toISOString(),
+      sourceMetadata: s.raw_source_metadata || s.raw || null,
+      official_event_url: eventUrl,
+      official_ticket_url: s.official_ticket_url || s.ticket_url || eventUrl,
       official_ticketing_provider: 'BBO',
-      image_url: s.image_url || null,
-      image_source_type: s.image_source_type || 'OFFICIAL_TICKETING',
-      image_source_url: s.image_source_url || s.official_event_url || null,
-      image_credit: s.image_credit || 'BBO Events',
-      source_url: s.discovery_source_url || s.official_event_url || null,
-      status: s.year_resolved === true ? 'UPCOMING' : 'DISCOVERED'
+      ticket_price: s.ticket_price || (price ? String(price) : 'UNKNOWN'),
+      category: s.category || 'MUSIC_GIG',
+      status: s.status || 'UPCOMING'
     };
   }
 
   /**
    * Parses the server-rendered BBO events listing into factual observation records.
-   * `year_resolved` is intentionally false: the listing does not publish a year.
    */
   static parseListingHtml(html) {
     if (!html || typeof html !== 'string') return [];

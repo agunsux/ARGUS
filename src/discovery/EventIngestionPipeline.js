@@ -249,6 +249,14 @@ class EventIngestionPipeline {
         }
       }
 
+      const hasConflicts = canonicalEvent.conflicts && canonicalEvent.conflicts.length > 0;
+      if (sourceRegistry.isTrustedPrimarySource(source.source_id) && !hasConflicts) {
+        canonicalEvent.verification_status = VERIFICATION_STATUS.VERIFIED;
+        canonicalEvent.is_verified = true;
+        canonicalEvent.homepage_visibility = true;
+        canonicalEvent.public_upcoming = true;
+      }
+
       // Append decomposed claims to canonical event
       const incomingClaims = [
         new SourceClaim({
@@ -305,7 +313,10 @@ class EventIngestionPipeline {
       let initialStatus = VERIFICATION_STATUS.UNVERIFIED;
       let initialConfidence = 25;
 
-      if (isAuthoritative) {
+      if (sourceRegistry.isTrustedPrimarySource(source.source_id)) {
+        initialStatus = VERIFICATION_STATUS.VERIFIED;
+        initialConfidence = 100;
+      } else if (isAuthoritative) {
         initialStatus = (source.source_type.includes('IG') || source.source_type.includes('SOCIAL'))
           ? 'PRIMARY_SOURCE_VERIFIED'
           : VERIFICATION_STATUS.VERIFIED;

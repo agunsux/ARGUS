@@ -8,6 +8,9 @@ const { TicketmasterAdapter } = require('./TicketmasterAdapter');
 const { TiketComAdapter } = require('./TiketComAdapter');
 const { LoketAdapter } = require('./LoketAdapter');
 const { GoersAdapter } = require('./GoersAdapter');
+const { BboAdapter } = require('./BboAdapter');
+const { BandsintownAdapter } = require('./BandsintownAdapter');
+const { SongkickAdapter } = require('./SongkickAdapter');
 const { LiveNationAdapter } = require('./LiveNationAdapter');
 const { PromoterAdapter } = require('./PromoterAdapter');
 const { VenueAdapter } = require('./VenueAdapter');
@@ -33,12 +36,18 @@ class AdapterRegistry {
 
     if (sourceId === 'src-ticketmaster') {
       adapterInstance = new TicketmasterAdapter(sourceId, options);
-    } else if (sourceId === 'src-tiket-com') {
+    } else if (sourceId === 'src-tiket-com' || sourceId === 'src-tiket') {
       adapterInstance = new TiketComAdapter(sourceId, options);
     } else if (sourceId === 'src-loket') {
       adapterInstance = new LoketAdapter(sourceId, options);
     } else if (sourceId === 'src-goers') {
       adapterInstance = new GoersAdapter(sourceId, options);
+    } else if (sourceId === 'src-bbo') {
+      adapterInstance = new BboAdapter(sourceId, options);
+    } else if (sourceId === 'src-bandsintown-jakarta' || sourceId === 'src-bandsintown') {
+      adapterInstance = new BandsintownAdapter(sourceId, options);
+    } else if (sourceId === 'src-songkick-jakarta' || sourceId === 'src-songkick') {
+      adapterInstance = new SongkickAdapter(sourceId, options);
     } else if (sourceId === 'src-dewatiket') {
       adapterInstance = new DewatiketAdapter(sourceId, options);
     } else if (sourceId === 'src-yesplis') {

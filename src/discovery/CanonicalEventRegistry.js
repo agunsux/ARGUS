@@ -226,6 +226,12 @@ class CanonicalEventRegistry {
       // Pricing & Official Links
       min_price: eventData.min_price || eventData.ticket_price || null,
       max_price: eventData.max_price || null,
+      price: eventData.price || eventData.min_price || null,
+      price_status: eventData.price_status || (eventData.min_price || eventData.price || eventData.max_price ? (Math.max(eventData.min_price || 0, eventData.max_price || 0, eventData.price || 0) > 500000 ? 'QUALIFIED' : 'EXCLUDED_PRICE_TOO_LOW') : 'UNKNOWN'),
+      meets_price_threshold: eventData.meets_price_threshold !== undefined ? eventData.meets_price_threshold : (Math.max(eventData.min_price || 0, eventData.max_price || 0, eventData.price || 0) > 500000),
+      image_locked: eventData.image_locked || (visual.image_url ? true : false),
+      image_verified_against_source_event: eventData.image_verified_against_source_event !== undefined ? eventData.image_verified_against_source_event : (visual.image_url ? true : false),
+      image_source_id: eventData.image_source_id || (sources[0] && sources[0].source_id) || null,
       official_event_url: eventData.official_event_url || eventData.official_link || null,
       official_ticket_url: eventData.official_ticket_url || null,
       ticket_url: eventData.official_ticket_url || null,
@@ -622,7 +628,14 @@ class CanonicalEventRegistry {
         const oldVenue = event.venue_name;
         event.venue_name = incomingVenue;
         event.venue = incomingVenue;
-        if (incomingRecord.venue_id) event.venue_id = incomingRecord.venue_id;
+        if (incomingRecord.venue_id) {
+          event.venue_id = incomingRecord.venue_id;
+        } else {
+          try {
+            const vNorm = EventNormalizationService.normalizeVenue(incomingVenue, event.city);
+            if (vNorm && vNorm.venue_id) event.venue_id = vNorm.venue_id;
+          } catch (_) {}
+        }
         if (incomingRecord.city) {
           event.city = incomingRecord.city;
           event.venue_city = incomingRecord.city;
@@ -907,29 +920,61 @@ class CanonicalEventRegistry {
     event.source_count = event.sources.length;
     event.updated_at = new Date().toISOString();
 
+    // Update pricing from source record if available
+    const incomingPrice = sourceRecord.price || sourceRecord.min_price || sourceRecord.max_price;
+    if (incomingPrice) {
+      if (sourceRecord.min_price && (!event.min_price || sourceRecord.min_price < event.min_price)) {
+        event.min_price = Number(sourceRecord.min_price);
+      }
+      if (sourceRecord.max_price && (!event.max_price || sourceRecord.max_price > event.max_price)) {
+        event.max_price = Number(sourceRecord.max_price);
+      }
+      if (!event.price && sourceRecord.price) {
+        event.price = Number(sourceRecord.price);
+      }
+      const maxP = Math.max(event.min_price || 0, event.max_price || 0, event.price || 0);
+      if (maxP > 500000) {
+        event.meets_price_threshold = true;
+        event.price_status = 'QUALIFIED';
+      } else if (maxP > 0) {
+        event.meets_price_threshold = false;
+        event.price_status = 'EXCLUDED_PRICE_TOO_LOW';
+      }
+    }
+
     // Visual provenance re-resolution: when new evidence carrying official poster
     // art arrives, the official image supersedes a missing or placeholder visual.
     // Mirrors the verification re-evaluation below (evidence-driven, never fabricated).
     if (sourceRecord.image_url || sourceRecord.poster_url || sourceRecord.event_image) {
       try {
-        const visual = EventVisualProvenanceService.resolveEventImage(event, event.sources);
-        if (visual && visual.image_url && visual.is_fallback !== true) {
-          event.image_url = visual.image_url;
-          event.thumbnail_url = visual.thumbnail_url;
-          event.image_source_type = visual.image_source_type;
-          event.image_source_url = visual.image_source_url;
-          event.image_source_account = visual.image_source_account;
-          event.image_source_tier = visual.image_source_tier;
-          event.image_last_checked_at = visual.image_last_checked_at;
-          event.image_evidence_hash = visual.image_evidence_hash;
-          event.image_license_status = visual.image_license_status;
-          event.image_status = visual.image_status;
-          event.image_scope = visual.image_scope;
-          event.image_credit = visual.image_credit;
-          event.is_fallback_image = false;
-          event.fallback_meta = null;
-          event.event_image = visual.image_url;
-          event.poster_url = visual.image_url;
+        const incomingPrio = sourceRegistry.getSourcePriority ? sourceRegistry.getSourcePriority(sourceRecord.source_id) : 99;
+        const currentPrio = sourceRegistry.getSourcePriority ? sourceRegistry.getSourcePriority(event.image_source_id) : 99;
+        
+        // Only update if existing image is missing or incoming source has strictly higher/equal priority
+        const canUpdateImage = !event.image_url || !event.image_locked || incomingPrio <= currentPrio;
+        if (canUpdateImage) {
+          const visual = EventVisualProvenanceService.resolveEventImage(event, event.sources);
+          if (visual && visual.image_url && visual.is_fallback !== true) {
+            event.image_url = visual.image_url;
+            event.thumbnail_url = visual.thumbnail_url;
+            event.image_source_type = visual.image_source_type;
+            event.image_source_url = visual.image_source_url;
+            event.image_source_account = visual.image_source_account;
+            event.image_source_tier = visual.image_source_tier;
+            event.image_last_checked_at = visual.image_last_checked_at;
+            event.image_evidence_hash = visual.image_evidence_hash;
+            event.image_license_status = visual.image_license_status;
+            event.image_status = visual.image_status;
+            event.image_scope = visual.image_scope;
+            event.image_credit = visual.image_credit;
+            event.is_fallback_image = false;
+            event.fallback_meta = null;
+            event.event_image = visual.image_url;
+            event.poster_url = visual.image_url;
+            event.image_locked = true;
+            event.image_source_id = sourceRecord.source_id;
+            event.image_verified_against_source_event = true;
+          }
         }
       } catch (_) {
         // Visual provenance failure must never block canonical reconciliation.

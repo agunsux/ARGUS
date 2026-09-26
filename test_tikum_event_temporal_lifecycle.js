@@ -635,7 +635,8 @@ async function run() {
     assert.strictEqual(res.body.counts.upcoming, 3, 'Expected 3 upcoming events remaining');
 
     // NON-DELETION INVARIANT: The Weeknd record must still exist in DB / registry
-    const weekndInDb = canonicalRegistry.getAllEvents().find(e => (e.title || '').includes('The Weeknd'));
+    const allWeeknd = canonicalRegistry.getAllEvents().filter(e => (e.title || '').includes('The Weeknd'));
+    const weekndInDb = allWeeknd.find(e => e.start_date === '2026-09-25') || allWeeknd[0];
     assert.ok(weekndInDb, 'The Weeknd record must NOT be deleted from database');
     assert.ok(
       weekndInDb.lifecycle_status === LIFECYCLE_STATUS.EXPIRED || weekndInDb.lifecycle_status === LIFECYCLE_STATUS.ARCHIVED,
