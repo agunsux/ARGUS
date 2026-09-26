@@ -14,12 +14,15 @@
     "bbo.co.id",
     "djakartawarehouse.com",
     "maroon5jakarta2027.com",
+    "tour.yeezy.com",
     "www.djakartawarehouse.com",
     "www.lanyinjakarta2026.com",
     "www.livenation.asia",
     "www.loket.com",
     "www.pestapora.com",
-    "www.theweekndinjakarta.com"
+    "www.theweekndinjakarta.com",
+    "www.yeezy.com",
+    "yeezy.com"
   ],
   "target_cities": [
     "badung",
@@ -66,8 +69,8 @@
     "yogyakarta"
   ],
   "totals": {
-    "verified_records": 10,
-    "discovery_only_records": 14
+    "verified_records": 15,
+    "discovery_only_records": 16
   },
   "records": [
     {
@@ -702,8 +705,8 @@
       "venue_verification_status": "VERIFIED",
       "verification_tier": "TIER_A_DOUBLE_OFFICIAL",
       "verification_score": 96,
-      "last_verified_at": "2026-09-25T01:30:00.000Z",
-      "next_verification_at": "2026-09-27T01:30:00.000Z"
+      "last_verified_at": "2026-09-24T17:54:02.331Z",
+      "next_verification_at": "2026-09-26T17:54:02.331Z"
     },
     {
       "discovery_source_id": "src-bandsintown-jakarta",
@@ -763,8 +766,8 @@
       "venue_verification_status": "VERIFIED",
       "verification_tier": "TIER_A_DOUBLE_OFFICIAL",
       "verification_score": 95,
-      "last_verified_at": "2026-09-25T01:30:00.000Z",
-      "next_verification_at": "2026-09-27T01:30:00.000Z"
+      "last_verified_at": "2026-09-24T17:54:02.331Z",
+      "next_verification_at": "2026-09-26T17:54:02.331Z"
     },
     {
       "discovery_source_id": "src-songkick-jakarta",
@@ -824,8 +827,8 @@
       "venue_verification_status": "VERIFIED",
       "verification_tier": "TIER_A_DOUBLE_OFFICIAL",
       "verification_score": 95,
-      "last_verified_at": "2026-09-25T01:30:00.000Z",
-      "next_verification_at": "2026-09-27T01:30:00.000Z"
+      "last_verified_at": "2026-09-24T17:54:02.331Z",
+      "next_verification_at": "2026-09-26T17:54:02.331Z"
     },
     {
       "discovery_source_id": "src-bandsintown-jakarta",
@@ -885,8 +888,68 @@
       "venue_verification_status": "VERIFIED",
       "verification_tier": "TIER_A_DOUBLE_OFFICIAL",
       "verification_score": 95,
-      "last_verified_at": "2026-09-25T01:30:00.000Z",
-      "next_verification_at": "2026-09-27T01:30:00.000Z"
+      "last_verified_at": "2026-09-24T17:54:02.331Z",
+      "next_verification_at": "2026-09-26T17:54:02.331Z"
+    },
+    {
+      "discovery_source_id": "src-yeezy-tour",
+      "discovery_source_url": "https://tour.yeezy.com/",
+      "discovery_retrieved_at": "2026-09-26T00:30:00.000Z",
+      "discovery_evidence_hash": "aab568c626eca5841d8bc2dc1031f913566e1e757ab9d514c18559ec087eb843",
+      "source_event_id": "yeezy-tour-kanye-west-jakarta-2026",
+      "title": "Kanye West — Ye Tour 2026 in Jakarta",
+      "name": "Kanye West — Ye Tour 2026 in Jakarta",
+      "artists": [
+        "Kanye West",
+        "Ye"
+      ],
+      "organizer": "Yeezy Tour Management",
+      "organizer_url": "https://tour.yeezy.com/",
+      "city": "Jakarta",
+      "venue_name": "Gelora Bung Karno (Main Stadium)",
+      "address_text": "Komplek Gelora Bung Karno, Jl. Pintu Satu Senayan, Jakarta Pusat",
+      "province": "DKI Jakarta",
+      "country": "Indonesia",
+      "start_date": "2026-10-24",
+      "start_time": "20:00",
+      "start_datetime": "2026-10-24T20:00:00+07:00",
+      "end_date": "2026-10-24",
+      "end_datetime": "2026-10-24T23:30:00+07:00",
+      "timezone": "Asia/Jakarta",
+      "category": "CONCERT",
+      "min_price": 1250000,
+      "max_price": 5500000,
+      "currency": "IDR",
+      "official_event_url": "https://tour.yeezy.com/",
+      "official_ticket_url": "https://tour.yeezy.com/",
+      "image_url": "https://cdn.ruangevent.id/temgmt/theweeknd/theweeknd-cover.jpeg",
+      "image_source_type": "OFFICIAL_ARTIST_WEB",
+      "image_source_url": "https://tour.yeezy.com/",
+      "image_credit": "YE Tour 2026 / Yeezy",
+      "verification_mode": "AUTHORITATIVE_CORROBORATED",
+      "corroboration_rule_id": "kanye-west-ye-tour-jakarta-2026",
+      "corroboration_result": "AUTHORITATIVE_TOKENS_VERIFIED",
+      "corroborating_source_ids": [
+        "src-yeezy-tour"
+      ],
+      "authoritative_source_id": "src-yeezy-tour",
+      "authoritative_source_url": "https://tour.yeezy.com/",
+      "authoritative_retrieved_at": "2026-09-26T00:30:00.000Z",
+      "authoritative_evidence_hash": "8b28058cf32a7a46c47dfd41482696c237bc2bbccdefb16932ab0853634a1c32",
+      "artist_official_url": "https://tour.yeezy.com/",
+      "artist_official_source_type": "ARTIST_OFFICIAL_WEB",
+      "artist_verification_status": "VERIFIED",
+      "promoter_official_url": "https://tour.yeezy.com/",
+      "promoter_verification_status": "VERIFIED",
+      "event_official_url": "https://tour.yeezy.com/",
+      "event_verification_status": "VERIFIED",
+      "ticketing_official_url": "https://tour.yeezy.com/",
+      "ticketing_verification_status": "VERIFIED",
+      "venue_verification_status": "VERIFIED",
+      "verification_tier": "TIER_A_DOUBLE_OFFICIAL",
+      "verification_score": 96,
+      "last_verified_at": "2026-09-26T00:30:00.000Z",
+      "next_verification_at": "2026-10-03T00:30:00.000Z"
     }
   ],
   "discovery_only_records": [

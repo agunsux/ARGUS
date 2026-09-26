@@ -80,7 +80,10 @@ const ALLOWED_HOSTS = new Set([
   'maddixmusic.com',
   'www.maddixmusic.com',
   'ismaya.com',
-  'www.ismaya.com'
+  'www.ismaya.com',
+  'tour.yeezy.com',
+  'yeezy.com',
+  'www.yeezy.com'
 ]);
 
 // Indonesian target market: Jabodetabek, Java, Sumatera, Sulawesi, Kalimantan, Bali.
@@ -245,6 +248,17 @@ const EVIDENCE_RULES = [
     expect_tokens: ['maddix', 'tangerang'],
     image_source_type: 'OFFICIAL_EVENT_WEB',
     image_credit: 'Maddix Live in Tangerang (Ismaya Live)'
+  },
+  {
+    id: 'kanye-west-ye-tour-jakarta-2026',
+    discovery_source_id: 'src-yeezy-tour',
+    title_includes: ['ye', 'kanye west'],
+    city_includes: 'jakarta',
+    authoritative_source_id: 'src-yeezy-tour',
+    evidence_url: 'https://tour.yeezy.com/',
+    expect_tokens: ['ye', 'tour', '2026'],
+    image_source_type: 'OFFICIAL_ARTIST_WEB',
+    image_credit: 'YE Tour 2026 / Yeezy'
   }
 ];
 

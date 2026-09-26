@@ -654,6 +654,32 @@ async function runSuite() {
     }
   });
 
+  await test('Test 31: Kanye West — Ye Tour in Jakarta corroborated by official artist website https://tour.yeezy.com/ achieves TIER_A_DOUBLE_OFFICIAL and VERIFIED status', async () => {
+    const kanyeObs = await ingestionPipeline.ingestEvent({
+      name: 'Kanye West — Ye Tour 2026 in Jakarta',
+      title: 'Kanye West — Ye Tour 2026 in Jakarta',
+      artists: ['Kanye West', 'Ye'],
+      venue_name: 'Gelora Bung Karno (Main Stadium)',
+      city: 'Jakarta',
+      start_date: '2026-10-24',
+      category: 'CONCERT',
+      official_event_url: 'https://tour.yeezy.com/',
+      official_ticket_url: 'https://tour.yeezy.com/',
+      artist_official_url: 'https://tour.yeezy.com/',
+      artist_verification_status: 'VERIFIED'
+    }, 'src-yeezy-tour');
+
+    const canonicalKanye = kanyeObs.canonical_event;
+    assert.ok(canonicalKanye);
+    assert.strictEqual(canonicalKanye.is_verified, true);
+    assert.strictEqual(canonicalKanye.verification_status, 'VERIFIED');
+    assert.strictEqual(canonicalKanye.artist_official_url, 'https://tour.yeezy.com/');
+    assert.strictEqual(canonicalKanye.artist_verification_status, 'VERIFIED');
+    assert.strictEqual(canonicalKanye.verification_tier, 'TIER_A_DOUBLE_OFFICIAL');
+    assert.strictEqual(canonicalKanye.homepage_visibility, true);
+    assert.strictEqual(canonicalKanye.public_upcoming, true);
+  });
+
   await stopTestServer();
 
   console.log('\n================================================================');

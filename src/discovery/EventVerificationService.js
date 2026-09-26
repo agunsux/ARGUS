@@ -500,6 +500,8 @@ class EventVerificationService {
             artistSourceType = ARTIST_SOURCE_TYPES.MANAGEMENT_LABEL_OFFICIAL;
           } else if (artistOfficialUrl.includes('instagram.com')) {
             artistSourceType = ARTIST_SOURCE_TYPES.OFFICIAL_SOCIAL;
+          } else if (artistOfficialUrl.includes('yeezy.com')) {
+            artistSourceType = ARTIST_SOURCE_TYPES.ARTIST_OFFICIAL_WEB;
           } else {
             artistSourceType = ARTIST_SOURCE_TYPES.ARTIST_OFFICIAL_WEB;
           }
