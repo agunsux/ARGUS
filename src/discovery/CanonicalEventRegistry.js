@@ -628,14 +628,7 @@ class CanonicalEventRegistry {
         const oldVenue = event.venue_name;
         event.venue_name = incomingVenue;
         event.venue = incomingVenue;
-        if (incomingRecord.venue_id) {
-          event.venue_id = incomingRecord.venue_id;
-        } else {
-          try {
-            const vNorm = EventNormalizationService.normalizeVenue(incomingVenue, event.city);
-            if (vNorm && vNorm.venue_id) event.venue_id = vNorm.venue_id;
-          } catch (_) {}
-        }
+        if (incomingRecord.venue_id) event.venue_id = incomingRecord.venue_id;
         if (incomingRecord.city) {
           event.city = incomingRecord.city;
           event.venue_city = incomingRecord.city;

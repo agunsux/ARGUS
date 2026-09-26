@@ -67,14 +67,14 @@ class EventDeduplicationService {
   static findDuplicateCandidate(incomingRecord, existingCanonicalEvents) {
     const incomingNormTitle = EventNormalizationService.normalizeTitle(incomingRecord.name || incomingRecord.title || incomingRecord.canonical_name);
     const incomingDate = incomingRecord.start_date || (incomingRecord.start_datetime ? incomingRecord.start_datetime.substring(0, 10) : incomingRecord.date);
-    const incomingVenueName = (incomingRecord.venue_name || incomingRecord.venue || '').toLowerCase().trim();
+    const incomingVenue = incomingRecord.venue_id || (incomingRecord.venue_name || incomingRecord.venue || '').toLowerCase().trim();
     const incomingCity = (incomingRecord.city || incomingRecord.venue_city || '').toLowerCase().trim();
     const incomingArtists = (Array.isArray(incomingRecord.artists) ? incomingRecord.artists : (incomingRecord.artist ? [incomingRecord.artist] : [])).map(a => a.toLowerCase().trim());
     const isExplicitReschedule = incomingRecord.status === 'RESCHEDULED' || incomingRecord.is_reschedule === true;
 
     for (const canonical of existingCanonicalEvents) {
       const canonicalDate = canonical.start_date || (canonical.start_datetime ? canonical.start_datetime.substring(0, 10) : canonical.date);
-      const canonicalVenueName = (canonical.venue_name || canonical.venue || '').toLowerCase().trim();
+      const canonicalVenue = canonical.venue_id || (canonical.venue_name || canonical.venue || '').toLowerCase().trim();
       const canonicalCity = (canonical.city || canonical.venue_city || '').toLowerCase().trim();
       const canonicalNormTitle = EventNormalizationService.normalizeTitle(canonical.canonical_name || canonical.name || canonical.title);
       const canonicalArtists = (Array.isArray(canonical.artists) ? canonical.artists : (canonical.artist ? [canonical.artist] : [])).map(a => a.toLowerCase().trim());
@@ -122,7 +122,7 @@ class EventDeduplicationService {
 
       const isSameDate = incomingDate && canonicalDate && incomingDate === canonicalDate;
       const isSameVenue = (incomingRecord.venue_id && canonical.venue_id && incomingRecord.venue_id === canonical.venue_id) ||
-                          (incomingVenueName && canonicalVenueName && (incomingVenueName.includes(canonicalVenueName) || canonicalVenueName.includes(incomingVenueName)));
+                          (incomingVenue && canonicalVenue && (incomingVenue.includes(canonicalVenue) || canonicalVenue.includes(incomingVenue)));
       const titleSim = this.calculateTokenSimilarity(incomingNormTitle, canonicalNormTitle);
 
       // ==========================================
@@ -146,21 +146,26 @@ class EventDeduplicationService {
             continue; // Distinct residency show, do not collapse!
           }
 
-          // Same venue + exact same title with small date discrepancy = date conflict across sources
-          const isExactTitle = incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase();
-          if (isSameVenue && (isExactTitle || titleSim >= 0.85)) {
-            const dateDiffDays = Math.abs(new Date(incomingDate).getTime() - new Date(canonicalDate).getTime()) / (1000 * 60 * 60 * 24);
-            if (dateDiffDays <= 30) {
-              return {
-                isMatch: true,
-                confidence: 85,
-                matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT',
-                canonicalEvent: canonical
-              };
-            }
+          // Anti-overmerge: Check year difference (e.g. Synchronize Fest 2026 vs 2027)
+          const yearA = extractYear(incomingNormTitle) || extractYear(incomingDate);
+          const yearB = extractYear(canonicalNormTitle) || extractYear(canonicalDate);
+          if (yearA && yearB && yearA !== yearB) {
+            continue; // Different festival editions / years = distinct events!
           }
 
-          continue; // Different dates = separate events
+          // Anti-overmerge: Concert vs Fan Meeting
+          if (hasConflictingEventType(incomingNormTitle, canonicalNormTitle)) {
+            continue; // Concert vs Fan Meeting = distinct events!
+          }
+
+          // Anti-overmerge: Consecutive show dates for artists (e.g. 10 Oct vs 11 Oct)
+          const hasArtist = Boolean(incomingRecord.artist || canonical.artist || incomingArtists.length > 0 || canonicalArtists.length > 0);
+          const isSameSharedSourceEventId = Boolean(incomingRecord.source_event_id && canonical.sources && canonical.sources.some(s => s.source_event_id === incomingRecord.source_event_id));
+          const dateDiffDays = Math.abs(new Date(incomingDate).getTime() - new Date(canonicalDate).getTime()) / (1000 * 60 * 60 * 24);
+
+          if (hasArtist && !isSameSharedSourceEventId && dateDiffDays <= 3) {
+            continue; // Consecutive concert dates (e.g. Oct 10 vs Oct 11) must remain separate show dates!
+          }
         }
       }
 
@@ -228,7 +233,60 @@ class EventDeduplicationService {
       }
 
       // ==========================================
-      // 7. EXPLICIT RESCHEDULE ONLY ACROSS DATES
+      // 7. CONFLICT DETECTION: Same Title & Venue with Different Dates
+      // ==========================================
+      if (isSameVenue && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || titleSim >= 0.75)) {
+        if (incomingDate && canonicalDate && incomingDate !== canonicalDate) {
+          const dateDiffDays = Math.abs(new Date(incomingDate).getTime() - new Date(canonicalDate).getTime()) / (1000 * 60 * 60 * 24);
+          if (dateDiffDays <= 120 || isExplicitReschedule) {
+            return {
+              isMatch: true,
+              confidence: 85,
+              matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT',
+              canonicalEvent: canonical
+            };
+          }
+        }
+      }
+
+      // ==========================================
+      // 8. RESCHEDULE & SAME-CITY EVENT UPDATES (ACROSS DATES)
+      // ==========================================
+      const isExactTitle = incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase();
+      const isHighTitleSim = titleSim >= 0.80;
+
+      if (isSameCityOrMetro(incomingCity, canonicalCity) && (isExactTitle || isHighTitleSim)) {
+        if (incomingDate && canonicalDate && incomingDate !== canonicalDate) {
+          const dateDiffDays = Math.abs(new Date(incomingDate).getTime() - new Date(canonicalDate).getTime()) / (1000 * 60 * 60 * 24);
+          if (dateDiffDays <= 120 || isExplicitReschedule) {
+            const isSameOrganizer = incomingRecord.organizer_name && canonical.organizer_name &&
+              incomingRecord.organizer_name.toLowerCase().trim() === canonical.organizer_name.toLowerCase().trim();
+            const isSameSource = incomingRecord.source_id && canonical.sources &&
+              canonical.sources.some(s => s.source_id === incomingRecord.source_id);
+
+            if (isExplicitReschedule || isSameOrganizer || isSameSource) {
+              return {
+                isMatch: true,
+                confidence: isExplicitReschedule ? 95 : 88,
+                matchReason: isExplicitReschedule ? 'EXPLICIT_RESCHEDULE_SAME_EVENT' : 'PROMOTER_EVENT_UPDATE_SAME_CITY',
+                canonicalEvent: canonical
+              };
+            }
+
+            if (isExactTitle) {
+              return {
+                isMatch: true,
+                confidence: 88,
+                matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT_IN_CITY',
+                canonicalEvent: canonical
+              };
+            }
+          }
+        }
+      }
+
+      // ==========================================
+      // 8b. EXPLICIT RESCHEDULE ONLY ACROSS DATES
       // ==========================================
       if (isExplicitReschedule && (isSameVenue || isSameCityOrMetro(incomingCity, canonicalCity)) && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || titleSim >= 0.75)) {
         return {

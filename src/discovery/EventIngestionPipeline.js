@@ -165,8 +165,11 @@ class EventIngestionPipeline {
       image_credit: sanitizedPayload.image_credit || null,
       image_license: sanitizedPayload.image_license || sanitizedPayload.image_license_status || null,
       image_scope: sanitizedPayload.image_scope || null,
-      min_price: sanitizedPayload.min_price || sanitizedPayload.ticket_price_min || null,
-      max_price: sanitizedPayload.max_price || null,
+      min_price: sanitizedPayload.min_price !== undefined && sanitizedPayload.min_price !== null ? sanitizedPayload.min_price : (sanitizedPayload.ticket_price_min || sanitizedPayload.price || null),
+      max_price: sanitizedPayload.max_price !== undefined && sanitizedPayload.max_price !== null ? sanitizedPayload.max_price : (sanitizedPayload.price || sanitizedPayload.min_price || null),
+      price: sanitizedPayload.price !== undefined && sanitizedPayload.price !== null ? sanitizedPayload.price : (sanitizedPayload.min_price || sanitizedPayload.ticket_price_min || null),
+      meets_price_threshold: sanitizedPayload.meets_price_threshold,
+      price_status: sanitizedPayload.price_status,
 
       // Zero-Fake Policy Verification Attributes
       artist_official_url: sanitizedPayload.artist_official_url || null,
@@ -251,7 +254,9 @@ class EventIngestionPipeline {
 
       const hasConflicts = canonicalEvent.conflicts && canonicalEvent.conflicts.length > 0;
       if (sourceRegistry.isTrustedPrimarySource(source.source_id) && !hasConflicts) {
-        canonicalEvent.verification_status = VERIFICATION_STATUS.VERIFIED;
+        if (canonicalEvent.verification_status !== 'PRIMARY_SOURCE_VERIFIED') {
+          canonicalEvent.verification_status = VERIFICATION_STATUS.VERIFIED;
+        }
         canonicalEvent.is_verified = true;
         canonicalEvent.homepage_visibility = true;
         canonicalEvent.public_upcoming = true;
