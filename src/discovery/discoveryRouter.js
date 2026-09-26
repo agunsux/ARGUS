@@ -27,7 +27,8 @@ const { state, recordAuditLog } = require('../database');
 const { renderFooterHtml } = require('../config/businessProfile');
 const { cityRegistry, CityRegistry } = require('./CityRegistry');
 const { PopularityEngine } = require('./PopularityEngine');
-const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('./EventTemporalLifecycleEngine');
+const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS, HOMEPAGE_EVENT_GRACE_DAYS } = require('./EventTemporalLifecycleEngine');
+const { inventoryReconciliationService } = require('./EventInventoryReconciliationService');
 
 // ==========================================
 // PROMOTER IMPORT ADMIN GUARD & CSV UPLOAD
@@ -712,7 +713,9 @@ function handleGetEvents(req, res) {
       const evStatus = (e.status || '').toUpperCase();
       const evLifecycle = (e.lifecycle_status || '').toUpperCase();
       if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
-      if ((e.start_date || e.date || '') < '2026-09-24') return false;
+      if (evStatus === 'ARCHIVED' || evLifecycle === 'ARCHIVED' ||
+          evStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS' || evLifecycle === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
+      if (e.archive_status === 'ARCHIVED' || e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
       if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
       if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
           ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
@@ -848,13 +851,39 @@ router.get('/api/events/home-feed', (req, res) => {
 
   const { city, lat, lng, country, category } = req.query;
 
-  // Filter canonical events through strict temporal & verification gates
+  // Filter canonical events through strict temporal & verification gates (Zero Duplicates + H+2 Gate)
   let allEvents = canonicalRegistry.getAllEvents().filter(e => {
     const evStatus = (e.status || '').toUpperCase();
     const evLifecycle = (e.lifecycle_status || '').toUpperCase();
     if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
     if (evStatus === 'EXPIRED' || evLifecycle === 'EXPIRED') return false;
+    if (evStatus === 'ARCHIVED' || evLifecycle === 'ARCHIVED' ||
+        evStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS' || evLifecycle === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
+    if (e.archive_status === 'ARCHIVED' || e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
+    if (e.homepage_visibility === false) return false;
+
+    // Defense-in-depth: query-time H+2 check (now > event_end_at + 48h)
+    const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(e);
+    const endMs = new Date(temporal.event_end_at).getTime();
+    const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
+    if (now.getTime() > endMs + graceMs) {
+      return false;
+    }
+
     return EventTemporalLifecycleEngine.isEventHomepageEligible(e, now);
+  });
+
+  // Guarantee 1 concert = 1 canonical homepage card (Zero Duplicate Guarantee)
+  const seenKeys = new Set();
+  allEvents = allEvents.filter(e => {
+    const normName = (e.canonical_name || e.title || e.name || '').toLowerCase().trim();
+    const date = e.start_date || (e.start_datetime ? e.start_datetime.substring(0, 10) : e.date) || '';
+    const venue = (e.venue_name || e.venue || '').toLowerCase().trim();
+    const city = (e.city || e.venue_city || '').toLowerCase().trim();
+    const key = `${normName}::${venue}::${city}::${date}`;
+    if (seenKeys.has(key)) return false;
+    seenKeys.add(key);
+    return true;
   });
 
   // Country filter if supplied
@@ -1770,6 +1799,56 @@ router.post('/api/discovery/admin/events/:id/expire', requireDiscoveryAdmin, (re
     res.json({ success: true, event: updated });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/admin/reconcile
+ * Triggers upcoming inventory reconciliation across Tier-1 sources, deduplication,
+ * and H+2 archive evaluation.
+ */
+router.post('/api/discovery/admin/reconcile', async (req, res) => {
+  try {
+    const user = resolveDiscoveryActor(req);
+    const actorId = user ? user.id : (req.body?.admin_id || req.body?.actorId || 'SYSTEM_RECONCILER');
+    const now = (req.query.now || req.body?.now || req.headers['x-simulate-clock'])
+      ? new Date(req.query.now || req.body?.now || req.headers['x-simulate-clock'])
+      : new Date();
+
+    const report = await inventoryReconciliationService.reconcileInventory({
+      now,
+      actorId,
+      sources: req.body?.sources || null,
+      syncSources: req.body?.sync_sources !== false
+    });
+
+    res.json({
+      success: true,
+      report
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/discovery/admin/inventory-report
+ * Returns current canonical inventory reconciliation status, upcoming events,
+ * homepage cards, and H+2 archived events.
+ */
+router.get('/api/discovery/admin/inventory-report', (req, res) => {
+  try {
+    const now = (req.query.now || req.headers['x-simulate-clock'])
+      ? new Date(req.query.now || req.headers['x-simulate-clock'])
+      : new Date();
+
+    const report = inventoryReconciliationService.getInventoryReport(now);
+    res.json({
+      success: true,
+      report
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

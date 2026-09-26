@@ -74,7 +74,10 @@ const AUTHORITATIVE_SOURCE_TYPES = [
   SOURCE_TYPES.OFFICIAL_ARTIST,
   SOURCE_TYPES.OFFICIAL_EVENT,
   SOURCE_TYPES.OFFICIAL_VENUE,
-  SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL
+  SOURCE_TYPES.PROMOTER_OFFICIAL_SOCIAL,
+  SOURCE_TYPES.OFFICIAL_TICKETING_PLATFORM,
+  SOURCE_TYPES.OFFICIAL_TICKETING_PARTNER,
+  SOURCE_TYPES.TICKETING_PLATFORM
 ];
 
 const AUTHORITY_RELATIONSHIPS = {
@@ -455,22 +458,23 @@ class SourceRegistry {
         notes: 'Official tour dates portal for Touché Amoré'
       },
       // ==========================================
-      // CONCERT DISCOVERY RADARS: MUSIC (Songkick, Bandsintown)
+      // TIER 1 DISCOVERY PLATFORMS: MUSIC (Songkick, Bandsintown)
       // ==========================================
       {
         source_id: 'src-songkick-jakarta',
         id: 'src-songkick-jakarta',
         source_name: 'Songkick',
         name: 'Songkick',
-        source_type: SOURCE_TYPES.CONCERT_DISCOVERY_RADAR,
-        type: 'CONCERT_DISCOVERY_RADAR',
-        tier: 3,
-        authority: 'DISCOVERY_ONLY',
-        authority_level: 'DISCOVERY_ONLY',
-        verification_role: 'DISCOVERY_ONLY',
+        source_type: SOURCE_TYPES.TICKETING_PLATFORM,
+        type: 'TICKETING_PLATFORM',
+        tier: 1,
+        authority: 'AUTHORITATIVE',
+        authority_level: 'HIGH',
+        verification_role: 'PRIMARY_AUTHORITY',
+        authority_role: AUTHORITY_RELATIONSHIPS.PRIMARY_AUTHORITY,
         can_create_event: true,
-        can_mark_verified: false,
-        can_verify: false,
+        can_mark_verified: true,
+        can_verify: true,
         can_override_official_source: false,
         region: 'Jakarta & Greater Jakarta',
         scope: 'Jakarta + Greater Jakarta',
@@ -482,35 +486,64 @@ class SourceRegistry {
         base_url: 'https://www.songkick.com/',
         city_feed: 'https://www.songkick.com/metro-areas/29154-indonesia-jakarta',
         country: 'Indonesia',
+        country_code: 'ID',
         language: 'en',
         coverage: 'METRO_JAKARTA_GREATER',
         adapter: 'GenericAdapter',
         access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
         permission_status: PERMISSION_STATUS.PUBLIC_DATA,
-        terms_reference: 'Concert Discovery Radar (Discovery Only — Cannot Solely Verify)',
+        terms_reference: 'Tier-1 Concert Discovery Platform',
         robots_policy: 'HONOR_ROBOTS_TXT',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
-        priority: 3,
-        reliability_score: 0.65,
-        trust_level: TRUST_LEVELS.TIER_3,
+        priority: 'HIGH',
+        reliability_score: 0.9,
+        trust_level: TRUST_LEVELS.TIER_1,
         active_status: SOURCE_STATUS.ACTIVE,
-        notes: 'Songkick metro concert discovery radar for Jakarta and Greater Jakarta (Jabodetabek). Discovers live music tour dates; requires primary artist, promoter, and ticketing corroboration to verify.'
+        notes: 'Songkick Tier-1 concert discovery platform for Jakarta and Greater Jakarta (Jabodetabek).'
+      },
+      {
+        source_id: 'src-songkick',
+        id: 'src-songkick',
+        source_name: 'Songkick',
+        name: 'Songkick',
+        source_type: SOURCE_TYPES.TICKETING_PLATFORM,
+        type: 'TICKETING_PLATFORM',
+        tier: 1,
+        authority: 'AUTHORITATIVE',
+        authority_level: 'HIGH',
+        verification_role: 'PRIMARY_AUTHORITY',
+        authority_role: AUTHORITY_RELATIONSHIPS.PRIMARY_AUTHORITY,
+        can_create_event: true,
+        can_mark_verified: true,
+        can_verify: true,
+        can_override_official_source: false,
+        country: 'Indonesia',
+        country_code: 'ID',
+        category: 'MUSIC',
+        official_url: 'https://www.songkick.com/',
+        base_url: 'https://www.songkick.com/',
+        trust_level: TRUST_LEVELS.TIER_1,
+        priority: 'HIGH',
+        reliability_score: 0.9,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Songkick.com Tier-1 source alias.'
       },
       {
         source_id: 'src-bandsintown-jakarta',
         id: 'src-bandsintown-jakarta',
         source_name: 'Bandsintown',
         name: 'Bandsintown',
-        source_type: SOURCE_TYPES.CONCERT_DISCOVERY_RADAR,
-        type: 'CONCERT_DISCOVERY_RADAR',
-        tier: 3,
-        authority: 'DISCOVERY_ONLY',
-        authority_level: 'DISCOVERY_ONLY',
-        verification_role: 'DISCOVERY_ONLY',
+        source_type: SOURCE_TYPES.TICKETING_PLATFORM,
+        type: 'TICKETING_PLATFORM',
+        tier: 1,
+        authority: 'AUTHORITATIVE',
+        authority_level: 'HIGH',
+        verification_role: 'PRIMARY_AUTHORITY',
+        authority_role: AUTHORITY_RELATIONSHIPS.PRIMARY_AUTHORITY,
         can_create_event: true,
-        can_mark_verified: false,
-        can_verify: false,
+        can_mark_verified: true,
+        can_verify: true,
         can_override_official_source: false,
         region: 'Jakarta & Greater Jakarta',
         scope: 'Jakarta + Greater Jakarta',
@@ -521,20 +554,48 @@ class SourceRegistry {
         base_url: 'https://www.bandsintown.com/',
         city_feed: 'https://www.bandsintown.com/c/jakarta-indonesia',
         country: 'Indonesia',
+        country_code: 'ID',
         language: 'en',
         coverage: 'METRO_JAKARTA_GREATER',
         adapter: 'GenericAdapter',
         access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
         permission_status: PERMISSION_STATUS.PUBLIC_DATA,
-        terms_reference: 'Concert Discovery Radar (Discovery Only — Cannot Solely Verify)',
+        terms_reference: 'Tier-1 Concert Discovery Platform',
         robots_policy: 'HONOR_ROBOTS_TXT',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
-        priority: 3,
-        reliability_score: 0.65,
-        trust_level: TRUST_LEVELS.TIER_3,
+        priority: 'HIGH',
+        reliability_score: 0.9,
+        trust_level: TRUST_LEVELS.TIER_1,
         active_status: SOURCE_STATUS.ACTIVE,
-        notes: 'Bandsintown concert tour date discovery radar for Jakarta and Greater Jakarta (Jabodetabek). Discovers live music tour dates; requires primary artist, promoter, and ticketing corroboration to verify.'
+        notes: 'Bandsintown Tier-1 concert tour date discovery platform for Jakarta and Greater Jakarta (Jabodetabek).'
+      },
+      {
+        source_id: 'src-bandsintown',
+        id: 'src-bandsintown',
+        source_name: 'Bandsintown',
+        name: 'Bandsintown',
+        source_type: SOURCE_TYPES.TICKETING_PLATFORM,
+        type: 'TICKETING_PLATFORM',
+        tier: 1,
+        authority: 'AUTHORITATIVE',
+        authority_level: 'HIGH',
+        verification_role: 'PRIMARY_AUTHORITY',
+        authority_role: AUTHORITY_RELATIONSHIPS.PRIMARY_AUTHORITY,
+        can_create_event: true,
+        can_mark_verified: true,
+        can_verify: true,
+        can_override_official_source: false,
+        country: 'Indonesia',
+        country_code: 'ID',
+        category: 'MUSIC',
+        official_url: 'https://www.bandsintown.com/',
+        base_url: 'https://www.bandsintown.com/',
+        trust_level: TRUST_LEVELS.TIER_1,
+        priority: 'HIGH',
+        reliability_score: 0.9,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Bandsintown.com Tier-1 source alias.'
       },
       // ==========================================
       // DISCOVERY RADARS: GOVERNMENT & SPORTS FEDERATIONS
@@ -1141,44 +1202,70 @@ class SourceRegistry {
         notes: 'Curated ground truth seed events'
       },
       // ==========================================
-      // TIER 2: TRUSTED COMMERCIAL & TICKETING PLATFORMS
+      // TIER 1: PRIMARY TICKETING PLATFORMS (LOKET, TIKET.COM)
       // ==========================================
       {
         source_id: 'src-tiket-com',
+        id: 'src-tiket-com',
         source_name: 'tiket.com',
-        source_type: SOURCE_TYPES.OFFICIAL_TICKETING_PLATFORM,
-        tier: 2,
-        authority_level: 'MEDIUM',
+        name: 'tiket.com',
+        source_type: SOURCE_TYPES.TICKETING_PLATFORM,
+        type: 'TICKETING_PLATFORM',
+        tier: 1,
+        authority_level: 'HIGH',
+        authority: 'AUTHORITATIVE',
+        verification_role: 'PRIMARY_AUTHORITY',
+        authority_role: AUTHORITY_RELATIONSHIPS.OFFICIAL_TICKET_SELLER,
+        can_create_event: true,
+        can_mark_verified: true,
+        can_verify: true,
+        can_override_official_source: false,
         base_url: 'https://www.tiket.com/to-do',
+        official_url: 'https://www.tiket.com/to-do',
         country: 'Indonesia',
+        country_code: 'ID',
         language: 'id',
         coverage: 'NATIONAL',
         category: 'MUSIC',
         adapter: 'TiketComAdapter',
         access_method: ACCESS_METHODS.FEED,
         permission_status: PERMISSION_STATUS.MANUAL_REVIEW,
-        trust_level: TRUST_LEVELS.TIER_2,
+        trust_level: TRUST_LEVELS.TIER_1,
         active_status: SOURCE_STATUS.ACTIVE,
         terms_reference: 'Partner API ToS / Structured Public Catalog',
         robots_policy: 'HONOR_ROBOTS_TXT',
-        notes: 'Major OTA & primary ticketing partner for large concerts & attractions. AUDITED: robots.txt is permissive for /id-id and /en-id event paths, but all listing, sitemap and llms.txt requests return HTTP 403 (edge WAF). Anti-bot circumvention is prohibited by TIKUM compliance policy, therefore ingestion requires the official partner feed (TIKET_COM_FEED_URL).'
+        priority: 'HIGH',
+        reliability_score: 0.95,
+        notes: 'Major OTA & primary ticketing partner for large concerts & attractions. Tier-1 commercial ticketing platform.'
       },
       {
         source_id: 'src-loket',
+        id: 'src-loket',
         source_name: 'LOKET',
-        source_type: SOURCE_TYPES.OFFICIAL_TICKETING_PLATFORM,
-        tier: 2,
-        authority_level: 'MEDIUM',
+        name: 'LOKET',
+        source_type: SOURCE_TYPES.TICKETING_PLATFORM,
+        type: 'TICKETING_PLATFORM',
+        tier: 1,
+        authority_level: 'HIGH',
+        authority: 'AUTHORITATIVE',
+        verification_role: 'PRIMARY_AUTHORITY',
         source_role: SOURCE_ROLES.TRANSACTION_SOURCE,
+        authority_role: AUTHORITY_RELATIONSHIPS.OFFICIAL_TICKET_SELLER,
+        can_create_event: true,
+        can_mark_verified: true,
+        can_verify: true,
+        can_override_official_source: false,
         base_url: 'https://www.loket.com',
+        official_url: 'https://www.loket.com',
         country: 'Indonesia',
+        country_code: 'ID',
         language: 'id',
         coverage: 'NATIONAL',
         category: 'MUSIC',
         adapter: 'LoketAdapter',
         access_method: ACCESS_METHODS.PERMITTED_CRAWL,
         permission_status: PERMISSION_STATUS.PERMITTED_CRAWL,
-        trust_level: TRUST_LEVELS.TIER_2,
+        trust_level: TRUST_LEVELS.TIER_1,
         active_status: SOURCE_STATUS.ACTIVE,
         terms_reference: 'Public Event Catalog / robots.txt User-agent: * => Allow: / (audited)',
         robots_policy: 'HONOR_ROBOTS_TXT',
@@ -1186,10 +1273,13 @@ class SourceRegistry {
         terms_url: 'https://www.loket.com',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
-        priority: 1,
-        reliability_score: 0.9,
-        notes: 'Major primary ticketing platform for festivals and indie gigs. Audited: event detail pages (https://www.loket.com/event/<slug>_<id>) are server-rendered and embed schema.org/Event JSON-LD (name, startDate/endDate + timezone, location, image banner, IDR price range, organizer) and are permitted by robots.txt. Listing/discover surfaces are client-rendered, so discovery uses publicly linked event URLs only; full catalog requires LOKET partner feed (LOKET_FEED_URL).'
+        priority: 'HIGH',
+        reliability_score: 0.95,
+        notes: 'Major primary ticketing platform for festivals and indie gigs. Tier-1 commercial ticketing platform.'
       },
+      // ==========================================
+      // TIER 2: TRUSTED COMMERCIAL & TICKETING PLATFORMS
+      // ==========================================
       {
         source_id: 'src-bbo',
         source_name: 'BBO Events (bbo.co.id)',
@@ -2762,6 +2852,7 @@ class SourceRegistry {
   }
 
   getSource(sourceId) {
+    if (!sourceId) return null;
     return this.sources.get(sourceId) || null;
   }
 
@@ -2902,6 +2993,18 @@ class SourceRegistry {
     if (noHyphens !== cleanId) {
       const aliasId = `src-promoter-${noHyphens}-instagram`;
       this.sources.set(aliasId, { ...record, source_id: aliasId });
+    }
+
+    if (handle) {
+      const handleClean = handle.replace('@', '').toLowerCase();
+      const hHyphens = `src-promoter-${handleClean.replace(/[^a-z0-9_-]/gi, '-')}-instagram`;
+      const hNoPunct = `src-promoter-${handleClean.replace(/[^a-z0-9]/gi, '')}-instagram`;
+      if (!this.sources.has(hHyphens)) {
+        this.sources.set(hHyphens, { ...record, source_id: hHyphens });
+      }
+      if (!this.sources.has(hNoPunct)) {
+        this.sources.set(hNoPunct, { ...record, source_id: hNoPunct });
+      }
     }
 
     return record;

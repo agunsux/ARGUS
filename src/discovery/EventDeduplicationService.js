@@ -202,12 +202,15 @@ class EventDeduplicationService {
       // ==========================================
       if (isSameVenue && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || titleSim >= 0.75)) {
         if (incomingDate && canonicalDate && incomingDate !== canonicalDate) {
-          return {
-            isMatch: true,
-            confidence: 85,
-            matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT',
-            canonicalEvent: canonical
-          };
+          const dateDiffDays = Math.abs(new Date(incomingDate).getTime() - new Date(canonicalDate).getTime()) / (1000 * 60 * 60 * 24);
+          if (dateDiffDays <= 120 || isExplicitReschedule) {
+            return {
+              isMatch: true,
+              confidence: 85,
+              matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT',
+              canonicalEvent: canonical
+            };
+          }
         }
       }
 
@@ -219,27 +222,30 @@ class EventDeduplicationService {
 
       if (isSameCityOrMetro(incomingCity, canonicalCity) && (isExactTitle || isHighTitleSim)) {
         if (incomingDate && canonicalDate && incomingDate !== canonicalDate) {
-          const isSameOrganizer = incomingRecord.organizer_name && canonical.organizer_name &&
-            incomingRecord.organizer_name.toLowerCase().trim() === canonical.organizer_name.toLowerCase().trim();
-          const isSameSource = incomingRecord.source_id && canonical.sources &&
-            canonical.sources.some(s => s.source_id === incomingRecord.source_id);
+          const dateDiffDays = Math.abs(new Date(incomingDate).getTime() - new Date(canonicalDate).getTime()) / (1000 * 60 * 60 * 24);
+          if (dateDiffDays <= 120 || isExplicitReschedule) {
+            const isSameOrganizer = incomingRecord.organizer_name && canonical.organizer_name &&
+              incomingRecord.organizer_name.toLowerCase().trim() === canonical.organizer_name.toLowerCase().trim();
+            const isSameSource = incomingRecord.source_id && canonical.sources &&
+              canonical.sources.some(s => s.source_id === incomingRecord.source_id);
 
-          if (isExplicitReschedule || isSameOrganizer || isSameSource) {
-            return {
-              isMatch: true,
-              confidence: isExplicitReschedule ? 95 : 88,
-              matchReason: isExplicitReschedule ? 'EXPLICIT_RESCHEDULE_SAME_EVENT' : 'PROMOTER_EVENT_UPDATE_SAME_CITY',
-              canonicalEvent: canonical
-            };
-          }
+            if (isExplicitReschedule || isSameOrganizer || isSameSource) {
+              return {
+                isMatch: true,
+                confidence: isExplicitReschedule ? 95 : 88,
+                matchReason: isExplicitReschedule ? 'EXPLICIT_RESCHEDULE_SAME_EVENT' : 'PROMOTER_EVENT_UPDATE_SAME_CITY',
+                canonicalEvent: canonical
+              };
+            }
 
-          if (isExactTitle) {
-            return {
-              isMatch: true,
-              confidence: 88,
-              matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT_IN_CITY',
-              canonicalEvent: canonical
-            };
+            if (isExactTitle) {
+              return {
+                isMatch: true,
+                confidence: 88,
+                matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT_IN_CITY',
+                canonicalEvent: canonical
+              };
+            }
           }
         }
       }

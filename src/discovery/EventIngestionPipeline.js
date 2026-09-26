@@ -166,7 +166,16 @@ class EventIngestionPipeline {
       image_license: sanitizedPayload.image_license || sanitizedPayload.image_license_status || null,
       image_scope: sanitizedPayload.image_scope || null,
       min_price: sanitizedPayload.min_price || sanitizedPayload.ticket_price_min || null,
-      max_price: sanitizedPayload.max_price || null
+      max_price: sanitizedPayload.max_price || null,
+
+      // Zero-Fake Policy Verification Attributes
+      artist_official_url: sanitizedPayload.artist_official_url || null,
+      artist_official_source_type: sanitizedPayload.artist_official_source_type || null,
+      artist_verification_status: sanitizedPayload.artist_verification_status || null,
+      promoter_official_url: sanitizedPayload.promoter_official_url || null,
+      promoter_verification_status: sanitizedPayload.promoter_verification_status || null,
+      event_official_url: sanitizedPayload.event_official_url || sanitizedPayload.official_event_url || null,
+      event_verification_status: sanitizedPayload.event_verification_status || null
     };
 
     // Stage 5: IDEMPOTENCY CHECK

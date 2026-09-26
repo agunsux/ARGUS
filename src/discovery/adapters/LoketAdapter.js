@@ -109,33 +109,60 @@ class LoketAdapter extends EventSourceAdapter {
 
   parse(raw) {
     const s = super.parse(raw);
+    const artists = Array.isArray(s.artists) ? s.artists : (s.artist ? [s.artist] : []);
+    const title = s.name || s.title || null;
+    const startDate = s.start_date || s.date || null;
+    const startDatetime = s.start_datetime || (s.event_start_at || null);
+    const endDate = s.end_date || null;
+    const endDatetime = s.end_datetime || (s.event_end_at || null);
+
+    let startTime = s.start_time || s.time || null;
+    if (!startTime && startDatetime && startDatetime.includes('T')) {
+      startTime = startDatetime.split('T')[1].substring(0, 5);
+    }
+
+    let endTime = s.end_time || null;
+    if (!endTime && endDatetime && endDatetime.includes('T')) {
+      endTime = endDatetime.split('T')[1].substring(0, 5);
+    }
+
     return {
       source_id: this.sourceId,
       source_event_id: s.source_event_id || s.loket_event_slug || s.id || null,
-      name: s.name || s.title,
-      title: s.name || s.title,
-      start_date: s.start_date || s.date,
-      start_datetime: s.start_datetime || null,
-      end_date: s.end_date || null,
-      end_datetime: s.end_datetime || null,
-      venue_name: s.venue_name || s.venue || 'Venue TBA',
-      city: s.city || s.venue_city || 'Jakarta',
+      name: title,
+      title: title,
+      artist: artists.length > 0 ? artists[0] : null,
+      artists: artists,
+      start_date: startDate,
+      start_time: startTime,
+      start_datetime: startDatetime,
+      end_date: endDate,
+      end_time: endTime,
+      end_datetime: endDatetime,
+      timezone: s.timezone || s.event_timezone || 'Asia/Jakarta',
+      venue_name: s.venue_name || s.venue || null,
+      city: s.city || s.venue_city || null,
       province: s.province || null,
       country: s.country || 'Indonesia',
-      category: s.category || 'FESTIVAL',
-      organizer_name: s.organizer || s.organizer_name || 'LOKET',
-      artists: Array.isArray(s.artists) ? s.artists : (s.artist ? [s.artist] : []),
+      category: s.category || 'CONCERT',
+      promoter: s.organizer || s.organizer_name || null,
+      organizer_name: s.organizer || s.organizer_name || null,
       official_event_url: s.official_event_url || null,
       official_ticket_url: s.official_ticket_url || s.ticket_url || s.url || null,
       official_ticketing_provider: 'LOKET',
-      min_price: s.min_price || null,
-      max_price: s.max_price || null,
+      ticket_status: s.ticket_status || (s.status === 'SOLD_OUT' ? 'SOLD_OUT' : (s.official_ticket_url ? 'ON_SALE' : 'UPCOMING')),
+      min_price: s.min_price !== undefined && s.min_price !== null ? Number(s.min_price) : null,
+      max_price: s.max_price !== undefined && s.max_price !== null ? Number(s.max_price) : null,
+      ticket_price: s.ticket_price || (s.min_price ? String(s.min_price) : null),
+      currency: s.currency || 'IDR',
       image_url: s.image_url || null,
       image_source_type: s.image_source_type || 'OFFICIAL_TICKETING',
       image_source_url: s.image_source_url || s.official_event_url || null,
       image_credit: s.image_credit || 'LOKET',
       source_url: s.discovery_source_url || s.official_event_url || null,
-      ticket_price: s.ticket_price || 'UNKNOWN',
+      source_publication_timestamp: s.source_publication_timestamp || s.published_at || s.discovery_retrieved_at || null,
+      source_last_checked_at: s.source_last_checked_at || s.retrieved_at || new Date().toISOString(),
+      raw_source_metadata: s.raw_source_metadata || s.raw || raw || null,
       status: s.status || 'UPCOMING'
     };
   }

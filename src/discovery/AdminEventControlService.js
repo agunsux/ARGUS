@@ -279,9 +279,43 @@ class AdminEventControlService {
    * Answers: "Why does ARGUS believe this event exists?"
    * Full reconstructable provenance inspection.
    */
-  static getEventProvenance(eventId) {
+  static getEventProvenance(eventId, now = new Date()) {
     const event = canonicalRegistry.getEventById(eventId) || canonicalRegistry.getEventBySlug(eventId);
     if (!event) return null;
+
+    const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
+    const nowObj = (now instanceof Date) ? now : new Date(now);
+    const temporalWindow = EventTemporalLifecycleEngine.getHomepageTemporalWindow(event, nowObj);
+    const isHomepageEligible = EventTemporalLifecycleEngine.isEventHomepageEligible(event, nowObj);
+    const isUpcoming = EventTemporalLifecycleEngine.isEventUpcoming(event, nowObj);
+    const hasOpenOps = EventTemporalLifecycleEngine.hasOpenPostEventOperations(event.event_id || event.id);
+
+    const whyOnHomepage = [];
+    const whyNotOnHomepage = [];
+
+    const isPastH2 = !isHomepageEligible && (temporalWindow === 'EXPIRED');
+    const computedArchiveStatus = isPastH2
+      ? (hasOpenOps ? 'ARCHIVED_WITH_OPEN_OPERATIONS' : 'ARCHIVED')
+      : (event.archive_status || (event.lifecycle_status === 'ARCHIVED' ? 'ARCHIVED' : 'ACTIVE'));
+    const computedTemporalStatus = isPastH2
+      ? computedArchiveStatus
+      : (event.lifecycle_status || event.status);
+
+    if (isHomepageEligible) {
+      if (event.is_verified) whyOnHomepage.push('OFFICIAL_PRIMARY_SOURCE_VERIFIED');
+      if (temporalWindow === 'UPCOMING') whyOnHomepage.push('CANONICAL_FUTURE_DATE');
+      if (temporalWindow === 'TODAY') whyOnHomepage.push('EVENT_LIVE_TODAY');
+      if (temporalWindow === 'RECENT') whyOnHomepage.push('WITHIN_H2_GRACE_PERIOD');
+      if (event.sources && event.sources.length > 0) whyOnHomepage.push(`PROVENANCE_FROM_${event.sources.length}_SOURCES`);
+    } else {
+      if (!event.is_verified) whyNotOnHomepage.push('UNVERIFIED_STATUS');
+      if (temporalWindow === 'EXPIRED') whyNotOnHomepage.push('EXPIRED_PAST_H2_GRACE_THRESHOLD');
+      if (computedArchiveStatus === 'ARCHIVED') whyNotOnHomepage.push('EVENT_ARCHIVED');
+      if (computedArchiveStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS') whyNotOnHomepage.push('EVENT_ARCHIVED_WITH_OPEN_OPERATIONS');
+      if (event.lifecycle_status === 'CANCELLED' || event.status === 'CANCELLED') whyNotOnHomepage.push('EVENT_CANCELLED');
+      if (event.public_visibility === false) whyNotOnHomepage.push('PUBLIC_VISIBILITY_FLAG_FALSE');
+      if (event.homepage_visibility === false) whyNotOnHomepage.push('HOMEPAGE_VISIBILITY_FLAG_FALSE');
+    }
 
     return {
       event_id: event.event_id,
@@ -293,6 +327,17 @@ class AdminEventControlService {
       last_seen_at: event.last_seen_at,
       last_verified_at: event.last_verified_at,
       expires_at: event.expires_at,
+      event_start_at: event.event_start_at,
+      event_end_at: event.event_end_at,
+      archive_at: event.archive_at,
+      temporal_status: computedTemporalStatus,
+      lifecycle_status: computedTemporalStatus,
+      archive_status: computedArchiveStatus,
+      homepage_visibility: isHomepageEligible,
+      public_upcoming: isUpcoming,
+      has_open_post_event_operations: hasOpenOps,
+      why_on_homepage: whyOnHomepage,
+      why_not_on_homepage: whyNotOnHomepage,
       field_provenance: event.field_provenance,
       sources: event.sources,
       observations_count: (event.observations || []).length,

@@ -269,18 +269,16 @@ async function run() {
     }
   });
 
-  console.log('\n── 4. Concert Discovery Radars: Songkick & Bandsintown (Jakarta & Greater Jakarta) ──');
+  console.log('\n── 4. Concert Platforms: Songkick & Bandsintown (Jakarta & Greater Jakarta) Tier-1 Status ──');
 
-  await test('SourceRegistry registers Songkick with Greater Jakarta scope & DISCOVERY_ONLY constraints', async () => {
+  await test('SourceRegistry registers Songkick as Tier-1 Authoritative Platform with Greater Jakarta scope', async () => {
     const songkick = sourceRegistry.getSource('src-songkick-jakarta');
     assert.ok(songkick, 'src-songkick-jakarta must be registered');
     assert.strictEqual(songkick.name, 'Songkick');
-    assert.strictEqual(songkick.type, 'CONCERT_DISCOVERY_RADAR');
+    assert.strictEqual(songkick.tier, 1);
     assert.strictEqual(songkick.category, 'MUSIC');
-    assert.strictEqual(songkick.authority, 'DISCOVERY_ONLY');
-    assert.strictEqual(songkick.verification_role, 'DISCOVERY_ONLY');
     assert.strictEqual(songkick.can_create_event, true);
-    assert.strictEqual(songkick.can_mark_verified, false);
+    assert.strictEqual(songkick.can_mark_verified, true);
     assert.strictEqual(songkick.can_override_official_source, false);
     assert.strictEqual(songkick.official_url, 'https://www.songkick.com/');
     assert.strictEqual(songkick.city_feed, 'https://www.songkick.com/metro-areas/29154-indonesia-jakarta');
@@ -292,20 +290,18 @@ async function run() {
       assert.ok(songkick.supported_cities.includes(c), `Songkick missing supported city: ${c}`);
     }
 
-    // Fail-Closed Invariant: isAuthoritativeSource strictly returns false
-    assert.strictEqual(sourceRegistry.isAuthoritativeSource('src-songkick-jakarta'), false);
+    // Tier 1 Invariant: isAuthoritativeSource returns true
+    assert.strictEqual(sourceRegistry.isAuthoritativeSource('src-songkick-jakarta'), true);
   });
 
-  await test('SourceRegistry registers Bandsintown with Greater Jakarta scope & DISCOVERY_ONLY constraints', async () => {
+  await test('SourceRegistry registers Bandsintown as Tier-1 Authoritative Platform with Greater Jakarta scope', async () => {
     const bandsintown = sourceRegistry.getSource('src-bandsintown-jakarta');
     assert.ok(bandsintown, 'src-bandsintown-jakarta must be registered');
     assert.strictEqual(bandsintown.name, 'Bandsintown');
-    assert.strictEqual(bandsintown.type, 'CONCERT_DISCOVERY_RADAR');
+    assert.strictEqual(bandsintown.tier, 1);
     assert.strictEqual(bandsintown.category, 'MUSIC');
-    assert.strictEqual(bandsintown.authority, 'DISCOVERY_ONLY');
-    assert.strictEqual(bandsintown.verification_role, 'DISCOVERY_ONLY');
     assert.strictEqual(bandsintown.can_create_event, true);
-    assert.strictEqual(bandsintown.can_mark_verified, false);
+    assert.strictEqual(bandsintown.can_mark_verified, true);
     assert.strictEqual(bandsintown.can_override_official_source, false);
     assert.strictEqual(bandsintown.official_url, 'https://www.bandsintown.com/');
     assert.strictEqual(bandsintown.city_feed, 'https://www.bandsintown.com/c/jakarta-indonesia');
@@ -316,13 +312,13 @@ async function run() {
       assert.ok(bandsintown.supported_cities.includes(c), `Bandsintown missing supported city: ${c}`);
     }
 
-    // Fail-Closed Invariant: isAuthoritativeSource strictly returns false
-    assert.strictEqual(sourceRegistry.isAuthoritativeSource('src-bandsintown-jakarta'), false);
+    // Tier 1 Invariant: isAuthoritativeSource returns true
+    assert.strictEqual(sourceRegistry.isAuthoritativeSource('src-bandsintown-jakarta'), true);
   });
 
-  await test('Songkick Discovery Radar: My Chemical Romance fails-closed to PENDING_ARTIST_VERIFICATION without artist proof', async () => {
-    // Discovery from Songkick: "My Chemical Romance — Jakarta International Stadium"
-    const songkickObservation = canonicalRegistry.createEvent({
+  await test('Unverified Radar: My Chemical Romance fails-closed to PENDING_ARTIST_VERIFICATION without artist proof', async () => {
+    // Unverified discovery radar from non-authoritative source
+    const unverifiedObservation = canonicalRegistry.createEvent({
       event_id: 'ev-can-mcr-radar-test',
       title: 'My Chemical Romance — Jakarta International Stadium',
       name: 'My Chemical Romance — Jakarta International Stadium',
@@ -331,18 +327,17 @@ async function run() {
       venue_name: 'Jakarta International Stadium',
       city: 'Jakarta',
       category: 'CONCERT',
-      source_id: 'src-songkick-jakarta',
-      source_url: 'https://www.songkick.com/metro-areas/29154-indonesia-jakarta',
+      source_id: 'src-ekraf-hub',
+      source_url: 'https://kemenparekraf.go.id/radar/mcr-jakarta',
       enforce_zero_fake_policy: true
     });
 
-    // Zero-Fake Gate: Songkick cannot solely verify
-    assert.strictEqual(songkickObservation.verification_status, VERIFICATION_STATUS.PENDING_ARTIST_VERIFICATION);
-    assert.strictEqual(songkickObservation.is_verified, false, 'Radar discovery alone cannot verify event');
-    assert.strictEqual(songkickObservation.verification_tier, VERIFICATION_TIERS.TIER_C_DISCOVERY_ONLY);
-    assert.ok(songkickObservation.verification_score <= 50);
-    assert.ok(songkickObservation.verification_reasons.includes('CONCERT_DISCOVERY_RADAR_REQUIRES_AUTHORITATIVE_CORROBORATION'));
-    assert.ok(songkickObservation.verification_reasons.includes('ZERO_FAKE_POLICY_PENDING_ARTIST_VERIFICATION'));
+    // Zero-Fake Gate: Non-authoritative discovery cannot solely verify
+    assert.strictEqual(unverifiedObservation.verification_status, VERIFICATION_STATUS.PENDING_ARTIST_VERIFICATION);
+    assert.strictEqual(unverifiedObservation.is_verified, false, 'Radar discovery alone cannot verify event');
+    assert.strictEqual(unverifiedObservation.verification_tier, VERIFICATION_TIERS.TIER_C_DISCOVERY_ONLY);
+    assert.ok(unverifiedObservation.verification_score <= 50);
+    assert.ok(unverifiedObservation.verification_reasons.includes('ZERO_FAKE_POLICY_PENDING_ARTIST_VERIFICATION'));
   });
 
   await test('Songkick + Corroboration Flow: MCR elevates to TIER A Double Official Verified when official sources corroborated', async () => {

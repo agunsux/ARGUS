@@ -431,9 +431,23 @@ class EventTemporalLifecycleEngine {
     );
     if (!isVerified) return false;
     if (event.public_visibility === false) return false;
+    if (event.homepage_visibility === false) return false;
 
     const rawStatus = (event.lifecycle_status || event.status || '').toUpperCase();
-    if (rawStatus === 'CANCELLED' || rawStatus === 'DIBATALKAN' || rawStatus === 'EXPIRED') {
+    if (rawStatus === 'CANCELLED' || rawStatus === 'DIBATALKAN' || rawStatus === 'EXPIRED' ||
+        rawStatus === 'ARCHIVED' || rawStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS') {
+      return false;
+    }
+    if (event.archive_status === 'ARCHIVED' || event.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS') {
+      return false;
+    }
+
+    // Explicit Defense-in-depth H+2 check:
+    const temporal = this.computeTemporalAttributes(event);
+    const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
+    const endMs = new Date(temporal.event_end_at).getTime();
+    const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
+    if (nowMs > endMs + graceMs) {
       return false;
     }
 
@@ -473,30 +487,48 @@ class EventTemporalLifecycleEngine {
       event.status = 'LIVE';
     }
 
-    // Expiry rule: H+2 grace period past end_at hides from public homepage and marks expired_at
+    // Expiry rule: H+2 grace period past end_at hides from public homepage and marks archive_status
     const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
     const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
     const endMs = new Date(temporal.event_end_at).getTime();
     if (nowMs > endMs + graceMs) {
       event.public_visibility = false;
+      event.homepage_visibility = false;
+      event.public_upcoming = false;
+      const hasOpenOps = this.hasOpenPostEventOperations(eventId);
+      event.archive_status = hasOpenOps ? LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS : LIFECYCLE_STATUS.ARCHIVED;
+      if (!event.archived_at) {
+        event.archived_at = (now instanceof Date ? now : new Date(now)).toISOString();
+      }
       if (!event.expired_at) {
         event.expired_at = (now instanceof Date ? now : new Date(now)).toISOString();
       }
     } else {
-      if (event.is_verified && newStatus !== LIFECYCLE_STATUS.CANCELLED) {
-        event.public_visibility = true;
-        event.expired_at = null;
+      if (newStatus === LIFECYCLE_STATUS.CANCELLED) {
+        event.archive_status = 'CANCELLED';
+        event.public_visibility = false;
+        event.homepage_visibility = false;
+        event.public_upcoming = false;
+      } else {
+        event.archive_status = 'ACTIVE';
+        if (event.is_verified) {
+          event.public_visibility = true;
+          event.homepage_visibility = (this.getHomepageTemporalWindow(event, now) !== 'EXPIRED');
+          event.public_upcoming = this.isEventUpcoming(event, now);
+          event.expired_at = null;
+        } else {
+          event.homepage_visibility = false;
+          event.public_upcoming = false;
+        }
       }
     }
 
     event.last_lifecycle_evaluated_at = (now instanceof Date ? now : new Date(now)).toISOString();
 
-    // If transitioned to a concluded state, expire active listings for this event
-    if (previousStatus !== newStatus && (
-      newStatus === LIFECYCLE_STATUS.COMPLETED ||
-      newStatus === LIFECYCLE_STATUS.ARCHIVED ||
-      newStatus === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS
-    )) {
+    // If in a concluded state, expire any active listings for this event
+    if (newStatus === LIFECYCLE_STATUS.COMPLETED ||
+        newStatus === LIFECYCLE_STATUS.ARCHIVED ||
+        newStatus === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS) {
       this._expireActiveListingsForEndedEvent(eventId, newStatus, now);
     }
 

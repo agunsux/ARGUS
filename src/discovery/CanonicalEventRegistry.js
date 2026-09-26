@@ -12,7 +12,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { EventNormalizationService } = require('./EventNormalizationService');
 const { EventVerificationService, VERIFICATION_STATUS } = require('./EventVerificationService');
-const { sourceRegistry, TRUST_LEVELS } = require('./SourceRegistry');
+const { sourceRegistry, TRUST_LEVELS, SOURCE_ROLES } = require('./SourceRegistry');
 const { EventSourceObservation } = require('./models/EventSourceObservation');
 const { EventConflict } = require('./models/EventConflict');
 const { EventQualityGate, CANONICAL_STATES, MARKETPLACE_ELIGIBILITY } = require('./EventQualityGate');
@@ -442,9 +442,21 @@ class CanonicalEventRegistry {
 
     const isTerminalState = (resolvedLifecycle === LIFECYCLE_STATUS.COMPLETED || resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED || resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS || resolvedLifecycle === LIFECYCLE_STATUS.CANCELLED || canonicalEvent.status === 'CANCELLED');
     canonicalEvent.public_visibility = Boolean(canonicalEvent.is_verified && !isTerminalState);
+    canonicalEvent.homepage_visibility = EventTemporalLifecycleEngine.isEventHomepageEligible(canonicalEvent);
+    canonicalEvent.public_upcoming = EventTemporalLifecycleEngine.isEventUpcoming(canonicalEvent);
+    canonicalEvent.archive_status = (resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED || resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS)
+      ? resolvedLifecycle
+      : (resolvedLifecycle === LIFECYCLE_STATUS.CANCELLED ? 'CANCELLED' : 'ACTIVE');
 
     this.events.set(eventId, canonicalEvent);
     this.slugMap.set(slug, eventId);
+
+    try {
+      const { state } = require('../database');
+      if (state && Array.isArray(state.events)) {
+        this.syncToState(state.events);
+      }
+    } catch (_) {}
 
     return canonicalEvent;
   }
@@ -513,11 +525,25 @@ class CanonicalEventRegistry {
     if (incomingDate && incomingDate !== event.start_date) {
       const existingFieldSrc = event.field_provenance?.start_date?.source_id;
       const existingSrc = sourceRegistry.getSource(existingFieldSrc) || {};
+      const incomingSrc = sourceRegistry.getSource(sourceId) || {};
       const existingTier = existingSrc.tier || 2;
-      const isExplicitReschedule = incomingRecord.status === 'RESCHEDULED' || event.status === 'RESCHEDULED';
+      const isExplicitReschedule = incomingRecord.status === 'RESCHEDULED';
       const isAuthoritative = sourceRegistry.isAuthoritativeSource(sourceId) || incomingTier === 1;
-      const canOverwrite = (incomingTier < existingTier) || (incomingTier === existingTier && (isExplicitReschedule || isAuthoritative) && isFresherThan(event.field_provenance?.start_date));
 
+      const isPromoterOrArtist = (src) => {
+        if (!src) return false;
+        if (src.trust_level === TRUST_LEVELS.TIER_S) return true;
+        if (src.source_id && src.source_id.startsWith('src-promoter-')) return true;
+        const type = String(src.source_type || '').toUpperCase();
+        return type.includes('PROMOTER') || type.includes('ARTIST') || type.includes('ORGANIZER');
+      };
+
+      const isExistingPromoter = isPromoterOrArtist(existingSrc);
+      const isIncomingPromoter = isPromoterOrArtist(incomingSrc);
+
+      const canOverwrite = (!isExistingPromoter || isIncomingPromoter)
+        ? ((incomingTier < existingTier) || (incomingTier === existingTier && (isExplicitReschedule || isAuthoritative) && isFresherThan(event.field_provenance?.start_date)))
+        : isExplicitReschedule;
       if (canOverwrite) {
         const oldDate = event.start_date;
         event.start_date = incomingDate;
@@ -797,6 +823,14 @@ class CanonicalEventRegistry {
     event.expires_at = this.computeExpirationDate(event.start_date, new Date(now));
     event.update_priority = this.computeUpdatePriority(event.start_date);
 
+    if (incomingRecord.artist_official_url) event.artist_official_url = incomingRecord.artist_official_url;
+    if (incomingRecord.artist_official_source_type) event.artist_official_source_type = incomingRecord.artist_official_source_type;
+    if (incomingRecord.artist_verification_status) event.artist_verification_status = incomingRecord.artist_verification_status;
+    if (incomingRecord.promoter_official_url) event.promoter_official_url = incomingRecord.promoter_official_url;
+    if (incomingRecord.promoter_verification_status) event.promoter_verification_status = incomingRecord.promoter_verification_status;
+    if (incomingRecord.official_event_url) event.event_official_url = incomingRecord.official_event_url;
+    if (incomingRecord.official_ticket_url) event.ticketing_official_url = incomingRecord.official_ticket_url;
+
     if (event.status !== 'CANCELLED' && event.lifecycle_status !== LIFECYCLE_STATUS.CANCELLED) {
       const reEval = EventVerificationService.evaluateEvent(event, event.sources || []);
       event.verification_status = reEval.verification_status;
@@ -947,6 +981,11 @@ class CanonicalEventRegistry {
 
     const isTerminalState = (resolvedLifecycle === LIFECYCLE_STATUS.COMPLETED || resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED || resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS || resolvedLifecycle === LIFECYCLE_STATUS.CANCELLED || event.status === 'CANCELLED');
     event.public_visibility = Boolean(event.is_verified && !isTerminalState);
+    event.homepage_visibility = EventTemporalLifecycleEngine.isEventHomepageEligible(event);
+    event.public_upcoming = EventTemporalLifecycleEngine.isEventUpcoming(event);
+    event.archive_status = (resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED || resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS)
+      ? resolvedLifecycle
+      : (resolvedLifecycle === LIFECYCLE_STATUS.CANCELLED ? 'CANCELLED' : 'ACTIVE');
 
     return event;
   }
@@ -1000,6 +1039,23 @@ class CanonicalEventRegistry {
     return Array.from(this.events.values());
   }
 
+  getUpcomingEvents(now = new Date()) {
+    return this.getAllEvents().filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e, now));
+  }
+
+  getHomepageEvents(now = new Date()) {
+    return this.getAllEvents().filter(e => EventTemporalLifecycleEngine.isEventHomepageEligible(e, now));
+  }
+
+  getArchivedEvents(now = new Date()) {
+    return this.getAllEvents().filter(e => 
+      e.archive_status === 'ARCHIVED' || 
+      e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS' || 
+      e.lifecycle_status === 'ARCHIVED' || 
+      e.lifecycle_status === 'ARCHIVED_WITH_OPEN_OPERATIONS'
+    );
+  }
+
   /**
    * Synchronizes with state.events (Marketplace Invariant Bridge).
    * Ensures that all canonical events exist inside state.events for marketplace queries,
@@ -1027,12 +1083,18 @@ class CanonicalEventRegistry {
           source_url: canonical.source_url,
           evidence_hash: canonical.evidence_hash,
           verified_at: canonical.verified_at,
-          status: canonical.status
+          status: canonical.status,
+          archive_status: canonical.archive_status,
+          homepage_visibility: canonical.homepage_visibility,
+          public_upcoming: canonical.public_upcoming
         };
       } else {
         stateEventsArray.push({
           ...canonical,
-          id: canonical.event_id
+          id: canonical.event_id,
+          archive_status: canonical.archive_status,
+          homepage_visibility: canonical.homepage_visibility,
+          public_upcoming: canonical.public_upcoming
         });
       }
     }

@@ -16,7 +16,7 @@
  * - Temporal Proximity-Aware TTL: Imminent events (<= 7 days) enforce 12-hour TTL before transitioning to STALE
  */
 
-const { TRUST_LEVELS, sourceRegistry } = require('./SourceRegistry');
+const { TRUST_LEVELS, SOURCE_ROLES, sourceRegistry } = require('./SourceRegistry');
 
 const VERIFICATION_TIERS = {
   TIER_A_DOUBLE_OFFICIAL: 'TIER_A_DOUBLE_OFFICIAL',
@@ -239,25 +239,30 @@ class EventVerificationService {
     }
 
     if (dates.size > 1) {
-      const authDates = new Map();
+      const promoterDates = new Map();
       for (const [d, sid] of dates.entries()) {
-        if (sourceRegistry.isAuthoritativeSource(sid)) authDates.set(d, sid);
+        const srcMeta = sourceRegistry.getSource(sid) || {};
+        const type = String(srcMeta.source_type || '').toUpperCase();
+        const isPromoter = srcMeta.trust_level === TRUST_LEVELS.TIER_S ||
+          (sid && sid.startsWith('src-promoter-')) ||
+          type.includes('PROMOTER') || type.includes('ARTIST') || type.includes('ORGANIZER');
+        if (isPromoter) promoterDates.set(d, sid);
       }
 
-      if (authDates.size > 1) {
-        // Two authoritative sources report conflicting dates -> CONFLICTED!
-        const dateEntries = Array.from(authDates.entries());
+      if (promoterDates.size > 1) {
+        // Two promoter sources report conflicting dates -> CONFLICTED!
+        const dateEntries = Array.from(promoterDates.entries());
         conflicts.push({
           field: 'start_date',
           source_a: dateEntries[0][1],
           value_a: dateEntries[0][0],
           source_b: dateEntries[1][1],
           value_b: dateEntries[1][0],
-          values: Array.from(authDates.keys()),
-          reason: 'Different authoritative sources report conflicting event dates'
+          values: Array.from(promoterDates.keys()),
+          reason: 'Different promoter sources report conflicting event dates'
         });
-      } else if (authDates.size === 1) {
-        // Authoritative source takes precedence over secondary
+      } else if (promoterDates.size === 1) {
+        // Authoritative promoter takes precedence over secondary
         flags.push('AUTHORITATIVE_PROMOTER_PRECEDENCE_DATE');
       } else {
         const dateEntries = Array.from(dates.entries());
@@ -274,13 +279,18 @@ class EventVerificationService {
     }
 
     if (venues.size > 1) {
-      const authVenues = new Map();
+      const promoterVenues = new Map();
       for (const [normV, item] of venues.entries()) {
-        if (sourceRegistry.isAuthoritativeSource(item.source_id)) authVenues.set(normV, item);
+        const srcMeta = sourceRegistry.getSource(item.source_id) || {};
+        const type = String(srcMeta.source_type || '').toUpperCase();
+        const isPromoter = srcMeta.trust_level === TRUST_LEVELS.TIER_S ||
+          (item.source_id && item.source_id.startsWith('src-promoter-')) ||
+          type.includes('PROMOTER') || type.includes('ARTIST') || type.includes('ORGANIZER');
+        if (isPromoter) promoterVenues.set(normV, item);
       }
 
-      if (authVenues.size > 1) {
-        const venueEntries = Array.from(authVenues.values());
+      if (promoterVenues.size > 1) {
+        const venueEntries = Array.from(promoterVenues.values());
         conflicts.push({
           field: 'venue',
           source_a: venueEntries[0].source_id,
@@ -288,9 +298,9 @@ class EventVerificationService {
           source_b: venueEntries[1].source_id,
           value_b: venueEntries[1].raw,
           values: venueEntries.map(v => v.raw),
-          reason: 'Different authoritative sources report conflicting event venues'
+          reason: 'Different promoter sources report conflicting event venues'
         });
-      } else if (authVenues.size === 1) {
+      } else if (promoterVenues.size === 1) {
         flags.push('AUTHORITATIVE_PROMOTER_PRECEDENCE_VENUE');
       } else {
         const venueEntries = Array.from(venues.values());
