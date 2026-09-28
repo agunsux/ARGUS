@@ -6,7 +6,10 @@
  *
  * Strict Principles:
  * - High-speed SSR HTML.
- * - JSON-LD Article & Breadcrumbs schema.
+ * - JSON-LD Article + Breadcrumbs + FAQ schema (only when FAQ content exists).
+ * - Dynamic reading time calculation.
+ * - Related articles section.
+ * - Per-article og:image support.
  * - Enforces indexation rules (unapproved drafts are never public/indexed).
  */
 
@@ -19,6 +22,102 @@ const { StructuredDataFactory } = require('../seo/StructuredDataFactory');
 const { InternalLinkingService } = require('../seo/InternalLinkingService');
 const { renderFooterHtml } = require('../config/businessProfile');
 
+// -------------------------------------------------------------
+// Utility: Reading Time
+// -------------------------------------------------------------
+function calculateReadingTime(htmlContent) {
+  if (!htmlContent) return 1;
+  const plainText = htmlContent.replace(/<[^>]*>/gm, ' ');
+  const wordCount = plainText.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.ceil(wordCount / 200)); // 200 WPM average
+}
+
+// -------------------------------------------------------------
+// Utility: Format date to Indonesian locale
+// -------------------------------------------------------------
+function formatDateId(isoDate) {
+  if (!isoDate) return 'Tikum Editorial';
+  try {
+    const d = new Date(isoDate);
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch (e) {
+    return isoDate.substring(0, 10);
+  }
+}
+
+// -------------------------------------------------------------
+// Utility: Related Articles HTML (excludes current slug, same-category prioritized)
+// -------------------------------------------------------------
+function renderRelatedArticles(currentSlug, category) {
+  const allPublished = articleRepository.getPublishedArticles();
+  const related = allPublished
+    .filter(a => a.slug !== currentSlug)
+    .sort((a, b) => {
+      const aSameCat = a.category === category ? 1 : 0;
+      const bSameCat = b.category === category ? 1 : 0;
+      if (bSameCat !== aSameCat) return bSameCat - aSameCat;
+      return (b.published_at || b.updated_at || '').localeCompare(a.published_at || a.updated_at || '');
+    })
+    .slice(0, 3);
+
+  if (related.length === 0) return '';
+
+  const cards = related.map(a => {
+    const rt = calculateReadingTime(a.content);
+    const date = formatDateId(a.published_at);
+    return `
+      <a href="/blog/${a.slug}" style="display:block; background:#131d31; border:1px solid #1e293b; border-radius:10px; padding:16px 18px; text-decoration:none; transition:border-color 0.2s;" onmouseover="this.style.borderColor='#0284c7'" onmouseout="this.style.borderColor='#1e293b'">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:11px; font-weight:700; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px;">${a.category.replace(/_/g, ' ')}</span>
+          <span style="font-size:11px; color:#64748b;">${rt} menit baca</span>
+        </div>
+        <h3 style="font-size:15px; font-weight:700; color:#f8fafc; margin:0 0 6px; line-height:1.4;">${a.title}</h3>
+        <p style="font-size:13px; color:#94a3b8; margin:0 0 8px; line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${a.description}</p>
+        <div style="font-size:12px; color:#64748b;"><i class="fa-solid fa-calendar-day" style="margin-right:4px;"></i>${date}</div>
+      </a>
+    `;
+  }).join('');
+
+  return `
+    <section style="margin-top:48px; padding-top:32px; border-top:1px solid #1e293b;" aria-label="Artikel Terkait">
+      <h2 style="font-size:20px; font-weight:800; color:#f8fafc; margin:0 0 20px;">Artikel Terkait</h2>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:16px;">
+        ${cards}
+      </div>
+    </section>
+  `;
+}
+
+// -------------------------------------------------------------
+// Utility: Render FAQ section HTML from article.faq[]
+// -------------------------------------------------------------
+function renderFaqSection(faq) {
+  if (!Array.isArray(faq) || faq.length === 0) return '';
+
+  const items = faq.map((item, i) => `
+    <div style="border-bottom:1px solid #1e293b; padding:16px 0;" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <h3 itemprop="name" style="font-size:16px; font-weight:700; color:#f8fafc; margin:0 0 8px; cursor:pointer;" onclick="const a=this.nextElementSibling; a.style.display=a.style.display==='none'?'block':'none'">
+        <i class="fa-solid fa-circle-question" style="color:#38bdf8; margin-right:8px;"></i>${item.q}
+      </h3>
+      <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer" style="display:block;">
+        <p itemprop="text" style="font-size:14px; color:#94a3b8; margin:0; line-height:1.7;">${item.a}</p>
+      </div>
+    </div>
+  `).join('');
+
+  return `
+    <section style="margin-top:40px;" itemscope itemtype="https://schema.org/FAQPage" aria-label="FAQ">
+      <h2 style="font-size:22px; font-weight:800; color:#f8fafc; margin:0 0 16px;">
+        <i class="fa-solid fa-circle-question" style="color:#38bdf8; margin-right:8px;"></i>Pertanyaan Umum
+      </h2>
+      ${items}
+    </section>
+  `;
+}
+
+// -------------------------------------------------------------
+// Utility: Nav Header
+// -------------------------------------------------------------
 function renderBlogNavHeader() {
   return `
   <header class="site-header">
@@ -48,13 +147,18 @@ router.get(['/blog', '/guides'], (req, res) => {
   const { category, q } = req.query;
   let articles = articleRepository.getPublishedArticles();
 
+  // Sort by published_at descending (newest first)
+  articles = articles.sort((a, b) =>
+    (b.published_at || b.updated_at || '').localeCompare(a.published_at || a.updated_at || '')
+  );
+
   if (category && category.trim()) {
     articles = articles.filter(a => (a.category || '').toUpperCase() === category.toUpperCase().trim());
   }
 
   if (q && q.trim()) {
     const term = q.toLowerCase().trim();
-    articles = articles.filter(a => 
+    articles = articles.filter(a =>
       (a.title || '').toLowerCase().includes(term) ||
       (a.description || '').toLowerCase().includes(term)
     );
@@ -69,20 +173,21 @@ router.get(['/blog', '/guides'], (req, res) => {
   // If query params are active, apply noindex
   const isFiltered = Boolean(q || category);
   const headMeta = TechnicalSEOService.renderHeadMeta({
-    title: 'Panduan Tiket, Konser &amp; Keamanan Transaksi Event | Tikum Blog',
-    description: 'Pusat edukasi penonton konser Indonesia: tips menghindari penipuan calo, panduan tiket presale, regulasi turnstile venue, dan sistem rekening escrow.',
+    title: 'Panduan Tiket, Konser & Keamanan Transaksi Event | Tikum Blog',
+    description: 'Pusat edukasi penonton konser Indonesia: tips menghindari penipuan calo, panduan secondary ticketing yang aman, escrow tiket, dan cara memastikan transaksi tiket event terlindungi.',
     canonicalPath: '/blog',
     noindex: isFiltered,
     jsonLd
   });
 
   const cardsHtml = articles.map(a => {
-    const dateFormatted = a.published_at ? a.published_at.substring(0, 10) : 'Tikum Editorial';
+    const dateFormatted = formatDateId(a.published_at);
+    const readingTime = calculateReadingTime(a.content);
     return `
       <article class="blog-card" style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:24px; display:flex; flex-direction:column; justify-content:space-between;">
         <div>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span class="badge badge-sm" style="background:#0ea5e9; color:#fff; font-weight:700;">${a.category}</span>
+            <span class="badge badge-sm" style="background:#0ea5e9; color:#fff; font-weight:700;">${a.category.replace(/_/g, ' ')}</span>
             <span style="font-size:12px; color:#64748b;"><i class="fa-solid fa-calendar-day"></i> ${dateFormatted}</span>
           </div>
           <h2 style="font-size:20px; font-weight:800; color:#f8fafc; margin:8px 0 10px; line-height:1.4;">
@@ -91,7 +196,10 @@ router.get(['/blog', '/guides'], (req, res) => {
           <p style="color:#94a3b8; font-size:14px; line-height:1.6; margin-bottom:16px;">${a.description}</p>
         </div>
         <div style="border-top:1px solid #1e293b; padding-top:14px; display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-size:12px; color:#cbd5e1;"><i class="fa-solid fa-user-pen"></i> ${a.author}</span>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="font-size:12px; color:#cbd5e1;"><i class="fa-solid fa-user-pen"></i> ${a.author}</span>
+            <span style="font-size:12px; color:#64748b;"><i class="fa-solid fa-clock"></i> ${readingTime} menit</span>
+          </div>
           <a href="/blog/${a.slug}" class="btn btn-sm btn-primary">Baca Selengkapnya</a>
         </div>
       </article>
@@ -113,7 +221,7 @@ router.get(['/blog', '/guides'], (req, res) => {
     <div style="text-align:center; max-width:800px; margin:0 auto 36px;">
       <div class="hero-pill"><i class="fa-solid fa-newspaper"></i> TIKUM EDITORIAL PUBLICATION</div>
       <h1 style="font-size:32px; font-weight:800; margin:14px 0;">Panduan, Edukasi &amp; Keamanan Tiket Konser</h1>
-      <p style="color:#94a3b8; font-size:15px;">Pelajari cara membeli dan menjual tiket konser dengan aman, menghindari calo penipu, dan memahami protokol verifikasi di venue Indonesia.</p>
+      <p style="color:#94a3b8; font-size:15px;">Pelajari cara membeli dan menjual tiket konser dengan aman, menghindari calo penipu, dan memahami mekanisme perlindungan transaksi di pasar tiket Indonesia.</p>
     </div>
 
     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:24px;">
@@ -138,7 +246,7 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
   const isPreview = req.query.preview === '1' && process.env.NODE_ENV === 'test';
   if (!article || (article.status !== CONTENT_STATUS.PUBLISHED && !isPreview)) {
     return res.status(404).send(`<!DOCTYPE html>
-      <html><head><title>Artikel Tidak Ditemukan — Tikum</title><meta name="robots" content="noindex, follow"></head>
+      <html lang="id"><head><title>Artikel Tidak Ditemukan — Tikum</title><meta name="robots" content="noindex, follow"></head>
       <body style="font-family:sans-serif; background:#0f172a; color:#fff; text-align:center; padding:50px;">
         <h2>Artikel Tidak Ditemukan</h2>
         <p>Artikel yang Anda cari tidak tersedia atau belum dipublikasikan.</p>
@@ -155,17 +263,37 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
   const articleJsonLd = StructuredDataFactory.createArticleSchema(article);
   const breadcrumbsJsonLd = StructuredDataFactory.createBreadcrumbSchema(breadcrumbs);
 
+  // Build JSON-LD array — add FAQ schema only when FAQ content actually exists
+  const jsonLdArray = [articleJsonLd, breadcrumbsJsonLd];
+  if (Array.isArray(article.faq) && article.faq.length > 0) {
+    jsonLdArray.push(StructuredDataFactory.createFAQSchema(article.faq));
+  }
+
+  // Per-article og:image (falls back to site default)
+  const ogImage = article.image || article.ogImage ||
+    'https://tikum.app/icons/icon-512x512.png';
+
   const headMeta = TechnicalSEOService.renderHeadMeta({
     title: `${article.title} | Tikum`,
     description: article.description,
     canonicalPath: `/blog/${article.slug}`,
     ogType: 'article',
+    image: ogImage,
     noindex: isPreview,
-    jsonLd: [articleJsonLd, breadcrumbsJsonLd]
+    jsonLd: jsonLdArray
   });
 
   // Inject semantic contextual internal links
   const contentWithLinks = InternalLinkingService.injectContextualLinks(article.content, article.internal_links);
+
+  // Dynamic reading time
+  const readingTime = calculateReadingTime(article.content);
+  const publishDateFormatted = formatDateId(article.published_at);
+  const publishDateIso = article.published_at ? article.published_at.substring(0, 10) : '';
+
+  // Related articles & FAQ sections
+  const relatedHtml = renderRelatedArticles(article.slug, article.category);
+  const faqHtml = renderFaqSection(article.faq);
 
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -185,24 +313,27 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
     .article-body ul, .article-body ol { margin: 0 0 20px 24px; padding: 0; }
     .article-body li { margin-bottom: 8px; }
     .article-body a { color: #38bdf8; text-decoration: underline; }
+    .article-body table { width: 100%; border-collapse: collapse; margin: 20px 0; }
     .cta-banner { background: #131d31; border: 1px solid #0284c7; border-radius: 12px; padding: 24px; margin-top: 40px; }
   </style>
 </head>
 <body>
   ${renderBlogNavHeader()}
   <main class="article-container">
-    <nav style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
-      <a href="/" style="color: #94a3b8; text-decoration: none;">Beranda</a> &rsaquo; 
-      <a href="/blog" style="color: #94a3b8; text-decoration: none;">Blog</a> &rsaquo; 
+    <nav aria-label="breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+      <a href="/" style="color: #94a3b8; text-decoration: none;">Beranda</a> &rsaquo;
+      <a href="/blog" style="color: #94a3b8; text-decoration: none;">Blog</a> &rsaquo;
       <span style="color: #f8fafc;">${article.title}</span>
     </nav>
 
     <header class="article-header">
-      <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
-        <span class="badge badge-primary">${article.category}</span>
-        <span style="font-size:13px; color:#94a3b8;"><i class="fa-solid fa-calendar-day"></i> ${article.published_at ? article.published_at.substring(0, 10) : '2026'}</span>
+      <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
+        <span class="badge badge-primary">${article.category.replace(/_/g, ' ')}</span>
+        <time datetime="${publishDateIso}" style="font-size:13px; color:#94a3b8;">
+          <i class="fa-solid fa-calendar-day"></i> ${publishDateFormatted}
+        </time>
         <span style="font-size:13px; color:#94a3b8;">&bull;</span>
-        <span style="font-size:13px; color:#94a3b8;"><i class="fa-solid fa-clock"></i> 4 menit baca</span>
+        <span style="font-size:13px; color:#94a3b8;"><i class="fa-solid fa-clock"></i> ${readingTime} menit baca</span>
       </div>
       <h1 style="font-size: 32px; font-weight: 800; color: #f8fafc; line-height: 1.3; margin: 10px 0 14px;">${article.title}</h1>
       <p style="font-size: 17px; color: #94a3b8; line-height: 1.6; margin: 0;">${article.description}</p>
@@ -211,22 +342,26 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
       </div>
     </header>
 
-    <div class="article-body">
+    <article class="article-body">
       ${contentWithLinks}
-    </div>
+    </article>
+
+    ${faqHtml}
 
     <div class="cta-banner">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
         <div>
-          <h3 style="font-size:18px; font-weight:800; color:#f8fafc; margin:0 0 6px;">Cari Tiket Konser Terverifikasi?</h3>
-          <p style="font-size:13px; color:#94a3b8; margin:0;">Transaksi aman dengan penahanan dana di rekening escrow dan pendampingan di gerbang venue.</p>
+          <h3 style="font-size:18px; font-weight:800; color:#f8fafc; margin:0 0 6px;">Temukan Tiket Konser Terverifikasi di Tikum</h3>
+          <p style="font-size:13px; color:#94a3b8; margin:0;">Transaksi aman dengan perlindungan pembayaran dan pendampingan di gerbang venue.</p>
         </div>
-        <div style="display:flex; gap:10px;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
           <a href="/events" class="btn btn-sm btn-primary">Lihat Event</a>
           <a href="/how-it-works" class="btn btn-sm btn-secondary">Pelajari Escrow</a>
         </div>
       </div>
     </div>
+
+    ${relatedHtml}
   </main>
   ${renderFooterHtml()}
   <script src="/js/i18n.js"></script>
@@ -237,4 +372,3 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
 });
 
 module.exports = router;
-

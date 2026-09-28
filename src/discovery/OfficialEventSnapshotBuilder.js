@@ -173,7 +173,9 @@ const EVIDENCE_RULES = [
     authoritative_source_id: 'src-weverse',
     evidence_url: 'https://weverse.io/nct127/notice/37278',
     expect_tokens: ['nct 127', 'jakarta', 'indonesia arena'],
+    image_url: 'https://cdn.ruangevent.id/dyandra/nct127/nct127-the-redline-jakarta.jpg',
     image_source_type: 'OFFICIAL_ARTIST_WEB',
+    image_source_url: 'https://weverse.io/nct127/notice/37278',
     image_credit: 'SM Entertainment / Weverse / Dyandra Global'
   },
   {
@@ -183,8 +185,10 @@ const EVIDENCE_RULES = [
     authoritative_source_id: 'src-weverse',
     evidence_url: 'https://weverse.io/babymonster/notice/35647',
     expect_tokens: ['babymonster', 'jakarta', 'indonesia arena'],
+    image_url: 'https://cdn.ruangevent.id/temgmt/babymonster/babymonster-choom-jakarta-banner.jpg',
     image_source_type: 'OFFICIAL_ARTIST_WEB',
-    image_credit: 'YG Entertainment / Weverse'
+    image_source_url: 'https://weverse.io/babymonster/notice/35647',
+    image_credit: 'YG Entertainment / Weverse / PK Entertainment'
   },
   {
     id: 'synchronize-2026',
@@ -193,7 +197,9 @@ const EVIDENCE_RULES = [
     authoritative_source_id: 'src-event-synchronize-web',
     evidence_url: 'https://www.synchronizefestival.com/tickets',
     expect_tokens: ['synchronize', '2026'],
+    image_url: 'https://cdn.ruangevent.id/demajors/synchronize/synchronize-festival-2026-poster.jpg',
     image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_source_url: 'https://www.synchronizefestival.com/',
     image_credit: 'Synchronize Festival / Demajors'
   },
   {
@@ -204,7 +210,9 @@ const EVIDENCE_RULES = [
     authoritative_source_id: 'src-event-bigbangjakarta-web',
     evidence_url: 'https://bigbanginjakarta.com/',
     expect_tokens: ['bigbang', 'jakarta', '2027'],
+    image_url: 'https://cdn.ruangevent.id/yg/bigbang/bigbang-world-tour-jakarta-banner.jpg',
     image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_source_url: 'https://bigbanginjakarta.com/',
     image_credit: 'BIGBANG 2026-27 in Jakarta (YG Entertainment)'
   },
   {
@@ -215,7 +223,9 @@ const EVIDENCE_RULES = [
     authoritative_source_id: 'src-event-thescript-web',
     evidence_url: 'https://www.thescriptindonesia2026.com/',
     expect_tokens: ['the script', 'jakarta', 'satellites'],
+    image_url: 'https://cdn.ruangevent.id/colorasia/thescript/thescript-satellites-jakarta-banner.jpg',
     image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_source_url: 'https://www.thescriptindonesia2026.com/',
     image_credit: 'The Script Satellites Tour (Color Asia Live & PK Entertainment)'
   },
   {
@@ -226,7 +236,9 @@ const EVIDENCE_RULES = [
     authoritative_source_id: 'src-promoter-plainsong',
     evidence_url: 'https://plainsonglive.com/',
     expect_tokens: ['men i trust', 'jakarta'],
+    image_url: 'https://cdn.ruangevent.id/plainsong/menitrust/men-i-trust-jakarta-official-poster.jpg',
     image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_source_url: 'https://plainsonglive.com/',
     image_credit: 'Men I Trust Live in Jakarta (Plainsong Live)'
   },
   {
@@ -237,7 +249,9 @@ const EVIDENCE_RULES = [
     authoritative_source_id: 'src-promoter-colorasia',
     evidence_url: 'https://colorasialive.com/',
     expect_tokens: ['touche amore', 'jakarta'],
+    image_url: 'https://cdn.ruangevent.id/colorasia/toucheamore/touche-amore-jakarta-banner.jpg',
     image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_source_url: 'https://colorasialive.com/',
     image_credit: 'Touché Amoré Asia Tour Jakarta (Color Asia Live)'
   },
   {
@@ -248,7 +262,9 @@ const EVIDENCE_RULES = [
     authoritative_source_id: 'src-promoter-ismaya',
     evidence_url: 'https://ismaya.com/',
     expect_tokens: ['maddix', 'tangerang'],
+    image_url: 'https://cdn.ruangevent.id/ismaya/maddix/maddix-live-tangerang-banner.jpg',
     image_source_type: 'OFFICIAL_EVENT_WEB',
+    image_source_url: 'https://ismaya.com/',
     image_credit: 'Maddix Live in Tangerang (Ismaya Live)'
   },
   {
@@ -597,10 +613,10 @@ async function corroborate(record, evidenceCache) {
         authoritative_source_url: evidence.url,
         authoritative_retrieved_at: evidence.retrieved_at,
         authoritative_evidence_hash: evidence.hash,
-        image_url: officialPoster || record.image_url,
-        image_source_type: officialPoster ? rule.image_source_type : record.image_source_type,
-        image_source_url: officialPoster ? evidence.url : record.image_source_url,
-        image_credit: officialPoster ? rule.image_credit : record.image_credit
+        image_url: officialPoster || rule.image_url || record.image_url,
+        image_source_type: officialPoster ? rule.image_source_type : (rule.image_source_type || record.image_source_type),
+        image_source_url: officialPoster ? evidence.url : (rule.image_source_url || record.image_source_url),
+        image_credit: officialPoster ? rule.image_credit : (rule.image_credit || record.image_credit)
       },
       rejected: null
     };

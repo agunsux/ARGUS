@@ -485,6 +485,8 @@ class EventTemporalLifecycleEngine {
       event.status = newStatus;
     } else if (newStatus === LIFECYCLE_STATUS.LIVE) {
       event.status = 'LIVE';
+    } else if (newStatus === LIFECYCLE_STATUS.UPCOMING && (event.status === 'ARCHIVED' || event.status === 'COMPLETED' || event.status === 'EXPIRED')) {
+      event.status = 'UPCOMING';
     }
 
     // Expiry rule: H+2 grace period past end_at hides from public homepage and marks archive_status

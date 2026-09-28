@@ -256,14 +256,16 @@ Sitemap: ${origin}/sitemap.xml
         const articles = providers.getPublishedArticles();
         for (const art of articles) {
           if (art.slug && art.status === 'published') {
+            const lastmod = (art.updated_at || art.published_at || nowIso).substring(0, 10);
             urls.push({
               loc: `${origin}/blog/${art.slug}`,
-              lastmod: (art.updated_at || art.published_at || nowIso).substring(0, 10),
+              lastmod,
               changefreq: 'weekly',
               priority: '0.8'
             });
           }
         }
+
       } catch (e) {}
     }
 

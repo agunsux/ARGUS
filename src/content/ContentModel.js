@@ -88,7 +88,8 @@ class ContentModel {
       human_approved_by: data.human_approved_by || null,
       human_approved_at: data.human_approved_at || null,
       publish_error: data.publish_error || null,
-      created_at: data.created_at || now
+      created_at: data.created_at || now,
+      faq: Array.isArray(data.faq) ? data.faq : []
     };
   }
 }

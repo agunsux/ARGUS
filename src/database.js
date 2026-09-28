@@ -482,7 +482,7 @@ function resetDatabase() {
     artists: ['Tulus', 'Hindia', 'The Changcuters', 'Danilla', 'Isyana Sarasvati', 'Feast'],
     date: '2026-09-25',
     start_date: '2026-09-25',
-    end_date: '2026-09-27',
+    end_date: '2026-10-05',
     venue_id: 'venue-kemayoran',
     venue: 'Gambir Expo / JIExpo Kemayoran',
     venue_name: 'Gambir Expo / JIExpo Kemayoran',

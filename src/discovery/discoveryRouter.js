@@ -29,6 +29,7 @@ const { cityRegistry, CityRegistry } = require('./CityRegistry');
 const { PopularityEngine } = require('./PopularityEngine');
 const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS, HOMEPAGE_EVENT_GRACE_DAYS } = require('./EventTemporalLifecycleEngine');
 const { inventoryReconciliationService } = require('./EventInventoryReconciliationService');
+const { EventVisualProvenanceService } = require('./EventVisualProvenanceService');
 
 // ==========================================
 // PROMOTER IMPORT ADMIN GUARD & CSV UPLOAD
@@ -918,6 +919,28 @@ router.get('/api/events/home-feed', (req, res) => {
   function formatSection13(e) {
     const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(e);
     const activeListings = getActiveResaleListings(e.event_id || e.id);
+
+    // Image Verification Gate check for homepage display
+    const rawImg = e.image_url || e.event_image || null;
+    let safeImg = rawImg;
+    let isFallbackImg = e.is_fallback_image || e.is_fallback || false;
+    let imgType = e.image_type || 'OFFICIAL_EVENT_POSTER';
+    let imgConf = e.image_confidence || 'HIGH';
+
+    if (rawImg) {
+      const wrongCheck = EventVisualProvenanceService.detectWrongImage(rawImg, e);
+      if (wrongCheck.is_wrong || e.image_verified === false) {
+        safeImg = null;
+        isFallbackImg = true;
+        imgType = 'GENERIC_FALLBACK';
+        imgConf = 'UNKNOWN';
+      }
+    } else {
+      isFallbackImg = true;
+      imgType = 'GENERIC_FALLBACK';
+      imgConf = 'UNKNOWN';
+    }
+
     return {
       ...e,
       event_id: e.event_id || e.id,
@@ -931,7 +954,10 @@ router.get('/api/events/home-feed', (req, res) => {
       official_artist_url: e.artist_official_url || e.official_event_url || (e.sources && e.sources[0]?.source_url) || 'https://tikum.id',
       official_event_url: e.event_official_url || e.official_event_url || (e.sources && e.sources[0]?.source_url) || 'https://tikum.id',
       official_ticketing_url: e.ticketing_official_url || e.official_ticket_url || 'https://tikum.id',
-      image_url: e.image_url || e.event_image || 'https://tikum.id/assets/default-poster.jpg',
+      image_url: safeImg,
+      is_fallback_image: isFallbackImg,
+      image_type: imgType,
+      image_confidence: imgConf,
       last_verified_at: e.last_verified_at || e.verified_at || now.toISOString(),
       source_last_seen_at: e.source_last_checked_at || e.last_seen_at || e.updated_at || now.toISOString(),
       price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : (e.min_price || null),

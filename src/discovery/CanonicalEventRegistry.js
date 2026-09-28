@@ -153,7 +153,7 @@ class CanonicalEventRegistry {
     });
 
     // Resolve Image Visual Provenance
-    const visual = EventVisualProvenanceService.resolveEventImage(eventData, sources);
+    const visual = EventVisualProvenanceService.resolveEventImage(eventData, sources, this.getAllEvents());
 
     const resolvedCountry = venueNorm.country || eventData.country || 'Indonesia';
     const resolvedCurrency = eventData.currency || (
@@ -212,6 +212,11 @@ class CanonicalEventRegistry {
       image_source_url: visual.image_source_url,
       image_source_account: visual.image_source_account,
       image_source_tier: visual.image_source_tier,
+      image_type: visual.image_type,
+      image_verified: visual.image_verified,
+      image_confidence: visual.image_confidence,
+      image_verified_at: visual.image_verified_at,
+      image_verified_by: visual.image_verified_by,
       image_last_checked_at: visual.image_last_checked_at,
       image_evidence_hash: visual.image_evidence_hash,
       image_license_status: visual.image_license_status,
@@ -487,7 +492,12 @@ class CanonicalEventRegistry {
       event.status === 'CANCELLED' ||
       event.status === 'ARCHIVED'
     );
-    if (isTerminal) {
+    const srcMeta = sourceRegistry.getSource(sourceId) || {};
+    const incomingTier = srcMeta.tier || incomingRecord.tier || 2;
+    const isAuthoritative = sourceRegistry.isAuthoritativeSource(sourceId) || incomingTier === 1;
+    const isRescheduleAttempt = Boolean(incomingRecord.start_date && incomingRecord.start_date !== event.start_date && isAuthoritative && event.status !== 'CANCELLED');
+
+    if (isTerminal && !isRescheduleAttempt) {
       return {
         event,
         changes: [],
@@ -495,9 +505,6 @@ class CanonicalEventRegistry {
         reason: `Event ${eventId} is in terminal lifecycle status ${event.lifecycle_status || event.status} and cannot be resurrected.`
       };
     }
-
-    const srcMeta = sourceRegistry.getSource(sourceId) || {};
-    const incomingTier = srcMeta.tier || incomingRecord.tier || 2;
     const now = new Date().toISOString();
     const observedAt = observation.observed_at || now;
     const publishedAt = observation.published_at || incomingRecord.published_at || null;
@@ -565,6 +572,8 @@ class CanonicalEventRegistry {
         event.lifecycle_status = EventTemporalLifecycleEngine.resolveLifecycleStatus(event);
         if (event.is_verified) {
           event.public_visibility = true;
+          event.homepage_visibility = true;
+          event.archive_status = 'ACTIVE';
         }
 
         const changeType = (incomingRecord.status === 'RESCHEDULED' || event.status === 'RESCHEDULED') ? 'RESCHEDULED' : 'DATE_RESCHEDULED';
@@ -946,7 +955,7 @@ class CanonicalEventRegistry {
         // Only update if existing image is missing or incoming source has strictly higher/equal priority
         const canUpdateImage = !event.image_url || !event.image_locked || incomingPrio <= currentPrio;
         if (canUpdateImage) {
-          const visual = EventVisualProvenanceService.resolveEventImage(event, event.sources);
+          const visual = EventVisualProvenanceService.resolveEventImage(event, event.sources, this.getAllEvents());
           if (visual && visual.image_url && visual.is_fallback !== true) {
             event.image_url = visual.image_url;
             event.thumbnail_url = visual.thumbnail_url;
@@ -954,6 +963,11 @@ class CanonicalEventRegistry {
             event.image_source_url = visual.image_source_url;
             event.image_source_account = visual.image_source_account;
             event.image_source_tier = visual.image_source_tier;
+            event.image_type = visual.image_type;
+            event.image_verified = visual.image_verified;
+            event.image_confidence = visual.image_confidence;
+            event.image_verified_at = visual.image_verified_at;
+            event.image_verified_by = visual.image_verified_by;
             event.image_last_checked_at = visual.image_last_checked_at;
             event.image_evidence_hash = visual.image_evidence_hash;
             event.image_license_status = visual.image_license_status;

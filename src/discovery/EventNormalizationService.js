@@ -1195,6 +1195,229 @@ class EventNormalizationService {
       timezone: cleanTz
     };
   }
+
+  /**
+   * Calculate Jaccard token similarity between two strings.
+   */
+  static calculateTokenSimilarity(str1, str2) {
+    if (!str1 || !str2) return 0;
+    const tokens1 = new Set(
+      str1.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .split(/\s+/)
+        .filter(t => t.length > 2)
+    );
+    const tokens2 = new Set(
+      str2.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .split(/\s+/)
+        .filter(t => t.length > 2)
+    );
+
+    if (tokens1.size === 0 || tokens2.size === 0) return 0;
+
+    let intersection = 0;
+    for (const t of tokens1) {
+      if (tokens2.has(t)) intersection++;
+    }
+
+    const union = tokens1.size + tokens2.size - intersection;
+    return union === 0 ? 0 : intersection / union;
+  }
+
+  /**
+   * Normalizes artist name, handling aliases, punctuation, accents, and conjunctions.
+   * Preserves artist identity without dangerous over-normalization.
+   */
+  static normalizeArtistName(rawArtist) {
+    if (!rawArtist) return '';
+    let name = String(rawArtist).trim();
+    // Normalize unicode accents (e.g. Touché Amoré -> Touche Amore)
+    name = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    // Standardize "&" to "and" for uniform comparison
+    name = name.replace(/\s*&\s*/g, ' and ');
+    // Remove extra whitespace
+    name = name.replace(/\s+/g, ' ').trim();
+    return name;
+  }
+
+  /**
+   * Extracts canonical artist search tokens and aliases for cross-source matching.
+   */
+  static extractArtistTokens(nameOrTitle) {
+    if (!nameOrTitle) return [];
+    const normalized = this.normalizeArtistName(nameOrTitle).toLowerCase();
+    const tokens = new Set([normalized]);
+
+    const aliasMap = {
+      'the weeknd': ['the weeknd', 'weeknd'],
+      'weeknd': ['the weeknd', 'weeknd'],
+      'sheila on 7': ['sheila on 7', 'sheila on seven', 'so7'],
+      'nct 127': ['nct 127', 'nct127', 'nct'],
+      'babymonster': ['babymonster', 'baby monster'],
+      'bigbang': ['bigbang', 'big bang'],
+      'the script': ['the script', 'script'],
+      'men i trust': ['men i trust'],
+      'touche amore': ['touche amore', 'touché amoré'],
+      'kanye west': ['kanye west', 'kanye', 'ye'],
+      'ye': ['kanye west', 'kanye', 'ye'],
+      'maroon 5': ['maroon 5', 'maroon5'],
+      'lany': ['lany'],
+      'dewa 19': ['dewa 19', 'dewa', 'dewa19']
+    };
+
+    for (const [key, aliases] of Object.entries(aliasMap)) {
+      if (normalized.includes(key) || aliases.includes(normalized)) {
+        aliases.forEach(a => tokens.add(a));
+      }
+    }
+
+    return Array.from(tokens);
+  }
+
+  /**
+   * Deterministic multi-factor event matching score.
+   * Evaluates Artist, Title, Date, Venue, City, Promoter.
+   * Enforces anti-collision hard gates for city, year, and conflicting artists.
+   */
+  static calculateEventMatchScore(eventA, eventB) {
+    if (!eventA || !eventB) {
+      return { isMatch: false, confidence: 0, matchReason: 'MISSING_EVENT_DATA', details: {} };
+    }
+
+    const normTitleA = this.normalizeTitle(eventA.title || eventA.name || eventA.canonical_name || '');
+    const normTitleB = this.normalizeTitle(eventB.title || eventB.name || eventB.canonical_name || '');
+    const dateA = eventA.start_date || (eventA.start_datetime ? eventA.start_datetime.substring(0, 10) : eventA.date) || '';
+    const dateB = eventB.start_date || (eventB.start_datetime ? eventB.start_datetime.substring(0, 10) : eventB.date) || '';
+    const cityA = (eventA.city || eventA.venue_city || '').toLowerCase().trim();
+    const cityB = (eventB.city || eventB.venue_city || '').toLowerCase().trim();
+    const venueA = (eventA.venue_name || eventA.venue || '').toLowerCase().trim();
+    const venueB = (eventB.venue_name || eventB.venue || '').toLowerCase().trim();
+
+    // 1. HARD GATE: Multi-City Tour Separation
+    // "Live in Jakarta" vs "Live in Bandung" MUST NOT merge!
+    if (cityA && cityB && cityA !== cityB) {
+      return {
+        isMatch: false,
+        confidence: 0,
+        matchReason: 'CITY_COLLISION_PREVENTED',
+        details: { cityA, cityB }
+      };
+    }
+
+    // 2. HARD GATE: Year Discrepancy
+    // "Festival 2026" vs "Festival 2025" MUST NOT merge!
+    const yearA = (normTitleA.match(/\b(202\d)\b/) || [null, dateA.substring(0, 4)])[1];
+    const yearB = (normTitleB.match(/\b(202\d)\b/) || [null, dateB.substring(0, 4)])[1];
+    if (yearA && yearB && yearA !== yearB) {
+      return {
+        isMatch: false,
+        confidence: 0,
+        matchReason: 'YEAR_COLLISION_PREVENTED',
+        details: { yearA, yearB }
+      };
+    }
+
+    // 3. HARD GATE: Tribute / Cover Band vs Original Artist
+    const isTributeA = /\btribute\b|\bcover\b/i.test(normTitleA);
+    const isTributeB = /\btribute\b|\bcover\b/i.test(normTitleB);
+    if (isTributeA !== isTributeB) {
+      return {
+        isMatch: false,
+        confidence: 0,
+        matchReason: 'TRIBUTE_ORIGINAL_COLLISION_PREVENTED',
+        details: { isTributeA, isTributeB }
+      };
+    }
+
+    // 4. Scoring dimensions
+    let artistScore = 0;
+    const artistsA = (Array.isArray(eventA.artists) ? eventA.artists : (eventA.artist ? [eventA.artist] : [])).map(a => this.normalizeArtistName(a).toLowerCase());
+    const artistsB = (Array.isArray(eventB.artists) ? eventB.artists : (eventB.artist ? [eventB.artist] : [])).map(a => this.normalizeArtistName(a).toLowerCase());
+
+    if (artistsA.length > 0 && artistsB.length > 0) {
+      const hasDirectOverlap = artistsA.some(a => artistsB.includes(a));
+      if (hasDirectOverlap) {
+        artistScore = 35;
+      } else {
+        // Check token/alias overlap
+        const tokensA = artistsA.flatMap(a => this.extractArtistTokens(a));
+        const tokensB = artistsB.flatMap(b => this.extractArtistTokens(b));
+        const hasTokenOverlap = tokensA.some(t => tokensB.includes(t));
+        if (hasTokenOverlap) {
+          artistScore = 30;
+        } else {
+          // Both have declared artists, and zero overlap -> hard conflict!
+          return {
+            isMatch: false,
+            confidence: 0,
+            matchReason: 'DIFFERENT_ARTISTS_CONFLICT',
+            details: { artistsA, artistsB }
+          };
+        }
+      }
+    } else {
+      artistScore = 15; // neutral if artist not populated
+    }
+
+    // Date Score
+    let dateScore = 0;
+    if (dateA && dateB) {
+      if (dateA === dateB) {
+        dateScore = 25;
+      } else {
+        // Consecutive dates of a multi-night residency must not merge
+        return {
+          isMatch: false,
+          confidence: 10,
+          matchReason: 'DISTINCT_SHOW_DATE_OR_RESIDENCY',
+          details: { dateA, dateB }
+        };
+      }
+    } else {
+      dateScore = 10;
+    }
+
+    // Venue Score
+    let venueScore = 0;
+    if (venueA && venueB) {
+      const vNormA = this.normalizeVenue(venueA, cityA);
+      const vNormB = this.normalizeVenue(venueB, cityB);
+      if (vNormA.venue_id && vNormB.venue_id && vNormA.venue_id === vNormB.venue_id) {
+        venueScore = 20;
+      } else if (venueA.includes(venueB) || venueB.includes(venueA)) {
+        venueScore = 15;
+      } else {
+        venueScore = 5;
+      }
+    } else {
+      venueScore = 10;
+    }
+
+    // City Score
+    let cityScore = (cityA && cityB && cityA === cityB) ? 10 : 5;
+
+    // Title Semantic Similarity (0 - 10)
+    const titleSim = this.calculateTokenSimilarity(normTitleA, normTitleB);
+    const titleScore = Math.round(titleSim * 10);
+
+    const totalConfidence = Math.min(100, artistScore + dateScore + venueScore + cityScore + titleScore);
+    const isMatch = totalConfidence >= 80;
+
+    return {
+      isMatch,
+      confidence: totalConfidence,
+      matchReason: isMatch ? 'STRONG_MULTI_FACTOR_ENTITY_MATCH' : 'INSUFFICIENT_MATCH_CONFIDENCE',
+      details: {
+        artistScore,
+        dateScore,
+        venueScore,
+        cityScore,
+        titleScore,
+        totalConfidence
+      }
+    };
+  }
 }
 
 module.exports = {
