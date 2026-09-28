@@ -58,7 +58,7 @@ class AdapterRegistry {
       adapterInstance = new LiveNationAdapter(sourceId, options);
     } else if (sourceId.includes('venue') || sourceId.includes('league')) {
       adapterInstance = new VenueAdapter(sourceId, { venueName: srcMeta.source_name, ...options });
-    } else if (sourceId.includes('instagram') || sourceId.includes('social') || srcMeta.source_type === 'PROMOTER_OFFICIAL_SOCIAL') {
+    } else if (sourceId.includes('instagram') || sourceId.includes('social') || sourceId.includes('ig-') || sourceId.includes('infokonser') || srcMeta.adapter === 'SocialDiscoveryAdapter' || srcMeta.source_type === 'PROMOTER_OFFICIAL_SOCIAL') {
       adapterInstance = new SocialDiscoveryAdapter(sourceId, { accountHandle: srcMeta.account_handle, ...options });
     } else if (sourceId.includes('promoter') || sourceId.includes('assoc')) {
       adapterInstance = new PromoterAdapter(sourceId, { promoterName: srcMeta.source_name, ...options });
