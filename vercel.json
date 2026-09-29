@@ -1,5 +1,4 @@
 {
-  "name": "argus-trust-infrastructure",
   "version": 2,
   "functions": {
     "api/index.js": {
@@ -32,7 +31,7 @@
   "crons": [
     {
       "path": "/api/discovery/lifecycle/cron",
-      "schedule": "0 * * * *"
+      "schedule": "0 17 * * *"
     }
   ]
 }
