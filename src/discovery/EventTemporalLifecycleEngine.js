@@ -346,12 +346,12 @@ class EventTemporalLifecycleEngine {
       return LIFECYCLE_STATUS.LIVE;
     }
 
-    // Stage 3: Event has ended, but within H+48 archive grace period
-    if (nowMs > endMs && nowMs < archiveMs) {
+    // Stage 3: Event has ended, but within H+48 / H+3 archive grace period
+    if (nowMs > endMs && nowMs < archiveMs && !this.isEventArchived(event, now)) {
       return LIFECYCLE_STATUS.COMPLETED;
     }
 
-    // Stage 4: Event has passed H+48 hours (Archive Eligibility)
+    // Stage 4: Event has passed H+48 hours / H+3 (Archive Eligibility)
     const eventId = event.event_id || event.id;
     const hasOpenOps = this.hasOpenPostEventOperations(eventId);
 
@@ -360,6 +360,70 @@ class EventTemporalLifecycleEngine {
     }
 
     return LIFECYCLE_STATUS.ARCHIVED;
+  }
+
+  /**
+   * Returns YYYY-MM-DD in Asia/Jakarta timezone (WIB = UTC+7).
+   */
+  static getJakartaDateString(dateInput = new Date()) {
+    const d = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
+    if (isNaN(d.getTime())) return new Date().toISOString().substring(0, 10);
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(d);
+  }
+
+  /**
+   * Deterministic predicate: has this event concluded / expired?
+   * Timezone: Asia/Jakarta (WIB = UTC+7) — ALL date calculations use this timezone.
+   * Multi-day event rule: uses the last day (end_date).
+   */
+  static isEventExpired(event, now = new Date()) {
+    if (!event) return false;
+    const rawStatus = (event.status || event.lifecycle_status || '').toUpperCase();
+    if (rawStatus === 'CANCELLED') {
+      return true;
+    }
+    const temporal = this.computeTemporalAttributes(event);
+    const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
+    const endMs = new Date(temporal.event_end_at).getTime();
+    if (nowMs > endMs) return true;
+
+    // Check Asia/Jakarta calendar date vs event end date
+    const currentJakartaDate = this.getJakartaDateString(now);
+    const eventEndDate = temporal.end_date || temporal.start_date;
+    if (eventEndDate && eventEndDate < currentJakartaDate) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Deterministic predicate: is this event eligible for ARCHIVE?
+   * H+3 Archive Rule:
+   * Event day (H): Active, visible
+   * H+1: Still visible (grace period)
+   * H+2: Still visible (grace period)
+   * H+3: REMOVED from homepage, moved to ARCHIVE
+   * e.g., Event on 2026-09-29 -> at 2026-09-30 = not archived (H+1); at 2026-10-02 = ARCHIVED (H+3)
+   */
+  static isEventArchived(event, now = new Date()) {
+    if (!event) return false;
+    const temporal = this.computeTemporalAttributes(event);
+    const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
+    const archiveMs = new Date(temporal.archive_at).getTime();
+    if (nowMs >= archiveMs) return true;
+
+    // Check calendar day difference in Asia/Jakarta (>= 3 days difference = H+3)
+    const currentJakartaDate = this.getJakartaDateString(now);
+    const eventEndDate = temporal.end_date || temporal.start_date;
+    if (eventEndDate) {
+      const eDate = new Date(`${eventEndDate}T00:00:00+07:00`);
+      const nDate = new Date(`${currentJakartaDate}T00:00:00+07:00`);
+      const diffDays = Math.round((nDate - eDate) / (24 * 60 * 60 * 1000));
+      if (diffDays >= 3) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -442,7 +506,11 @@ class EventTemporalLifecycleEngine {
       return false;
     }
 
-    // Explicit Defense-in-depth H+2 check:
+    if (this.isEventArchived(event, now)) {
+      return false;
+    }
+
+    // Explicit Defense-in-depth H+2/H+3 check:
     const temporal = this.computeTemporalAttributes(event);
     const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
     const endMs = new Date(temporal.event_end_at).getTime();
@@ -493,12 +561,15 @@ class EventTemporalLifecycleEngine {
     const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
     const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
     const endMs = new Date(temporal.event_end_at).getTime();
-    if (nowMs > endMs + graceMs) {
+    const isArchived = this.isEventArchived(event, now) || (nowMs > endMs + graceMs);
+    if (isArchived) {
       event.public_visibility = false;
       event.homepage_visibility = false;
       event.public_upcoming = false;
       const hasOpenOps = this.hasOpenPostEventOperations(eventId);
       event.archive_status = hasOpenOps ? LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS : LIFECYCLE_STATUS.ARCHIVED;
+      event.lifecycle_status = event.archive_status;
+      event.status = event.archive_status;
       if (!event.archived_at) {
         event.archived_at = (now instanceof Date ? now : new Date(now)).toISOString();
       }
@@ -706,5 +777,8 @@ module.exports = {
   TERMINAL_ORDER_STATUSES,
   NON_TERMINAL_ORDER_STATUSES,
   TERMINAL_ESCROW_STATUSES,
-  NON_TERMINAL_ESCROW_STATUSES
+  NON_TERMINAL_ESCROW_STATUSES,
+  isEventExpired: EventTemporalLifecycleEngine.isEventExpired.bind(EventTemporalLifecycleEngine),
+  isEventArchived: EventTemporalLifecycleEngine.isEventArchived.bind(EventTemporalLifecycleEngine),
+  getJakartaDateString: EventTemporalLifecycleEngine.getJakartaDateString.bind(EventTemporalLifecycleEngine)
 };

@@ -25,7 +25,8 @@ const JOB_TYPES = {
   EVENT_REFRESH_DAILY: 'EVENT_REFRESH_DAILY',
   EVENT_VERIFICATION_DAILY: 'EVENT_VERIFICATION_DAILY',
   SOURCE_HEALTH_CHECK: 'SOURCE_HEALTH_CHECK',
-  EXPIRATION_SWEEP: 'EXPIRATION_SWEEP'
+  EXPIRATION_SWEEP: 'EXPIRATION_SWEEP',
+  EVENT_LIFECYCLE_SWEEP: 'EVENT_LIFECYCLE_SWEEP'
 };
 
 const JOB_STATUS = {
@@ -110,6 +111,17 @@ class EventIngestionScheduler {
       run_count: 0,
       enabled: false
     });
+
+    this.jobs.set(JOB_TYPES.EVENT_LIFECYCLE_SWEEP, {
+      name: JOB_TYPES.EVENT_LIFECYCLE_SWEEP,
+      description: 'Hourly automated lifecycle transition: UPCOMING -> IN_PROGRESS -> COMPLETED -> ARCHIVED (H+3)',
+      cronExpression: '0 * * * *', // Hourly
+      status: JOB_STATUS.IDLE,
+      last_run_at: null,
+      last_result: null,
+      run_count: 0,
+      enabled: false
+    });
   }
 
   /**
@@ -134,6 +146,10 @@ class EventIngestionScheduler {
       switch (jobName) {
         case JOB_TYPES.EXPIRATION_SWEEP:
           result = this._runExpirationSweep();
+          break;
+
+        case JOB_TYPES.EVENT_LIFECYCLE_SWEEP:
+          result = await this._runLifecycleSweep();
           break;
 
         case JOB_TYPES.SOURCE_HEALTH_CHECK:
@@ -180,6 +196,23 @@ class EventIngestionScheduler {
       expired_count: expiredIds.length,
       expired_event_ids: expiredIds,
       timestamp: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Automated Lifecycle Sweep: reconciles all canonical events (H+3 Archive).
+   */
+  async _runLifecycleSweep() {
+    const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
+    const now = new Date();
+    const res = await EventTemporalLifecycleEngine.reconcileAllEvents(now, 'SCHEDULER_LIFECYCLE');
+    return {
+      job: JOB_TYPES.EVENT_LIFECYCLE_SWEEP,
+      evaluated_count: res.counts.total,
+      archived_count: (res.counts.archived || 0) + (res.counts.archived_with_ops || 0),
+      transitioned_count: res.counts.transitioned,
+      counts: res.counts,
+      timestamp: res.evaluated_at
     };
   }
 

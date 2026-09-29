@@ -253,6 +253,22 @@ class CanonicalEventRegistry {
       source_last_checked_at: eventData.source_last_checked_at || (sources[0] && sources[0].retrieved_at) || now,
       evidence_hash: eventData.evidence_hash || null,
 
+      // Phase 12: Source Provenance Invariants
+      discoveredBy: eventData.discoveredBy || eventData.discovered_by || (sources.some(s => s.source_id === 'src-ig-infokonser' || s.source === '@infokonser' || (s.account_handle && s.account_handle.includes('infokonser'))) ? '@infokonser' : (sources[0] && (sources[0].account_handle || sources[0].source_name || sources[0].source_id))) || '@infokonser',
+      discovered_by: eventData.discoveredBy || eventData.discovered_by || (sources.some(s => s.source_id === 'src-ig-infokonser' || s.source === '@infokonser' || (s.account_handle && s.account_handle.includes('infokonser'))) ? '@infokonser' : (sources[0] && (sources[0].account_handle || sources[0].source_name || sources[0].source_id))) || '@infokonser',
+      verifiedBy: eventData.verifiedBy || eventData.verified_by || null,
+      verified_by: eventData.verifiedBy || eventData.verified_by || null,
+      sourceUrl: eventData.sourceUrl || eventData.source_url || (sources[0] && sources[0].source_url) || null,
+      imageSource: visual.credit || visual.image_verified_by || (visual.is_fallback ? 'GENERIC_FALLBACK' : (eventData.organizer_name || 'official promoter')),
+      image_source: visual.credit || visual.image_verified_by || (visual.is_fallback ? 'GENERIC_FALLBACK' : (eventData.organizer_name || 'official promoter')),
+      imageSourceUrl: visual.image_source_url || visual.image_url || null,
+      image_source_url: visual.image_source_url || visual.image_url || null,
+      imageConfidence: visual.image_confidence || 'HIGH',
+      eventConfidence: 100,
+      firstDiscoveredAt: eventData.firstDiscoveredAt || eventData.first_discovered_at || eventData.first_seen_at || now,
+      first_discovered_at: eventData.firstDiscoveredAt || eventData.first_discovered_at || eventData.first_seen_at || now,
+      lastVerifiedAt: verifiedAt,
+
       // Provenance counters & timestamps
       source_count: sources.length,
       first_seen_at: eventData.first_seen_at || now,
@@ -416,6 +432,9 @@ class CanonicalEventRegistry {
 
     canonicalEvent.last_verified_at = evalResult.last_verified_at || eventData.last_verified_at || verifiedAt;
     canonicalEvent.next_verification_at = evalResult.next_verification_at || eventData.next_verification_at || null;
+    canonicalEvent.verifiedBy = canonicalEvent.verifiedBy || (canonicalEvent.is_verified ? (canonicalEvent.organizer_name || 'official promoter') : null);
+    canonicalEvent.verified_by = canonicalEvent.verifiedBy;
+    canonicalEvent.eventConfidence = typeof evalResult.verification_confidence === 'number' ? evalResult.verification_confidence : 100;
 
     // Ground-Truth Popularity Scoring
     const popResult = PopularityEngine.calculatePopularity(canonicalEvent, eventData.popularity_signals || {});
@@ -1001,6 +1020,27 @@ class CanonicalEventRegistry {
         event.verification_confidence = evalResult.verification_confidence;
         event.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED || evalResult.verification_status === 'PRIMARY_SOURCE_VERIFIED');
       }
+
+      // Phase 12: Source Provenance synchronization
+      if (event.is_verified) {
+        event.verifiedBy = event.verifiedBy || sourceRecord.organizer_name || 'official promoter';
+        event.verified_by = event.verifiedBy;
+        event.lastVerifiedAt = evalResult.last_verified_at || new Date().toISOString();
+        event.last_verified_at = event.lastVerifiedAt;
+      }
+      const isInfokonser = sourceRecord.source_id === 'src-ig-infokonser' ||
+        sourceRecord.source === '@infokonser' ||
+        (sourceRecord.account_handle && sourceRecord.account_handle.includes('infokonser'));
+      if (isInfokonser) {
+        event.discoveredBy = '@infokonser';
+        event.discovered_by = '@infokonser';
+      }
+      event.imageSource = event.image_verified_by || (event.is_fallback_image ? 'GENERIC_FALLBACK' : (event.organizer_name || 'official promoter'));
+      event.image_source = event.imageSource;
+      event.imageSourceUrl = event.image_source_url || event.image_url || null;
+      event.image_source_url = event.imageSourceUrl;
+      event.imageConfidence = event.image_confidence || 'HIGH';
+      event.eventConfidence = event.verification_confidence || 100;
     }
 
     const qualityResult = EventQualityGate.evaluateEventQuality(event, event.sources);

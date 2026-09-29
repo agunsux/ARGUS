@@ -621,8 +621,10 @@ function handleGetEvents(req, res) {
   res.setHeader('Expires', '0');
 
   let allEvents = canonicalRegistry.getAllEvents();
-  const showAllOrPast = include_past === 'true' || scope === 'all';
-  const now = new Date();
+  const showAllOrPast = include_past === 'true' || scope === 'all' || req.query.include_archived === 'true';
+  const now = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
+    ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
+    : new Date();
 
   const searchTerm = (q || req.query.search || req.query.query || '').trim();
 
@@ -717,6 +719,8 @@ function handleGetEvents(req, res) {
       if (evStatus === 'ARCHIVED' || evLifecycle === 'ARCHIVED' ||
           evStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS' || evLifecycle === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
       if (e.archive_status === 'ARCHIVED' || e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
+      if (EventTemporalLifecycleEngine.isEventArchived(e, now)) return false;
+      if (EventTemporalLifecycleEngine.isEventExpired(e, now)) return false;
       if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
       if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
           ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
@@ -829,6 +833,38 @@ router.get('/api/events', handleGetEvents);
 router.get('/api/discovery/events', handleGetEvents);
 
 /**
+ * GET /api/events/archived and GET /api/discovery/events/archived
+ * Phase 9: Returns preserved archived events (not shown on default homepage)
+ */
+function handleGetArchivedEvents(req, res) {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
+  const now = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
+    ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
+    : new Date();
+
+  const allEvents = canonicalRegistry.getAllEvents();
+  const archived = allEvents.filter(e => {
+    return e.archive_status === 'ARCHIVED' ||
+      e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS' ||
+      (e.status || '').toUpperCase() === 'ARCHIVED' ||
+      (e.lifecycle_status || '').toUpperCase() === 'ARCHIVED' ||
+      EventTemporalLifecycleEngine.isEventArchived(e, now);
+  });
+
+  res.json({
+    success: true,
+    total: archived.length,
+    events: archived
+  });
+}
+
+router.get('/api/events/archived', handleGetArchivedEvents);
+router.get('/api/discovery/events/archived', handleGetArchivedEvents);
+
+/**
  * GET /api/events/home-feed
  * Delivers structured landing sections:
  * - coming_soon
@@ -861,6 +897,7 @@ router.get('/api/events/home-feed', (req, res) => {
     if (evStatus === 'ARCHIVED' || evLifecycle === 'ARCHIVED' ||
         evStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS' || evLifecycle === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
     if (e.archive_status === 'ARCHIVED' || e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
+    if (EventTemporalLifecycleEngine.isEventArchived(e, now)) return false;
     if (e.homepage_visibility === false) return false;
 
     // Defense-in-depth: query-time H+2 check (now > event_end_at + 48h)
@@ -1878,4 +1915,48 @@ router.get('/api/discovery/admin/inventory-report', (req, res) => {
   }
 });
 
+/**
+ * GET/POST /api/discovery/lifecycle/cron
+ * Also mapped to /api/cron/lifecycle
+ * Phase 14: Vercel Cron Endpoint: Automatic Event Lifecycle Reconciler (H+3 Archive Engine)
+ */
+async function handleLifecycleCron(req, res) {
+  try {
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret) {
+      const authHeader = req.headers.authorization;
+      const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+      const querySecret = req.query.secret;
+      if (bearerToken !== cronSecret && querySecret !== cronSecret) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Invalid cron secret' });
+      }
+    }
+
+    const now = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
+      ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
+      : new Date();
+
+    const result = await EventTemporalLifecycleEngine.reconcileAllEvents(now, 'VERCEL_CRON');
+    const archivedCount = (result.counts.archived || 0) + (result.counts.archived_with_ops || 0);
+
+    res.json({
+      success: true,
+      evaluated_count: result.counts.total,
+      archived_count: archivedCount,
+      transitioned_count: result.counts.transitioned,
+      counts: result.counts,
+      timestamp: result.evaluated_at,
+      transitions: result.transitions
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+router.get('/api/discovery/lifecycle/cron', handleLifecycleCron);
+router.post('/api/discovery/lifecycle/cron', handleLifecycleCron);
+router.get('/api/cron/lifecycle', handleLifecycleCron);
+router.post('/api/cron/lifecycle', handleLifecycleCron);
+
 module.exports = router;
+

@@ -2791,9 +2791,11 @@ class SourceRegistry {
         active_status: SOURCE_STATUS.ACTIVE,
         terms_reference: 'Public Social Discovery Media',
         robots_policy: 'API_OR_MANUAL_REVIEW',
-        priority: 2,
+        priority: 1,
+        is_primary_discovery: true,
+        is_primary_discovery_source: true,
         reliability_score: 0.85,
-        notes: 'Primary Indonesian local concert discovery channel (@infokonser). AUDITED: Instagram profiles are login-gated and Meta Terms of Service prohibit automated collection, therefore NO scraping is performed. Registered strictly as a Tier 3 discovery signal; announcements must be corroborated by an official promoter, venue, artist or ticketing source before an event can become publicly verified.'
+        notes: 'PRIMARY DISCOVERY SOURCE: Primary Indonesian local concert discovery channel (@infokonser). PRIMARY DISCOVERY SOURCE ≠ PRIMARY TRUTH SOURCE. Prioritized for discovering upcoming Indonesian concerts and festivals; candidate announcements must be corroborated by an official promoter, venue, artist or ticketing source before an event can become publicly verified.'
       },
       {
         source_id: 'src-ig-livenationasia',

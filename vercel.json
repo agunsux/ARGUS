@@ -28,5 +28,11 @@
   "env": {
     "NODE_ENV": "production",
     "ARGUS_REAL_SOURCE_SEED": "true"
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/discovery/lifecycle/cron",
+      "schedule": "0 * * * *"
+    }
+  ]
 }
