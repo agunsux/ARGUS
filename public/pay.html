@@ -165,25 +165,10 @@
           </select>
         </div>
 
-        <div class="form-group">
-          <label for="channelSelect" style="display: flex; justify-content: space-between; align-items: center;">
-            <span>Metode Pembayaran (Escrow Protected):</span>
-            <span class="badge badge-success" style="font-size: 10px;"><i class="fa-solid fa-shield-check"></i> RCB Rail</span>
-          </label>
-          <select id="channelSelect" class="form-control mono">
-            <option value="QRIS">QRIS Standar Nasional (BCA, GoPay, OVO, Dana, ShopeePay)</option>
-            <option value="VA_BCA">BCA Virtual Account</option>
-            <option value="VA_MANDIRI">Mandiri Virtual Account</option>
-            <option value="VA_BRI">BRI Virtual Account</option>
-            <option value="VA_BNI">BNI Virtual Account</option>
-            <option value="VA_PERMATA">Permata Virtual Account</option>
-          </select>
-        </div>
-
         <div class="notice-box notice-info" style="font-size: 12px;">
           <i class="fa-solid fa-circle-info"></i>
           <div>
-            <strong>Rekening Penampungan Terlindungi (Escrow):</strong> Dana ditahan di ledger internal Tikum dan diteruskan ke penjual H+1 setelah kehadiran Anda terverifikasi fisik di venue.
+            <strong>Keterbukaan Integrasi Gateway:</strong> Pada tahap pilot saat ini, transaksi diproses melalui simulasi rekening penampungan internal Tikum. Dana ditahan di ledger kami hingga PIC lapangan mencatat verifikasi masuk venue.
           </div>
         </div>
 
@@ -195,78 +180,6 @@
           </button>
           <button id="btnOpenOfferModal" class="btn btn-secondary" style="flex: 1; min-width: 220px; padding: 14px; font-size: 14px; border-color: #3b82f6; color: #60a5fa;" onclick="openOfferModal()">
             <i class="fa-solid fa-handshake"></i> Ajukan Tawaran Harga
-          </button>
-        </div>
-      </div>
-
-      <!-- Payment Instructions Card (Shown after order creation) -->
-      <div id="paymentInstructionCard" class="card" style="display: none; border-color: #38bdf8; background: rgba(56, 189, 248, 0.04);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #1e293b; padding-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-          <div>
-            <span class="hero-pill" style="margin-bottom: 4px;"><i class="fa-solid fa-clock"></i> MENUNGGU PEMBAYARAN</span>
-            <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin: 4px 0 0 0;">Instruksi Pembayaran Aman</h3>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-size: 11px; color: var(--text-muted);">Sisa Waktu Pembayaran:</div>
-            <div id="payCountdown" class="mono" style="font-size: 18px; font-weight: 800; color: #f59e0b;">15:00</div>
-          </div>
-        </div>
-
-        <div class="card" style="background: #090d16; border-color: #1e293b; margin-bottom: 16px;">
-          <div class="price-row">
-            <span>Nominal Tagihan:</span>
-            <strong id="instructionAmount" class="mono" style="color: #34d399; font-size: 18px;">-</strong>
-          </div>
-          <div class="price-row">
-            <span>Metode:</span>
-            <span id="instructionMethod" class="badge badge-info">-</span>
-          </div>
-          <div class="price-row">
-            <span>Kode Referensi Gateway (RCB):</span>
-            <code id="instructionProviderRef" class="mono" style="color: var(--cyan); font-size: 12px;">-</code>
-          </div>
-        </div>
-
-        <!-- QRIS Container -->
-        <div id="qrisContainer" style="display: none; text-align: center; padding: 20px; background: #0b1120; border-radius: 8px; border: 1px solid #1e293b; margin-bottom: 16px;">
-          <div style="font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 12px;">
-            <i class="fa-solid fa-qrcode" style="color: #38bdf8;"></i> Pindai Kode QRIS Menggunakan Aplikasi Bank / e-Wallet Anda:
-          </div>
-          <div style="background: #fff; padding: 16px; display: inline-block; border-radius: 8px; margin-bottom: 12px;">
-            <img id="qrisImage" src="" alt="QRIS QR Code" style="width: 200px; height: 200px; display: block; object-fit: contain;">
-          </div>
-          <div style="font-size: 11px; color: var(--text-muted); max-width: 440px; margin: 0 auto 12px;">
-            Dukung semua aplikasi pembayaran nasional berlisensi Bank Indonesia (BCA Mobile, Livin' Mandiri, BRImo, BNI Mobile, GoPay, OVO, Dana, ShopeePay, LinkAja).
-          </div>
-          <div style="display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap;">
-            <button class="btn btn-secondary btn-sm" onclick="copyQrisString()"><i class="fa-regular fa-copy"></i> Salin Raw QR String</button>
-            <input type="hidden" id="rawQrisInput" value="">
-          </div>
-        </div>
-
-        <!-- Virtual Account Container -->
-        <div id="vaContainer" style="display: none; background: #0b1120; padding: 20px; border-radius: 8px; border: 1px solid #1e293b; margin-bottom: 16px;">
-          <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Nomor Rekening Virtual Account:</div>
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px; flex-wrap: wrap; gap: 10px;">
-            <span id="vaNumberDisplay" class="mono" style="font-size: 24px; font-weight: 800; color: #fff; letter-spacing: 1px;">-</span>
-            <button class="btn btn-secondary btn-sm" onclick="copyVaNumber()"><i class="fa-regular fa-copy"></i> Salin Nomor</button>
-          </div>
-          <div style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">
-            Nama Akun: <strong style="color: #cbd5e1;">TIKUM ESCROW INDONESIA</strong>
-          </div>
-        </div>
-
-        <!-- Payment Polling Status Indicator -->
-        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #94a3b8; background: rgba(15, 23, 42, 0.6); padding: 10px 14px; border-radius: 6px; border: 1px solid #1e293b;">
-          <i class="fa-solid fa-circle-notch fa-spin" style="color: #38bdf8;"></i>
-          <span>Menunggu konfirmasi pembayaran otomatis dari payment gateway RCB... Halaman akan beralih otomatis.</span>
-        </div>
-
-        <!-- Sandbox Simulation Button (Pilot/Dev Mode Only) -->
-        <div id="sandboxSimulateSection" style="margin-top: 16px; padding-top: 14px; border-top: 1px dashed #334155; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-flask"></i> Sandbox Testing Rail</span>
-          <button id="btnSimulateSandboxPayment" class="btn btn-secondary btn-sm" style="border-color: #34d399; color: #34d399;" onclick="simulateSandboxWebhookPayment()">
-            <i class="fa-solid fa-bolt"></i> Simulasikan Webhook Bayar (Sandbox)
           </button>
         </div>
       </div>
@@ -573,24 +486,19 @@
       }
     }
 
-    let activePaymentPollInterval = null;
-    let activePaymentRecord = null;
-    let activeOrderId = null;
-
     async function handleCreateOrder() {
       if (!currentListing) return;
 
       const btn = document.getElementById('btnOrderSubmit');
       const errEl = document.getElementById('orderErrorMsg');
       const buyerId = document.getElementById('buyerSelect').value;
-      const channel = document.getElementById('channelSelect').value || 'QRIS';
 
       errEl.style.display = 'none';
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyiapkan Pesanan & Gateway...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses Pesanan di Ledger...';
 
       try {
-        // Step 1: Create Order in TIKUM domain ledger
+        // Step 1: Create Order
         const resOrder = await fetch('/api/mvp/buyer/order', {
           method: 'POST',
           headers: { 
@@ -609,179 +517,43 @@
         }
 
         const createdOrder = orderData.order;
-        activeOrderId = createdOrder.id;
 
-        // Step 2: Create Canonical Payment Intent with chosen provider rail (RCB)
-        const resPayment = await fetch('/api/v1/payments/create', {
+        // Step 2: Lock escrow payment (pilot simulated bank transfer)
+        const resPay = await fetch('/api/mvp/buyer/pay', {
           method: 'POST',
-          headers: {
+          headers: { 
             'Content-Type': 'application/json',
             'x-user-id': buyerId
           },
           body: JSON.stringify({
             orderId: createdOrder.id,
-            channel: channel,
-            buyerId: buyerId
+            providerRef: `BANK-ESCROW-${Date.now()}`,
+            idempotencyKey: `idemp-${createdOrder.id}`,
+            amountPaid: createdOrder.total_amount
           })
         });
 
-        const paymentData = await resPayment.json();
-        if (!resPayment.ok) {
-          throw new Error(paymentData.error || paymentData.message || 'Gagal membuat intent pembayaran gateway');
+        const payData = await resPay.json();
+        if (!resPay.ok) {
+          throw new Error(payData.error || payData.message || 'Gagal mengonfirmasi pembayaran escrow');
         }
 
-        const payment = paymentData.payment;
-        activePaymentRecord = payment;
+        // Display Success State
+        document.getElementById('orderActionCard').style.display = 'none';
+        document.getElementById('resOrderId').innerText = createdOrder.id;
+        document.getElementById('resOrderStatus').innerText = payData.order.status;
+        document.getElementById('resEscrowStatus').innerText = payData.escrow.status;
+        document.getElementById('btnGoTrack').href = `/track?id=${createdOrder.id}`;
 
-        // Step 3: Present Payment Instructions Card
-        renderPaymentInstructions(createdOrder, payment, channel);
+        const successCard = document.getElementById('orderSuccessCard');
+        successCard.style.display = 'block';
+        successCard.scrollIntoView({ behavior: 'smooth' });
 
       } catch (err) {
         errEl.innerText = err.message;
         errEl.style.display = 'block';
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-lock"></i> Beli Langsung (Harga Normal)';
-      }
-    }
-
-    function renderPaymentInstructions(order, payment, channel) {
-      document.getElementById('orderActionCard').style.display = 'none';
-      const instructionCard = document.getElementById('paymentInstructionCard');
-      instructionCard.style.display = 'block';
-      instructionCard.scrollIntoView({ behavior: 'smooth' });
-
-      document.getElementById('instructionAmount').innerText = 'Rp ' + Number(payment.amount || order.total_amount).toLocaleString('id-ID');
-      document.getElementById('instructionMethod').innerText = channel;
-      document.getElementById('instructionProviderRef').innerText = payment.providerRef || payment.paymentId;
-
-      const qrisBox = document.getElementById('qrisContainer');
-      const vaBox = document.getElementById('vaContainer');
-
-      if (channel === 'QRIS') {
-        qrisBox.style.display = 'block';
-        vaBox.style.display = 'none';
-        const qrString = payment.paymentDetails?.qrString || `00020101021226500016ID.CO.TIKUM.WWW011893600999${order.id}5204581253033605802ID5913TIKUM_ESCROW6007BANDUNG6304${order.id.slice(-4)}`;
-        document.getElementById('rawQrisInput').value = qrString;
-        document.getElementById('qrisImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrString)}`;
-      } else {
-        qrisBox.style.display = 'none';
-        vaBox.style.display = 'block';
-        const vaNum = payment.paymentDetails?.vaNumber || '7999' + Math.floor(1000000000 + Math.random() * 9000000000);
-        document.getElementById('vaNumberDisplay').innerText = vaNum;
-      }
-
-      // Start Countdown
-      startPaymentCountdown(15 * 60);
-
-      // Start Polling for payment confirmation
-      startPaymentPolling(payment.paymentId, order.id);
-    }
-
-    function startPaymentCountdown(durationSeconds) {
-      let remaining = durationSeconds;
-      const display = document.getElementById('payCountdown');
-      const timer = setInterval(() => {
-        remaining--;
-        if (remaining <= 0) {
-          clearInterval(timer);
-          display.innerText = '00:00 (Kedaluwarsa)';
-          display.style.color = '#ef4444';
-          return;
-        }
-        const m = Math.floor(remaining / 60).toString().padStart(2, '0');
-        const s = (remaining % 60).toString().padStart(2, '0');
-        display.innerText = `${m}:${s}`;
-      }, 1000);
-    }
-
-    function startPaymentPolling(paymentId, orderId) {
-      if (activePaymentPollInterval) clearInterval(activePaymentPollInterval);
-      activePaymentPollInterval = setInterval(async () => {
-        try {
-          const res = await fetch(`/api/v1/payments/${encodeURIComponent(paymentId)}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.payment && data.payment.status === 'PAYMENT_PAID') {
-              clearInterval(activePaymentPollInterval);
-              showOrderSuccess(orderId, 'PAID', 'HELD');
-              return;
-            }
-          }
-        } catch (e) {}
-      }, 3000);
-    }
-
-    function showOrderSuccess(orderId, orderStatus, escrowStatus) {
-      document.getElementById('paymentInstructionCard').style.display = 'none';
-      document.getElementById('resOrderId').innerText = orderId;
-      document.getElementById('resOrderStatus').innerText = orderStatus || 'PAID';
-      document.getElementById('resEscrowStatus').innerText = escrowStatus || 'HELD';
-      document.getElementById('btnGoTrack').href = `/track?id=${orderId}`;
-
-      const successCard = document.getElementById('orderSuccessCard');
-      successCard.style.display = 'block';
-      successCard.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function copyQrisString() {
-      const val = document.getElementById('rawQrisInput').value;
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(val);
-        alert('String QRIS berhasil disalin.');
-      } else {
-        prompt('Salin string QRIS berikut:', val);
-      }
-    }
-
-    function copyVaNumber() {
-      const val = document.getElementById('vaNumberDisplay').innerText;
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(val);
-        alert('Nomor Virtual Account disalin: ' + val);
-      } else {
-        prompt('Salin nomor VA:', val);
-      }
-    }
-
-    async function simulateSandboxWebhookPayment() {
-      if (!activePaymentRecord || !activeOrderId) {
-        alert('Tidak ada transaksi aktif untuk disimulasikan.');
-        return;
-      }
-      const btn = document.getElementById('btnSimulateSandboxPayment');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Webhook...';
-
-      try {
-        const payload = {
-          event: 'PAYMENT_SUCCESS',
-          order_id: activeOrderId,
-          reference_id: activePaymentRecord.providerRef || activePaymentRecord.providerReference,
-          amount: activePaymentRecord.amount,
-          channel: activePaymentRecord.channel || 'QRIS',
-          paid_at: new Date().toISOString()
-        };
-
-        const res = await fetch('/api/v1/payments/webhook/rcb', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-provider': 'rcb'
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || 'Simulasi webhook gagal');
-        }
-
-        if (activePaymentPollInterval) clearInterval(activePaymentPollInterval);
-        showOrderSuccess(activeOrderId, 'PAID', 'HELD');
-      } catch (err) {
-        alert('Simulasi gagal: ' + err.message);
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Simulasikan Webhook Bayar (Sandbox)';
+        btn.innerHTML = '<i class="fa-solid fa-lock"></i> Kunci Tiket &amp; Masuk Antrean Verifikasi Penampungan';
       }
     }
 
@@ -823,6 +595,7 @@
         return;
       }
 
+      const platformFee = Math.round(val * 0.10);
       const rawFee = Math.floor((val * 6) / 100);
       const platformFee = Math.max(10000, Math.min(rawFee, 300000));
       const total = val + platformFee;
