@@ -20,7 +20,8 @@ const LEDGER_ACCOUNTS = {
   TAX_PAYABLE: 'TAX_PAYABLE', // Liability (Taxes withheld and collected owed to DJP)
   PAYMENT_GATEWAY_CLEARING: 'PAYMENT_GATEWAY_CLEARING', // Clearing Asset (Gateway receivables)
   SETTLEMENT_CLEARING: 'SETTLEMENT_CLEARING', // Clearing (Disbursal bank account)
-  REFUND_REVERSAL_ACCOUNT: 'REFUND_REVERSAL_ACCOUNT' // Contra-Account for refunds
+  REFUND_REVERSAL_ACCOUNT: 'REFUND_REVERSAL_ACCOUNT', // Contra-Account for refunds
+  PROVIDER_FEE_EXPENSE: 'PROVIDER_FEE_EXPENSE' // Gateway processing fee expense
 };
 
 const FINANCIAL_EVENT_TYPES = {
@@ -182,6 +183,7 @@ class FinancialLedger {
     sellerFee,
     buyerTax = 0,
     sellerTax = 0,
+    providerFee = 0,
     actorId = 'SYSTEM'
   }) {
     const price = parseInt(ticketPrice, 10);
@@ -189,8 +191,9 @@ class FinancialLedger {
     const effSellerFee = sellerFee !== undefined ? parseInt(sellerFee, 10) : 0;
     const effBuyerTax = parseInt(buyerTax || 0, 10);
     const effSellerTax = parseInt(sellerTax || 0, 10);
+    const effProviderFee = parseInt(providerFee || 0, 10);
 
-    const buyerTotal = price + effBuyerFee + effBuyerTax;
+    const buyerTotal = price + effBuyerFee + effBuyerTax + effProviderFee;
     const sellerNetPayout = price - effSellerFee - effSellerTax;
     const totalPlatformFee = effBuyerFee + effSellerFee;
     const totalTaxPayable = effBuyerTax + effSellerTax;
@@ -227,12 +230,20 @@ class FinancialLedger {
       });
     }
 
+    if (effProviderFee > 0) {
+      entries.push({
+        account: LEDGER_ACCOUNTS.PROVIDER_FEE_EXPENSE,
+        type: 'CREDIT',
+        amount: effProviderFee
+      });
+    }
+
     return await this.recordTransaction({
       eventType: FINANCIAL_EVENT_TYPES.CAPTURE,
       orderId,
       quoteId,
       actorId,
-      description: `Payment captured for order ${orderId}: Buyer Total Rp ${buyerTotal} (Ticket: ${price}, Buyer Fee: ${effBuyerFee}, Seller Fee: ${effSellerFee}, PPN: ${effBuyerTax}, PPh22: ${effSellerTax})`,
+      description: `Payment captured for order ${orderId}: Buyer Total Rp ${buyerTotal} (Ticket: ${price}, Buyer Fee: ${effBuyerFee}, Seller Fee: ${effSellerFee}, PPN: ${effBuyerTax}, PPh22: ${effSellerTax}, Gateway Fee: ${effProviderFee})`,
       entries
     });
   }

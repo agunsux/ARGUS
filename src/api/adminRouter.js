@@ -19,6 +19,7 @@ const { requireAdmin, resolveUser, isAdminRole, ADMIN_ROLES } = require('../midd
 const { SessionStore } = require('../services/sessionStore');
 const { emailService } = require('../services/emailService');
 const { FinancialLedger } = require('../settlement/FinancialLedger');
+const { PaymentService } = require('../services/payment/PaymentService');
 const { sourceRegistry } = require('../discovery/SourceRegistry');
 const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
 const { cityRegistry } = require('../discovery/CityRegistry');
@@ -1273,12 +1274,25 @@ router.get('/payments', requireAdmin, (req, res) => {
   const payments = state.payments || [];
   const balances = FinancialLedger.getAccountBalances();
 
+  const canonicalPayments = state.canonical_payments || [];
+  const webhooks = state.provider_webhooks || [];
+  const reconciliations = state.payment_reconciliation_logs || [];
+  const settlements = state.settlement_records || state.settlements || [];
+
   res.json({
     balances,
     total_ledger_transactions: ledger.length,
     ledger_transactions: ledger.slice(-50).reverse(),
     total_gateway_payments: payments.length,
-    gateway_payments: payments.slice(-50).reverse()
+    gateway_payments: payments.slice(-50).reverse(),
+    total_canonical_payments: canonicalPayments.length,
+    canonical_payments: canonicalPayments.slice(-50).reverse(),
+    total_provider_webhooks: webhooks.length,
+    provider_webhooks: webhooks.slice(-50).reverse(),
+    total_reconciliation_logs: reconciliations.length,
+    reconciliation_logs: reconciliations.slice(-50).reverse(),
+    total_settlements: settlements.length,
+    subsystem_status: PaymentService ? PaymentService.getSubsystemStatus() : null
   });
 });
 

@@ -45,7 +45,11 @@ const state = {
   tax_audit_logs: [],
   reservations: [],
   deliveries: [],
-  event_lifecycles: []
+  event_lifecycles: [],
+  canonical_payments: [],
+  provider_webhooks: [],
+  settlement_records: [],
+  payment_reconciliation_logs: []
 };
 
 let seqId = 1;
@@ -89,6 +93,11 @@ function resetDatabase() {
   state.magic_link_tokens = [];
   state.email_logs = [];
   state.password_reset_tokens = [];
+  state.canonical_payments = [];
+  state.provider_webhooks = [];
+  state.settlement_records = [];
+  state.payment_reconciliation_logs = [];
+  state.processed_webhooks = new Set();
 
   const isTest = process.env.NODE_ENV === 'test';
   const defaultTestPass = isTest ? 'pilot123' : null;

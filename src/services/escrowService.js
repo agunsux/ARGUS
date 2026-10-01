@@ -675,13 +675,33 @@ class EscrowService {
       refunded_at: escrow.refunded_at
     });
 
+    // Attempt provider rail refund if supported by active provider
+    let providerRefundResult = null;
+    try {
+      const { PaymentService } = require('./payment/PaymentService');
+      const payment = (state.canonical_payments || []).find(p => p.order_id === orderId);
+      if (payment && payment.provider) {
+        providerRefundResult = await PaymentService.requestRefund({
+          orderId,
+          amount: escrow.total_paid,
+          reason: reason || 'BUYER_REFUND',
+          providerName: payment.provider
+        });
+      }
+    } catch (refundErr) {
+      // If capability unsupported or manual refund required, log and proceed with internal ledger reversal
+      await recordAuditLog('REFUND_RAIL', orderId, 'MANUAL_REFUND_REQUIRED', actorId, {
+        reason: refundErr.message,
+        code: refundErr.code
+      });
+    }
+
     // Record balanced refund in FinancialLedger
     try {
       const { FinancialLedger } = require('../settlement/FinancialLedger');
       await FinancialLedger.recordRefund({
         orderId,
         quoteId: order.quote_id || escrow.quote_id || null,
-        ticketPrice: order.ticket_price || escrow.ticket_price || escrow.amount,
         ticketPrice: order.gross_ticket_value || order.ticket_price || escrow.gross_ticket_value || escrow.ticket_price || escrow.amount,
         platformFee: order.platform_fee || order.buyer_fee || 0,
         buyerFee: order.buyer_fee,
@@ -693,7 +713,7 @@ class EscrowService {
       });
     } catch (e) {}
 
-    return { success: true, escrow, order, reason };
+    return { success: true, escrow, order, reason, providerRefund: providerRefundResult };
   }
 
   /**

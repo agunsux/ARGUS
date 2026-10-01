@@ -944,6 +944,14 @@ router.post('/buyer/order', async (req, res) => {
  */
 router.post('/buyer/pay', async (req, res) => {
   try {
+    // Production Security Gate: Direct payment mutation without gateway confirmation is forbidden in production
+    if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_DIRECT_PAYMENT_SIMULATION) {
+      return res.status(403).json({
+        error: 'Direct client payment confirmation is forbidden in production. Payments must be processed through verified gateway webhooks.',
+        code: 'DIRECT_PAYMENT_SIMULATION_FORBIDDEN'
+      });
+    }
+
     const { orderId, providerRef, idempotencyKey, amountPaid } = req.body;
     if (!orderId || !idempotencyKey) {
       return res.status(400).json({ error: 'orderId and idempotencyKey are required' });
@@ -955,6 +963,16 @@ router.post('/buyer/pay', async (req, res) => {
       idempotencyKey,
       amountPaid
     });
+
+    // Synchronize canonical_payments record if present
+    if (state.canonical_payments) {
+      const canonical = state.canonical_payments.find(p => p.order_id === orderId);
+      if (canonical) {
+        canonical.status = 'PAYMENT_PAID';
+        canonical.paid_at = new Date().toISOString();
+        canonical.provider_transaction_id = providerRef;
+      }
+    }
 
     // Provide assigned Event PIC contact for venue meet-up
     const picAssign = state.event_pics.find(ep => ep.event_id === result.order.event_id && ep.status === 'ACTIVE');

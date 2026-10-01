@@ -22,8 +22,12 @@ app.use('/api/discovery/promoters/import', (req, res, next) => {
   });
 });
 
-// Configure body parsing
-app.use(express.json());
+// Configure body parsing (preserve rawBody buffer for cryptographic webhook HMAC verification)
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // Initialize DB
@@ -140,6 +144,10 @@ app.use(express.static(publicDir, sendFileOpts));
 
 // Mount Trust APIs
 app.use(trustApi);
+
+// Mount Canonical Payment & Webhook Router (RCB MVP + Multi-Provider Rails)
+const paymentRouter = require('./api/paymentRouter');
+app.use('/api', paymentRouter);
 
 // Mount MVP Transaction Trust Loop APIs
 const mvpRouter = require('./api/mvpRouter');
