@@ -259,7 +259,7 @@ const THREAT_SCENARIOS = [
 
       await ingestionPipeline.ingestEvent({
         name: 'Cancelled Tour Test',
-        start_date: '2026-10-01',
+        start_date: '2026-11-01',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT'
@@ -268,7 +268,7 @@ const THREAT_SCENARIOS = [
       // Cancellation announced
       await ingestionPipeline.ingestEvent({
         name: 'Cancelled Tour Test',
-        start_date: '2026-10-01',
+        start_date: '2026-11-01',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT',
@@ -633,7 +633,7 @@ const THREAT_SCENARIOS = [
       // Create and cancel event
       await ingestionPipeline.ingestEvent({
         name: 'Reanimation Test Concert',
-        start_date: '2026-10-01',
+        start_date: '2026-11-01',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT'
@@ -641,7 +641,7 @@ const THREAT_SCENARIOS = [
 
       await ingestionPipeline.ingestEvent({
         name: 'Reanimation Test Concert',
-        start_date: '2026-10-01',
+        start_date: '2026-11-01',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT',

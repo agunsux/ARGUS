@@ -255,7 +255,7 @@ async function run() {
     }
   });
 
-  const firstSlug = feedRes.body.feed[0].slug;
+  const firstSlug = (feedRes.body.feed.find(f => Array.isArray(f.social_discovery_signals) && f.social_discovery_signals.length > 0) || feedRes.body.feed[0]).slug;
   const detailRes = await request(`/events/${firstSlug}`);
   await test('Verified event detail page renders publicly (HTTP 200)', async () => {
     assert.strictEqual(detailRes.status, 200, `Detail page for ${firstSlug} did not render`);

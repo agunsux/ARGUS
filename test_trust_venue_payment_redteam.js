@@ -327,6 +327,24 @@ async function runSuite() {
     const validSig = crypto.createHmac('sha256', apiKey).update(payloadStr).digest('hex');
     const headers = { 'x-signature': validSig };
 
+    // Setup order and escrow in state so EscrowService.recordPayment can transition it
+    state.orders.push({
+      id: 'ord-webhook-01',
+      buyer_id: 'buyer-wh-01',
+      seller_id: 'seller-wh-01',
+      event_id: 'event-coldplay-2026',
+      total_amount: 500000,
+      buyer_total: 500000,
+      status: 'PENDING_PAYMENT'
+    });
+    state.escrows.push({
+      id: 'esc-ord-webhook-01',
+      order_id: 'ord-webhook-01',
+      amount: 500000,
+      total_paid: 500000,
+      status: 'AWAITING_PAYMENT'
+    });
+
     // First arrival: processed
     const firstRes = await PaymentService.handleWebhook({
       providerName: 'ipaymu',
@@ -487,6 +505,7 @@ async function runSuite() {
   });
 
   await asyncTest('FinancialLedger: Records balanced capture and release journal entries', async () => {
+    state.financial_ledger = [];
     const captureTx = await FinancialLedger.recordPaymentCapture({
       orderId: 'ord-ledger-01',
       ticketPrice: 1000000,
