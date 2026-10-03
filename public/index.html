@@ -6,21 +6,31 @@
   <meta name="theme-color" content="#0B0B0C">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Tikum — Verified Ticket Marketplace by Shinerva</title>
-  <meta name="description" content="Tikum adalah platform penemuan seluruh event berbayar dan bertiket di Indonesia dan Asia Tenggara. Konser, Olahraga, Festival, Teater, Komedi, dan Pameran dengan verifikasi sumber resmi dan perlindungan turnstile.">
+  <title>Tikum — Tiket Second. Tanpa Scam. | by Shinerva</title>
+  <meta name="description" content="Marketplace tiket sekunder terpercaya. Dirancang untuk mengurangi penipuan tiket dengan verifikasi resmi, transaksi terlindungi escrow, dan pendampingan PIC di gerbang venue.">
   <link rel="canonical" href="https://tikum.app/">
+
+  <!-- International SEO / Hreflang -->
+  <link rel="alternate" hreflang="id" href="https://tikum.app/">
+  <link rel="alternate" hreflang="en" href="https://tikum.app/">
+  <link rel="alternate" hreflang="zh" href="https://tikum.app/">
+  <link rel="alternate" hreflang="ar" href="https://tikum.app/">
+  <link rel="alternate" hreflang="hi" href="https://tikum.app/">
+  <link rel="alternate" hreflang="es" href="https://tikum.app/">
+  <link rel="alternate" hreflang="fr" href="https://tikum.app/">
+  <link rel="alternate" hreflang="x-default" href="https://tikum.app/">
 
   <!-- OpenGraph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Tikum — Find Every Event Worth Buying a Ticket For">
-  <meta property="og:description" content="Temukan seluruh event berbayar dan bertiket di Indonesia dengan verifikasi sumber resmi dan marketplace sekunder terlindungi.">
+  <meta property="og:title" content="Tikum — Tiket Second. Tanpa Scam. | by Shinerva">
+  <meta property="og:description" content="Marketplace tiket sekunder terpercaya dengan verifikasi resmi, transaksi terlindungi escrow, dan bantuan langsung staf PIC di venue.">
   <meta property="og:url" content="https://tikum.app/">
   <meta property="og:site_name" content="TIKUM">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Tikum — Find Every Event Worth Buying a Ticket For">
-  <meta name="twitter:description" content="Temukan seluruh event berbayar dan bertiket di Indonesia.">
+  <meta name="twitter:title" content="Tikum — Tiket Second. Tanpa Scam. | by Shinerva">
+  <meta name="twitter:description" content="Marketplace tiket sekunder terpercaya dengan verifikasi resmi dan perlindungan turnstile.">
 
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -964,16 +974,20 @@
 <body>
 
   <header class="site-header" style="background:#0B0B0C; border-bottom:1px solid #232326;">
-    <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
+    <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
       <i class="fa-solid fa-ticket brand-logo" style="color:var(--primary); font-size:24px;"></i>
-      <div class="brand-title">Tikum</div>
+      <div style="display:flex; flex-direction:column; line-height:1.15;">
+        <span class="brand-title" style="font-weight:900; font-size:20px; letter-spacing:-0.5px;">Tikum</span>
+        <span class="brand-byline" style="font-size:10.5px; color:#94A3B8; font-weight:700; letter-spacing:0.02em;" data-i18n="brand.tagline">Tiket Second. Tanpa Scam.</span>
+      </div>
     </a>
     <nav class="ln-nav-links">
-      <a class="ln-nav-link" href="#upcoming">Upcoming Shows</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('MUSIC'); return false;">Konser</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('FESTIVAL'); return false;">Festival</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('SPORT'); return false;">Olahraga</a>
-      <a class="ln-nav-link" href="/faq">Bantuan</a>
+      <a class="ln-nav-link" href="#upcoming" data-i18n="nav.events">Upcoming Shows</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('MUSIC'); return false;" data-i18n="nav.concerts">Konser</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('FESTIVAL'); return false;" data-i18n="nav.festivals">Festival</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('SPORT'); return false;" data-i18n="nav.sports">Olahraga</a>
+      <a class="ln-nav-link" href="#howItWorks" data-i18n="nav.howItWorks">Cara Kerja</a>
+      <a class="ln-nav-link" href="/faq" data-i18n="nav.support">Bantuan</a>
     </nav>
     <div class="header-actions" style="display:flex; align-items:center; gap:10px;">
       <span class="ln-nav-link header-location-badge" style="color:#6B7280; cursor:default;"><i class="fa-solid fa-location-dot"></i> Indonesia</span>
@@ -985,13 +999,39 @@
     </div>
   </header>
 
+  <!-- Editorial Hero Section -->
+  <section class="editorial-hero" style="background: radial-gradient(circle at 50% 0%, rgba(85,51,255,0.18) 0%, rgba(4,3,10,0.98) 75%), #04030A; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 56px 20px 42px; text-align: center;">
+    <div style="max-width: 900px; margin: 0 auto;">
+      <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(85,51,255,0.12); border: 1px solid rgba(85,51,255,0.3); border-radius: 999px; padding: 6px 14px; margin-bottom: 18px; font-size: 12px; font-weight: 800; color: #A5B4FC; letter-spacing: 0.04em;">
+        <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i>
+        <span data-i18n="brand.tagline">Tiket Second. Tanpa Scam.</span>
+      </div>
+      <h1 style="font-size: clamp(28px, 5vw, 48px); font-weight: 900; line-height: 1.15; letter-spacing: -0.02em; color: #FFFFFF; margin: 0 0 16px;" data-i18n="hero.headline">
+        Tiket Second. Tanpa Scam.
+      </h1>
+      <p style="font-size: clamp(14px, 2vw, 17px); color: #94A3B8; line-height: 1.6; max-width: 680px; margin: 0 auto 28px;" data-i18n="hero.subhead">
+        Marketplace tiket sekunder terpercaya yang dirancang untuk mengurangi penipuan tiket dengan verifikasi berlapis, transaksi terlindungi escrow, dan bantuan langsung staf PIC di venue.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <a href="#upcoming" class="ln-btn ln-btn-primary" style="padding: 13px 28px; font-size: 13px;" data-i18n="hero.ctaFind">
+          <i class="fa-solid fa-magnifying-glass"></i> Cari Tiket
+        </a>
+        <a href="/create" class="ln-btn ln-btn-ghost" style="padding: 13px 28px; font-size: 13px;" data-i18n="hero.ctaSell">
+          <i class="fa-solid fa-ticket"></i> Jual Tiket
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- Featured event hero (Live Nation Asia style: poster-led "Just Announced") -->
   <section id="heroFeature" class="ln-hero-feature"></section>
 
+  <!-- 3 Trust Pillars + Upfront Transparent Pricing Strip -->
   <div class="trust-strip" style="background:#101012; border-bottom:1px solid #232326;">
-    <div class="trust-item"><i class="fa-solid fa-circle-check"></i> 100% Tiket Terverifikasi</div>
-    <div class="trust-item"><i class="fa-solid fa-lock"></i> Escrow Pembayaran Aman</div>
-    <div class="trust-item"><i class="fa-solid fa-user-shield"></i> PIC Fisik di Gerbang Venue</div>
+    <div class="trust-item"><i class="fa-solid fa-certificate" style="color:var(--primary);"></i> <span data-i18n="trust.pillarVerified">Penjual Terverifikasi (Verified Sellers)</span></div>
+    <div class="trust-item"><i class="fa-solid fa-user-shield" style="color:var(--cyan);"></i> <span data-i18n="trust.pillarVenue">Venue PIC di Lokasi (On-Site Support)</span></div>
+    <div class="trust-item"><i class="fa-solid fa-shield-halved" style="color:#10b981;"></i> <span data-i18n="trust.pillarProtected">Transaksi Terlindungi Escrow</span></div>
+    <div class="trust-item"><i class="fa-solid fa-receipt" style="color:var(--accent);"></i> <span data-i18n="trust.pillarPricing">Biaya Transparan di Muka</span></div>
     <div class="trust-item" id="feedFreshnessItem" style="display:none;"><i class="fa-solid fa-bolt" style="color:#10b981;"></i> <span id="feedFreshnessText">Live Auto-Refresh (H+2 Expiry Engine)</span></div>
   </div>
 
@@ -1036,6 +1076,204 @@
   <main id="mainContent">
     <!-- Dynamic sections go here -->
   </main>
+
+  <!-- How TIKUM Works (Dual Buyer / Seller Journey) -->
+  <section class="landing-section" id="howItWorks">
+    <div class="landing-section-header">
+      <div class="landing-kicker">Alur Transaksi &amp; Keamanan</div>
+      <h2 class="landing-title">Cara Kerja TIKUM</h2>
+      <p class="landing-lead">Proses terstruktur yang dirancang dari listing hingga gerbang venue agar pembeli dan penjual bertransaksi dengan tenang.</p>
+    </div>
+    <div class="how-grid-cols">
+      <!-- Buyer Column -->
+      <div class="how-column">
+        <div class="how-column-header">
+          <i class="fa-solid fa-bag-shopping" style="color: var(--primary); font-size: 18px;"></i>
+          <span class="how-column-title">Untuk Pembeli (Buyer)</span>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">1</div>
+          <div>
+            <div class="how-step-title">Pilih Acara &amp; Tiket Terverifikasi</div>
+            <div class="how-step-desc">Temukan tiket konser, festival, atau olahraga impianmu dari penjual yang telah melalui pemeriksaan sinyal verifikasi.</div>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">2</div>
+          <div>
+            <div class="how-step-title">Periksa Rincian Harga Transparan</div>
+            <div class="how-step-desc">Lihat total biaya bersih di muka tanpa mark-up checkout tersembunyi atau biaya tak terduga.</div>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">3</div>
+          <div>
+            <div class="how-step-title">Bayar Aman Lewat Escrow</div>
+            <div class="how-step-desc">Uang Anda tidak langsung diberikan ke penjual, melainkan ditahan di rekening penampungan internal (escrow) TIKUM.</div>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">4</div>
+          <div>
+            <div class="how-step-title">Masuk Venue Didampingi PIC</div>
+            <div class="how-step-desc">Tukarkan gelang dan lewati turnstile gerbang venue. Staf PIC TIKUM hadir di lokasi untuk mendampingi jika ada kendala.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Seller Column -->
+      <div class="how-column">
+        <div class="how-column-header">
+          <i class="fa-solid fa-ticket" style="color: var(--cyan); font-size: 18px;"></i>
+          <span class="how-column-title">Untuk Penjual (Seller)</span>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">1</div>
+          <div>
+            <div class="how-step-title">Pasang Listing Tiket Asli</div>
+            <div class="how-step-desc">Unggah bukti pemesanan atau tiket asli yang tidak terpakai dengan data kategori, baris, dan kursi yang akurat.</div>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">2</div>
+          <div>
+            <div class="how-step-title">Pemeriksaan &amp; Anti-Duplikasi</div>
+            <div class="how-step-desc">Sistem dan tim TIKUM memverifikasi keaslian dokumen dan mencegah penjualan tiket yang sama lebih dari satu kali.</div>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">3</div>
+          <div>
+            <div class="how-step-title">Pesanan Terkunci &amp; Pembeli Membayar</div>
+            <div class="how-step-desc">Saat ada pembeli, pesanan terkunci dan pembayaran masuk ke escrow resmi sebelum tiket diserahkan.</div>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">4</div>
+          <div>
+            <div class="how-step-title">Pencairan Dana Pasca-Masuk Gate</div>
+            <div class="how-step-desc">Setelah pembeli terkonfirmasi sukses masuk turnstile gate venue, dana otomatis dicairkan ke rekening bank penjual.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Venue PIC Differentiator -->
+  <section class="landing-section" id="venuePic">
+    <div class="venue-pic-box">
+      <div class="venue-pic-icon">
+        <i class="fa-solid fa-user-shield"></i>
+      </div>
+      <div class="venue-pic-content">
+        <div class="landing-kicker" style="color: #A5B4FC;">Diferensiasi Utama TIKUM</div>
+        <h3 class="venue-pic-title">Butuh Bantuan di Venue? Kami Punya Tim di Lokasi.</h3>
+        <p class="venue-pic-desc">
+          Koordinator lapangan (PIC) TIKUM hadir langsung di sekitar venue untuk mendampingi pembeli saat penukaran wristband gelang dan turnstile entry gate. Anda tidak ditinggalkan sendirian menghadapi bot saat hari konser tiba.
+        </p>
+        <div class="venue-pic-badges">
+          <span class="venue-pic-badge"><i class="fa-solid fa-map-pin" style="color: var(--primary);"></i> On-Site Coordinator</span>
+          <span class="venue-pic-badge"><i class="fa-solid fa-door-open" style="color: #10B981;"></i> Turnstile Assistance</span>
+          <span class="venue-pic-badge"><i class="fa-solid fa-handshake" style="color: var(--cyan);"></i> Fast Gate Dispute Resolution</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Architecture & Invariants -->
+  <section class="landing-section" id="trustArchitecture">
+    <div class="landing-section-header">
+      <div class="landing-kicker">Fondasi Perlindungan</div>
+      <h2 class="landing-title">Arsitektur Kepercayaan TIKUM</h2>
+      <p class="landing-lead">Tiga pilar operasional nyata untuk menekan risiko penipuan tiket sekunder.</p>
+    </div>
+    <div class="trust-grid">
+      <div class="trust-card">
+        <div class="trust-card-icon"><i class="fa-solid fa-certificate"></i></div>
+        <h4 class="trust-card-title">Sinyal Penjual Terverifikasi</h4>
+        <p class="trust-card-desc">Setiap penjual melalui kontrol identitas, riwayat transaksi, dan rekam jejak penyelesaian tiket sebelum listing tayang.</p>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-icon"><i class="fa-solid fa-vault"></i></div>
+        <h4 class="trust-card-title">Escrow Terkunci Hingga Gate</h4>
+        <p class="trust-card-desc">Dana pembeli tersimpan aman di rekening penampungan internal dan baru dilepas ke penjual saat pembeli lolos gerbang masuk.</p>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-icon"><i class="fa-solid fa-barcode"></i></div>
+        <h4 class="trust-card-title">Pencegahan Tiket Ganda</h4>
+        <p class="trust-card-desc">Sistem buku besar dan audit trail mencegah tiket yang sama didaftarkan atau ditransaksikan dua kali di platform.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Seller Experience Callout -->
+  <section class="landing-section" id="sellerExperience">
+    <div style="background: #101014; border: 1px solid #23232A; border-radius: var(--radius-lg); padding: 32px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+      <div style="max-width: 600px;">
+        <div class="landing-kicker">Pengalaman Penjual</div>
+        <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;">Punya Tiket yang Tidak Bisa Dipakai?</h3>
+        <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin: 0;">
+          Daftarkan tiketmu secara gratis tanpa biaya awal. Dapatkan pembeli dengan harga wajar dan pencairan dana langsung ke rekening bank Anda setelah acara.
+        </p>
+      </div>
+      <a href="/create" class="ln-btn ln-btn-primary" style="padding: 12px 24px; font-size: 13px;">
+        <i class="fa-solid fa-ticket"></i> Pasang Listing Tiket
+      </a>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="landing-section" id="faqPreview">
+    <div class="landing-section-header">
+      <div class="landing-kicker">Pertanyaan Umum</div>
+      <h2 class="landing-title">Pertanyaan yang Sering Diajukan</h2>
+      <p class="landing-lead">Jawaban transparan seputar cara bertransaksi, perlindungan escrow, dan kehadiran staf di venue.</p>
+    </div>
+    <div class="faq-grid">
+      <div class="faq-card">
+        <div class="faq-question"><i class="fa-solid fa-circle-question"></i> Bagaimana TIKUM menekan penipuan tiket?</div>
+        <div class="faq-answer">Kami menggunakan verifikasi dokumen kepemilikan tiket, penahanan dana di escrow sampai penonton masuk gerbang, serta kehadiran staf PIC di lokasi acara.</div>
+      </div>
+      <div class="faq-card">
+        <div class="faq-question"><i class="fa-solid fa-circle-question"></i> Kapan penjual menerima pencairan dana?</div>
+        <div class="faq-answer">Dana ditahan di rekening penampungan internal (escrow) dan baru dicairkan setelah pembeli terkonfirmasi berhasil masuk gerbang turnstile acara.</div>
+      </div>
+      <div class="faq-card">
+        <div class="faq-question"><i class="fa-solid fa-circle-question"></i> Apa peran staf PIC TIKUM di lokasi?</div>
+        <div class="faq-answer">Staf operasional (PIC) TIKUM hadir di sekitar area venue untuk membantu pembeli saat penukaran gelang dan mendampingi jika terjadi kendala pemindaian barcode tiket.</div>
+      </div>
+      <div class="faq-card">
+        <div class="faq-question"><i class="fa-solid fa-circle-question"></i> Bagaimana jika tiket bermasalah di gerbang?</div>
+        <div class="faq-answer">Pembeli dapat langsung melapor ke PIC venue atau sistem dispute. Jika tiket terbukti tidak valid atau sudah dipakai, dana pembeli dikembalikan sesuai kebijakan refund.</div>
+      </div>
+    </div>
+    <div style="text-align: center; margin-top: 20px;">
+      <a href="/faq" style="color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+        <span>Lihat seluruh FAQ &amp; panduan bantuan</span> <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="landing-section" id="finalCta">
+    <div class="final-cta-box">
+      <div class="landing-kicker">Mulai Bertransaksi</div>
+      <h2 style="font-size: clamp(22px, 4vw, 36px); font-weight: 900; color: #fff; margin-bottom: 12px;">
+        Siap Menghadiri Acara Favoritmu?
+      </h2>
+      <p style="font-size: 14px; color: var(--text-muted); max-width: 580px; margin: 0 auto 24px; line-height: 1.6;">
+        Temukan ribuan penikmat musik, olahraga, dan festival di ekosistem tiket sekunder yang terlindungi.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <a href="#upcoming" class="ln-btn ln-btn-primary" style="padding: 13px 28px; font-size: 13px;">
+          <i class="fa-solid fa-magnifying-glass"></i> Cari Tiket Sekarang
+        </a>
+        <a href="/create" class="ln-btn ln-btn-ghost" style="padding: 13px 28px; font-size: 13px;">
+          <i class="fa-solid fa-ticket"></i> Jual Tiket Anda
+        </a>
+      </div>
+    </div>
+  </section>
 
   <!-- Site Footer (iPaymu Compliance & Trust Verification) -->
   <footer class="site-footer">
@@ -1353,11 +1591,17 @@
     }
 
     function formatRupiah(num) {
+      if (window.TikumI18n && typeof window.TikumI18n.formatNumber === 'function') {
+        return window.TikumI18n.formatNumber(num);
+      }
       return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "0";
     }
 
     function formatDate(dateStr) {
       if (!dateStr) return "-";
+      if (window.TikumI18n && typeof window.TikumI18n.formatDate === 'function') {
+        return window.TikumI18n.formatDate(dateStr);
+      }
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
       const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
@@ -1743,6 +1987,10 @@
       if (new URLSearchParams(window.location.search).get('login') === 'true') {
         openAuthModal();
       }
+    });
+
+    window.addEventListener('tikum:languageChanged', () => {
+      renderAllSections();
     });
   </script>
   <script src="/js/i18n.js"></script>

@@ -30,16 +30,16 @@
   const hasDoc = typeof document !== 'undefined';
 
   const LANGUAGES = [
-    { code: 'en', name: 'English', native: 'English', dir: 'ltr', pill: 'EN' },
     { code: 'id', name: 'Indonesian', native: 'Bahasa Indonesia', dir: 'ltr', pill: 'ID' },
+    { code: 'en', name: 'English', native: 'English', dir: 'ltr', pill: 'EN' },
     { code: 'zh-CN', codeAlias: 'zh', name: 'Chinese (Simplified)', native: '中文', dir: 'ltr', pill: '中文' },
+    { code: 'ar', name: 'Arabic', native: 'العربية', dir: 'rtl', pill: 'العربية' },
+    { code: 'hi', name: 'Hindi', native: 'हिन्दी', dir: 'ltr', pill: 'हिन्दी' },
+    { code: 'es', name: 'Spanish', native: 'Español', dir: 'ltr', pill: 'ES' },
+    { code: 'fr', name: 'French', native: 'Français', dir: 'ltr', pill: 'FR' },
     { code: 'ja', name: 'Japanese', native: '日本語', dir: 'ltr', pill: '日本語' },
     { code: 'ko', name: 'Korean', native: '한국어', dir: 'ltr', pill: '한국어' },
-    { code: 'es', name: 'Spanish', native: 'Español', dir: 'ltr', pill: 'ES' },
-    { code: 'pt-BR', codeAlias: 'pt', name: 'Portuguese', native: 'Português', dir: 'ltr', pill: 'PT' },
-    { code: 'fr', name: 'French', native: 'Français', dir: 'ltr', pill: 'FR' },
-    { code: 'ar', name: 'Arabic', native: 'العربية', dir: 'rtl', pill: 'العربية' },
-    { code: 'hi', name: 'Hindi', native: 'हिन्दी', dir: 'ltr', pill: 'हिन्दी' }
+    { code: 'pt-BR', codeAlias: 'pt', name: 'Portuguese', native: 'Português', dir: 'ltr', pill: 'PT' }
   ];
 
   const translations = {
@@ -47,15 +47,15 @@
       brand: {
         name: 'Tikum',
         byline: 'by Shinerva',
-        tagline: 'Verified Resale. Real Support.',
+        tagline: 'Tiket Second. Tanpa Scam.',
         slogan: 'Beli Tiket Resale dengan Percaya Diri.',
-        copy: 'Listing terverifikasi, transaksi terlindungi, dan bantuan manusia di venue saat Anda membutuhkannya.',
+        copy: 'Marketplace tiket sekunder terpercaya yang dirancang untuk mengurangi penipuan tiket dengan verifikasi berlapis, transaksi terlindungi escrow, dan bantuan langsung staf PIC di venue.',
         venueSupport: 'Orang sungguhan. Di venue.',
         copyright: '© 2026 Tikum — by Shinerva. Seluruh hak cipta dilindungi undang-undang.'
       },
       meta: {
-        title: 'Tikum — Verified Resale. Real Support. | by Shinerva',
-        description: 'Marketplace tiket sekunder terverifikasi. Transaksi terlindungi rekening penampungan internal (escrow) dan pendampingan PIC di gerbang venue.'
+        title: 'Tikum — Tiket Second. Tanpa Scam. | by Shinerva',
+        description: 'Marketplace tiket sekunder terpercaya. Dirancang untuk mengurangi penipuan tiket dengan verifikasi resmi, transaksi terlindungi escrow, dan pendampingan PIC di gerbang venue.'
       },
       nav: {
         events: 'Semua Event',
@@ -75,8 +75,8 @@
         findTickets: 'Cari Tiket'
       },
       hero: {
-        headline: 'Tiket yang Kamu Cari Mungkin Sudah Ada di Sini.',
-        subhead: 'Beli dan jual tiket sekunder dengan listing terverifikasi, harga transparan, dan bantuan langsung di venue saat kamu membutuhkannya.',
+        headline: 'Tiket Second. Tanpa Scam.',
+        subhead: 'Marketplace tiket sekunder terpercaya yang dirancang untuk mengurangi penipuan tiket dengan verifikasi resmi, transaksi terlindungi escrow, dan bantuan langsung staf PIC di venue.',
         ctaFind: 'Cari Tiket',
         ctaSell: 'Jual Tiket',
         featuredBadge: 'PENGUMUMAN RESMI TERVERIFIKASI'
@@ -89,7 +89,11 @@
         venue: 'Dukungan Nyata di Venue',
         venueDesc: 'Untuk event yang didukung, Tikum menyediakan PIC operasional langsung di sekitar venue.',
         pricing: 'Harga Transparan',
-        pricingDesc: 'Rincian harga tiket, biaya layanan, dan pajak ditampilkan jelas tanpa markup tersembunyi.'
+        pricingDesc: 'Rincian harga tiket, biaya layanan, dan pajak ditampilkan jelas tanpa markup tersembunyi.',
+        pillarVerified: 'Penjual Terverifikasi (Verified Sellers)',
+        pillarVenue: 'Venue PIC di Lokasi (On-Site Support)',
+        pillarProtected: 'Transaksi Terlindungi Escrow',
+        pillarPricing: 'Biaya Transparan di Muka'
       },
       trustStates: {
         VERIFIED: 'Listing Terverifikasi',
@@ -203,15 +207,15 @@
       brand: {
         name: 'Tikum',
         byline: 'by Shinerva',
-        tagline: 'Verified Resale. Real Support.',
+        tagline: 'Secondary Tickets. Built to Reduce Ticket Fraud.',
         slogan: 'Buy Resale Tickets With Confidence.',
-        copy: 'Verified listings, protected transactions, and real human support when you need it.',
+        copy: 'A trusted secondary-ticket marketplace built around verification, protected transactions, and real human support at the venue.',
         venueSupport: 'Real people. At the venue.',
         copyright: '© 2026 Tikum — by Shinerva. All rights reserved.'
       },
       meta: {
-        title: 'Tikum — Verified Resale. Real Support. | by Shinerva',
-        description: 'Verified secondary ticket marketplace. Protected by escrow infrastructure and dedicated venue gate support.'
+        title: 'Tikum — Secondary Tickets. Built to Reduce Ticket Fraud. | by Shinerva',
+        description: 'Trusted secondary ticket marketplace designed to reduce ticket fraud through verified sellers, escrow protection, and on-site venue PIC support.'
       },
       nav: {
         events: 'Events',
@@ -231,10 +235,10 @@
         findTickets: 'Find Tickets'
       },
       hero: {
-        headline: 'The Ticket You Want May Already Be Here.',
-        subhead: 'Buy and sell resale tickets with verified listings, transparent pricing, and real support when it matters.',
+        headline: 'Secondary Tickets. Built to Reduce Ticket Fraud.',
+        subhead: 'A trusted secondary-ticket marketplace built around verification, protected transactions, and real human support at the venue.',
         ctaFind: 'Find Tickets',
-        ctaSell: 'Sell a Ticket',
+        ctaSell: 'Sell Tickets',
         featuredBadge: 'FEATURED OFFICIAL ANNOUNCEMENT'
       },
       trust: {
@@ -245,7 +249,11 @@
         venue: 'Real Venue Support',
         venueDesc: 'For supported events, TIKUM provides an identifiable operational PIC at or near the venue.',
         pricing: 'Transparent Pricing',
-        pricingDesc: 'Clear line-item pricing with no hidden checkout markups.'
+        pricingDesc: 'Clear line-item pricing with no hidden checkout markups.',
+        pillarVerified: 'Verified Sellers',
+        pillarVenue: 'Venue PIC On-Site Support',
+        pillarProtected: 'Escrow-Protected Transactions',
+        pillarPricing: 'Transparent Upfront Pricing'
       },
       trustStates: {
         VERIFIED: 'Verified Listing',
@@ -359,15 +367,15 @@
       brand: {
         name: 'Tikum',
         byline: 'by Shinerva',
-        tagline: '官方核验转售 · 现场专人支持',
-        slogan: '安心购买转售门票，信赖尽在 Tikum。',
-        copy: '严格核验的票源、资金托管保障，以及关键时刻演出场地的现场专人协助。',
+        tagline: '二手门票·防范诈骗',
+        slogan: '安心购买转售门票。',
+        copy: '值得信赖的二手门票交易平台，依托严格票源核验、资金托管保障以及现场工作人员（PIC）实地协助。',
         venueSupport: '真人团队，常驻现场。',
         copyright: '© 2026 Tikum — by Shinerva. 版权所有。'
       },
       meta: {
-        title: 'Tikum — 官方核验转售 · 现场专人支持 | by Shinerva',
-        description: '经过严格核验的二手门票市场。依托安全托管基础设施与演出场地专属现场支持。'
+        title: 'Tikum — 二手门票·防范诈骗 | by Shinerva',
+        description: '经过严格核验的二手门票市场。依托安全托管基础设施与演出场地专属现场支持，降低票务欺诈风险。'
       },
       nav: {
         events: '全部活动',
@@ -387,11 +395,11 @@
         findTickets: '查找门票'
       },
       hero: {
-        headline: '你心仪的演出门票，或许就在这里。',
-        subhead: '购买与转售经严格核验的二手门票，尊享透明定价，关键时刻更有现场专人鼎力协助。',
+        headline: '二手门票·防范诈骗',
+        subhead: '值得信赖的二手门票交易平台，依托严格票源核验、资金托管保障以及现场工作人员（PIC）实地协助。',
         ctaFind: '查找门票',
         ctaSell: '转售门票',
-        featuredBadge: '官方重磅发布 · 经官方验证'
+        featuredBadge: '官方核验公布'
       },
       trust: {
         verified: '官方核验票源',
@@ -401,7 +409,11 @@
         venue: '场馆现场支持',
         venueDesc: '针对指定演出，Tikum 在检票口及场馆周边设立专人对接服务。',
         pricing: '透明公允定价',
-        pricingDesc: '票价、服务费与税费明细清晰展示，绝无隐性加价。'
+        pricingDesc: '票价、服务费与税费明细清晰展示，绝无隐性加价。',
+        pillarVerified: '经核验卖家',
+        pillarVenue: '场馆驻点现场协助 (Venue PIC)',
+        pillarProtected: '资金托管交易保障',
+        pillarPricing: '透明定价无隐性收费'
       },
       trustStates: {
         VERIFIED: '已核验门票',
@@ -827,15 +839,15 @@
       brand: {
         name: 'Tikum',
         byline: 'by Shinerva',
-        tagline: 'Verified Resale. Real Support.',
-        slogan: 'Compra Entradas de Reventa con Confianza.',
-        copy: 'Publicaciones verificadas, transacciones protegidas y soporte presencial en el recinto cuando lo necesites.',
-        venueSupport: 'Personas reales. En el recinto.',
+        tagline: 'Entradas de reventa. Diseñado para reducir el fraude.',
+        slogan: 'Compra entradas de reventa con total confianza.',
+        copy: 'Un marketplace seguro de entradas de reventa diseñado con verificación estricta, transacciones protegidas por custodia y asistencia presencial en el recinto.',
+        venueSupport: 'Personas reales en el recinto.',
         copyright: '© 2026 Tikum — by Shinerva. Todos los derechos reservados.'
       },
       meta: {
-        title: 'Tikum — Reventa Verificada · Soporte Real en Venue | by Shinerva',
-        description: 'Marketplace de reventa de entradas verificado. Protegido por custodia (escrow) y soporte presencial en el recinto.'
+        title: 'Tikum — Entradas de reventa. Diseñado para reducir el fraude. | by Shinerva',
+        description: 'Marketplace de entradas de reventa de confianza, diseñado para reducir el fraude mediante vendedores verificados, custodia de fondos y coordinadores en el recinto.'
       },
       nav: {
         events: 'Eventos',
@@ -855,11 +867,11 @@
         findTickets: 'Buscar Entradas'
       },
       hero: {
-        headline: 'La entrada que buscas puede estar aquí.',
-        subhead: 'Compra y vende entradas de reventa con publicaciones verificadas, precios transparentes y soporte humano en el recinto cuando realmente importa.',
+        headline: 'Entradas de reventa. Diseñado para reducir el fraude.',
+        subhead: 'Un marketplace seguro de entradas de reventa diseñado con verificación estricta, transacciones protegidas por custodia y asistencia presencial en el recinto.',
         ctaFind: 'Buscar Entradas',
         ctaSell: 'Vender Entrada',
-        featuredBadge: 'ANUNCIO OFICIAL DESTACADO'
+        featuredBadge: 'ANUNCIO OFICIAL VERIFICADO'
       },
       trust: {
         verified: 'Listados Verificados',
@@ -869,7 +881,11 @@
         venue: 'Soporte Presencial en Venue',
         venueDesc: 'Para eventos seleccionados, Tikum cuenta con personal de soporte en el recinto.',
         pricing: 'Precios Transparentes',
-        pricingDesc: 'Desglose claro de precio base, tasas e impuestos sin cargos ocultos.'
+        pricingDesc: 'Desglose claro de precio base, tasas e impuestos sin cargos ocultos.',
+        pillarVerified: 'Vendedores Verificados',
+        pillarVenue: 'Asistencia Presencial (Venue PIC)',
+        pillarProtected: 'Transacciones Protegidas por Custodia',
+        pillarPricing: 'Precios Transparentes en Pantalla'
       },
       trustStates: {
         VERIFIED: 'Listado Verificado',
@@ -1139,15 +1155,15 @@
       brand: {
         name: 'Tikum',
         byline: 'by Shinerva',
-        tagline: 'Verified Resale. Real Support.',
-        slogan: 'Achetez des Billets de Revente en Toute Confiance.',
-        copy: 'Annonces vérifiées, transactions protégées et assistance humaine sur place en cas de besoin.',
-        venueSupport: 'Des personnes réelles. Sur place.',
+        tagline: 'Billets de revente. Conçu pour réduire la fraude.',
+        slogan: 'Achetez des billets de revente en toute confiance.',
+        copy: 'Une plateforme de revente de billets fiable, conçue autour de la vérification, de transactions sécurisées sous séquestre et d’une assistance humaine sur place.',
+        venueSupport: 'Des personnes réelles sur place.',
         copyright: '© 2026 Tikum — by Shinerva. Tous droits réservés.'
       },
       meta: {
-        title: 'Tikum — Revente Vérifiée · Support Réel sur Place | by Shinerva',
-        description: 'Place de marché de revente de billets vérifiée. Protection par séquestre (escrow) et présence opérationnelle aux portes de la salle.'
+        title: 'Tikum — Billets de revente. Conçu pour réduire la fraude. | by Shinerva',
+        description: 'Plateforme fiable de revente de billets conçue pour réduire la fraude grâce à des vendeurs vérifiés, la protection sous séquestre et des coordinateurs sur place.'
       },
       nav: {
         events: 'Événements',
@@ -1167,8 +1183,8 @@
         findTickets: 'Trouver des Billets'
       },
       hero: {
-        headline: 'Le billet que vous cherchez est peut-être déjà ici.',
-        subhead: 'Achetez et revendez vos billets avec des annonces vérifiées, des prix transparents et une assistance humaine sur place lorsque cela compte.',
+        headline: 'Billets de revente. Conçu pour réduire la fraude.',
+        subhead: 'Une plateforme de revente de billets fiable, conçue autour de la vérification, de transactions sécurisées sous séquestre et d’une assistance humaine sur place.',
         ctaFind: 'Trouver des Billets',
         ctaSell: 'Vendre un Billet',
         featuredBadge: 'ANNONCE OFFICIELLE VÉRIFIÉE'
@@ -1181,7 +1197,11 @@
         venue: 'Assistance sur Place',
         venueDesc: 'Pour les événements éligibles, un référent Tikum est présent aux abords de la salle.',
         pricing: 'Tarification Transparente',
-        pricingDesc: 'Détail précis du billet, des frais de service et des taxes sans frais cachés.'
+        pricingDesc: 'Détail précis du billet, des frais de service et des taxes sans frais cachés.',
+        pillarVerified: 'Vendeurs Vérifiés',
+        pillarVenue: 'Assistance sur Place (Venue PIC)',
+        pillarProtected: 'Transactions Sécurisées sous Séquestre',
+        pillarPricing: 'Tarification Claire et Transparente'
       },
       trustStates: {
         VERIFIED: 'Annonce Vérifiée',
@@ -1295,15 +1315,15 @@
       brand: {
         name: 'Tikum',
         byline: 'by Shinerva',
-        tagline: 'Verified Resale. Real Support.',
+        tagline: 'تذاكر ثانوية. صُممت للحد من الاحتيال.',
         slogan: 'شراء تذاكر إعادة البيع بكل ثقة.',
-        copy: 'قوائم تذاكر موثوقة، معاملات محمية بالضمان، ودعم بشري حقيقي في موقع الفعالية عند حاجتك.',
+        copy: 'سوق تذاكر موثوق لإعادة البيع يعتمد على التحقق الدقيق، المعاملات المحمية بالضمان، ودعم بشري حقيقي في موقع الفعالية.',
         venueSupport: 'أشخاص حقيقيون. في موقع الفعالية.',
         copyright: '© 2026 Tikum — by Shinerva. جميع الحقوق محفوظة.'
       },
       meta: {
-        title: 'Tikum — إعادة بيع موثوقة · دعم ميداني حقيقي | by Shinerva',
-        description: 'سوق تذاكر الفعاليات المعاد بيعها بعد التحقق الموثق. معاملات محمية عبر نظام الضمان وحضور ميداني عند البوابات.'
+        title: 'Tikum — تذاكر ثانوية. صُممت للحد من الاحتيال. | by Shinerva',
+        description: 'سوق تذاكر موثوق لإعادة البيع، صُمم للحد من الاحتيال عبر بائعين موثقين، حماية أموال الضمان، وتواجد ميداني لمشرفي الدعم في موقع الفعالية.'
       },
       nav: {
         events: 'جميع الفعاليات',
@@ -1323,9 +1343,9 @@
         findTickets: 'البحث عن التذاكر'
       },
       hero: {
-        headline: 'التذكرة التي تبحث عنها قد تكون هنا بالفعل.',
-        subhead: 'اشترِ وبِع تذاكر الفعاليات مع قوائم موثوقة، وأسعار شفافة، ودعم بشري حقيقي في موقع الفعالية عند حاجتك.',
-        ctaFind: 'البحث عن التذاكر',
+        headline: 'تذاكر ثانوية. صُممت للحد من الاحتيال.',
+        subhead: 'سوق تذاكر موثوق لإعادة البيع يعتمد على التحقق الدقيق، المعاملات المحمية بالضمان، ودعم بشري حقيقي في موقع الفعالية.',
+        ctaFind: 'البحث عن تذاكر',
         ctaSell: 'بيع تذكرة',
         featuredBadge: 'إعلان رسمي موثق'
       },
@@ -1337,7 +1357,11 @@
         venue: 'دعم ميداني في الموقع',
         venueDesc: 'للإيفنتات المؤهلة، نوفر منسقاً ميدانياً عند بوابات الفعالية لتقديم المساعدة.',
         pricing: 'شفافية تامة في الأسعار',
-        pricingDesc: 'تفصيل كامل لسعر التذكرة والرسوم والضرائب دون أي مبالغ خفية.'
+        pricingDesc: 'تفصيل كامل لسعر التذكرة والرسوم والضرائب دون أي مبالغ خفية.',
+        pillarVerified: 'بائعون موثقون',
+        pillarVenue: 'دعم ميداني مباشر في الفعالية (Venue PIC)',
+        pillarProtected: 'معاملات محمية بحساب الضمان',
+        pillarPricing: 'أسعار واضحة دون رسوم خفية'
       },
       trustStates: {
         VERIFIED: 'قائمة موثقة',
@@ -1451,15 +1475,15 @@
       brand: {
         name: 'Tikum',
         byline: 'by Shinerva',
-        tagline: 'Verified Resale. Real Support.',
-        slogan: 'पूरे विश्वास के साथ रीसेल टिकट खरीदें।',
-        copy: 'सत्यापित लिस्टिंग, सुरक्षित लेन-देन और ज़रूरत पड़ने पर कार्यक्रम स्थल पर वास्तविक मानव सहायता।',
-        venueSupport: 'वास्तविक लोग। वेन्यू पर।',
+        tagline: 'रीसेल टिकटें। टिकट धोखाधड़ी रोकने के लिए निर्मित।',
+        slogan: 'विश्वास के साथ टिकट खरीदें।',
+        copy: 'एक विश्वसनीय रीसेल टिकट मार्केटप्लेस जो सत्यापन, सुरक्षित एस्क्रो लेन-देन और कार्यक्रम स्थल पर वास्तविक मानव सहायता के लिए निर्मित है।',
+        venueSupport: 'स्थल पर वास्तविक लोग।',
         copyright: '© 2026 Tikum — by Shinerva. सर्वाधिकार सुरक्षित।'
       },
       meta: {
-        title: 'Tikum — सत्यापित रीसेल · वास्तविक वेन्यू सहायता | by Shinerva',
-        description: 'सत्यापित सेकंडरी टिकट मार्केटप्लेस। एस्क्रो सुरक्षा और वेन्यू गेट पर समर्पित प्रतिनिधि सहायता।'
+        title: 'Tikum — रीसेल टिकटें। टिकट धोखाधड़ी रोकने के लिए निर्मित। | by Shinerva',
+        description: 'विश्वसनीय रीसेल टिकट मार्केटप्लेस, जो सत्यापित विक्रेताओं, एस्क्रो सुरक्षा और स्थल पर उपस्थित समन्वयकों (PIC) द्वारा टिकट धोखाधड़ी कम करने के लिए बनाया गया है।'
       },
       nav: {
         events: 'सभी कार्यक्रम',
@@ -1479,11 +1503,11 @@
         findTickets: 'टिकट खोजें'
       },
       hero: {
-        headline: 'जो टिकट आप चाहते हैं, वह शायद यहीं है।',
-        subhead: 'सत्यापित लिस्टिंग, पारदर्शी मूल्य निर्धारण और कार्यक्रम स्थल पर वास्तविक मानव सहायता के साथ टिकट खरीदें और बेचें।',
+        headline: 'रीसेल टिकटें। टिकट धोखाधड़ी रोकने के लिए निर्मित।',
+        subhead: 'एक विश्वसनीय रीसेल टिकट मार्केटप्लेस जो सत्यापन, सुरक्षित एस्क्रो लेन-देन और कार्यक्रम स्थल पर वास्तविक मानव सहायता के लिए निर्मित है।',
         ctaFind: 'टिकट खोजें',
         ctaSell: 'टिकट बेचें',
-        featuredBadge: 'विशेष आधिकारिक घोषणा'
+        featuredBadge: 'आधिकारिक तौर पर सत्यापित घोषणा'
       },
       trust: {
         verified: 'सत्यापित लिस्टिंग',
@@ -1493,7 +1517,11 @@
         venue: 'वेन्यू पर मानव सहायता',
         venueDesc: 'समर्थित कार्यक्रमों के लिए, टिकम वेन्यू गेट पर स्थानीय पीआईसी प्रतिनिधि उपलब्ध कराता है।',
         pricing: 'पारदर्शी मूल्य',
-        pricingDesc: 'बिना किसी छुपे हुए शुल्क के टिकट मूल्य, सेवा शुल्क और करों का स्पष्ट विवरण।'
+        pricingDesc: 'बिना किसी छुपे हुए शुल्क के टिकट मूल्य, सेवा शुल्क और करों का स्पष्ट विवरण।',
+        pillarVerified: 'सत्यापित विक्रेता',
+        pillarVenue: 'स्थल पर वास्तविक सहायता (Venue PIC)',
+        pillarProtected: 'एस्क्रो-संरक्षित लेन-देन',
+        pillarPricing: 'पारदर्शी अग्रिम मूल्य'
       },
       trustStates: {
         VERIFIED: 'सत्यापित लिस्टिंग',
@@ -1604,18 +1632,93 @@
     }
   };
 
+  // Locale tags mapping for Intl API
+  const LOCALE_TAGS = {
+    'id': 'id-ID',
+    'en': 'en-US',
+    'zh-CN': 'zh-CN',
+    'zh': 'zh-CN',
+    'ar': 'ar-SA',
+    'hi': 'hi-IN',
+    'es': 'es-ES',
+    'fr': 'fr-FR',
+    'ja': 'ja-JP',
+    'ko': 'ko-KR',
+    'pt-BR': 'pt-BR',
+    'pt': 'pt-BR'
+  };
+
+  function getLocaleTag(lang) {
+    return LOCALE_TAGS[lang] || LOCALE_TAGS[currentLang] || 'id-ID';
+  }
+
+  function normalizeLang(langCode) {
+    if (!langCode || typeof langCode !== 'string') return null;
+    const clean = langCode.trim().toLowerCase();
+    if (clean === 'id' || clean === 'in' || clean.startsWith('id-') || clean.startsWith('in-')) return 'id';
+    if (clean === 'en' || clean.startsWith('en-')) return 'en';
+    if (clean === 'zh' || clean.startsWith('zh-') || clean.startsWith('zh_')) return 'zh-CN';
+    if (clean === 'ar' || clean.startsWith('ar-')) return 'ar';
+    if (clean === 'hi' || clean.startsWith('hi-')) return 'hi';
+    if (clean === 'es' || clean.startsWith('es-')) return 'es';
+    if (clean === 'fr' || clean.startsWith('fr-')) return 'fr';
+    if (clean === 'ja' || clean.startsWith('ja-')) return 'ja';
+    if (clean === 'ko' || clean.startsWith('ko-')) return 'ko';
+    if (clean === 'pt' || clean.startsWith('pt-')) return 'pt-BR';
+    if (translations[clean]) return clean;
+    return null;
+  }
+
+  /**
+   * Language resolution priority:
+   * 1. Explicit user selection (URL query parameter ?lang= or ?locale=)
+   * 2. Stored preference (localStorage.getItem('tikum_lang'))
+   * 3. Browser locale (navigator.language / navigator.languages)
+   * 4. Default id-ID ('id')
+   */
+  function resolveInitialLanguage() {
+    // 1. Explicit URL parameter
+    if (typeof window !== 'undefined' && window.location && window.location.search) {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlLang = params.get('lang') || params.get('locale');
+        if (urlLang) {
+          const norm = normalizeLang(urlLang);
+          if (norm) return norm;
+        }
+      } catch (e) {}
+    }
+
+    // 2. Stored user preference
+    if (hasStorage) {
+      try {
+        const saved = localStorage.getItem('tikum_lang');
+        if (saved) {
+          const norm = normalizeLang(saved);
+          if (norm) return norm;
+        }
+      } catch (e) {}
+    }
+
+    // 3. Browser locale
+    if (typeof navigator !== 'undefined') {
+      const candidates = [navigator.language, ...(navigator.languages || [])].filter(Boolean);
+      for (const cand of candidates) {
+        const norm = normalizeLang(cand);
+        if (norm) return norm;
+      }
+    }
+
+    // 4. Default id-ID
+    return 'id';
+  }
+
   // State management
-  let currentLang = 'id';
+  let currentLang = resolveInitialLanguage();
   let currentTheme = 'dark';
 
   if (hasStorage) {
     try {
-      const savedLang = localStorage.getItem('tikum_lang');
-      if (savedLang) {
-        if (savedLang === 'zh') currentLang = 'zh-CN';
-        else if (savedLang === 'pt') currentLang = 'pt-BR';
-        else if (translations[savedLang]) currentLang = savedLang;
-      }
       const savedTheme = localStorage.getItem('tikum_theme');
       if (savedTheme) currentTheme = savedTheme;
     } catch (e) {}
@@ -1643,21 +1746,68 @@
     return fallback !== undefined ? fallback : key;
   }
 
+  /**
+   * Locale-aware Date Formatter (Intl.DateTimeFormat)
+   */
+  function formatDate(dateInput, options) {
+    if (!dateInput) return '-';
+    const d = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
+    if (isNaN(d.getTime())) return String(dateInput);
+    try {
+      const defaultOpts = { day: 'numeric', month: 'short', year: 'numeric' };
+      return new Intl.DateTimeFormat(getLocaleTag(currentLang), options || defaultOpts).format(d);
+    } catch (e) {
+      return d.toDateString();
+    }
+  }
+
+  /**
+   * Locale-aware Number Formatter (Intl.NumberFormat)
+   */
+  function formatNumber(num, options) {
+    if (num === null || num === undefined || isNaN(Number(num))) return '0';
+    try {
+      return new Intl.NumberFormat(getLocaleTag(currentLang), options).format(Number(num));
+    } catch (e) {
+      return String(num);
+    }
+  }
+
+  /**
+   * Locale-aware Currency Formatter
+   * Preserves authentic event currency (never invents currency conversion).
+   */
+  function formatCurrency(amount, currency = 'IDR') {
+    if (amount === null || amount === undefined || isNaN(Number(amount))) return '0';
+    const n = Number(amount);
+    const curr = String(currency || 'IDR').toUpperCase();
+    try {
+      return new Intl.NumberFormat(getLocaleTag(currentLang), {
+        style: 'currency',
+        currency: curr,
+        maximumFractionDigits: (curr === 'IDR' ? 0 : 2)
+      }).format(n);
+    } catch (e) {
+      if (curr === 'IDR') {
+        return 'Rp ' + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+      return `${curr} ${n.toLocaleString()}`;
+    }
+  }
+
   function applyLanguage(lang) {
-    if (lang === 'zh') lang = 'zh-CN';
-    if (lang === 'pt') lang = 'pt-BR';
-    if (!translations[lang]) lang = 'id';
-    currentLang = lang;
+    const norm = normalizeLang(lang) || 'id';
+    currentLang = norm;
 
     if (hasStorage) {
       try {
-        localStorage.setItem('tikum_lang', lang);
+        localStorage.setItem('tikum_lang', norm);
       } catch (e) {}
     }
 
     if (hasDoc) {
-      document.documentElement.lang = lang;
-      const isRtl = lang === 'ar';
+      document.documentElement.lang = norm;
+      const isRtl = norm === 'ar';
       document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
 
       if (isRtl) {
@@ -1667,7 +1817,7 @@
       }
 
       // Localized Document Title & Meta Tags
-      const localizedTitle = t('meta.title', 'Tikum — Verified Resale. Real Support. | by Shinerva');
+      const localizedTitle = t('meta.title', 'Tikum — Tiket Second. Tanpa Scam. | by Shinerva');
       document.title = localizedTitle;
 
       const metaDesc = document.querySelector('meta[name="description"]');
@@ -1700,8 +1850,8 @@
       // Update Header Lang Switcher Trigger
       const langBtn = document.getElementById('langToggle') || document.getElementById('btnLangToggle');
       if (langBtn) {
-        const matched = LANGUAGES.find(l => l.code === lang || l.codeAlias === lang);
-        const displayLabel = matched ? matched.pill : lang.toUpperCase();
+        const matched = LANGUAGES.find(l => l.code === norm || l.codeAlias === norm);
+        const displayLabel = matched ? matched.pill : norm.toUpperCase();
         const innerLabel = langBtn.querySelector('#langLabel');
         if (innerLabel) {
           innerLabel.textContent = displayLabel;
@@ -1710,8 +1860,8 @@
         }
       }
 
-      // Notify dynamic rendering engines (e.g. renderAllSections)
-      window.dispatchEvent(new CustomEvent('tikum:languageChanged', { detail: { lang } }));
+      // Notify dynamic rendering engines
+      window.dispatchEvent(new CustomEvent('tikum:languageChanged', { detail: { lang: norm } }));
     }
   }
 
@@ -1753,7 +1903,7 @@
             <button type="button" class="lang-modal-close" onclick="window.TikumI18n.closeLangModal()">&times;</button>
           </div>
           <div class="lang-modal-body">
-            <div class="lang-tier-title">10 Global Music &amp; Touring Markets</div>
+            <div class="lang-tier-title">Global Touring &amp; Music Markets</div>
             <div class="lang-grid" id="langGridContainer"></div>
           </div>
         </div>
@@ -1762,6 +1912,10 @@
 
       modal.addEventListener('click', (e) => {
         if (e.target === modal) closeLangModal();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeLangModal();
       });
     }
 
@@ -1813,6 +1967,12 @@
     getTheme: () => currentTheme,
     setLang: applyLanguage,
     setTheme: applyTheme,
+    formatDate,
+    formatNumber,
+    formatCurrency,
+    getLocaleTag,
+    normalizeLang,
+    resolveInitialLanguage,
     toggleLang: () => openLangModal(),
     openLangModal,
     closeLangModal,
