@@ -201,6 +201,7 @@
         <a href="/" style="font-size: 14px; color: var(--text-muted); text-decoration: none;">
           <i class="fa-solid fa-house"></i> Beranda
         </a>
+        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.openLangModal() : null" style="padding: 4px 10px; font-size: 11px;" title="Switch Language"><i class="fa-solid fa-globe"></i> <span id="langLabel">EN</span></button>
         <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
           <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
         </button>
@@ -333,5 +334,6 @@
       } catch (_) {}
     })();
   </script>
+  <script src="/js/i18n.js"></script>
 </body>
 </html>

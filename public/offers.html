@@ -103,10 +103,8 @@
         <a href="/offers" class="nav-link active"><i class="fa-solid fa-handshake"></i> Tawaran Harga</a>
         <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Transaksi</a>
         <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console Internal</a>
-        <div class="nav-controls" style="display: inline-flex; gap: 8px; margin-left: 12px; align-items: center;">
-          <button id="btnLangToggle" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px; font-weight: 700;">EN</button>
-          <button id="btnThemeToggle" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px;" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon"></i></button>
-        </div>
+        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.openLangModal() : null" style="padding: 4px 10px; font-size: 11px;" title="Switch Language"><i class="fa-solid fa-globe"></i> <span id="langLabel">EN</span></button>
+        <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
   </header>
@@ -301,6 +299,26 @@
       </div>
     </div>
   </div>
+
+  <!-- Mobile Bottom Navigation (Visible only on <= 768px screens) -->
+  <nav class="mobile-bottom-nav" aria-label="Navigasi Seluler">
+    <a href="/" class="mobile-nav-item">
+      <i class="fa-solid fa-house"></i>
+      <span data-i18n="nav.home">Beranda</span>
+    </a>
+    <a href="/track" class="mobile-nav-item">
+      <i class="fa-solid fa-ticket"></i>
+      <span data-i18n="nav.myTickets">Tiket</span>
+    </a>
+    <a href="/create" class="mobile-nav-item">
+      <i class="fa-solid fa-plus-circle"></i>
+      <span data-i18n="nav.sell">Jual</span>
+    </a>
+    <a href="/account" class="mobile-nav-item">
+      <i class="fa-solid fa-user"></i>
+      <span data-i18n="nav.account">Akun</span>
+    </a>
+  </nav>
 
   <!-- Site Footer -->
   <footer class="site-footer" style="margin-top: auto;">
@@ -911,5 +929,6 @@
     fetchOffers();
     fetchNotifications();
   </script>
+  <script src="/js/i18n.js"></script>
 </body>
 </html>

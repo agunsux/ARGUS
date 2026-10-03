@@ -26,19 +26,19 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    /* Inline CSS for Viagogo-inspired theme */
+    /* Unified Tikum Dark-First Palette */
     :root {
-      --primary: #1DB954;
-      --primary-hover: #179643;
-      --bg-light: #FFFFFF;
-      --bg-dark: #0F0F0F;
-      --text-light: #1A1A1A;
-      --text-dark: #F5F5F5;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg-light: #F8FAFC;
+      --bg-dark: #0B0F19;
+      --text-light: #0F172A;
+      --text-dark: #F8FAFC;
       --card-light: #FFFFFF;
-      --card-dark: #1A1A1A;
-      --accent: #FF6B35;
-      --border-light: #E0E0E0;
-      --border-dark: #333333;
+      --card-dark: #0F172A;
+      --accent: #38bdf8;
+      --border-light: #E2E8F0;
+      --border-dark: #1E293B;
     }
 
     body {
@@ -1239,11 +1239,11 @@
     }
 
     function toggleLang() {
-      const btn = document.getElementById('langToggle');
-      if (btn.innerText === 'ID') {
-        btn.innerText = 'EN';
+      if (window.TikumI18n && typeof window.TikumI18n.openLangModal === 'function') {
+        window.TikumI18n.openLangModal();
       } else {
-        btn.innerText = 'ID';
+        const btn = document.getElementById('langToggle');
+        if (btn) btn.innerText = btn.innerText === 'ID' ? 'EN' : 'ID';
       }
     }
 
@@ -1745,5 +1745,6 @@
       }
     });
   </script>
+  <script src="/js/i18n.js"></script>
 </body>
 </html>
