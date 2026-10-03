@@ -663,25 +663,67 @@ class EscrowService {
       throw err;
     }
 
+    // 1. Determine provider refund capability and rail status (Distinguish provider vs internal reversal)
+    let refundRailStatus = 'MANUAL_REFUND_REQUIRED';
+    let providerRefundResult = null;
+    const payment = (state.canonical_payments || []).find(p => p.order_id === orderId);
+    const providerName = payment?.provider || 'rcb';
+
+    try {
+      const { PaymentService } = require('./payment/PaymentService');
+      if (payment && payment.provider) {
+        providerRefundResult = await PaymentService.requestRefund({
+          orderId,
+          amount: escrow.total_paid,
+          reason: reason || 'BUYER_REFUND',
+          providerName: payment.provider
+        });
+        refundRailStatus = providerRefundResult?.status === 'CONFIRMED'
+          ? 'PROVIDER_REFUND_CONFIRMED'
+          : 'PROVIDER_REFUND_REQUESTED';
+      }
+    } catch (refundErr) {
+      // Capability unsupported or manual refund required: distinguish internal ledger reversal from real money return
+      refundRailStatus = 'MANUAL_REFUND_REQUIRED';
+      await recordAuditLog('REFUND_RAIL', orderId, 'MANUAL_REFUND_REQUIRED', actorId, {
+        provider: providerName,
+        reason: refundErr.message,
+        code: refundErr.code,
+        notice: 'RCB/provider does not support native API refunds. Physical money must be returned to buyer via manual bank disburse.'
+      });
+    }
+
+    // 2. State & Semantic updates
     escrow.status = ESCROW_STATUS.REFUNDED;
     escrow.refunded_at = new Date().toISOString();
+    escrow.refund_rail_status = refundRailStatus;
+    escrow.ledger_reversed = true;
+    escrow.provider_refund_confirmed = (refundRailStatus === 'PROVIDER_REFUND_CONFIRMED');
+
     order.status = ORDER_STATUS.REFUNDED;
+    order.refund_rail_status = refundRailStatus;
+
+    if (payment) {
+      payment.refund_status = refundRailStatus;
+      payment.ledger_reversed = true;
+    }
 
     await recordAuditLog('ESCROW', escrow.id, 'FUNDS_REFUNDED_TO_BUYER', actorId, {
       order_id: orderId,
       buyer_id: order.buyer_id,
       amount: escrow.total_paid,
       reason,
+      refund_rail_status: refundRailStatus,
       refunded_at: escrow.refunded_at
     });
 
-    // Record balanced refund in FinancialLedger
+    // 3. Record balanced double-entry ledger reversal (C. INTERNAL LEDGER REVERSAL)
+    let ledgerTx = null;
     try {
       const { FinancialLedger } = require('../settlement/FinancialLedger');
-      await FinancialLedger.recordRefund({
+      ledgerTx = await FinancialLedger.recordRefund({
         orderId,
         quoteId: order.quote_id || escrow.quote_id || null,
-        ticketPrice: order.ticket_price || escrow.ticket_price || escrow.amount,
         ticketPrice: order.gross_ticket_value || order.ticket_price || escrow.gross_ticket_value || escrow.ticket_price || escrow.amount,
         platformFee: order.platform_fee || order.buyer_fee || 0,
         buyerFee: order.buyer_fee,
@@ -693,7 +735,19 @@ class EscrowService {
       });
     } catch (e) {}
 
-    return { success: true, escrow, order, reason };
+    return {
+      success: true,
+      escrow,
+      order,
+      reason,
+      providerRefund: providerRefundResult,
+      refund_semantics: {
+        internal_ledger_reversed: true,
+        provider_refund_requested: refundRailStatus === 'PROVIDER_REFUND_REQUESTED' || refundRailStatus === 'PROVIDER_REFUND_CONFIRMED',
+        provider_refund_confirmed: refundRailStatus === 'PROVIDER_REFUND_CONFIRMED',
+        refund_rail_status: refundRailStatus
+      }
+    };
   }
 
   /**
