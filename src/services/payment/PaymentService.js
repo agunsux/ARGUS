@@ -178,6 +178,18 @@ class PaymentService {
 
     state.canonical_payments.push(canonicalRecord);
 
+    try {
+      const { PaymentRoutingService, PAYMENT_ATTEMPT_STATUS } = require('./PaymentRoutingService');
+      PaymentRoutingService.recordPaymentAttempt({
+        paymentAttemptId: internalPaymentId,
+        orderId,
+        provider: targetProviderName,
+        providerTransactionId: providerTxId,
+        idempotencyKey: effectiveIdempotencyKey,
+        status: PAYMENT_ATTEMPT_STATUS.PENDING
+      });
+    } catch (e) {}
+
     await recordAuditLog('PAYMENT', internalPaymentId, 'INTENT_CREATED', buyer.id || 'SYSTEM', {
       order_id: orderId,
       provider: targetProviderName,
@@ -289,6 +301,11 @@ class PaymentService {
           canonical.provider_transaction_id = event.providerRef;
           canonical.provider_fee = event.providerFee || 0;
           canonical.updated_at = new Date().toISOString();
+
+          try {
+            const { PaymentRoutingService, PAYMENT_ATTEMPT_STATUS } = require('./PaymentRoutingService');
+            PaymentRoutingService.updateAttemptStatus(canonical.internal_payment_id || canonical.id, PAYMENT_ATTEMPT_STATUS.SUCCESS, event.providerRef);
+          } catch (e) {}
         }
       }
 

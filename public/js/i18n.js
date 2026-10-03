@@ -59,6 +59,23 @@
 
   const translations = {
   "id": {
+    "domain": {
+      "payment": "Pembayaran",
+      "refund": "Pengembalian Dana",
+      "escrow": "Rekening Penampungan (Escrow)",
+      "sellerVerification": "Verifikasi Penjual",
+      "buyerProtection": "Perlindungan Pembeli",
+      "dispute": "Sengketa Transaksi",
+      "ticketDelivery": "Pengiriman Tiket",
+      "ticketVerification": "Verifikasi Tiket",
+      "venueAssist": "Bantuan Venue Opsional",
+      "picAssistance": "Pendampingan PIC Lapangan",
+      "eventStatus": "Status Event",
+      "orderStatus": "Status Pesanan",
+      "terms": "Syarat & Ketentuan",
+      "privacy": "Kebijakan Privasi",
+      "refundPolicy": "Kebijakan Pengembalian Dana"
+    },
     "brand": {
       "name": "Tikum",
       "byline": "by Shinerva",
@@ -287,6 +304,23 @@
     }
   },
   "en": {
+    "domain": {
+      "payment": "Payment",
+      "refund": "Refund",
+      "escrow": "Escrow Protection",
+      "sellerVerification": "Seller Verification",
+      "buyerProtection": "Buyer Protection",
+      "dispute": "Dispute Resolution",
+      "ticketDelivery": "Ticket Delivery",
+      "ticketVerification": "Ticket Verification",
+      "venueAssist": "Optional Venue Assistance",
+      "picAssistance": "On-Site PIC Assistance",
+      "eventStatus": "Event Status",
+      "orderStatus": "Order Status",
+      "terms": "Terms & Conditions",
+      "privacy": "Privacy Policy",
+      "refundPolicy": "Refund Policy"
+    },
     "brand": {
       "name": "Tikum",
       "byline": "by Shinerva",
@@ -2448,10 +2482,15 @@
     const activeDict = translations[currentLang] || translations.id;
     let res = getNested(activeDict, key);
     if (res !== undefined) return res;
-    res = getNested(translations.id, key);
-    if (res !== undefined) return res;
-    res = getNested(translations.en, key);
-    if (res !== undefined) return res;
+    // Fallback hierarchy: requested locale -> English -> Indonesian
+    if (translations.en) {
+      res = getNested(translations.en, key);
+      if (res !== undefined) return res;
+    }
+    if (translations.id) {
+      res = getNested(translations.id, key);
+      if (res !== undefined) return res;
+    }
     return fallback !== undefined ? fallback : key;
   }
 

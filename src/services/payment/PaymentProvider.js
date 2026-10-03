@@ -44,6 +44,22 @@ class PaymentProvider {
   }
 
   /**
+   * Country codes this provider serves (e.g. ['ID'])
+   * @returns {Array<string>}
+   */
+  getSupportedCountries() {
+    return [this.getCountry()];
+  }
+
+  /**
+   * Currencies supported by this provider (e.g. ['IDR'])
+   * @returns {Array<string>}
+   */
+  getSupportedCurrencies() {
+    return ['IDR'];
+  }
+
+  /**
    * Provider operational verification status:
    * 'PENDING_VERIFICATION', 'ACTIVE', 'BLOCKED', 'MAINTENANCE'
    * @returns {{ status: string, isVerified: boolean, message: string, readiness?: any }}
