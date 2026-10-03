@@ -39,6 +39,7 @@ yarn-error.log*
 *.db-shm
 
 .vercel
+scratch/
 
 # Encrypted test data and stray CLI logs
 *.enc
