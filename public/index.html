@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0B0B0C">
+  <meta name="theme-color" content="#04030A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Tikum — Verified Ticket Marketplace by Shinerva</title>
@@ -33,23 +33,28 @@
   <meta name="twitter:title" content="Tikum — Find Every Event Worth Buying a Ticket For">
   <meta name="twitter:description" content="Temukan seluruh event berbayar dan bertiket di Indonesia.">
 
+  <link rel="icon" type="image/svg+xml" href="/assets/tikum-mark-p2p.svg">
+  <link rel="apple-touch-icon" href="/assets/tikum-mark-p2p.svg">
   <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <style>
     /* Unified Tikum Dark-First Palette */
     :root {
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
+      --primary: #5533FF;
+      --primary-hover: #4326D6;
       --bg-light: #F8FAFC;
-      --bg-dark: #0B0F19;
+      --bg-dark: #04030A;
       --text-light: #0F172A;
       --text-dark: #F8FAFC;
       --card-light: #FFFFFF;
-      --card-dark: #0F172A;
-      --accent: #38bdf8;
+      --card-dark: #0E121E;
+      --accent: #FF5F3E;
       --border-light: #E2E8F0;
-      --border-dark: #1E293B;
+      --border-dark: rgba(255, 255, 255, 0.08);
     }
 
     body {
@@ -974,12 +979,12 @@
 </head>
 <body>
 
-  <header class="site-header" style="background:#0B0B0C; border-bottom:1px solid #232326;">
-    <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-      <i class="fa-solid fa-ticket brand-logo" style="color:var(--primary); font-size:24px;"></i>
+  <header class="site-header" style="background: rgba(4, 3, 10, 0.94); border-bottom: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px);">
+    <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
+      <img src="/assets/tikum-mark-p2p.svg" class="brand-logo" width="34" height="34" alt="Tikum">
       <div>
         <div class="brand-title">Tikum</div>
-        <div class="brand-subtitle" style="font-size:10px; color:#94a3b8; font-weight:600; line-height:1;" data-i18n="hero.headline">Tiket Second. Tanpa Scam.</div>
+        <div class="brand-subtitle" style="font-size:10px; color:#94a3b8; font-weight:600; line-height:1;" data-i18n="hero.headline">Verified Resale. Real Support.</div>
       </div>
     </a>
     <nav class="ln-nav-links">
@@ -990,7 +995,7 @@
       <a class="ln-nav-link" href="/faq">Bantuan</a>
     </nav>
     <div class="header-actions" style="display:flex; align-items:center; gap:10px;">
-      <span class="ln-nav-link header-location-badge" style="color:#6B7280; cursor:default;"><i class="fa-solid fa-location-dot"></i> Indonesia</span>
+      <span class="ln-nav-link header-location-badge" style="color:#94a3b8; cursor:default; display:inline-flex; align-items:center; gap:6px;"><img src="/assets/tikum-mark-pin.svg" width="14" height="14" alt="Indonesia"> Indonesia</span>
       <div id="authHeaderContainer">
         <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()">Login / Sign Up</button>
       </div>
@@ -1002,15 +1007,11 @@
   <!-- Featured event hero (Live Nation Asia style: poster-led "Just Announced") -->
   <section id="heroFeature" class="ln-hero-feature"></section>
 
-  <div class="trust-strip" style="background:#101012; border-bottom:1px solid #232326;">
+  <div class="trust-strip" style="background: #0E121E; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
     <div class="trust-item"><i class="fa-solid fa-certificate" style="color:var(--primary);"></i> <span data-i18n="trust.pillarVerified">Listing Terverifikasi</span></div>
-    <div class="trust-item"><i class="fa-solid fa-user-shield" style="color:#10b981;"></i> <span data-i18n="trust.pillarVenue">Dukungan Venue PIC</span></div>
+    <div class="trust-item"><img src="/assets/tikum-mark-pin.svg" width="14" height="14" alt="Venue Assist"> <span data-i18n="trust.pillarVenue">Dukungan Venue PIC (Opsional)</span></div>
     <div class="trust-item"><i class="fa-solid fa-vault" style="color:var(--cyan);"></i> <span data-i18n="trust.pillarProtected">Transaksi Terlindungi (Escrow)</span></div>
     <div class="trust-item"><i class="fa-solid fa-receipt" style="color:#f59e0b;"></i> <span data-i18n="trust.pillarPricing">Harga Transparan</span></div>
-    <div class="trust-item" id="feedFreshnessItem" style="display:none;"><i class="fa-solid fa-bolt" style="color:#10b981;"></i> <span id="feedFreshnessText">Live Auto-Refresh (H+2 Expiry Engine)</span></div>
-  </div>
-    <div class="trust-item"><i class="fa-solid fa-lock"></i> Escrow Pembayaran Aman</div>
-    <div class="trust-item"><i class="fa-solid fa-user-shield"></i> PIC Fisik di Gerbang Venue</div>
     <div class="trust-item" id="feedFreshnessItem" style="display:none;"><i class="fa-solid fa-bolt" style="color:#10b981;"></i> <span id="feedFreshnessText">Live Auto-Refresh (H+2 Expiry Engine)</span></div>
   </div>
 
@@ -1260,7 +1261,7 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> TIKUM — by SHINERVA
+          <img src="/assets/tikum-mark-p2p.svg" width="22" height="22" alt="Tikum"> TIKUM — by SHINERVA
         </div>
         <p style="color: var(--text-muted, #94a3b8); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
           Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.

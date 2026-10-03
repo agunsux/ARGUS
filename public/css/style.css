@@ -1,15 +1,18 @@
 :root {
-  --bg: #0b0f19;
-  --surface: #0f172a;
-  --surface-hover: #1e293b;
-  --border: #1e293b;
-  --border-focus: #3b82f6;
+  --bg: #04030A;
+  --surface: #0E121E;
+  --surface-hover: #182032;
+  --surface-card: rgba(255, 255, 255, 0.04);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-focus: #5533FF;
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-dim: #64748b;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-glow: rgba(37, 99, 235, 0.25);
+  --primary: #5533FF;
+  --primary-hover: #4326D6;
+  --primary-glow: rgba(85, 51, 255, 0.28);
+  --accent: #FF5F3E;
+  --accent-glow: rgba(255, 95, 62, 0.28);
   --cyan: #38bdf8;
   --success: #10b981;
   --success-bg: rgba(16, 185, 129, 0.12);
@@ -102,7 +105,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
@@ -121,8 +124,9 @@ body {
 /* Header */
 .site-header {
   border-bottom: 1px solid var(--border);
-  background: rgba(11, 15, 25, 0.95);
-  backdrop-filter: blur(8px);
+  background: rgba(4, 3, 10, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -147,18 +151,22 @@ body {
   color: inherit;
 }
 
+.brand-logo {
+  width: 34px;
+  height: 34px;
+  display: block;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
 .brand-badge {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   width: 36px;
   height: 36px;
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  font-size: 18px;
-  color: #fff;
-  box-shadow: 0 0 12px var(--primary-glow);
+  flex-shrink: 0;
 }
 
 .brand-title {

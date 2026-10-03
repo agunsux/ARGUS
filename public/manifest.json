@@ -5,10 +5,15 @@
   "start_url": "https://tikum.app/",
   "scope": "https://tikum.app/",
   "display": "standalone",
-  "background_color": "#0b101b",
-  "theme_color": "#06b6d4",
+  "background_color": "#04030A",
+  "theme_color": "#5533FF",
   "categories": ["shopping", "entertainment", "lifestyle"],
   "icons": [
+    {
+      "src": "/assets/tikum-mark-p2p.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
     {
       "src": "/favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
