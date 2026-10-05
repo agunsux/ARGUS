@@ -46,14 +46,14 @@
     :root {
       --primary: #5533FF;
       --primary-hover: #4326D6;
-      --bg-light: #F8FAFC;
+      --bg-light: #F7F6F2;
       --bg-dark: #04030A;
-      --text-light: #0F172A;
+      --text-light: #18181B;
       --text-dark: #F8FAFC;
-      --card-light: #FFFFFF;
+      --card-light: #FCFBF8;
       --card-dark: #0E121E;
       --accent: #FF5F3E;
-      --border-light: #E2E8F0;
+      --border-light: #E3E0D8;
       --border-dark: rgba(255, 255, 255, 0.08);
     }
 
@@ -128,7 +128,8 @@
       max-width: 800px;
       margin: 0 auto;
       display: flex;
-      background: white;
+      background: var(--card-light, #FCFBF8);
+      border: 1px solid var(--border-light, #E3E0D8);
       border-radius: 8px;
       overflow: hidden;
       padding: 8px;
@@ -1458,12 +1459,7 @@
     }
 
     function toggleLang() {
-      if (window.TikumI18n && typeof window.TikumI18n.openLangModal === 'function') {
-        window.TikumI18n.openLangModal();
-      } else {
-        const btn = document.getElementById('langToggle');
-        if (btn) btn.innerText = btn.innerText === 'ID' ? 'EN' : 'ID';
-      }
+      // Indonesian only: language switcher deactivated
     }
 
     function debounceSearch() {
@@ -1621,7 +1617,7 @@
       const slug = e.slug || e.event_id || e.id;
       const verifDate = e.verified_at || '';
       const tierBadge = e.verification_tier === 'TIER_A_DOUBLE_OFFICIAL'
-        ? '<i class="fa-solid fa-certificate"></i> DOUBLE OFFICIAL'
+        ? '<i class="fa-solid fa-certificate"></i> Verified Event'
         : (e.verification_tier === 'TIER_B_OFFICIAL_EVENT' ? '<i class="fa-solid fa-shield-halved"></i> EVENT VERIFIED' : '<i class="fa-solid fa-shield-halved"></i> TERVERIFIKASI');
 
       let radarBadge = '';

@@ -2419,40 +2419,7 @@
    * 4. Default id-ID ('id')
    */
   function resolveInitialLanguage() {
-    if (isNode) return 'id';
-    // 1. Explicit URL parameter
-    if (typeof window !== 'undefined' && window.location && window.location.search) {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const urlLang = params.get('lang') || params.get('locale');
-        if (urlLang) {
-          const norm = normalizeLang(urlLang);
-          if (norm) return norm;
-        }
-      } catch (e) {}
-    }
-
-    // 2. Stored user preference
-    if (hasStorage) {
-      try {
-        const saved = localStorage.getItem('tikum_lang');
-        if (saved) {
-          const norm = normalizeLang(saved);
-          if (norm) return norm;
-        }
-      } catch (e) {}
-    }
-
-    // 3. Browser locale
-    if (typeof navigator !== 'undefined') {
-      const candidates = [navigator.language, ...(navigator.languages || [])].filter(Boolean);
-      for (const cand of candidates) {
-        const norm = normalizeLang(cand);
-        if (norm) return norm;
-      }
-    }
-
-    // 4. Default id-ID
+    // Tikum is strictly locked to Indonesian ('id') for live events
     return 'id';
   }
 
@@ -2635,65 +2602,12 @@
   }
 
   function openLangModal() {
-    if (!hasDoc) return;
-    let modal = document.getElementById('tikumLangModal');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'tikumLangModal';
-      modal.className = 'lang-modal-overlay';
-      modal.innerHTML = `
-        <div class="lang-modal-box" role="dialog" aria-modal="true" aria-labelledby="langModalTitle">
-          <div class="lang-modal-header">
-            <div id="langModalTitle" style="font-weight: 800; font-size: 16px; display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-globe" style="color: var(--primary);"></i>
-              <span>Select Language / Pilih Bahasa</span>
-            </div>
-            <button type="button" class="lang-modal-close" onclick="window.TikumI18n.closeLangModal()">&times;</button>
-          </div>
-          <div class="lang-modal-body">
-            <div class="lang-tier-title">Global Touring &amp; Music Markets</div>
-            <div class="lang-grid" id="langGridContainer"></div>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeLangModal();
-      });
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeLangModal();
-      });
-    }
-
-    const container = modal.querySelector('#langGridContainer');
-    if (container) {
-      container.innerHTML = '';
-      LANGUAGES.forEach(lang => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        const isActive = (lang.code === currentLang || lang.codeAlias === currentLang);
-        btn.className = `lang-select-item ${isActive ? 'active' : ''}`;
-        btn.innerHTML = `
-          <span class="lang-native">${lang.native}</span>
-          <span class="lang-english">${lang.name} (${lang.pill})</span>
-        `;
-        btn.onclick = () => {
-          applyLanguage(lang.code);
-          closeLangModal();
-        };
-        container.appendChild(btn);
-      });
-    }
-
-    modal.classList.add('visible');
+    // Language selection modal deactivated (Indonesian-only active)
+    return;
   }
 
   function closeLangModal() {
-    if (!hasDoc) return;
-    const modal = document.getElementById('tikumLangModal');
-    if (modal) modal.classList.remove('visible');
+    return;
   }
 
   // Auto initialize on DOM ready
