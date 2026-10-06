@@ -32,6 +32,10 @@
     {
       "path": "/api/discovery/lifecycle/cron",
       "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/content/scheduler/cron",
+      "schedule": "0 2 * * *"
     }
   ]
 }

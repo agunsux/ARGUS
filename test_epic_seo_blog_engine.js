@@ -134,6 +134,30 @@ async function runBlogEngineSuite() {
       assert.ok(flagship.published_at.startsWith('2026-10-06'), 'Must be published on 2026-10-06');
     });
 
+    check('Strict 2x/week editorial calendar: exactly 3 articles PUBLISHED, 17 SCHEDULED', () => {
+      const published = articleRepository.getPublishedArticles();
+      const scheduled = articleRepository.getAllArticles({ status: CONTENT_STATUS.SCHEDULED });
+
+      assert.strictEqual(published.length, 3, 'Must have exactly 3 published articles');
+      assert.strictEqual(scheduled.length, 17, 'Must have exactly 17 scheduled articles');
+
+      const art01 = articleRepository.getArticleById('art-campaign-01');
+      assert.strictEqual(art01.status, CONTENT_STATUS.PUBLISHED);
+      assert.ok(art01.published_at.startsWith('2026-09-29'), 'Article 01 published on 2026-09-29 (Tuesday last week)');
+
+      const art02 = articleRepository.getArticleById('art-campaign-02');
+      assert.strictEqual(art02.status, CONTENT_STATUS.PUBLISHED);
+      assert.ok(art02.published_at.startsWith('2026-10-02'), 'Article 02 published on 2026-10-02 (Friday last week)');
+
+      const art17 = articleRepository.getArticleById('art-campaign-17');
+      assert.strictEqual(art17.status, CONTENT_STATUS.PUBLISHED);
+      assert.ok(art17.published_at.startsWith('2026-10-06'), 'Article 17 published on 2026-10-06 (Tuesday this week)');
+
+      const art03 = articleRepository.getArticleById('art-campaign-03');
+      assert.strictEqual(art03.status, CONTENT_STATUS.SCHEDULED);
+      assert.strictEqual(art03.scheduled_at, '2026-10-09T09:00:00+07:00', 'Article 03 is next up on 2026-10-09 (Friday)');
+    });
+
     check('Pillar page (Article 20) links out to supporting cluster articles', () => {
       const pillar = EDITORIAL_ARTICLES.find(a => a.slug === 'panduan-lengkap-secondary-ticketing-di-indonesia');
       assert.ok(pillar, 'Pillar page must exist');
@@ -447,44 +471,48 @@ async function runBlogEngineSuite() {
     });
 
     await checkAsync('Production Simulation: scheduled article becomes published upon scheduled_at reached', async () => {
-      // 1. Initial State: art-campaign-11 is scheduled for 2026-10-09
-      const art11 = articleRepository.getArticleById('art-campaign-11');
-      assert.strictEqual(art11.status, CONTENT_STATUS.SCHEDULED);
-      assert.strictEqual(art11.scheduled_at, '2026-10-09T09:00:00+07:00');
+      // 1. Initial State: art-campaign-03 is scheduled for 2026-10-09
+      const art03 = articleRepository.getArticleById('art-campaign-03');
+      assert.strictEqual(art03.status, CONTENT_STATUS.SCHEDULED);
+      assert.strictEqual(art03.scheduled_at, '2026-10-09T09:00:00+07:00');
 
       // 2. Verify hidden at current time (404 with noindex, nofollow)
-      const resBefore = await request(`/blog/${art11.slug}`);
+      const resBefore = await request(`/blog/${art03.slug}`);
       assert.strictEqual(resBefore.statusCode, 404);
       assert.ok(resBefore.body.includes('noindex, nofollow'));
 
       // 3. Verify NOT in sitemap or RSS
       const sitemapBefore = await request('/sitemap.xml');
-      assert.ok(!sitemapBefore.body.includes(art11.slug));
+      assert.ok(!sitemapBefore.body.includes(art03.slug));
       const rssBefore = await request('/blog/rss.xml');
-      assert.ok(!rssBefore.body.includes(art11.slug));
+      assert.ok(!rssBefore.body.includes(art03.slug));
 
-      // 4. Simulate advancing time to scheduled_at: 2026-10-09T09:01:00+07:00
+      // 4. Simulate advancing time to scheduled_at: 2026-10-09T09:01:00+07:00 via Cron endpoint
       const countBefore = articleRepository.getAllArticles().length;
-      const simulatedTime = new Date('2026-10-09T09:01:00+07:00');
-      const newlyPublished = publishingScheduler.publishDueArticles(simulatedTime);
-      assert.strictEqual(newlyPublished.length, 1);
-      assert.strictEqual(newlyPublished[0].id, 'art-campaign-11');
-      assert.strictEqual(newlyPublished[0].status, CONTENT_STATUS.PUBLISHED);
+      const cronRes = await request('/api/content/scheduler/cron?now=2026-10-09T09:01:00%2B07:00');
+      assert.strictEqual(cronRes.statusCode, 200, 'Cron endpoint must return 200');
+      const cronData = JSON.parse(cronRes.body);
+      assert.strictEqual(cronData.success, true);
+      assert.strictEqual(cronData.published_due_count, 1);
+      assert.strictEqual(cronData.published_due_articles[0].id, 'art-campaign-03');
 
-      // 5. Verify art-campaign-11 is now 200 on /blog/:slug
-      const resAfter = await request(`/blog/${art11.slug}`);
+      const reloadedArt03 = articleRepository.getArticleById('art-campaign-03');
+      assert.strictEqual(reloadedArt03.status, CONTENT_STATUS.PUBLISHED);
+
+      // 5. Verify art-campaign-03 is now 200 on /blog/:slug
+      const resAfter = await request(`/blog/${art03.slug}`);
       assert.strictEqual(resAfter.statusCode, 200);
-      assert.ok(resAfter.body.includes(art11.title));
+      assert.ok(resAfter.body.includes(art03.title));
 
       // 6. Verify appears in /blog, /blog/category, /sitemap.xml, /blog/rss.xml
       const blogAfter = await request('/blog');
-      assert.ok(blogAfter.body.includes(art11.slug));
+      assert.ok(blogAfter.body.includes(art03.slug));
 
       const sitemapAfter = await request('/sitemap.xml');
-      assert.ok(sitemapAfter.body.includes(art11.slug));
+      assert.ok(sitemapAfter.body.includes(art03.slug));
 
       const rssAfter = await request('/blog/rss.xml');
-      assert.ok(rssAfter.body.includes(art11.slug));
+      assert.ok(rssAfter.body.includes(art03.slug));
 
       // 7. Verify total article count remains unchanged (zero duplicates created)
       assert.strictEqual(articleRepository.getAllArticles().length, countBefore, 'Zero duplicate articles created');
@@ -492,8 +520,8 @@ async function runBlogEngineSuite() {
       // 8. Verify restart survival: new published status persists on restart
       const { ArticleRepository } = require('./src/content/ArticleRepository');
       const restarted = new ArticleRepository();
-      const reloadedArt11 = restarted.getArticleById('art-campaign-11');
-      assert.strictEqual(reloadedArt11.status, CONTENT_STATUS.PUBLISHED);
+      const reloadedArt = restarted.getArticleById('art-campaign-03');
+      assert.strictEqual(reloadedArt.status, CONTENT_STATUS.PUBLISHED);
     });
 
     console.log('\n===================================================================');

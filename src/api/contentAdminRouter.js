@@ -236,6 +236,43 @@ router.post('/api/admin/content/scheduler/run', requireContentAdmin, async (req,
   }
 });
 
+// Vercel Cron & Production Automated Execution Endpoint
+async function handleContentSchedulerCron(req, res) {
+  try {
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret) {
+      const authHeader = req.headers ? (req.headers.authorization || req.header('authorization')) : null;
+      const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+      const querySecret = req.query?.secret;
+      if (bearerToken !== cronSecret && querySecret !== cronSecret) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Invalid cron secret' });
+      }
+    }
+
+    const now = (req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
+      ? new Date(req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
+      : new Date();
+
+    const newlyPublished = publishingScheduler.publishDueArticles(now);
+    const cycleResult = await publishingScheduler.runCycle({ now, forceRun: req.query?.force === 'true' });
+
+    res.json({
+      success: true,
+      timestamp: now.toISOString(),
+      published_due_count: newlyPublished.length,
+      published_due_articles: newlyPublished.map(a => ({ id: a.id, slug: a.slug, title: a.title })),
+      cycle_result: cycleResult
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+router.get('/api/content/scheduler/cron', handleContentSchedulerCron);
+router.post('/api/content/scheduler/cron', handleContentSchedulerCron);
+router.get('/api/cron/content-scheduler', handleContentSchedulerCron);
+router.post('/api/cron/content-scheduler', handleContentSchedulerCron);
+
 // -------------------------------------------------------------
 // 7. Real Telemetry & Operational Analytics
 // -------------------------------------------------------------

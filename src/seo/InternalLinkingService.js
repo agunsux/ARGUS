@@ -155,11 +155,30 @@ class InternalLinkingService {
   static injectContextualLinks(htmlContent, links = []) {
     if (!htmlContent || links.length === 0) return htmlContent;
 
+    // Filter out unpublished or scheduled blog articles
+    let safeLinks = links;
+    try {
+      const { articleRepository } = require('../content/ArticleRepository');
+      const nowIso = new Date().toISOString();
+      safeLinks = links.filter(link => {
+        if (!link.url || !link.url.startsWith('/blog/')) return true;
+        if (link.url.includes('/blog/category/') || link.url.includes('/blog/editorial-standards') || link.url === '/blog') {
+          return true;
+        }
+        const slug = link.url.replace('/blog/', '').split(/[?#]/)[0];
+        const art = articleRepository.getArticleBySlug(slug);
+        if (!art) return false;
+        if (art.status !== 'published') return false;
+        if (art.published_at && art.published_at > nowIso) return false;
+        return true;
+      });
+    } catch (_) {}
+
     let modified = htmlContent;
     let injectedCount = 0;
     const maxInjections = 5;
 
-    for (const link of links) {
+    for (const link of safeLinks) {
       if (injectedCount >= maxInjections) break;
 
       // Only match anchor text that is not already inside an <a> tag
