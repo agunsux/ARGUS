@@ -53,7 +53,9 @@ const state = {
   chargebacks: [],
   payment_attempts: [],
   idempotency_records: [],
-  articles: []
+  articles: [],
+  inbox_messages: [],
+  contact_inquiries: []
 };
 
 try {
@@ -109,6 +111,8 @@ function resetDatabase() {
   state.chargebacks = [];
   state.payment_attempts = [];
   state.idempotency_records = [];
+  state.inbox_messages = [];
+  state.contact_inquiries = [];
   state.processed_webhooks = new Set();
 
   try {
@@ -506,9 +510,9 @@ function resetDatabase() {
     name: 'Pestapora 2026',
     title: 'Pestapora 2026',
     artists: ['Tulus', 'Hindia', 'The Changcuters', 'Danilla', 'Isyana Sarasvati', 'Feast'],
-    date: '2026-09-25',
-    start_date: '2026-09-25',
-    end_date: '2026-10-05',
+    date: '2026-10-25',
+    start_date: '2026-10-25',
+    end_date: '2026-10-28',
     venue_id: 'venue-kemayoran',
     venue: 'Gambir Expo / JIExpo Kemayoran',
     venue_name: 'Gambir Expo / JIExpo Kemayoran',

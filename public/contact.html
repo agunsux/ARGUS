@@ -133,6 +133,59 @@
 
     </div>
 
+    <!-- Interactive Contact Form -->
+    <div class="card" style="padding: 32px; margin-bottom: 40px; background: #0f172a; border: 1px solid var(--border);">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <div style="font-size: 20px; color: var(--cyan);"><i class="fa-solid fa-paper-plane"></i></div>
+        <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin: 0;">Kirim Pesan / Pengaduan Langsung</h2>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">
+        Pesan akan diteruskan ke tim support operasional Tikum (<span style="color: var(--cyan); font-weight: 600;">support@tikum.app</span>) dan Anda akan menerima tanda terima resmi beserta nomor tiket via email.
+      </p>
+
+      <form id="contactInquiryForm" onsubmit="handleContactSubmit(event)" style="display: flex; flex-direction: column; gap: 18px;">
+        <!-- Anti-spam Honeypot (hidden from human users) -->
+        <input type="text" name="hp_website" id="hpWebsite" style="display: none !important; tab-index: -1;" autocomplete="off">
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+          <div>
+            <label for="contactName" style="display: block; font-size: 13px; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;">Nama Lengkap <span style="color: #f43f5e;">*</span></label>
+            <input type="text" id="contactName" required placeholder="Contoh: Budi Santoso" style="width: 100%; padding: 10px 14px; background: #0a0f1d; border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 14px; outline: none; box-sizing: border-box;">
+          </div>
+          <div>
+            <label for="contactEmail" style="display: block; font-size: 13px; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;">Alamat Email Anda <span style="color: #f43f5e;">*</span></label>
+            <input type="email" id="contactEmail" required placeholder="nama@email.com" style="width: 100%; padding: 10px 14px; background: #0a0f1d; border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 14px; outline: none; box-sizing: border-box;">
+          </div>
+        </div>
+
+        <div>
+          <label for="contactSubject" style="display: block; font-size: 13px; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;">Perihal / Kategori <span style="color: #f43f5e;">*</span></label>
+          <select id="contactSubject" required style="width: 100%; padding: 10px 14px; background: #0a0f1d; border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 14px; outline: none; box-sizing: border-box;">
+            <option value="" disabled selected>Pilih kategori pertanyaan atau kendala...</option>
+            <option value="Pertanyaan Pembelian Tiket">Pertanyaan Pembelian Tiket & Verifikasi</option>
+            <option value="Kendala Rekening Bersama (Escrow)">Kendala Rekening Bersama (Escrow / Pembayaran)</option>
+            <option value="Bantuan Gate Masuk Venue (Hari H)">Bantuan Gate Masuk Venue (Hari H Acara)</option>
+            <option value="Kerjasama Promotor / Event Organizer">Kerjasama Promotor / Event Organizer</option>
+            <option value="Pengaduan Sengketa Transaksi">Pengaduan Sengketa Transaksi</option>
+            <option value="Lainnya">Lainnya / Korespondensi Umum</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="contactMessage" style="display: block; font-size: 13px; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;">Pesan Anda <span style="color: #f43f5e;">*</span></label>
+          <textarea id="contactMessage" required rows="5" placeholder="Tuliskan pertanyaan, nomor order (jika ada), atau detail kendala Anda secara lengkap..." style="width: 100%; padding: 12px 14px; background: #0a0f1d; border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 14px; outline: none; resize: vertical; box-sizing: border-box; line-height: 1.6;"></textarea>
+        </div>
+
+        <div id="contactFormStatus" style="display: none; padding: 12px 16px; border-radius: 6px; font-size: 13px; line-height: 1.5;"></div>
+
+        <div>
+          <button type="submit" id="btnSubmitContact" class="btn btn-cyan" style="padding: 12px 28px; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-paper-plane"></i> Kirim Pesan ke Support Tikum
+          </button>
+        </div>
+      </form>
+    </div>
+
     <!-- Operational Assistance Guide -->
     <div class="card" style="padding: 28px; margin-bottom: 40px; background: #0b1120; border-color: #1e293b;">
       <h3 style="font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 14px;">
@@ -223,5 +276,54 @@
   </footer>
 
   <script src="/js/i18n.js"></script>
+  <script>
+    async function handleContactSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitContact');
+      const statusBox = document.getElementById('contactFormStatus');
+      const name = document.getElementById('contactName').value.trim();
+      const email = document.getElementById('contactEmail').value.trim();
+      const subject = document.getElementById('contactSubject').value;
+      const message = document.getElementById('contactMessage').value.trim();
+      const hpWebsite = document.getElementById('hpWebsite').value;
+
+      statusBox.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirimkan pesan...';
+
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, subject, message, hp_website: hpWebsite })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          statusBox.style.display = 'block';
+          statusBox.style.background = 'rgba(16, 185, 129, 0.15)';
+          statusBox.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+          statusBox.style.color = '#34d399';
+          statusBox.innerHTML = `<strong><i class="fa-solid fa-circle-check"></i> Pesan Berhasil Terkirim!</strong><br>${data.message || 'Pesan telah kami terima.'} (Nomor Tiket: <code>${data.inquiry_id || ''}</code>). Salinan konfirmasi telah dikirim ke <code>${email}</code>.`;
+          document.getElementById('contactInquiryForm').reset();
+        } else {
+          statusBox.style.display = 'block';
+          statusBox.style.background = 'rgba(239, 68, 68, 0.15)';
+          statusBox.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+          statusBox.style.color = '#f87171';
+          statusBox.innerHTML = `<strong><i class="fa-solid fa-triangle-exclamation"></i> Gagal Mengirim:</strong> ${data.error || 'Terjadi kesalahan sistem.'}`;
+        }
+      } catch (err) {
+        statusBox.style.display = 'block';
+        statusBox.style.background = 'rgba(239, 68, 68, 0.15)';
+        statusBox.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+        statusBox.style.color = '#f87171';
+        statusBox.innerHTML = '<strong><i class="fa-solid fa-triangle-exclamation"></i> Gangguan Koneksi:</strong> Tidak dapat menghubungi server. Silakan hubungi kami via WhatsApp resmi.';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Kirim Pesan ke Support Tikum';
+      }
+    }
+  </script>
 </body>
 </html>

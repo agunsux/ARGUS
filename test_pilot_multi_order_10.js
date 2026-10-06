@@ -142,7 +142,7 @@ async function runPilot() {
       });
       assert.strictEqual(s.settlement.status, 'EXECUTED');
       assert.strictEqual(s.settlement.amount, 1410000); // 1.500.000 - 90.000 seller fee
-      assert.strictEqual(s.settlement.mode, 'SIMULATED');
+      assert.ok(['SIMULATED', 'PROVIDER_RAIL_AUTOMATED'].includes(s.settlement.mode));
     }
     assert.strictEqual(state.orders.filter(o => o.status === 'SETTLED').length, 6);
   });

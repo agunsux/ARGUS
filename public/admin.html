@@ -450,6 +450,10 @@
         <span class="nav-item-left"><i class="fa-solid fa-newspaper"></i> Editorial &amp; SEO Blog</span>
         <span id="sidebarBlogCount" class="nav-badge">-</span>
       </button>
+      <button class="nav-item" onclick="switchView('inbox', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-inbox"></i> Inbox (@tikum.app)</span>
+        <span id="sidebarInboxCount" class="nav-badge" style="display: none; background: #0284c7; color: #fff;">0</span>
+      </button>
 
       <div class="sidebar-heading" style="margin-top: 16px;">Platform Control</div>
       <a href="/" class="nav-item" target="_blank">
@@ -1371,6 +1375,136 @@
         </div>
       </div>
 
+      <!-- DEDICATED VIEW: HUMAN INBOX (@tikum.app) -->
+      <div id="viewInbox" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <div>
+            <h2 style="font-size: 20px; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-inbox" style="color: #38bdf8;"></i> Tikum Operations Inbox
+            </h2>
+            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+              Korespondensi Resmi Pelanggan &bull; Identitas: <span class="mono" style="color: #38bdf8;">support@tikum.app</span> &bull; Resend Outbound + Cloudflare/API Inbound
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="loadInboxView()" title="Muat ulang pesan masuk">
+              <i class="fa-solid fa-rotate"></i> Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Inbox KPI Overview -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
+          <div class="kpi-card" style="padding: 14px 16px;">
+            <div class="kpi-title">Pesan Belum Dibaca</div>
+            <div id="kpiInboxUnread" class="kpi-value" style="color: #38bdf8;">0</div>
+            <div class="kpi-sub">Memerlukan tindak lanjut</div>
+          </div>
+          <div class="kpi-card" style="padding: 14px 16px;">
+            <div class="kpi-title">Total Korespondensi</div>
+            <div id="kpiInboxTotal" class="kpi-value" style="color: #fff;">0</div>
+            <div class="kpi-sub">Form kontak &amp; inbound email</div>
+          </div>
+          <div class="kpi-card" style="padding: 14px 16px;">
+            <div class="kpi-title">Telah Dibalas</div>
+            <div id="kpiInboxReplied" class="kpi-value" style="color: #34d399;">0</div>
+            <div class="kpi-sub">Terkirim via @tikum.app</div>
+          </div>
+          <div class="kpi-card" style="padding: 14px 16px;">
+            <div class="kpi-title">Diarsipkan</div>
+            <div id="kpiInboxArchived" class="kpi-value" style="color: #94a3b8;">0</div>
+            <div class="kpi-sub">Selesai ditangani</div>
+          </div>
+        </div>
+
+        <!-- Two-Column Master-Detail Layout -->
+        <div style="display: grid; grid-template-columns: 360px 1fr; gap: 16px; min-height: 540px; align-items: stretch;">
+          
+          <!-- Column 1: Message List -->
+          <div class="card" style="padding: 16px; display: flex; flex-direction: column; overflow: hidden; background: #0b1120;">
+            <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+              <select id="inboxStatusFilter" class="form-select" onchange="loadInboxView()" style="flex: 1; font-size: 12px; padding: 6px 10px;">
+                <option value="ALL">Semua Pesan</option>
+                <option value="UNREAD" selected>Belum Dibaca</option>
+                <option value="REPLIED">Telah Dibalas</option>
+                <option value="ARCHIVED">Diarsipkan</option>
+              </select>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <input type="text" id="inboxSearchInput" class="form-input" placeholder="Cari pengirim, subjek..." onkeyup="handleInboxSearch(event)" style="width: 100%; box-sizing: border-box; font-size: 12px; padding: 7px 10px;">
+            </div>
+
+            <div id="inboxListContainer" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; max-height: 520px;">
+              <div style="text-align: center; color: #64748b; padding: 40px 10px; font-size: 12px;">Memuat pesan inbox...</div>
+            </div>
+          </div>
+
+          <!-- Column 2: Message Reading & Reply Pane -->
+          <div class="card" id="inboxDetailPane" style="padding: 24px; display: flex; flex-direction: column; background: #0f172a;">
+            <div id="inboxDetailEmpty" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #64748b; text-align: center; padding: 60px 20px;">
+              <i class="fa-solid fa-envelope-open-text" style="font-size: 48px; color: #334155; margin-bottom: 16px;"></i>
+              <div style="font-size: 15px; font-weight: 600; color: #94a3b8;">Belum Ada Pesan yang Dipilih</div>
+              <div style="font-size: 12px; color: #64748b; max-width: 320px; margin-top: 6px;">Pilih salah satu pesan di daftar sebelah kiri untuk membaca detail korespondensi dan mengirim balasan.</div>
+            </div>
+
+            <div id="inboxDetailContent" style="display: none; flex-direction: column; height: 100%;">
+              <!-- Message Header -->
+              <div style="border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px;">
+                  <h3 id="inboxDetailSubject" style="font-size: 18px; font-weight: 700; color: #fff; margin: 0; line-height: 1.4;"></h3>
+                  <div id="inboxDetailStatusBadge"></div>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: #94a3b8;">
+                  <div><strong style="color: #cbd5e1;">Dari:</strong> <span id="inboxDetailSender"></span></div>
+                  <div><strong style="color: #cbd5e1;">Kepada:</strong> <span id="inboxDetailRecipient">support@tikum.app</span></div>
+                  <div><strong style="color: #cbd5e1;">Waktu:</strong> <span id="inboxDetailTime" class="mono"></span></div>
+                  <div><strong style="color: #cbd5e1;">Sumber:</strong> <span id="inboxDetailSource"></span></div>
+                </div>
+              </div>
+
+              <!-- Message Body -->
+              <div style="flex: 1; overflow-y: auto; margin-bottom: 20px; max-height: 300px;">
+                <div style="font-size: 11px; text-transform: uppercase; color: #64748b; margin-bottom: 8px; font-weight: 600;">Isi Pesan:</div>
+                <div id="inboxDetailBody" style="background: #0a0f1d; border: 1px solid #1e293b; border-radius: 6px; padding: 18px; font-size: 13px; line-height: 1.7; color: #e2e8f0; white-space: pre-wrap; font-family: inherit;"></div>
+
+                <div id="inboxRepliesThread" style="margin-top: 20px; display: none;">
+                  <div style="font-size: 11px; text-transform: uppercase; color: #64748b; margin-bottom: 8px; font-weight: 600;">Riwayat Balasan Resmi (@tikum.app):</div>
+                  <div id="inboxRepliesList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                </div>
+              </div>
+
+              <!-- Action Toolbar & Reply Box -->
+              <div style="border-top: 1px solid #1e293b; padding-top: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <div style="font-size: 12px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-reply"></i> Balas dari support@tikum.app
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <button id="btnArchiveMsg" class="btn btn-secondary btn-sm" onclick="handleArchiveCurrentMessage()">
+                      <i class="fa-solid fa-box-archive"></i> Arsipkan
+                    </button>
+                    <button id="btnToggleReadMsg" class="btn btn-secondary btn-sm" onclick="handleToggleReadCurrentMessage()">
+                      <i class="fa-solid fa-envelope"></i> Tandai Belum Dibaca
+                    </button>
+                  </div>
+                </div>
+
+                <form onsubmit="handleSendReply(event)">
+                  <textarea id="inboxReplyText" class="form-input" rows="4" placeholder="Tuliskan tanggapan resmi dari support@tikum.app untuk pengguna..." required style="width: 100%; box-sizing: border-box; font-size: 13px; line-height: 1.6; margin-bottom: 10px;"></textarea>
+                  <div style="display: flex; justify-content: flex-end;">
+                    <button type="submit" id="btnSendReply" class="btn btn-cyan btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-paper-plane"></i> Kirim Balasan via Resend
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <!-- Modal Create / Edit Article -->
       <div id="articleModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
         <div class="card" style="max-width: 720px; width: 100%; border-color: #0284c7; background: #0f172a; max-height: 85vh; overflow-y: auto;">
@@ -1770,7 +1904,7 @@
     }
 
     // View Switching
-    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust', 'payments', 'editorial'];
+    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust', 'payments', 'editorial', 'inbox'];
 
     function switchView(viewName, btn = null) {
       currentView = viewName;
@@ -1784,6 +1918,7 @@
       document.getElementById('viewSources').style.display = viewName === 'sources' ? 'block' : 'none';
       document.getElementById('viewPayments').style.display = viewName === 'payments' ? 'block' : 'none';
       document.getElementById('viewEditorial').style.display = viewName === 'editorial' ? 'block' : 'none';
+      document.getElementById('viewInbox').style.display = viewName === 'inbox' ? 'block' : 'none';
       document.getElementById('viewGeneric').style.display = DEDICATED_VIEWS.includes(viewName) ? 'none' : 'block';
 
       if (viewName === 'event-supply') {
@@ -1796,6 +1931,8 @@
         loadPaymentsView();
       } else if (viewName === 'editorial') {
         loadEditorialView();
+      } else if (viewName === 'inbox') {
+        loadInboxView();
       } else if (!DEDICATED_VIEWS.includes(viewName)) {
         loadGenericEntityView(viewName);
       }
@@ -3118,10 +3255,258 @@
       }
     }
 
+    // =========================================================================
+    // INBOX OPERATIONS CONTROLLER (@tikum.app)
+    // =========================================================================
+    let inboxMessages = [];
+    let currentInboxMessage = null;
+
+    async function loadInboxView() {
+      const listContainer = document.getElementById('inboxListContainer');
+      const statusFilter = document.getElementById('inboxStatusFilter')?.value || 'ALL';
+      const search = document.getElementById('inboxSearchInput')?.value || '';
+
+      listContainer.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px 10px; font-size: 12px;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat pesan...</div>';
+
+      try {
+        const query = new URLSearchParams();
+        if (statusFilter !== 'ALL') query.set('status', statusFilter);
+        if (search) query.set('search', search);
+
+        const res = await adminFetch(`/api/admin/inbox?${query.toString()}`);
+        if (!res.ok) throw new Error('Gagal memuat pesan inbox');
+        const data = await res.json();
+
+        inboxMessages = data.messages || [];
+
+        // Update KPIs
+        const unreadCount = data.unread_count || 0;
+        const totalCount = data.total || 0;
+        const repliedCount = inboxMessages.filter(m => (m.status || '').toUpperCase() === 'REPLIED').length;
+        const archivedCount = inboxMessages.filter(m => (m.status || '').toUpperCase() === 'ARCHIVED').length;
+
+        document.getElementById('kpiInboxUnread').innerText = unreadCount;
+        document.getElementById('kpiInboxTotal').innerText = totalCount;
+        document.getElementById('kpiInboxReplied').innerText = repliedCount;
+        document.getElementById('kpiInboxArchived').innerText = archivedCount;
+
+        const sidebarBadge = document.getElementById('sidebarInboxCount');
+        if (sidebarBadge) {
+          sidebarBadge.innerText = unreadCount;
+          sidebarBadge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+        }
+
+        renderInboxList();
+
+        if (currentInboxMessage) {
+          const stillThere = inboxMessages.find(m => m.id === currentInboxMessage.id);
+          if (stillThere) {
+            selectInboxMessage(stillThere.id, false);
+          } else {
+            resetInboxDetailPane();
+          }
+        }
+      } catch (err) {
+        listContainer.innerHTML = `<div style="text-align: center; color: #f87171; padding: 30px 10px; font-size: 12px;"><i class="fa-solid fa-triangle-exclamation"></i> ${err.message}</div>`;
+      }
+    }
+
+    function renderInboxList() {
+      const listContainer = document.getElementById('inboxListContainer');
+      if (inboxMessages.length === 0) {
+        listContainer.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px 10px; font-size: 12px;">Tidak ada pesan yang sesuai filter.</div>';
+        return;
+      }
+
+      listContainer.innerHTML = inboxMessages.map(msg => {
+        const isSelected = currentInboxMessage && currentInboxMessage.id === msg.id;
+        const isUnread = (msg.status || '').toUpperCase() === 'UNREAD';
+        const isReplied = (msg.status || '').toUpperCase() === 'REPLIED';
+        const isArchived = (msg.status || '').toUpperCase() === 'ARCHIVED';
+
+        let badgeTag = '';
+        if (isUnread) badgeTag = '<span class="tag tag-high" style="font-size: 9px; padding: 1px 6px;">BARU</span>';
+        else if (isReplied) badgeTag = '<span class="tag tag-success" style="font-size: 9px; padding: 1px 6px;">DIBALAS</span>';
+        else if (isArchived) badgeTag = '<span class="tag tag-neutral" style="font-size: 9px; padding: 1px 6px;">ARSIP</span>';
+
+        const snippet = (msg.body || '').substring(0, 70) + ((msg.body || '').length > 70 ? '...' : '');
+        const timeStr = formatTs(msg.created_at);
+
+        return `
+          <div onclick="selectInboxMessage('${msg.id}')" style="cursor: pointer; padding: 12px; border-radius: 6px; border: 1px solid ${isSelected ? '#38bdf8' : '#1e293b'}; background: ${isSelected ? '#172554' : (isUnread ? '#1e293b' : '#0f172a')}; transition: all 0.15s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-size: 12px; font-weight: ${isUnread ? '700' : '600'}; color: ${isUnread ? '#fff' : '#cbd5e1'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">
+                ${escapeHtml(msg.sender_name || msg.from || 'Pengguna')}
+              </span>
+              ${badgeTag}
+            </div>
+            <div style="font-size: 12px; font-weight: ${isUnread ? '700' : '500'}; color: #e2e8f0; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${escapeHtml(msg.subject || '(Tanpa Subjek)')}
+            </div>
+            <div style="font-size: 11px; color: #94a3b8; line-height: 1.4; margin-bottom: 6px;">
+              ${escapeHtml(snippet)}
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #64748b;" class="mono">
+              <span>${timeStr}</span>
+              <span>${msg.source || 'INBOUND'}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function selectInboxMessage(id, triggerReadApi = true) {
+      const msg = inboxMessages.find(m => m.id === id);
+      if (!msg) return;
+
+      currentInboxMessage = msg;
+      renderInboxList();
+
+      document.getElementById('inboxDetailEmpty').style.display = 'none';
+      const content = document.getElementById('inboxDetailContent');
+      content.style.display = 'flex';
+
+      document.getElementById('inboxDetailSubject').innerText = msg.subject || '(Tanpa Subjek)';
+      document.getElementById('inboxDetailSender').innerText = `${msg.sender_name || 'Pengguna'} <${msg.sender_email || msg.from}>`;
+      document.getElementById('inboxDetailRecipient').innerText = msg.to || 'support@tikum.app';
+      document.getElementById('inboxDetailTime').innerText = formatTs(msg.created_at);
+      document.getElementById('inboxDetailSource').innerText = msg.source || 'INBOUND';
+      document.getElementById('inboxDetailBody').innerText = msg.body || msg.text || '';
+
+      const status = (msg.status || 'UNREAD').toUpperCase();
+      let badgeHtml = '';
+      if (status === 'UNREAD') badgeHtml = '<span class="tag tag-high">BELUM DIBACA</span>';
+      else if (status === 'REPLIED') badgeHtml = '<span class="tag tag-success">TELAH DIBALAS</span>';
+      else if (status === 'ARCHIVED') badgeHtml = '<span class="tag tag-neutral">DIARSIPKAN</span>';
+      else badgeHtml = '<span class="tag tag-low">DIBACA</span>';
+      document.getElementById('inboxDetailStatusBadge').innerHTML = badgeHtml;
+
+      const threadContainer = document.getElementById('inboxRepliesThread');
+      const repliesList = document.getElementById('inboxRepliesList');
+      if (msg.replies && msg.replies.length > 0) {
+        threadContainer.style.display = 'block';
+        repliesList.innerHTML = msg.replies.map(r => `
+          <div style="background: #1e293b; border-left: 3px solid #38bdf8; border-radius: 4px; padding: 10px 14px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #94a3b8; font-size: 11px;">
+              <span style="font-weight: 600; color: #38bdf8;">Admin (${r.admin_email || 'support@tikum.app'})</span>
+              <span class="mono">${formatTs(r.sent_at)}</span>
+            </div>
+            <div style="color: #f1f5f9; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(r.text)}</div>
+          </div>
+        `).join('');
+      } else {
+        threadContainer.style.display = 'none';
+      }
+
+      if (triggerReadApi && status === 'UNREAD') {
+        try {
+          const res = await adminFetch(`/api/admin/inbox/${id}`);
+          if (res.ok) {
+            msg.status = 'READ';
+            renderInboxList();
+            const badge = document.getElementById('sidebarInboxCount');
+            const unreadCount = inboxMessages.filter(m => (m.status || '').toUpperCase() === 'UNREAD').length;
+            if (badge) {
+              badge.innerText = unreadCount;
+              badge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    function resetInboxDetailPane() {
+      currentInboxMessage = null;
+      document.getElementById('inboxDetailEmpty').style.display = 'flex';
+      document.getElementById('inboxDetailContent').style.display = 'none';
+    }
+
+    function handleInboxSearch(e) {
+      if (e.key === 'Enter' || e.target.value === '') {
+        loadInboxView();
+      }
+    }
+
+    async function handleSendReply(e) {
+      e.preventDefault();
+      if (!currentInboxMessage) return;
+
+      const replyText = document.getElementById('inboxReplyText').value.trim();
+      if (!replyText) return;
+
+      const btn = document.getElementById('btnSendReply');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim via Resend...';
+
+      try {
+        const res = await adminFetch(`/api/admin/inbox/${currentInboxMessage.id}/reply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reply_text: replyText })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal mengirim balasan');
+
+        showToast('Balasan resmi berhasil dikirim ke ' + (currentInboxMessage.sender_email || 'pengguna'), 'success');
+        document.getElementById('inboxReplyText').value = '';
+
+        if (!currentInboxMessage.replies) currentInboxMessage.replies = [];
+        if (data.reply) currentInboxMessage.replies.push(data.reply);
+        currentInboxMessage.status = 'REPLIED';
+
+        selectInboxMessage(currentInboxMessage.id, false);
+        loadInboxView();
+      } catch (err) {
+        showToast('Gagal mengirim balasan: ' + err.message, 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Kirim Balasan via Resend';
+      }
+    }
+
+    async function handleArchiveCurrentMessage() {
+      if (!currentInboxMessage) return;
+      try {
+        const res = await adminFetch(`/api/admin/inbox/${currentInboxMessage.id}/archive`, { method: 'POST' });
+        if (!res.ok) throw new Error('Gagal mengarsipkan pesan');
+        showToast('Pesan berhasil diarsipkan.', 'info');
+        loadInboxView();
+      } catch (err) {
+        showToast('Gagal arsip: ' + err.message, 'danger');
+      }
+    }
+
+    async function handleToggleReadCurrentMessage() {
+      if (!currentInboxMessage) return;
+      const newStatus = (currentInboxMessage.status || '').toUpperCase() === 'UNREAD' ? 'READ' : 'UNREAD';
+      try {
+        const res = await adminFetch(`/api/admin/inbox/${currentInboxMessage.id}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (!res.ok) throw new Error('Gagal memperbarui status');
+        currentInboxMessage.status = newStatus;
+        showToast('Status pesan diperbarui ke ' + newStatus, 'info');
+        selectInboxMessage(currentInboxMessage.id, false);
+        loadInboxView();
+      } catch (err) {
+        showToast('Gagal update status: ' + err.message, 'danger');
+      }
+    }
+
     (async function initOpsConsole() {
       const sessionOk = await loadAdminSession();
       if (!sessionOk) return;
       fetchDashboardOverview();
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      if (tabParam) {
+        const targetBtn = Array.from(document.querySelectorAll('.nav-item')).find(b => b.innerText.toLowerCase().includes(tabParam.toLowerCase()));
+        if (targetBtn) {
+          switchView(tabParam, targetBtn);
+        }
+      }
     })();
   </script>
 </body>

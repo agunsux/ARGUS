@@ -118,6 +118,8 @@ function recordStructuredEmailLog({
   emailId,
   template,
   recipient,
+  from,
+  subject,
   provider,
   providerMessageId,
   status,
@@ -133,15 +135,23 @@ function recordStructuredEmailLog({
     ? sanitizeHeader(recipient)
     : (Array.isArray(recipient) ? recipient.map(sanitizeHeader).join(', ') : 'unknown');
 
+  const id = emailId || `eml-${uuidv4()}`;
   const logEntry = {
-    email_id: emailId || `eml-${uuidv4()}`,
-    template: template || 'CUSTOM',
-    recipient: safeRecipient,
+    id,
+    email_id: id,
+    message_id: providerMessageId || null,
     provider: provider || 'resend',
+    type: template || 'CUSTOM',
+    template: template || 'CUSTOM',
+    from: sanitizeHeader(from || DEFAULT_SUPPORT_FROM),
+    to: safeRecipient,
+    recipient: safeRecipient,
+    subject: sanitizeHeader(subject || ''),
     provider_message_id: providerMessageId || null,
     status: status || 'UNKNOWN',
     created_at: createdAt || new Date().toISOString(),
     sent_at: sentAt || null,
+    error: failureReason ? String(failureReason).substring(0, 500) : null,
     failure_reason: failureReason ? String(failureReason).substring(0, 500) : null
   };
 
@@ -433,6 +443,8 @@ class EmailService {
           emailId,
           template: template || 'CUSTOM',
           recipient: to,
+          from: effectiveFrom,
+          subject: renderedSubject,
           provider: dispatchResult.provider || this.provider.name,
           providerMessageId: dispatchResult.id,
           status: dispatchResult.status || 'DELIVERED',
@@ -460,6 +472,8 @@ class EmailService {
           emailId,
           template: template || 'CUSTOM',
           recipient: to,
+          from: effectiveFrom,
+          subject: renderedSubject,
           provider: dispatchResult.provider || this.provider.name,
           providerMessageId: null,
           status: dispatchResult.status || 'FAILED',
@@ -620,10 +634,11 @@ class EmailService {
 
   async sendPaymentSuccessfulEmail({ order, payment, buyer, seller, event }) {
     const idempotencyKey = `order:${order.id}:payment-confirmed`;
+    const promises = [];
 
     // 1. Notify Buyer
     if (buyer && buyer.email) {
-      this.sendEmail({
+      promises.push(this.sendEmail({
         to: buyer.email,
         template: 'PAYMENT_SUCCESSFUL',
         replyTo: SUPPORT_EMAIL,
@@ -633,12 +648,15 @@ class EmailService {
           eventTitle: event?.title || event?.name || 'Event TIKUM',
           amount: payment?.amount || order.total_amount
         }
-      }).catch(err => console.error('[EmailService:PaymentBuyer] Secondary effect error:', err.message));
+      }).catch(err => {
+        console.error('[EmailService:PaymentBuyer] Secondary effect error:', err.message);
+        return { success: false, error: err.message };
+      }));
     }
 
     // 2. Notify Seller that ticket is sold
     if (seller && seller.email) {
-      this.sendEmail({
+      promises.push(this.sendEmail({
         to: seller.email,
         template: 'SELLER_TICKET_SOLD',
         replyTo: SUPPORT_EMAIL,
@@ -648,8 +666,17 @@ class EmailService {
           eventTitle: event?.title || event?.name || 'Event TIKUM',
           sellerEarnings: order.total_amount
         }
-      }).catch(err => console.error('[EmailService:PaymentSeller] Secondary effect error:', err.message));
+      }).catch(err => {
+        console.error('[EmailService:PaymentSeller] Secondary effect error:', err.message);
+        return { success: false, error: err.message };
+      }));
     }
+
+    const results = await Promise.all(promises);
+    return {
+      success: true,
+      results
+    };
   }
 
   async sendTicketDeliveryEmail({ order, buyer, ticket, event, downloadUrl }) {
@@ -849,6 +876,118 @@ class EmailService {
         data: { orderId: dispute.order_id, outcome, decisionNotes }
       }).catch(e => {});
     }
+  }
+
+  // ===========================================================================
+  // CONVENIENCE DISPATCHERS REQUIRED BY EPIC EMAIL ARCHITECTURE
+  // ===========================================================================
+
+  async send(options) {
+    return this.sendEmail(options);
+  }
+
+  async sendWelcomeEmail({ to, name }) {
+    if (!to) return;
+    const idempotencyKey = `user:welcome:${to}`;
+    return this.sendEmail({
+      to,
+      template: 'ACCOUNT_WELCOME',
+      replyTo: SUPPORT_EMAIL,
+      idempotencyKey,
+      data: { name: name || 'Pengguna TIKUM' }
+    });
+  }
+
+  async sendOrderConfirmation(params) {
+    return this.sendOrderCreatedEmail(params);
+  }
+
+  async sendPaymentConfirmation(params) {
+    return this.sendPaymentSuccessfulEmail(params);
+  }
+
+  async sendTicketTransferNotification(params) {
+    return this.sendTicketDeliveryEmail(params);
+  }
+
+  async sendDisputeNotification(params) {
+    if (params.outcome) {
+      return this.sendDisputeResolvedEmail(params);
+    }
+    return this.sendDisputeOpenedEmail(params);
+  }
+
+  async sendSupportNotification({ to = null, name, email, subject, message, inquiryId }) {
+    const targetEmail = to || process.env.EMAIL_SUPPORT || SUPPORT_EMAIL;
+    const idempotencyKey = `inquiry:support-notif:${inquiryId || Date.now()}`;
+    return this.sendEmail({
+      to: targetEmail,
+      template: 'CONTACT_INQUIRY_NOTIFICATION',
+      sender: `TIKUM Support <${SUPPORT_EMAIL}>`,
+      replyTo: email,
+      idempotencyKey,
+      data: {
+        name,
+        email,
+        subject,
+        message,
+        inquiryId: inquiryId || `inq-${Date.now()}`
+      }
+    });
+  }
+
+  async sendContactConfirmationEmail({ to, name, subject, inquiryId }) {
+    if (!to) return;
+    const idempotencyKey = `inquiry:receipt:${inquiryId || Date.now()}`;
+    return this.sendEmail({
+      to,
+      template: 'CONTACT_CONFIRMATION_RECEIPT',
+      sender: `TIKUM Support <${SUPPORT_EMAIL}>`,
+      replyTo: SUPPORT_EMAIL,
+      idempotencyKey,
+      data: {
+        name,
+        subject,
+        inquiryId: inquiryId || `inq-${Date.now()}`
+      }
+    });
+  }
+
+  async sendAdminNotification({ title, message, details, severity = 'INFO' }) {
+    const targetEmail = process.env.ADMIN_EMAIL || ADMIN_EMAIL;
+    const idempotencyKey = `admin:notif:${Date.now()}:${Math.random().toString(36).substring(2, 7)}`;
+    return this.sendEmail({
+      to: targetEmail,
+      template: 'ADMIN_SECURITY_ALERT',
+      sender: EMAIL_ADMIN_FROM,
+      replyTo: process.env.ADMIN_EMAIL || ADMIN_EMAIL,
+      idempotencyKey,
+      data: {
+        title,
+        message,
+        details,
+        severity
+      }
+    });
+  }
+
+  async sendInboxReplyEmail({ to, recipientName, subject, replyText, originalMessage, inReplyTo = null }) {
+    if (!to) return;
+    const idempotencyKey = `inbox:reply:${to}:${Date.now()}`;
+    return this.sendEmail({
+      to,
+      template: 'INBOX_REPLY',
+      sender: `TIKUM Support <${SUPPORT_EMAIL}>`,
+      replyTo: SUPPORT_EMAIL,
+      idempotencyKey,
+      headers: inReplyTo ? { 'In-Reply-To': inReplyTo, 'References': inReplyTo } : {},
+      data: {
+        recipientName: recipientName || 'Pengguna TIKUM',
+        subject,
+        replyText,
+        originalMessage
+      }
+    });
   }
 
   // ===========================================================================

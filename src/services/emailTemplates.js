@@ -641,6 +641,78 @@ const TEMPLATES = {
         text: wrapText({ title, content: textContent, actionUrl: trackUrl })
       };
     }
+  },
+
+  // ===========================================================================
+  // CONTACT & HUMAN INBOX CORRESPONDENCE
+  // ===========================================================================
+  CONTACT_INQUIRY_NOTIFICATION: {
+    subject: (d) => `[TIKUM INQUIRY] ${d.subject || 'Pertanyaan Pengguna'} #${(d.inquiryId || '').slice(-6)}`,
+    render: (d) => {
+      const title = `Pesan Masuk: ${d.subject || 'Pertanyaan Pengguna'}`;
+      const content = `
+        <span class="badge badge-info">Pesan Masuk / Form Kontak</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Inquiry dari: ${escapeHtml(d.name || 'Pengunjung')}</h2>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">ID Inquiry:</span><span class="info-value mono">${escapeHtml(d.inquiryId || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Pengirim:</span><span class="info-value">${escapeHtml(d.name || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Email Pengirim:</span><span class="info-value">${escapeHtml(d.email || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Perihal:</span><span class="info-value">${escapeHtml(d.subject || '-')}</span></div>
+        </div>
+        <div style="background-color: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 16px; margin: 16px 0; font-size: 13px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap;">${escapeHtml(d.message || '-')}</div>
+        <p style="color: #94a3b8; font-size: 12px;">Balas langsung email ini atau buka Admin Inbox untuk menindaklanjuti pesan ini.</p>
+      `;
+      const textContent = `[TIKUM INQUIRY] Pesan Masuk #${d.inquiryId || ''}\nDari: ${d.name || '-'} (${d.email || '-'})\nPerihal: ${d.subject || '-'}\n\nPesan:\n${d.message || '-'}`;
+      return {
+        html: wrapHtml({ title, preheader: `Inquiry baru dari ${d.name || 'Pengunjung'}: ${d.subject || ''}`, content, actionButton: { text: 'Buka Admin Inbox', url: `${CANONICAL_ORIGIN}/admin?tab=inbox` } }),
+        text: wrapText({ title, content: textContent, actionUrl: `${CANONICAL_ORIGIN}/admin?tab=inbox` })
+      };
+    }
+  },
+
+  CONTACT_CONFIRMATION_RECEIPT: {
+    subject: (d) => `Konfirmasi Penerimaan Pesan: ${d.subject || 'Layanan Tikum'}`,
+    render: (d) => {
+      const title = 'Pesan Anda Telah Kami Terima';
+      const content = `
+        <span class="badge badge-success">Pesan Diterima</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Halo, ${escapeHtml(d.name || 'Pelanggan')}!</h2>
+        <p>Terima kasih telah menghubungi TIKUM. Pesan Anda mengenai <strong>"${escapeHtml(d.subject || 'Pertanyaan')}"</strong> telah berhasil kami terima dengan nomor tiket <code class="mono" style="color: #22d3ee;">#${escapeHtml(d.inquiryId || '')}</code>.</p>
+        <p>Tim operasional dan customer support TIKUM akan meninjau pesan Anda dan memberikan tanggapan melalui email ini dalam waktu 1&times;24 jam.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">No. Tiket:</span><span class="info-value mono">${escapeHtml(d.inquiryId || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Perihal:</span><span class="info-value">${escapeHtml(d.subject || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Status:</span><span class="info-value" style="color: #34d399;">DITERIMA &bull; DALAM ANTREAN</span></div>
+        </div>
+      `;
+      const textContent = `Halo ${d.name || 'Pelanggan'},\n\nTerima kasih telah menghubungi TIKUM. Pesan Anda terkait "${d.subject || ''}" (#${d.inquiryId || ''}) telah kami terima.\nTim support kami akan merespons dalam waktu 1x24 jam.`;
+      return {
+        html: wrapHtml({ title, preheader: `Konfirmasi pesan diterima #${d.inquiryId || ''}`, content, actionButton: { text: 'Pusat Bantuan TIKUM', url: `${CANONICAL_ORIGIN}/faq` } }),
+        text: wrapText({ title, content: textContent, actionUrl: `${CANONICAL_ORIGIN}/faq` })
+      };
+    }
+  },
+
+  INBOX_REPLY: {
+    subject: (d) => d.subject ? (d.subject.startsWith('Re:') ? d.subject : `Re: ${d.subject}`) : 'Tanggapan dari Tim Support TIKUM',
+    render: (d) => {
+      const title = 'Tanggapan dari Tim Support TIKUM';
+      const content = `
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Halo, ${escapeHtml(d.recipientName || 'Pengguna')}</h2>
+        <div style="background-color: #0f172a; border-left: 3px solid #0284c7; padding: 14px 18px; margin: 16px 0; font-size: 14px; line-height: 1.6; color: #f8fafc; white-space: pre-wrap;">${escapeHtml(d.replyText || '')}</div>
+        ${d.originalMessage ? `
+          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #334155;">
+            <div style="color: #64748b; font-size: 11px; text-transform: uppercase; margin-bottom: 8px;">Pesan Anda Sebelumnya:</div>
+            <div style="color: #94a3b8; font-size: 12px; font-style: italic; white-space: pre-wrap;">${escapeHtml(d.originalMessage)}</div>
+          </div>
+        ` : ''}
+      `;
+      const textContent = `Halo ${d.recipientName || 'Pengguna'},\n\n${d.replyText || ''}\n\n---\nPesan Sebelumnya:\n${d.originalMessage || ''}`;
+      return {
+        html: wrapHtml({ title, preheader: `Tanggapan Support TIKUM untuk: ${d.subject || ''}`, content, actionButton: { text: 'Kunjungi TIKUM', url: CANONICAL_ORIGIN } }),
+        text: wrapText({ title, content: textContent, actionUrl: CANONICAL_ORIGIN })
+      };
+    }
   }
 };
 

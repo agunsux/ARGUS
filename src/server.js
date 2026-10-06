@@ -190,6 +190,12 @@ app.use('/api/admin', adminRouter);
 const authRouter = require('./api/authRouter');
 app.use('/api/auth', authRouter);
 
+// Mount Canonical Email, Inbound Webhook, Contact Form & Inbox APIs
+const emailRouter = require('./api/emailRouter');
+app.use('/api', emailRouter);
+
+app.get('/admin/inbox', (req, res) => res.redirect(302, '/admin?tab=inbox'));
+
 // Explicit Institutional Frontend Page Delivery
 const { businessProfile } = require('./config/businessProfile');
 app.get('/api/business-profile', (req, res) => res.json(businessProfile));

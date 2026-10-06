@@ -259,13 +259,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://tikum.app/blog/draft-tanpa-persetujuan</loc>
-    <lastmod>2026-10-06</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://tikum.app/blog/kenapa-tikum-menggunakan-escrow-untuk-transaksi-tiket</loc>
+    <loc>https://tikum.app/blog/kenapa-tikum-punya-pic-di-venue</loc>
     <lastmod>2026-10-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -278,6 +272,12 @@
   </url>
   <url>
     <loc>https://tikum.app/blog/secondary-ticketing-indonesia-cara-baru-beli-tiket-event</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://tikum.app/blog/kenapa-tikum-menggunakan-escrow-untuk-transaksi-tiket</loc>
     <lastmod>2026-10-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

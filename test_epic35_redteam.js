@@ -622,7 +622,7 @@ async function runRedTeamSuite() {
         picUserId: 'pic-1',
         orderId: order.id,
         photoFile: true,
-        currentDateStr: '2026-09-25'
+        currentDateStr: '2026-10-25'
       });
 
       const prevEnv = process.env.NODE_ENV;
