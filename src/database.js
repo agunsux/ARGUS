@@ -52,7 +52,8 @@ const state = {
   payment_reconciliation_logs: [],
   chargebacks: [],
   payment_attempts: [],
-  idempotency_records: []
+  idempotency_records: [],
+  articles: []
 };
 
 try {

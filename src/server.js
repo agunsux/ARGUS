@@ -242,8 +242,10 @@ app.use((err, req, res, next) => {
 // Start listener only when running standalone locally
 if (require.main === module && !process.env.VERCEL) {
   const { startOfferExpiryJob } = require('./jobs/offerExpiryJob');
+  const { startPublishingSchedulerJob } = require('./content/PublishingScheduler');
   const { EventTemporalLifecycleEngine } = require('./discovery/EventTemporalLifecycleEngine');
   startOfferExpiryJob();
+  startPublishingSchedulerJob();
   dbPromise.then(async () => {
     try {
       await EventTemporalLifecycleEngine.reconcileAllEvents();

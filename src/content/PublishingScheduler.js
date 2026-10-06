@@ -1,12 +1,14 @@
 /**
  * TIKUM Publishing Scheduler
- * Manages the 2x/Week publication pipeline (Tuesday & Friday cadence).
+ * Manages the 2x/Week publication pipeline (Tuesday & Friday cadence)
+ * and executes scheduled publication transitions (SCHEDULED -> PUBLISHED).
  * 
  * Strict Invariants:
- * - Quality over quantity: Maximum 2 publications per week; skips tick if no approved topic exists.
- * - Human Approval Gate: Only approved/scheduled articles can be published.
+ * - Quality over quantity: Only human-approved/scheduled articles can be published.
  * - Idempotency: Retrying a scheduled execution never generates duplicate articles or overwrites existing publications.
- * - Safe Failures: Errors are logged, draft retained, never marked published on error.
+ * - Scheduled article fulfillment: An article scheduled for a specific timestamp automatically
+ *   transitions to PUBLISHED when scheduled_at <= current_time.
+ * - Concurrency Safe: Mutex and status gates prevent double publication across multiple instances.
  */
 
 const { articleRepository } = require('./ArticleRepository');
@@ -18,6 +20,7 @@ class PublishingScheduler {
     this.publishHourWib = options.publishHourWib || 9; // 09:00 WIB
     this.autoPublishEvergreen = Boolean(options.autoPublishEvergreen); // Default false: human approval required
     this.logs = [];
+    this.isPublishing = false;
   }
 
   /**
@@ -25,18 +28,89 @@ class PublishingScheduler {
    */
   isScheduledDay(date = new Date()) {
     // Convert to Asia/Jakarta (UTC+7)
-    const wibDate = new Date(date.getTime() + (7 * 60 * 60 * 1000));
+    const targetDate = (date instanceof Date) ? date : new Date(date);
+    const wibDate = new Date(targetDate.getTime() + (7 * 60 * 60 * 1000));
     const day = wibDate.getUTCDay();
     return this.scheduleDays.includes(day);
   }
 
   /**
+   * Evaluates all SCHEDULED articles and transitions those whose scheduled_at <= now
+   * into PUBLISHED status.
+   *
+   * @param {Date|string} currentTime Reference timestamp (defaults to current system time)
+   * @returns {Array} List of newly published article objects
+   */
+  publishDueArticles(currentTime = new Date()) {
+    if (this.isPublishing) return [];
+    this.isPublishing = true;
+
+    try {
+      const now = (currentTime instanceof Date) ? currentTime : new Date(currentTime);
+      const allArticles = articleRepository.getAllArticles();
+      const dueArticles = allArticles.filter(a => {
+        if (a.status !== CONTENT_STATUS.SCHEDULED) return false;
+        if (!a.scheduled_at) return false;
+        return new Date(a.scheduled_at) <= now;
+      });
+
+      // Sort by scheduled_at ascending (oldest due first)
+      dueArticles.sort((a, b) => (a.scheduled_at || '').localeCompare(b.scheduled_at || ''));
+
+      const newlyPublished = [];
+
+      for (const target of dueArticles) {
+        // Re-fetch to ensure fresh state under concurrency
+        const fresh = articleRepository.getArticleById(target.id);
+        if (!fresh || fresh.status !== CONTENT_STATUS.SCHEDULED) {
+          continue;
+        }
+
+        const pubResult = articleRepository.publishArticle(fresh.id, {
+          publishedAt: new Date().toISOString()
+        });
+
+        if (pubResult && pubResult.success && !pubResult.alreadyPublished) {
+          newlyPublished.push(pubResult.article);
+          const logEntry = {
+            timestamp: now.toISOString(),
+            action: 'SCHEDULED_ARTICLE_PUBLISHED',
+            articleId: fresh.id,
+            slug: fresh.slug,
+            title: fresh.title,
+            scheduled_at: fresh.scheduled_at,
+            published_at: pubResult.article.published_at
+          };
+          this.logs.unshift(logEntry);
+        }
+      }
+
+      return newlyPublished;
+    } finally {
+      this.isPublishing = false;
+    }
+  }
+
+  /**
    * Main publication cycle execution
-   * @param {Object} options execution overrides (forceRun for admin or tests)
+   * @param {Object} options execution overrides (forceRun, now)
    */
   async runCycle(options = {}) {
-    const now = new Date();
+    const now = options.now ? new Date(options.now) : new Date();
+
+    // 1. First, always fulfill any scheduled articles that are due
+    const scheduledPublished = this.publishDueArticles(now);
+
     const isScheduled = options.forceRun || this.isScheduledDay(now);
+
+    if (scheduledPublished.length > 0) {
+      return {
+        executed: true,
+        publishedCount: scheduledPublished.length,
+        articles: scheduledPublished,
+        message: `Successfully published ${scheduledPublished.length} scheduled article(s).`
+      };
+    }
 
     if (!isScheduled) {
       return {
@@ -46,21 +120,16 @@ class PublishingScheduler {
       };
     }
 
-    // Find the highest-priority approved or scheduled article ready for publication
+    // 2. Handle approved evergreen candidates (if autoPublishEvergreen or forceRun)
     const allArticles = articleRepository.getAllArticles();
-    const candidates = allArticles.filter(a => {
-      if (a.status === CONTENT_STATUS.SCHEDULED) {
-        // If scheduled_at is set, verify scheduled time has passed (or forced)
-        if (!a.scheduled_at || options.forceRun) return true;
-        return new Date(a.scheduled_at) <= now;
-      }
+    const approvedCandidates = allArticles.filter(a => {
       if (a.status === CONTENT_STATUS.APPROVED && (options.forceRun || this.autoPublishEvergreen)) {
         return true;
       }
       return false;
     });
 
-    if (candidates.length === 0) {
+    if (approvedCandidates.length === 0) {
       const logEntry = {
         timestamp: now.toISOString(),
         action: 'CYCLE_SKIPPED',
@@ -76,14 +145,14 @@ class PublishingScheduler {
     }
 
     // Pick top candidate (highest quality score, then oldest approved)
-    candidates.sort((a, b) => {
+    approvedCandidates.sort((a, b) => {
       if ((b.quality_score || 0) !== (a.quality_score || 0)) {
         return (b.quality_score || 0) - (a.quality_score || 0);
       }
       return (a.created_at || '').localeCompare(b.created_at || '');
     });
 
-    const targetArticle = candidates[0];
+    const targetArticle = approvedCandidates[0];
 
     try {
       const result = articleRepository.publishArticle(targetArticle.id);
@@ -131,8 +200,36 @@ class PublishingScheduler {
 
 const publishingSchedulerInstance = new PublishingScheduler();
 
+let schedulerTimer = null;
+
+function startPublishingSchedulerJob(intervalMs = 60000) {
+  if (schedulerTimer) return schedulerTimer;
+
+  schedulerTimer = setInterval(() => {
+    try {
+      publishingSchedulerInstance.publishDueArticles();
+    } catch (err) {
+      console.error('[TIKUM Scheduler] Error publishing due articles:', err);
+    }
+  }, intervalMs);
+
+  if (schedulerTimer.unref) {
+    schedulerTimer.unref();
+  }
+
+  return schedulerTimer;
+}
+
+function stopPublishingSchedulerJob() {
+  if (schedulerTimer) {
+    clearInterval(schedulerTimer);
+    schedulerTimer = null;
+  }
+}
+
 module.exports = {
   PublishingScheduler,
-  publishingScheduler: publishingSchedulerInstance
+  publishingScheduler: publishingSchedulerInstance,
+  startPublishingSchedulerJob,
+  stopPublishingSchedulerJob
 };
-
