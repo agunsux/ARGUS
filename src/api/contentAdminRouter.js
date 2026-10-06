@@ -191,6 +191,35 @@ router.post('/api/admin/content/articles/:id/publish', requireContentAdmin, (req
   }
 });
 
+router.post('/api/admin/content/articles/:id/unpublish', requireContentAdmin, (req, res) => {
+  try {
+    const article = articleRepository.getArticleById(req.params.id);
+    if (!article) return res.status(404).json({ error: 'Article not found', code: 'NOT_FOUND' });
+    article.status = 'draft';
+    article.updated_at = new Date().toISOString();
+    res.json({
+      success: true,
+      message: 'Article unpublished and reverted to draft',
+      article
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/api/admin/content/articles/:id/archive', requireContentAdmin, (req, res) => {
+  try {
+    const article = articleRepository.archiveArticle(req.params.id);
+    res.json({
+      success: true,
+      message: 'Article archived successfully',
+      article
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message, code: 'ARCHIVE_FAILED' });
+  }
+});
+
 // -------------------------------------------------------------
 // 6. Scheduler Execution & Logs
 // -------------------------------------------------------------

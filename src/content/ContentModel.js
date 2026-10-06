@@ -14,7 +14,54 @@ const CONTENT_PILLARS = {
   TICKET_BUYING: 'TICKET_BUYING',
   SAFETY: 'SAFETY',
   RESALE_EDUCATION: 'RESALE_EDUCATION',
-  EVENT_GUIDES: 'EVENT_GUIDES'
+  EVENT_GUIDES: 'EVENT_GUIDES',
+  // Public blog category slugs
+  TICKET_SAFETY: 'ticket-safety',
+  SECONDARY_TICKETING: 'secondary-ticketing',
+  TICKET_GUIDES: 'ticket-guides',
+  TIKUM: 'tikum',
+  SCAM_PREVENTION: 'scam-prevention'
+};
+
+const CATEGORY_MAP = {
+  'SAFETY': 'ticket-safety',
+  'TICKET_BUYING': 'ticket-guides',
+  'RESALE_EDUCATION': 'secondary-ticketing',
+  'EVENT_GUIDES': 'ticket-guides',
+  'EVENT_DISCOVERY': 'ticket-guides',
+  'ticket-safety': 'ticket-safety',
+  'secondary-ticketing': 'secondary-ticketing',
+  'ticket-guides': 'ticket-guides',
+  'tikum': 'tikum',
+  'scam-prevention': 'scam-prevention'
+};
+
+const CATEGORY_METADATA = {
+  'ticket-safety': {
+    slug: 'ticket-safety',
+    title: 'Keamanan Tiket',
+    description: 'Panduan lengkap keamanan transaksi tiket konser, tips verifikasi keaslian, dan perlindungan pembeli serta penjual di Indonesia.'
+  },
+  'secondary-ticketing': {
+    slug: 'secondary-ticketing',
+    title: 'Secondary Ticketing',
+    description: 'Edukasi mendalam seputar pasar sekunder tiket event di Indonesia, mekanisme escrow, transparansi harga, dan perlindungan transaksi.'
+  },
+  'ticket-guides': {
+    slug: 'ticket-guides',
+    title: 'Panduan Tiket',
+    description: 'Panduan praktis membeli, menjual, dan menukarkan tiket konser dan event besar di Indonesia secara aman dan terverifikasi.'
+  },
+  'tikum': {
+    slug: 'tikum',
+    title: 'Tentang Tikum',
+    description: 'Mengenal visi, diferensiasi model escrow, kehadiran PIC di venue, dan komitmen Tikum dalam membangun infrastruktur kepercayaan live event.'
+  },
+  'scam-prevention': {
+    slug: 'scam-prevention',
+    title: 'Pencegahan Scam',
+    description: 'Kenali modus-modus penipuan tiket konser online, red flags calo medsos, double selling, dan langkah pencegahan efektif.'
+  }
 };
 
 const CONTENT_STATUS = {
@@ -98,6 +145,8 @@ module.exports = {
   CONTENT_PILLARS,
   CONTENT_STATUS,
   SEARCH_INTENTS,
+  CATEGORY_MAP,
+  CATEGORY_METADATA,
   ContentModel
 };
 

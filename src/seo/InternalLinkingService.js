@@ -4,7 +4,8 @@
  *
  * Rules:
  * - Never keyword-stuff.
- * - Maximum 3 - 5 contextual links per article.
+ * - Maximum 3 - 6 contextual links per article.
+ * - Topical cluster graph: Supporting articles link to Pillar Page, and Pillar links out to cluster.
  * - Links must be genuinely helpful to users and search engine crawlers.
  */
 
@@ -17,23 +18,36 @@ class InternalLinkingService {
    */
   static getRecommendedLinks(article) {
     const links = [];
+    const slug = article.slug || '';
+    const category = (article.category || '').toLowerCase();
 
-    // 1. Trust Page Links based on intent
-    const category = article.category || '';
-    if (category === 'SAFETY' || category === 'TICKET_BUYING') {
+    // 1. Pillar Link: Every supporting article should link back to the pillar guide
+    if (slug !== 'panduan-lengkap-secondary-ticketing-di-indonesia') {
+      links.push({
+        anchor: 'Panduan Lengkap Secondary Ticketing',
+        url: '/blog/panduan-lengkap-secondary-ticketing-di-indonesia',
+        title: 'Baca Panduan Lengkap Secondary Ticketing di Indonesia'
+      });
+    }
+
+    // 2. Trust Page Links based on intent and category
+    if (category.includes('safety') || category.includes('scam')) {
       links.push({
         anchor: 'perlindungan pembeli Tikum',
         url: '/buyer-protection',
         title: 'Pelajari Jaminan Perlindungan Pembeli Tikum'
       });
       links.push({
-        anchor: 'verifikasi barcode dan tiket',
+        anchor: 'verifikasi tiket',
         url: '/ticket-verification',
         title: 'Standar Verifikasi Tiket'
       });
-    }
-
-    if (category === 'RESALE_EDUCATION') {
+      links.push({
+        anchor: 'rekening penampungan escrow',
+        url: '/escrow',
+        title: 'Mekanisme Rekening Escrow Tikum'
+      });
+    } else if (category.includes('resale') || category.includes('secondary')) {
       links.push({
         anchor: 'rekening penampungan escrow',
         url: '/escrow',
@@ -44,9 +58,64 @@ class InternalLinkingService {
         url: '/disputes',
         title: 'Prosedur Penyelesaian Sengketa'
       });
+      links.push({
+        anchor: 'perlindungan pembeli Tikum',
+        url: '/buyer-protection',
+        title: 'Perlindungan Pembeli Tikum'
+      });
+    } else if (category.includes('tikum')) {
+      links.push({
+        anchor: 'cara kerja Tikum',
+        url: '/how-it-works',
+        title: 'Pelajari Cara Kerja Tikum'
+      });
+      links.push({
+        anchor: 'rekening penampungan escrow',
+        url: '/escrow',
+        title: 'Infrastruktur Escrow Tikum'
+      });
+      links.push({
+        anchor: 'perlindungan penjual',
+        url: '/seller-protection',
+        title: 'Jaminan Perlindungan Penjual'
+      });
+    } else {
+      // General ticket guides
+      links.push({
+        anchor: 'perlindungan pembeli Tikum',
+        url: '/buyer-protection',
+        title: 'Perlindungan Pembeli Tikum'
+      });
+      links.push({
+        anchor: 'rekening penampungan escrow',
+        url: '/escrow',
+        title: 'Infrastruktur Escrow Tikum'
+      });
     }
 
-    // 2. Event Links if specified or matching
+    // 3. Cluster Cross-Links for specific high-value topics
+    if (slug.includes('escrow')) {
+      links.push({
+        anchor: 'escrow vs transfer langsung',
+        url: '/blog/escrow-vs-transfer-langsung-mana-yang-lebih-aman',
+        title: 'Perbandingan Escrow vs Transfer Langsung'
+      });
+    }
+
+    if (slug.includes('scam') || slug.includes('penipuan')) {
+      links.push({
+        anchor: 'double selling tiket',
+        url: '/blog/apa-itu-double-selling-tiket-modus-scam',
+        title: 'Pahami Modus Double Selling Tiket'
+      });
+      links.push({
+        anchor: 'checklist anti scam tiket',
+        url: '/blog/checklist-anti-scam-sebelum-membeli-tiket-konser-online',
+        title: 'Checklist Anti Scam Tiket Konser'
+      });
+    }
+
+    // 4. Event Links if specified or matching
     if (article.target_event_id) {
       const ev = canonicalRegistry.getEventById(article.target_event_id);
       if (ev) {
@@ -58,7 +127,7 @@ class InternalLinkingService {
       }
     }
 
-    // 3. Venue Links if specified
+    // 5. Venue Links if specified
     if (article.target_venue_id) {
       const v = VenueRegistry.getVenueBySlug(article.target_venue_id);
       if (v) {
@@ -88,7 +157,7 @@ class InternalLinkingService {
 
     let modified = htmlContent;
     let injectedCount = 0;
-    const maxInjections = 4;
+    const maxInjections = 5;
 
     for (const link of links) {
       if (injectedCount >= maxInjections) break;
@@ -110,4 +179,3 @@ class InternalLinkingService {
 module.exports = {
   InternalLinkingService
 };
-

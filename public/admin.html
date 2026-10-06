@@ -446,6 +446,10 @@
         <span class="nav-item-left"><i class="fa-solid fa-tower-broadcast"></i> Sources</span>
         <span id="sidebarSourcesBadge" class="nav-badge">-</span>
       </button>
+      <button class="nav-item" onclick="switchView('editorial', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-newspaper"></i> Editorial &amp; SEO Blog</span>
+        <span id="sidebarBlogCount" class="nav-badge">-</span>
+      </button>
 
       <div class="sidebar-heading" style="margin-top: 16px;">Platform Control</div>
       <a href="/" class="nav-item" target="_blank">
@@ -1262,7 +1266,169 @@
 
       </div>
 
-      <!-- Modal Due Diligence Checklist (Part 30) -->
+      <!-- ============================================================ -->
+      <!-- VIEW: EDITORIAL & SEO CONTENT ENGINE -->
+      <!-- ============================================================ -->
+      <div id="viewEditorial" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;">
+              <i class="fa-solid fa-newspaper" style="color: #38bdf8;"></i> Editorial &amp; SEO Content Engine
+            </h2>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+              Pusat kendali konten otoritas Tikum — kalender publikasi 2x/minggu, audit kualitas fakta, scoring SEO &amp; human approval gate.
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="triggerSchedulerCycle()">
+              <i class="fa-solid fa-forward"></i> Trigger Scheduler
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="openArticleModal()">
+              <i class="fa-solid fa-plus"></i> Buat Artikel Baru
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="loadEditorialView()">
+              <i class="fa-solid fa-rotate"></i> Sync
+            </button>
+          </div>
+        </div>
+
+        <!-- Editorial KPI Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Total Articles <i class="fa-solid fa-file-lines" style="color: #38bdf8;"></i></div>
+            <div id="kpiBlogTotal" class="kpi-value">-</div>
+            <div class="kpi-sub">Total Kampanye Otoritas</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Published <i class="fa-solid fa-circle-check" style="color: #4ade80;"></i></div>
+            <div id="kpiBlogPublished" class="kpi-value">-</div>
+            <div class="kpi-sub">Aktif &amp; Terindeks</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Scheduled Queue <i class="fa-solid fa-calendar-day" style="color: #f59e0b;"></i></div>
+            <div id="kpiBlogScheduled" class="kpi-value">-</div>
+            <div class="kpi-sub">Cadence Selasa &amp; Jumat</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Approved &amp; Drafts <i class="fa-solid fa-pen-ruler" style="color: #94a3b8;"></i></div>
+            <div id="kpiBlogDrafts" class="kpi-value">-</div>
+            <div class="kpi-sub">Pipeline Konten</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Avg Quality / Trust <i class="fa-solid fa-shield-halved" style="color: #60a5fa;"></i></div>
+            <div id="kpiBlogAvgTrust" class="kpi-value">-</div>
+            <div class="kpi-sub">Skor Anti-Misinformasi</div>
+          </div>
+        </div>
+
+        <!-- Editorial Filter Bar -->
+        <div class="panel" style="margin-bottom: 16px;">
+          <div style="padding: 12px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div style="font-weight: 600; font-size: 12px; color: #94a3b8;">Filter:</div>
+            <select id="editorialStatusFilter" class="form-select" style="width: auto; font-size: 12px;" onchange="loadEditorialView()">
+              <option value="">Semua Status</option>
+              <option value="published">Published</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="approved">Approved</option>
+              <option value="draft">Draft</option>
+              <option value="review">Review</option>
+              <option value="archived">Archived</option>
+            </select>
+            <select id="editorialCategoryFilter" class="form-select" style="width: auto; font-size: 12px;" onchange="loadEditorialView()">
+              <option value="">Semua Kategori</option>
+              <option value="ticket-safety">Keamanan Tiket</option>
+              <option value="secondary-ticketing">Secondary Ticketing</option>
+              <option value="scam-prevention">Pencegahan Scam</option>
+              <option value="ticket-guides">Panduan Tiket</option>
+              <option value="tikum">Tentang Tikum</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Articles Table Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-newspaper" style="color: #38bdf8;"></i> Daftar Artikel Editorial &amp; Kluster Topik</div>
+            <div style="font-size: 11px; color: #94a3b8;">Total: <span id="editorialArticlesTableCount">0</span> artikel</div>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="ops-table">
+              <thead>
+                <tr>
+                  <th>Judul &amp; Slug</th>
+                  <th>Kategori</th>
+                  <th>Status</th>
+                  <th>Tanggal / Jadwal</th>
+                  <th>SEO / Trust</th>
+                  <th>Aksi Operasional</th>
+                </tr>
+              </thead>
+              <tbody id="editorialTableBody">
+                <tr><td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">Memuat data editorial...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Create / Edit Article -->
+      <div id="articleModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+        <div class="card" style="max-width: 720px; width: 100%; border-color: #0284c7; background: #0f172a; max-height: 85vh; overflow-y: auto;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+            <div style="font-weight: 700; color: #fff; font-size: 16px;">
+              <i class="fa-solid fa-file-pen" style="color: #38bdf8;"></i> <span id="articleModalTitle">Editor Artikel Editorial</span>
+            </div>
+            <button onclick="closeArticleModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <form id="articleForm" onsubmit="handleSaveArticle(event)" style="display: flex; flex-direction: column; gap: 12px;">
+            <input type="hidden" id="editArticleId">
+            <div>
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Judul Artikel (H1 / Title)</label>
+              <input type="text" id="articleFormTitle" class="form-input" style="width: 100%; box-sizing: border-box;" required placeholder="Secondary Ticketing Indonesia: Cara Baru Membeli Tiket...">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Slug URL (/blog/:slug)</label>
+              <input type="text" id="articleFormSlug" class="form-input" style="width: 100%; box-sizing: border-box;" placeholder="secondary-ticketing-indonesia-cara-baru...">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Deskripsi Singkat / Excerpt (Meta Description)</label>
+              <textarea id="articleFormDescription" class="form-input" style="width: 100%; height: 60px; box-sizing: border-box;" required placeholder="Ringkasan informatif minimum 40 karakter untuk cuplikan Google Search..."></textarea>
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <div style="flex: 1;">
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Kategori</label>
+                <select id="articleFormCategory" class="form-select" style="width: 100%; box-sizing: border-box;">
+                  <option value="secondary-ticketing">Secondary Ticketing</option>
+                  <option value="ticket-safety">Keamanan Tiket</option>
+                  <option value="scam-prevention">Pencegahan Scam</option>
+                  <option value="ticket-guides">Panduan Tiket</option>
+                  <option value="tikum">Tentang Tikum</option>
+                </select>
+              </div>
+              <div style="flex: 1;">
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Search Intent</label>
+                <select id="articleFormIntent" class="form-select" style="width: 100%; box-sizing: border-box;">
+                  <option value="informational">Informational</option>
+                  <option value="commercial">Commercial</option>
+                  <option value="transactional">Transactional</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Target Keywords (pisahkan dengan koma)</label>
+              <input type="text" id="articleFormKeywords" class="form-input" style="width: 100%; box-sizing: border-box;" placeholder="secondary ticketing Indonesia, jual beli tiket konser, escrow tiket">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Isi Artikel (HTML Semantic / Format Artikel)</label>
+              <textarea id="articleFormContent" class="form-input mono" style="width: 100%; height: 180px; box-sizing: border-box; font-size: 12px;" required placeholder="<p><strong>Secondary ticketing adalah...</strong></p><h2>Bagian Utama</h2>..."></textarea>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="closeArticleModal()">Batal</button>
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk"></i> Simpan Artikel</button>
+            </div>
+          </form>
+        </div>
+      </div>
       <div id="dueDiligenceModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
         <div class="card" style="max-width: 600px; width: 100%; border-color: #f59e0b; background: #0f172a; max-height: 85vh; overflow-y: auto;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
@@ -1604,7 +1770,7 @@
     }
 
     // View Switching
-    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust', 'payments'];
+    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust', 'payments', 'editorial'];
 
     function switchView(viewName, btn = null) {
       currentView = viewName;
@@ -1617,6 +1783,7 @@
       document.getElementById('viewTrust').style.display = viewName === 'trust' ? 'block' : 'none';
       document.getElementById('viewSources').style.display = viewName === 'sources' ? 'block' : 'none';
       document.getElementById('viewPayments').style.display = viewName === 'payments' ? 'block' : 'none';
+      document.getElementById('viewEditorial').style.display = viewName === 'editorial' ? 'block' : 'none';
       document.getElementById('viewGeneric').style.display = DEDICATED_VIEWS.includes(viewName) ? 'none' : 'block';
 
       if (viewName === 'event-supply') {
@@ -1627,6 +1794,8 @@
         loadTrustView();
       } else if (viewName === 'payments') {
         loadPaymentsView();
+      } else if (viewName === 'editorial') {
+        loadEditorialView();
       } else if (!DEDICATED_VIEWS.includes(viewName)) {
         loadGenericEntityView(viewName);
       }
@@ -2685,6 +2854,267 @@
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-play"></i> Mulai Rekonsiliasi';
+      }
+    }
+
+    // ============================================================
+    // EDITORIAL & BLOG SEO CONTROLLER
+    // ============================================================
+    async function loadEditorialView() {
+      try {
+        // 1. Fetch Analytics
+        const analyticsRes = await adminFetch('/api/admin/content/analytics');
+        if (analyticsRes.ok) {
+          const aData = await analyticsRes.json();
+          document.getElementById('kpiBlogTotal').innerText = aData.content_funnel?.total_articles || '0';
+          document.getElementById('kpiBlogPublished').innerText = aData.content_funnel?.published_total || '0';
+          document.getElementById('kpiBlogScheduled').innerText = aData.content_funnel?.scheduled_queue || '0';
+          document.getElementById('kpiBlogDrafts').innerText = (aData.content_funnel?.draft_and_review || 0) + (aData.content_funnel?.approved_awaiting_schedule || 0);
+          document.getElementById('kpiBlogAvgTrust').innerText = `${aData.quality_metrics?.average_trust_score || 0}%`;
+          
+          const badge = document.getElementById('sidebarBlogCount');
+          if (badge) {
+            badge.innerText = aData.content_funnel?.total_articles || '0';
+          }
+        }
+
+        // 2. Fetch Filtered Articles
+        const statusFilter = document.getElementById('editorialStatusFilter')?.value || '';
+        const catFilter = document.getElementById('editorialCategoryFilter')?.value || '';
+        let url = '/api/admin/content/articles?';
+        if (statusFilter) url += `status=${encodeURIComponent(statusFilter)}&`;
+        if (catFilter) url += `category=${encodeURIComponent(catFilter)}&`;
+
+        const articlesRes = await adminFetch(url);
+        if (!articlesRes.ok) throw new Error('Gagal memuat artikel');
+        const data = await articlesRes.json();
+        const articles = data.articles || [];
+
+        document.getElementById('editorialArticlesTableCount').innerText = articles.length;
+        const tbody = document.getElementById('editorialTableBody');
+
+        if (articles.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 30px;">Tidak ada artikel yang cocok dengan filter.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = articles.map(art => {
+          let statusBadgeClass = 'tag-secondary';
+          if (art.status === 'published') statusBadgeClass = 'tag-success';
+          else if (art.status === 'scheduled') statusBadgeClass = 'tag-warning';
+          else if (art.status === 'approved') statusBadgeClass = 'tag-primary';
+          else if (art.status === 'draft') statusBadgeClass = 'tag-secondary';
+
+          const dateStr = art.published_at ? art.published_at.substring(0, 10) : (art.scheduled_at ? `Jadwal: ${art.scheduled_at.substring(0, 10)}` : 'Draf');
+
+          return `
+            <tr>
+              <td>
+                <div style="font-weight: 700; color: #fff; margin-bottom: 2px;">${art.title}</div>
+                <div class="mono" style="font-size: 11px; color: #38bdf8;">
+                  /blog/${art.slug}
+                  <a href="/blog/${art.slug}?preview=1" target="_blank" title="Pratinjau Artikel" style="color: #94a3b8; margin-left: 6px;"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                </div>
+              </td>
+              <td><span class="tag tag-secondary">${(art.category || '').toUpperCase()}</span></td>
+              <td><span class="tag ${statusBadgeClass}">${(art.status || '').toUpperCase()}</span></td>
+              <td style="font-size: 11px; color: #94a3b8;">${dateStr}</td>
+              <td style="font-size: 11px;">
+                <span style="color: ${art.seo_score >= 70 ? '#4ade80' : '#f59e0b'}; font-weight: 600;">SEO: ${art.seo_score || 0}%</span><br>
+                <span style="color: ${art.trust_score >= 70 ? '#38bdf8' : '#94a3b8'};">Trust: ${art.trust_score || 0}%</span>
+              </td>
+              <td>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                  <button class="btn btn-secondary btn-xs" onclick="openArticleModal('${art.id}')" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                  <button class="btn btn-secondary btn-xs" onclick="scoreArticle('${art.id}')" title="Cek Skor & Mutu"><i class="fa-solid fa-chart-simple"></i></button>
+                  ${(art.status === 'draft' || art.status === 'review') ? `<button class="btn btn-primary btn-xs" onclick="approveArticle('${art.id}')" title="Approve Human Editor"><i class="fa-solid fa-check"></i></button>` : ''}
+                  ${art.status === 'approved' ? `<button class="btn btn-secondary btn-xs" onclick="scheduleArticle('${art.id}')" title="Jadwalkan"><i class="fa-solid fa-calendar"></i></button>` : ''}
+                  ${(art.status === 'approved' || art.status === 'scheduled') ? `<button class="btn btn-success btn-xs" onclick="publishArticle('${art.id}')" title="Publikasikan"><i class="fa-solid fa-globe"></i></button>` : ''}
+                  ${art.status === 'published' ? `<button class="btn btn-secondary btn-xs" onclick="unpublishArticle('${art.id}')" title="Tarik ke Draf"><i class="fa-solid fa-eye-slash"></i></button>` : ''}
+                  ${art.status !== 'archived' ? `<button class="btn btn-secondary btn-xs" onclick="archiveArticle('${art.id}')" title="Arsipkan"><i class="fa-solid fa-box-archive"></i></button>` : ''}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+      } catch (err) {
+        showToast('Gagal memuat artikel: ' + err.message, 'danger');
+      }
+    }
+
+    async function openArticleModal(articleId = null) {
+      document.getElementById('editArticleId').value = articleId || '';
+      document.getElementById('articleModalTitle').innerText = articleId ? 'Edit Artikel Editorial' : 'Buat Artikel Editorial Baru';
+
+      if (articleId) {
+        try {
+          const res = await adminFetch(`/api/admin/content/articles/${articleId}`);
+          if (!res.ok) throw new Error('Artikel tidak ditemukan');
+          const data = await res.json();
+          const a = data.article;
+          document.getElementById('articleFormTitle').value = a.title || '';
+          document.getElementById('articleFormSlug').value = a.slug || '';
+          document.getElementById('articleFormDescription').value = a.description || '';
+          document.getElementById('articleFormCategory').value = (a.category || 'secondary-ticketing').toLowerCase();
+          document.getElementById('articleFormIntent').value = a.search_intent || 'informational';
+          document.getElementById('articleFormKeywords').value = Array.isArray(a.keywords) ? a.keywords.join(', ') : (a.keywords || '');
+          document.getElementById('articleFormContent').value = a.content || '';
+        } catch (err) {
+          showToast('Gagal membuka artikel: ' + err.message, 'danger');
+          return;
+        }
+      } else {
+        document.getElementById('articleForm').reset();
+        document.getElementById('editArticleId').value = '';
+      }
+
+      document.getElementById('articleModal').style.display = 'flex';
+    }
+
+    function closeArticleModal() {
+      document.getElementById('articleModal').style.display = 'none';
+    }
+
+    async function handleSaveArticle(event) {
+      event.preventDefault();
+      const articleId = document.getElementById('editArticleId').value;
+      const title = document.getElementById('articleFormTitle').value.trim();
+      const slug = document.getElementById('articleFormSlug').value.trim();
+      const description = document.getElementById('articleFormDescription').value.trim();
+      const category = document.getElementById('articleFormCategory').value;
+      const search_intent = document.getElementById('articleFormIntent').value;
+      const rawKw = document.getElementById('articleFormKeywords').value;
+      const keywords = rawKw.split(',').map(s => s.trim()).filter(Boolean);
+      const content = document.getElementById('articleFormContent').value.trim();
+
+      const payload = { title, slug, description, category, search_intent, keywords, content };
+
+      try {
+        let res;
+        if (articleId) {
+          res = await adminFetch(`/api/admin/content/articles/${articleId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await adminFetch('/api/admin/content/articles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menyimpan artikel');
+
+        showToast('Artikel berhasil disimpan!', 'success');
+        closeArticleModal();
+        loadEditorialView();
+      } catch (err) {
+        showToast('Error: ' + err.message, 'danger');
+      }
+    }
+
+    async function scoreArticle(id) {
+      try {
+        const res = await adminFetch(`/api/admin/content/articles/${id}/score`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menghitung skor');
+        const ev = data.evaluation;
+        alert(`Audit Mutu Artikel:\n- SEO Score: ${ev.seo_score}/100\n- Readability Score: ${ev.readability_score}/100\n- Trust Score: ${ev.trust_score}/100\n- Fact Check: ${ev.fact_check_passed ? 'LULUS (Passed)' : 'PERIKSA (Flagged)'}\n${ev.flags && ev.flags.length ? '\nCatatan:\n' + ev.flags.join('\n') : ''}`);
+      } catch (err) {
+        showToast('Gagal evaluasi artikel: ' + err.message, 'danger');
+      }
+    }
+
+    async function approveArticle(id) {
+      if (!confirm('Setujui draf artikel ini untuk masuk antrean publikasi?')) return;
+      try {
+        const res = await adminFetch(`/api/admin/content/articles/${id}/approve`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal approve');
+        showToast('Artikel disetujui oleh editor!', 'success');
+        loadEditorialView();
+      } catch (err) {
+        showToast('Gagal approve: ' + err.message, 'danger');
+      }
+    }
+
+    async function scheduleArticle(id) {
+      const defaultDate = new Date(Date.now() + 86400000 * 3).toISOString().substring(0, 10);
+      const targetDate = prompt('Tentukan tanggal jadwal publikasi (YYYY-MM-DD):', defaultDate);
+      if (!targetDate) return;
+
+      try {
+        const res = await adminFetch(`/api/admin/content/articles/${id}/schedule`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetDate })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menjadwalkan');
+        showToast(`Artikel dijadwalkan pada ${targetDate}!`, 'success');
+        loadEditorialView();
+      } catch (err) {
+        showToast('Gagal menjadwalkan: ' + err.message, 'danger');
+      }
+    }
+
+    async function publishArticle(id) {
+      if (!confirm('Publikasikan artikel ini sekarang secara langsung?')) return;
+      try {
+        const res = await adminFetch(`/api/admin/content/articles/${id}/publish`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal publikasi');
+        showToast('Artikel berhasil dipublikasikan!', 'success');
+        loadEditorialView();
+      } catch (err) {
+        showToast('Gagal publikasi: ' + err.message, 'danger');
+      }
+    }
+
+    async function unpublishArticle(id) {
+      if (!confirm('Tarik artikel ini dari publikasi kembali ke draf?')) return;
+      try {
+        const res = await adminFetch(`/api/admin/content/articles/${id}/unpublish`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal unpublish');
+        showToast('Artikel ditarik kembali ke draf.', 'info');
+        loadEditorialView();
+      } catch (err) {
+        showToast('Gagal unpublish: ' + err.message, 'danger');
+      }
+    }
+
+    async function archiveArticle(id) {
+      if (!confirm('Arsipkan artikel ini?')) return;
+      try {
+        const res = await adminFetch(`/api/admin/content/articles/${id}/archive`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal arsip');
+        showToast('Artikel diarsipkan.', 'info');
+        loadEditorialView();
+      } catch (err) {
+        showToast('Gagal arsip: ' + err.message, 'danger');
+      }
+    }
+
+    async function triggerSchedulerCycle() {
+      try {
+        const res = await adminFetch('/api/admin/content/scheduler/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ forceRun: true })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal memicu scheduler');
+        const cr = data.cycle_result;
+        showToast(`Siklus scheduler selesai: ${cr.publishedCount || 0} artikel baru dipublikasikan.`, 'success');
+        loadEditorialView();
+      } catch (err) {
+        showToast('Scheduler error: ' + err.message, 'danger');
       }
     }
 

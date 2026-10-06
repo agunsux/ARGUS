@@ -70,12 +70,16 @@ class ContentQualityEngine {
       report.flags.push('Article lacks structured H2 headings for scannability.');
     }
 
-    // Keyword presence in title and description
+    // Keyword presence in title and description (exact or all terms present naturally)
     const keywords = Array.isArray(article.keywords) ? article.keywords : [];
     if (keywords.length > 0) {
       const primaryKw = keywords[0].toLowerCase();
-      const inTitle = title.toLowerCase().includes(primaryKw);
-      const inDesc = desc.toLowerCase().includes(primaryKw);
+      const kwWords = primaryKw.split(/\s+/).filter(w => w.length > 2);
+      const allWordsInTitle = kwWords.length > 0 && kwWords.every(w => title.toLowerCase().includes(w));
+      const allWordsInDesc = kwWords.length > 0 && kwWords.every(w => desc.toLowerCase().includes(w));
+
+      const inTitle = title.toLowerCase().includes(primaryKw) || allWordsInTitle;
+      const inDesc = desc.toLowerCase().includes(primaryKw) || allWordsInDesc;
       if (inTitle && inDesc) {
         seoPoints += 25;
       } else if (inTitle || inDesc) {
@@ -126,12 +130,16 @@ class ContentQualityEngine {
     const forbiddenClaims = [
       { pattern: /100%\s*pasti\s*bisa\s*masuk/i, issue: 'Do not make 100% unconditional entry guarantee without noting gate protocol compliance.' },
       { pattern: /mitra\s*resmi\s*promotor\s*seluruh\s*indonesia/i, issue: 'TIKUM is an independent secondary ticket marketplace, not official partner of all promoters.' },
-      { pattern: /tanpa\s*syarat\s*dan\s*ketentuan/i, issue: 'Disputes require valid turnstile scan evidence.' }
+      { pattern: /tanpa\s*syarat\s*dan\s*ketentuan/i, issue: 'Disputes require valid turnstile scan evidence.' },
+      { pattern: /(penjual\s+tiket\s+pertama\s+di\s+indonesia|marketplace\s+tiket\s+pertama\s+di\s+indonesia)/i, issue: 'Do not state Tikum is first in Indonesia without verified historical proof.' },
+      { pattern: /100%\s*(scam[- ]?free|bebas\s+penipuan|bebas\s+scam|garansi\s+pasti)/i, issue: 'Do not make absolute 100% scam-free claims; state that platform minimizes fraud risk via escrow.' },
+      { pattern: /(marketplace\s+terbesar\s+di\s+indonesia|nomor\s+satu\s+di\s+indonesia)/i, issue: 'Do not claim largest or number one without independent audited data.' }
     ];
 
     for (const claim of forbiddenClaims) {
-      if (claim.pattern.test(content)) {
+      if (claim.pattern.test(content) || claim.pattern.test(title) || claim.pattern.test(desc)) {
         factPoints -= 25;
+        report.fact_check_passed = false;
         report.flags.push(claim.issue);
       }
     }

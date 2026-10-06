@@ -243,7 +243,7 @@ Sitemap: ${origin}/sitemap.xml
       } catch (e) {}
     }
 
-    // 8. Published Blog / Editorial Articles
+    // 8. Published Blog / Editorial Articles & Category Hubs
     if (providers.getPublishedArticles) {
       try {
         urls.push({
@@ -252,6 +252,29 @@ Sitemap: ${origin}/sitemap.xml
           changefreq: 'daily',
           priority: '0.8'
         });
+
+        urls.push({
+          loc: `${origin}/blog/editorial-standards`,
+          lastmod: nowIso,
+          changefreq: 'monthly',
+          priority: '0.7'
+        });
+
+        const blogCategories = [
+          'ticket-safety',
+          'secondary-ticketing',
+          'ticket-guides',
+          'tikum',
+          'scam-prevention'
+        ];
+        for (const cat of blogCategories) {
+          urls.push({
+            loc: `${origin}/blog/category/${cat}`,
+            lastmod: nowIso,
+            changefreq: 'weekly',
+            priority: '0.8'
+          });
+        }
 
         const articles = providers.getPublishedArticles();
         for (const art of articles) {
