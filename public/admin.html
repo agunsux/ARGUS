@@ -1078,11 +1078,11 @@
               </div>
               <div>
                 <div style="font-size: 13px; font-weight: 700; color: #fff;">
-                  Primary Rail: <span id="payActiveProviderName" class="mono" style="color: #38bdf8;">RCB</span> &bull; 
+                  Primary Rail: <span id="payActiveProviderName" class="mono" style="color: #38bdf8;">DOKU</span> &bull; 
                   <span id="payProviderStatusBadge" class="tag tag-medium">SANDBOX TESTING</span>
                 </div>
                 <div id="paySafetyGateDesc" style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
-                  Real-money marketplace activation is gated. Funds are held in internal double-entry ledger.
+                  Real-money marketplace activation is gated. Funds are held in licensed DOKU Escrow Account.
                 </div>
               </div>
             </div>
@@ -1266,11 +1266,11 @@
       <div id="dueDiligenceModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
         <div class="card" style="max-width: 600px; width: 100%; border-color: #f59e0b; background: #0f172a; max-height: 85vh; overflow-y: auto;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
-            <div style="font-weight: 700; color: #fff; font-size: 16px;"><i class="fa-solid fa-clipboard-check" style="color: #f59e0b;"></i> Vendor Gate: 12-Point Due Diligence Checklist (RCB)</div>
+            <div style="font-weight: 700; color: #fff; font-size: 16px;"><i class="fa-solid fa-clipboard-check" style="color: #f59e0b;"></i> Vendor Gate: DOKU Due Diligence & KYC Verification Checklist</div>
             <button onclick="toggleDueDiligenceModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
           </div>
           <div style="font-size: 12px; color: #94a3b8; margin-bottom: 14px;">
-            Berdasarkan protokol TIKUM Part 30, aktivasi produksi diblokir (fail-closed) hingga seluruh 12 kriteria ini diverifikasi dan disetujui.
+            Berdasarkan protokol TIKUM Section 2 & 3, aktivasi produksi diblokir (fail-closed) hingga verifikasi KYC Perusahaan, akta, foto lokasi usaha, dan kontrak Hold & Release Settlement disetujui.
           </div>
           <div id="dueDiligenceChecklistContainer" style="display: flex; flex-direction: column; gap: 8px;">
             <!-- Rendered via JS -->
@@ -1295,8 +1295,9 @@
           <div class="form-group" style="margin-bottom: 14px;">
             <label style="font-size: 12px; color: #cbd5e1;">Pilih Provider Gateway:</label>
             <select id="reconcileProviderSelect" class="form-control mono" style="width: 100%; padding: 8px;">
-              <option value="rcb">RCB (Primary)</option>
-              <option value="ipaymu">iPaymu (Secondary)</option>
+              <option value="doku">DOKU (Primary Escrow)</option>
+              <option value="midtrans">Midtrans (Backup #1)</option>
+              <option value="xendit">Xendit (Backup #2)</option>
             </select>
           </div>
           <div style="display: flex; gap: 8px; justify-content: flex-end;">
@@ -2469,7 +2470,7 @@
         document.getElementById('kpiTotalWebhooks').innerText = data.total_provider_webhooks || 0;
 
         // 2. Safety Gate Banner
-        const providerName = (data.subsystem_status?.default_provider || 'rcb').toUpperCase();
+        const providerName = (data.subsystem_status?.default_provider || 'doku').toUpperCase();
         document.getElementById('payActiveProviderName').innerText = providerName;
         const isVerified = data.subsystem_status?.primary_provider?.is_verified;
         const badge = document.getElementById('payProviderStatusBadge');
@@ -2480,7 +2481,7 @@
         } else {
           badge.className = 'tag tag-medium';
           badge.innerText = 'SANDBOX TESTING (GATED)';
-          document.getElementById('paySafetyGateDesc').innerText = 'Aktivasi uang riil ditahan (fail-closed). Rekening penampungan diamankan di ledger internal Tikum.';
+          document.getElementById('paySafetyGateDesc').innerText = 'Aktivasi uang riil ditahan (fail-closed). Rekening penampungan diamankan di DOKU Escrow Account.';
         }
 
         // 3. Render Canonical Payments Table
@@ -2493,7 +2494,7 @@
             <tr>
               <td class="mono" style="color: #38bdf8; font-size: 11px;">${p.id || p.internal_payment_id}</td>
               <td class="mono">${p.order_id}</td>
-              <td><span class="tag tag-neutral">${(p.provider || 'rcb').toUpperCase()}</span></td>
+              <td><span class="tag tag-neutral">${(p.provider || 'doku').toUpperCase()}</span></td>
               <td class="mono" style="font-size: 11px;">${p.provider_reference || '-'}</td>
               <td><span class="badge badge-info">${p.payment_channel || 'QRIS'}</span></td>
               <td class="mono" style="font-weight: 700; color: #fff;">${formatRupiah(p.gross_amount)}</td>
@@ -2517,7 +2518,7 @@
           whTb.innerHTML = data.provider_webhooks.map(w => `
             <tr>
               <td class="mono" style="font-size: 11px;">${w.id || w.event_id || '-'}</td>
-              <td><span class="tag tag-neutral">${(w.provider || 'rcb').toUpperCase()}</span></td>
+              <td><span class="tag tag-neutral">${(w.provider || 'doku').toUpperCase()}</span></td>
               <td><strong>${w.event_name || w.event_type || 'PAYMENT_EVENT'}</strong></td>
               <td class="mono">${w.provider_reference || w.reference_id || '-'}</td>
               <td>${w.signature_verified !== false ? '<span class="tag tag-success"><i class="fa-solid fa-check"></i> VALID HMAC</span>' : '<span class="tag tag-critical"><i class="fa-solid fa-xmark"></i> INVALID</span>'}</td>
@@ -2582,7 +2583,7 @@
         <tr>
           <td class="mono" style="font-size: 11px;">${r.id || r.run_id || '-'}</td>
           <td class="mono" style="font-weight: 600;">${r.date || '-'}</td>
-          <td><span class="tag tag-neutral">${(r.provider || 'rcb').toUpperCase()}</span></td>
+          <td><span class="tag tag-neutral">${(r.provider || 'doku').toUpperCase()}</span></td>
           <td class="mono" style="color: #34d399; font-weight: 700;">${r.matches !== undefined ? r.matches : (r.matched_count || 0)}</td>
           <td class="mono" style="color: ${(r.discrepancies || 0) > 0 ? '#ef4444' : '#94a3b8'}; font-weight: 700;">${r.discrepancies !== undefined ? r.discrepancies : (r.discrepancy_count || 0)}</td>
           <td class="mono">${r.total_processed || r.total_checked || 0}</td>

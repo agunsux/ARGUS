@@ -49,8 +49,16 @@ const state = {
   canonical_payments: [],
   provider_webhooks: [],
   settlement_records: [],
-  payment_reconciliation_logs: []
+  payment_reconciliation_logs: [],
+  chargebacks: [],
+  payment_attempts: [],
+  idempotency_records: []
 };
+
+try {
+  const { DurableFinancialStore } = require('./settlement/DurableFinancialStore');
+  DurableFinancialStore.restoreAll(state);
+} catch (_) {}
 
 let seqId = 1;
 let logId = 1;
@@ -97,7 +105,15 @@ function resetDatabase() {
   state.provider_webhooks = [];
   state.settlement_records = [];
   state.payment_reconciliation_logs = [];
+  state.chargebacks = [];
+  state.payment_attempts = [];
+  state.idempotency_records = [];
   state.processed_webhooks = new Set();
+
+  try {
+    const { DurableFinancialStore } = require('./settlement/DurableFinancialStore');
+    DurableFinancialStore.resetAll();
+  } catch (_) {}
 
   const isTest = process.env.NODE_ENV === 'test';
   const defaultTestPass = isTest ? 'pilot123' : null;

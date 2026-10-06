@@ -135,7 +135,7 @@ async function runSuite() {
   console.log('\n── Section 3: Payment Provider Routing & Failover Architecture ──');
 
   await test('3.1 Base PaymentProvider provides getSupportedCountries & getSupportedCurrencies', async () => {
-    const provider = paymentManager.getProvider('ipaymu');
+    const provider = paymentManager.getProvider('doku');
     assert.ok(Array.isArray(provider.getSupportedCountries()));
     assert.ok(provider.getSupportedCountries().includes('ID'));
     assert.ok(Array.isArray(provider.getSupportedCurrencies()));
@@ -144,7 +144,7 @@ async function runSuite() {
 
   await test('3.2 PaymentRoutingService resolves deterministic primary provider for Indonesia', async () => {
     const resolved = PaymentRoutingService.resolveProvider({ countryCode: 'ID', currency: 'IDR' });
-    assert.ok(resolved.providerName === 'rcb' || resolved.providerName === 'test');
+    assert.ok(resolved.providerName === 'doku' || resolved.providerName === 'test');
     assert.strictEqual(resolved.tier, PROVIDER_TIER.PRIMARY);
   });
 
@@ -152,7 +152,7 @@ async function runSuite() {
     const attempt = PaymentRoutingService.recordPaymentAttempt({
       paymentAttemptId: 'att-test-001',
       orderId: 'ord-test-001',
-      provider: 'rcb',
+      provider: 'doku',
       idempotencyKey: 'idemp-att-001',
       status: PAYMENT_ATTEMPT_STATUS.PENDING
     });
@@ -177,7 +177,7 @@ async function runSuite() {
     PaymentRoutingService.recordPaymentAttempt({
       paymentAttemptId: 'att-test-002',
       orderId: 'ord-test-002',
-      provider: 'rcb',
+      provider: 'doku',
       idempotencyKey: 'idemp-att-002',
       status: PAYMENT_ATTEMPT_STATUS.SUCCESS
     });
@@ -311,7 +311,7 @@ async function runSuite() {
   // ---------------------------------------------------------------------------
   console.log('\n── Section 8: Production Payment & Financial Safety Invariants ──');
 
-  await test('8.1 ENABLE_RCB_PRODUCTION is not enabled; safety gates remain absolute', async () => {
+  await test('8.1 Production safety gates remain absolute and un-bypassed', async () => {
     const status = PaymentService.getSubsystemStatus();
     assert.strictEqual(status.safety_gates.NO_REAL_PAYMENT, true);
     assert.strictEqual(status.safety_gates.NO_REAL_SETTLEMENT, true);

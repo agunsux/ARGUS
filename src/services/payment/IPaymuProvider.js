@@ -262,6 +262,17 @@ class IPaymuProvider extends PaymentProvider {
     };
   }
 
+  getCapabilities() {
+    return {
+      hold: false,
+      release: false,
+      refund: true,
+      split: true,
+      disbursement: false,
+      escrow_verified: false
+    };
+  }
+
   /**
    * Verify signature of iPaymu webhook
    */

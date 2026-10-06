@@ -272,7 +272,7 @@ async function runFeeTestSuite() {
       // Setup seller and listing
       const listingRes = await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-pestapora-2026',
+        eventId: 'event-joyland-2026',
         seatInfo: 'CAT 1 - Row 5',
         faceValue: 1000000,
         price: 1000000,
@@ -300,7 +300,7 @@ async function runFeeTestSuite() {
     await asyncTest('16. Checkout amount tampering is rejected with AMOUNT_MISMATCH', async () => {
       const listingRes = await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-pestapora-2026',
+        eventId: 'event-joyland-2026',
         seatInfo: 'CAT 2 - Row 10',
         faceValue: 500000,
         price: 500000,
@@ -355,7 +355,7 @@ async function runFeeTestSuite() {
     await asyncTest('18. Refund consumes the original order fee snapshot rather than recalculating today', async () => {
       const listingRes = await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-pestapora-2026',
+        eventId: 'event-joyland-2026',
         seatInfo: 'VIP - Row 1',
         faceValue: 2000000,
         price: 2000000,
@@ -395,7 +395,7 @@ async function runFeeTestSuite() {
     await asyncTest('19. Admin financial overview reconciles with FinancialLedger double-entry accounts', async () => {
       const listingRes = await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-pestapora-2026',
+        eventId: 'event-joyland-2026',
         seatInfo: 'CAT 1 - Row 2',
         faceValue: 1000000,
         price: 1000000,
@@ -446,7 +446,7 @@ async function runFeeTestSuite() {
       // 2. Listing creation
       const listingRes = await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-pestapora-2026',
+        eventId: 'event-joyland-2026',
         seatInfo: 'CAT 1 - Row 9',
         faceValue: 1000000,
         price: 1000000,

@@ -145,7 +145,7 @@ app.use(express.static(publicDir, sendFileOpts));
 // Mount Trust APIs
 app.use(trustApi);
 
-// Mount Canonical Payment & Webhook Router (RCB MVP + Multi-Provider Rails)
+// Mount Canonical Payment & Webhook Router (DOKU Primary Escrow + Multi-Provider Rails)
 const paymentRouter = require('./api/paymentRouter');
 app.use('/api', paymentRouter);
 

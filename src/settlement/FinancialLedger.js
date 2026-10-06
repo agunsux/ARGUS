@@ -153,6 +153,11 @@ class FinancialLedger {
     }
     state.financial_ledger.push(journalTransaction);
 
+    try {
+      const { DurableFinancialStore } = require('./DurableFinancialStore');
+      DurableFinancialStore.persist('financial_ledger', state.financial_ledger);
+    } catch (_) {}
+
     await recordAuditLog('FINANCIAL_LEDGER', transactionId, eventType, actorId, {
       order_id: orderId,
       quote_id: effectiveQuoteId || null,

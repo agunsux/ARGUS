@@ -994,7 +994,7 @@ async function runEpic5Suite() {
     // 1. Create and verify listing
     const listingRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-pestapora-2026',
+      eventId: 'event-lany-jakarta-2026',
       seatInfo: 'VIP Row 10',
       faceValue: 2000000,
       price: 2500000,

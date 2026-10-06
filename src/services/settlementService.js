@@ -61,7 +61,7 @@ class SettlementService {
     }
 
     // 4. Provider capability resolution
-    const providerName = order.provider || paymentManager.defaultProvider || 'rcb';
+    const providerName = (order.provider || paymentManager.defaultProvider || 'doku').toLowerCase();
     let provider = null;
     try {
       provider = paymentManager.getProvider(providerName);
@@ -90,8 +90,7 @@ class SettlementService {
         throw payoutErr;
       }
     } else {
-      // Documented operational reality: RCB does not support automated API payout
-      // Settle via verified banking rail / manual operator disburse (SIMULATED in test)
+      // Settle via verified banking rail / manual operator disburse
       settlementMode = process.env.NODE_ENV === 'test' ? 'SIMULATED' : 'MANUAL_BANK_TRANSFER';
       payoutRef = `ops-clear-${Date.now()}`;
     }
@@ -127,6 +126,11 @@ class SettlementService {
       bank_account: effectiveBankAccount,
       executed_at: settlement.executed_at
     });
+
+    try {
+      const { DurableFinancialStore } = require('../settlement/DurableFinancialStore');
+      DurableFinancialStore.persist('settlement_records', state.settlement_records);
+    } catch (_) {}
 
     await recordAuditLog('SETTLEMENT', settlementId, 'EXECUTED', officerId || 'SYSTEM', {
       order_id: orderId,

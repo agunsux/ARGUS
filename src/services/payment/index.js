@@ -1,26 +1,31 @@
 /**
- * ARGUS Payment Gateway Registry (Part 1, 16, 17)
- * 
+ * ARGUS Payment Gateway Registry (Section 0, 3, 16, 23)
+ *
  * Central registry managing regional payment providers:
- * - Primary / MVP: RCB (Indonesia - IDR)
- * - Secondary / Fallback: iPaymu (Indonesia - IDR)
- * - Extensible: DOKU, Midtrans, Xendit
+ * - Primary Rail: DOKU (PT Nusa Satu Inti Artha) — Escrow & Hold & Release Settlement
+ * - Backup #1: Midtrans (PT Midtrans / GoTo Financial) — Snap, Iris, Core API
+ * - Backup #2: Xendit (PT Sinar Digital Terdepan) — xenPlatform, Invoices, Disbursements
+ * - REMOVED: RCB (Completely deleted from production architecture)
  */
 
 const { PaymentProvider, CapabilityUnsupportedError } = require('./PaymentProvider');
-const { RCBPaymentProvider, RCB_STATUS } = require('./RCBPaymentProvider');
+const { DokuPaymentProvider, DOKU_STATUS, DOKU_ACCOUNT_STATUS, DOKU_ESCROW_STATUS } = require('./DokuPaymentProvider');
+const { MidtransPaymentProvider, MIDTRANS_STATUS } = require('./MidtransPaymentProvider');
+const { XenditPaymentProvider, XENDIT_STATUS } = require('./XenditPaymentProvider');
 const { IPaymuProvider, IPAYMU_STATUS } = require('./IPaymuProvider');
 
 class PaymentManager {
   constructor() {
     this.providers = new Map();
-    this.defaultProvider = process.env.DEFAULT_PAYMENT_PROVIDER || 'rcb';
+    this.defaultProvider = (process.env.DEFAULT_PAYMENT_PROVIDER || 'doku').toLowerCase();
 
-    // Register primary providers
-    this.registerProvider(new RCBPaymentProvider());
+    // Register primary and backup production providers
+    this.registerProvider(new DokuPaymentProvider());
+    this.registerProvider(new MidtransPaymentProvider());
+    this.registerProvider(new XenditPaymentProvider());
     this.registerProvider(new IPaymuProvider());
 
-    // Register DeterministicTestProvider in test environment if available
+    // Register DeterministicTestProvider in test environment if present
     if (process.env.NODE_ENV === 'test') {
       try {
         const { DeterministicTestProvider } = require('./DeterministicTestProvider');
@@ -39,7 +44,7 @@ class PaymentManager {
   }
 
   getProvider(name = this.defaultProvider) {
-    const provider = this.providers.get(name.toLowerCase());
+    const provider = this.providers.get((name || this.defaultProvider).toLowerCase());
     if (!provider) {
       throw new Error(`Payment provider '${name}' not supported or registered`);
     }
@@ -47,6 +52,7 @@ class PaymentManager {
   }
 
   hasProvider(name) {
+    if (!name) return false;
     return this.providers.has(name.toLowerCase());
   }
 
@@ -66,8 +72,11 @@ class PaymentManager {
       list.push({
         provider: name,
         country: provider.getCountry(),
+        countries: provider.getSupportedCountries ? provider.getSupportedCountries() : [provider.getCountry()],
+        currencies: provider.getSupportedCurrencies ? provider.getSupportedCurrencies() : ['IDR'],
         status: provider.getStatus ? provider.getStatus().status : 'UNKNOWN',
         is_verified: provider.getStatus ? provider.getStatus().isVerified : false,
+        health: provider.getHealth ? provider.getHealth() : { status: 'ACTIVE' },
         capabilities: provider.getCapabilities ? provider.getCapabilities() : null,
         channels: provider.getSupportedChannels()
       });
@@ -83,8 +92,14 @@ module.exports = {
   paymentManager,
   PaymentProvider,
   CapabilityUnsupportedError,
-  RCBPaymentProvider,
-  RCB_STATUS,
+  DokuPaymentProvider,
+  DOKU_STATUS,
+  DOKU_ACCOUNT_STATUS,
+  DOKU_ESCROW_STATUS,
+  MidtransPaymentProvider,
+  MIDTRANS_STATUS,
+  XenditPaymentProvider,
+  XENDIT_STATUS,
   IPaymuProvider,
   IPAYMU_STATUS
 };

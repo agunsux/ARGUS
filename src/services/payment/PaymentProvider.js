@@ -1,23 +1,25 @@
 /**
- * TIKUM / ARGUS — Canonical Payment Provider Abstraction (Part 1, 3, 16)
+ * TIKUM / ARGUS — Canonical Payment Provider Abstraction
  *
  * Provider-independent interface for multi-channel & escrow-capable payment gateways.
  * Keeps core marketplace, order, trust, escrow, and dispute logic completely decoupled
- * from any specific financial rail (RCB, iPaymu, DOKU, Midtrans, Xendit, etc.).
+ * from any specific financial rail (DOKU, Midtrans, Xendit).
  *
  * RULE: Unsupported capabilities MUST return an explicit CapabilityUnsupportedError.
  * Never silently stub or fabricate success for unsupported capabilities!
  */
 
-const { ProviderCapabilities } = require('./canonicalPaymentTypes');
+const { ProviderCapabilities, PROVIDER_HEALTH_STATE } = require('./canonicalPaymentTypes');
 
 class CapabilityUnsupportedError extends Error {
-  constructor(providerName, capability) {
-    super(`Capability '${capability}' is not supported by payment provider '${providerName}'.`);
+  constructor(providerName, capability, reason = null) {
+    const detail = reason ? `: ${reason}` : '.';
+    super(`Capability '${capability}' is not supported by payment provider '${providerName}'${detail}`);
     this.name = 'CapabilityUnsupportedError';
     this.code = 'CAPABILITY_UNSUPPORTED';
     this.provider = providerName;
     this.capability = capability;
+    this.reason = reason;
     this.status = 501;
   }
 }
@@ -25,10 +27,11 @@ class CapabilityUnsupportedError extends Error {
 class PaymentProvider {
   constructor(config = {}) {
     this.config = config;
+    this.healthState = config.initialHealth || PROVIDER_HEALTH_STATE.ACTIVE;
   }
 
   /**
-   * Provider identifier (e.g. 'rcb', 'ipaymu', 'midtrans', 'doku', 'xendit')
+   * Provider identifier (e.g. 'doku', 'midtrans', 'xendit')
    * @returns {string}
    */
   getName() {
@@ -36,7 +39,7 @@ class PaymentProvider {
   }
 
   /**
-   * Country code this provider serves (e.g. 'ID', 'SG')
+   * Primary Country code this provider serves (e.g. 'ID', 'SG')
    * @returns {string}
    */
   getCountry() {
@@ -60,8 +63,7 @@ class PaymentProvider {
   }
 
   /**
-   * Provider operational verification status:
-   * 'PENDING_VERIFICATION', 'ACTIVE', 'BLOCKED', 'MAINTENANCE'
+   * Provider operational verification status
    * @returns {{ status: string, isVerified: boolean, message: string, readiness?: any }}
    */
   getStatus() {
@@ -69,22 +71,29 @@ class PaymentProvider {
   }
 
   /**
+   * Provider health state (ACTIVE, DEGRADED, PAUSED, FAILED, DISABLED)
+   */
+  getHealth() {
+    return {
+      status: this.healthState,
+      provider: this.getName(),
+      lastCheck: new Date().toISOString()
+    };
+  }
+
+  setHealth(newHealth) {
+    if (!PROVIDER_HEALTH_STATE[newHealth]) {
+      throw new Error(`Invalid provider health state: '${newHealth}'`);
+    }
+    this.healthState = newHealth;
+  }
+
+  /**
    * Explicit capabilities verified from official documentation/contracts.
    * @returns {ProviderCapabilities}
    */
   getCapabilities() {
-    return new ProviderCapabilities({
-      paymentCollection: false,
-      refund: false,
-      hold: false,
-      release: false,
-      payout: false,
-      splitSettlement: false,
-      sellerAccounts: false,
-      subAccounts: false,
-      webhooks: false,
-      reconciliation: false
-    });
+    return new ProviderCapabilities();
   }
 
   /**
@@ -103,12 +112,11 @@ class PaymentProvider {
   isEscrowSupported(channelCode) {
     const channels = this.getSupportedChannels();
     const channel = channels.find(c => c.code.toUpperCase() === (channelCode || '').toUpperCase());
-    return channel ? channel.isEscrowSupported : false;
+    return channel ? Boolean(channel.isEscrowSupported) : false;
   }
 
   /**
    * Creates a payment intent / invoice on the provider rail.
-   * @returns {Promise<import('./canonicalPaymentTypes').CanonicalPaymentResult>}
    */
   async createPayment({
     orderId,
@@ -118,7 +126,8 @@ class PaymentProvider {
     buyer = {},
     requiresEscrow = true,
     metadata = {},
-    idempotencyKey = null
+    idempotencyKey = null,
+    correlationId = null
   }) {
     throw new Error('createPayment() must be implemented by payment provider');
   }
@@ -132,14 +141,14 @@ class PaymentProvider {
 
   /**
    * Verifies incoming webhook cryptographic signature.
-   * Accepts both raw buffer and parsed body.
+   * Accepts headers, parsed body, and raw body buffer.
    */
   verifyWebhook(headers = {}, body = {}, rawBodyBuffer = null) {
     throw new Error('verifyWebhook() must be implemented by payment provider');
   }
 
   /**
-   * Normalizes gateway webhook payload into canonical ARGUS payment event.
+   * Normalizes gateway webhook payload into canonical payment event.
    */
   parseWebhook(payload = {}, headers = {}) {
     throw new Error('parseWebhook() must be implemented by payment provider');
@@ -223,12 +232,24 @@ class PaymentProvider {
   }
 
   /**
+   * Handles chargeback evidence submission
+   */
+  async submitChargebackEvidence({ chargebackId, providerRef, evidence = [] }) {
+    const caps = this.getCapabilities();
+    if (!caps.chargebackHandling) {
+      throw new CapabilityUnsupportedError(this.getName(), 'chargebackHandling');
+    }
+    throw new Error('submitChargebackEvidence() must be implemented by payment provider');
+  }
+
+  /**
    * Provider connectivity / ping health check.
    */
   async healthCheck() {
     return {
       provider: this.getName(),
-      healthy: true,
+      healthy: this.healthState === PROVIDER_HEALTH_STATE.ACTIVE,
+      healthState: this.healthState,
       timestamp: new Date().toISOString()
     };
   }
@@ -238,12 +259,10 @@ class PaymentProvider {
     return this.createHold(params);
   }
 
-  // Backward compatibility alias for existing code
   async refund(params) {
     return this.requestRefund(params);
   }
 
-  // Backward compatibility alias for existing code
   async cancel({ orderId, providerRef, reason }) {
     return { orderId, providerRef, cancelled: true, reason };
   }
