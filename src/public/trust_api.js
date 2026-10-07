@@ -10,6 +10,7 @@ const { replayTicketState, appendLedgerEvent } = require('../ownership/ledger');
 const { createEvidenceBundle, verifyBundleIntegrity } = require('../verification/evidence');
 const { explainDecision } = require('./explain');
 const { validateSettlement } = require('../settlement/escrow');
+const { requireAdminApiKey } = require('../middleware/adminApiKeyAuth');
 
 // Configure multer storage
 const uploadsDir = process.env.VERCEL
@@ -159,7 +160,7 @@ router.post('/tickets/:id/reserve', async (req, res) => {
  * Endpoint 4: Get verification queue (Admin Only)
  * GET /api/admin/queue
  */
-router.get('/api/admin/queue', async (req, res) => {
+router.get('/api/admin/queue', requireAdminApiKey, async (req, res) => {
   try {
     const queue = await all(`
       SELECT t.*, e.title as event_title, e.date as event_date, e.venue as event_venue,
@@ -183,7 +184,7 @@ router.get('/api/admin/queue', async (req, res) => {
  * Endpoint 5: Ops verifies ticket validity (Admin action)
  * POST /api/admin/tickets/:id/verify
  */
-router.post('/api/admin/tickets/:id/verify', async (req, res) => {
+router.post('/api/admin/tickets/:id/verify', requireAdminApiKey, async (req, res) => {
   try {
     const ticketId = req.params.id;
     const { approved, officerId, reason } = req.body;
@@ -220,7 +221,7 @@ router.post('/api/admin/tickets/:id/verify', async (req, res) => {
  * Endpoint 6: Ops confirms Buyer's Escrow Payment has cleared (Admin action)
  * POST /api/admin/transfers/:id/confirm-payment
  */
-router.post('/api/admin/transfers/:id/confirm-payment', async (req, res) => {
+router.post('/api/admin/transfers/:id/confirm-payment', requireAdminApiKey, async (req, res) => {
   try {
     const transferId = req.params.id;
     const { officerId } = req.body;
@@ -243,7 +244,7 @@ router.post('/api/admin/transfers/:id/confirm-payment', async (req, res) => {
  * Endpoint 7: Ops releases funds to Seller & finalizes transfer (Admin action)
  * POST /api/admin/transfers/:id/release
  */
-router.post('/api/admin/transfers/:id/release', async (req, res) => {
+router.post('/api/admin/transfers/:id/release', requireAdminApiKey, async (req, res) => {
   try {
     const transferId = req.params.id;
     const { officerId } = req.body;
@@ -281,7 +282,7 @@ router.post('/api/admin/transfers/:id/release', async (req, res) => {
  * Endpoint 8: Ops registers a dispute
  * POST /api/admin/transfers/:id/dispute
  */
-router.post('/api/admin/transfers/:id/dispute', async (req, res) => {
+router.post('/api/admin/transfers/:id/dispute', requireAdminApiKey, async (req, res) => {
   try {
     const transferId = req.params.id;
     const { officerId, reason } = req.body;
@@ -304,7 +305,7 @@ router.post('/api/admin/transfers/:id/dispute', async (req, res) => {
  * Endpoint 9: Public VSER Metric calculator
  * GET /api/admin/metrics
  */
-router.get('/api/admin/metrics', async (req, res) => {
+router.get('/api/admin/metrics', requireAdminApiKey, async (req, res) => {
   try {
     const redeemed = await get(`SELECT COUNT(*) as count FROM transfers WHERE status = 'TRANSFERRED'`);
     const disputed = await get(`SELECT COUNT(*) as count FROM transfers WHERE status = 'DISPUTED'`);

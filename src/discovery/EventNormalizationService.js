@@ -796,6 +796,9 @@ class EventNormalizationService {
     if (!rawTitle) return '';
     let title = String(rawTitle).trim();
 
+    // Strip HTML tags and entities
+    title = title.replace(/<[^>]*>?/gm, '').trim();
+
     // Strip common sponsor noise and prefixes
     title = title.replace(/^(BRI\s+Liga\s+1\s*[:\-\—]\s*)/i, '');
     title = title.replace(/^(Pegadaian\s+Liga\s+2\s*[:\-\—]\s*)/i, '');
@@ -811,6 +814,11 @@ class EventNormalizationService {
 
     // Standardize "v" or "v." to "vs"
     title = title.replace(/\s+v\.?\s+/gi, ' vs ');
+
+    // Bound maximum title length to 255 chars
+    if (title.length > 255) {
+      title = title.substring(0, 255).trim();
+    }
 
     return title;
   }

@@ -26,6 +26,8 @@ const { inventoryReconciliationService } = require('./src/discovery/EventInvento
 const { AdminEventControlService } = require('./src/discovery/AdminEventControlService');
 const discoveryRouter = require('./src/discovery/discoveryRouter');
 
+process.env.ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'test-admin-key-argus-reconcile';
+
 let server;
 let baseUrl;
 
@@ -57,6 +59,7 @@ function apiRequest(path, options = {}) {
       method: options.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'x-admin-api-key': process.env.ADMIN_API_KEY,
         ...(options.headers || {})
       }
     };

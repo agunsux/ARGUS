@@ -1835,12 +1835,22 @@ function bootstrapAdminUser() {
  */
 async function seedOfficialEventSupply() {
   try {
+    const { canonicalRegistry } = require('./discovery/CanonicalEventRegistry');
+    const { getCatalogRepository } = require('./discovery/repository');
+    const repo = getCatalogRepository();
+    await repo.init();
+    const hydration = await canonicalRegistry.hydrateFromRepository(repo);
+    if (hydration.hydrated && hydration.count > 0) {
+      canonicalRegistry.syncToState(state.events);
+    }
+
     const { RealSourceSeedService } = require('./discovery/RealSourceSeedService');
     if (!RealSourceSeedService.isEnabled()) {
       return null;
     }
     const service = new RealSourceSeedService();
     const report = await service.seed();
+    await canonicalRegistry.syncToRepository(repo);
     return report;
   } catch (err) {
     console.error('[RealSourceSeed] Bootstrap seeding failed:', err && err.message ? err.message : err);

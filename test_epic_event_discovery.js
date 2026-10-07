@@ -1,4 +1,5 @@
 process.env.NODE_ENV = 'test';
+process.env.ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'test-admin-key-argus';
 const assert = require('assert');
 const http = require('http');
 const { state, resetDatabase } = require('./src/database');

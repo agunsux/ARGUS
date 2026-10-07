@@ -9,6 +9,7 @@
  * - Zero access to payment/user/escrow private data.
  */
 
+const crypto = require('crypto');
 const express = require('express');
 const router = express.Router();
 const { articleRepository } = require('../content/ArticleRepository');
@@ -240,12 +241,22 @@ router.post('/api/admin/content/scheduler/run', requireContentAdmin, async (req,
 async function handleContentSchedulerCron(req, res) {
   try {
     const cronSecret = process.env.CRON_SECRET;
+    if (process.env.NODE_ENV !== 'test') {
+      if (!cronSecret || typeof cronSecret !== 'string' || cronSecret.trim().length === 0) {
+        return res.status(500).json({ success: false, error: 'Unauthorized: CRON_SECRET not configured in environment (fail-closed)', code: 'CRON_SECRET_NOT_CONFIGURED' });
+      }
+    }
     if (cronSecret) {
-      const authHeader = req.headers ? (req.headers.authorization || req.header('authorization')) : null;
-      const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
-      const querySecret = req.query?.secret;
-      if (bearerToken !== cronSecret && querySecret !== cronSecret) {
-        return res.status(401).json({ success: false, error: 'Unauthorized: Invalid cron secret' });
+      const authHeader = req.headers ? (req.headers.authorization || req.header?.('authorization')) : null;
+      const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
+      const candidate = bearerToken || req.query?.secret;
+      if (!candidate) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Missing cron secret', code: 'UNAUTHORIZED' });
+      }
+      const secretBuf = Buffer.from(cronSecret);
+      const candBuf = Buffer.from(candidate);
+      if (secretBuf.length !== candBuf.length || !crypto.timingSafeEqual(secretBuf, candBuf)) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Invalid cron secret', code: 'UNAUTHORIZED' });
       }
     }
 

@@ -30,6 +30,9 @@ const { PopularityEngine } = require('./PopularityEngine');
 const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS, HOMEPAGE_EVENT_GRACE_DAYS } = require('./EventTemporalLifecycleEngine');
 const { inventoryReconciliationService } = require('./EventInventoryReconciliationService');
 const { EventVisualProvenanceService } = require('./EventVisualProvenanceService');
+const crypto = require('crypto');
+const { requireAdminApiKey } = require('../middleware/adminApiKeyAuth');
+const { getCatalogRepository } = require('./repository');
 
 // ==========================================
 // PROMOTER IMPORT ADMIN GUARD & CSV UPLOAD
@@ -1316,6 +1319,10 @@ router.get('/api/discovery/promoters/apmi/:slug/events', (req, res) => {
 // 3. ADMIN CONTROL CENTER APIS
 // ==========================================
 
+// Fail-closed Admin API key lockdown across all discovery admin routes
+router.use('/api/discovery/admin', requireAdminApiKey);
+router.use('/admin', requireAdminApiKey);
+
 /**
  * GET /api/discovery/admin/dashboard
  */
@@ -1923,17 +1930,39 @@ router.get('/api/discovery/admin/inventory-report', (req, res) => {
 async function handleLifecycleCron(req, res) {
   try {
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret) {
-      const authHeader = req.headers.authorization;
-      const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
-      const querySecret = req.query.secret;
-      if (bearerToken !== cronSecret && querySecret !== cronSecret) {
-        return res.status(401).json({ success: false, error: 'Unauthorized: Invalid cron secret' });
-      }
+    if (!cronSecret || typeof cronSecret !== 'string' || cronSecret.trim().length === 0) {
+      return res.status(500).json({
+        success: false,
+        error: 'Unauthorized: CRON_SECRET not configured in environment (fail-closed)',
+        code: 'CRON_SECRET_NOT_CONFIGURED'
+      });
     }
 
-    const now = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
-      ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
+    const authHeader = req.headers ? (req.headers.authorization || req.header?.('authorization')) : null;
+    const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
+    const querySecret = req.query?.secret;
+    const candidate = bearerToken || querySecret;
+
+    if (!candidate) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized: Missing cron secret',
+        code: 'CRON_SECRET_REQUIRED'
+      });
+    }
+
+    const secretBuf = Buffer.from(cronSecret);
+    const candBuf = Buffer.from(candidate);
+    if (secretBuf.length !== candBuf.length || !crypto.timingSafeEqual(secretBuf, candBuf)) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized: Invalid cron secret',
+        code: 'INVALID_CRON_SECRET'
+      });
+    }
+
+    const now = (req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
+      ? new Date(req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
       : new Date();
 
     const result = await EventTemporalLifecycleEngine.reconcileAllEvents(now, 'VERCEL_CRON');
@@ -1953,10 +1982,134 @@ async function handleLifecycleCron(req, res) {
   }
 }
 
+/**
+ * GET/POST /api/cron/discovery-sync
+ * Also mapped to /api/discovery/cron/sync
+ * Vercel Cron Endpoint: Scheduled Discovery Sync & Multi-Source Reconciliation
+ *
+ * Invariants:
+ * - Strict Authorization: Bearer <CRON_SECRET> (fail-closed HTTP 500 if unset, 401 if missing/invalid)
+ * - Advisory Concurrency Lock: 17913001 (returns HTTP 409 SKIPPED if busy)
+ * - 45-second execution time budget
+ * - Reconciles Tier-1 sources (LOKET active API pagination, GOERS passive mode)
+ * - Writes audit log to reconciliation_runs
+ */
+async function handleDiscoverySyncCron(req, res) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret || typeof cronSecret !== 'string' || cronSecret.trim().length === 0) {
+    return res.status(500).json({
+      success: false,
+      error: 'Unauthorized: CRON_SECRET not configured in environment (fail-closed)',
+      code: 'CRON_SECRET_NOT_CONFIGURED'
+    });
+  }
+
+  const authHeader = req.headers ? (req.headers.authorization || req.header?.('authorization')) : null;
+  const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
+  const querySecret = req.query?.secret;
+  const candidate = bearerToken || querySecret;
+
+  if (!candidate) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized: Missing cron secret',
+      code: 'CRON_SECRET_REQUIRED'
+    });
+  }
+
+  const secretBuf = Buffer.from(cronSecret);
+  const candBuf = Buffer.from(candidate);
+  if (secretBuf.length !== candBuf.length || !crypto.timingSafeEqual(secretBuf, candBuf)) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized: Invalid cron secret',
+      code: 'INVALID_CRON_SECRET'
+    });
+  }
+
+  const catalogRepo = getCatalogRepository();
+  const lockId = 17913001;
+  const lockAcquired = await catalogRepo.acquireAdvisoryLock(lockId);
+
+  if (!lockAcquired) {
+    return res.status(409).json({
+      success: false,
+      status: 'SKIPPED',
+      reason: 'RECONCILIATION_ALREADY_IN_PROGRESS',
+      code: 'LOCK_BUSY'
+    });
+  }
+
+  let runRecord = null;
+  try {
+    runRecord = await catalogRepo.recordReconciliationRun({
+      trigger_type: 'CRON',
+      status: 'RUNNING',
+      run_by: 'VERCEL_CRON'
+    });
+
+    const now = (req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
+      ? new Date(req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
+      : new Date();
+
+    const report = await inventoryReconciliationService.reconcileInventory({
+      now,
+      actorId: 'VERCEL_CRON',
+      timeBudgetMs: 45000,
+      syncSources: true
+    });
+
+    if (runRecord && runRecord.id) {
+      await catalogRepo.updateReconciliationRun(runRecord.id, {
+        status: 'SUCCESS',
+        records_discovered: report.counts?.total_discovered || 0,
+        records_ingested: report.counts?.total_canonical || 0,
+        duplicates_merged: report.counts?.duplicates_merged || 0,
+        error_count: (report.errors || []).length,
+        report
+      }).catch(() => {});
+    }
+
+    res.json({
+      success: true,
+      status: 'COMPLETED',
+      reconciliation_id: report.reconciliation_id,
+      counts: report.counts,
+      summary: report.summary
+    });
+  } catch (err) {
+    if (runRecord && runRecord.id) {
+      await catalogRepo.updateReconciliationRun(runRecord.id, {
+        status: 'FAILED',
+        error_count: 1,
+        report: { error: err.message }
+      }).catch(() => {});
+    }
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    await catalogRepo.releaseAdvisoryLock(lockId).catch(() => {});
+  }
+}
+
 router.get('/api/discovery/lifecycle/cron', handleLifecycleCron);
 router.post('/api/discovery/lifecycle/cron', handleLifecycleCron);
 router.get('/api/cron/lifecycle', handleLifecycleCron);
 router.post('/api/cron/lifecycle', handleLifecycleCron);
+
+router.get('/api/cron/discovery-sync', handleDiscoverySyncCron);
+router.post('/api/cron/discovery-sync', handleDiscoverySyncCron);
+router.get('/api/discovery/cron/sync', handleDiscoverySyncCron);
+router.post('/api/discovery/cron/sync', handleDiscoverySyncCron);
+
+// Aliases for /admin root mounts
+router.post('/admin/reconcile', (req, res, next) => {
+  req.url = '/api/discovery/admin/reconcile';
+  router.handle(req, res, next);
+});
+router.get('/admin/inventory-report', (req, res, next) => {
+  req.url = '/api/discovery/admin/inventory-report';
+  router.handle(req, res, next);
+});
 
 module.exports = router;
 

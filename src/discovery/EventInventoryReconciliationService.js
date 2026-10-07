@@ -239,6 +239,24 @@ class EventInventoryReconciliationService {
       // 4. Sync to state.events
       canonicalRegistry.syncToState(state.events);
 
+      // 4b. Sync to durable repository (PostgreSQL/Neon)
+      try {
+        await canonicalRegistry.syncToRepository();
+        const { getCatalogRepository } = require('./repository');
+        const repo = getCatalogRepository();
+        await repo.recordReconciliationRun({
+          id: reconciliationId,
+          trigger_type: actorId && actorId.includes('CRON') ? 'CRON' : 'ADMIN',
+          status: 'SUCCESS',
+          records_discovered: syncResults.records_discovered,
+          records_ingested: syncResults.records_ingested,
+          duplicates_merged: syncResults.duplicates_merged,
+          error_count: syncResults.errors.length,
+          report: { counts: allEvents.length },
+          run_by: actorId || 'SYSTEM'
+        });
+      } catch (_) {}
+
       // 5. Gather all sources coverage
       const sourceCoverage = {};
       for (const ev of allEvents) {

@@ -23,9 +23,14 @@ const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('./EventTempo
 const { EventVisualProvenanceService } = require('./EventVisualProvenanceService');
 
 class CanonicalEventRegistry {
-  constructor() {
+  constructor(repository = null) {
     this.events = new Map(); // event_id -> canonicalEvent
     this.slugMap = new Map(); // slug -> event_id
+    this.repository = repository;
+  }
+
+  async init(repository = null) {
+    return this.hydrateFromRepository(repository || this.repository);
   }
 
   /**
@@ -1301,6 +1306,50 @@ class CanonicalEventRegistry {
     }
 
     return { stale_count: staleCount, expired_count: expiredCount, total_events: this.events.size };
+  }
+
+  /**
+   * Hydrates in-memory cache from durable storage (PostgreSQL/repository).
+   * Safe for cold-starts: if repository has data, loads all canonical events.
+   */
+  async hydrateFromRepository(repository = null) {
+    try {
+      const { getCatalogRepository } = require('./repository');
+      const repo = repository || this.repository || getCatalogRepository();
+      await repo.init();
+      const durableEvents = await repo.getAllEvents();
+      if (Array.isArray(durableEvents) && durableEvents.length > 0) {
+        for (const ev of durableEvents) {
+          const id = ev.id || ev.event_id;
+          this.events.set(id, ev);
+          if (ev.slug) {
+            this.slugMap.set(ev.slug, id);
+          }
+        }
+        return { hydrated: true, count: durableEvents.length, degraded: repo.isDegraded() };
+      }
+      return { hydrated: false, count: 0, degraded: repo.isDegraded() };
+    } catch (err) {
+      console.warn('[CanonicalEventRegistry] Hydration from repository failed:', err.message);
+      return { hydrated: false, count: 0, degraded: true };
+    }
+  }
+
+  /**
+   * Synchronizes current in-memory events to durable repository storage.
+   */
+  async syncToRepository(repository = null) {
+    try {
+      const { getCatalogRepository } = require('./repository');
+      const repo = repository || getCatalogRepository();
+      for (const event of this.events.values()) {
+        await repo.upsertCanonicalEvent(event);
+      }
+      return true;
+    } catch (err) {
+      console.warn('[CanonicalEventRegistry] syncToRepository failed:', err.message);
+      return false;
+    }
   }
 
   reset() {
