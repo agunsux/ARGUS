@@ -52,9 +52,11 @@ class DokuPaymentProvider extends PaymentProvider {
     super(config);
     this.clientId = config.clientId || process.env.DOKU_CLIENT_ID || null;
     this.secretKey = config.secretKey || process.env.DOKU_SECRET_KEY || null;
-    this.apiBaseUrl = config.apiBaseUrl || process.env.DOKU_API_BASE_URL || 'https://api-sandbox.doku.com';
+    this.apiBaseUrl = config.apiBaseUrl || process.env.DOKU_BASE_URL || process.env.DOKU_API_BASE_URL || 'https://api-sandbox.doku.com';
     this.webhookSecret = config.webhookSecret || process.env.DOKU_WEBHOOK_SECRET || this.secretKey || null;
-    this.mode = config.mode || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox');
+    this.env = (config.env || process.env.DOKU_ENV || config.mode || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase();
+    this.mode = this.env;
+    this.isSandbox = this.env === 'sandbox' || this.apiBaseUrl.includes('sandbox');
 
     // Section 2: KYC & Account State
     // DOKU Business Account requires company NPWP, amendment deed, business-location photo, matched bank account
@@ -86,6 +88,28 @@ class DokuPaymentProvider extends PaymentProvider {
     this.allowSimulation = config.allowSimulation !== undefined
       ? config.allowSimulation === true
       : (process.env.NODE_ENV === 'test' && !this.enableProduction);
+  }
+
+  /**
+   * Validates DOKU configuration and credential presence without leaking secrets
+   */
+  validateConfiguration() {
+    const issues = [];
+    if (!this.clientId) issues.push('DOKU_CLIENT_ID is missing');
+    if (!this.secretKey) issues.push('DOKU_SECRET_KEY is missing');
+    if (!this.apiBaseUrl) issues.push('DOKU_BASE_URL is missing');
+    if (!this.env) issues.push('DOKU_ENV is missing');
+
+    return {
+      valid: issues.length === 0,
+      issues,
+      environment: this.env,
+      isSandbox: this.isSandbox,
+      apiBaseUrl: this.apiBaseUrl,
+      hasClientId: Boolean(this.clientId),
+      hasSecretKey: Boolean(this.secretKey),
+      hasWebhookSecret: Boolean(this.webhookSecret)
+    };
   }
 
   getName() {
@@ -129,7 +153,7 @@ class DokuPaymentProvider extends PaymentProvider {
 
     const passedCount = Object.values(checklist).filter(Boolean).length;
     const totalCount = Object.keys(checklist).length;
-    const isReady = (this.enableProduction || this.allowSimulation) && hasCredentials;
+    const isReady = (this.isSandbox ? hasCredentials : (this.enableProduction && hasCredentials)) || (this.allowSimulation && hasCredentials);
 
     return {
       checklist,
@@ -176,9 +200,12 @@ class DokuPaymentProvider extends PaymentProvider {
       account_status: this.accountStatus,
       escrow_status: this.escrowStatus,
       isVerified: readiness.is_ready,
-      environment: this.mode,
+      environment: this.env || this.mode,
+      is_sandbox: this.isSandbox,
+      api_base_url: this.apiBaseUrl,
+      production_gated: !this.enableProduction,
       message: readiness.is_ready
-        ? 'DOKU primary payment provider operational'
+        ? (this.isSandbox ? 'DOKU Sandbox payment provider operational' : 'DOKU primary payment provider operational')
         : `PAYMENT PROVIDER DOKU: ${this.accountStatus} — Real-money activation requires business KYC and signed merchant contract`,
       readiness: readiness.checklist,
       escrow_verification_matrix: this.getEscrowVerificationMatrix(),
@@ -261,6 +288,97 @@ class DokuPaymentProvider extends PaymentProvider {
   }
 
   /**
+   * Internal HTTP POST client for DOKU API
+   */
+  _httpPost({ url, headers, body }) {
+    return new Promise((resolve, reject) => {
+      const parsedUrl = new URL(url);
+      const isHttps = parsedUrl.protocol === 'https:';
+      const transport = isHttps ? require('https') : require('http');
+
+      const req = transport.request(parsedUrl, {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Length': Buffer.byteLength(body)
+        },
+        timeout: 10000
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          let json = null;
+          try {
+            json = JSON.parse(data);
+          } catch (e) {}
+          resolve({
+            statusCode: res.statusCode,
+            headers: res.headers,
+            body: data,
+            json
+          });
+        });
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('DOKU API request timed out (10s)'));
+      });
+
+      req.on('error', (err) => {
+        reject(new Error(`DOKU API network error: ${err.message}`));
+      });
+
+      req.write(body);
+      req.end();
+    });
+  }
+
+  _handleCreatePaymentResponse({ orderId, gross, currency, channel, requiresEscrow, effIdempotency, effCorrelation, invoiceNumber, response }) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      const errorMsg = response.json?.error?.message || response.json?.message || `HTTP ${response.statusCode}`;
+      const err = new Error(`DOKU Checkout API error: ${errorMsg}`);
+      err.code = 'DOKU_API_ERROR';
+      err.status = response.statusCode;
+      err.details = response.json;
+      throw err;
+    }
+
+    const data = response.json || {};
+    const paymentData = data.payment || data.response?.payment || {};
+    const checkoutUrl = paymentData.url;
+
+    if (!checkoutUrl) {
+      const err = new Error('DOKU Checkout did not return a payment URL');
+      err.code = 'DOKU_INVALID_RESPONSE';
+      err.details = data;
+      throw err;
+    }
+
+    return {
+      provider: this.getName(),
+      orderId,
+      providerReference: invoiceNumber,
+      providerTransactionId: invoiceNumber,
+      amount: gross,
+      currency,
+      channel: channel || 'DOKU_CHECKOUT',
+      status: MONEY_STATE.PAYMENT_PENDING,
+      requiresEscrow,
+      escrowHeld: false,
+      paymentUrl: checkoutUrl,
+      paymentDetails: {
+        invoiceNumber,
+        checkoutUrl,
+        expiresAt: paymentData.expired_date || new Date(Date.now() + 60 * 60 * 1000).toISOString()
+      },
+      idempotencyKey: effIdempotency,
+      correlationId: effCorrelation,
+      simulated: false
+    };
+  }
+
+  /**
    * Creates payment on DOKU rail
    */
   async createPayment({
@@ -272,17 +390,19 @@ class DokuPaymentProvider extends PaymentProvider {
     requiresEscrow = true,
     metadata = {},
     idempotencyKey = null,
-    correlationId = null
+    correlationId = null,
+    callbackUrl = null
   }) {
     const gross = parseInt(amount, 10);
     const effIdempotency = idempotencyKey || `doku-pay-${orderId}-${Date.now()}`;
     const effCorrelation = correlationId || `corr-${orderId}`;
-    const requestId = `req-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-    const timestamp = new Date().toISOString();
+    const requestId = `req-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    const requestTimestamp = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
     const invoiceNumber = `INV-DOKU-${orderId}`;
+    const effCallbackUrl = callbackUrl || metadata?.callbackUrl || `https://tikum.app/track/${orderId}`;
 
-    // Simulation / Sandbox handling when no live network credentials active
-    if (!this.enableProduction && (this.allowSimulation || !this.secretKey)) {
+    // Simulation / Sandbox handling when no live network credentials active or simulation explicitly allowed
+    if (!this.enableProduction && (this.allowSimulation || !this.secretKey || !this.clientId)) {
       const providerRef = `doku-trx-${orderId}-${Date.now()}`;
       return {
         provider: this.getName(),
@@ -309,8 +429,61 @@ class DokuPaymentProvider extends PaymentProvider {
       };
     }
 
-    // Live HTTP client integration
-    throw new Error('Live DOKU production API client awaiting merchant production activation.');
+    // Live production gate: production API requires explicit merchant production enablement flag
+    if (this.mode === 'production' && !this.enableProduction) {
+      throw new Error('Live DOKU production API client awaiting merchant production activation.');
+    }
+
+    // Real Sandbox HTTP POST to DOKU Checkout API
+    const payload = {
+      order: {
+        invoice_number: invoiceNumber,
+        amount: gross,
+        callback_url: effCallbackUrl,
+        auto_redirect: true
+      },
+      payment: {
+        payment_due_date: 60
+      },
+      customer: {
+        id: buyer.id || 'buyer-tikum',
+        name: buyer.name || 'Tikum Customer',
+        email: buyer.email || 'customer@tikum.app'
+      }
+    };
+
+    const rawBody = JSON.stringify(payload);
+    const requestTarget = '/checkout/v1/payment';
+    const signature = this.generateSignature({
+      requestId,
+      requestTimestamp,
+      requestTarget,
+      rawBody
+    });
+
+    const response = await this._httpPost({
+      url: `${this.apiBaseUrl}${requestTarget}`,
+      headers: {
+        'Client-Id': this.clientId,
+        'Request-Id': requestId,
+        'Request-Timestamp': requestTimestamp,
+        'Signature': signature,
+        'Content-Type': 'application/json'
+      },
+      body: rawBody
+    });
+
+    return this._handleCreatePaymentResponse({
+      orderId,
+      gross,
+      currency,
+      channel,
+      requiresEscrow,
+      effIdempotency,
+      effCorrelation,
+      invoiceNumber,
+      response
+    });
   }
 
   /**
