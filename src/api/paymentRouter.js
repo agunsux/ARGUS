@@ -147,21 +147,91 @@ router.post('/v1/payments/create', async (req, res) => {
  */
 router.get('/v1/payments/sandbox/diagnostics', async (req, res) => {
   const doku = paymentManager.getProvider('doku');
-  const mask = (s) => {
-    if (!s) return null;
-    if (s.length <= 8) return s.slice(0, 2) + '***' + s.slice(-2);
-    return s.slice(0, 4) + '...' + s.slice(-4) + ` (${s.length} chars)`;
+  const crypto = require('crypto');
+  const rawSecret = process.env.DOKU_SECRET_KEY || '';
+
+  // Step 1: Environment Integrity & Secret Metadata (no secret leaked)
+  const envIntegrity = {
+    DOKU_ENV: process.env.DOKU_ENV || null,
+    DOKU_BASE_URL: process.env.DOKU_BASE_URL || null,
+    ENABLE_DOKU_PRODUCTION: process.env.ENABLE_DOKU_PRODUCTION || 'false',
+    clientId: doku.clientId || process.env.DOKU_CLIENT_ID || null,
+    secretLength: rawSecret.length,
+    secretHasLeadingWhitespace: /^\s/.test(rawSecret),
+    secretHasTrailingWhitespace: /\s$/.test(rawSecret),
+    secretHasNewline: /[\r\n]/.test(rawSecret),
+    secretHasQuotes: /^['"].*['"]$/.test(rawSecret) || rawSecret.includes('"') || rawSecret.includes("'"),
+    rawEnvKeys: Object.keys(process.env).filter(k => k.startsWith('DOKU_'))
+  };
+
+  // Step 2 & Step 3a: Canonical Signing Dump & Independent Signature Calculation
+  const testPayload = {
+    order: {
+      invoice_number: 'INV-TEST-CANONICAL-001',
+      amount: 50000,
+      callback_url: 'https://tikum.app/track/order-doku-sandbox-gate-1',
+      auto_redirect: true
+    },
+    payment: {
+      payment_due_date: 60
+    },
+    customer: {
+      id: 'test-sandbox-buyer-001',
+      name: 'Tikum Customer',
+      email: 'customer@tikum.app'
+    },
+    additional_info: {
+      hold_settlement: true
+    }
+  };
+
+  const sampleRequestId = '4f7d2927-4a57-4146-a365-27a3c74900a1';
+  const sampleRequestTimestamp = '2026-10-07T14:15:00Z';
+  const sampleRequestTarget = '/checkout/v1/payment';
+  const rawBody = JSON.stringify(testPayload);
+  const digest = crypto.createHash('sha256').update(rawBody).digest('base64');
+
+  const componentString = [
+    `Client-Id:${envIntegrity.clientId}`,
+    `Request-Id:${sampleRequestId}`,
+    `Request-Timestamp:${sampleRequestTimestamp}`,
+    `Request-Target:${sampleRequestTarget}`,
+    `Digest:${digest}`
+  ].join('\n');
+
+  const hashedBodyByteLength = Buffer.byteLength(rawBody, 'utf8');
+  const wireBodyByteLength = Buffer.byteLength(rawBody, 'utf8');
+
+  // Tikum's signature implementation
+  const tikumSig = doku.generateSignature({
+    requestId: sampleRequestId,
+    requestTimestamp: sampleRequestTimestamp,
+    requestTarget: sampleRequestTarget,
+    digest,
+    secretKey: rawSecret
+  });
+
+  // Step 3a: Independent reference implementation
+  const independentHmac = crypto.createHmac('sha256', rawSecret).update(componentString).digest('base64');
+  const independentSig = `HMACSHA256=${independentHmac}`;
+  const signatureMatch = tikumSig === independentSig ? 'MATCH' : 'MISMATCH';
+
+  const signingDump = {
+    clientId: envIntegrity.clientId,
+    requestId: sampleRequestId,
+    requestTimestamp: sampleRequestTimestamp,
+    requestTarget: sampleRequestTarget,
+    digest,
+    componentString,
+    hashedBodyByteLength,
+    wireBodyByteLength,
+    byteIdentical: hashedBodyByteLength === wireBodyByteLength,
+    tikumVsIndependentSignature: signatureMatch
   };
 
   const response = {
-    env: doku.env,
-    mode: doku.mode,
-    isSandbox: doku.isSandbox,
-    apiBaseUrl: doku.apiBaseUrl,
-    clientId: mask(doku.clientId),
-    secretKey: mask(doku.secretKey),
-    apiKey: mask(doku.apiKey),
-    rawEnvKeys: Object.keys(process.env).filter(k => k.startsWith('DOKU_'))
+    envIntegrity,
+    signingDump
   };
 
   if (req.query.probe === 'true') {
