@@ -66,7 +66,7 @@ router.post('/v1/payments/create', async (req, res) => {
     }
 
     let order = state.orders ? state.orders.find(o => o.id === orderId) : null;
-    if (!order && (orderId === 'order-doku-sandbox-gate-1' || orderId.startsWith('sandbox-') || orderId.startsWith('test-sandbox-'))) {
+    if (!order && (orderId === 'order-doku-sandbox-gate-1' || orderId.startsWith('order-doku-sandbox-gate-') || orderId.startsWith('sandbox-') || orderId.startsWith('test-sandbox-'))) {
       const { DurableFinancialStore } = require('../settlement/DurableFinancialStore');
       order = {
         id: orderId,
