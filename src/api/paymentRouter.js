@@ -133,8 +133,35 @@ router.post('/v1/payments/create', async (req, res) => {
     });
   } catch (err) {
     const statusCode = err.status || err.statusCode || 400;
-    res.status(statusCode).json({ error: err.message, code: err.code || 'PAYMENT_CREATION_FAILED' });
+    res.status(statusCode).json({
+      error: err.message,
+      code: err.code || 'PAYMENT_CREATION_FAILED',
+      details: err.details || null
+    });
   }
+});
+
+/**
+ * GET /api/v1/payments/sandbox/diagnostics
+ * Safe masked diagnostic metadata for Sandbox debugging (zero secrets leaked)
+ */
+router.get('/v1/payments/sandbox/diagnostics', (req, res) => {
+  const doku = paymentManager.getProvider('doku');
+  const mask = (s) => {
+    if (!s) return null;
+    if (s.length <= 8) return s.slice(0, 2) + '***' + s.slice(-2);
+    return s.slice(0, 4) + '...' + s.slice(-4) + ` (${s.length} chars)`;
+  };
+  res.json({
+    env: doku.env,
+    mode: doku.mode,
+    isSandbox: doku.isSandbox,
+    apiBaseUrl: doku.apiBaseUrl,
+    clientId: mask(doku.clientId),
+    secretKey: mask(doku.secretKey),
+    apiKey: mask(doku.apiKey),
+    rawEnvKeys: Object.keys(process.env).filter(k => k.startsWith('DOKU_'))
+  });
 });
 
 /**
