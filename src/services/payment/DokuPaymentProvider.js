@@ -50,11 +50,12 @@ const DOKU_ESCROW_STATUS = {
 class DokuPaymentProvider extends PaymentProvider {
   constructor(config = {}) {
     super(config);
-    this.clientId = config.clientId || process.env.DOKU_CLIENT_ID || null;
-    this.secretKey = config.secretKey || process.env.DOKU_SECRET_KEY || null;
-    this.apiBaseUrl = config.apiBaseUrl || process.env.DOKU_BASE_URL || process.env.DOKU_API_BASE_URL || 'https://api-sandbox.doku.com';
-    this.webhookSecret = config.webhookSecret || process.env.DOKU_WEBHOOK_SECRET || this.secretKey || null;
-    this.env = (config.env || process.env.DOKU_ENV || config.mode || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase();
+    this.clientId = (config.clientId || process.env.DOKU_CLIENT_ID || '').trim() || null;
+    this.secretKey = (config.secretKey || process.env.DOKU_SECRET_KEY || '').trim() || null;
+    this.apiKey = (config.apiKey || process.env.DOKU_API_KEY || '').trim() || null;
+    this.apiBaseUrl = (config.apiBaseUrl || process.env.DOKU_BASE_URL || process.env.DOKU_API_BASE_URL || 'https://api-sandbox.doku.com').trim().replace(/\/+$/, '');
+    this.webhookSecret = (config.webhookSecret || process.env.DOKU_WEBHOOK_SECRET || this.secretKey || '').trim() || null;
+    this.env = (config.env || process.env.DOKU_ENV || config.mode || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase().trim();
     this.mode = this.env;
     this.isSandbox = this.env === 'sandbox' || this.apiBaseUrl.includes('sandbox');
 
@@ -261,26 +262,30 @@ class DokuPaymentProvider extends PaymentProvider {
   }
 
   /**
-   * Generates official DOKU HMAC-SHA256 signature
-   * Formula:
-   * Digest = base64(sha256(rawBody))
-   * Component = "Client-Id:" + clientId + "\nRequest-Id:" + requestId + "\nRequest-Timestamp:" + requestTimestamp + "\nRequest-Target:" + requestTarget + "\nDigest:" + digest
-   * Signature = "HMACSHA256=" + base64(hmacSha256(component, secretKey))
+   * Generates SHA-256 Base64 digest of request body
    */
-  generateSignature({ requestId, requestTimestamp, requestTarget, rawBody = '' }) {
-    if (!this.secretKey) {
+  generateDigest(rawBody = '') {
+    return crypto.createHash('sha256').update(rawBody || '').digest('base64');
+  }
+
+  /**
+   * Generates official DOKU HMAC-SHA256 signature
+   */
+  generateSignature({ requestId, requestTimestamp, requestTarget, rawBody = '', digest = null, secretKey = null }) {
+    const key = secretKey || this.secretKey;
+    if (!key) {
       throw new Error('DOKU secret key is not configured');
     }
-    const digest = crypto.createHash('sha256').update(rawBody || '').digest('base64');
+    const effDigest = digest || this.generateDigest(rawBody);
     const signatureComponent = [
       `Client-Id:${this.clientId || ''}`,
       `Request-Id:${requestId}`,
       `Request-Timestamp:${requestTimestamp}`,
       `Request-Target:${requestTarget}`,
-      `Digest:${digest}`
+      `Digest:${effDigest}`
     ].join('\n');
 
-    const hmac = crypto.createHmac('sha256', this.secretKey)
+    const hmac = crypto.createHmac('sha256', key)
       .update(signatureComponent)
       .digest('base64');
 
@@ -454,24 +459,54 @@ class DokuPaymentProvider extends PaymentProvider {
 
     const rawBody = JSON.stringify(payload);
     const requestTarget = '/checkout/v1/payment';
-    const signature = this.generateSignature({
-      requestId,
-      requestTimestamp,
-      requestTarget,
-      rawBody
-    });
+    const baseUrl = (this.apiBaseUrl || 'https://api-sandbox.doku.com').replace(/\/+$/, '');
+    const digest = this.generateDigest(rawBody);
 
-    const response = await this._httpPost({
-      url: `${this.apiBaseUrl}${requestTarget}`,
-      headers: {
-        'Client-Id': this.clientId,
-        'Request-Id': requestId,
-        'Request-Timestamp': requestTimestamp,
-        'Signature': signature,
-        'Content-Type': 'application/json'
-      },
-      body: rawBody
-    });
+    const tryKeys = [this.secretKey];
+    if (this.apiKey && this.apiKey !== this.secretKey) {
+      tryKeys.push(this.apiKey);
+    }
+
+    let lastRes = null;
+    let response = null;
+
+    for (const key of tryKeys) {
+      const signature = this.generateSignature({
+        requestId,
+        requestTimestamp,
+        requestTarget,
+        digest,
+        secretKey: key
+      });
+
+      const res = await this._httpPost({
+        url: `${baseUrl}${requestTarget}`,
+        headers: {
+          'Client-Id': this.clientId,
+          'Request-Id': requestId,
+          'Request-Timestamp': requestTimestamp,
+          'Signature': signature,
+          'Digest': digest,
+          'Content-Type': 'application/json'
+        },
+        body: rawBody
+      });
+
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        response = res;
+        break;
+      }
+
+      lastRes = res;
+      const errMsg = res.json?.error?.message || res.json?.message || '';
+      if (!errMsg.toLowerCase().includes('signature')) {
+        break;
+      }
+    }
+
+    if (!response) {
+      response = lastRes;
+    }
 
     return this._handleCreatePaymentResponse({
       orderId,
