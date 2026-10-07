@@ -145,14 +145,15 @@ router.post('/v1/payments/create', async (req, res) => {
  * GET /api/v1/payments/sandbox/diagnostics
  * Safe masked diagnostic metadata for Sandbox debugging (zero secrets leaked)
  */
-router.get('/v1/payments/sandbox/diagnostics', (req, res) => {
+router.get('/v1/payments/sandbox/diagnostics', async (req, res) => {
   const doku = paymentManager.getProvider('doku');
   const mask = (s) => {
     if (!s) return null;
     if (s.length <= 8) return s.slice(0, 2) + '***' + s.slice(-2);
     return s.slice(0, 4) + '...' + s.slice(-4) + ` (${s.length} chars)`;
   };
-  res.json({
+
+  const response = {
     env: doku.env,
     mode: doku.mode,
     isSandbox: doku.isSandbox,
@@ -161,7 +162,90 @@ router.get('/v1/payments/sandbox/diagnostics', (req, res) => {
     secretKey: mask(doku.secretKey),
     apiKey: mask(doku.apiKey),
     rawEnvKeys: Object.keys(process.env).filter(k => k.startsWith('DOKU_'))
-  });
+  };
+
+  if (req.query.probe === 'true') {
+    const https = require('https');
+    const crypto = require('crypto');
+    const { v4: uuidv4 } = require('uuid');
+
+    const runProbe = ({ name, method, target, clientId, secretKey, body = null, prefix = 'HMACSHA256=', headers = {} }) => {
+      return new Promise((resolve) => {
+        const requestId = uuidv4();
+        const requestTimestamp = new Date().toISOString().slice(0, 19) + 'Z';
+        let effDigest = '';
+        if (body) {
+          effDigest = crypto.createHash('sha256').update(body).digest('base64');
+        }
+
+        const comp = [
+          `Client-Id:${clientId}`,
+          `Request-Id:${requestId}`,
+          `Request-Timestamp:${requestTimestamp}`,
+          `Request-Target:${target}`
+        ];
+        if (effDigest) comp.push(`Digest:${effDigest}`);
+
+        const hmac = crypto.createHmac('sha256', secretKey).update(comp.join('\n')).digest('base64');
+        const signature = `${prefix}${hmac}`;
+
+        const reqHeaders = {
+          'Client-Id': clientId,
+          'Request-Id': requestId,
+          'Request-Timestamp': requestTimestamp,
+          'Signature': signature,
+          ...headers
+        };
+        if (body) {
+          reqHeaders['Content-Type'] = 'application/json';
+          reqHeaders['Content-Length'] = Buffer.byteLength(body);
+        }
+
+        const parsedUrl = new URL(`https://api-sandbox.doku.com${target}`);
+        const request = https.request(parsedUrl, { method, headers: reqHeaders, timeout: 5000 }, (r) => {
+          let data = '';
+          r.on('data', c => data += c);
+          r.on('end', () => {
+            let json = null;
+            try { json = JSON.parse(data); } catch (e) {}
+            resolve({
+              probe: name,
+              statusCode: r.statusCode,
+              error: json?.error?.message || json?.message || (r.statusCode === 200 ? 'SUCCESS' : data.slice(0, 100))
+            });
+          });
+        });
+        request.on('error', (e) => resolve({ probe: name, error: e.message }));
+        request.on('timeout', () => { request.destroy(); resolve({ probe: name, error: 'TIMEOUT' }); });
+        if (body) request.write(body);
+        request.end();
+      });
+    };
+
+    const probes = [];
+    const cId = doku.clientId;
+    const sKey = doku.secretKey;
+    const aKey = doku.apiKey;
+
+    if (cId && sKey) {
+      probes.push(await runProbe({ name: 'GET status standard', method: 'GET', target: '/orders/v1/status/INV-TEST', clientId: cId, secretKey: sKey }));
+      probes.push(await runProbe({ name: 'GET status without prefix', method: 'GET', target: '/orders/v1/status/INV-TEST', clientId: cId, secretKey: sKey, prefix: '' }));
+      if (aKey) {
+        probes.push(await runProbe({ name: 'GET status apiKey as secret', method: 'GET', target: '/orders/v1/status/INV-TEST', clientId: cId, secretKey: aKey }));
+        probes.push(await runProbe({ name: 'GET status apiKey as clientId', method: 'GET', target: '/orders/v1/status/INV-TEST', clientId: aKey, secretKey: sKey }));
+      }
+      const testBody = JSON.stringify({
+        order: { invoice_number: 'INV-PROBE-1', amount: 10000, callback_url: 'https://tikum.app', auto_redirect: true },
+        payment: { payment_due_date: 60 }
+      });
+      probes.push(await runProbe({ name: 'POST checkout standard', method: 'POST', target: '/checkout/v1/payment', clientId: cId, secretKey: sKey, body: testBody }));
+      probes.push(await runProbe({ name: 'POST checkout with Digest header', method: 'POST', target: '/checkout/v1/payment', clientId: cId, secretKey: sKey, body: testBody, headers: { 'Digest': crypto.createHash('sha256').update(testBody).digest('base64') } }));
+      probes.push(await runProbe({ name: 'POST checkout without prefix', method: 'POST', target: '/checkout/v1/payment', clientId: cId, secretKey: sKey, body: testBody, prefix: '' }));
+    }
+    response.probes = probes;
+  }
+
+  res.json(response);
 });
 
 /**
