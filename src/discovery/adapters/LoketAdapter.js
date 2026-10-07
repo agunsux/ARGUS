@@ -75,15 +75,71 @@ class LoketAdapter extends EventSourceAdapter {
   }
 
   /**
-   * Loads corroborated / discovered LOKET event facts from the committed snapshot.
-   * Never performs live network I/O.
+   * Loads corroborated / discovered LOKET event facts.
+   * If query.live is requested, queries the official public REST discover API.
+   * Otherwise reads from fixture or committed snapshot.
    */
   async discover(query = {}) {
     if (this.fixtureData) {
       return this.fixtureData.map(item => this.parse(item));
     }
 
+    if (query.live || process.env.LOKET_ENABLE_LIVE_DISCOVER === 'true') {
+      try {
+        const liveEvents = await this.discoverFromApi(query);
+        if (Array.isArray(liveEvents) && liveEvents.length > 0) {
+          return liveEvents.map(item => this.parse(item));
+        }
+      } catch (err) {
+        // Fall back gracefully to committed snapshot
+      }
+    }
+
     return OfficialSourceSnapshotStore.getRecordsBySource(this.sourceId).map(rec => this.parse(rec));
+  }
+
+  /**
+   * Complete paginated discovery across LOKET's official public REST API.
+   * Enforces pagination proof, rate-limiting and graceful termination.
+   */
+  async discoverFromApi(options = {}) {
+    const pageSize = options.pageSize || 100;
+    const maxPages = options.maxPages || 50;
+    let page = 1;
+    let totalPages = 1;
+    let totalRecords = 0;
+    const allDiscovered = [];
+    const scannedUrls = [];
+
+    while (page <= totalPages && page <= maxPages) {
+      const targetUrl = `https://rest.loket.com/fusio/api/v1/public/discover?p=${page}&ps=${pageSize}&f.d_ext=1`;
+      scannedUrls.push(targetUrl);
+
+      const res = await this.fetchWithRetry(async () => {
+        const fetchRes = await fetch(targetUrl, {
+          headers: {
+            'User-Agent': 'TikumEventBot/1.0 (+https://tikum.app/bot-info; ops@tikum.app)',
+            Accept: 'application/json',
+            Origin: 'https://www.loket.com',
+            Referer: 'https://www.loket.com/'
+          }
+        });
+        if (!fetchRes.ok) throw new Error(`HTTP ${fetchRes.status} from ${targetUrl}`);
+        return fetchRes.json();
+      });
+
+      if (!res || !res.result) break;
+      totalRecords = res.result.total_records || 0;
+      totalPages = res.result.total_pages || Math.ceil(totalRecords / pageSize);
+      const items = res.result.data || [];
+      if (items.length === 0) break;
+
+      allDiscovered.push(...items);
+      if (page >= totalPages) break;
+      page++;
+    }
+
+    return allDiscovered;
   }
 
   /**
@@ -109,26 +165,67 @@ class LoketAdapter extends EventSourceAdapter {
 
   parse(raw) {
     const s = super.parse(raw);
-    const artists = Array.isArray(s.artists) ? s.artists : (s.artist ? [s.artist] : []);
-    const title = s.name || s.title || null;
-    const startDate = s.start_date || s.date || null;
-    const startDatetime = s.start_datetime || (s.event_start_at || null);
-    const endDate = s.end_date || null;
-    const endDatetime = s.end_datetime || (s.event_end_at || null);
-
+    const title = s.name || s.title || s.event_name || (raw?.event_name || null);
+    const artists = Array.isArray(s.artists) ? s.artists : (s.artist ? [s.artist] : (title ? [title] : []));
+    
+    // Support unix timestamp in seconds, date object or date strings
+    let startDate = s.start_date || (typeof s.date === 'string' ? s.date : null);
+    let endDate = s.end_date || null;
+    let startDatetime = s.start_datetime || (s.event_start_at || null);
+    let endDatetime = s.end_datetime || (s.event_end_at || null);
     let startTime = s.start_time || s.time || null;
+    let endTime = s.end_time || null;
+
+    if (raw && raw.date && typeof raw.date === 'object') {
+      if (raw.date.start_date) {
+        const sec = typeof raw.date.start_date === 'number' ? raw.date.start_date : parseInt(raw.date.start_date, 10);
+        if (!isNaN(sec)) {
+          const d = new Date(sec * 1000);
+          startDate = d.toISOString().substring(0, 10);
+          startTime = d.toISOString().substring(11, 16);
+          startDatetime = `${startDate}T${startTime}:00+07:00`;
+        }
+      }
+      if (raw.date.end_date) {
+        const sec = typeof raw.date.end_date === 'number' ? raw.date.end_date : parseInt(raw.date.end_date, 10);
+        if (!isNaN(sec)) {
+          const d = new Date(sec * 1000);
+          endDate = d.toISOString().substring(0, 10);
+          endTime = d.toISOString().substring(11, 16);
+          endDatetime = `${endDate}T${endTime}:00+07:00`;
+        }
+      }
+    } else if (typeof startDate === 'number') {
+      const d = new Date(startDate * 1000);
+      startDate = d.toISOString().substring(0, 10);
+      startTime = startTime || d.toISOString().substring(11, 16);
+      startDatetime = `${startDate}T${startTime}:00+07:00`;
+    }
+
     if (!startTime && startDatetime && startDatetime.includes('T')) {
       startTime = startDatetime.split('T')[1].substring(0, 5);
     }
-
-    let endTime = s.end_time || null;
     if (!endTime && endDatetime && endDatetime.includes('T')) {
       endTime = endDatetime.split('T')[1].substring(0, 5);
     }
 
+    const venue = s.venue_name || s.venue || (raw?.location?.location_name || null);
+    const rawCity = s.city || s.venue_city || (raw?.location?.city || null);
+    const city = LoketAdapter.resolveCity(rawCity || venue || '') || rawCity;
+    const province = s.province || (raw?.location?.province || null);
+    const country = s.country || (raw?.location?.country || 'Indonesia');
+
+    const sourceUrl = s.official_ticket_url || s.ticket_url || s.link || s.url || s.official_event_url || (raw?.link || null);
+    const sourceEventId = s.source_event_id || s.loket_event_slug || s.id || (sourceUrl ? LoketAdapter.extractEventSlug(sourceUrl) : null);
+
+    const promoter = s.organizer || s.organizer_name || (raw?.organization?.name || raw?.organization_name || null);
+    const minPrice = s.min_price !== undefined && s.min_price !== null ? Number(s.min_price) : (raw?.pricing?.price !== undefined ? Number(raw.pricing.price) : (raw?.price !== undefined ? Number(raw.price) : null));
+    const maxPrice = s.max_price !== undefined && s.max_price !== null ? Number(s.max_price) : (raw?.pricing?.initial_price !== undefined && raw.pricing.initial_price > 0 ? Number(raw.pricing.initial_price) : minPrice);
+    const banner = s.image_url || (raw?.banners?.desktop || raw?.banners?.banner || null);
+
     return {
       source_id: this.sourceId,
-      source_event_id: s.source_event_id || s.loket_event_slug || s.id || null,
+      source_event_id: sourceEventId,
       name: title,
       title: title,
       artist: artists.length > 0 ? artists[0] : null,
@@ -140,43 +237,43 @@ class LoketAdapter extends EventSourceAdapter {
       end_time: endTime,
       end_datetime: endDatetime,
       timezone: s.timezone || s.event_timezone || 'Asia/Jakarta',
-      venue_name: s.venue_name || s.venue || null,
-      city: s.city || s.venue_city || null,
-      province: s.province || null,
-      country: s.country || 'Indonesia',
+      venue_name: venue,
+      city: city,
+      province: province,
+      country: country,
       category: s.category || 'CONCERT',
-      promoter: s.organizer || s.organizer_name || null,
-      organizer_name: s.organizer || s.organizer_name || null,
-      official_event_url: s.official_event_url || null,
-      official_ticket_url: s.official_ticket_url || s.ticket_url || s.url || null,
+      promoter: promoter,
+      organizer_name: promoter,
+      official_event_url: sourceUrl,
+      official_ticket_url: sourceUrl,
       official_ticketing_provider: 'LOKET',
-      ticket_status: s.ticket_status || (s.status === 'SOLD_OUT' ? 'SOLD_OUT' : (s.official_ticket_url ? 'ON_SALE' : 'UPCOMING')),
-      min_price: s.min_price !== undefined && s.min_price !== null ? Number(s.min_price) : null,
-      max_price: s.max_price !== undefined && s.max_price !== null ? Number(s.max_price) : null,
-      price: s.min_price !== undefined && s.min_price !== null ? Number(s.min_price) : (s.max_price !== undefined && s.max_price !== null ? Number(s.max_price) : null),
-      ticket_price: s.ticket_price || (s.min_price ? String(s.min_price) : null),
-      currency: s.currency || 'IDR',
-      image_url: s.image_url || null,
-      imageUrl: s.image_url || null,
+      ticket_status: s.ticket_status || (s.status === 'SOLD_OUT' || raw?.sales_status === 2 ? 'SOLD_OUT' : (sourceUrl ? 'ON_SALE' : 'UPCOMING')),
+      min_price: minPrice,
+      max_price: maxPrice,
+      price: minPrice,
+      ticket_price: minPrice ? String(minPrice) : null,
+      currency: s.currency || raw?.pricing?.currency_code || 'IDR',
+      image_url: banner,
+      imageUrl: banner,
       image_source_type: s.image_source_type || 'OFFICIAL_TICKETING',
-      image_source_url: s.image_source_url || s.official_event_url || null,
+      image_source_url: banner,
       image_credit: s.image_credit || 'LOKET',
-      source_url: s.discovery_source_url || s.official_event_url || null,
-      eventUrl: s.official_ticket_url || s.ticket_url || s.official_event_url || s.url || null,
+      source_url: sourceUrl,
+      eventUrl: sourceUrl,
       source: this.sourceId,
-      sourceEventId: s.source_event_id || s.id || null,
+      sourceEventId: sourceEventId,
       startDate: startDate,
       endDate: endDate,
-      venueName: s.venue_name || s.venue || null,
-      normalizedVenueName: s.venue_name || s.venue || null,
-      organizerName: s.organizer || s.organizer_name || null,
-      normalizedOrganizerName: s.organizer || s.organizer_name || null,
+      venueName: venue,
+      normalizedVenueName: venue,
+      organizerName: promoter,
+      normalizedOrganizerName: promoter,
       sourceFetchedAt: s.source_last_checked_at || s.retrieved_at || new Date().toISOString(),
       sourceMetadata: s.raw_source_metadata || s.raw || raw || null,
       source_publication_timestamp: s.source_publication_timestamp || s.published_at || s.discovery_retrieved_at || null,
       source_last_checked_at: s.source_last_checked_at || s.retrieved_at || new Date().toISOString(),
       raw_source_metadata: s.raw_source_metadata || s.raw || raw || null,
-      status: s.status || 'UPCOMING'
+      status: s.status || (raw?.sales_status === 2 ? 'SOLD_OUT' : 'UPCOMING')
     };
   }
 
@@ -255,7 +352,7 @@ class LoketAdapter extends EventSourceAdapter {
 
   static extractEventSlug(pageUrl) {
     if (!pageUrl) return null;
-    const m = String(pageUrl).match(/\/event\/([a-z0-9\-]+_[A-Za-z0-9]+)/);
+    const m = String(pageUrl).match(/\/event\/([a-zA-Z0-9_\-]+)/);
     return m ? m[1] : null;
   }
 

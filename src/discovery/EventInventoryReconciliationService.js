@@ -52,6 +52,7 @@ class EventInventoryReconciliationService {
     const allTier1SourceIds = [
       'src-loket',
       'src-tiket-com',
+      'src-goers',
       'src-songkick-jakarta',
       'src-bandsintown-jakarta',
       'src-promoters-official',

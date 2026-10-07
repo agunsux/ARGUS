@@ -805,6 +805,8 @@ class EventNormalizationService {
     title = title.replace(/\s*-\s*Live\s*In\s*Jakarta/i, '');
     title = title.replace(/\s*-\s*Official\s*Ticket/i, '');
     title = title.replace(/\s*\[OFFICIAL\]/i, '');
+    title = title.replace(/^\[(?:EARLY\s+BIRD|PRE-?SALE|PRESALE|PROMO|OFFICIAL|SPECIAL)\]\s*/i, '');
+    title = title.replace(/\s*\[(?:EARLY\s+BIRD|PRE-?SALE|PRESALE|PROMO|OFFICIAL|SPECIAL)\]/i, '');
     title = title.replace(/\s*\s+/g, ' ').trim();
 
     // Standardize "v" or "v." to "vs"

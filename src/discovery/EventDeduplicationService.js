@@ -120,6 +120,72 @@ class EventDeduplicationService {
         }
       }
 
+      // ==========================================
+      // LEVEL 2 — EXACT CANONICAL SOURCE URL MATCH
+      // ==========================================
+      const inUrl = incomingRecord.source_url || incomingRecord.official_ticket_url;
+      if (inUrl) {
+        const canUrl = canonical.official_ticket_url || canonical.source_url;
+        if (canUrl && normalizeUrl(canUrl) === normalizeUrl(inUrl)) {
+          return {
+            isMatch: true,
+            confidence: 100,
+            matchReason: 'EXACT_CANONICAL_URL',
+            canonicalEvent: canonical
+          };
+        }
+        if (canonical.sources && Array.isArray(canonical.sources)) {
+          const matchingUrl = canonical.sources.find(s => 
+            (s.source_url && normalizeUrl(s.source_url) === normalizeUrl(inUrl)) ||
+            (s.official_ticket_url && normalizeUrl(s.official_ticket_url) === normalizeUrl(inUrl))
+          );
+          if (matchingUrl) {
+            return {
+              isMatch: true,
+              confidence: 100,
+              matchReason: 'EXACT_CANONICAL_URL',
+              canonicalEvent: canonical
+            };
+          }
+        }
+      }
+
+      // ==========================================
+      // SAME-SOURCE DISTINCT LISTING SEPARATION
+      // Two distinct listings from the same source platform must remain distinct,
+      // UNLESS title, date, and venue match identically (same-source duplicate publication).
+      // ==========================================
+      if (incomingRecord.source_id && (incomingRecord.source_event_id || incomingRecord.source_event_identifier) && canonical.sources) {
+        const inId = incomingRecord.source_event_id || incomingRecord.source_event_identifier;
+        const samePlatformDifferentId = canonical.sources.find(s =>
+          s.source_id === incomingRecord.source_id &&
+          (s.source_event_identifier || s.source_event_id) &&
+          (s.source_event_identifier || s.source_event_id) !== inId
+        );
+        if (samePlatformDifferentId) {
+          // If title, date, and venue are strictly identical without conflicting modifiers,
+          // recognize as same-source duplicate publication
+          const isExactTitle = incomingNormTitle && canonicalNormTitle && incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase();
+          const isExactDate = incomingDate && canonicalDate && incomingDate === canonicalDate;
+          const isExactVenue = (incomingVenue && canonicalVenue && incomingVenue.toLowerCase() === canonicalVenue.toLowerCase()) ||
+                              (incomingCity && canonicalCity && incomingCity.toLowerCase() === canonicalCity.toLowerCase());
+          if (isExactTitle && isExactDate && isExactVenue && !hasConflictingModifiers(incomingNormTitle, canonicalNormTitle)) {
+            return {
+              isMatch: true,
+              confidence: 95,
+              matchReason: 'SAME_SOURCE_DUPLICATE_LISTING',
+              canonicalEvent: canonical
+            };
+          }
+          continue; // Otherwise, distinct listings on the same platform must remain distinct
+        }
+      }
+
+      // Anti-overmerge: Conflicting volume / batch / edition / day / school-level tokens
+      if (hasConflictingModifiers(incomingNormTitle, canonicalNormTitle)) {
+        continue;
+      }
+
       const isSameDate = incomingDate && canonicalDate && incomingDate === canonicalDate;
       const isSameVenue = (incomingRecord.venue_id && canonical.venue_id && incomingRecord.venue_id === canonical.venue_id) ||
                           (incomingVenue && canonicalVenue && (incomingVenue.includes(canonicalVenue) || canonicalVenue.includes(incomingVenue)));
@@ -382,9 +448,48 @@ function hasConflictingEventType(titleA, titleB) {
   return false;
 }
 
+function hasConflictingModifiers(titleA, titleB) {
+  if (!titleA || !titleB) return false;
+  const s1 = titleA.toLowerCase();
+  const s2 = titleB.toLowerCase();
+
+  // Volume / Vol / Part / Batch / Edition / Chapter / Sesi
+  const vol1 = s1.match(/\b(?:vol|volume|batch|part|edisi|edition|chapter|sesi|session|disk)\s*([0-9a-z]+)/i);
+  const vol2 = s2.match(/\b(?:vol|volume|batch|part|edisi|edition|chapter|sesi|session|disk)\s*([0-9a-z]+)/i);
+  if (vol1 && vol2 && vol1[1] !== vol2[1]) return true;
+  if ((vol1 && !vol2) || (!vol1 && vol2)) return true;
+
+  // School level: SD vs SMP vs SMA
+  const levels = ['sd', 'smp', 'sma', 'tk', 'mi', 'mts', 'ma'];
+  for (const l1 of levels) {
+    for (const l2 of levels) {
+      if (l1 !== l2 && new RegExp(`\\b${l1}\\b`, 'i').test(s1) && new RegExp(`\\b${l2}\\b`, 'i').test(s2)) {
+        return true;
+      }
+    }
+  }
+
+  // Day of week in title e.g. [Kamis, 8 Oktober] vs [Jumat, 9 Oktober]
+  const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+  for (const d1 of days) {
+    for (const d2 of days) {
+      if (d1 !== d2 && s1.includes(d1) && s2.includes(d2)) return true;
+    }
+  }
+
+  return false;
+}
+
+function normalizeUrl(u) {
+  if (!u) return '';
+  return String(u).trim().toLowerCase().split('?')[0].split('#')[0].replace(/^https?:\/\/(?:www\.)?/, '').replace(/\/$/, '');
+}
+
 module.exports = {
   EventDeduplicationService,
   extractYear,
-  hasConflictingEventType
+  hasConflictingEventType,
+  hasConflictingModifiers,
+  normalizeUrl
 };
 

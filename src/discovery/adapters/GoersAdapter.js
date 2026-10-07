@@ -44,9 +44,42 @@ class GoersAdapter extends EventSourceAdapter {
     });
   }
 
+  /**
+   * Probes public GOERS web endpoints legitimately without WAF/Cloudflare bypass.
+   * Returns honest telemetry regarding accessibility.
+   */
+  async probePublicWeb() {
+    const targetUrl = 'https://www.goersapp.com/events';
+    try {
+      const res = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'TikumEventBot/1.0 (+https://tikum.app/bot-info; ops@tikum.app)',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        }
+      });
+      return {
+        endpoint: targetUrl,
+        http_status: res.status,
+        is_blocked: res.status === 403,
+        reason: res.status === 403 ? 'CLOUDFLARE_BOT_MANAGEMENT_CHALLENGE' : `HTTP_${res.status}`,
+        timestamp: new Date().toISOString()
+      };
+    } catch (err) {
+      return {
+        endpoint: targetUrl,
+        http_status: null,
+        is_blocked: true,
+        reason: err.message,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
   parse(raw) {
+    const rawTitle = (raw && (raw.title || raw.name)) ? (raw.title || raw.name) : 'Event';
+    const rawVenue = (raw && (raw.venue_name || raw.venue)) ? (raw.venue_name || raw.venue) : 'Venue TBA';
+    const rawOrganizer = (raw && (raw.organizer_name || raw.organizer || raw.promoter)) ? (raw.organizer_name || raw.organizer || raw.promoter) : 'Goers Partner';
     const s = super.parse(raw);
-    const rawTitle = s.title || s.name || 'Event';
     const normTitle = EventNormalizationService.normalizeTitle(rawTitle);
     const venueRaw = s.venue_name || s.venue || 'Venue TBA';
     const cityRaw = s.city || s.venue_city || 'Jakarta';
@@ -64,7 +97,13 @@ class GoersAdapter extends EventSourceAdapter {
     const organizer = s.organizer_name || s.organizer || s.promoter || 'Goers Partner';
 
     return {
-      // Common Event Contract (Phase 2)
+      // Common Event Contract & Raw Provenance
+      raw_source: raw,
+      rawTitle: rawTitle,
+      rawVenue: rawVenue,
+      rawCity: raw.city || raw.venue_city || cityRaw,
+      rawDate: raw.start_date || raw.date || startDate,
+      rawOrganizer: rawOrganizer,
       title: rawTitle,
       normalizedTitle: normTitle,
       name: normTitle,
