@@ -398,12 +398,13 @@ class DokuPaymentProvider extends PaymentProvider {
     correlationId = null,
     callbackUrl = null
   }) {
+    const { v4: uuidv4 } = require('uuid');
     const gross = parseInt(amount, 10);
     const effIdempotency = idempotencyKey || `doku-pay-${orderId}-${Date.now()}`;
     const effCorrelation = correlationId || `corr-${orderId}`;
-    const requestId = `req-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-    const requestTimestamp = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
-    const invoiceNumber = `INV-DOKU-${orderId}`;
+    const requestId = uuidv4();
+    const requestTimestamp = new Date().toISOString().slice(0, 19) + 'Z';
+    const invoiceNumber = metadata?.invoiceNumber || `INV-DOKU-${orderId}`;
     const effCallbackUrl = callbackUrl || metadata?.callbackUrl || `https://tikum.app/track/${orderId}`;
 
     // Simulation / Sandbox handling when no live network credentials active or simulation explicitly allowed
@@ -466,46 +467,63 @@ class DokuPaymentProvider extends PaymentProvider {
     if (this.apiKey && this.apiKey !== this.secretKey) {
       tryKeys.push(this.apiKey);
     }
+    if (process.env.DOKU_PUBLIC_KEY && !tryKeys.includes(process.env.DOKU_PUBLIC_KEY.trim())) {
+      tryKeys.push(process.env.DOKU_PUBLIC_KEY.trim());
+    }
 
+    const headerOptions = [false, true];
     let lastRes = null;
     let response = null;
+    const attemptLog = [];
 
     for (const key of tryKeys) {
-      const signature = this.generateSignature({
-        requestId,
-        requestTimestamp,
-        requestTarget,
-        digest,
-        secretKey: key
-      });
+      for (const withDigest of headerOptions) {
+        const signature = this.generateSignature({
+          requestId,
+          requestTimestamp,
+          requestTarget,
+          digest,
+          secretKey: key
+        });
 
-      const res = await this._httpPost({
-        url: `${baseUrl}${requestTarget}`,
-        headers: {
+        const reqHeaders = {
           'Client-Id': this.clientId,
           'Request-Id': requestId,
           'Request-Timestamp': requestTimestamp,
           'Signature': signature,
-          'Digest': digest,
           'Content-Type': 'application/json'
-        },
-        body: rawBody
-      });
+        };
+        if (withDigest) {
+          reqHeaders['Digest'] = digest;
+        }
 
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        response = res;
-        break;
-      }
+        const res = await this._httpPost({
+          url: `${baseUrl}${requestTarget}`,
+          headers: reqHeaders,
+          body: rawBody
+        });
 
-      lastRes = res;
-      const errMsg = res.json?.error?.message || res.json?.message || '';
-      if (!errMsg.toLowerCase().includes('signature')) {
-        break;
+        attemptLog.push({
+          keyPrefix: key.slice(0, 4) + '...' + key.slice(-4),
+          withDigest,
+          statusCode: res.statusCode,
+          error: res.json?.error?.message || res.json?.message || null
+        });
+
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          response = res;
+          break;
+        }
+        lastRes = res;
       }
+      if (response) break;
     }
 
     if (!response) {
       response = lastRes;
+      if (response && response.json) {
+        response.json.attempts = attemptLog;
+      }
     }
 
     return this._handleCreatePaymentResponse({
