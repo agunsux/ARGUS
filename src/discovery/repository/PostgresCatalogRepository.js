@@ -36,11 +36,22 @@ class PostgresCatalogRepository extends CatalogRepository {
     }
 
     try {
-      const isLocalhost = this.connectionString.includes('localhost') || this.connectionString.includes('127.0.0.1');
+      let cleanConnStr = this.connectionString.trim();
+      if (cleanConnStr.startsWith('"') && cleanConnStr.endsWith('"')) cleanConnStr = cleanConnStr.slice(1, -1);
+      if (cleanConnStr.startsWith("'") && cleanConnStr.endsWith("'")) cleanConnStr = cleanConnStr.slice(1, -1);
+      if (cleanConnStr.includes('channel_binding=')) {
+        try {
+          const u = new URL(cleanConnStr);
+          u.searchParams.delete('channel_binding');
+          cleanConnStr = u.toString();
+        } catch (_) {}
+      }
+
+      const isLocalhost = cleanConnStr.includes('localhost') || cleanConnStr.includes('127.0.0.1');
       const ssl = isLocalhost ? undefined : { rejectUnauthorized: false };
 
       this.pool = new Pool({
-        connectionString: this.connectionString,
+        connectionString: cleanConnStr,
         ssl,
         max: 1, // Max 1 pooled connection per serverless lambda instance
         idleTimeoutMillis: 10000,
@@ -436,8 +447,26 @@ class PostgresCatalogRepository extends CatalogRepository {
     try {
       // Postgres advisory lock ID must be a signed 64-bit int or 32-bit int
       const numericId = typeof lockId === 'number' ? lockId : 17913001;
-      const res = await this.query('SELECT pg_try_advisory_lock($1) as locked', [numericId]);
-      return res.rows[0] && res.rows[0].locked === true;
+      if (!this._lockClients) this._lockClients = new Map();
+
+      // If this instance already holds the lock on a client, return false to prevent re-entrancy
+      if (this._lockClients.has(numericId)) {
+        return false;
+      }
+
+      const client = await this.pool.connect();
+      try {
+        const res = await client.query('SELECT pg_try_advisory_lock($1) as locked', [numericId]);
+        if (res.rows[0] && res.rows[0].locked === true) {
+          this._lockClients.set(numericId, client);
+          return true;
+        }
+        client.release();
+        return false;
+      } catch (err) {
+        client.release();
+        throw err;
+      }
     } catch (_) {
       return this.fallbackRepo.acquireAdvisoryLock(lockId);
     }
@@ -449,6 +478,16 @@ class PostgresCatalogRepository extends CatalogRepository {
     }
     try {
       const numericId = typeof lockId === 'number' ? lockId : 17913001;
+      if (this._lockClients && this._lockClients.has(numericId)) {
+        const client = this._lockClients.get(numericId);
+        this._lockClients.delete(numericId);
+        try {
+          const res = await client.query('SELECT pg_advisory_unlock($1) as unlocked', [numericId]);
+          return res.rows[0] && res.rows[0].unlocked === true;
+        } finally {
+          client.release();
+        }
+      }
       const res = await this.query('SELECT pg_advisory_unlock($1) as unlocked', [numericId]);
       return res.rows[0] && res.rows[0].unlocked === true;
     } catch (_) {
