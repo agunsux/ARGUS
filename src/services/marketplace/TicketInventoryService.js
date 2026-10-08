@@ -222,6 +222,33 @@ class TicketInventoryService {
       status: TICKET_STATUS.DRAFT
     });
 
+    try {
+      const { getMarketplaceRepository } = require('../../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      await marketplaceRepo.createTicket({
+        id: ticketId,
+        canonical_event_id: canonicalEventId,
+        original_owner_id: sellerId,
+        current_owner_id: sellerId,
+        ticket_type: ticketType,
+        section,
+        row,
+        seat,
+        face_value: parsedFaceValue,
+        currency,
+        status: TICKET_STATUS.DRAFT,
+        verification_status: ticket?.verification_status || 'PENDING',
+        transferability_status: transferabilityStatus,
+        barcode_hash: effectiveBarcodeHash,
+        raw_barcode_encrypted: null,
+        metadata: {
+          quantity: parseInt(quantity, 10) || 1,
+          ticket_format: ticketFormat,
+          transfer_method: transferMethod
+        }
+      });
+    } catch (_) {}
+
     return ticket || canonicalTicket;
   }
 
@@ -260,6 +287,15 @@ class TicketInventoryService {
     ticket.verification_status = TICKET_VERIFICATION_STATUS.SUBMITTED;
     ticket.evidence_bundle_id = evidenceBundleId || ticket.evidence_bundle_id;
     ticket.updated_at = new Date().toISOString();
+
+    try {
+      const { getMarketplaceRepository } = require('../../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      await marketplaceRepo.updateTicketStatus(ticketId, TICKET_STATUS.PENDING_VERIFICATION, {
+        verification_status: TICKET_VERIFICATION_STATUS.SUBMITTED,
+        evidence_bundle_id: evidenceBundleId || ticket.evidence_bundle_id
+      });
+    } catch (_) {}
 
     await recordAuditLog('TICKET_INVENTORY', ticketId, 'SUBMITTED_FOR_VERIFICATION', sellerId, {
       evidence_bundle_id: evidenceBundleId,
@@ -301,6 +337,14 @@ class TicketInventoryService {
     } else if (newStatus === TICKET_STATUS.REJECTED) {
       ticket.verification_status = TICKET_VERIFICATION_STATUS.REJECTED;
     }
+
+    try {
+      const { getMarketplaceRepository } = require('../../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      await marketplaceRepo.updateTicketStatus(ticketId, newStatus, {
+        verification_status: ticket.verification_status
+      });
+    } catch (_) {}
 
     await recordAuditLog('TICKET_INVENTORY', ticketId, `STATUS_${newStatus}`, actorId, {
       previous_status: previousStatus,

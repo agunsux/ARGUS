@@ -307,6 +307,40 @@ class EscrowService {
     };
     state.escrows.push(escrow);
 
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      await moneyRepo.createOrder({
+        id: orderId,
+        buyer_id: buyerId,
+        seller_id: listing.seller_id,
+        listing_id: listingId,
+        ticket_id: listing.ticket_id,
+        canonical_event_id: listing.event_id,
+        gross_amount: quote.ticket_price,
+        buyer_fee: quote.buyer_platform_fee,
+        seller_fee: quote.seller_platform_fee,
+        buyer_tax: quote.buyer_tax_amount || 0,
+        seller_tax_withholding: quote.seller_tax_withholding || 0,
+        seller_payout: quote.seller_net_payout,
+        total_amount: quote.buyer_total,
+        currency: quote.currency || 'IDR',
+        status: ORDER_STATUS.PENDING_PAYMENT,
+        pricing_policy_version: quote.fee_policy_version || 'TIKUM_FEE_POLICY_V1',
+        expires_at: paymentDeadline
+      });
+      await moneyRepo.createEscrow({
+        id: escrowId,
+        order_id: orderId,
+        buyer_id: buyerId,
+        seller_id: listing.seller_id,
+        amount: quote.seller_net_payout,
+        currency: quote.currency || 'IDR',
+        status: ESCROW_STATUS.PENDING_PAYMENT,
+        held_by: 'DOKU_ESCROW'
+      });
+    } catch (_) {}
+
     await recordAuditLog('ORDER', orderId, 'CREATED', buyerId, {
       listing_id: listingId,
       pricing,
@@ -441,6 +475,15 @@ class EscrowService {
     if (ticket) {
       ticket.status = 'ESCROWED';
     }
+
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      await moneyRepo.updateOrderStatus(orderId, ORDER_STATUS.PAID_ESCROWED);
+      await moneyRepo.updateEscrowStatus(orderId, ESCROW_STATUS.ESCROWED, {
+        provider_escrow_id: providerRef
+      });
+    } catch (_) {}
 
     await recordAuditLog('PAYMENT', paymentId, 'PROCESSED', order.buyer_id, {
       order_id: orderId,
@@ -592,6 +635,12 @@ class EscrowService {
 
       const ticket = state.tickets.find(t => t.id === order.ticket_id);
       if (ticket) ticket.status = 'SETTLED';
+
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        await moneyRepo.releaseEscrow(orderId, actorId);
+      } catch (_) {}
 
       // 6. State Machine synchronization
       const { EscrowStateMachine, ESCROW_LIFECYCLE_STATE } = require('../settlement/EscrowStateMachine');

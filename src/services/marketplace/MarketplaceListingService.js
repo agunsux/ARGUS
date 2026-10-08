@@ -234,6 +234,29 @@ class MarketplaceListingService {
       pricing: listing.pricing
     });
 
+    try {
+      const { getMarketplaceRepository } = require('../../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      await marketplaceRepo.createListing({
+        id: listingId,
+        ticket_id: ticket.ticket_id || ticket.id,
+        seller_id: sellerId,
+        canonical_event_id: eventId,
+        price: numericPrice,
+        currency: currency || 'IDR',
+        status: initialStatus,
+        seat_info: listing.seat_info,
+        face_value: ticket.face_value,
+        pricing: listing.pricing,
+        expires_at: expiresAt || null
+      });
+      if (initialStatus === LISTING_STATUS.ACTIVE) {
+        await marketplaceRepo.updateTicketStatus(ticket.ticket_id || ticket.id, TICKET_STATUS.LISTED, {
+          listing_id: listingId
+        });
+      }
+    } catch (_) {}
+
     return listing;
   }
 
@@ -337,6 +360,19 @@ class MarketplaceListingService {
       ticket_id: listing.ticket_id
     });
 
+    try {
+      const { getMarketplaceRepository } = require('../../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.CANCELLED, {
+        cancellation_reason: reason
+      });
+      if (ticket && ticket.status === TICKET_STATUS.VERIFIED) {
+        await marketplaceRepo.updateTicketStatus(ticket.ticket_id || ticket.id, TICKET_STATUS.VERIFIED, {
+          listing_id: null
+        });
+      }
+    } catch (_) {}
+
     return listing;
   }
 
@@ -362,6 +398,14 @@ class MarketplaceListingService {
       previous_status: previousStatus,
       reason
     });
+
+    try {
+      const { getMarketplaceRepository } = require('../../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.SUSPENDED, {
+        suspension_reason: reason
+      });
+    } catch (_) {}
 
     return listing;
   }
@@ -391,6 +435,17 @@ class MarketplaceListingService {
     await recordAuditLog('MARKETPLACE_LISTING', listingId, 'EXPIRED', 'SYSTEM', {
       ticket_id: listing.ticket_id
     });
+
+    try {
+      const { getMarketplaceRepository } = require('../../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.EXPIRED);
+      if (ticket && ticket.status === TICKET_STATUS.VERIFIED) {
+        await marketplaceRepo.updateTicketStatus(ticket.ticket_id || ticket.id, TICKET_STATUS.VERIFIED, {
+          listing_id: null
+        });
+      }
+    } catch (_) {}
 
     return listing;
   }

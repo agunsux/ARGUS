@@ -232,6 +232,29 @@ class PaymentService {
     state.canonical_payments.push(canonicalRecord);
     DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
 
+    try {
+      const { getMoneyRepository } = require('../../storage');
+      const moneyRepo = getMoneyRepository();
+      await moneyRepo.createPayment({
+        id: internalPaymentId,
+        internal_payment_id: internalPaymentId,
+        order_id: orderId,
+        buyer_id: canonicalRecord.buyer_id,
+        seller_id: canonicalRecord.seller_id,
+        provider: targetProviderName,
+        provider_transaction_id: providerTxId,
+        provider_reference: providerRef,
+        currency,
+        gross_amount: canonicalRecord.gross_amount,
+        provider_fee: canonicalRecord.provider_fee,
+        status: canonicalRecord.status,
+        money_state: canonicalRecord.money_state,
+        payment_method: canonicalRecord.payment_method,
+        idempotency_key: effectiveIdempotencyKey,
+        metadata: canonicalRecord.metadata
+      });
+    } catch (_) {}
+
     // Record deterministic payment attempt
     PaymentRoutingService.recordPaymentAttempt({
       paymentAttemptId: internalPaymentId,
@@ -324,6 +347,28 @@ class PaymentService {
         message: 'Webhook event already processed'
       };
     }
+
+    try {
+      const { getMoneyRepository } = require('../../storage');
+      const moneyRepo = getMoneyRepository();
+      const webhookInsert = await moneyRepo.recordWebhook({
+        provider: targetProviderName,
+        provider_event_id: eventId,
+        event_type: event.eventType || 'PAYMENT_EVENT',
+        payload_hash: payloadHash,
+        raw_payload: body,
+        signature_status: 'VALID',
+        processing_status: 'PROCESSING'
+      });
+      if (!webhookInsert.inserted) {
+        return {
+          idempotent: true,
+          orderId: event.orderId,
+          providerRef: event.providerRef,
+          message: 'Webhook event already processed'
+        };
+      }
+    } catch (_) {}
 
     // 4. Record Webhook Entry (Audit & Non-Repudiation)
     const webhookRecord = {
@@ -438,6 +483,12 @@ class PaymentService {
       webhookRecord.processed_at = new Date().toISOString();
       DurableFinancialStore.persist('provider_webhooks', state.provider_webhooks);
     }
+
+    try {
+      const { getMoneyRepository } = require('../../storage');
+      const moneyRepo = getMoneyRepository();
+      await moneyRepo.markWebhookProcessed(targetProviderName, eventId, 'PROCESSED');
+    } catch (_) {}
 
     await recordAuditLog('WEBHOOK', eventId, 'PROCESSED', targetProviderName, {
       order_id: event.orderId,

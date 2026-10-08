@@ -158,6 +158,28 @@ class FinancialLedger {
       DurableFinancialStore.persist('financial_ledger', state.financial_ledger);
     } catch (_) {}
 
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      await moneyRepo.recordLedgerTransaction({
+        transaction_id: transactionId,
+        order_id: orderId,
+        quote_id: effectiveQuoteId || null,
+        source_event: eventType,
+        total_amount: totalDebits,
+        currency,
+        description,
+        actor_id: actorId
+      }, entries.map((e, index) => ({
+        entry_id: `${transactionId}-${index + 1}`,
+        transaction_id: transactionId,
+        account: e.account,
+        type: e.type,
+        amount: parseInt(e.amount, 10),
+        currency
+      })));
+    } catch (_) {}
+
     await recordAuditLog('FINANCIAL_LEDGER', transactionId, eventType, actorId, {
       order_id: orderId,
       quote_id: effectiveQuoteId || null,

@@ -201,6 +201,18 @@ class ReservationService {
       }
       state.reservations.push(reservation);
 
+      // Durable Repository Sync (when repository is active)
+      try {
+        const { getMarketplaceRepository } = require('../../storage');
+        const repo = getMarketplaceRepository();
+        await repo.createReservation({
+          id: reservationId,
+          listing_id: listingId,
+          ticket_id: ticket.ticket_id || ticket.id,
+          buyer_id: buyerId
+        }, ttlMs);
+      } catch (_) {}
+
       await recordAuditLog('INVENTORY_RESERVATION', reservationId, 'RESERVED', buyerId, {
         listing_id: listingId,
         ticket_id: reservation.ticket_id,
@@ -262,6 +274,13 @@ class ReservationService {
         ticket.updated_at = now;
       }
 
+      // Durable Repository Sync
+      try {
+        const { getMarketplaceRepository } = require('../../storage');
+        const repo = getMarketplaceRepository();
+        await repo.releaseReservation(reservationId, actorId, reason);
+      } catch (_) {}
+
       await recordAuditLog('INVENTORY_RESERVATION', reservationId, 'RELEASED', actorId, {
         listing_id: reservation.listing_id,
         ticket_id: reservation.ticket_id,
@@ -321,6 +340,13 @@ class ReservationService {
             ticket.updated_at = timestamp;
           }
 
+          // Durable Repository Sync
+          try {
+            const { getMarketplaceRepository } = require('../../storage');
+            const repo = getMarketplaceRepository();
+            await repo.expireReservation(res.id);
+          } catch (_) {}
+
           await recordAuditLog('INVENTORY_RESERVATION', res.id, 'EXPIRED_RECOVERED', 'SYSTEM', {
             listing_id: res.listing_id,
             ticket_id: res.ticket_id,
@@ -372,6 +398,13 @@ class ReservationService {
     reservation.order_id = orderId;
     reservation.converted_at = now;
     reservation.updated_at = now;
+
+    // Durable Repository Sync
+    try {
+      const { getMarketplaceRepository } = require('../../storage');
+      const repo = getMarketplaceRepository();
+      await repo.convertReservation(reservationId);
+    } catch (_) {}
 
     await recordAuditLog('INVENTORY_RESERVATION', reservationId, 'CONVERTED_TO_ORDER', reservation.buyer_id, {
       order_id: orderId,
