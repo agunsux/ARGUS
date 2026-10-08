@@ -382,7 +382,9 @@ async function runTests() {
 }
 
 if (require.main === module) {
-  runTests().catch(err => {
+  runTests().then(() => {
+    process.exit(0);
+  }).catch(err => {
     console.error('Test execution fatal error:', err);
     process.exit(1);
   });

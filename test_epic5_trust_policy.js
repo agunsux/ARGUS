@@ -1082,7 +1082,9 @@ async function runEpic5Suite() {
   }
 }
 
-runEpic5Suite().catch(err => {
+runEpic5Suite().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('Epic 5 Suite Fatal Error:', err);
   process.exit(1);
 });

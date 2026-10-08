@@ -257,7 +257,9 @@ async function runPilot() {
   if (failed > 0) process.exit(1);
 }
 
-runPilot().catch(err => {
+runPilot().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('Pilot Test Failed:', err);
   process.exit(1);
 });

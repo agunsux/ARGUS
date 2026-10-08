@@ -466,7 +466,9 @@ async function runSuite() {
 }
 
 if (require.main === module) {
-  runSuite().catch(err => {
+  runSuite().then(() => {
+    process.exit(0);
+  }).catch(err => {
     console.error('Fatal error running promoter CSV import suite:', err);
     process.exit(1);
   });

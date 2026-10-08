@@ -885,7 +885,9 @@ async function runSuite() {
   }
 }
 
-runSuite().catch(err => {
+runSuite().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('\n[SUITE FATAL ERROR]:', err);
   if (server) server.close();
   process.exit(1);

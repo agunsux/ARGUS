@@ -507,7 +507,9 @@ async function runCanaryTests() {
   }
 }
 
-runCanaryTests().catch(err => {
+runCanaryTests().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('\nCANARY TEST SUITE FAILED:', err);
   process.exit(1);
 });

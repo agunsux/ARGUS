@@ -507,7 +507,9 @@ async function runSuite() {
 }
 
 if (require.main === module) {
-  runSuite().catch(err => {
+  runSuite().then(() => {
+    process.exit(0);
+  }).catch(err => {
     console.error('Fatal test runner error:', err);
     process.exit(1);
   });

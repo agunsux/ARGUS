@@ -1230,7 +1230,7 @@ function resetDatabase() {
       event_id: 'event-pestapora-2026',
       venue_id: 'venue-kemayoran',
       pic_user_id: 'pic-1',
-      event_date: '2026-09-25',
+      event_date: '2026-10-25',
       status: 'ACTIVE',
       contact_phone: '081199887766'
     },
@@ -1835,6 +1835,11 @@ function bootstrapAdminUser() {
  */
 async function seedOfficialEventSupply() {
   try {
+    const { RealSourceSeedService } = require('./discovery/RealSourceSeedService');
+    if (!RealSourceSeedService.isEnabled()) {
+      return null;
+    }
+
     const { canonicalRegistry } = require('./discovery/CanonicalEventRegistry');
     const { getCatalogRepository } = require('./discovery/repository');
     const repo = getCatalogRepository();
@@ -1844,10 +1849,6 @@ async function seedOfficialEventSupply() {
       canonicalRegistry.syncToState(state.events);
     }
 
-    const { RealSourceSeedService } = require('./discovery/RealSourceSeedService');
-    if (!RealSourceSeedService.isEnabled()) {
-      return null;
-    }
     const service = new RealSourceSeedService();
     const report = await service.seed();
     await canonicalRegistry.syncToRepository(repo);
@@ -1864,6 +1865,27 @@ async function seedOfficialEventSupply() {
 async function initializeDatabase() {
   bootstrapAdminUser();
   await seedOfficialEventSupply();
+  try {
+    const { getUserRepository } = require('./storage');
+    const userRepo = getUserRepository();
+    await userRepo.ensureInitialized();
+    const dbUsers = await userRepo.listUsers();
+    if (dbUsers && dbUsers.length > 0) {
+      for (const dbu of dbUsers) {
+        const idx = (state.users || []).findIndex(u => u.id === dbu.id);
+        if (idx >= 0) {
+          state.users[idx] = { ...state.users[idx], ...dbu };
+        } else {
+          state.users.push(dbu);
+        }
+      }
+    }
+  } catch (err) {
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      console.error('[database.js] Failed to initialize user repository:', err);
+      throw err;
+    }
+  }
   return Promise.resolve();
 }
 

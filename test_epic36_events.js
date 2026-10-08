@@ -280,7 +280,9 @@ async function runSuite() {
   }
 }
 
-runSuite().catch(err => {
+runSuite().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('Fatal test error:', err);
   if (server) server.close();
   process.exit(1);

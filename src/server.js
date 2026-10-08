@@ -45,6 +45,18 @@ app.use(async (req, res, next) => {
   }
 });
 
+const { resolveUser, resolveUserAsync, isAdminRole } = require('./middleware/auth');
+
+// Early durable authentication resolution: pre-populate req.user, req.session, req.role
+app.use(async (req, res, next) => {
+  try {
+    await resolveUserAsync(req);
+  } catch (err) {
+    // Fail safe
+  }
+  next();
+});
+
 // Serve uploads folder statically for evidence check debugging
 const uploadsDir = process.env.VERCEL
   ? '/tmp/uploads'
@@ -85,8 +97,6 @@ app.get('/sitemap.xml', (req, res) => {
     getPublishedArticles: () => articleRepository.getPublishedArticles()
   }));
 });
-
-const { resolveUser, isAdminRole } = require('./middleware/auth');
 
 // Institutional and static file delivery
 const publicDir = path.resolve(__dirname, '../public');

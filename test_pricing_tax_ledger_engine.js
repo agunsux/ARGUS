@@ -920,7 +920,9 @@ async function runSuite() {
   console.log('================================================================\n');
 }
 
-runSuite().catch(err => {
+runSuite().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('\nFatal suite error:', err);
   process.exit(1);
 });

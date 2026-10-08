@@ -75,7 +75,8 @@ class EventPicService {
    */
   static assignPic({ eventId, venueId, picUserId, contactPhone }) {
     const user = state.users.find(u => u.id === picUserId);
-    if (!user || user.role !== 'pic') {
+    const roleLower = (user?.role || '').toLowerCase();
+    if (!user || (roleLower !== 'pic' && roleLower !== 'venue_pic')) {
       const err = new Error('User must exist and have role "pic"');
       err.code = 'INVALID_PIC_USER';
       throw err;

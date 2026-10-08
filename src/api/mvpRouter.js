@@ -43,12 +43,19 @@ const { TransactionChallengeService } = require('../services/transactionChalleng
 const { EvidenceStorageService } = require('../verification/evidenceStorage');
 const { RETENTION_CONFIG, purgeExpiredEvidence } = require('../config/retention');
 const { SessionStore } = require('../services/sessionStore');
+const { isAdminRole } = require('../middleware/auth');
+const isPicRole = (r) => ['pic', 'venue_pic'].includes((r || '').toLowerCase());
 
 // =============================================================================
 // PILOT AUTH & SESSIONS (Epic 3.5: real sessions, 4 roles, window enforcement)
 // =============================================================================
 function resolveAuth(req, ...fallbacks) {
-  // Check Authorization Bearer or x-session-token
+  // 1. If already resolved by early auth middleware, trusted identity is authoritative
+  if (req && req.user) {
+    return req.user.id;
+  }
+
+  // 2. Check Authorization Bearer, x-session-token header, or session_token cookie
   const authHeader = req.header ? (req.header('authorization') || req.header('x-session-token')) : null;
   let sessionToken = null;
   if (authHeader) {
@@ -59,8 +66,16 @@ function resolveAuth(req, ...fallbacks) {
     }
   }
 
+  if (!sessionToken && req.headers && req.headers.cookie) {
+    const { parseCookies } = require('../middleware/auth');
+    const cookies = parseCookies(req.headers.cookie);
+    if (cookies.session_token) {
+      sessionToken = cookies.session_token.trim();
+    }
+  }
+
   if (sessionToken) {
-    const session = SessionStore.findSession(sessionToken) || state.sessions.find(s => s.session_token === sessionToken && new Date(s.expires_at) > new Date() && !s.revoked);
+    const session = SessionStore.findSession(sessionToken) || (state.sessions && state.sessions.find(s => s.session_token === sessionToken && new Date(s.expires_at) > new Date() && !s.revoked));
     if (session) {
       const user = findUser(session.user_id);
       if (user) {
@@ -71,8 +86,7 @@ function resolveAuth(req, ...fallbacks) {
     }
   }
 
-  // Blocker 2: Fallback to x-user-id header or passed parameter ONLY in test mode!
-  // In production (NODE_ENV !== 'test'), reject unauthenticated actor selection / identity spoofing.
+  // 3. Fallback to x-user-id header or passed parameter ONLY in test mode and ONLY when no session provided
   if (process.env.NODE_ENV === 'test') {
     const headerId = req.header ? req.header('x-user-id') : null;
     const callerId = headerId || fallbacks.find(f => !!f);
@@ -128,7 +142,7 @@ function requirePicOperationalWindow(req, res, next) {
 
 function verifyAdminStepUp(req, officerId) {
   const officer = findUser(officerId);
-  if (!officer || officer.role !== 'admin') {
+  if (!officer || !isAdminRole(officer.role)) {
     const err = new Error('Admin role required');
     err.code = 'ADMIN_UNAUTHORIZED';
     err.status = 401;
@@ -191,7 +205,7 @@ function requireAdmin(officerId) {
     err.status = 401;
     throw err;
   }
-  if (user.role !== 'admin') {
+  if (!isAdminRole(user.role)) {
     const err = new Error('Forbidden: admin role required');
     err.code = 'ADMIN_FORBIDDEN';
     err.status = 403;
@@ -1026,6 +1040,9 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
     if (!sellerId || !eventId || !seatInfo || !faceValue || !price || !rawBarcode) {
       return res.status(400).json({ error: 'Missing required listing fields (sellerId, eventId, seatInfo, faceValue, price, rawBarcode)', code: 'VALIDATION_ERROR' });
     }
+    if (req.user && sellerId !== req.user.id && !isAdminRole(req.user.role)) {
+      return res.status(403).json({ error: 'Cannot create listing for another seller', code: 'FORBIDDEN' });
+    }
     if (!findUser(sellerId)) {
       return res.status(401).json({ error: 'Unknown seller', code: 'AUTH_REQUIRED' });
     }
@@ -1071,7 +1088,7 @@ router.get('/seller/:id/listings', (req, res) => {
   if (!caller) {
     return res.status(401).json({ error: 'Unknown requester', code: 'AUTH_REQUIRED' });
   }
-  if (caller.id !== req.params.id && caller.role !== 'admin') {
+  if (caller.id !== req.params.id && !isAdminRole(caller.role)) {
     return res.status(403).json({ error: 'Forbidden: cannot access another seller orders', code: 'FORBIDDEN' });
   }
   const sellerListings = state.listings.filter(l => l.seller_id === req.params.id).map(l => {
@@ -1097,7 +1114,7 @@ router.post('/seller/orders/:orderId/handoff-challenge', async (req, res) => {
     const order = state.orders.find(o => o.id === req.params.orderId);
     if (!order) return res.status(404).json({ error: 'Order not found', code: 'NOT_FOUND' });
 
-    if (order.seller_id !== sellerId && req.role !== 'admin') {
+    if (order.seller_id !== sellerId && !isAdminRole(req.role)) {
       return res.status(403).json({ error: 'Forbidden: cannot generate challenge for another seller order', code: 'FORBIDDEN' });
     }
 
@@ -1134,6 +1151,9 @@ router.post('/buyer/order', async (req, res) => {
     const { buyerId, listingId, quoteId, quote_id, policyVersion } = req.body;
     if (!buyerId || !listingId) {
       return res.status(400).json({ error: 'buyerId and listingId are required', code: 'VALIDATION_ERROR' });
+    }
+    if (req.user && buyerId !== req.user.id && !isAdminRole(req.user.role)) {
+      return res.status(403).json({ error: 'Cannot create order for another buyer', code: 'FORBIDDEN' });
     }
     if (!findUser(buyerId)) {
       return res.status(401).json({ error: 'Unknown buyer', code: 'AUTH_REQUIRED' });
@@ -1229,7 +1249,7 @@ router.get('/buyer/:id/orders', async (req, res) => {
   if (!caller) {
     return res.status(401).json({ error: 'Unknown requester', code: 'AUTH_REQUIRED' });
   }
-  if (caller.id !== req.params.id && caller.role !== 'admin') {
+  if (caller.id !== req.params.id && !isAdminRole(caller.role)) {
     return res.status(403).json({ error: 'Forbidden: cannot access another buyer orders', code: 'FORBIDDEN' });
   }
 
@@ -1294,6 +1314,9 @@ router.post('/buyer/dispute', async (req, res) => {
     const { orderId, buyerId, reason } = req.body;
     if (!orderId || !buyerId) {
       return res.status(400).json({ error: 'orderId and buyerId are required' });
+    }
+    if (req.user && buyerId !== req.user.id && !isAdminRole(req.user.role)) {
+      return res.status(403).json({ error: 'Cannot file dispute for another buyer', code: 'FORBIDDEN' });
     }
 
     const result = await DisputeService.openDispute({
@@ -1654,7 +1677,7 @@ router.get('/admin/operations', (req, res) => {
   if (!caller) {
     return res.status(401).json({ error: 'Unknown requester', code: 'AUTH_REQUIRED' });
   }
-  if (caller.role !== 'admin' && caller.role !== 'pic') {
+  if (!isAdminRole(caller.role) && !isPicRole(caller.role)) {
     return res.status(403).json({ error: 'Forbidden: ops console requires admin or pic role', code: 'FORBIDDEN' });
   }
   const today = new Date().toISOString().split('T')[0];
@@ -1757,7 +1780,7 @@ router.get('/admin/email-status', (req, res) => {
     return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
   }
   const caller = findUser(callerId);
-  if (!caller || (caller.role !== 'admin' && caller.role !== 'pic')) {
+  if (!caller || (!isAdminRole(caller.role) && !isPicRole(caller.role))) {
     return res.status(403).json({ error: 'Forbidden: requires admin or pic role', code: 'FORBIDDEN' });
   }
   res.json({ success: true, email: emailService.getTelemetry() });
@@ -1862,7 +1885,7 @@ router.post('/admin/listings/:id/verify', async (req, res) => {
 router.post('/admin/step-up-token', (req, res) => {
   const { officerId, password } = req.body;
   const officer = findUser(officerId);
-  if (!officer || officer.role !== 'admin') {
+  if (!officer || !isAdminRole(officer.role)) {
     return res.status(401).json({ error: 'Admin credentials required', code: 'ADMIN_UNAUTHORIZED' });
   }
   if (officer.password && officer.password !== password) {
@@ -2017,7 +2040,7 @@ router.get('/admin/events', (req, res) => {
     return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
   }
   const caller = findUser(callerId);
-  if (!caller || caller.role !== 'admin') {
+  if (!caller || !isAdminRole(caller.role)) {
     return res.status(403).json({ error: 'Admin role required', code: 'FORBIDDEN' });
   }
 
@@ -2044,7 +2067,7 @@ router.post('/admin/events/:id/verify', async (req, res) => {
       return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
     }
     const officer = findUser(officerId);
-    if (!officer || officer.role !== 'admin') {
+    if (!officer || !isAdminRole(officer.role)) {
       return res.status(403).json({ error: 'Admin role required', code: 'FORBIDDEN' });
     }
 
@@ -2089,7 +2112,7 @@ router.patch('/admin/events/:id', async (req, res) => {
       return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
     }
     const officer = findUser(officerId);
-    if (!officer || officer.role !== 'admin') {
+    if (!officer || !isAdminRole(officer.role)) {
       return res.status(403).json({ error: 'Admin role required', code: 'FORBIDDEN' });
     }
 
@@ -2130,7 +2153,7 @@ router.post('/admin/events/:id/cancel', async (req, res) => {
       return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
     }
     const officer = findUser(officerId);
-    if (!officer || officer.role !== 'admin') {
+    if (!officer || !isAdminRole(officer.role)) {
       return res.status(403).json({ error: 'Admin role required', code: 'FORBIDDEN' });
     }
 
@@ -2393,7 +2416,7 @@ router.get('/admin/pricing/policies', (req, res) => {
   const callerId = getCallerId(req, req.query.requesterId);
   if (!callerId) return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
   const caller = findUser(callerId);
-  if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
+  if (!caller || !isAdminRole(caller.role)) return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
 
   const policies = MarketplacePricingEngine.listPolicies();
   res.json({ success: true, policies });
@@ -2407,7 +2430,7 @@ router.post('/admin/pricing/policies', async (req, res) => {
   const callerId = getCallerId(req, req.body?.officerId);
   if (!callerId) return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
   const caller = findUser(callerId);
-  if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
+  if (!caller || !isAdminRole(caller.role)) return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
 
   try {
     const policy = await MarketplacePricingEngine.registerPolicy(req.body, callerId);
@@ -2425,7 +2448,7 @@ router.get('/admin/tax/policies', (req, res) => {
   const callerId = getCallerId(req, req.query.requesterId);
   if (!callerId) return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
   const caller = findUser(callerId);
-  if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
+  if (!caller || !isAdminRole(caller.role)) return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
 
   const policies = TaxEngine.listPolicies();
   res.json({ success: true, policies });
@@ -2439,7 +2462,7 @@ router.post('/admin/tax/policies', async (req, res) => {
   const callerId = getCallerId(req, req.body?.officerId);
   if (!callerId) return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
   const caller = findUser(callerId);
-  if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
+  if (!caller || !isAdminRole(caller.role)) return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
 
   try {
     const policy = await TaxEngine.registerPolicy(req.body, callerId);
@@ -2457,7 +2480,7 @@ router.get('/admin/economics/contribution-margin', (req, res) => {
   const callerId = getCallerId(req, req.query.requesterId);
   if (!callerId) return res.status(401).json({ error: 'requester identity required', code: 'AUTH_REQUIRED' });
   const caller = findUser(callerId);
-  if (!caller || caller.role !== 'admin') return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
+  if (!caller || !isAdminRole(caller.role)) return res.status(403).json({ error: 'Forbidden: admin role required', code: 'FORBIDDEN' });
 
   const summary = EconomicsEngine.calculateContributionMargin({
     startDate: req.query.startDate,

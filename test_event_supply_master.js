@@ -392,7 +392,9 @@ async function runSupplyMasterTests() {
   console.log('================================================================\n');
 }
 
-runSupplyMasterTests().catch(err => {
+runSupplyMasterTests().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('\nEVENT SUPPLY MASTER TEST SUITE FAILED:', err);
   process.exit(1);
 });

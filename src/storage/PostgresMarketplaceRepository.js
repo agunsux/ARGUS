@@ -66,7 +66,7 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
           connectionString: cleanConnStr,
           ssl,
           max: 5,
-          idleTimeoutMillis: 10000,
+          idleTimeoutMillis: process.env.NODE_ENV === 'test' ? 500 : 10000,
           connectionTimeoutMillis: 5000
         });
 

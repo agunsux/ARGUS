@@ -70,6 +70,9 @@ function main() {
   console.log(`Homepage surface guard PASSED (${scripts.length} inline scripts parsed, ${REQUIRED_IDS.length + REQUIRED_CLASSES.length + REQUIRED_GLOBALS.length} hooks verified).`);
 }
 
-if (require.main === module) main();
+if (require.main === module) {
+  main();
+  process.exit(0);
+}
 
 module.exports = { main };

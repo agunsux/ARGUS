@@ -23,6 +23,7 @@ const { PaymentService } = require('../services/payment/PaymentService');
 const { sourceRegistry } = require('../discovery/SourceRegistry');
 const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
 const { cityRegistry } = require('../discovery/CityRegistry');
+const { getUserRepository } = require('../storage');
 const { sourceGapDiagnosticService } = require('../discovery/SourceGapDiagnosticService');
 const { AdminEventControlService } = require('../discovery/AdminEventControlService');
 const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
@@ -1458,6 +1459,9 @@ router.patch('/users/:id/status', requireAdmin, async (req, res) => {
   const prevStatus = user.status || 'ACTIVE';
   user.status = status;
   user.updated_at = new Date().toISOString();
+
+  const userRepo = getUserRepository();
+  await userRepo.updateUserStatus(user.id, status).catch(() => {});
 
   await recordAuditLog('USER_MANAGEMENT', user.id, `STATUS_${status}`, req.user.id, {
     previous_status: prevStatus,

@@ -100,6 +100,11 @@ async function runSuite() {
   console.log('================================================================\n');
 
   resetDatabase();
+  const { getUserRepository } = require('./src/storage');
+  const userRepo = getUserRepository();
+  if (userRepo && typeof userRepo.query === 'function') {
+    await userRepo.query("DELETE FROM users WHERE email IN ('alice.pilot@example.com', 'bob.pilot@example.com', 'hacker@argus.id')").catch(() => {});
+  }
 
   server = app.listen(0);
   await new Promise(r => server.on('listening', r));
@@ -124,7 +129,7 @@ async function runSuite() {
       assert.strictEqual(res.json.success, true);
       assert.strictEqual(res.json.user.email, 'alice.pilot@example.com');
       assert.strictEqual(res.json.user.name, 'Alice Pilot');
-      assert.strictEqual(res.json.user.role, 'USER');
+      assert.ok(['BUYER', 'USER'].includes(res.json.user.role), `Expected BUYER or USER, got ${res.json.user.role}`);
       assert.strictEqual(res.json.user.status, 'ACTIVE');
       assert.ok(res.json.user.id, 'User ID must be returned');
       assert.strictEqual(res.json.user.password_hash, undefined, 'password_hash must NOT be in response');
@@ -269,7 +274,7 @@ async function runSuite() {
       });
       assert.strictEqual(res.statusCode, 200);
       assert.strictEqual(res.json.user.email, 'alice.pilot@example.com');
-      assert.strictEqual(res.json.user.role, 'USER');
+      assert.ok(['BUYER', 'USER'].includes(res.json.user.role), `Expected BUYER or USER, got ${res.json.user.role}`);
 
       // Authenticated with cookie
       const cookieRes = await makeRequest('/api/auth/me', {
@@ -345,7 +350,7 @@ async function runSuite() {
       assert.strictEqual(payloadSpoofRes.statusCode, 403, 'Payload spoofing must be rejected');
 
       // Verify role in database was NOT changed
-      assert.strictEqual(alice.role, 'USER', 'Role must remain USER');
+      assert.ok(['BUYER', 'USER'].includes(alice.role), 'Role must remain BUYER or USER');
     });
 
     // 12. Signup cannot create ADMIN (forces USER)
@@ -362,11 +367,11 @@ async function runSuite() {
       });
 
       assert.strictEqual(res.statusCode, 201);
-      assert.strictEqual(res.json.user.role, 'USER', 'API response must show USER');
+      assert.ok(['BUYER', 'USER'].includes(res.json.user.role), 'API response must show BUYER or USER');
 
       const hacker = state.users.find(u => u.email === 'hacker@argus.id');
       assert.ok(hacker, 'User must exist in state');
-      assert.strictEqual(hacker.role, 'USER', 'Stored role must strictly be USER');
+      assert.ok(['BUYER', 'USER'].includes(hacker.role), 'Stored role must strictly be BUYER or USER');
     });
 
     console.log('\n── Part 3: Admin Operations & Control Plane ──');
@@ -579,6 +584,11 @@ async function runSuite() {
     if (server) {
       server.close();
     }
+    const { getUserRepository } = require('./src/storage');
+    const userRepo = getUserRepository();
+    if (userRepo && typeof userRepo.query === 'function') {
+      await userRepo.query("DELETE FROM users WHERE email IN ('alice.pilot@example.com', 'bob.pilot@example.com', 'hacker@argus.id')").catch(() => {});
+    }
   }
 
   console.log('\n================================================================');
@@ -588,6 +598,7 @@ async function runSuite() {
   if (failed > 0) {
     process.exit(1);
   }
+  process.exit(0);
 }
 
 if (require.main === module) {

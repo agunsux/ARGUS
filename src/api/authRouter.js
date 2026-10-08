@@ -1,21 +1,27 @@
 /**
  * TIKUM / ARGUS — Canonical Authentication Router
  * 
- * Endpoints:
- * - POST /api/auth/magic-link : Request magic link login
- * - GET  /api/auth/verify     : Verify token, set HttpOnly cookie, establish session
- * - GET  /api/auth/session    : Retrieve authenticated user session info
- * - POST /api/auth/logout     : Terminate session, clear cookie
+ * Durable PostgreSQL-backed authentication and identity management:
+ * - POST /api/auth/signup         : User registration with bcrypt hashing, unique email, default BUYER role
+ * - POST /api/auth/login          : Password authentication, SHA-256 session hash, HttpOnly cookie
+ * - GET  /api/auth/me             : Current authenticated user profile
+ * - GET  /api/auth/session        : Active session details
+ * - POST /api/auth/logout         : Session revocation in DB & local store, cookie cleared
+ * - POST /api/auth/password-reset : Secure password reset
+ * - POST /api/auth/magic-link     : Passwordless authentication flow
+ * - GET  /api/auth/verify         : Magic link token verification
  */
 
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
+const { getUserRepository } = require('../storage');
 const { MagicLinkService } = require('../services/magicLinkService');
 const { SessionStore } = require('../services/sessionStore');
-const { authenticate, requireAuth, resolveUser } = require('../middleware/auth');
-const { recordAuditLog, state, hashPassword } = require('../database');
+const { authenticate, requireAuth, resolveUser, parseCookies } = require('../middleware/auth');
+const { recordAuditLog, state, hashPassword, verifyPassword } = require('../database');
 const { emailService } = require('../services/emailService');
 
 /**
@@ -23,7 +29,7 @@ const { emailService } = require('../services/emailService');
  * Standard user registration.
  * Minimum fields: email, password, name.
  * Password hashed using bcrypt cost 12.
- * Role is strictly USER (never trusts client-supplied role).
+ * Default role is BUYER (server-enforced).
  * Rejects duplicate email (case-insensitive).
  */
 router.post('/signup', async (req, res) => {
@@ -47,36 +53,51 @@ router.post('/signup', async (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 8 characters', code: 'INVALID_PASSWORD' });
   }
 
-  // Duplicate email check
-  if (!state.users) state.users = [];
-  const existing = state.users.find(u => u.email && u.email.toLowerCase() === normalizedEmail);
-  if (existing) {
-    return res.status(409).json({ error: 'Email already registered', code: 'EMAIL_ALREADY_REGISTERED' });
-  }
-
-  const { hashPassword } = require('../database');
-  const passwordHash = hashPassword(password);
-  const now = new Date().toISOString();
+  const userRepo = getUserRepository();
+  const passwordHash = bcrypt.hashSync(password, 12);
   const userId = `usr-${uuidv4()}`;
 
-  const newUser = {
-    id: userId,
-    email: normalizedEmail,
-    name: name.trim(),
-    role: 'USER', // Default signup role MUST always be USER. Never trust client role.
-    status: 'ACTIVE',
-    password: passwordHash,
-    password_hash: passwordHash,
-    created_at: now,
-    updated_at: now,
-    last_login_at: null
-  };
+  let createdUser;
+  try {
+    createdUser = await userRepo.createUser({
+      id: userId,
+      email: normalizedEmail,
+      name: name.trim(),
+      role: 'BUYER', // Default signup role MUST always be BUYER. Never trust client role.
+      status: 'ACTIVE',
+      password_hash: passwordHash
+    });
+  } catch (err) {
+    if (err.code === 'IDENTITY_CONFLICT' || (err.message && err.message.includes('already exists'))) {
+      return res.status(409).json({ error: 'Email already registered', code: 'EMAIL_ALREADY_REGISTERED' });
+    }
+    console.error('[AuthRouter:Signup] Error creating user:', err.message);
+    return res.status(500).json({ error: 'Failed to register user', code: 'INTERNAL_ERROR' });
+  }
 
-  state.users.push(newUser);
+  // Synchronize in-memory cache for legacy components
+  if (state.users && Array.isArray(state.users)) {
+    const idx = state.users.findIndex(u => u.id === createdUser.id);
+    if (idx >= 0) {
+      state.users[idx] = { ...state.users[idx], ...createdUser, password: passwordHash, password_hash: passwordHash };
+    } else {
+      state.users.push({ ...createdUser, password: passwordHash, password_hash: passwordHash });
+    }
+  }
 
-  await recordAuditLog('AUTH', userId, 'USER_REGISTERED', userId, {
+  // Audit event in durable auth audit log
+  userRepo.recordAuthAudit({
+    userId: createdUser.id,
+    eventType: 'USER_REGISTERED',
+    success: true,
+    ipAddress: req.ip || req.connection?.remoteAddress || null,
+    userAgent: req.headers['user-agent'] || null,
+    metadata: { email: normalizedEmail, role: createdUser.role }
+  }).catch(() => {});
+
+  recordAuditLog('AUTH', createdUser.id, 'USER_REGISTERED', createdUser.id, {
     email: normalizedEmail,
-    role: newUser.role
+    role: createdUser.role
   }).catch(() => {});
 
   // Never return password or password_hash
@@ -84,12 +105,12 @@ router.post('/signup', async (req, res) => {
     success: true,
     message: 'User registered successfully',
     user: {
-      id: newUser.id,
-      email: newUser.email,
-      name: newUser.name,
-      role: newUser.role,
-      status: newUser.status,
-      created_at: newUser.created_at
+      id: createdUser.id,
+      email: createdUser.email,
+      name: createdUser.name,
+      role: createdUser.role,
+      status: createdUser.status,
+      created_at: createdUser.created_at
     }
   });
 });
@@ -97,8 +118,8 @@ router.post('/signup', async (req, res) => {
 /**
  * POST /api/auth/login
  * Standard password login.
- * Validates email and password against stored bcrypt hash.
- * Creates authenticated session in SessionStore.
+ * Validates email and password against stored bcrypt hash in PostgreSQL.
+ * Creates authenticated session in durable UserRepository and SessionStore.
  * Sets secure HttpOnly cookie session_token.
  */
 router.post('/login', async (req, res) => {
@@ -111,34 +132,99 @@ router.post('/login', async (req, res) => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const user = (state.users || []).find(u => u.email && u.email.toLowerCase() === normalizedEmail);
+  const userRepo = getUserRepository();
 
-  const { verifyPassword } = require('../database');
-  const isValid = user && verifyPassword(password, user.password_hash || user.password);
+  // Retrieve user with password hash from authoritative store
+  let user = await userRepo.getUserByEmail(normalizedEmail, true);
+
+  // Fallback to local state.users if not found in repository (e.g. initial memory state)
+  if (!user && state.users) {
+    user = state.users.find(u => u.email && u.email.toLowerCase() === normalizedEmail);
+  }
+
+  const storedHash = user?.password_hash || user?.password;
+  let isValid = false;
+
+  if (user && storedHash) {
+    if (storedHash.startsWith('$2a$') || storedHash.startsWith('$2b$') || storedHash.startsWith('$2y$')) {
+      isValid = bcrypt.compareSync(password, storedHash);
+    } else {
+      isValid = verifyPassword(password, storedHash);
+    }
+  }
 
   if (!isValid) {
+    userRepo.recordAuthAudit({
+      userId: user?.id || null,
+      eventType: 'LOGIN_FAILED',
+      success: false,
+      ipAddress: ip,
+      userAgent,
+      metadata: { email: normalizedEmail, reason: 'INVALID_CREDENTIALS' }
+    }).catch(() => {});
+
     return res.status(401).json({ error: 'Invalid email or password', code: 'INVALID_CREDENTIALS' });
   }
 
-  // Check account suspension
-  if (user.status && user.status.toUpperCase() === 'SUSPENDED') {
+  // Check account suspension (fail closed if suspended in DB or in-memory state)
+  const stateUser = (state.users || []).find(u => u.id === user.id || (u.email && u.email.toLowerCase() === normalizedEmail));
+  const isSuspended = (user?.status && user.status.toUpperCase() === 'SUSPENDED') ||
+                      (stateUser?.status && stateUser.status.toUpperCase() === 'SUSPENDED');
+  if (isSuspended) {
+    userRepo.recordAuthAudit({
+      userId: user.id,
+      eventType: 'LOGIN_SUSPENDED',
+      success: false,
+      ipAddress: ip,
+      userAgent,
+      metadata: { email: normalizedEmail, reason: 'ACCOUNT_SUSPENDED' }
+    }).catch(() => {});
+
     return res.status(403).json({ error: 'Account is suspended. Access denied.', code: 'ACCOUNT_SUSPENDED' });
   }
 
-  // Create session
-  const session = SessionStore.createSession({
+  // Create session in authoritative repository
+  const sessionRes = await userRepo.createSession({
     userId: user.id,
     role: user.role,
     ip,
     userAgent
   });
+  const session = sessionRes.session;
 
+  // Mirror session to local SessionStore and state.sessions for synchronous lookup compatibility
+  try {
+    const rawSessions = SessionStore.getAll();
+    const tokenHash = crypto.createHash('sha256').update(session.session_token).digest('hex');
+    const nowIso = new Date().toISOString();
+    const expiresAt = session.expires_at || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    rawSessions.push({
+      session_token: session.session_token,
+      session_token_hash: tokenHash,
+      user_id: user.id,
+      role: user.role,
+      user_agent: userAgent,
+      ip: ip,
+      created_at: nowIso,
+      last_active_at: nowIso,
+      expires_at: expiresAt,
+      revoked: false,
+      revoked_at: null,
+      revoked_reason: null
+    });
+    SessionStore.saveAll(rawSessions);
+
+    if (!state.sessions) state.sessions = [];
+    state.sessions.push(session);
+  } catch (_) {}
+
+  // Touch last_login_at in durable repository
   const now = new Date().toISOString();
+  await userRepo.updateUser(user.id, { last_login_at: now }).catch(() => {});
   user.last_login_at = now;
-  user.updated_at = now;
 
   // Set secure HttpOnly cookie
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL;
   const cookieOptions = [
     `session_token=${session.session_token}`,
     'HttpOnly',
@@ -151,9 +237,19 @@ router.post('/login', async (req, res) => {
   }
   res.setHeader('Set-Cookie', cookieOptions.join('; '));
 
-  await recordAuditLog('AUTH', user.id, 'USER_LOGIN', user.id, {
+  // Record audit log
+  userRepo.recordAuthAudit({
+    userId: user.id,
+    eventType: 'USER_LOGIN',
+    success: true,
+    ipAddress: ip,
+    userAgent,
+    metadata: { sessionId: session.id }
+  }).catch(() => {});
+
+  recordAuditLog('AUTH', user.id, 'USER_LOGIN', user.id, {
     ip,
-    session_token: session.session_token
+    session_id: session.id
   }).catch(() => {});
 
   return res.status(200).json({
@@ -202,7 +298,8 @@ router.post('/password-reset/request', async (req, res) => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const user = (state.users || []).find(
+  const userRepo = getUserRepository();
+  const user = await userRepo.getUserByEmail(normalizedEmail) || (state.users || []).find(
     u => u.email && u.email.toLowerCase() === normalizedEmail
   );
 
@@ -250,7 +347,15 @@ router.post('/password-reset/request', async (req, res) => {
     console.error('[AuthRouter:PasswordReset] Failed to send reset email:', err.message);
   }
 
-  await recordAuditLog('AUTH', user.id, 'PASSWORD_RESET_REQUESTED', 'SYSTEM', {
+  userRepo.recordAuthAudit({
+    userId: user.id,
+    eventType: 'PASSWORD_RESET_REQUESTED',
+    success: true,
+    ipAddress: tokenRecord.ip_address,
+    metadata: { tokenId: tokenRecord.id }
+  }).catch(() => {});
+
+  recordAuditLog('AUTH', user.id, 'PASSWORD_RESET_REQUESTED', 'SYSTEM', {
     ip: tokenRecord.ip_address,
     token_id: tokenRecord.id
   }).catch(() => {});
@@ -287,7 +392,8 @@ router.post('/password-reset/confirm', async (req, res) => {
     return res.status(400).json({ error: 'Token reset password telah kedaluwarsa', code: 'TOKEN_EXPIRED' });
   }
 
-  const user = (state.users || []).find(u => u.id === tokenRecord.user_id || u.email === tokenRecord.email);
+  const userRepo = getUserRepository();
+  const user = await userRepo.getUserById(tokenRecord.user_id) || (state.users || []).find(u => u.id === tokenRecord.user_id || u.email === tokenRecord.email);
   if (!user) {
     return res.status(404).json({ error: 'Pengguna tidak ditemukan', code: 'USER_NOT_FOUND' });
   }
@@ -295,20 +401,26 @@ router.post('/password-reset/confirm', async (req, res) => {
   tokenRecord.used = true;
   tokenRecord.used_at = new Date().toISOString();
 
-  const newHash = hashPassword(newPassword);
+  const newHash = bcrypt.hashSync(newPassword, 12);
+  await userRepo.updateUserPassword(user.id, newHash);
+
+  // Update in-memory user record
   user.password = newHash;
   user.password_hash = newHash;
   user.updated_at = new Date().toISOString();
 
-  // Revoke active sessions for user
-  if (state.sessions && Array.isArray(state.sessions)) {
-    const userSessions = state.sessions.filter(s => s.user_id === user.id || s.userId === user.id);
-    for (const sess of userSessions) {
-      SessionStore.revokeSession(sess.session_token, 'USER_PASSWORD_RESET');
-    }
-  }
+  // Invalidate all active sessions for user in durable database & local store
+  await userRepo.revokeAllUserSessions(user.id, null, 'USER_PASSWORD_RESET');
+  SessionStore.invalidateAllSessions(user.id);
 
-  await recordAuditLog('AUTH', user.id, 'PASSWORD_RESET_COMPLETED', user.id, {
+  userRepo.recordAuthAudit({
+    userId: user.id,
+    eventType: 'PASSWORD_RESET_COMPLETED',
+    success: true,
+    ipAddress: req.ip || req.connection?.remoteAddress || null
+  }).catch(() => {});
+
+  recordAuditLog('AUTH', user.id, 'PASSWORD_RESET_COMPLETED', user.id, {
     ip: req.ip || req.connection?.remoteAddress || null
   }).catch(() => {});
 
@@ -321,7 +433,6 @@ router.post('/password-reset/confirm', async (req, res) => {
 /**
  * POST /api/auth/magic-link
  * Request passwordless authentication link.
- * Generic response prevents email enumeration.
  */
 router.post('/magic-link', async (req, res) => {
   const { email, redirectUrl } = req.body || {};
@@ -349,14 +460,13 @@ router.post('/magic-link', async (req, res) => {
 
 /**
  * GET /api/auth/verify
- * Verifies single-use magic link token and establishes SessionStore session.
- * Supports both JSON API clients and direct browser redirects.
+ * Verifies single-use magic link token and establishes session.
  */
 router.get('/verify', async (req, res) => {
   const token = req.query.token;
   const ip = req.ip || req.connection?.remoteAddress || '127.0.0.1';
   const userAgent = req.headers['user-agent'] || null;
-  const acceptsJson = req.accepts('json') && !req.accepts('html') || req.query.format === 'json';
+  const acceptsJson = (req.accepts('json') && !req.accepts('html')) || req.query.format === 'json';
 
   try {
     const verification = await MagicLinkService.verifyMagicLink({
@@ -366,7 +476,7 @@ router.get('/verify', async (req, res) => {
     });
 
     const sessionToken = verification.session.session_token;
-    const isProd = process.env.NODE_ENV === 'production';
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL;
 
     // Set secure HttpOnly session cookie
     const cookieOptions = [
@@ -391,7 +501,6 @@ router.get('/verify', async (req, res) => {
         redirect: verification.redirectUrl
       });
     } else {
-      // Browser navigation redirect
       return res.redirect(verification.redirectUrl || '/');
     }
   } catch (err) {
@@ -434,15 +543,31 @@ router.get('/session', authenticate, (req, res) => {
 
 /**
  * POST /api/auth/logout
- * Terminates active session in SessionStore, clears cookie.
+ * Terminates active session in durable database & local store, clears cookie.
  */
-router.post('/logout', (req, res) => {
-  const user = resolveUser(req);
-  const token = req.session?.session_token || 
-    (req.header ? (req.header('authorization')?.replace('Bearer ', '') || req.header('x-session-token')) : null) ||
-    req.body?.session_token;
+router.post('/logout', async (req, res) => {
+  const user = req.user || resolveUser(req);
+  let token = req.session?.session_token;
 
+  if (!token) {
+    const authHeader = req.header ? (req.header('authorization') || req.header('x-session-token')) : null;
+    if (authHeader) {
+      token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader.trim();
+    }
+  }
+
+  if (!token && req.headers && req.headers.cookie) {
+    const cookies = parseCookies(req.headers.cookie);
+    if (cookies.session_token) token = cookies.session_token.trim();
+  }
+
+  if (!token && req.body?.session_token) {
+    token = req.body.session_token.trim();
+  }
+
+  const userRepo = getUserRepository();
   if (token) {
+    await userRepo.revokeSession(token, 'USER_LOGOUT');
     SessionStore.revokeSession(token, 'USER_LOGOUT');
     if (state.sessions) {
       state.sessions = state.sessions.filter(s => s.session_token !== token);
@@ -453,6 +578,15 @@ router.post('/logout', (req, res) => {
   res.setHeader('Set-Cookie', 'session_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax');
 
   const actorId = user ? user.id : 'ANONYMOUS';
+  userRepo.recordAuthAudit({
+    userId: user ? user.id : null,
+    eventType: 'USER_LOGOUT',
+    success: true,
+    ipAddress: req.ip || req.connection?.remoteAddress || null,
+    userAgent: req.headers['user-agent'] || null,
+    metadata: { tokenRevoked: !!token }
+  }).catch(() => {});
+
   recordAuditLog('AUTH', actorId, 'SESSION_REVOKED', 'SYSTEM', {
     session_token: token || null,
     user_id: user ? user.id : null

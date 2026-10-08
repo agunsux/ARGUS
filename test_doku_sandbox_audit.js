@@ -621,7 +621,9 @@ async function runAuditSuite() {
   }
 }
 
-runAuditSuite().catch((err) => {
+runAuditSuite().then(() => {
+  process.exit(0);
+}).catch((err) => {
   console.error('\nAudit Suite Execution Failed:', err);
   process.exit(1);
 });

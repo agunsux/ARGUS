@@ -208,7 +208,9 @@ async function runDisputeSuite() {
   if (failed > 0) process.exit(1);
 }
 
-runDisputeSuite().catch(err => {
+runDisputeSuite().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('Dispute Suite Failed:', err);
   process.exit(1);
 });

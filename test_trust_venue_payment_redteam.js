@@ -717,7 +717,9 @@ async function runSuite() {
   console.log('══════════════════════════════════════════════════════════════\n');
 }
 
-runSuite().catch(err => {
+runSuite().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('\nTest suite failed with fatal error:', err);
   process.exit(1);
 });

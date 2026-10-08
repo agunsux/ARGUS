@@ -438,7 +438,9 @@ async function runSuite() {
 }
 
 if (require.main === module) {
-  runSuite().catch(err => {
+  runSuite().then(() => {
+    process.exit(0);
+  }).catch(err => {
     console.error('Fatal error running promoter registry suite:', err);
     process.exit(1);
   });

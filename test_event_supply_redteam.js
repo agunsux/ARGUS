@@ -854,7 +854,9 @@ async function runAllScenarios() {
   }
 }
 
-runAllScenarios().catch(err => {
+runAllScenarios().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('Fatal test error:', err);
   process.exit(1);
 });

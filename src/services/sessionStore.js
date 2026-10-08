@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
+const { getUserRepository } = require('../storage');
 
 const DATA_DIR = process.env.VERCEL
   ? '/tmp/argus_data'
@@ -46,19 +48,38 @@ class SessionStore {
   }
 
   /**
-   * Creates a server-side session with concurrent limit enforcement (max 3)
+   * Creates a server-side session with concurrent limit enforcement (max 3).
+   * Persists both to local cache and authoritative UserRepository.
+   * Returns a thenable session object that resolves to itself when DB write finishes.
    */
-  static createSession({ userId, role, ttlMs = 24 * 60 * 60 * 1000, userAgent = null, ip = null }) {
+  static createSession({ userId, role, ttlMs = 24 * 60 * 60 * 1000, userAgent = null, ip = null, token = null }) {
     if (!userId || !role) {
       throw new Error('userId and role are required for session creation');
     }
 
-    const sessions = this.getAll();
+    const sessionToken = token || `ses-${uuidv4()}`;
+    const tokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
     const now = Date.now();
     const nowIso = new Date(now).toISOString();
+    const expiresAt = new Date(now + ttlMs).toISOString();
 
-    // Enforce concurrent session limit (max 3 active sessions per user)
-    // N+1 revokes the oldest session
+    const localSession = {
+      session_token: sessionToken,
+      session_token_hash: tokenHash,
+      user_id: userId,
+      role: role,
+      user_agent: userAgent,
+      ip: ip,
+      created_at: nowIso,
+      last_active_at: nowIso,
+      expires_at: expiresAt,
+      revoked: false,
+      revoked_at: null,
+      revoked_reason: null
+    };
+
+    // 1. Enforce concurrent session limit in local store (max 3 active sessions per user)
+    const sessions = this.getAll();
     const activeUserSessions = sessions.filter(
       s => s.user_id === userId && !s.revoked && new Date(s.expires_at) > new Date(now)
     );
@@ -73,25 +94,43 @@ class SessionStore {
       }
     }
 
-    const token = `ses-${uuidv4()}`;
+    sessions.push(localSession);
+    this.saveAll(sessions);
 
-    const session = {
-      session_token: token,
-      user_id: userId,
-      role: role,
-      user_agent: userAgent,
-      ip: ip,
-      created_at: nowIso,
-      last_active_at: nowIso,
-      expires_at: new Date(now + ttlMs).toISOString(),
-      revoked: false,
-      revoked_at: null,
-      revoked_reason: null
+    // 2. Persist to Authoritative UserRepository (Postgres in prod, in-memory in mock)
+    const repoPromise = (async () => {
+      try {
+        const repo = getUserRepository();
+        if (repo && typeof repo.createSession === 'function') {
+          await repo.createSession({
+            userId,
+            role,
+            ip,
+            userAgent,
+            ttlMs,
+            token: sessionToken
+          });
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          console.error('[SessionStore] Critical: failed to persist session to authoritative repo:', err);
+          throw err;
+        }
+      }
+      return localSession;
+    })();
+
+    // Make localSession Thenable so `await SessionStore.createSession(...)` waits for DB write
+    localSession.then = function(onFulfilled, onRejected) {
+      return repoPromise.then(() => onFulfilled(localSession), onRejected);
     };
 
-    sessions.push(session);
-    this.saveAll(sessions);
-    return session;
+    return localSession;
+  }
+
+  static async createSessionAsync(options) {
+    const session = this.createSession(options);
+    return await session;
   }
 
   /**
@@ -113,6 +152,27 @@ class SessionStore {
   }
 
   /**
+   * Authoritative asynchronous session resolution from UserRepository.
+   */
+  static async findSessionAsync(token) {
+    if (!token) return null;
+    try {
+      const repo = getUserRepository();
+      if (repo && typeof repo.getSessionByTokenHash === 'function') {
+        const result = await repo.getSessionByTokenHash(token);
+        if (result && result.session) {
+          return {
+            ...result.session,
+            session_token: token,
+            user: result.user
+          };
+        }
+      }
+    } catch (_) {}
+    return this.findSession(token);
+  }
+
+  /**
    * Alias for findSession
    */
   static getSession(token) {
@@ -124,6 +184,7 @@ class SessionStore {
    */
   static revokeSession(token, reason = 'LOGOUT') {
     if (!token) return false;
+    let revoked = false;
     const sessions = this.getAll();
     const session = sessions.find(s => s.session_token === token);
     if (session && !session.revoked) {
@@ -131,9 +192,30 @@ class SessionStore {
       session.revoked_at = new Date().toISOString();
       session.revoked_reason = reason;
       this.saveAll(sessions);
-      return true;
+      revoked = true;
     }
-    return false;
+
+    // Authoritative repository revocation
+    try {
+      const repo = getUserRepository();
+      if (repo && typeof repo.revokeSession === 'function') {
+        repo.revokeSession(token, reason).catch(() => {});
+      }
+    } catch (_) {}
+
+    return revoked;
+  }
+
+  static async revokeSessionAsync(token, reason = 'LOGOUT') {
+    if (!token) return false;
+    this.revokeSession(token, reason);
+    try {
+      const repo = getUserRepository();
+      if (repo && typeof repo.revokeSession === 'function') {
+        return await repo.revokeSession(token, reason);
+      }
+    } catch (_) {}
+    return true;
   }
 
   /**
@@ -161,7 +243,28 @@ class SessionStore {
     if (revokedCount > 0) {
       this.saveAll(sessions);
     }
+
+    // Authoritative repository revocation
+    try {
+      const repo = getUserRepository();
+      if (repo && typeof repo.revokeAllUserSessions === 'function') {
+        repo.revokeAllUserSessions(userId, exceptToken, 'SECURITY_INVALIDATION').catch(() => {});
+      }
+    } catch (_) {}
+
     return revokedCount;
+  }
+
+  static async invalidateAllSessionsAsync(userId, exceptToken = null) {
+    if (!userId) return 0;
+    this.invalidateAllSessions(userId, exceptToken);
+    try {
+      const repo = getUserRepository();
+      if (repo && typeof repo.revokeAllUserSessions === 'function') {
+        return await repo.revokeAllUserSessions(userId, exceptToken, 'SECURITY_INVALIDATION');
+      }
+    } catch (_) {}
+    return 0;
   }
 
   static purgeExpired() {

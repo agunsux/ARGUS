@@ -53,7 +53,8 @@ function requireContentAdmin(req, res, next) {
   if (!user) {
     return res.status(401).json({ error: 'Authentication required for content management', code: 'AUTH_REQUIRED' });
   }
-  if (user.role !== 'admin') {
+  const roleLower = (user.role || '').toLowerCase();
+  if (roleLower !== 'admin' && roleLower !== 'ops' && roleLower !== 'super_admin') {
     return res.status(403).json({ error: `Forbidden: role '${user.role}' cannot manage editorial content`, code: 'ADMIN_FORBIDDEN' });
   }
   req.adminUser = user;

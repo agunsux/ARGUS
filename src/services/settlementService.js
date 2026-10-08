@@ -62,7 +62,7 @@ class SettlementService {
 
     if (officerId) {
       const officer = state.users ? state.users.find(u => u.id === officerId) : null;
-      if (!officer || officer.role !== 'admin') {
+      if (!officer || !['admin', 'ops', 'super_admin'].includes((officer.role || '').toLowerCase())) {
         const err = new Error('Forbidden: settlement requires admin officer');
         err.code = 'SETTLEMENT_FORBIDDEN';
         throw err;

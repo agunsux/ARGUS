@@ -497,7 +497,9 @@ async function runAllTests() {
   }
 }
 
-runAllTests().catch(err => {
+runAllTests().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('Fatal test error:', err);
   process.exit(1);
 });

@@ -356,7 +356,9 @@ async function runBrandBoundaryTests() {
 }
 
 if (require.main === module) {
-  runBrandBoundaryTests().catch(err => {
+  runBrandBoundaryTests().then(() => {
+    process.exit(0);
+  }).catch(err => {
     console.error('Brand boundary test failed:', err);
     process.exit(1);
   });

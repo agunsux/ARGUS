@@ -786,7 +786,9 @@ async function runRedTeamSuite() {
   }
 }
 
-runRedTeamSuite().catch(err => {
+runRedTeamSuite().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('Fatal Red Team Test Error:', err);
   process.exit(1);
 });

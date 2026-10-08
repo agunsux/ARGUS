@@ -50,7 +50,7 @@ function resolveDiscoveryActor(req) {
     const session = SessionStore.findSession(token) ||
       (state.sessions || []).find(s => s.session_token === token && new Date(s.expires_at) > new Date() && !s.revoked);
     if (session) {
-      const user = (state.users || []).find(u => u.id === session.user_id);
+      const user = (state.users || []).find(u => u.id === session.user_id) || { id: session.user_id, role: session.role };
       if (user) return user;
     }
   }
@@ -72,7 +72,8 @@ function requireDiscoveryAdmin(req, res, next) {
   if (!user) {
     return res.status(401).json({ error: 'Authentication required for promoter registry management', code: 'AUTH_REQUIRED' });
   }
-  if (user.role !== 'admin') {
+  const roleLower = (user.role || '').toLowerCase();
+  if (roleLower !== 'admin' && roleLower !== 'ops' && roleLower !== 'super_admin') {
     return res.status(403).json({ error: `Forbidden: role '${user.role}' cannot manage the promoter registry`, code: 'ADMIN_FORBIDDEN' });
   }
   req.adminUser = user;
@@ -2109,6 +2110,62 @@ router.post('/admin/reconcile', (req, res, next) => {
 router.get('/admin/inventory-report', (req, res, next) => {
   req.url = '/api/discovery/admin/inventory-report';
   router.handle(req, res, next);
+});
+
+// ==========================================
+// MARKET SUPPLY EXPANSION ENDPOINTS
+// ==========================================
+const { marketSupplyService } = require('./supply/MarketSupplyExpansionService');
+
+/**
+ * GET /api/discovery/supply/scan
+ * Scans public sources, runs qualification and classification (dry-run).
+ */
+router.get('/api/discovery/supply/scan', async (req, res) => {
+  try {
+    const minPrice = req.query.minPrice ? Number(req.query.minPrice) : 300000;
+    const result = await marketSupplyService.dryRun({ minPrice });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/discovery/supply/review-queue
+ * Admin-facing review queue for ambiguous or secondary category events.
+ */
+router.get('/api/discovery/supply/review-queue', async (req, res) => {
+  try {
+    const minPrice = req.query.minPrice ? Number(req.query.minPrice) : 300000;
+    const result = await marketSupplyService.dryRun({ minPrice });
+    res.json({
+      success: true,
+      total_pending: result.review_queue.length,
+      review_queue: result.review_queue
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/supply/ingest
+ * Admin-gated execution of qualified and approved candidates into PostgreSQL.
+ */
+router.post('/api/discovery/supply/ingest', requireDiscoveryAdmin, async (req, res) => {
+  try {
+    const minPrice = req.body?.minPrice ? Number(req.body.minPrice) : 300000;
+    const actor = req.adminUser ? req.adminUser.id : 'ADMIN_MANUAL';
+    const result = await marketSupplyService.ingest({
+      minPrice,
+      actor,
+      triggerType: 'ADMIN'
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 module.exports = router;

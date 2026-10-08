@@ -407,7 +407,7 @@ class MagicLinkService {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: (user.role || 'buyer').toLowerCase(),
         status: user.status || 'ACTIVE',
         created_at: user.created_at
       },

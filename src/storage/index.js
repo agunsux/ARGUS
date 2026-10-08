@@ -35,8 +35,13 @@ const { MoneyRepository } = require('./MoneyRepository');
 const { InMemoryMoneyRepository } = require('./InMemoryMoneyRepository');
 const { PostgresMoneyRepository } = require('./PostgresMoneyRepository');
 
+const { UserRepository } = require('./UserRepository');
+const { InMemoryUserRepository } = require('./InMemoryUserRepository');
+const { PostgresUserRepository } = require('./PostgresUserRepository');
+
 let activeMarketplaceRepo = null;
 let activeMoneyRepo = null;
+let activeUserRepo = null;
 
 function getMarketplaceRepository(forceNew = false) {
   if (activeMarketplaceRepo && !forceNew) {
@@ -70,6 +75,22 @@ function setMoneyRepository(repo) {
   activeMoneyRepo = repo;
 }
 
+function getUserRepository(forceNew = false) {
+  if (activeUserRepo && !forceNew) {
+    return activeUserRepo;
+  }
+  if (process.env.DATABASE_URL) {
+    activeUserRepo = new PostgresUserRepository();
+  } else {
+    activeUserRepo = new InMemoryUserRepository();
+  }
+  return activeUserRepo;
+}
+
+function setUserRepository(repo) {
+  activeUserRepo = repo;
+}
+
 module.exports = {
   MarketplaceRepository,
   InMemoryMarketplaceRepository,
@@ -81,5 +102,11 @@ module.exports = {
   InMemoryMoneyRepository,
   PostgresMoneyRepository,
   getMoneyRepository,
-  setMoneyRepository
+  setMoneyRepository,
+
+  UserRepository,
+  InMemoryUserRepository,
+  PostgresUserRepository,
+  getUserRepository,
+  setUserRepository
 };

@@ -225,7 +225,9 @@ async function runSecuritySuite() {
   if (failed > 0) process.exit(1);
 }
 
-runSecuritySuite().catch(err => {
+runSecuritySuite().then(() => {
+  process.exit(0);
+}).catch(err => {
   console.error('Security Suite Failed:', err);
   process.exit(1);
 });

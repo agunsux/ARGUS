@@ -53,8 +53,8 @@ class PostgresCatalogRepository extends CatalogRepository {
       this.pool = new Pool({
         connectionString: cleanConnStr,
         ssl,
-        max: 1, // Max 1 pooled connection per serverless lambda instance
-        idleTimeoutMillis: 10000,
+        max: 3, // Sized to allow advisory lock client + active transaction/query clients without pool starvation
+        idleTimeoutMillis: process.env.NODE_ENV === 'test' ? 500 : 10000,
         connectionTimeoutMillis: 5000
       });
 
@@ -214,7 +214,14 @@ class PostgresCatalogRepository extends CatalogRepository {
     const archivedAt = eventData.archived_at || null;
     const publicVisibility = eventData.public_visibility !== false;
     let homepageVisibility = eventData.homepage_visibility === true;
-    const metadata = JSON.stringify(eventData.metadata || {});
+    const metadataObj = {
+      ...(eventData.metadata || {}),
+      artist: eventData.artist || (eventData.metadata && eventData.metadata.artist) || null,
+      artists: Array.isArray(eventData.artists) && eventData.artists.length > 0
+        ? eventData.artists
+        : (eventData.metadata && Array.isArray(eventData.metadata.artists) ? eventData.metadata.artists : (eventData.artist ? [eventData.artist] : []))
+    };
+    const metadata = JSON.stringify(metadataObj);
 
     // Check anti-resurrection
     const existing = await this.getEventById(id);
@@ -497,6 +504,12 @@ class PostgresCatalogRepository extends CatalogRepository {
 
   mapRowToEvent(row) {
     if (!row) return null;
+    const meta = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : (row.metadata || {});
+    const artists = Array.isArray(meta.artists) && meta.artists.length > 0
+      ? meta.artists
+      : (meta.artist ? [meta.artist] : []);
+    const artist = meta.artist || (artists.length > 0 ? artists[0] : null);
+
     return {
       id: row.id,
       event_id: row.id,
@@ -504,6 +517,8 @@ class PostgresCatalogRepository extends CatalogRepository {
       canonical_name: row.canonical_name,
       title: row.canonical_name,
       name: row.canonical_name,
+      artist: artist,
+      artists: artists,
       event_type: row.event_type,
       category: row.category,
       start_date: row.start_date instanceof Date ? row.start_date.toISOString().substring(0, 10) : (row.start_date || null),
@@ -530,7 +545,7 @@ class PostgresCatalogRepository extends CatalogRepository {
       archived_at: row.archived_at ? (row.archived_at instanceof Date ? row.archived_at.toISOString() : row.archived_at) : null,
       public_visibility: row.public_visibility === true,
       homepage_visibility: row.homepage_visibility === true,
-      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : (row.metadata || {}),
+      metadata: meta,
       created_at: row.created_at instanceof Date ? row.created_at.toISOString() : (row.created_at || null),
       updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : (row.updated_at || null)
     };
