@@ -114,6 +114,13 @@ class CanonicalFeeEngine {
   }
 
   /**
+   * Helper alias for order pricing calculation
+   */
+  static calculateOrderPricing(ticketPrice, quantity = 1) {
+    return this.calculateTicketFees({ ticketPrice, quantity });
+  }
+
+  /**
    * Calculate complete, deterministic, immutable ticket fees.
    * SINGLE SOURCE OF TRUTH across the entire platform.
    * 

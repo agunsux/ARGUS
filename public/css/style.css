@@ -1,104 +1,167 @@
 :root {
-  --bg: #04030A;
-  --surface: #0E121E;
-  --surface-hover: #182032;
-  --surface-card: rgba(255, 255, 255, 0.04);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-focus: #5533FF;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
-  --primary: #5533FF;
-  --primary-hover: #4326D6;
-  --primary-glow: rgba(85, 51, 255, 0.28);
-  --accent: #FF5F3E;
-  --accent-glow: rgba(255, 95, 62, 0.28);
-  --cyan: #38bdf8;
-  --success: #10b981;
-  --success-bg: rgba(16, 185, 129, 0.12);
-  --warning: #f59e0b;
-  --warning-bg: rgba(245, 158, 11, 0.12);
-  --danger: #ef4444;
-  --danger-bg: rgba(239, 68, 68, 0.12);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  /* ==========================================================================
+     TIKUM SEMANTIC DESIGN SYSTEM TOKENS (LIGHT THEME DEFAULT)
+     Philosophy: BOLD PRIMARY + WARM SECONDARY + CALM NEUTRALS + TRUST ACCENTS
+     Hierarchy: 80-90% Neutral/Light | 8-15% Brand Violet | 1-5% Accent & Trust
+     ========================================================================== */
+
+  /* Brand Primary: Deep / Rich Violet-Purple (Visual Anchor) */
+  --color-brand-primary: #5227CC;
+  --color-brand-primary-hover: #431EAD;
+  --color-brand-primary-soft: #F3EFFF;
+  --color-brand-primary-border: #D8CCFD;
+
+  /* Secondary Accent: Warm Yellow / Golden Accent (Highlights, Selected States, Attention Cues) */
+  --color-accent: #E5A000;
+  --color-accent-hover: #C68A00;
+  --color-accent-soft: #FFF9E6;
+  --color-accent-border: #FDE68A;
+
+  /* Supporting: Soft Lilac / Lavender */
+  --color-supporting-lilac: #FAF8FF;
+  --color-supporting-lilac-border: #EDE5FD;
+
+  /* Trust Color: Deep Green (Strictly for Verified, Protected, Escrow, PIC, Confirmed) */
+  --color-trust: #047857;
+  --color-trust-hover: #065F46;
+  --color-trust-soft: #ECFDF5;
+  --color-trust-border: #A7F3D0;
+
+  /* Warning: Warm Amber */
+  --color-warning: #D97706;
+  --color-warning-hover: #B45309;
+  --color-warning-soft: #FFFBEB;
+  --color-warning-border: #FDE68A;
+
+  /* Danger: Muted Red */
+  --color-danger: #DC2626;
+  --color-danger-hover: #B91C1C;
+  --color-danger-soft: #FEF2F2;
+  --color-danger-border: #FECACA;
+
+  /* Neutrals: Warm Off-White, Soft Gray, Charcoal / Near-Black (80-90% Area) */
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: #FCFBF9;
+  --color-surface-muted: #F5F4F0;
+  --color-surface-subtle: #FAFAF8;
+
+  --color-text-primary: #18181B;
+  --color-text-secondary: #52525B;
+  --color-text-muted: #71717A;
+  --color-text-dim: #A1A1AA;
+
+  --color-border: #E5E3DC;
+  --color-border-subtle: #EFECE6;
+  --color-border-focus: var(--color-brand-primary);
+
+  /* Elevation, Shadows & Radii */
+  --shadow-xs: 0 1px 2px rgba(18, 18, 23, 0.04);
+  --shadow-sm: 0 2px 4px rgba(18, 18, 23, 0.05);
+  --shadow-md: 0 6px 16px -2px rgba(18, 18, 23, 0.07);
+  --shadow-lg: 0 16px 32px -4px rgba(18, 18, 23, 0.09);
+  --shadow-card-hover: 0 12px 24px -4px rgba(82, 39, 204, 0.09), 0 4px 12px -2px rgba(18, 18, 23, 0.04);
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Semantic Compatibility & Legacy Bridges */
+  --bg: var(--color-surface-muted);
+  --surface: var(--color-surface);
+  --surface-hover: var(--color-surface-elevated);
+  --surface-card: var(--color-surface);
+  --border: var(--color-border);
+  --border-focus: var(--color-brand-primary);
+  --text-main: var(--color-text-primary);
+  --text-muted: var(--color-text-secondary);
+  --text-dim: var(--color-text-muted);
+  --primary: var(--color-brand-primary);
+  --primary-hover: var(--color-brand-primary-hover);
+  --primary-glow: rgba(82, 39, 204, 0.16);
+  --accent: var(--color-accent);
+  --accent-glow: rgba(229, 160, 0, 0.18);
+  --cyan: #0284C7;
+  --success: var(--color-trust);
+  --success-bg: var(--color-trust-soft);
+  --warning: var(--color-warning);
+  --warning-bg: var(--color-warning-soft);
+  --danger: var(--color-danger);
+  --danger-bg: var(--color-danger-soft);
+}
+
+/* ==========================================================================
+   DARK THEME ARCHITECTURE
+   ========================================================================== */
+[data-theme="dark"], body.dark-mode {
+  --color-brand-primary: #7C4DFF;
+  --color-brand-primary-hover: #6934FF;
+  --color-brand-primary-soft: rgba(124, 77, 255, 0.16);
+  --color-brand-primary-border: rgba(124, 77, 255, 0.35);
+
+  --color-accent: #F59E0B;
+  --color-accent-hover: #D97706;
+  --color-accent-soft: rgba(245, 158, 11, 0.16);
+  --color-accent-border: rgba(245, 158, 11, 0.35);
+
+  --color-supporting-lilac: rgba(124, 77, 255, 0.08);
+  --color-supporting-lilac-border: rgba(124, 77, 255, 0.2);
+
+  --color-trust: #10B981;
+  --color-trust-hover: #059669;
+  --color-trust-soft: rgba(16, 185, 129, 0.15);
+  --color-trust-border: rgba(16, 185, 129, 0.35);
+
+  --color-warning: #F59E0B;
+  --color-warning-hover: #D97706;
+  --color-warning-soft: rgba(245, 158, 11, 0.15);
+  --color-warning-border: rgba(245, 158, 11, 0.3);
+
+  --color-danger: #EF4444;
+  --color-danger-hover: #DC2626;
+  --color-danger-soft: rgba(239, 68, 68, 0.15);
+  --color-danger-border: rgba(239, 68, 68, 0.3);
+
+  --color-surface: #0E121E;
+  --color-surface-elevated: #151B2B;
+  --color-surface-muted: #07090F;
+  --color-surface-subtle: #0B0E17;
+
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
+  --color-text-dim: #64748B;
+
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  --color-border-focus: var(--color-brand-primary);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 6px 16px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 32px -4px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 12px 28px -4px rgba(124, 77, 255, 0.2), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+
+  --bg: var(--color-surface-muted);
+  --surface: var(--color-surface);
+  --surface-hover: var(--color-surface-elevated);
+  --border: var(--color-border);
+  --text-main: var(--color-text-primary);
+  --text-muted: var(--color-text-secondary);
+  --cyan: #38BDF8;
 }
 
 [data-theme="light"] {
-  --bg: #F7F6F2;
-  --surface: #FCFBF8;
-  --surface-hover: #EFECE6;
-  --border: #E3E0D8;
-  --border-focus: #16a34a;
+  --bg: #F5F4F0;
+  --surface: #FFFFFF;
+  --surface-hover: #FCFBF9;
+  --border: #E5E3DC;
   --text-main: #18181B;
   --text-muted: #52525B;
-  --text-dim: #71717A;
-  --primary: #16a34a;
-  --primary-hover: #15803d;
-  --primary-glow: rgba(22, 163, 74, 0.12);
-  --cyan: #0284c7;
-  --success: #059669;
-  --success-bg: rgba(5, 150, 105, 0.1);
-  --warning: #d97706;
-  --warning-bg: rgba(217, 119, 6, 0.1);
-  --danger: #dc2626;
-  --danger-bg: rgba(220, 38, 38, 0.1);
-}
-
-[data-theme="light"] .site-header {
-  background: rgba(247, 246, 242, 0.95);
-  border-bottom: 1px solid #E3E0D8;
-}
-
-[data-theme="light"] .site-footer {
-  background: #EFECE6 !important;
-  border-top: 1px solid #E3E0D8 !important;
-  color: #52525B;
-}
-
-[data-theme="light"] .card {
-  background: #FCFBF8 !important;
-  border-color: #E3E0D8 !important;
-}
-
-[data-theme="light"] .hero h1 {
-  color: #18181B;
-}
-
-[data-theme="light"] .footer-col h4,
-[data-theme="light"] .footer-business div {
-  color: #18181B !important;
-}
-
-[data-theme="light"] .footer-address div {
-  color: #3f3f46 !important;
-}
-
-[data-theme="light"] .form-control {
-  background: #FCFBF8;
-  color: #18181B;
-  border-color: #E3E0D8;
-}
-
-[data-theme="light"] .btn-secondary {
-  background: #f1f5f9;
-  color: #1e293b;
-  border-color: #cbd5e1;
-}
-
-[data-theme="light"] .btn-secondary:hover {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-[data-theme="light"] .price-breakdown {
-  background: #f8fafc !important;
-  border-color: #e2e8f0 !important;
-}
-
-[data-theme="light"] .notice-box {
-  background: #f8fafc;
+  --primary: #5227CC;
+  --primary-hover: #431EAD;
 }
 
 * {
@@ -359,19 +422,97 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 8px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
 }
 
-.badge-success { background: var(--success-bg); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.25); }
-.badge-warning { background: var(--warning-bg); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.25); }
-.badge-danger  { background: var(--danger-bg);  color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); }
-.badge-info    { background: rgba(59, 130, 246, 0.12); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.25); }
-.badge-slate   { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+.badge-success { background: var(--color-trust-soft); color: var(--color-trust); border: 1px solid var(--color-trust-border); }
+.badge-warning { background: var(--color-warning-soft); color: var(--color-warning); border: 1px solid var(--color-warning-border); }
+.badge-danger  { background: var(--color-danger-soft);  color: var(--color-danger); border: 1px solid var(--color-danger-border); }
+.badge-info    { background: rgba(59, 130, 246, 0.1); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.25); }
+.badge-slate   { background: var(--color-surface-muted); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+.badge-primary { background: var(--color-brand-primary-soft); color: var(--color-brand-primary); border: 1px solid var(--color-brand-primary-border); }
+.badge-accent  { background: var(--color-accent-soft); color: var(--color-accent-hover); border: 1px solid var(--color-accent-border); }
+
+/* Proprietary TIKUM Trust Badge System */
+.badge-trust {
+  background: var(--color-trust-soft);
+  color: var(--color-trust);
+  border: 1px solid var(--color-trust-border);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.badge-trust i {
+  color: var(--color-trust);
+}
+
+.badge-pic {
+  background: linear-gradient(135deg, var(--color-trust-soft) 0%, var(--color-brand-primary-soft) 100%);
+  color: var(--color-trust);
+  border: 1px solid var(--color-trust-border);
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.badge-pic i {
+  color: var(--color-brand-primary);
+}
+
+/* Category Visual Badges */
+.badge-cat-konser    { background: #F3EFFF; color: #5227CC; border: 1px solid #D8CCFD; }
+.badge-cat-olahraga  { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+.badge-cat-comedy    { background: #FFF9E6; color: #B45309; border: 1px solid #FDE68A; }
+.badge-cat-pameran   { background: #FAF5FF; color: #7E22CE; border: 1px solid #E9D5FF; }
+.badge-cat-lainnya   { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
+
+/* Action Buttons */
+.btn-accent {
+  background: var(--color-accent);
+  color: #18181B;
+  font-weight: 700;
+  border: 1px solid var(--color-accent-border);
+}
+.btn-accent:hover {
+  background: var(--color-accent-hover);
+  color: #000;
+}
+
+.btn-trust {
+  background: var(--color-trust);
+  color: #FFFFFF;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+.btn-trust:hover {
+  background: var(--color-trust-hover);
+}
+
+/* Price Dominance */
+.price-dominant {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.price-dominant .price-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
 
 /* Cards & Surfaces */
 .card {

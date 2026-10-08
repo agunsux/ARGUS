@@ -79,8 +79,12 @@ function renderFooterHtml() {
         <div style="font-weight: 700; color: #fff; margin-bottom: 12px; font-size: 14px;">Kontak Resmi</div>
         <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
           <div>
-            <span style="color: #64748b;">Email:</span>
-            <a href="${businessProfile.emailUrl}" style="color: #06b6d4; text-decoration: none; margin-left: 6px;">${businessProfile.email}</a>
+            <span style="color: #64748b;">Layanan Pengguna:</span>
+            <a href="mailto:support@tikum.app" style="color: #06b6d4; text-decoration: none; margin-left: 6px; font-weight: 600;">support@tikum.app</a>
+          </div>
+          <div>
+            <span style="color: #64748b;">Korespondensi Legal:</span>
+            <a href="${businessProfile.emailUrl}" style="color: #94a3b8; text-decoration: none; margin-left: 6px;">${businessProfile.email}</a>
           </div>
           <div>
             <span style="color: #64748b;">WhatsApp:</span>

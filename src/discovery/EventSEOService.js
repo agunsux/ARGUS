@@ -10,6 +10,7 @@
 
 const { renderFooterHtml } = require('../config/businessProfile');
 const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
+const { CanonicalFeeEngine } = require('../pricing/CanonicalFeeEngine');
 
 class EventSEOService {
   /**
@@ -150,26 +151,73 @@ class EventSEOService {
       `;
     } else if (activeListings && activeListings.length > 0) {
       const minPrice = Math.min(...activeListings.map(l => l.price));
+      const hasEventPic = Boolean(event.has_venue_assist || event.has_pic || event.venue_assist_status === 'PIC_AVAILABLE' || event.venue_assist_status === 'PIC_ON_SITE');
+      const gateVerificationText = hasEventPic
+        ? `verifikasi fisik Event PIC Tikum di gerbang ${venue}`
+        : `validasi barcode resmi turnstile di gerbang ${venue}`;
       resaleHtml = `
         <div class="resale-card verified-active">
           <div class="badge-row">
             <span class="badge badge-success"><i class="fa-solid fa-shield-check"></i> ${activeListings.length} Tiket Resale Terverifikasi</span>
             <span class="badge badge-cyan">Mulai Rp ${minPrice.toLocaleString('id-ID')}</span>
           </div>
-          <p class="resale-desc">Setiap tiket dilindungi anti-duplikasi barcode, dana tertahan di rekening escrow, dan verifikasi fisik Event PIC di gate ${venue}.</p>
+          <p class="resale-desc">Setiap tiket dilindungi anti-duplikasi barcode, dana tertahan di rekening escrow, dan ${gateVerificationText}.</p>
           <div class="resale-grid">
-            ${activeListings.map(l => `
-              <div class="listing-pill">
-                <div>
-                  <strong>${l.seat_info || 'General Admission'}</strong>
-                  <span class="text-muted"> (Nominal: Rp ${(l.face_value || l.price).toLocaleString('id-ID')})</span>
+            ${activeListings.map(l => {
+              const basePrice = Math.max(0, Math.round(l.price || 0));
+              let fee = 0;
+              let totalPrice = basePrice;
+              if (basePrice > 0) {
+                try {
+                  const pricing = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: basePrice, quantity: 1 });
+                  fee = pricing.buyer_fee;
+                  totalPrice = pricing.buyer_total;
+                } catch {
+                  fee = Math.max(10000, Math.min(Math.floor((basePrice * 6) / 100), 300000));
+                  totalPrice = basePrice + fee;
+                }
+              }
+              const section = l.section || l.ticket_type || l.category || 'General Admission';
+              const seat = l.seat_info || 'Festival / Free Standing';
+              const hasEventPic = Boolean(event.has_venue_assist || event.has_pic || event.venue_assist_status === 'PIC_AVAILABLE' || event.venue_assist_status === 'PIC_ON_SITE');
+              const picProtectionText = hasEventPic
+                ? 'Dilindungi Rekening Escrow &amp; Event PIC Tikum di Gate'
+                : 'Dilindungi Rekening Escrow &amp; Validasi Gate Turnstile';
+              return `
+              <div class="listing-pill" style="display:flex; flex-direction:column; gap:12px; padding:18px; border-radius:12px; background:var(--color-surface, #FFFFFF); border:1px solid var(--color-border, #E5E7EB); box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+                  <div>
+                    <div style="font-size:15px; font-weight:800; color:var(--color-text-primary, #111827);">${section}</div>
+                    <div style="font-size:12.5px; color:var(--color-text-muted, #6B7280);"><i class="fa-solid fa-chair"></i> ${seat} &nbsp;·&nbsp; <i class="fa-solid fa-ticket"></i> Jumlah: 1 tiket</div>
+                  </div>
+                  <span class="badge badge-success" style="font-size:11px; font-weight:700;"><i class="fa-solid fa-user-check"></i> Penjual Terverifikasi</span>
                 </div>
-                <div class="listing-action">
-                  <span class="price">Rp ${l.price.toLocaleString('id-ID')}</span>
-                  <a href="/pay?listing_id=${l.id}" class="btn btn-sm btn-primary">Beli Aman</a>
+
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; background:var(--color-surface-muted, #F8F9FA); padding:12px 14px; border-radius:8px; font-size:12px; border:1px solid var(--color-border-subtle, #F3F4F6);">
+                  <div>
+                    <span style="color:var(--color-text-muted, #6B7280); display:block; margin-bottom:2px;">Harga Penjual</span>
+                    <strong style="font-size:13.5px; color:var(--color-text-primary, #111827);">Rp ${basePrice.toLocaleString('id-ID')}</strong>
+                  </div>
+                  <div>
+                    <span style="color:var(--color-text-muted, #6B7280); display:block; margin-bottom:2px;">Biaya TIKUM (6% Policy V1)</span>
+                    <strong style="font-size:13.5px; color:var(--color-text-secondary, #4B5563);">Rp ${fee.toLocaleString('id-ID')}</strong>
+                  </div>
+                  <div>
+                    <span style="color:var(--color-brand-primary, #5227CC); font-weight:700; display:block; margin-bottom:2px;">Total Pembeli (All-In)</span>
+                    <strong style="font-size:15px; font-weight:800; color:var(--color-brand-primary, #5227CC);">Rp ${totalPrice.toLocaleString('id-ID')}</strong>
+                  </div>
                 </div>
-              </div>
-            `).join('')}
+
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding-top:6px;">
+                  <div style="font-size:11.5px; color:#047857; font-weight:600; display:flex; align-items:center; gap:5px;">
+                    <i class="fa-solid fa-shield-halved"></i> ${picProtectionText}
+                  </div>
+                  <a href="/pay?listing_id=${l.id}" class="btn btn-sm btn-primary" style="padding:10px 20px; font-weight:700; border-radius:8px; text-decoration:none;">
+                    <i class="fa-solid fa-lock"></i> Beli Aman via Escrow
+                  </a>
+                </div>
+              </div>`;
+            }).join('')}
           </div>
         </div>
       `;
@@ -393,7 +441,7 @@ class EventSEOService {
     </section>
 
     <!-- Admission & Trust Protocol -->
-    <section class="card" style="background: #0f172a; border-color: #1e293b; padding: 20px; margin-top: 30px;">
+    <section class="card" style="background: #0f172a; border-color: #1e293b; padding: 20px; margin-top: 30px; border-radius: 12px;">
       <h3 style="font-size: 16px; margin-bottom: 8px;"><i class="fa-solid fa-user-shield"></i> Protokol Verifikasi Gerbang (TIKUM PIC)</h3>
       <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
         Tipe Tiket: <strong>${event.admission_protocol?.type || 'BARCODE_PLUS_ID'}</strong>. 
@@ -401,6 +449,21 @@ class EventSEOService {
       </p>
       <div style="font-size: 11px; color: #64748b; margin-top: 6px; border-top: 1px solid #1e293b; padding-top: 6px;">
         <em>${event.admission_protocol?.verification_disclaimer || 'Verifikasi fisik gerbang memvalidasi kepemilikan dan integritas tiket, namun tidak menggantikan validasi kriptografis langsung dari promotor penerbit tiket.'}</em>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section style="margin-top: 30px;">
+      <h3 style="font-size: 18px; margin-bottom: 14px;"><i class="fa-solid fa-circle-question"></i> Tanya Jawab Seputar Event Ini</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+        <div style="background: #0f172a; border: 1px solid #1e293b; padding: 16px; border-radius: 10px;">
+          <h4 style="font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: #f8fafc;">Apakah tiket resale ini aman?</h4>
+          <p style="font-size: 12.5px; color: #94a3b8; line-height: 1.5; margin: 0;">Ya. Setiap tiket sekunder diverifikasi identitas dan barcode kepemilikannya. Dana Anda tersimpan aman di rekening escrow hingga Anda sukses masuk gerbang acara.</p>
+        </div>
+        <div style="background: #0f172a; border: 1px solid #1e293b; padding: 16px; border-radius: 10px;">
+          <h4 style="font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: #f8fafc;">Bagaimana peran staf PIC Tikum di lokasi?</h4>
+          <p style="font-size: 12.5px; color: #94a3b8; line-height: 1.5; margin: 0;">Pada event dengan pendampingan aktif, staf operasional (Event PIC Tikum) siap mendampingi pembeli di sekitar venue jika terjadi hambatan saat penukaran gelang atau scanning barcode turnstile.</p>
+        </div>
       </div>
     </section>
 

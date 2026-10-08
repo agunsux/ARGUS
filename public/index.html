@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#04030A">
+  <meta name="theme-color" content="#5227CC">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Tikum — Verified Ticket Marketplace by Shinerva</title>
-  <meta name="description" content="Tikum adalah platform penemuan seluruh event berbayar dan bertiket di Indonesia dan Asia Tenggara. Konser, Olahraga, Festival, Teater, Komedi, dan Pameran dengan verifikasi sumber resmi dan perlindungan turnstile.">
+  <meta name="description" content="Tikum adalah platform penemuan seluruh event berbayar dan bertiket di Indonesia dan Asia Tenggara. Konser, Olahraga, Stand Up Comedy, Pameran, dan Hiburan dengan verifikasi sumber resmi dan perlindungan turnstile.">
   <link rel="canonical" href="https://tikum.app/">
   <link rel="alternate" hreflang="id" href="https://tikum.app/">
   <link rel="alternate" hreflang="en" href="https://tikum.app/?lang=en">
@@ -23,15 +23,15 @@
 
   <!-- OpenGraph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Tikum — Find Every Event Worth Buying a Ticket For">
-  <meta property="og:description" content="Temukan seluruh event berbayar dan bertiket di Indonesia dengan verifikasi sumber resmi dan marketplace sekunder terlindungi.">
+  <meta property="og:title" content="Tikum — Verified Ticket Marketplace by Shinerva">
+  <meta property="og:description" content="Temukan seluruh event berbayar dan bertiket di Indonesia dengan verifikasi sumber resmi, rekening escrow terlindungi, dan staf PIC di venue.">
   <meta property="og:url" content="https://tikum.app/">
   <meta property="og:site_name" content="TIKUM">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Tikum — Find Every Event Worth Buying a Ticket For">
-  <meta name="twitter:description" content="Temukan seluruh event berbayar dan bertiket di Indonesia.">
+  <meta name="twitter:title" content="Tikum — Verified Ticket Marketplace by Shinerva">
+  <meta name="twitter:description" content="Temukan seluruh event berbayar dan bertiket di Indonesia dengan perlindungan turnstile dan staf PIC di venue.">
 
   <link rel="icon" type="image/svg+xml" href="/assets/tikum-mark-p2p.svg">
   <link rel="apple-touch-icon" href="/assets/tikum-mark-p2p.svg">
@@ -42,19 +42,18 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    /* Unified Tikum Dark-First Palette */
     :root {
-      --primary: #5533FF;
-      --primary-hover: #4326D6;
-      --bg-light: #F7F6F2;
-      --bg-dark: #04030A;
-      --text-light: #18181B;
-      --text-dark: #F8FAFC;
-      --card-light: #FCFBF8;
-      --card-dark: #0E121E;
-      --accent: #FF5F3E;
-      --border-light: #E3E0D8;
-      --border-dark: rgba(255, 255, 255, 0.08);
+      --primary: var(--color-brand-primary, #5227CC);
+      --primary-hover: var(--color-brand-primary-hover, #431EAF);
+      --bg-light: #F8F9FA;
+      --bg-dark: #0B0B0C;
+      --text-light: #111827;
+      --text-dark: #F9FAFB;
+      --card-light: #FFFFFF;
+      --card-dark: #141416;
+      --accent: var(--color-accent, #E5A000);
+      --border-light: #E5E7EB;
+      --border-dark: #232326;
     }
 
     body {
@@ -63,7 +62,8 @@
       font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
       padding: 0;
-      transition: background-color 0.3s, color 0.3s;
+      transition: background-color 0.25s ease, color 0.25s ease;
+      -webkit-font-smoothing: antialiased;
     }
 
     body.dark-mode {
@@ -76,15 +76,18 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 24px;
-      background: var(--bg-light);
+      padding: 14px 28px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border-light);
       position: sticky;
       top: 0;
       z-index: 100;
+      transition: background 0.25s, border-color 0.25s;
     }
     body.dark-mode .site-header {
-      background: var(--bg-dark);
+      background: rgba(11, 11, 12, 0.94);
       border-bottom-color: var(--border-dark);
     }
     .brand {
@@ -101,63 +104,165 @@
     .brand-title {
       font-size: 20px;
       font-weight: 800;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.03em;
+      color: var(--primary);
+    }
+    body.dark-mode .brand-title {
+      color: #FFFFFF;
+    }
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--color-text-muted, #6B7280);
+      font-weight: 600;
+      line-height: 1;
+    }
+    .ln-nav-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .ln-nav-link {
+      color: var(--text-light);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      transition: color 0.15s;
+      cursor: pointer;
+    }
+    body.dark-mode .ln-nav-link {
+      color: #D1D5DB;
+    }
+    .ln-nav-link:hover {
+      color: var(--primary);
     }
     .header-actions {
       display: flex;
-      gap: 12px;
+      align-items: center;
+      gap: 10px;
     }
 
-    /* Hero */
-    .hero {
-      background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&q=80&w=2000') center/cover;
-      padding: 80px 20px;
-      text-align: center;
-      color: white;
-    }
-    .hero h1 {
-      font-size: 36px;
-      font-weight: 800;
-      margin-bottom: 16px;
-    }
-    .hero p {
-      font-size: 18px;
-      margin-bottom: 32px;
-    }
-    .search-bar {
-      max-width: 800px;
-      margin: 0 auto;
+    /* Hero Feature */
+    .ln-hero-feature {
+      position: relative;
+      min-height: 420px;
       display: flex;
-      background: var(--card-light, #FCFBF8);
-      border: 1px solid var(--border-light, #E3E0D8);
-      border-radius: 8px;
+      align-items: flex-end;
+      background: linear-gradient(135deg, #1A093E 0%, #30106E 50%, #5227CC 100%);
+      background-size: cover;
+      background-position: center 25%;
+      color: #FFFFFF;
       overflow: hidden;
-      padding: 8px;
+    }
+    .ln-hero-feature::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(17, 8, 43, 0.45) 0%, rgba(26, 11, 62, 0.75) 60%, rgba(15, 6, 38, 0.96) 100%);
+    }
+    .ln-hero-inner {
+      position: relative;
+      z-index: 2;
+      padding: 40px 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .ln-kicker {
+      color: #FCD34D;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 11px;
+      margin-bottom: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ln-hero-title {
+      font-size: clamp(28px, 4.5vw, 46px);
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin: 0 0 12px;
+      color: #FFFFFF;
+    }
+    .ln-hero-meta {
+      color: #E2E8F0;
+      font-size: 14px;
+      margin-bottom: 22px;
+      line-height: 1.6;
+    }
+    .ln-hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .ln-btn {
+      display: inline-flex;
+      align-items: center;
       gap: 8px;
-    }
-    .search-input {
-      flex: 1;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: -0.01em;
+      text-decoration: none;
       border: none;
-      padding: 16px;
-      font-size: 16px;
-      outline: none;
-      color: #333;
-    }
-    .search-btn {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 0 32px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 4px;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
-    .search-btn:hover {
-      background: var(--primary-hover);
+    .ln-btn-primary {
+      background: var(--accent);
+      color: #111827;
+    }
+    .ln-btn-primary:hover {
+      background: #F59E0B;
+      transform: translateY(-1px);
+    }
+    .ln-btn-ghost {
+      background: rgba(255, 255, 255, 0.15);
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(8px);
+    }
+    .ln-btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
     }
 
-    /* Filters */
+    /* Trust Strip */
+    .trust-strip {
+      background: var(--card-light);
+      padding: 18px 24px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 28px;
+      border-bottom: 1px solid var(--border-light);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    body.dark-mode .trust-strip {
+      background: #101014;
+      border-bottom-color: var(--border-dark);
+    }
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-light);
+    }
+    body.dark-mode .trust-item {
+      color: var(--text-dark);
+    }
+    .trust-item i {
+      font-size: 18px;
+    }
+
+    /* Search & Filters */
     .filters-container {
       max-width: 1200px;
       margin: 24px auto;
@@ -168,16 +273,64 @@
       align-items: center;
       justify-content: space-between;
     }
+    .search-bar {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      background: var(--card-light);
+      border: 1.5px solid var(--border-light);
+      border-radius: 12px;
+      overflow: hidden;
+      padding: 6px;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    body.dark-mode .search-bar {
+      background: #141416;
+      border-color: var(--border-dark);
+    }
+    .search-bar:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(82, 39, 204, 0.12);
+    }
+    .search-input {
+      flex: 1;
+      border: none;
+      padding: 14px 18px;
+      font-size: 15px;
+      outline: none;
+      background: transparent;
+      color: var(--text-light);
+    }
+    body.dark-mode .search-input {
+      color: var(--text-dark);
+    }
+    .search-btn {
+      background: var(--primary);
+      color: #FFFFFF;
+      border: none;
+      padding: 0 26px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .search-btn:hover {
+      background: var(--primary-hover);
+    }
+
     .filter-pills {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       overflow-x: auto;
-      padding-bottom: 8px;
+      padding-bottom: 6px;
       scrollbar-width: none;
     }
     .filter-pills::-webkit-scrollbar { display: none; }
     .pill {
-      padding: 8px 16px;
+      padding: 8px 18px;
       border-radius: 20px;
       border: 1px solid var(--border-light);
       background: var(--card-light);
@@ -185,26 +338,35 @@
       cursor: pointer;
       white-space: nowrap;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
+      transition: all 0.15s ease;
     }
     body.dark-mode .pill {
       border-color: var(--border-dark);
       background: var(--card-dark);
       color: var(--text-dark);
     }
-    .pill.active, .pill:hover {
-      background: var(--primary);
-      color: white;
+    .pill:hover {
       border-color: var(--primary);
+      color: var(--primary);
     }
+    .pill.active {
+      background: var(--primary);
+      color: #FFFFFF;
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(82, 39, 204, 0.25);
+    }
+
     .select-filter {
-      padding: 8px 12px;
-      border-radius: 4px;
+      padding: 9px 14px;
+      border-radius: 8px;
       border: 1px solid var(--border-light);
       background: var(--card-light);
       color: var(--text-light);
       outline: none;
       cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
     }
     body.dark-mode .select-filter {
       border-color: var(--border-dark);
@@ -213,150 +375,628 @@
     }
 
     /* Sections */
-    .section-container {
+    .ln-section {
       max-width: 1200px;
-      margin: 40px auto;
-      padding: 0 24px;
+      margin: 40px auto 0;
     }
-    .section-title {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .ln-section-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 4px;
+      color: var(--text-light);
+    }
+    body.dark-mode .ln-section-title {
+      color: var(--text-dark);
+    }
+    .ln-section-lead {
+      color: var(--color-text-muted, #6B7280);
+      font-size: 13.5px;
+      margin: 0 0 18px;
     }
 
-    /* Grid & Cards */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 24px;
+    .ln-rail {
+      display: flex;
+      gap: 18px;
+      overflow-x: auto;
+      padding: 6px 24px 20px;
+      scroll-snap-type: x mandatory;
     }
-    .card {
+    .ln-rail::-webkit-scrollbar { height: 6px; }
+    .ln-rail::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 8px; }
+    body.dark-mode .ln-rail::-webkit-scrollbar-thumb { background: #2A2A2E; }
+
+    .ln-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 20px;
+      padding: 0 24px 12px;
+    }
+
+    /* Event Card */
+    .poster-card {
+      flex: 0 0 250px;
+      scroll-snap-align: start;
       background: var(--card-light);
       border: 1px solid var(--border-light);
-      border-radius: 8px;
+      border-radius: 14px;
       overflow: hidden;
+      text-decoration: none;
+      color: inherit;
       display: flex;
       flex-direction: column;
-      transition: transform 0.2s, box-shadow 0.2s;
-      cursor: pointer;
+      position: relative;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
     }
-    body.dark-mode .card {
+    body.dark-mode .poster-card {
       background: var(--card-dark);
       border-color: var(--border-dark);
     }
-    .card:hover {
+    .poster-card:hover {
       transform: translateY(-4px);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+      border-color: #A78BFA;
+      box-shadow: 0 12px 24px -8px rgba(82, 39, 204, 0.15);
     }
-    body.dark-mode .card:hover {
-      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-    }
-    .card-img-wrapper {
+    .poster-media {
       position: relative;
-      height: 160px;
-      background: #E0E0E0;
-    }
-    .card-img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      aspect-ratio: 4 / 5;
+      background: linear-gradient(135deg, #E0E7FF 0%, #EDE9FE 100%);
+      background-size: cover;
+      background-position: center;
     }
-    .badge-verified {
+    body.dark-mode .poster-media {
+      background: linear-gradient(135deg, #1E1B4B 0%, #2E1065 100%);
+    }
+    .card-category-pill {
       position: absolute;
-      top: 8px;
-      left: 8px;
-      background: var(--primary);
-      color: white;
+      top: 10px;
+      left: 10px;
+      z-index: 3;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
       padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      z-index: 10;
+      border-radius: 6px;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.95);
+      color: #431EAF;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
     }
-    .badge-status {
+    body.dark-mode .card-category-pill {
+      background: rgba(20, 20, 22, 0.9);
+      color: #C4B5FD;
+    }
+    .ln-badge {
       position: absolute;
-      top: 8px;
-      right: 8px;
+      z-index: 3;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
       padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: bold;
-      color: white;
-      z-index: 10;
-    }
-    .status-onsale { background: var(--primary); }
-    .status-comingsoon { background: var(--accent); }
-    .status-soldout { background: #E74C3C; }
-    
-    .card-content {
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-    }
-    .card-date {
-      font-size: 12px;
-      color: var(--primary);
-      font-weight: bold;
-      margin-bottom: 8px;
+      border-radius: 6px;
       text-transform: uppercase;
     }
-    .card-title {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      line-height: 1.4;
+    .ln-badge--status {
+      top: 10px;
+      right: 10px;
+      background: rgba(17, 24, 39, 0.85);
+      color: #FFFFFF;
+    }
+    .ln-badge--radar {
+      bottom: 10px;
+      left: 10px;
+      background: linear-gradient(135deg, #0284C7, #0369A1);
+      color: #FFFFFF;
+      font-size: 9px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .poster-body {
+      padding: 14px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex: 1;
+    }
+    .poster-date {
+      font-size: 11px;
+      color: var(--primary);
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .poster-title {
+      font-size: 14.5px;
+      font-weight: 800;
+      line-height: 1.35;
+      color: var(--text-light);
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-    .card-venue {
-      font-size: 13px;
-      color: #666;
+    body.dark-mode .poster-title {
+      color: var(--text-dark);
+    }
+    .poster-sub {
+      font-size: 12px;
+      color: var(--color-text-muted, #6B7280);
+      line-height: 1.4;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .poster-price-row {
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    body.dark-mode .poster-price-row {
+      border-top-color: var(--border-dark);
+    }
+    .poster-price {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.02em;
+    }
+    .badge-card-trust {
+      font-size: 11px;
+      font-weight: 700;
+      color: #047857;
+      background: #ECFDF5;
+      padding: 3px 7px;
+      border-radius: 4px;
+      border: 1px solid #A7F3D0;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+    }
+    body.dark-mode .badge-card-trust {
+      background: rgba(4, 120, 87, 0.15);
+      border-color: rgba(4, 120, 87, 0.4);
+    }
+    .card-pic-cue {
+      font-size: 10.5px;
+      color: #047857;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .ln-attribution {
+      max-width: 1200px;
+      margin: 36px auto 52px;
+      padding: 16px 20px;
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      background: var(--card-light);
+      color: var(--color-text-muted, #6B7280);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+    body.dark-mode .ln-attribution {
+      border-color: var(--border-dark);
+      background: var(--card-dark);
+    }
+    .ln-attribution strong { color: var(--text-light); }
+    body.dark-mode .ln-attribution strong { color: var(--text-dark); }
+    .ln-empty { text-align: center; padding: 64px 24px; color: var(--color-text-muted, #6B7280); }
+
+    /* Landing Sections */
+    .landing-section {
+      max-width: 1200px;
+      margin: 64px auto 0;
+      padding: 0 24px;
+    }
+    .landing-section-header {
+      margin-bottom: 28px;
+    }
+    .landing-kicker {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+    .landing-title {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px;
+      color: var(--text-light);
+    }
+    body.dark-mode .landing-title { color: var(--text-dark); }
+    .landing-lead {
+      font-size: 14px;
+      color: var(--color-text-muted, #6B7280);
+      margin: 0;
+      max-width: 640px;
+      line-height: 1.6;
+    }
+
+    /* Trust Architecture Grid */
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .trust-card {
+      background: var(--card-light);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 24px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    body.dark-mode .trust-card {
+      background: var(--card-dark);
+      border-color: var(--border-dark);
+    }
+    .trust-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    }
+    .trust-card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: var(--color-brand-primary-soft, #F3EFFE);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
       margin-bottom: 16px;
     }
-    body.dark-mode .card-venue { color: #AAA; }
-    .card-footer {
-      margin-top: auto;
-      border-top: 1px solid var(--border-light);
-      padding-top: 16px;
+    body.dark-mode .trust-card-icon {
+      background: rgba(82, 39, 204, 0.18);
+      color: #C4B5FD;
+    }
+    .trust-card-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin: 0 0 8px;
+      color: var(--text-light);
+    }
+    body.dark-mode .trust-card-title { color: var(--text-dark); }
+    .trust-card-desc {
+      font-size: 13px;
+      color: var(--color-text-muted, #6B7280);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* Venue PIC Highlight Feature */
+    .venue-pic-box {
+      background: linear-gradient(135deg, #1E0B4B 0%, #3B169E 100%);
+      border-radius: 16px;
+      padding: 36px 32px;
+      color: #FFFFFF;
+      display: flex;
+      gap: 28px;
+      align-items: center;
+    }
+    .venue-pic-icon {
+      width: 68px;
+      height: 68px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      flex-shrink: 0;
+      color: #FCD34D;
+    }
+    .venue-pic-title {
+      font-size: 24px;
+      font-weight: 800;
+      margin: 6px 0 10px;
+      color: #FFFFFF;
+      letter-spacing: -0.02em;
+    }
+    .venue-pic-desc {
+      font-size: 14px;
+      color: #E2E8F0;
+      line-height: 1.6;
+      margin: 0 0 16px;
+      max-width: 680px;
+    }
+    .venue-pic-badges {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .venue-pic-badge {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Comparison Table */
+    .comparison-table-wrapper {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border-light);
+      background: var(--card-light);
+    }
+    body.dark-mode .comparison-table-wrapper {
+      border-color: var(--border-dark);
+      background: var(--card-dark);
+    }
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      text-align: left;
+    }
+    .comparison-table th {
+      padding: 16px 20px;
+      font-weight: 800;
+      background: rgba(82, 39, 204, 0.04);
+      border-bottom: 1px solid var(--border-light);
+    }
+    body.dark-mode .comparison-table th {
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom-color: var(--border-dark);
+    }
+    .comparison-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-light);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    body.dark-mode .comparison-table td {
+      border-bottom-color: var(--border-dark);
+    }
+    .comparison-table tr:last-child td {
+      border-bottom: none;
+    }
+    .col-tikum {
+      background: rgba(82, 39, 204, 0.04);
+      font-weight: 600;
+      color: var(--primary);
+    }
+    body.dark-mode .col-tikum {
+      background: rgba(82, 39, 204, 0.1);
+      color: #C4B5FD;
+    }
+
+    /* How It Works Grid */
+    .how-grid-cols {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .how-column {
+      background: var(--card-light);
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 24px;
+    }
+    body.dark-mode .how-column {
+      background: var(--card-dark);
+      border-color: var(--border-dark);
+    }
+    .how-col-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      color: var(--text-light);
+    }
+    body.dark-mode .how-col-header { color: var(--text-dark); }
+    .how-step {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .how-step:last-child { margin-bottom: 0; }
+    .how-step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--color-brand-primary-soft, #F3EFFE);
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    body.dark-mode .how-step-num {
+      background: rgba(82, 39, 204, 0.2);
+      color: #C4B5FD;
+    }
+    .how-step-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 3px;
+      color: var(--text-light);
+    }
+    body.dark-mode .how-step-title { color: var(--text-dark); }
+    .how-step-desc {
+      font-size: 12.5px;
+      color: var(--color-text-muted, #6B7280);
+      line-height: 1.5;
+    }
+
+    /* Seller Callout */
+    .seller-callout-box {
+      background: var(--card-light);
+      border: 1.5px solid #DDD6FE;
+      border-radius: 16px;
+      padding: 36px 32px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 24px;
+      box-shadow: 0 4px 20px rgba(82, 39, 204, 0.06);
     }
-    body.dark-mode .card-footer { border-color: var(--border-dark); }
-    .card-price {
-      font-size: 14px;
-      font-weight: 700;
-    }
-    .btn-cta {
-      background: transparent;
-      color: var(--primary);
-      border: 1px solid var(--primary);
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 13px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: background 0.2s, color 0.2s;
-    }
-    .card:hover .btn-cta {
-      background: var(--primary);
-      color: white;
+    body.dark-mode .seller-callout-box {
+      background: var(--card-dark);
+      border-color: #4C1D95;
     }
 
-    /* Modal */
+    /* FAQ */
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .faq-card {
+      background: var(--card-light);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    body.dark-mode .faq-card {
+      background: var(--card-dark);
+      border-color: var(--border-dark);
+    }
+    .faq-question {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--text-light);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    body.dark-mode .faq-question { color: var(--text-dark); }
+    .faq-answer {
+      font-size: 13px;
+      color: var(--color-text-muted, #6B7280);
+      line-height: 1.6;
+    }
+
+    /* Final CTA */
+    .final-cta-box {
+      background: linear-gradient(135deg, #1A093E 0%, #30106E 50%, #5227CC 100%);
+      border-radius: 16px;
+      padding: 50px 32px;
+      text-align: center;
+      color: #FFFFFF;
+    }
+
+    /* Auth & Dropdowns */
+    .btn-auth-header {
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #FFFFFF;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .btn-auth-header:hover {
+      background: var(--primary-hover);
+    }
+    .user-dropdown-container {
+      position: relative;
+    }
+    .btn-user-dropdown {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+      background: var(--card-light);
+      color: var(--text-light);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      max-width: 220px;
+    }
+    body.dark-mode .btn-user-dropdown {
+      border-color: var(--border-dark);
+      background: var(--card-dark);
+      color: var(--text-dark);
+    }
+    .user-dropdown-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      background: var(--card-light);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      width: 210px;
+      z-index: 1000;
+      padding: 6px 0;
+      display: none;
+    }
+    body.dark-mode .user-dropdown-menu {
+      background: var(--card-dark);
+      border-color: var(--border-dark);
+    }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: inherit;
+      text-decoration: none;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      box-sizing: border-box;
+      transition: background 0.15s;
+    }
+    .dropdown-item:hover {
+      background: var(--color-brand-primary-soft, #F3EFFE);
+      color: var(--primary);
+    }
+    .dropdown-divider {
+      height: 1px;
+      background: var(--border-light);
+      margin: 6px 0;
+    }
+    body.dark-mode .dropdown-divider { background: var(--border-dark); }
+    .dropdown-logout { color: #DC2626 !important; }
+
+    /* Modals */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
       display: none;
       align-items: center;
       justify-content: center;
@@ -366,9 +1006,10 @@
       background: var(--card-light);
       color: var(--text-light);
       padding: 24px;
-      border-radius: 8px;
-      max-width: 400px;
+      border-radius: 14px;
+      max-width: 420px;
       width: 90%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
     }
     body.dark-mode .modal-content {
       background: var(--card-dark);
@@ -382,7 +1023,7 @@
     }
     .modal-title {
       font-size: 18px;
-      font-weight: bold;
+      font-weight: 800;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -404,154 +1045,10 @@
       align-items: center;
       gap: 8px;
       margin-bottom: 12px;
-      font-size: 14px;
+      font-size: 13.5px;
     }
-    .provenance-list i {
-      color: var(--primary);
-    }
+    .provenance-list i { color: #047857; }
 
-    /* Trust Signals */
-    .trust-strip {
-      background: #F8F9FA;
-      padding: 24px;
-      display: flex;
-      justify-content: space-around;
-      flex-wrap: wrap;
-      gap: 16px;
-      border-bottom: 1px solid var(--border-light);
-    }
-    body.dark-mode .trust-strip {
-      background: #151515;
-      border-bottom-color: var(--border-dark);
-    }
-    .trust-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 14px;
-      font-weight: 600;
-    }
-    .trust-item i {
-      font-size: 24px;
-      color: var(--primary);
-    }
-
-    /* Auth Header & Dropdown */
-    .btn-auth-header {
-      padding: 8px 16px;
-      border-radius: 6px;
-      background: var(--primary);
-      color: #FFFFFF;
-      font-size: 13px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      transition: background 0.2s;
-    }
-    .btn-auth-header:hover {
-      background: var(--primary-hover);
-    }
-    .user-dropdown-container {
-      position: relative;
-    }
-    .btn-user-dropdown {
-      padding: 8px 14px;
-      border-radius: 6px;
-      border: 1px solid var(--border-light);
-      background: var(--card-light);
-      color: var(--text-light);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap;
-      max-width: 220px;
-    }
-    body.dark-mode .btn-user-dropdown {
-      border-color: var(--border-dark);
-      background: var(--card-dark);
-      color: var(--text-dark);
-    }
-    .btn-user-dropdown:hover {
-      border-color: var(--primary);
-    }
-    .user-dropdown-menu {
-      position: absolute;
-      right: 0;
-      top: calc(100% + 8px);
-      background: var(--card-light);
-      border: 1px solid var(--border-light);
-      border-radius: 8px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
-      width: 210px;
-      z-index: 1000;
-      padding: 6px 0;
-      display: none;
-    }
-    body.dark-mode .user-dropdown-menu {
-      background: var(--card-dark);
-      border-color: var(--border-dark);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    }
-    .dropdown-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 16px;
-      font-size: 13px;
-      font-weight: 500;
-      color: inherit;
-      text-decoration: none;
-      border: none;
-      background: none;
-      width: 100%;
-      text-align: left;
-      cursor: pointer;
-      box-sizing: border-box;
-      transition: background 0.15s;
-    }
-    .dropdown-item:hover {
-      background: rgba(29, 185, 84, 0.08);
-      color: var(--primary);
-    }
-    .dropdown-item i {
-      width: 16px;
-      color: #6B7280;
-    }
-    .dropdown-item:hover i {
-      color: var(--primary);
-    }
-    .dropdown-divider {
-      height: 1px;
-      background: var(--border-light);
-      margin: 6px 0;
-    }
-    body.dark-mode .dropdown-divider {
-      background: var(--border-dark);
-    }
-    .dropdown-logout {
-      color: #DC2626 !important;
-    }
-    .dropdown-logout i {
-      color: #DC2626 !important;
-    }
-    .dropdown-logout:hover {
-      background: rgba(220, 38, 38, 0.08) !important;
-    }
-
-    /* Auth Modal */
-    .auth-modal-box {
-      max-width: 420px;
-      width: 90%;
-      border-radius: 12px;
-      padding: 28px 24px;
-    }
     .auth-input-field {
       width: 100%;
       padding: 12px 14px;
@@ -564,13 +1061,7 @@
       outline: none;
       margin-top: 4px;
     }
-    body.dark-mode .auth-input-field {
-      border-color: var(--border-dark);
-    }
-    .auth-input-field:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15);
-    }
+    body.dark-mode .auth-input-field { border-color: var(--border-dark); }
     .btn-auth-primary {
       width: 100%;
       padding: 12px;
@@ -579,363 +1070,100 @@
       border: none;
       border-radius: 8px;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      margin-top: 12px;
+      margin-top: 14px;
     }
-    .btn-auth-primary:hover {
-      background: var(--primary-hover);
+    .btn-auth-primary:hover { background: var(--primary-hover); }
+
+    /* Footer */
+    .site-footer {
+      background: var(--card-light);
+      border-top: 1px solid var(--border-light);
+      padding: 48px 24px 32px;
+      margin-top: 80px;
     }
-    .btn-auth-primary:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    body.dark-mode .site-footer {
+      background: #0B0B0C;
+      border-top-color: var(--border-dark);
     }
-    .btn-auth-secondary {
-      padding: 10px 20px;
-      background: transparent;
-      border: 1px solid var(--border-light);
-      color: inherit;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 40px;
     }
-    body.dark-mode .btn-auth-secondary {
-      border-color: var(--border-dark);
+    .footer-col h4 {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-light);
+      margin: 0 0 14px;
     }
+    body.dark-mode .footer-col h4 { color: var(--text-dark); }
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .footer-links a {
+      color: var(--color-text-muted, #6B7280);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .footer-links a:hover { color: var(--primary); }
+
+    /* Mobile Bottom Navigation */
+    .mobile-bottom-nav { display: none; }
 
     @media (max-width: 768px) {
-      .hero h1 { font-size: 28px; }
-      .search-bar { flex-direction: column; }
-      .search-btn { padding: 12px; }
-      .filters-container { flex-direction: column; align-items: stretch; }
-    }
-
-    /* ==================================================================
-       Live Nation Asia-inspired discovery surface
-       (dark-first poster-led rails; reference: https://www.livenation.asia/)
-       ================================================================== */
-    body { background: #0B0B0C; color: #F5F5F5; }
-    .ln-nav-links { display: flex; gap: 18px; align-items: center; }
-    .ln-nav-link {
-      color: #E5E7EB; text-decoration: none; font-size: 12px; font-weight: 800;
-      letter-spacing: .06em; text-transform: uppercase;
-    }
-    .ln-nav-link:hover { color: var(--primary); }
-
-    .ln-hero-feature {
-      position: relative; min-height: 430px; display: flex; align-items: flex-end;
-      background-color: #101012; background-size: cover; background-position: center 25%;
-    }
-    .ln-hero-feature::after {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.6) 45%, rgba(11,11,12,.96) 100%);
-    }
-    .ln-hero-inner {
-      position: relative; z-index: 2; padding: 34px 24px 38px;
-      max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box;
-    }
-    .ln-kicker {
-      color: var(--primary); font-weight: 900; letter-spacing: .16em;
-      text-transform: uppercase; font-size: 11px; margin-bottom: 10px;
-    }
-    .ln-hero-title { font-size: 44px; line-height: 1.05; font-weight: 900; margin: 0 0 12px; }
-    .ln-hero-meta { color: #D1D5DB; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
-    .ln-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
-    .ln-btn {
-      display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px;
-      border-radius: 4px; font-weight: 800; font-size: 12px; letter-spacing: .07em;
-      text-transform: uppercase; text-decoration: none; border: none; cursor: pointer;
-    }
-    .ln-btn-primary { background: var(--primary); color: #04220F; }
-    .ln-btn-primary:hover { background: var(--primary-hover); }
-    .ln-btn-ghost { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.3); }
-    .ln-btn-ghost:hover { background: rgba(255,255,255,.2); }
-
-    .ln-section { max-width: 1200px; margin: 34px auto 0; }
-    .ln-section-title {
-      font-size: 21px; font-weight: 900; letter-spacing: .02em;
-      text-transform: uppercase; margin: 0 0 4px;
-    }
-    .ln-section-lead { color: #9CA3AF; font-size: 13px; margin: 0 0 16px; }
-
-    .ln-rail {
-      display: flex; gap: 16px; overflow-x: auto; padding: 4px 24px 16px;
-      scroll-snap-type: x mandatory;
-    }
-    .ln-rail::-webkit-scrollbar { height: 8px; }
-    .ln-rail::-webkit-scrollbar-thumb { background: #2A2A2E; border-radius: 8px; }
-    .ln-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-      gap: 18px; padding: 0 24px 8px;
-    }
-
-    .poster-card {
-      flex: 0 0 236px; scroll-snap-align: start; background: #141416;
-      border: 1px solid #232326; border-radius: 10px; overflow: hidden;
-      text-decoration: none; color: inherit; display: flex; flex-direction: column;
-      position: relative; transition: transform .18s ease, border-color .18s ease;
-    }
-    .poster-card:hover { transform: translateY(-4px); border-color: var(--primary); }
-    .poster-media {
-      position: relative; width: 100%; aspect-ratio: 4 / 5;
-      background: linear-gradient(135deg, #1DB954, #0E6B33);
-      background-size: cover; background-position: center;
-    }
-    .poster-body { padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
-    .poster-date { font-size: 11px; color: var(--primary); font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
-    .poster-title {
-      font-size: 14px; font-weight: 800; line-height: 1.3;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-    }
-    .poster-sub { font-size: 12px; color: #9CA3AF; line-height: 1.4; }
-    .poster-price { margin-top: auto; font-size: 12px; font-weight: 800; color: #E5E7EB; }
-    .ln-badge {
-      position: absolute; z-index: 3; font-size: 10px; font-weight: 900;
-      letter-spacing: .08em; padding: 4px 8px; border-radius: 3px; text-transform: uppercase;
-    }
-    .ln-badge--verified { top: 10px; left: 10px; background: var(--primary); color: #04220F; }
-    .ln-badge--status {
-      top: 10px; right: 10px; background: rgba(0,0,0,.72); color: #fff;
-      border: 1px solid rgba(255,255,255,.28);
-    }
-    .ln-badge--radar {
-      bottom: 10px; left: 10px;
-      background: linear-gradient(135deg, #0284C7, #0369A1);
-      color: #FFFFFF; font-size: 9px; font-weight: 800; letter-spacing: .05em;
-      border: 1px solid rgba(255,255,255,.3); box-shadow: 0 2px 8px rgba(0,0,0,.5);
-      display: inline-flex; align-items: center; gap: 4px;
-    }
-    .ln-attribution {
-      max-width: 1200px; margin: 30px auto 52px; padding: 14px 18px;
-      border: 1px solid #232326; border-radius: 8px; background: #101012;
-      color: #9CA3AF; font-size: 12px; line-height: 1.8;
-    }
-    .ln-attribution strong { color: #E5E7EB; }
-    .ln-empty { text-align: center; padding: 64px 24px; color: #9CA3AF; }
-
-    /* Mobile Bottom Navigation Bar */
-    .mobile-bottom-nav {
-      display: none;
-    }
-
-    @media (max-width: 768px) {
-      body {
-        padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
-      }
-      .site-header {
-        padding: 12px 16px;
-      }
-      .brand-title {
-        font-size: 18px;
-      }
-      .header-actions {
-        gap: 6px;
-      }
-      .header-actions .select-filter {
-        padding: 6px 8px;
-        font-size: 12px;
-      }
-      .btn-auth-header {
-        padding: 6px 12px;
-        font-size: 12px;
-      }
-      .btn-user-dropdown {
-        padding: 6px 10px;
-        font-size: 12px;
-        max-width: 130px;
-      }
-      .header-location-badge {
-        display: none !important;
-      }
-      .ln-hero-feature {
-        min-height: 320px;
-      }
-      .ln-hero-inner {
-        padding: 24px 16px 28px;
-      }
-      .ln-hero-title {
-        font-size: clamp(22px, 6vw, 32px);
-        line-height: 1.15;
-        margin-bottom: 8px;
-      }
-      .ln-hero-meta {
-        font-size: 12px;
-        margin-bottom: 16px;
-        line-height: 1.5;
-      }
-      .ln-hero-actions {
-        display: flex;
-        gap: 8px;
-        width: 100%;
-      }
-      .ln-hero-actions .ln-btn {
-        flex: 1;
-        justify-content: center;
-        text-align: center;
-        padding: 11px 12px;
-        font-size: 11px;
-      }
-      .trust-strip {
-        padding: 12px 16px;
-        display: flex;
-        flex-direction: row;
-        overflow-x: auto;
-        gap: 14px;
-        scrollbar-width: none;
-        -webkit-overflow-scrolling: touch;
-      }
+      body { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+      .site-header { padding: 12px 16px; }
+      .ln-nav-links { display: none; }
+      .header-location-badge { display: none !important; }
+      .ln-hero-feature { min-height: 320px; }
+      .ln-hero-inner { padding: 24px 16px 28px; }
+      .ln-hero-title { font-size: clamp(22px, 6vw, 32px); }
+      .trust-strip { padding: 12px 16px; gap: 16px; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
       .trust-strip::-webkit-scrollbar { display: none; }
-      .trust-item {
-        font-size: 12px;
-        white-space: nowrap;
-        gap: 6px;
-      }
-      .trust-item i {
-        font-size: 16px;
-      }
-      .filters-container {
-        padding: 0 16px;
-        margin: 14px auto;
-        gap: 10px;
-      }
-      .search-bar {
-        flex-direction: row !important;
-        width: 100%;
-        box-sizing: border-box;
-      }
-      .search-input {
-        padding: 10px 12px;
-        font-size: 14px;
-      }
-      .search-btn {
-        padding: 8px 14px !important;
-        font-size: 12px;
-        white-space: nowrap;
-      }
-      .filters-row-selects {
-        display: flex;
-        gap: 8px;
-        width: 100%;
-      }
-      .filters-row-selects .select-filter {
-        flex: 1;
-        min-width: 0;
-        padding: 9px 10px;
-        font-size: 13px;
-      }
-      .filter-pills {
-        gap: 8px;
-        padding-bottom: 4px;
-      }
-      .pill {
-        padding: 7px 14px;
-        font-size: 12px;
-      }
-      .ln-section {
-        margin: 22px auto 0;
-      }
-      .ln-section > div:first-child {
-        padding: 0 16px !important;
-      }
-      .ln-section-title {
-        font-size: 18px;
-      }
-      .ln-section-lead {
-        font-size: 12px;
-        margin-bottom: 12px;
-      }
-      .ln-rail {
-        padding: 4px 16px 16px;
-        gap: 12px;
-        scroll-padding: 0 16px;
-      }
-      .poster-card {
-        flex: 0 0 185px;
-        border-radius: 8px;
-        -webkit-tap-highlight-color: transparent;
-      }
-      .poster-card:active {
-        transform: scale(0.97);
-        border-color: var(--primary);
-      }
-      .poster-body {
-        padding: 10px 12px 14px;
-        gap: 4px;
-      }
-      .poster-date {
-        font-size: 10px;
-      }
-      .poster-title {
-        font-size: 13px;
-        line-height: 1.25;
-      }
-      .poster-sub {
-        font-size: 11px;
-      }
-      .poster-price {
-        font-size: 11px;
-      }
-      .ln-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-        padding: 0 16px 8px;
-      }
-      .ln-nav-links {
-        display: none;
-      }
-      .ln-attribution {
-        margin: 20px 16px 36px;
-        padding: 12px 14px;
-        font-size: 11px;
-        line-height: 1.6;
-      }
+      .trust-item { white-space: nowrap; font-size: 12px; }
+      .filters-container { padding: 0 16px; margin: 16px auto; gap: 12px; }
+      .search-bar { width: 100%; box-sizing: border-box; }
+      .search-input { padding: 10px 12px; font-size: 14px; }
+      .search-btn { padding: 0 16px; font-size: 13px; }
+      .filters-row-selects { width: 100%; display: flex; gap: 8px; }
+      .filters-row-selects .select-filter { flex: 1; }
+      .ln-rail { padding: 4px 16px 16px; gap: 14px; }
+      .poster-card { flex: 0 0 190px; }
+      .ln-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; padding: 0 16px 8px; }
+      .venue-pic-box { flex-direction: column; text-align: center; padding: 28px 20px; }
+      .venue-pic-icon { margin: 0 auto; }
+      .venue-pic-badges { justify-content: center; }
+      .seller-callout-box { flex-direction: column; text-align: center; padding: 28px 20px; }
+      .footer-container { grid-template-columns: 1fr; gap: 28px; }
 
-      /* Native-like Bottom Sheet Modals on Mobile */
-      .modal-overlay {
-        align-items: flex-end !important;
-        padding: 0 !important;
-      }
-      .modal-content, .auth-modal-box {
-        max-width: 100% !important;
-        width: 100% !important;
-        border-radius: 18px 18px 0 0 !important;
-        padding: 16px 18px calc(24px + env(safe-area-inset-bottom, 0px)) !important;
-        animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        box-sizing: border-box !important;
-      }
-      @keyframes slideUpSheet {
-        from { transform: translateY(100%); opacity: 0.8; }
-        to { transform: translateY(0); opacity: 1; }
-      }
-      .bottom-sheet-handle {
-        width: 38px;
-        height: 4px;
-        background: rgba(255,255,255,0.28);
-        border-radius: 2px;
-        margin: 0 auto 12px;
-      }
-
-      /* Mobile Bottom Navigation */
       .mobile-bottom-nav {
         display: flex;
         position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        bottom: 0; left: 0; right: 0;
         height: 56px;
         padding-bottom: env(safe-area-inset-bottom, 0px);
-        background: rgba(14, 14, 16, 0.95);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-top: 1px solid var(--border-light);
         z-index: 999;
         justify-content: space-around;
         align-items: center;
-        box-sizing: content-box;
+      }
+      body.dark-mode .mobile-bottom-nav {
+        background: rgba(14, 14, 16, 0.96);
+        border-top-color: var(--border-dark);
       }
       .mobile-nav-item {
         flex: 1;
@@ -944,97 +1172,84 @@
         align-items: center;
         justify-content: center;
         gap: 3px;
-        color: #9CA3AF;
+        color: var(--color-text-muted, #6B7280);
         text-decoration: none;
         background: none;
         border: none;
         padding: 6px 0;
         font-size: 10px;
         font-weight: 700;
-        letter-spacing: 0.02em;
         cursor: pointer;
-        transition: color 0.15s, transform 0.15s;
-        -webkit-tap-highlight-color: transparent;
       }
-      .mobile-nav-item i {
-        font-size: 17px;
-      }
-      .mobile-nav-item.active,
-      .mobile-nav-item:active {
-        color: var(--primary);
-      }
-      .mobile-nav-item:active {
-        transform: scale(0.92);
-      }
-    }
-
-    @media (max-width: 360px) {
-      .ln-grid {
-        grid-template-columns: 1fr;
-      }
-      .poster-card {
-        flex: 0 0 165px;
-      }
+      .mobile-nav-item i { font-size: 17px; }
+      .mobile-nav-item.active { color: var(--primary); }
     }
   </style>
 </head>
 <body>
 
-  <header class="site-header" style="background: rgba(4, 3, 10, 0.94); border-bottom: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px);">
-    <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
+  <!-- Site Header -->
+  <header class="site-header">
+    <a href="/" class="brand">
       <img src="/assets/tikum-mark-p2p.svg" class="brand-logo" width="34" height="34" alt="Tikum">
       <div>
         <div class="brand-title">Tikum</div>
-        <div class="brand-subtitle" style="font-size:10px; color:#94a3b8; font-weight:600; line-height:1;" data-i18n="hero.headline">Verified Resale. Real Support.</div>
+        <div class="brand-subtitle">Verified Ticket Marketplace</div>
       </div>
     </a>
     <nav class="ln-nav-links">
-      <a class="ln-nav-link" href="#upcoming">Upcoming Shows</a>
+      <a class="ln-nav-link" href="#upcoming">Semua Event</a>
       <a class="ln-nav-link" href="#" onclick="applyNavCategory('MUSIC'); return false;">Konser</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('FESTIVAL'); return false;">Festival</a>
       <a class="ln-nav-link" href="#" onclick="applyNavCategory('SPORT'); return false;">Olahraga</a>
-      <a class="ln-nav-link" href="/blog">Blog</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('COMEDY'); return false;">Stand Up Comedy</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('EXHIBITION'); return false;">Pameran</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('HIBURAN'); return false;">Hiburan Lainnya</a>
       <a class="ln-nav-link" href="/faq">Bantuan</a>
     </nav>
-    <div class="header-actions" style="display:flex; align-items:center; gap:10px;">
-      <span class="ln-nav-link header-location-badge" style="color:#94a3b8; cursor:default; display:inline-flex; align-items:center; gap:6px;"><img src="/assets/tikum-mark-pin.svg" width="14" height="14" alt="Indonesia"> Indonesia</span>
+    <div class="header-actions">
+      <span class="ln-nav-link header-location-badge" style="cursor:default; display:inline-flex; align-items:center; gap:6px;">
+        <img src="/assets/tikum-mark-pin.svg" width="14" height="14" alt="Indonesia"> Indonesia
+      </span>
       <div id="authHeaderContainer">
         <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()">Login / Sign Up</button>
       </div>
-      <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Dark Mode"><i class="fa-solid fa-moon"></i></button>
-      <button class="select-filter" onclick="toggleLang()" id="langToggle" title="Toggle Language">ID</button>
+      <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Toggle Theme" style="padding:6px 10px;">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <button class="select-filter" onclick="toggleLang()" id="langToggle" title="Language" style="padding:6px 10px;">ID</button>
     </div>
   </header>
 
-  <!-- Featured event hero (Live Nation Asia style: poster-led "Just Announced") -->
+  <!-- Featured Event Hero -->
   <section id="heroFeature" class="ln-hero-feature"></section>
 
-  <div class="trust-strip" style="background: #0E121E; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-    <div class="trust-item"><i class="fa-solid fa-certificate" style="color:var(--primary);"></i> <span data-i18n="trust.pillarVerified">Listing Terverifikasi</span></div>
-    <div class="trust-item"><img src="/assets/tikum-mark-pin.svg" width="14" height="14" alt="Venue Assist"> <span data-i18n="trust.pillarVenue">Dukungan Venue PIC (Opsional)</span></div>
-    <div class="trust-item"><i class="fa-solid fa-vault" style="color:var(--cyan);"></i> <span data-i18n="trust.pillarProtected">Transaksi Terlindungi (Escrow)</span></div>
-    <div class="trust-item"><i class="fa-solid fa-receipt" style="color:#f59e0b;"></i> <span data-i18n="trust.pillarPricing">Harga Transparan</span></div>
-    <div class="trust-item" id="feedFreshnessItem" style="display:none;"><i class="fa-solid fa-bolt" style="color:#10b981;"></i> <span id="feedFreshnessText">Live Auto-Refresh (H+2 Expiry Engine)</span></div>
+  <!-- Trust Strip -->
+  <div class="trust-strip">
+    <div class="trust-item"><i class="fa-solid fa-certificate" style="color:var(--primary);"></i> <span>Event Terverifikasi</span></div>
+    <div class="trust-item"><i class="fa-solid fa-user-check" style="color:#047857;"></i> <span>Dukungan PIC di Venue (Event Terpilih)</span></div>
+    <div class="trust-item"><i class="fa-solid fa-vault" style="color:#2563EB;"></i> <span>Rekening Escrow Dilindungi</span></div>
+    <div class="trust-item"><i class="fa-solid fa-receipt" style="color:#D97706;"></i> <span>Harga Transparan (All-In)</span></div>
+    <div class="trust-item" id="feedFreshnessItem" style="display:none;"><i class="fa-solid fa-bolt" style="color:#047857;"></i> <span id="feedFreshnessText">Live Auto-Refresh Active</span></div>
   </div>
 
-  <!-- Search & discovery controls -->
+  <!-- Search & Discovery Controls -->
   <div class="filters-container" style="padding-top:20px;">
-    <div class="search-bar" style="flex:1; min-width:280px; background:#141416; border:1px solid #232326; border-radius:6px; margin:0; padding:6px;">
-      <input type="text" id="searchInput" class="search-input" placeholder="Cari artis, event, atau venue..." oninput="debounceSearch()" style="background:transparent; color:#F5F5F5;">
-      <button class="search-btn ln-btn ln-btn-primary" onclick="renderAllSections()"><i class="fa-solid fa-magnifying-glass"></i> Cari</button>
+    <div class="search-bar" style="flex:1; min-width:280px; margin:0;">
+      <input type="text" id="searchInput" class="search-input" placeholder="Cari konser, pertandingan, atau acara..." oninput="debounceSearch()">
+      <button class="search-btn" onclick="renderAllSections()"><i class="fa-solid fa-magnifying-glass"></i> Cari</button>
     </div>
   </div>
 
   <div class="filters-container" id="upcoming">
     <div class="filter-pills">
-      <div class="pill active" data-category="" onclick="setCategory(this, '')">Semua Kategori</div>
+      <div class="pill active" data-category="" onclick="setCategory(this, '')">Semua Event</div>
       <div class="pill" data-category="MUSIC" onclick="setCategory(this, 'MUSIC')">Konser</div>
       <div class="pill" data-category="SPORT" onclick="setCategory(this, 'SPORT')">Olahraga</div>
-      <div class="pill" data-category="THEATER" onclick="setCategory(this, 'THEATER')">Teater</div>
-      <div class="pill" data-category="FESTIVAL" onclick="setCategory(this, 'FESTIVAL')">Festival</div>
+      <div class="pill" data-category="COMEDY" onclick="setCategory(this, 'COMEDY')">Stand Up Comedy</div>
       <div class="pill" data-category="EXHIBITION" onclick="setCategory(this, 'EXHIBITION')">Pameran</div>
+      <div class="pill" data-category="HIBURAN" onclick="setCategory(this, 'HIBURAN')">Hiburan Lainnya</div>
     </div>
-    <div class="filters-row-selects" style="display:flex; gap:12px;">
+    <div class="filters-row-selects" style="display:flex; gap:10px;">
       <select id="cityFilter" class="select-filter" onchange="renderAllSections()">
         <option value="">Semua Kota</option>
         <option value="Jakarta">Jakarta</option>
@@ -1055,50 +1270,148 @@
     </div>
   </div>
 
-  <main id="mainContent">
-    <!-- Dynamic sections go here -->
-  </main>
+  <!-- Dynamic Sections -->
+  <main id="mainContent"></main>
+
+  <!-- Section 16: Trust Center -->
+  <section class="landing-section" id="trustCenter">
+    <div class="landing-section-header">
+      <div class="landing-kicker">STANDAR KEAMANAN TIKET INDONESIA</div>
+      <h2 class="landing-title">Kenapa Beli &amp; Jual Tiket di TIKUM?</h2>
+      <p class="landing-lead">Beli tiket dari orang lain tanpa rasa was-was. TIKUM membangun ekosistem pasar sekunder yang transparan, aman, dan beradab.</p>
+    </div>
+    <div class="trust-grid">
+      <div class="trust-card">
+        <div class="trust-card-icon"><i class="fa-solid fa-certificate"></i></div>
+        <h3 class="trust-card-title">Event &amp; Tiket Terverifikasi</h3>
+        <p class="trust-card-desc">Setiap event dan listing tiket diverifikasi silang dengan promotor resmi untuk mencegah peredaran barcode palsu atau duplikat.</p>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-icon"><i class="fa-solid fa-vault"></i></div>
+        <h3 class="trust-card-title">Rekening Escrow Terlindungi</h3>
+        <p class="trust-card-desc">Dana pembeli ditahan dengan aman di rekening penampungan internal (escrow) dan baru dicairkan ke penjual setelah pembeli sukses masuk venue.</p>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-icon"><i class="fa-solid fa-user-shield"></i></div>
+        <h3 class="trust-card-title">Dukungan PIC di Venue (Event Terpilih)</h3>
+        <p class="trust-card-desc">Koordinator lapangan resmi hadir di konser dan festival terkurasi untuk mendampingi penukaran wristband gelang dan asistensi turnstile gate.</p>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-icon"><i class="fa-solid fa-receipt"></i></div>
+        <h3 class="trust-card-title">Harga All-In Transparan</h3>
+        <p class="trust-card-desc">Tanpa biaya siluman saat checkout. Rincian harga penjual dan biaya platform 6% terbuka transparan sejak awal pencarian.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 17: PIC Venue Hero Feature -->
+  <section class="landing-section" id="venuePic">
+    <div class="venue-pic-box">
+      <div class="venue-pic-icon">
+        <i class="fa-solid fa-user-shield"></i>
+      </div>
+      <div class="venue-pic-content">
+        <div class="landing-kicker" style="color: #FCD34D;">LAYANAN PENDAMPINGAN LAPANGAN</div>
+        <h3 class="venue-pic-title">DUKUNGAN PIC DI VENUE PADA EVENT TERPILIH</h3>
+        <p class="venue-pic-desc">
+          Marketplace tiket dengan opsi pendampingan fisik hingga pintu masuk. Koordinator lapangan (PIC) TIKUM hadir langsung di konser dan festival terpilih untuk mendampingi pembeli saat penukaran wristband gelang dan asistensi turnstile gate jika terjadi kendala tiket.
+        </p>
+        <div class="venue-pic-badges">
+          <span class="venue-pic-badge"><i class="fa-solid fa-map-pin" style="color: #FCD34D;"></i> On-Site Coordinator</span>
+          <span class="venue-pic-badge"><i class="fa-solid fa-door-open" style="color: #34D399;"></i> Turnstile Gate Assistance</span>
+          <span class="venue-pic-badge"><i class="fa-solid fa-handshake" style="color: #60A5FA;"></i> Fast Gate Dispute Resolution</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 18: Comparison / Differentiation -->
+  <section class="landing-section" id="comparison">
+    <div class="landing-section-header">
+      <div class="landing-kicker">PERBANDINGAN KEAMANAN</div>
+      <h2 class="landing-title">Mengapa TIKUM Berbeda dari Cara Biasa?</h2>
+      <p class="landing-lead">Lihat perbandingan perlindungan transaksi di TIKUM dibandingkan pasar calo liar atau media sosial.</p>
+    </div>
+    <div class="comparison-table-wrapper">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Kebutuhan Pembeli &amp; Penjual</th>
+            <th>Calo Liar / Media Sosial (Twitter, IG)</th>
+            <th>Marketplace Biasa</th>
+            <th class="col-tikum">TIKUM — Verified Marketplace</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Keamanan Pembayaran</strong></td>
+            <td>Transfer langsung, risiko uang hilang 100%</td>
+            <td>Escrow e-commerce standar</td>
+            <td class="col-tikum"><strong>Escrow tertahan hingga pembeli sukses masuk gate</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Validitas Tiket &amp; Barcode</strong></td>
+            <td>Rawan barcode ganda &amp; screenshot palsu</td>
+            <td>Pemeriksaan bukti manual tanpa jaminan</td>
+            <td class="col-tikum"><strong>Audit trail anti-duplikasi &amp; verifikasi data resmi</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Pendampingan Hari-H di Acara</strong></td>
+            <td>Ditinggal sendirian, nomor kontak diblokir</td>
+            <td>Hanya layanan chatbot online</td>
+            <td class="col-tikum"><strong>Staf PIC TIKUM hadir di venue (event terpilih)</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Transparansi Harga</strong></td>
+            <td>Markup liar tak terkendali</td>
+            <td>Biaya admin mendadak saat checkout</td>
+            <td class="col-tikum"><strong>All-in transparan 6%, tanpa biaya kejutan</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
   <!-- How It Works Section (Dual Buyer / Seller Flows) -->
   <section class="landing-section" id="howItWorks">
     <div class="landing-section-header">
-      <div class="landing-kicker" data-i18n="howItWorksSection.kicker">Alur Transaksi Aman</div>
-      <h2 class="landing-title" data-i18n="howItWorksSection.title">Cara Kerja Pasar Tiket TIKUM</h2>
-      <p class="landing-lead" data-i18n="howItWorksSection.lead">Proses transparan yang melindungi pembeli dan penjual dari awal hingga gerbang acara.</p>
+      <div class="landing-kicker">ALUR TRANSAKSI AMAN</div>
+      <h2 class="landing-title">Cara Kerja Pasar Tiket TIKUM</h2>
+      <p class="landing-lead">Proses transparan yang melindungi pembeli dan penjual dari awal hingga gerbang acara.</p>
     </div>
     <div class="how-grid-cols">
       <!-- Buyer Flow -->
       <div class="how-column">
         <div class="how-col-header">
-          <i class="fa-solid fa-bag-shopping" style="color: var(--cyan);"></i>
-          <span data-i18n="howItWorksSection.buyerColTitle">Untuk Pembeli</span>
+          <i class="fa-solid fa-bag-shopping" style="color: var(--primary);"></i>
+          <span>Untuk Pembeli</span>
         </div>
         <div class="how-step">
           <div class="how-step-num">1</div>
           <div class="how-step-content">
-            <div class="how-step-title" data-i18n="howItWorksSection.buyerStep1">Cari Event &amp; Tiket Terverifikasi</div>
-            <div class="how-step-desc" data-i18n="howItWorksSection.buyerStep1Desc">Pilih tiket sekunder dengan harga transparan tanpa markup tersembunyi saat checkout.</div>
+            <div class="how-step-title">Pilih Event &amp; Tiket Terverifikasi</div>
+            <div class="how-step-desc">Pilih tiket dengan harga all-in transparan tanpa markup tersembunyi saat checkout.</div>
           </div>
         </div>
         <div class="how-step">
           <div class="how-step-num">2</div>
           <div class="how-step-content">
-            <div class="how-step-title" data-i18n="howItWorksSection.buyerStep2">Pembayaran Aman via Escrow</div>
-            <div class="how-step-desc" data-i18n="howItWorksSection.buyerStep2Desc">Dana Anda disimpan di rekening penampungan internal (escrow), bukan langsung ke penjual.</div>
+            <div class="how-step-title">Pembayaran Aman via Escrow</div>
+            <div class="how-step-desc">Dana Anda disimpan di rekening penampungan internal (escrow), bukan langsung ke penjual.</div>
           </div>
         </div>
         <div class="how-step">
           <div class="how-step-num">3</div>
           <div class="how-step-content">
-            <div class="how-step-title" data-i18n="howItWorksSection.buyerStep3">Dapatkan Tiket Resmi &amp; Kode Masuk</div>
-            <div class="how-step-desc" data-i18n="howItWorksSection.buyerStep3Desc">Terima e-ticket atau instruksi penukaran gelang beserta kode validasi turnstile.</div>
+            <div class="how-step-title">Terima Tiket &amp; Panduan Masuk</div>
+            <div class="how-step-desc">Dapatkan e-ticket resmi dan instruksi penukaran gelang turnstile sebelum acara.</div>
           </div>
         </div>
         <div class="how-step">
           <div class="how-step-num">4</div>
           <div class="how-step-content">
-            <div class="how-step-title" data-i18n="howItWorksSection.buyerStep4">Masuk Venue Didampingi Tim PIC</div>
-            <div class="how-step-desc" data-i18n="howItWorksSection.buyerStep4Desc">Tunjukkan tiket di gerbang. Jika terjadi kendala barcode, PIC TIKUM siap mendampingi di lokasi.</div>
+            <div class="how-step-title">Masuk Venue dengan Aman</div>
+            <div class="how-step-desc">Tunjukkan tiket di gerbang. Pada event dengan status PIC aktif, staf TIKUM siap mendampingi langsung jika terjadi kendala barcode.</div>
           </div>
         </div>
       </div>
@@ -1106,100 +1419,53 @@
       <!-- Seller Flow -->
       <div class="how-column">
         <div class="how-col-header">
-          <i class="fa-solid fa-ticket-simple" style="color: #10B981;"></i>
-          <span data-i18n="howItWorksSection.sellerColTitle">Untuk Penjual</span>
+          <i class="fa-solid fa-ticket-simple" style="color: #047857;"></i>
+          <span>Untuk Penjual</span>
         </div>
         <div class="how-step">
-          <div class="how-step-num" style="background: rgba(16, 185, 129, 0.12); color: #10B981;">1</div>
+          <div class="how-step-num" style="background: rgba(4, 120, 87, 0.12); color: #047857;">1</div>
           <div class="how-step-content">
-            <div class="how-step-title" data-i18n="howItWorksSection.sellerStep1">Pasang Listing Tanpa Biaya Awal</div>
-            <div class="how-step-desc" data-i18n="howItWorksSection.sellerStep1Desc">Masukkan detail tiket, bukti kepemilikan, dan harga jual yang wajar.</div>
+            <div class="how-step-title">Pasang Listing Tanpa Biaya Awal</div>
+            <div class="how-step-desc">Masukkan detail tiket, bukti kepemilikan, dan harga jual yang wajar.</div>
           </div>
         </div>
         <div class="how-step">
-          <div class="how-step-num" style="background: rgba(16, 185, 129, 0.12); color: #10B981;">2</div>
+          <div class="how-step-num" style="background: rgba(4, 120, 87, 0.12); color: #047857;">2</div>
           <div class="how-step-content">
-            <div class="how-step-title" data-i18n="howItWorksSection.sellerStep2">Verifikasi Tiket Otomatis &amp; Manual</div>
-            <div class="how-step-desc" data-i18n="howItWorksSection.sellerStep2Desc">Sistem memeriksa validitas tiket dan mencegah duplikasi sebelum listing aktif.</div>
+            <div class="how-step-title">Verifikasi Tiket Anti-Duplikasi</div>
+            <div class="how-step-desc">Sistem memeriksa validitas tiket dan mencegah duplikasi sebelum listing tayang.</div>
           </div>
         </div>
         <div class="how-step">
-          <div class="how-step-num" style="background: rgba(16, 185, 129, 0.12); color: #10B981;">3</div>
+          <div class="how-step-num" style="background: rgba(4, 120, 87, 0.12); color: #047857;">3</div>
           <div class="how-step-content">
-            <div class="how-step-title" data-i18n="howItWorksSection.sellerStep3">Pemberitahuan Saat Tiket Terjual</div>
-            <div class="how-step-desc" data-i18n="howItWorksSection.sellerStep3Desc">Dapatkan notifikasi instan saat pembeli melakukan pembayaran ke rekening escrow.</div>
+            <div class="how-step-title">Pemberitahuan Saat Tiket Terjual</div>
+            <div class="how-step-desc">Dapatkan notifikasi instan saat pembeli melakukan pembayaran ke rekening escrow.</div>
           </div>
         </div>
         <div class="how-step">
-          <div class="how-step-num" style="background: rgba(16, 185, 129, 0.12); color: #10B981;">4</div>
+          <div class="how-step-num" style="background: rgba(4, 120, 87, 0.12); color: #047857;">4</div>
           <div class="how-step-content">
-            <div class="how-step-title" data-i18n="howItWorksSection.sellerStep4">Pencairan Dana Otomatis Pasca-Acara</div>
-            <div class="how-step-desc" data-i18n="howItWorksSection.sellerStep4Desc">Setelah pembeli terkonfirmasi sukses masuk gate, dana langsung dicairkan ke rekening bank Anda.</div>
+            <div class="how-step-title">Pencairan Dana Pasca-Acara</div>
+            <div class="how-step-desc">Setelah pembeli terkonfirmasi sukses masuk gate, dana langsung dicairkan ke rekening Anda.</div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Venue PIC Differentiator -->
-  <section class="landing-section" id="venuePic">
-    <div class="venue-pic-box">
-      <div class="venue-pic-icon">
-        <i class="fa-solid fa-user-shield"></i>
-      </div>
-      <div class="venue-pic-content">
-        <div class="landing-kicker" data-i18n="venuePicSection.kicker" style="color: #A5B4FC;">Diferensiasi Utama TIKUM</div>
-        <h3 class="venue-pic-title" data-i18n="venuePicSection.headline">Butuh Bantuan di Venue? Kami Punya Tim di Lokasi.</h3>
-        <p class="venue-pic-desc" data-i18n="venuePicSection.desc">
-          Koordinator lapangan (PIC) TIKUM hadir langsung di sekitar venue untuk mendampingi pembeli saat penukaran wristband gelang dan turnstile entry gate. Anda tidak ditinggalkan sendirian menghadapi bot saat hari konser tiba.
-        </p>
-        <div class="venue-pic-badges">
-          <span class="venue-pic-badge"><i class="fa-solid fa-map-pin" style="color: var(--primary);"></i> <span data-i18n="venuePicSection.badgeCoord">On-Site Coordinator</span></span>
-          <span class="venue-pic-badge"><i class="fa-solid fa-door-open" style="color: #10B981;"></i> <span data-i18n="venuePicSection.badgeTurnstile">Turnstile Assistance</span></span>
-          <span class="venue-pic-badge"><i class="fa-solid fa-handshake" style="color: var(--cyan);"></i> <span data-i18n="venuePicSection.badgeDispute">Fast Gate Dispute Resolution</span></span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Trust Architecture & Invariants -->
-  <section class="landing-section" id="trustArchitecture">
-    <div class="landing-section-header">
-      <div class="landing-kicker" data-i18n="trustArchitectureSection.kicker">Fondasi Perlindungan</div>
-      <h2 class="landing-title" data-i18n="trustArchitectureSection.title">Arsitektur Kepercayaan TIKUM</h2>
-      <p class="landing-lead" data-i18n="trustArchitectureSection.lead">Tiga pilar operasional nyata untuk menekan risiko penipuan tiket sekunder.</p>
-    </div>
-    <div class="trust-grid">
-      <div class="trust-card">
-        <div class="trust-card-icon"><i class="fa-solid fa-certificate"></i></div>
-        <h4 class="trust-card-title" data-i18n="trustArchitectureSection.card1Title">Sinyal Penjual Terverifikasi</h4>
-        <p class="trust-card-desc" data-i18n="trustArchitectureSection.card1Desc">Setiap penjual melalui kontrol identitas, riwayat transaksi, dan rekam jejak penyelesaian tiket sebelum listing tayang.</p>
-      </div>
-      <div class="trust-card">
-        <div class="trust-card-icon"><i class="fa-solid fa-vault"></i></div>
-        <h4 class="trust-card-title" data-i18n="trustArchitectureSection.card2Title">Escrow Terkunci Hingga Gate</h4>
-        <p class="trust-card-desc" data-i18n="trustArchitectureSection.card2Desc">Dana pembeli tersimpan aman di rekening penampungan internal dan baru dilepas ke penjual saat pembeli lolos gerbang masuk.</p>
-      </div>
-      <div class="trust-card">
-        <div class="trust-card-icon"><i class="fa-solid fa-barcode"></i></div>
-        <h4 class="trust-card-title" data-i18n="trustArchitectureSection.card3Title">Pencegahan Tiket Ganda</h4>
-        <p class="trust-card-desc" data-i18n="trustArchitectureSection.card3Desc">Sistem buku besar dan audit trail mencegah tiket yang sama didaftarkan atau ditransaksikan dua kali di platform.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Seller Experience Callout -->
+  <!-- Section 19: Seller Experience Callout -->
   <section class="landing-section" id="sellerExperience">
     <div class="seller-callout-box">
-      <div style="max-width: 600px;">
-        <div class="landing-kicker" data-i18n="sellerExperienceSection.kicker">Pengalaman Penjual</div>
-        <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;" data-i18n="sellerExperienceSection.headline">Punya Tiket yang Tidak Bisa Dipakai?</h3>
-        <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin: 0;" data-i18n="sellerExperienceSection.desc">
-          Daftarkan tiketmu secara gratis tanpa biaya awal. Dapatkan pembeli dengan harga wajar dan pencairan dana langsung ke rekening bank Anda setelah acara.
+      <div style="max-width: 620px;">
+        <div class="landing-kicker">PENGALAMAN PENJUAL</div>
+        <h3 style="font-size: 22px; font-weight: 800; margin: 0 0 8px;">Punya Tiket yang Tidak Bisa Dipakai?</h3>
+        <p style="font-size: 14px; color: var(--color-text-muted, #6B7280); line-height: 1.6; margin: 0;">
+          Daftarkan tiketmu secara gratis tanpa biaya awal. Dapatkan pembeli dengan harga wajar dan pencairan dana langsung ke rekening bank Anda setelah acara selesai.
         </p>
       </div>
-      <a href="/create" class="ln-btn ln-btn-primary" style="padding: 12px 24px; font-size: 13px;">
-        <i class="fa-solid fa-ticket"></i> <span data-i18n="sellerExperienceSection.cta">Pasang Listing Tiket</span>
+      <a href="/create" class="ln-btn ln-btn-primary" style="padding: 13px 26px; font-size: 14px;">
+        <i class="fa-solid fa-ticket"></i> Pasang Listing Tiket
       </a>
     </div>
   </section>
@@ -1207,31 +1473,31 @@
   <!-- FAQ Section -->
   <section class="landing-section" id="faqPreview">
     <div class="landing-section-header">
-      <div class="landing-kicker" data-i18n="faqPreviewSection.kicker">Pertanyaan Umum</div>
-      <h2 class="landing-title" data-i18n="faqPreviewSection.title">Pertanyaan yang Sering Diajukan</h2>
-      <p class="landing-lead" data-i18n="faqPreviewSection.lead">Jawaban transparan seputar cara bertransaksi, perlindungan escrow, dan kehadiran staf di venue.</p>
+      <div class="landing-kicker">PERTANYAAN UMUM</div>
+      <h2 class="landing-title">Pertanyaan yang Sering Diajukan</h2>
+      <p class="landing-lead">Jawaban transparan seputar cara bertransaksi, perlindungan escrow, dan kehadiran staf di venue.</p>
     </div>
     <div class="faq-grid">
       <div class="faq-card">
-        <div class="faq-question"><i class="fa-solid fa-circle-question"></i> <span data-i18n="faqPreviewSection.q1">Bagaimana TIKUM menekan penipuan tiket?</span></div>
-        <div class="faq-answer" data-i18n="faqPreviewSection.a1">Kami menggunakan verifikasi dokumen kepemilikan tiket, penahanan dana di escrow sampai penonton masuk gerbang, serta kehadiran staf PIC di lokasi acara.</div>
+        <div class="faq-question"><i class="fa-solid fa-circle-question" style="color:var(--primary);"></i> Bagaimana TIKUM menekan penipuan tiket?</div>
+        <div class="faq-answer">Kami menggunakan verifikasi dokumen kepemilikan tiket, penahanan dana di escrow sampai penonton masuk gerbang, serta kehadiran staf PIC di lokasi acara.</div>
       </div>
       <div class="faq-card">
-        <div class="faq-question"><i class="fa-solid fa-circle-question"></i> <span data-i18n="faqPreviewSection.q2">Kapan penjual menerima pencairan dana?</span></div>
-        <div class="faq-answer" data-i18n="faqPreviewSection.a2">Dana ditahan di rekening penampungan internal (escrow) dan baru dicairkan setelah pembeli terkonfirmasi berhasil masuk gerbang turnstile acara.</div>
+        <div class="faq-question"><i class="fa-solid fa-circle-question" style="color:var(--primary);"></i> Kapan penjual menerima pencairan dana?</div>
+        <div class="faq-answer">Dana ditahan di rekening penampungan internal (escrow) dan baru dicairkan setelah pembeli terkonfirmasi berhasil masuk gerbang turnstile acara.</div>
       </div>
       <div class="faq-card">
-        <div class="faq-question"><i class="fa-solid fa-circle-question"></i> <span data-i18n="faqPreviewSection.q3">Apa peran staf PIC TIKUM di lokasi?</span></div>
-        <div class="faq-answer" data-i18n="faqPreviewSection.a3">Staf operasional (PIC) TIKUM hadir di sekitar area venue untuk membantu pembeli saat penukaran gelang dan mendampingi jika terjadi kendala pemindaian barcode tiket.</div>
+        <div class="faq-question"><i class="fa-solid fa-circle-question" style="color:var(--primary);"></i> Apa peran staf PIC TIKUM di lokasi?</div>
+        <div class="faq-answer">Staf operasional (PIC) TIKUM hadir di sekitar area venue untuk membantu pembeli saat penukaran gelang dan mendampingi jika terjadi kendala pemindaian barcode tiket.</div>
       </div>
       <div class="faq-card">
-        <div class="faq-question"><i class="fa-solid fa-circle-question"></i> <span data-i18n="faqPreviewSection.q4">Bagaimana jika tiket bermasalah di gerbang?</span></div>
-        <div class="faq-answer" data-i18n="faqPreviewSection.a4">Pembeli dapat langsung melapor ke PIC venue atau sistem dispute. Jika tiket terbukti tidak valid atau sudah dipakai, dana pembeli dikembalikan sesuai kebijakan refund.</div>
+        <div class="faq-question"><i class="fa-solid fa-circle-question" style="color:var(--primary);"></i> Bagaimana jika tiket bermasalah di gerbang?</div>
+        <div class="faq-answer">Pembeli dapat langsung melapor ke PIC venue atau sistem dispute. Jika tiket terbukti tidak valid atau sudah dipakai, dana pembeli dikembalikan sesuai kebijakan refund.</div>
       </div>
     </div>
-    <div style="text-align: center; margin-top: 20px;">
-      <a href="/faq" style="color: var(--cyan); text-decoration: none; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-        <span data-i18n="faqPreviewSection.viewAll">Lihat seluruh FAQ &amp; panduan bantuan</span> <i class="fa-solid fa-arrow-right"></i>
+    <div style="text-align: center; margin-top: 24px;">
+      <a href="/faq" style="color: var(--primary); text-decoration: none; font-size: 13.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+        Lihat seluruh FAQ &amp; panduan bantuan <i class="fa-solid fa-arrow-right"></i>
       </a>
     </div>
   </section>
@@ -1239,37 +1505,36 @@
   <!-- Final CTA -->
   <section class="landing-section" id="finalCta">
     <div class="final-cta-box">
-      <div class="landing-kicker" data-i18n="finalCtaSection.kicker">Mulai Bertransaksi</div>
-      <h2 style="font-size: clamp(22px, 4vw, 36px); font-weight: 900; color: #fff; margin-bottom: 12px;" data-i18n="finalCtaSection.title">
+      <div class="landing-kicker" style="color: #FCD34D;">MULAI BERTRANSAKSI</div>
+      <h2 style="font-size: clamp(24px, 4vw, 36px); font-weight: 800; color: #fff; margin-bottom: 12px;">
         Siap Menghadiri Acara Favoritmu?
       </h2>
-      <p style="font-size: 14px; color: var(--text-muted); max-width: 580px; margin: 0 auto 24px; line-height: 1.6;" data-i18n="finalCtaSection.lead">
-        Temukan ribuan penikmat musik, olahraga, dan festival di ekosistem tiket sekunder yang terlindungi.
+      <p style="font-size: 14.5px; color: #E2E8F0; max-width: 580px; margin: 0 auto 24px; line-height: 1.6;">
+        Temukan ribuan penikmat konser, olahraga, dan festival di ekosistem tiket sekunder yang terlindungi escrow dan opsi pendampingan PIC di venue.
       </p>
       <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-        <a href="#upcoming" class="ln-btn ln-btn-primary" style="padding: 13px 28px; font-size: 13px;">
-          <i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="finalCtaSection.ctaFind">Cari Tiket Sekarang</span>
+        <a href="#upcoming" class="ln-btn ln-btn-primary" style="padding: 13px 28px; font-size: 14px;">
+          <i class="fa-solid fa-magnifying-glass"></i> Cari Tiket Sekarang
         </a>
-        <a href="/create" class="ln-btn ln-btn-ghost" style="padding: 13px 28px; font-size: 13px;">
-          <i class="fa-solid fa-ticket"></i> <span data-i18n="finalCtaSection.ctaSell">Jual Tiket Anda</span>
+        <a href="/create" class="ln-btn ln-btn-ghost" style="padding: 13px 28px; font-size: 14px;">
+          <i class="fa-solid fa-ticket"></i> Jual Tiket Anda
         </a>
       </div>
     </div>
   </section>
 
-
-  <!-- Site Footer (iPaymu Compliance & Trust Verification) -->
+  <!-- Site Footer -->
   <footer class="site-footer">
     <div class="footer-container">
       <div class="footer-col footer-business">
-        <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <img src="/assets/tikum-mark-p2p.svg" width="22" height="22" alt="Tikum"> TIKUM — by SHINERVA
+        <div style="font-weight: 800; font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+          <img src="/assets/tikum-mark-p2p.svg" width="24" height="24" alt="Tikum"> TIKUM — by SHINERVA
         </div>
-        <p style="color: var(--text-muted, #94a3b8); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+        <p style="color: var(--color-text-muted, #6B7280); font-size: 13px; line-height: 1.6; margin-bottom: 14px; max-width: 400px;">
+          Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik staf di gerbang venue.
         </p>
-        <div class="footer-address" style="color: var(--text-muted, #94a3b8); font-size: 13px; line-height: 1.6;">
-          <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
+        <div class="footer-address" style="color: var(--color-text-muted, #6B7280); font-size: 13px; line-height: 1.6;">
+          <div style="font-weight: 700; color: var(--text-light);">Kantor Operasional &amp; Surat:</div>
           <div>SHINERVA HQ</div>
           <div>Jl. Pasirluyu No. 79</div>
           <div>Bandung 40254</div>
@@ -1278,24 +1543,28 @@
       </div>
 
       <div class="footer-col footer-contact-col">
-        <div style="font-weight: 700; color: #fff; margin-bottom: 8px; font-size: 14px;">Kontak Resmi</div>
-        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+        <h4>Kontak Resmi</h4>
+        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
           <div>
-            <span style="color: var(--text-dim, #64748b);">Email:</span>
-            <a href="mailto:agunsux@gmail.com" style="color: var(--primary); text-decoration: none; margin-left: 6px;">agunsux@gmail.com</a>
+            <span style="color: var(--color-text-muted, #6B7280);">Layanan Pelanggan:</span>
+            <a href="mailto:support@tikum.app" style="color: var(--primary); text-decoration: none; margin-left: 6px; font-weight: 600;">support@tikum.app</a>
           </div>
           <div>
-            <span style="color: var(--text-dim, #64748b);">WhatsApp:</span>
-            <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none; margin-left: 6px;"><i class="fa-brands fa-whatsapp"></i> 081299927378</a>
+            <span style="color: var(--color-text-muted, #6B7280);">Korespondensi Legal:</span>
+            <a href="mailto:agunsux@gmail.com" style="color: var(--color-text-muted, #6B7280); text-decoration: none; margin-left: 6px;">agunsux@gmail.com</a>
+          </div>
+          <div>
+            <span style="color: var(--color-text-muted, #6B7280);">WhatsApp:</span>
+            <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #047857; text-decoration: none; margin-left: 6px; font-weight: 600;"><i class="fa-brands fa-whatsapp"></i> 081299927378</a>
           </div>
         </div>
       </div>
 
       <div class="footer-col footer-links-col">
-        <div style="font-weight: 700; color: #fff; margin-bottom: 8px; font-size: 14px;">Layanan &amp; Legalitas</div>
-        <div class="footer-links" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+        <h4>Layanan &amp; Legalitas</h4>
+        <div class="footer-links">
           <a href="/blog"><i class="fa-solid fa-newspaper"></i> Blog &amp; Panduan Tiket</a>
-          <a href="/faq"><i class="fa-solid fa-circle-question"></i> FAQ / Pertanyaan Umum</a>
+          <a href="/faq"><i class="fa-solid fa-circle-question"></i> FAQ / Bantuan</a>
           <a href="/terms"><i class="fa-solid fa-file-contract"></i> Syarat &amp; Ketentuan</a>
           <a href="/refund-policy"><i class="fa-solid fa-rotate-left"></i> Kebijakan Pengembalian Dana (Refund)</a>
           <a href="/contact"><i class="fa-solid fa-address-book"></i> Kontak Kami</a>
@@ -1303,7 +1572,7 @@
         </div>
       </div>
     </div>
-    <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim, #64748b);">
+    <div style="max-width: 1200px; margin: 32px auto 0; padding-top: 20px; border-top: 1px solid var(--border-light); text-align: center; font-size: 12px; color: var(--color-text-muted, #6B7280);">
       &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. TIKUM — by SHINERVA. Built in Indonesia. Designed to scale across Asia and beyond.
     </div>
   </footer>
@@ -1335,24 +1604,23 @@
   <!-- Modal Provenance -->
   <div class="modal-overlay" id="verifModal" onclick="closeModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
-      <div class="bottom-sheet-handle"></div>
       <div class="modal-header">
-        <div class="modal-title"><i class="fa-solid fa-shield-check" style="color:var(--primary)"></i> Status Verifikasi</div>
+        <div class="modal-title"><i class="fa-solid fa-shield-check" style="color:#047857"></i> Status Verifikasi Resmi</div>
         <button class="btn-close" onclick="closeModal(event)">&times;</button>
       </div>
-      <p id="modalVerifDate" style="margin-bottom: 16px; font-weight: bold;"></p>
+      <p id="modalVerifDate" style="margin-bottom: 16px; font-weight: 700; font-size: 13.5px;"></p>
       <ul class="provenance-list">
-        <li><i class="fa-solid fa-check-circle"></i> Penyelenggara Resmi Dikonfirmasi</li>
-        <li><i class="fa-solid fa-check-circle"></i> Izin Lokasi Valid</li>
-        <li><i class="fa-solid fa-check-circle"></i> Harga Tiket Sesuai Standar</li>
+        <li><i class="fa-solid fa-check-circle"></i> Penyelenggara &amp; Promotor Resmi Dikonfirmasi</li>
+        <li><i class="fa-solid fa-check-circle"></i> Lokasi &amp; Izin Penyelenggaraan Valid</li>
+        <li><i class="fa-solid fa-check-circle"></i> Harga Tiket &amp; Struktur Kategori Resmi</li>
+        <li><i class="fa-solid fa-check-circle"></i> Opsi Asistensi PIC di Venue untuk Event Terpilih</li>
       </ul>
     </div>
   </div>
 
   <!-- Auth Modal (Passwordless Magic Link) -->
   <div id="authModal" class="modal-overlay" onclick="closeAuthModalOnBackdrop(event)">
-    <div class="modal-content auth-modal-box" onclick="event.stopPropagation()">
-      <div class="bottom-sheet-handle"></div>
+    <div class="modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title">
           <i class="fa-solid fa-ticket" style="color:var(--primary);"></i> Masuk ke Tikum
@@ -1362,15 +1630,15 @@
 
       <!-- State 1: Input Email -->
       <div id="authModalInputView">
-        <p style="font-size:14px; margin-bottom:16px; line-height:1.5; color:inherit; opacity:0.85;">
-          Masukkan email Anda untuk menerima magic link.
+        <p style="font-size:13.5px; margin-bottom:16px; line-height:1.5; color:inherit; opacity:0.85;">
+          Masukkan email Anda untuk menerima tautan masuk instan (magic link).
         </p>
         <form id="authModalForm" onsubmit="submitMagicLink(event)">
           <div style="margin-bottom:16px;">
-            <label for="modalEmailInput" style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Email</label>
+            <label for="modalEmailInput" style="display:block; font-size:13px; font-weight:700; margin-bottom:6px;">Email</label>
             <input type="email" id="modalEmailInput" class="auth-input-field" placeholder="nama@email.com" required autocomplete="email">
           </div>
-          <div id="modalAuthError" style="display:none; color:#ef4444; font-size:13px; margin-bottom:12px; line-height:1.4;"></div>
+          <div id="modalAuthError" style="display:none; color:#DC2626; font-size:13px; margin-bottom:12px; line-height:1.4;"></div>
           <button type="submit" id="btnModalSubmit" class="btn-auth-primary">
             <span>Kirim Magic Link</span>
             <i class="fa-solid fa-paper-plane" style="font-size:13px;"></i>
@@ -1380,17 +1648,17 @@
 
       <!-- State 2: Confirmation Sent -->
       <div id="authModalSuccessView" style="display:none; text-align:center; padding:12px 0;">
-        <div style="width:48px; height:48px; border-radius:50%; background:rgba(29, 185, 84, 0.15); display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px;">
-          <i class="fa-solid fa-envelope-circle-check" style="font-size:24px; color:var(--primary);"></i>
+        <div style="width:48px; height:48px; border-radius:50%; background:rgba(4, 120, 87, 0.12); display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px;">
+          <i class="fa-solid fa-envelope-circle-check" style="font-size:24px; color:#047857;"></i>
         </div>
         <h3 style="font-size:18px; font-weight:700; margin:0 0 8px;">Cek email Anda</h3>
-        <p style="font-size:14px; line-height:1.5; margin:0 0 10px; color:inherit; opacity:0.85;">
+        <p style="font-size:13.5px; line-height:1.5; margin:0 0 10px; color:inherit; opacity:0.85;">
           Kami telah mengirim magic link ke <strong id="modalSentEmail">alamat email Anda</strong>.
         </p>
-        <p style="font-size:12px; color:#9ca3af; margin:0 0 20px; line-height:1.4;">
+        <p style="font-size:12px; color:var(--color-text-muted, #6B7280); margin:0 0 20px; line-height:1.4;">
           Link berlaku selama 15 menit dan hanya dapat digunakan sekali.
         </p>
-        <button class="btn-auth-secondary" onclick="closeAuthModal()">Tutup</button>
+        <button class="select-filter" style="width:100%; padding:10px;" onclick="closeAuthModal()">Tutup</button>
       </div>
     </div>
   </div>
@@ -1403,9 +1671,17 @@
     let currentCategory = '';
     let searchTimeout = null;
 
-    // Dark-first surface (matches the Live Nation Asia-inspired poster layout)
+    // Theme initialization (Light mode default; user preference stored in localStorage)
     document.addEventListener('DOMContentLoaded', () => {
-      document.body.classList.add('dark-mode');
+      const savedTheme = localStorage.getItem('tikum_theme');
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        const icon = document.querySelector('#themeToggle i');
+        if (icon) {
+          icon.classList.remove('fa-moon');
+          icon.classList.add('fa-sun');
+        }
+      }
     });
 
     // Nav shortcut: apply a category filter and scroll to the listings.
@@ -1445,13 +1721,13 @@
       }
     }
 
-    // Theming (legacy helper retained for backwards compatibility; the discovery
-    // surface is dark-first and no longer exposes a theme switch).
     function toggleTheme() {
       document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem('tikum_theme', isDark ? 'dark' : 'light');
       const icon = document.querySelector('#themeToggle i');
       if (!icon) return;
-      if (document.body.classList.contains('dark-mode')) {
+      if (isDark) {
         icon.classList.remove('fa-moon');
         icon.classList.add('fa-sun');
       } else {
@@ -1461,7 +1737,7 @@
     }
 
     function toggleLang() {
-      // Indonesian only: language switcher deactivated
+      // Indonesian default: language indicator
     }
 
     function debounceSearch() {
@@ -1528,8 +1804,8 @@
     }
 
     function getFilteredEvents() {
-      const q = document.getElementById('searchInput').value.toLowerCase();
-      const city = document.getElementById('cityFilter').value.toLowerCase();
+      const q = (document.getElementById('searchInput').value || '').toLowerCase();
+      const city = (document.getElementById('cityFilter').value || '').toLowerCase();
       const dateF = document.getElementById('dateFilter').value;
       const now = Date.now();
 
@@ -1549,11 +1825,17 @@
           if (!evCity.includes(city)) return false;
         }
 
-        // Category (supports canonical event types and broad category groups)
+        // Category
         if (currentCategory) {
           const evCat = [e.category, e.category_group, e.event_type]
             .filter(Boolean).join(' ').toUpperCase();
-          if (!evCat.includes(currentCategory)) return false;
+          if (currentCategory === 'COMEDY') {
+            if (!evCat.includes('COMEDY') && !evCat.includes('SHOWS_COMEDY') && !evCat.includes('STAND UP') && !evCat.includes('STANDUP')) return false;
+          } else if (currentCategory === 'HIBURAN') {
+            if (!evCat.includes('THEATER') && !evCat.includes('MUSICAL') && !evCat.includes('FAMILY') && !evCat.includes('OTHER') && !evCat.includes('FESTIVAL')) return false;
+          } else if (!evCat.includes(currentCategory)) {
+            return false;
+          }
         }
 
         // Date Filter
@@ -1592,7 +1874,6 @@
       document.getElementById('verifModal').style.display = 'none';
     }
 
-    // Colour status for the poster badge (live ticket state when known).
     function resolveStatus(e) {
       if (e.ticket_status === 'SOLD_OUT' || e.status === 'SOLD_OUT') return { css: 'status-soldout', text: 'SOLD OUT' };
       if (e.ticket_status === 'COMING_SOON') return { css: 'status-comingsoon', text: 'COMING SOON' };
@@ -1605,8 +1886,18 @@
       return img ? `background-image:url('${img}');` : '';
     }
 
+    function resolveCategoryLabel(e) {
+      const cat = (e.category || e.category_group || e.event_type || '').toUpperCase();
+      if (cat.includes('SPORT') || cat.includes('BADMINTON') || cat.includes('FOOTBALL')) return 'Olahraga';
+      if (cat.includes('COMEDY') || cat.includes('SHOWS_COMEDY') || cat.includes('STANDUP')) return 'Stand Up Comedy';
+      if (cat.includes('EXHIBITION') || cat.includes('PAMERAN')) return 'Pameran';
+      if (cat.includes('THEATER') || cat.includes('FAMILY') || cat.includes('BUSINESS')) return 'Hiburan Lainnya';
+      return 'Konser';
+    }
+
     /**
-     * Poster-led card (Live Nation Asia style): artwork first, facts underneath.
+     * Card hierarchy conforming to the TIKUM marketplace system:
+     * IMAGE -> CATEGORY -> EVENT NAME -> DATE -> VENUE/CITY -> PRICE FROM -> VERIFICATION / PIC BADGE
      */
     function renderPosterCard(e) {
       const status = resolveStatus(e);
@@ -1614,33 +1905,46 @@
       const city = e.city || e.venue_city || '';
       const venue = e.venue_name || e.venue || '';
       const loc = [venue, city].filter(Boolean).join(' · ');
-      const priceStr = e.min_price ? `Dari Rp ${formatRupiah(e.min_price)}` : '';
+      const priceStr = e.min_price ? `Mulai Rp ${formatRupiah(e.min_price)}` : 'Harga TBA';
       const dateStr = formatDate(e.date || e.start_date);
       const slug = e.slug || e.event_id || e.id;
       const verifDate = e.verified_at || '';
-      const tierBadge = e.verification_tier === 'TIER_A_DOUBLE_OFFICIAL'
-        ? '<i class="fa-solid fa-certificate"></i> Verified Event'
-        : (e.verification_tier === 'TIER_B_OFFICIAL_EVENT' ? '<i class="fa-solid fa-shield-halved"></i> EVENT VERIFIED' : '<i class="fa-solid fa-shield-halved"></i> TERVERIFIKASI');
+      const categoryLabel = resolveCategoryLabel(e);
 
       let radarBadge = '';
-      if (e.discovery_source_id === 'src-songkick-jakarta') {
-        radarBadge = '<div class="ln-badge ln-badge--radar"><i class="fa-solid fa-satellite-dish"></i> Songkick Radar</div>';
-      } else if (e.discovery_source_id === 'src-bandsintown-jakarta') {
-        radarBadge = '<div class="ln-badge ln-badge--radar"><i class="fa-solid fa-satellite-dish"></i> Bandsintown Radar</div>';
+      if (e.discovery_source_id === 'src-songkick-jakarta' || e.discovery_source_id === 'src-bandsintown-jakarta') {
+        radarBadge = '<div class="ln-badge ln-badge--radar"><i class="fa-solid fa-satellite-dish"></i> Radar Terverifikasi</div>';
       }
+
+      const hasPic = Boolean(
+        e.has_venue_assist ||
+        e.has_pic ||
+        e.venue_assist_status === 'PIC_AVAILABLE' ||
+        e.venue_assist_status === 'PIC_ON_SITE' ||
+        e.venue_pic_assigned === true
+      );
+      const picBadge = hasPic
+        ? '<div class="card-pic-cue"><i class="fa-solid fa-user-check"></i> TIKUM PIC di venue</div>'
+        : '';
 
       return `
         <a href="/events/${slug}" class="poster-card">
           <div class="poster-media" style="${posterBackground(e)}">
-            <div class="ln-badge ln-badge--verified" onclick="showVerifModal(event, '${verifDate}')">${tierBadge}</div>
+            <div class="card-category-pill">${categoryLabel}</div>
             <div class="ln-badge ln-badge--status">${status.text}</div>
             ${radarBadge}
           </div>
           <div class="poster-body">
-            <div class="poster-date">${dateStr}</div>
+            <div class="poster-date"><i class="fa-regular fa-calendar"></i> ${dateStr}</div>
             <div class="poster-title">${title}</div>
-            <div class="poster-sub">${loc}</div>
-            ${priceStr ? `<div class="poster-price">${priceStr}</div>` : ''}
+            <div class="poster-sub"><i class="fa-solid fa-location-dot"></i> ${loc}</div>
+            <div class="poster-price-row">
+              <span class="poster-price">${priceStr}</span>
+              <span class="badge-card-trust" onclick="showVerifModal(event, '${verifDate}')" title="Event Terverifikasi Resmi">
+                <i class="fa-solid fa-shield-check"></i> Terverifikasi
+              </span>
+            </div>
+            ${picBadge}
           </div>
         </a>
       `;
@@ -1655,7 +1959,7 @@
       if (!e) {
         mount.innerHTML = `
           <div class="ln-hero-inner">
-            <div class="ln-kicker">Tikum — Verified Ticket Marketplace</div>
+            <div class="ln-kicker"><i class="fa-solid fa-shield-check"></i> Tikum — Verified Ticket Marketplace</div>
             <h1 class="ln-hero-title">Belum ada event terverifikasi</h1>
             <p class="ln-hero-meta">Katalog Upcoming akan muncul di sini setelah ada pengumuman resmi dari promotor atau penyelenggara terverifikasi.</p>
           </div>`;
@@ -1675,23 +1979,22 @@
 
       mount.innerHTML = `
         <div class="ln-hero-inner">
-          <div class="ln-kicker">Baru Diumumkan · Terverifikasi Resmi</div>
+          <div class="ln-kicker"><i class="fa-solid fa-certificate"></i> Baru Diumumkan · Terverifikasi Resmi</div>
           <h1 class="ln-hero-title">${title}</h1>
           <p class="ln-hero-meta">
             <i class="fa-regular fa-calendar"></i> ${formatDate(e.date || e.start_date)}
             &nbsp;·&nbsp; <i class="fa-solid fa-location-dot"></i> ${[venue, city].filter(Boolean).join(', ')}
-            ${verif ? `&nbsp;·&nbsp; <i class="fa-solid fa-shield-halved" style="color:var(--primary)"></i> Diverifikasi ${verif}` : ''}
+            ${verif ? `&nbsp;·&nbsp; <i class="fa-solid fa-shield-check" style="color:#34D399;"></i> Diverifikasi ${verif}` : ''}
           </p>
           <div class="ln-hero-actions">
-            <a class="ln-btn ln-btn-primary" href="/events/${slug}"><i class="fa-solid fa-ticket"></i> Lihat Detail</a>
+            <a class="ln-btn ln-btn-primary" href="/events/${slug}"><i class="fa-solid fa-ticket"></i> Lihat Detail Event</a>
             ${e.official_ticket_url ? `<a class="ln-btn ln-btn-ghost" href="${e.official_ticket_url}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i> Tiket Resmi</a>` : ''}
           </div>
         </div>`;
     }
 
     /**
-     * Official attribution required by the compliance policy for every event
-     * surface that depends on promoter / ticketing partner data.
+     * Official attribution required by compliance policy.
      */
     function renderAttribution() {
       return `
@@ -1740,10 +2043,9 @@
     }
 
     /**
-     * Live Nation Asia-inspired composition:
+     * Live discovery composition:
      *   hero feature -> "Baru Diumumkan" rail -> "Upcoming Shows" grid ->
      *   "Last Call for Tickets" rail -> category rails -> official attribution.
-     * When any filter/search is active the surface collapses to a result grid.
      */
     function renderAllSections() {
       const main = document.getElementById('mainContent');
@@ -1774,8 +2076,8 @@
 
       const justAnnounced = (sections.just_announced || []).slice(0, 10);
       const lastCall = (sections.coming_soon || []);
-      const concerts = (sections.concerts || []);
-      const festivals = (sections.festivals || []);
+      const concerts = (sections.concerts || sections.music || []);
+      const festivals = (sections.festivals || sections.festivals_experiences || []);
       const sports = (sections.sports || []);
 
       const radarConcerts = upcoming.filter(e => {
@@ -1793,13 +2095,12 @@
         radarConcerts.length ? renderRail('Radar Konser Jabodetabek (Songkick & Bandsintown)', 'Konser terkurasi dari radar Songkick & Bandsintown yang lolos verifikasi ganda promotor/artis', radarConcerts) : '',
         renderGridSection('Upcoming Shows', 'Seluruh event Indonesia yang sudah terverifikasi sumber resminya', upcoming, { anchor: 'upcomingShows' }),
         lastCall.length ? renderRail('Last Call for Tickets', 'Berlangsung dalam 7 hari ke depan', lastCall) : '',
-        concerts.length ? renderRail('Konser', 'Tur dan konser resmi', concerts) : '',
-        festivals.length ? renderRail('Festival & Pameran', 'Festival musik, budaya, dan pameran', festivals) : '',
-        sports.length ? renderRail('Olahraga', 'Pertandingan dan kejuaraan resmi', sports) : '',
+        concerts.length ? renderRail('Konser', 'Tur dan konser resmi terverifikasi', concerts) : '',
+        festivals.length ? renderRail('Festival & Pameran', 'Festival musik, pameran seni, dan budaya', festivals) : '',
+        sports.length ? renderRail('Olahraga', 'Pertandingan dan turnamen olahraga resmi', sports) : '',
         renderAttribution()
       ].join('');
     }
-
 
     // ==========================================
     // Passwordless Magic Link Auth & Session
@@ -1840,10 +2141,10 @@
               <i class="fa-solid fa-chevron-down" style="font-size:11px;"></i>
             </button>
             <div id="userDropdownMenu" class="user-dropdown-menu">
-              <a href="/track" class="dropdown-item"><i class="fa-solid fa-ticket"></i> My Tickets</a>
-              <a href="/create" class="dropdown-item"><i class="fa-solid fa-plus-circle"></i> My Listings</a>
-              <a href="/offers" class="dropdown-item"><i class="fa-solid fa-tags"></i> Offers</a>
-              <a href="/account" class="dropdown-item"><i class="fa-solid fa-user"></i> Account</a>
+              <a href="/track" class="dropdown-item"><i class="fa-solid fa-ticket"></i> Tiket Saya</a>
+              <a href="/create" class="dropdown-item"><i class="fa-solid fa-plus-circle"></i> Pasang Listing</a>
+              <a href="/offers" class="dropdown-item"><i class="fa-solid fa-tags"></i> Tawaran Tiket</a>
+              <a href="/account" class="dropdown-item"><i class="fa-solid fa-user"></i> Akun</a>
               <div class="dropdown-divider"></div>
               <button onclick="handleHeaderLogout()" class="dropdown-item dropdown-logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
             </div>
