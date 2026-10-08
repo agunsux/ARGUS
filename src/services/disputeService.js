@@ -41,7 +41,21 @@ class DisputeService {
    * Buyer or seller opens a dispute on an order.
    */
   static async openDispute({ orderId, buyerId, reason, claimDetails = null, initialEvidenceBundleId = null }) {
-    const order = state.orders.find(o => o.id === orderId);
+    let order = (state.orders || []).find(o => o.id === orderId);
+    if (!order) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        const dbOrder = await moneyRepo.getOrderById(orderId);
+        if (dbOrder) {
+          if (!state.orders) state.orders = [];
+          state.orders.push(dbOrder);
+          order = dbOrder;
+        }
+      } catch (e) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+      }
+    }
     if (!order) throw new Error('Order not found');
 
     if (order.buyer_id !== buyerId) {
@@ -51,7 +65,19 @@ class DisputeService {
     }
 
     // Check if dispute already exists for this order
-    const existing = state.disputes.find(d => d.order_id === orderId);
+    let existing = (state.disputes || []).find(d => d.order_id === orderId);
+    if (!existing) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        const dbDispute = await moneyRepo.getDisputeByOrderId(orderId);
+        if (dbDispute) {
+          if (!state.disputes) state.disputes = [];
+          state.disputes.push(dbDispute);
+          existing = dbDispute;
+        }
+      } catch (e) {}
+    }
     if (existing) {
       return { dispute: existing, alreadyOpen: true };
     }
@@ -103,6 +129,31 @@ class DisputeService {
       resolved_by: null
     };
     state.disputes.push(dispute);
+
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      await moneyRepo.createDispute({
+        id: disputeId,
+        dispute_id: disputeId,
+        order_id: orderId,
+        buyer_id: buyerId,
+        seller_id: order.seller_id,
+        ticket_id: order.ticket_id,
+        canonical_event_id: order.event_id || order.canonical_event_id,
+        pic_id: picId,
+        status: DISPUTE_STATUS.OPEN,
+        outcome: DISPUTE_OUTCOME.PENDING,
+        reason: dispute.reason,
+        claim_details: dispute.claim?.details || null,
+        evidence_bundle_id: initialEvidenceBundleId || null
+      });
+      await moneyRepo.setDisputeHold(orderId, true);
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     await recordAuditLog('DISPUTE', disputeId, 'OPENED', buyerId, {
       order_id: orderId,
@@ -254,6 +305,16 @@ class DisputeService {
 
     const order = state.orders.find(o => o.id === dispute.order_id);
     const escrow = state.escrows.find(e => e.order_id === dispute.order_id);
+
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      await moneyRepo.resolveDispute(dispute.id || dispute.dispute_id, dispute.outcome, dispute.decision_notes);
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     if (dispute.outcome === 'REFUND_BUYER' || canonicalOutcome === 'BUYER_FAVORED') {
       await EscrowService.refundToBuyer(dispute.order_id, officerId, dispute.decision_notes);

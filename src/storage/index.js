@@ -8,6 +8,24 @@
  * Automatically instantiates Postgres implementations when DATABASE_URL is present,
  * or InMemory implementations when omitted or degraded.
  */
+const fs = require('fs');
+if (!process.env.DATABASE_URL && fs.existsSync('.env.local')) {
+  try {
+    const envContent = fs.readFileSync('.env.local', 'utf8');
+    for (const line of envContent.split('\n')) {
+      if (line.startsWith('DATABASE_URL=')) {
+        let val = line.substring('DATABASE_URL='.length).trim().replace(/['"]/g, '');
+        try {
+          const u = new URL(val);
+          u.searchParams.delete('channel_binding');
+          val = u.toString();
+        } catch (_) {}
+        process.env.DATABASE_URL = val;
+        break;
+      }
+    }
+  } catch (_) {}
+}
 
 const { MarketplaceRepository } = require('./MarketplaceRepository');
 const { InMemoryMarketplaceRepository } = require('./InMemoryMarketplaceRepository');

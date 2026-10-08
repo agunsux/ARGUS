@@ -322,14 +322,16 @@ async function runSuite() {
     const apiKey = 'test-secret-key-12345';
     ipaymu.apiKey = apiKey;
 
-    const payload = { order_id: 'ord-webhook-01', trx_id: 'trx-unique-9988', status: 'BERHASIL', amount: 500000 };
+    const uniqueSuffix = Date.now();
+    const testOrderId = `ord-webhook-${uniqueSuffix}`;
+    const payload = { order_id: testOrderId, trx_id: `trx-unique-${uniqueSuffix}`, status: 'BERHASIL', amount: 500000 };
     const payloadStr = JSON.stringify(payload);
     const validSig = crypto.createHmac('sha256', apiKey).update(payloadStr).digest('hex');
     const headers = { 'x-signature': validSig };
 
     // Setup order and escrow in state so EscrowService.recordPayment can transition it
     state.orders.push({
-      id: 'ord-webhook-01',
+      id: testOrderId,
       buyer_id: 'buyer-wh-01',
       seller_id: 'seller-wh-01',
       event_id: 'event-coldplay-2026',
@@ -338,8 +340,8 @@ async function runSuite() {
       status: 'PENDING_PAYMENT'
     });
     state.escrows.push({
-      id: 'esc-ord-webhook-01',
-      order_id: 'ord-webhook-01',
+      id: `esc-${testOrderId}`,
+      order_id: testOrderId,
       amount: 500000,
       total_paid: 500000,
       status: 'AWAITING_PAYMENT'

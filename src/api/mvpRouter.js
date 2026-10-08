@@ -584,13 +584,43 @@ router.post('/events', (req, res) => {
  * Browse active listings with full price transparency
  * GET /api/mvp/listings
  */
-router.get('/listings', (req, res) => {
+router.get('/listings', async (req, res) => {
   const { eventId } = req.query;
 
   // Cache Integrity: Prevent stale caching of ticket listings
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
+
+  try {
+    const { getMarketplaceRepository } = require('../storage');
+    const marketplaceRepo = getMarketplaceRepository();
+    const dbListings = await marketplaceRepo.listActiveListings(eventId || null);
+    if (dbListings && dbListings.length > 0) {
+      if (!state.listings) state.listings = [];
+      for (const dbl of dbListings) {
+        if (!state.listings.some(l => l.id === dbl.id)) {
+          state.listings.push({
+            id: dbl.id,
+            ticket_id: dbl.ticket_id,
+            event_id: dbl.canonical_event_id,
+            seller_id: dbl.seller_id,
+            seat_info: dbl.seat_info,
+            face_value: parseInt(dbl.face_value, 10),
+            price: parseInt(dbl.price, 10),
+            status: dbl.status,
+            created_at: dbl.created_at,
+            pricing: dbl.pricing,
+            metadata: dbl.metadata
+          });
+        }
+      }
+    }
+  } catch (err) {
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      return res.status(500).json({ error: 'Database unavailable', code: 'DATABASE_ERROR' });
+    }
+  }
 
   const listings = ListingService.getActiveListings(eventId);
   // Add transparent pricing calculation to each listing
@@ -610,13 +640,55 @@ router.get('/listings', (req, res) => {
  * Get single listing by ID with transparent pricing and verified event data
  * GET /api/mvp/listings/:id
  */
-router.get('/listings/:id', (req, res) => {
-  const listing = state.listings.find(l => l.id === req.params.id);
+router.get('/listings/:id', async (req, res) => {
+  let listing = state.listings.find(l => l.id === req.params.id);
+  if (!listing) {
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      const dbListing = await marketplaceRepo.getListingById(req.params.id);
+      if (dbListing) {
+        listing = {
+          id: dbListing.id,
+          ticket_id: dbListing.ticket_id,
+          event_id: dbListing.canonical_event_id,
+          seller_id: dbListing.seller_id,
+          seat_info: dbListing.seat_info,
+          face_value: parseInt(dbListing.face_value, 10),
+          price: parseInt(dbListing.price, 10),
+          status: dbListing.status,
+          created_at: dbListing.created_at,
+          pricing: dbListing.pricing,
+          user_created_event: dbListing.metadata?.user_created_event || false
+        };
+        if (!state.listings) state.listings = [];
+        state.listings.push(listing);
+      }
+    } catch (err) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        return res.status(500).json({ error: 'Database unavailable', code: 'DATABASE_ERROR' });
+      }
+    }
+  }
   if (!listing) {
     return res.status(404).json({ error: 'Listing not found', code: 'NOT_FOUND' });
   }
 
-  const ticket = state.tickets.find(t => t.id === listing.ticket_id) || {};
+  let ticket = state.tickets.find(t => t.id === listing.ticket_id);
+  if (!ticket) {
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      ticket = await marketplaceRepo.getTicketById(listing.ticket_id);
+      if (ticket) {
+        if (!state.tickets) state.tickets = [];
+        if (!state.tickets.some(t => t.id === ticket.id)) {
+          state.tickets.push(ticket);
+        }
+      }
+    } catch (_) {}
+  }
+  ticket = ticket || {};
   const event = state.events.find(e => e.id === listing.event_id) || {};
   const venue = state.venues.find(v => v.id === event.venue_id) || {};
   const sellerProfile = state.seller_profiles.find(sp => sp.user_id === listing.seller_id) || {};
@@ -680,16 +752,70 @@ router.get('/listings/:id', (req, res) => {
  * Public PII-safe transaction tracker
  * GET /api/mvp/track/:id
  */
-router.get('/track/:id', (req, res) => {
+router.get('/track/:id', async (req, res) => {
   const paramId = req.params.id;
 
   // 1. Check if ID matches an Order
-  const order = state.orders.find(o => o.id === paramId);
+  let order = state.orders.find(o => o.id === paramId);
+  if (!order) {
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      const dbOrder = await moneyRepo.getOrderById(paramId);
+      if (dbOrder) {
+        order = {
+          id: dbOrder.id,
+          buyer_id: dbOrder.buyer_id,
+          seller_id: dbOrder.seller_id,
+          listing_id: dbOrder.listing_id,
+          ticket_id: dbOrder.ticket_id,
+          event_id: dbOrder.canonical_event_id,
+          quote_id: dbOrder.quote_id,
+          status: dbOrder.status,
+          total_amount: parseInt(dbOrder.total_amount, 10),
+          buyer_total: parseInt(dbOrder.buyer_total, 10),
+          seller_payout: parseInt(dbOrder.seller_payout, 10),
+          service_fee: parseInt(dbOrder.service_fee, 10),
+          created_at: dbOrder.created_at,
+          payment_deadline: dbOrder.payment_deadline
+        };
+        if (!state.orders) state.orders = [];
+        state.orders.push(order);
+      }
+    } catch (_) {}
+  }
+
   if (order) {
-    const ticket = state.tickets.find(t => t.id === order.ticket_id) || {};
+    let ticket = state.tickets.find(t => t.id === order.ticket_id);
+    if (!ticket) {
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        ticket = await marketplaceRepo.getTicketById(order.ticket_id);
+        if (ticket) {
+          if (!state.tickets) state.tickets = [];
+          if (!state.tickets.some(t => t.id === ticket.id)) state.tickets.push(ticket);
+        }
+      } catch (_) {}
+    }
+    ticket = ticket || {};
+
+    let escrow = state.escrows.find(e => e.order_id === order.id);
+    if (!escrow) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        escrow = await moneyRepo.getEscrowByOrderId(order.id);
+        if (escrow) {
+          if (!state.escrows) state.escrows = [];
+          if (!state.escrows.some(e => e.order_id === escrow.order_id)) state.escrows.push(escrow);
+        }
+      } catch (_) {}
+    }
+    escrow = escrow || {};
+
     const event = state.events.find(e => e.id === order.event_id) || {};
     const venue = state.venues.find(v => v.id === event.venue_id) || {};
-    const escrow = state.escrows.find(e => e.order_id === order.id) || {};
     const verification = state.entry_verifications.find(ev => ev.order_id === order.id) || null;
     const picAssign = state.event_pics.find(ep => ep.event_id === order.event_id && ep.status === 'ACTIVE');
 
@@ -700,8 +826,8 @@ router.get('/track/:id', (req, res) => {
         type: 'ORDER',
         status: order.status,
         operational_stage: order.operational_stage || (verification ? verification.status : 'PENDING_ADMISSION'),
-        ticket_price: order.ticket_price,
-        platform_fee: order.platform_fee,
+        ticket_price: order.ticket_price || order.total_amount,
+        platform_fee: order.platform_fee || order.service_fee || 0,
         total_amount: order.total_amount,
         created_at: order.created_at,
         escrow_status: escrow.status || 'UNKNOWN',
@@ -722,9 +848,46 @@ router.get('/track/:id', (req, res) => {
   }
 
   // 2. Check if ID matches a Listing
-  const listing = state.listings.find(l => l.id === paramId);
+  let listing = state.listings.find(l => l.id === paramId);
+  if (!listing) {
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      const dbListing = await marketplaceRepo.getListingById(paramId);
+      if (dbListing) {
+        listing = {
+          id: dbListing.id,
+          ticket_id: dbListing.ticket_id,
+          event_id: dbListing.canonical_event_id,
+          seller_id: dbListing.seller_id,
+          seat_info: dbListing.seat_info,
+          face_value: parseInt(dbListing.face_value, 10),
+          price: parseInt(dbListing.price, 10),
+          status: dbListing.status,
+          created_at: dbListing.created_at,
+          pricing: dbListing.pricing
+        };
+        if (!state.listings) state.listings = [];
+        state.listings.push(listing);
+      }
+    } catch (_) {}
+  }
+
   if (listing) {
-    const ticket = state.tickets.find(t => t.id === listing.ticket_id) || {};
+    let ticket = state.tickets.find(t => t.id === listing.ticket_id);
+    if (!ticket) {
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        ticket = await marketplaceRepo.getTicketById(listing.ticket_id);
+        if (ticket) {
+          if (!state.tickets) state.tickets = [];
+          if (!state.tickets.some(t => t.id === ticket.id)) state.tickets.push(ticket);
+        }
+      } catch (_) {}
+    }
+    ticket = ticket || {};
+
     const event = state.events.find(e => e.id === listing.event_id) || {};
     const venue = state.venues.find(v => v.id === event.venue_id) || {};
     const sellerProfile = state.seller_profiles.find(sp => sp.user_id === listing.seller_id) || {};
@@ -765,16 +928,74 @@ router.get('/track/:id', (req, res) => {
  * Get single order details
  * GET /api/mvp/orders/:id
  */
-router.get('/orders/:id', (req, res) => {
-  const order = state.orders.find(o => o.id === req.params.id);
+router.get('/orders/:id', async (req, res) => {
+  let order = state.orders.find(o => o.id === req.params.id);
+  if (!order) {
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      const dbOrder = await moneyRepo.getOrderById(req.params.id);
+      if (dbOrder) {
+        order = {
+          id: dbOrder.id,
+          buyer_id: dbOrder.buyer_id,
+          seller_id: dbOrder.seller_id,
+          listing_id: dbOrder.listing_id,
+          ticket_id: dbOrder.ticket_id,
+          event_id: dbOrder.canonical_event_id,
+          quote_id: dbOrder.quote_id,
+          status: dbOrder.status,
+          total_amount: parseInt(dbOrder.total_amount, 10),
+          buyer_total: parseInt(dbOrder.buyer_total, 10),
+          seller_payout: parseInt(dbOrder.seller_payout, 10),
+          service_fee: parseInt(dbOrder.service_fee, 10),
+          created_at: dbOrder.created_at,
+          payment_deadline: dbOrder.payment_deadline
+        };
+        if (!state.orders) state.orders = [];
+        state.orders.push(order);
+      }
+    } catch (err) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        return res.status(500).json({ error: 'Database unavailable', code: 'DATABASE_ERROR' });
+      }
+    }
+  }
+
   if (!order) {
     return res.status(404).json({ error: 'Order not found', code: 'NOT_FOUND' });
   }
 
-  const ticket = state.tickets.find(t => t.id === order.ticket_id) || {};
+  let ticket = state.tickets.find(t => t.id === order.ticket_id);
+  if (!ticket) {
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      ticket = await marketplaceRepo.getTicketById(order.ticket_id);
+      if (ticket) {
+        if (!state.tickets) state.tickets = [];
+        if (!state.tickets.some(t => t.id === ticket.id)) state.tickets.push(ticket);
+      }
+    } catch (_) {}
+  }
+  ticket = ticket || {};
+
+  let escrow = state.escrows.find(e => e.order_id === order.id);
+  if (!escrow) {
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      escrow = await moneyRepo.getEscrowByOrderId(order.id);
+      if (escrow) {
+        if (!state.escrows) state.escrows = [];
+        if (!state.escrows.some(e => e.order_id === escrow.order_id)) state.escrows.push(escrow);
+      }
+    } catch (_) {}
+  }
+  escrow = escrow || {};
+
   const event = state.events.find(e => e.id === order.event_id) || {};
   const venue = state.venues.find(v => v.id === event.venue_id) || {};
-  const escrow = state.escrows.find(e => e.order_id === order.id) || {};
   const verification = state.entry_verifications.find(ev => ev.order_id === order.id) || null;
 
   res.json({
@@ -999,7 +1220,7 @@ router.post('/buyer/pay', async (req, res) => {
  * Buyer gets active orders (ownership enforced)
  * GET /api/mvp/buyer/:id/orders
  */
-router.get('/buyer/:id/orders', (req, res) => {
+router.get('/buyer/:id/orders', async (req, res) => {
   const callerId = getCallerId(req, req.query.requesterId);
   if (!callerId) {
     return res.status(401).json({ error: 'requester identity required (x-user-id or ?requesterId)', code: 'AUTH_REQUIRED' });
@@ -1011,6 +1232,38 @@ router.get('/buyer/:id/orders', (req, res) => {
   if (caller.id !== req.params.id && caller.role !== 'admin') {
     return res.status(403).json({ error: 'Forbidden: cannot access another buyer orders', code: 'FORBIDDEN' });
   }
+
+  try {
+    const { getMoneyRepository } = require('../storage');
+    const moneyRepo = getMoneyRepository();
+    const dbOrders = await moneyRepo.listOrdersByBuyerId(req.params.id);
+    if (dbOrders && dbOrders.length > 0) {
+      if (!state.orders) state.orders = [];
+      for (const dbo of dbOrders) {
+        if (!state.orders.some(o => o.id === dbo.id)) {
+          state.orders.push({
+            id: dbo.id,
+            buyer_id: dbo.buyer_id,
+            seller_id: dbo.seller_id,
+            listing_id: dbo.listing_id,
+            ticket_id: dbo.ticket_id,
+            event_id: dbo.canonical_event_id,
+            status: dbo.status,
+            total_amount: parseInt(dbo.total_amount, 10),
+            buyer_total: parseInt(dbo.buyer_total, 10),
+            seller_payout: parseInt(dbo.seller_payout, 10),
+            service_fee: parseInt(dbo.service_fee, 10),
+            created_at: dbo.created_at
+          });
+        }
+      }
+    }
+  } catch (err) {
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      return res.status(500).json({ error: 'Database unavailable', code: 'DATABASE_ERROR' });
+    }
+  }
+
   const buyerOrders = state.orders.filter(o => o.buyer_id === req.params.id).map(order => {
     const event = state.events.find(e => e.id === order.event_id) || {};
     const venue = state.venues.find(v => v.id === event.venue_id) || {};

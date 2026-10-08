@@ -18,61 +18,97 @@ class PostgresMoneyRepository extends MoneyRepository {
     this.fallbackRepo = new InMemoryMoneyRepository();
     this.degraded = false;
     this.initialized = false;
+    this.initPromise = null;
+  }
+
+  async ensureInitialized() {
+    if (this.initialized) {
+      if (this.degraded && (process.env.NODE_ENV === 'production' || process.env.VERCEL)) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return;
+    }
+    await this.init();
   }
 
   async init() {
-    if (!this.connectionString) {
-      this.degraded = true;
-      await this.fallbackRepo.init();
-      this.initialized = true;
-      return false;
-    }
-
-    try {
-      let cleanConnStr = this.connectionString.trim();
-      if (cleanConnStr.startsWith('"') && cleanConnStr.endsWith('"')) cleanConnStr = cleanConnStr.slice(1, -1);
-      if (cleanConnStr.startsWith("'") && cleanConnStr.endsWith("'")) cleanConnStr = cleanConnStr.slice(1, -1);
-      if (cleanConnStr.includes('channel_binding=')) {
-        try {
-          const u = new URL(cleanConnStr);
-          u.searchParams.delete('channel_binding');
-          cleanConnStr = u.toString();
-        } catch (_) {}
+    if (this.initPromise) return this.initPromise;
+    this.initPromise = (async () => {
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+      if (!this.connectionString) {
+        if (isProduction) {
+          this.degraded = true;
+          this.initialized = true;
+          throw new Error('[MoneyRepository] Production configuration error: DATABASE_URL is missing.');
+        }
+        this.degraded = true;
+        await this.fallbackRepo.init();
+        this.initialized = true;
+        return false;
       }
 
-      const isLocalhost = cleanConnStr.includes('localhost') || cleanConnStr.includes('127.0.0.1');
-      const ssl = isLocalhost ? undefined : { rejectUnauthorized: false };
+      try {
+        let cleanConnStr = this.connectionString.trim();
+        if (cleanConnStr.startsWith('"') && cleanConnStr.endsWith('"')) cleanConnStr = cleanConnStr.slice(1, -1);
+        if (cleanConnStr.startsWith("'") && cleanConnStr.endsWith("'")) cleanConnStr = cleanConnStr.slice(1, -1);
+        if (cleanConnStr.includes('channel_binding=')) {
+          try {
+            const u = new URL(cleanConnStr);
+            u.searchParams.delete('channel_binding');
+            cleanConnStr = u.toString();
+          } catch (_) {}
+        }
 
-      this.pool = new Pool({
-        connectionString: cleanConnStr,
-        ssl,
-        max: 5,
-        idleTimeoutMillis: 10000,
-        connectionTimeoutMillis: 5000
-      });
+        const isLocalhost = cleanConnStr.includes('localhost') || cleanConnStr.includes('127.0.0.1');
+        const ssl = isLocalhost ? undefined : { rejectUnauthorized: false };
 
-      await this.pool.query('SELECT NOW()');
-      this.initialized = true;
-      this.degraded = false;
-      return true;
-    } catch (err) {
-      console.warn(`[MoneyRepository] DB connection failed, falling back to memory: ${err.message}`);
-      this.degraded = true;
-      await this.fallbackRepo.init();
-      this.initialized = true;
-      return false;
-    }
+        this.pool = new Pool({
+          connectionString: cleanConnStr,
+          ssl,
+          max: 5,
+          idleTimeoutMillis: 10000,
+          connectionTimeoutMillis: 5000
+        });
+
+        await this.pool.query('SELECT NOW()');
+        this.initialized = true;
+        this.degraded = false;
+        return true;
+      } catch (err) {
+        if (isProduction) {
+          this.degraded = true;
+          this.initialized = true;
+          throw new Error(`[MoneyRepository] Production database connection failed: ${err.message}`);
+        }
+        console.warn(`[MoneyRepository] DB connection failed, falling back to memory: ${err.message}`);
+        this.degraded = true;
+        await this.fallbackRepo.init();
+        this.initialized = true;
+        return false;
+      }
+    })();
+    return this.initPromise;
   }
 
   async query(text, params = []) {
-    if (!this.initialized) await this.init();
-    if (this.degraded || !this.pool) return null;
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Database operation rejected while degraded in production.');
+      }
+      return null;
+    }
     return await this.pool.query(text, params);
   }
 
   async withTransaction(fn) {
-    if (!this.initialized) await this.init();
-    if (this.degraded || !this.pool) return fn(null);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Transaction rejected while degraded in production.');
+      }
+      return fn(null);
+    }
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -89,7 +125,13 @@ class PostgresMoneyRepository extends MoneyRepository {
 
   // Quotes
   async createQuote(quoteData) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.createQuote(quoteData);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createQuote(quoteData);
+    }
     const id = quoteData.quote_id || quoteData.id || `quo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
       INSERT INTO financial_quotes (
@@ -127,13 +169,25 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async getQuoteById(quoteId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getQuoteById(quoteId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getQuoteById(quoteId);
+    }
     const res = await this.query('SELECT * FROM financial_quotes WHERE quote_id = $1', [quoteId]);
     return res.rows[0] || null;
   }
 
   async consumeQuote(quoteId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.consumeQuote(quoteId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.consumeQuote(quoteId);
+    }
     const sql = "UPDATE financial_quotes SET status = 'CONSUMED', consumed_at = NOW() WHERE quote_id = $1 RETURNING *;";
     const res = await this.query(sql, [quoteId]);
     return res.rows[0] || null;
@@ -141,7 +195,13 @@ class PostgresMoneyRepository extends MoneyRepository {
 
   // Orders
   async createOrder(orderData) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.createOrder(orderData);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createOrder(orderData);
+    }
     const id = orderData.id || orderData.order_id || `ord-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
       INSERT INTO financial_orders (
@@ -180,13 +240,37 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async getOrderById(orderId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getOrderById(orderId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getOrderById(orderId);
+    }
     const res = await this.query('SELECT * FROM financial_orders WHERE id = $1', [orderId]);
     return res.rows[0] || null;
   }
 
+  async listOrdersByBuyerId(buyerId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listOrdersByBuyerId(buyerId);
+    }
+    const res = await this.query('SELECT * FROM financial_orders WHERE buyer_id = $1 ORDER BY created_at DESC', [buyerId]);
+    return res.rows;
+  }
+
   async updateOrderStatus(orderId, status, metadata = {}) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.updateOrderStatus(orderId, status, metadata);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.updateOrderStatus(orderId, status, metadata);
+    }
     const sql = 'UPDATE financial_orders SET status = $2, updated_at = NOW() WHERE id = $1 RETURNING *;';
     const res = await this.query(sql, [orderId, status]);
     return res.rows[0] || null;
@@ -194,7 +278,13 @@ class PostgresMoneyRepository extends MoneyRepository {
 
   // Canonical Payments
   async createPayment(paymentData) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.createPayment(paymentData);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createPayment(paymentData);
+    }
     const id = paymentData.id || `pay-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const internalId = paymentData.internal_payment_id || id;
     const sql = `
@@ -235,7 +325,13 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async getPaymentById(paymentId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getPaymentById(paymentId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getPaymentById(paymentId);
+    }
     const sql = `
       SELECT * FROM financial_payments
       WHERE id = $1 OR internal_payment_id = $1 OR provider_reference = $1
@@ -246,18 +342,30 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async getPaymentByOrderId(orderId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getPaymentByOrderId(orderId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getPaymentByOrderId(orderId);
+    }
     const res = await this.query('SELECT * FROM financial_payments WHERE order_id = $1 LIMIT 1', [orderId]);
     return res.rows[0] || null;
   }
 
   async updatePaymentStatus(paymentId, status, metadata = {}) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.updatePaymentStatus(paymentId, status, metadata);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.updatePaymentStatus(paymentId, status, metadata);
+    }
     const sql = `
       UPDATE financial_payments
-      SET status = $2,
-          money_state = $2,
-          paid_at = CASE WHEN $2 IN ('PAID', 'ESCROW_HELD', 'SETTLED') THEN NOW() ELSE paid_at END,
+      SET status = $2::varchar,
+          money_state = $2::varchar,
+          paid_at = CASE WHEN $2::varchar IN ('PAID', 'ESCROW_HELD', 'SETTLED') THEN NOW() ELSE paid_at END,
           provider_transaction_id = COALESCE($3, provider_transaction_id),
           updated_at = NOW()
       WHERE id = $1 OR internal_payment_id = $1
@@ -268,7 +376,13 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async recordPaymentAttempt(attemptData) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.recordPaymentAttempt(attemptData);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.recordPaymentAttempt(attemptData);
+    }
     const id = attemptData.id || `att-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
       INSERT INTO financial_payment_attempts (
@@ -295,7 +409,13 @@ class PostgresMoneyRepository extends MoneyRepository {
 
   // Webhook Deduplication (Database-Enforced Replay Proof)
   async recordWebhook(webhookData) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.recordWebhook(webhookData);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.recordWebhook(webhookData);
+    }
     const id = webhookData.id || `pwh-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const providerEventId = webhookData.provider_event_id || webhookData.providerEventId;
     const sql = `
@@ -327,7 +447,13 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async getWebhook(provider, providerEventId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getWebhook(provider, providerEventId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getWebhook(provider, providerEventId);
+    }
     const res = await this.query(
       'SELECT * FROM financial_provider_webhooks WHERE provider = $1 AND provider_event_id = $2',
       [provider, providerEventId]
@@ -336,7 +462,13 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async markWebhookProcessed(provider, providerEventId, status = 'PROCESSED') {
-    if (this.degraded || !this.pool) return this.fallbackRepo.markWebhookProcessed(provider, providerEventId, status);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.markWebhookProcessed(provider, providerEventId, status);
+    }
     const sql = `
       UPDATE financial_provider_webhooks
       SET processing_status = $3, processed_at = NOW()
@@ -349,7 +481,13 @@ class PostgresMoneyRepository extends MoneyRepository {
 
   // Escrows (With Row-Level Lock on Release)
   async createEscrow(escrowData) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.createEscrow(escrowData);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createEscrow(escrowData);
+    }
     const id = escrowData.id || `esc-${escrowData.order_id}`;
     const sql = `
       INSERT INTO financial_escrows (
@@ -361,11 +499,22 @@ class PostgresMoneyRepository extends MoneyRepository {
         updated_at = NOW()
       RETURNING *;
     `;
+    let buyerId = escrowData.buyer_id;
+    let sellerId = escrowData.seller_id;
+    if (!buyerId || !sellerId) {
+      try {
+        const ordRes = await this.query('SELECT buyer_id, seller_id FROM financial_orders WHERE id = $1', [escrowData.order_id]);
+        if (ordRes.rows[0]) {
+          buyerId = buyerId || ordRes.rows[0].buyer_id;
+          sellerId = sellerId || ordRes.rows[0].seller_id;
+        }
+      } catch (_) {}
+    }
     const params = [
       id,
       escrowData.order_id,
-      escrowData.buyer_id,
-      escrowData.seller_id,
+      buyerId,
+      sellerId,
       escrowData.amount,
       escrowData.currency || 'IDR',
       escrowData.status || 'PENDING_PAYMENT',
@@ -379,17 +528,29 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async getEscrowByOrderId(orderId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getEscrowByOrderId(orderId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getEscrowByOrderId(orderId);
+    }
     const res = await this.query('SELECT * FROM financial_escrows WHERE order_id = $1', [orderId]);
     return res.rows[0] || null;
   }
 
   async updateEscrowStatus(orderId, status, metadata = {}) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.updateEscrowStatus(orderId, status, metadata);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.updateEscrowStatus(orderId, status, metadata);
+    }
     const sql = `
       UPDATE financial_escrows
-      SET status = $2,
-          funded_at = CASE WHEN $2 = 'ESCROWED' THEN NOW() ELSE funded_at END,
+      SET status = $2::varchar,
+          funded_at = CASE WHEN $2::varchar = 'ESCROWED' THEN NOW() ELSE funded_at END,
           provider_escrow_id = COALESCE($3, provider_escrow_id),
           updated_at = NOW()
       WHERE order_id = $1
@@ -406,7 +567,13 @@ class PostgresMoneyRepository extends MoneyRepository {
       orderId = orderIdParam.orderId || orderIdParam.order_id;
       actorId = orderIdParam.actorId || orderIdParam.actor_id || 'SYSTEM';
     }
-    if (this.degraded || !this.pool) return this.fallbackRepo.releaseEscrow(orderId, actorId, reason);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.releaseEscrow(orderId, actorId, reason);
+    }
 
     const client = await this.pool.connect();
     try {
@@ -453,7 +620,13 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async refundEscrow(orderId, actorId, reason) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.refundEscrow(orderId, actorId, reason);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.refundEscrow(orderId, actorId, reason);
+    }
 
     const client = await this.pool.connect();
     try {
@@ -487,11 +660,17 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async setDisputeHold(orderId, hold = true) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.setDisputeHold(orderId, hold);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.setDisputeHold(orderId, hold);
+    }
     const sql = `
       UPDATE financial_escrows
-      SET dispute_hold = $2,
-          status = CASE WHEN $2 = TRUE THEN 'DISPUTED' ELSE status END,
+      SET dispute_hold = $2::boolean,
+          status = CASE WHEN $2::boolean = TRUE THEN 'DISPUTED' ELSE status END,
           updated_at = NOW()
       WHERE order_id = $1
       RETURNING *;
@@ -502,7 +681,13 @@ class PostgresMoneyRepository extends MoneyRepository {
 
   // Settlements
   async createSettlement(settlementData) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.createSettlement(settlementData);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createSettlement(settlementData);
+    }
     const id = settlementData.id || `stl-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
       INSERT INTO financial_settlements (
@@ -534,14 +719,26 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async getSettlementByOrderId(orderId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getSettlementByOrderId(orderId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getSettlementByOrderId(orderId);
+    }
     const res = await this.query('SELECT * FROM financial_settlements WHERE order_id = $1', [orderId]);
     return res.rows[0] || null;
   }
 
   // Disputes
   async createDispute(disputeData) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.createDispute(disputeData);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createDispute(disputeData);
+    }
     const id = disputeData.id || disputeData.dispute_id || `dsp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
       INSERT INTO financial_disputes (
@@ -573,13 +770,25 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async getDisputeByOrderId(orderId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getDisputeByOrderId(orderId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getDisputeByOrderId(orderId);
+    }
     const res = await this.query('SELECT * FROM financial_disputes WHERE order_id = $1', [orderId]);
     return res.rows[0] || null;
   }
 
   async resolveDispute(disputeId, outcome, notes) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.resolveDispute(disputeId, outcome, notes);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.resolveDispute(disputeId, outcome, notes);
+    }
     const sql = `
       UPDATE financial_disputes
       SET status = 'RESOLVED', outcome = $2, decision_notes = $3, resolved_at = NOW()
@@ -592,7 +801,13 @@ class PostgresMoneyRepository extends MoneyRepository {
 
   // Chargebacks
   async createChargeback(chargebackData) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.createChargeback(chargebackData);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createChargeback(chargebackData);
+    }
     const id = chargebackData.id || `chg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
       INSERT INTO financial_chargebacks (
@@ -617,7 +832,13 @@ class PostgresMoneyRepository extends MoneyRepository {
   // Append-Only Financial Ledger
   async recordLedgerTransaction(txData, entriesList = null) {
     const entries = entriesList || txData.entries || [];
-    if (this.degraded || !this.pool) return this.fallbackRepo.recordLedgerTransaction(txData, entries);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.recordLedgerTransaction(txData, entries);
+    }
 
     // Mathematical balancing check: sum(debit) === sum(credit)
     let totalDebit = 0;
@@ -689,7 +910,13 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async getAccountBalances() {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getAccountBalances();
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getAccountBalances();
+    }
     const sql = `
       SELECT ledger_account,
              SUM(CASE WHEN entry_type = 'DEBIT' THEN amount ELSE -amount END) as balance
@@ -705,7 +932,13 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   async getLedgerTransactionsByOrderId(orderId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getLedgerTransactionsByOrderId(orderId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getLedgerTransactionsByOrderId(orderId);
+    }
     const res = await this.query(
       'SELECT * FROM financial_ledger_transactions WHERE order_id = $1 ORDER BY created_at ASC',
       [orderId]
@@ -715,13 +948,25 @@ class PostgresMoneyRepository extends MoneyRepository {
 
   // Idempotency
   async checkIdempotency(key, scope) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.checkIdempotency(key, scope);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.checkIdempotency(key, scope);
+    }
     const res = await this.query('SELECT * FROM financial_idempotency_records WHERE key = $1 AND scope = $2', [key, scope]);
     return res.rows[0] || null;
   }
 
   async saveIdempotency(key, scope, responsePayload) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.saveIdempotency(key, scope, responsePayload);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.saveIdempotency(key, scope, responsePayload);
+    }
     const sql = `
       INSERT INTO financial_idempotency_records (key, scope, status, response_payload, completed_at)
       VALUES ($1, $2, 'COMPLETED', $3, NOW())

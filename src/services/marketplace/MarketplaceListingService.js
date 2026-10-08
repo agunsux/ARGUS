@@ -96,7 +96,7 @@ class MarketplaceListingService {
     }
 
     // 2. Validate ticket exists
-    const ticket = TicketInventoryService.findTicket(ticketId);
+    const ticket = await TicketInventoryService.getTicketById(ticketId);
     if (!ticket) {
       const err = new Error(`Ticket '${ticketId}' not found in inventory`);
       err.code = 'TICKET_NOT_FOUND';
@@ -255,7 +255,11 @@ class MarketplaceListingService {
           listing_id: listingId
         });
       }
-    } catch (_) {}
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     return listing;
   }
@@ -371,9 +375,36 @@ class MarketplaceListingService {
           listing_id: null
         });
       }
-    } catch (_) {}
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     return listing;
+  }
+
+  /**
+   * Retrieves listing by ID with authoritative database fallback.
+   * Hydrates in-memory projection if found in database.
+   */
+  static async getListingById(listingId) {
+    let listing = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
+    if (!listing) {
+      try {
+        const { getMarketplaceRepository } = require('../../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        const dbListing = await marketplaceRepo.getListingById(listingId);
+        if (dbListing) {
+          if (!state.listings) state.listings = [];
+          state.listings.push(dbListing);
+          listing = dbListing;
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
+      }
+    }
+    return listing ? this.getListing(listing.id) : null;
   }
 
   /**

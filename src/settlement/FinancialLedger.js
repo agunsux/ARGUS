@@ -178,7 +178,11 @@ class FinancialLedger {
         amount: parseInt(e.amount, 10),
         currency
       })));
-    } catch (_) {}
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     await recordAuditLog('FINANCIAL_LEDGER', transactionId, eventType, actorId, {
       order_id: orderId,

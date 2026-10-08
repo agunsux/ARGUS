@@ -247,7 +247,11 @@ class TicketInventoryService {
           transfer_method: transferMethod
         }
       });
-    } catch (_) {}
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     return ticket || canonicalTicket;
   }
@@ -295,7 +299,11 @@ class TicketInventoryService {
         verification_status: TICKET_VERIFICATION_STATUS.SUBMITTED,
         evidence_bundle_id: evidenceBundleId || ticket.evidence_bundle_id
       });
-    } catch (_) {}
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     await recordAuditLog('TICKET_INVENTORY', ticketId, 'SUBMITTED_FOR_VERIFICATION', sellerId, {
       evidence_bundle_id: evidenceBundleId,
@@ -344,7 +352,11 @@ class TicketInventoryService {
       await marketplaceRepo.updateTicketStatus(ticketId, newStatus, {
         verification_status: ticket.verification_status
       });
-    } catch (_) {}
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     await recordAuditLog('TICKET_INVENTORY', ticketId, `STATUS_${newStatus}`, actorId, {
       previous_status: previousStatus,
@@ -356,11 +368,53 @@ class TicketInventoryService {
   }
 
   /**
-   * Retrieves a ticket by ID.
+   * Retrieves a ticket by ID (synchronous memory lookup).
    * Looks up by both ticket_id and id for compatibility with TicketTrustService.
    */
   static findTicket(ticketId) {
     return state.tickets.find(t => t.ticket_id === ticketId || t.id === ticketId) || null;
+  }
+
+  /**
+   * Retrieves a ticket by ID with authoritative database fallback.
+   * Hydrates in-memory projection if found in database.
+   */
+  static async getTicketById(ticketId) {
+    let ticket = this.findTicket(ticketId);
+    if (!ticket) {
+      try {
+        const { getMarketplaceRepository } = require('../../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        const dbTicket = await marketplaceRepo.getTicketById(ticketId);
+        if (dbTicket) {
+          const formatted = {
+            id: dbTicket.id,
+            ticket_id: dbTicket.id,
+            canonical_event_id: dbTicket.canonical_event_id,
+            event_id: dbTicket.canonical_event_id,
+            current_owner_id: dbTicket.current_owner_id,
+            seller_id: dbTicket.original_owner_id,
+            original_owner_id: dbTicket.original_owner_id,
+            ticket_type: dbTicket.ticket_type,
+            section: dbTicket.section,
+            row: dbTicket.row,
+            seat: dbTicket.seat,
+            face_value: dbTicket.face_value,
+            currency: dbTicket.currency,
+            status: dbTicket.status,
+            verification_status: dbTicket.verification_status,
+            barcode_hash: dbTicket.barcode_hash,
+            marketplace_created: true
+          };
+          if (!state.tickets) state.tickets = [];
+          state.tickets.push(formatted);
+          ticket = formatted;
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
+      }
+    }
+    return ticket;
   }
 
   /**

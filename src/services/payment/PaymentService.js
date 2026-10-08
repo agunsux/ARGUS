@@ -253,7 +253,11 @@ class PaymentService {
         idempotency_key: effectiveIdempotencyKey,
         metadata: canonicalRecord.metadata
       });
-    } catch (_) {}
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     // Record deterministic payment attempt
     PaymentRoutingService.recordPaymentAttempt({
@@ -368,7 +372,11 @@ class PaymentService {
           message: 'Webhook event already processed'
         };
       }
-    } catch (_) {}
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     // 4. Record Webhook Entry (Audit & Non-Repudiation)
     const webhookRecord = {
@@ -411,6 +419,25 @@ class PaymentService {
 
       // Call authoritative EscrowService to fund escrow and balance double-entry FinancialLedger if order exists
       let order = state.orders ? state.orders.find(o => o.id === event.orderId) : null;
+      if (!order) {
+        try {
+          const { getMoneyRepository } = require('../../storage');
+          const moneyRepo = getMoneyRepository();
+          const dbOrder = await moneyRepo.getOrderById(event.orderId);
+          if (dbOrder) {
+            if (!state.orders) state.orders = [];
+            state.orders.push(dbOrder);
+            order = dbOrder;
+            const dbEscrow = await moneyRepo.getEscrowByOrderId(event.orderId);
+            if (dbEscrow) {
+              if (!state.escrows) state.escrows = [];
+              state.escrows.push(dbEscrow);
+            }
+          }
+        } catch (e) {
+          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+        }
+      }
       if (!order && (event.orderId.startsWith('order-doku-sandbox-gate-') || event.orderId.startsWith('sandbox-') || event.orderId === 'order-doku-sandbox-gate-1')) {
         order = {
           id: event.orderId,
@@ -460,6 +487,15 @@ class PaymentService {
       webhookRecord.processing_status = 'PROCESSED';
       webhookRecord.processed_at = new Date().toISOString();
       DurableFinancialStore.persist('provider_webhooks', state.provider_webhooks);
+      try {
+        const { getMoneyRepository } = require('../../storage');
+        const moneyRepo = getMoneyRepository();
+        await moneyRepo.markWebhookProcessed(targetProviderName, eventId, 'PROCESSED');
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw repoErr;
+        }
+      }
     } else if (event.status === MONEY_STATE.PAYMENT_FAILED) {
       if (state.canonical_payments) {
         const canonical = state.canonical_payments.find(p => p.order_id === event.orderId);

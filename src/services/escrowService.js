@@ -131,7 +131,21 @@ class EscrowService {
       throw err;
     }
 
-    const listing = state.listings.find(l => l.id === listingId);
+    let listing = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
+    if (!listing) {
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        const dbListing = await marketplaceRepo.getListingById(listingId);
+        if (dbListing) {
+          if (!state.listings) state.listings = [];
+          state.listings.push(dbListing);
+          listing = dbListing;
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
+      }
+    }
     if (!listing) {
       const err = new Error('Listing not found');
       err.code = 'LISTING_NOT_FOUND';
@@ -184,6 +198,10 @@ class EscrowService {
     // Resolve or generate immutable TransactionQuote
     let quote;
     if (quoteId) {
+      let quoteObj = TransactionQuoteService.getQuote(quoteId);
+      if (!quoteObj) {
+        quoteObj = await TransactionQuoteService.getQuoteById(quoteId);
+      }
       quote = TransactionQuoteService.validateQuote(quoteId);
       await TransactionQuoteService.consumeQuote(quoteId, orderId, buyerId);
     } else {
@@ -308,15 +326,16 @@ class EscrowService {
     state.escrows.push(escrow);
 
     try {
-      const { getMoneyRepository } = require('../storage');
+      const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
       const moneyRepo = getMoneyRepository();
+      const marketplaceRepo = getMarketplaceRepository();
       await moneyRepo.createOrder({
         id: orderId,
         buyer_id: buyerId,
         seller_id: listing.seller_id,
         listing_id: listingId,
         ticket_id: listing.ticket_id,
-        canonical_event_id: listing.event_id,
+        canonical_event_id: listing.event_id || listing.canonical_event_id,
         gross_amount: quote.ticket_price,
         buyer_fee: quote.buyer_platform_fee,
         seller_fee: quote.seller_platform_fee,
@@ -339,7 +358,12 @@ class EscrowService {
         status: ESCROW_STATUS.PENDING_PAYMENT,
         held_by: 'DOKU_ESCROW'
       });
-    } catch (_) {}
+      await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.RESERVED);
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     await recordAuditLog('ORDER', orderId, 'CREATED', buyerId, {
       listing_id: listingId,
@@ -416,28 +440,71 @@ class EscrowService {
    * Process payment confirmation (idempotent) and transition to ESCROWED
    */
   static async recordPayment({ orderId, providerRef, idempotencyKey, amountPaid }) {
-    const order = state.orders.find(o => o.id === orderId);
+    let order = (state.orders || []).find(o => o.id === orderId);
+    if (!order) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        const dbOrder = await moneyRepo.getOrderById(orderId);
+        if (dbOrder) {
+          dbOrder.total_amount = parseInt(dbOrder.total_amount, 10);
+          dbOrder.buyer_total = parseInt(dbOrder.buyer_total !== undefined ? dbOrder.buyer_total : dbOrder.total_amount, 10);
+          dbOrder.seller_payout = parseInt(dbOrder.seller_payout || 0, 10);
+          dbOrder.service_fee = parseInt(dbOrder.service_fee || 0, 10);
+          if (!state.orders) state.orders = [];
+          state.orders.push(dbOrder);
+          order = dbOrder;
+        }
+      } catch (e) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+      }
+    }
     if (!order) {
       const err = new Error('Order not found');
       err.code = 'ORDER_NOT_FOUND';
       throw err;
     }
 
-    // Check idempotency: if payment already recorded with this key
-    const existingPayment = state.payments.find(p => p.idempotency_key === idempotencyKey);
+    // Check idempotency: if payment already recorded in memory or db
+    const existingPayment = (state.payments || []).find(p => p.idempotency_key === idempotencyKey);
     if (existingPayment) {
-      const escrow = state.escrows.find(e => e.order_id === orderId);
+      let escrow = (state.escrows || []).find(e => e.order_id === orderId);
       return { payment: existingPayment, order, escrow, idempotent: true };
     }
 
-    const expectedAmount = order.buyer_total !== undefined ? order.buyer_total : order.total_amount;
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      const dbPayment = await moneyRepo.getPaymentByOrderId(orderId);
+      if (dbPayment && (dbPayment.idempotency_key === idempotencyKey || dbPayment.status === 'SETTLED')) {
+        let escrow = (state.escrows || []).find(e => e.order_id === orderId);
+        return { payment: dbPayment, order, escrow, idempotent: true };
+      }
+    } catch (_) {}
+
+    const expectedAmount = parseInt(order.buyer_total !== undefined ? order.buyer_total : order.total_amount, 10);
     if (amountPaid && parseInt(amountPaid, 10) !== expectedAmount) {
       const err = new Error(`Payment amount mismatch. Expected ${expectedAmount}, got ${amountPaid}`);
       err.code = 'AMOUNT_MISMATCH';
       throw err;
     }
 
-    const escrow = state.escrows.find(e => e.order_id === orderId);
+    let escrow = (state.escrows || []).find(e => e.order_id === orderId);
+    if (!escrow) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        const dbEscrow = await moneyRepo.getEscrowByOrderId(orderId);
+        if (dbEscrow) {
+          dbEscrow.amount = parseInt(dbEscrow.amount, 10);
+          if (!state.escrows) state.escrows = [];
+          state.escrows.push(dbEscrow);
+          escrow = dbEscrow;
+        }
+      } catch (e) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+      }
+    }
     if (!escrow) {
       const err = new Error('Escrow record not found for order');
       err.code = 'ESCROW_NOT_FOUND';
@@ -455,6 +522,7 @@ class EscrowService {
       idempotency_key: idempotencyKey,
       created_at: new Date().toISOString()
     };
+    if (!state.payments) state.payments = [];
     state.payments.push(payment);
 
     // Transition Escrow: PENDING_PAYMENT -> PAID -> ESCROWED
@@ -465,25 +533,51 @@ class EscrowService {
     order.status = ORDER_STATUS.PAID_ESCROWED;
 
     // Update listing status to SOLD
-    const listing = state.listings.find(l => l.id === order.listing_id);
+    const listing = (state.listings || []).find(l => l.id === order.listing_id);
     if (listing) {
       listing.status = LISTING_STATUS.SOLD;
     }
 
     // Update ticket owner/status
-    const ticket = state.tickets.find(t => t.id === order.ticket_id);
+    const ticket = (state.tickets || []).find(t => t.id === order.ticket_id);
     if (ticket) {
       ticket.status = 'ESCROWED';
     }
 
     try {
-      const { getMoneyRepository } = require('../storage');
+      const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
       const moneyRepo = getMoneyRepository();
+      const marketplaceRepo = getMarketplaceRepository();
+      await moneyRepo.createPayment({
+        id: paymentId,
+        order_id: orderId,
+        buyer_id: order.buyer_id,
+        seller_id: order.seller_id,
+        currency: order.currency || 'IDR',
+        gross_amount: expectedAmount,
+        provider: 'DOKU',
+        provider_reference: payment.provider_ref,
+        provider_transaction_id: payment.provider_ref,
+        status: 'SETTLED',
+        money_state: 'PAID',
+        payment_method: 'DOKU_VA',
+        idempotency_key: idempotencyKey
+      });
       await moneyRepo.updateOrderStatus(orderId, ORDER_STATUS.PAID_ESCROWED);
       await moneyRepo.updateEscrowStatus(orderId, ESCROW_STATUS.ESCROWED, {
         provider_escrow_id: providerRef
       });
-    } catch (_) {}
+      if (order.listing_id) {
+        await marketplaceRepo.updateListingStatus(order.listing_id, LISTING_STATUS.SOLD);
+      }
+      if (order.ticket_id) {
+        await marketplaceRepo.updateTicketStatus(order.ticket_id, 'ESCROWED');
+      }
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     await recordAuditLog('PAYMENT', paymentId, 'PROCESSED', order.buyer_id, {
       order_id: orderId,
@@ -557,10 +651,38 @@ class EscrowService {
   static async releaseToSeller(orderId, actorId) {
     const unlock = await releaseMutex.acquire(orderId);
     try {
-      const order = state.orders.find(o => o.id === orderId);
+      let order = (state.orders || []).find(o => o.id === orderId);
+      if (!order) {
+        try {
+          const { getMoneyRepository } = require('../storage');
+          const moneyRepo = getMoneyRepository();
+          const dbOrder = await moneyRepo.getOrderById(orderId);
+          if (dbOrder) {
+            if (!state.orders) state.orders = [];
+            state.orders.push(dbOrder);
+            order = dbOrder;
+          }
+        } catch (e) {
+          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+        }
+      }
       if (!order) throw new Error('Order not found');
 
-      const escrow = state.escrows.find(e => e.order_id === orderId);
+      let escrow = (state.escrows || []).find(e => e.order_id === orderId);
+      if (!escrow) {
+        try {
+          const { getMoneyRepository } = require('../storage');
+          const moneyRepo = getMoneyRepository();
+          const dbEscrow = await moneyRepo.getEscrowByOrderId(orderId);
+          if (dbEscrow) {
+            if (!state.escrows) state.escrows = [];
+            state.escrows.push(dbEscrow);
+            escrow = dbEscrow;
+          }
+        } catch (e) {
+          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+        }
+      }
       if (!escrow) throw new Error('Escrow not found');
 
       // 1. Idempotency Invariant: If already released, return success without duplicate payout or ledger entry
@@ -637,10 +759,21 @@ class EscrowService {
       if (ticket) ticket.status = 'SETTLED';
 
       try {
-        const { getMoneyRepository } = require('../storage');
+        const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
         const moneyRepo = getMoneyRepository();
+        const marketplaceRepo = getMarketplaceRepository();
         await moneyRepo.releaseEscrow(orderId, actorId);
-      } catch (_) {}
+        if (order.listing_id) {
+          await marketplaceRepo.updateListingStatus(order.listing_id, LISTING_STATUS.SETTLED);
+        }
+        if (order.ticket_id) {
+          await marketplaceRepo.updateTicketStatus(order.ticket_id, 'SETTLED');
+        }
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw repoErr;
+        }
+      }
 
       // 6. State Machine synchronization
       const { EscrowStateMachine, ESCROW_LIFECYCLE_STATE } = require('../settlement/EscrowStateMachine');
@@ -703,10 +836,38 @@ class EscrowService {
   static async refundToBuyer(orderId, actorId, reason) {
     const unlock = await releaseMutex.acquire(orderId);
     try {
-      const order = state.orders ? state.orders.find(o => o.id === orderId) : null;
+      let order = state.orders ? state.orders.find(o => o.id === orderId) : null;
+      if (!order) {
+        try {
+          const { getMoneyRepository } = require('../storage');
+          const moneyRepo = getMoneyRepository();
+          const dbOrder = await moneyRepo.getOrderById(orderId);
+          if (dbOrder) {
+            if (!state.orders) state.orders = [];
+            state.orders.push(dbOrder);
+            order = dbOrder;
+          }
+        } catch (e) {
+          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+        }
+      }
       if (!order) throw new Error('Order not found');
 
-      const escrow = state.escrows ? state.escrows.find(e => e.order_id === orderId) : null;
+      let escrow = state.escrows ? state.escrows.find(e => e.order_id === orderId) : null;
+      if (!escrow) {
+        try {
+          const { getMoneyRepository } = require('../storage');
+          const moneyRepo = getMoneyRepository();
+          const dbEscrow = await moneyRepo.getEscrowByOrderId(orderId);
+          if (dbEscrow) {
+            if (!state.escrows) state.escrows = [];
+            state.escrows.push(dbEscrow);
+            escrow = dbEscrow;
+          }
+        } catch (e) {
+          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+        }
+      }
       if (!escrow) throw new Error('Escrow not found');
 
       if (escrow.status === ESCROW_STATUS.RELEASED) {
@@ -765,6 +926,20 @@ class EscrowService {
         payment.ledger_reversed = true;
       }
 
+      try {
+        const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        const marketplaceRepo = getMarketplaceRepository();
+        await moneyRepo.refundEscrow(orderId, actorId, reason);
+        if (order.listing_id) {
+          await marketplaceRepo.updateListingStatus(order.listing_id, LISTING_STATUS.CANCELLED);
+        }
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw repoErr;
+        }
+      }
+
       await recordAuditLog('ESCROW', escrow.id, 'FUNDS_REFUNDED_TO_BUYER', actorId, {
         order_id: orderId,
         buyer_id: order.buyer_id,
@@ -821,10 +996,38 @@ class EscrowService {
    * Mark escrow as disputed
    */
   static async markDisputed(orderId, actorId, reason) {
-    const order = state.orders.find(o => o.id === orderId);
+    let order = state.orders ? state.orders.find(o => o.id === orderId) : null;
+    if (!order) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        const dbOrder = await moneyRepo.getOrderById(orderId);
+        if (dbOrder) {
+          if (!state.orders) state.orders = [];
+          state.orders.push(dbOrder);
+          order = dbOrder;
+        }
+      } catch (e) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+      }
+    }
     if (!order) throw new Error('Order not found');
 
-    const escrow = state.escrows.find(e => e.order_id === orderId);
+    let escrow = state.escrows ? state.escrows.find(e => e.order_id === orderId) : null;
+    if (!escrow) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        const dbEscrow = await moneyRepo.getEscrowByOrderId(orderId);
+        if (dbEscrow) {
+          if (!state.escrows) state.escrows = [];
+          state.escrows.push(dbEscrow);
+          escrow = dbEscrow;
+        }
+      } catch (e) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+      }
+    }
     if (!escrow) throw new Error('Escrow not found');
 
     if (escrow.status === ESCROW_STATUS.RELEASED) {
@@ -833,6 +1036,16 @@ class EscrowService {
 
     escrow.status = ESCROW_STATUS.DISPUTED;
     order.status = ORDER_STATUS.DISPUTED;
+
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      await moneyRepo.setDisputeHold(orderId, true);
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     await recordAuditLog('ESCROW', escrow.id, 'DISPUTED', actorId, {
       order_id: orderId,

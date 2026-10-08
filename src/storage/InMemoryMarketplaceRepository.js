@@ -245,6 +245,10 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     return delivery;
   }
 
+  async getDeliveryById(deliveryId) {
+    return this.deliveries.get(deliveryId) || null;
+  }
+
   async getDeliveryByOrderId(orderId) {
     for (const d of this.deliveries.values()) {
       if (d.order_id === orderId) return d;

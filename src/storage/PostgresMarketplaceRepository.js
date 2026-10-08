@@ -18,63 +18,97 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     this.fallbackRepo = new InMemoryMarketplaceRepository();
     this.degraded = false;
     this.initialized = false;
+    this.initPromise = null;
+  }
+
+  async ensureInitialized() {
+    if (this.initialized) {
+      if (this.degraded && (process.env.NODE_ENV === 'production' || process.env.VERCEL)) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return;
+    }
+    await this.init();
   }
 
   async init() {
-    if (!this.connectionString) {
-      this.degraded = true;
-      await this.fallbackRepo.init();
-      this.initialized = true;
-      return false;
-    }
-
-    try {
-      let cleanConnStr = this.connectionString.trim();
-      if (cleanConnStr.startsWith('"') && cleanConnStr.endsWith('"')) cleanConnStr = cleanConnStr.slice(1, -1);
-      if (cleanConnStr.startsWith("'") && cleanConnStr.endsWith("'")) cleanConnStr = cleanConnStr.slice(1, -1);
-      if (cleanConnStr.includes('channel_binding=')) {
-        try {
-          const u = new URL(cleanConnStr);
-          u.searchParams.delete('channel_binding');
-          cleanConnStr = u.toString();
-        } catch (_) {}
+    if (this.initPromise) return this.initPromise;
+    this.initPromise = (async () => {
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+      if (!this.connectionString) {
+        if (isProduction) {
+          this.degraded = true;
+          this.initialized = true;
+          throw new Error('[MarketplaceRepository] Production configuration error: DATABASE_URL is missing.');
+        }
+        this.degraded = true;
+        await this.fallbackRepo.init();
+        this.initialized = true;
+        return false;
       }
 
-      const isLocalhost = cleanConnStr.includes('localhost') || cleanConnStr.includes('127.0.0.1');
-      const ssl = isLocalhost ? undefined : { rejectUnauthorized: false };
+      try {
+        let cleanConnStr = this.connectionString.trim();
+        if (cleanConnStr.startsWith('"') && cleanConnStr.endsWith('"')) cleanConnStr = cleanConnStr.slice(1, -1);
+        if (cleanConnStr.startsWith("'") && cleanConnStr.endsWith("'")) cleanConnStr = cleanConnStr.slice(1, -1);
+        if (cleanConnStr.includes('channel_binding=')) {
+          try {
+            const u = new URL(cleanConnStr);
+            u.searchParams.delete('channel_binding');
+            cleanConnStr = u.toString();
+          } catch (_) {}
+        }
 
-      this.pool = new Pool({
-        connectionString: cleanConnStr,
-        ssl,
-        max: 5,
-        idleTimeoutMillis: 10000,
-        connectionTimeoutMillis: 5000
-      });
+        const isLocalhost = cleanConnStr.includes('localhost') || cleanConnStr.includes('127.0.0.1');
+        const ssl = isLocalhost ? undefined : { rejectUnauthorized: false };
 
-      const res = await this.pool.query('SELECT NOW()');
-      this.initialized = true;
-      this.degraded = false;
-      return true;
-    } catch (err) {
-      console.warn(`[MarketplaceRepository] DB connection failed, falling back to memory: ${err.message}`);
-      this.degraded = true;
-      await this.fallbackRepo.init();
-      this.initialized = true;
-      return false;
-    }
+        this.pool = new Pool({
+          connectionString: cleanConnStr,
+          ssl,
+          max: 5,
+          idleTimeoutMillis: 10000,
+          connectionTimeoutMillis: 5000
+        });
+
+        await this.pool.query('SELECT NOW()');
+        this.initialized = true;
+        this.degraded = false;
+        return true;
+      } catch (err) {
+        if (isProduction) {
+          this.degraded = true;
+          this.initialized = true;
+          throw new Error(`[MarketplaceRepository] Production database connection failed: ${err.message}`);
+        }
+        console.warn(`[MarketplaceRepository] DB connection failed, falling back to memory: ${err.message}`);
+        this.degraded = true;
+        await this.fallbackRepo.init();
+        this.initialized = true;
+        return false;
+      }
+    })();
+    return this.initPromise;
   }
 
   async query(text, params = []) {
-    if (!this.initialized) await this.init();
-    if (this.degraded || !this.pool) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Database operation rejected while degraded in production.');
+      }
       return null;
     }
     return await this.pool.query(text, params);
   }
 
   async withTransaction(fn) {
-    if (!this.initialized) await this.init();
-    if (this.degraded || !this.pool) return fn(null);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Transaction rejected while degraded in production.');
+      }
+      return fn(null);
+    }
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -91,7 +125,13 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
 
   // Tickets
   async createTicket(ticketData) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.createTicket(ticketData);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createTicket(ticketData);
+    }
 
     const id = ticketData.id || ticketData.ticket_id || `tkt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
@@ -132,13 +172,25 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
   }
 
   async getTicketById(ticketId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getTicketById(ticketId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getTicketById(ticketId);
+    }
     const res = await this.query('SELECT * FROM marketplace_tickets WHERE id = $1', [ticketId]);
     return res.rows[0] || null;
   }
 
   async updateTicketStatus(ticketId, status, lockedBy = null) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.updateTicketStatus(ticketId, status, lockedBy);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.updateTicketStatus(ticketId, status, lockedBy);
+    }
     const sql = `
       UPDATE marketplace_tickets
       SET status = $2,
@@ -152,14 +204,26 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
   }
 
   async listTicketsBySeller(sellerId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.listTicketsBySeller(sellerId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listTicketsBySeller(sellerId);
+    }
     const res = await this.query('SELECT * FROM marketplace_tickets WHERE seller_id = $1 ORDER BY created_at DESC', [sellerId]);
     return res.rows;
   }
 
   // Listings
   async createListing(listingData) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.createListing(listingData);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createListing(listingData);
+    }
     const id = listingData.id || listingData.listing_id || `list-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
       INSERT INTO marketplace_listings (
@@ -190,13 +254,25 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
   }
 
   async getListingById(listingId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getListingById(listingId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getListingById(listingId);
+    }
     const res = await this.query('SELECT * FROM marketplace_listings WHERE id = $1', [listingId]);
     return res.rows[0] || null;
   }
 
   async updateListingStatus(listingId, status) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.updateListingStatus(listingId, status);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.updateListingStatus(listingId, status);
+    }
     const sql = `
       UPDATE marketplace_listings
       SET status = $2, updated_at = NOW()
@@ -208,7 +284,13 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
   }
 
   async listActiveListings(canonicalEventId = null) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.listActiveListings(canonicalEventId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listActiveListings(canonicalEventId);
+    }
     if (canonicalEventId) {
       const res = await this.query(
         "SELECT * FROM marketplace_listings WHERE canonical_event_id = $1 AND status = 'ACTIVE' ORDER BY price ASC",
@@ -234,7 +316,13 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
   }
 
   async createReservation(reservationData, ttlMs = 600000) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.createReservation(reservationData, ttlMs);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createReservation(reservationData, ttlMs);
+    }
 
     const client = await this.pool.connect();
     try {
@@ -319,13 +407,25 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
   }
 
   async getReservationById(reservationId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getReservationById(reservationId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getReservationById(reservationId);
+    }
     const res = await this.query('SELECT * FROM marketplace_reservations WHERE id = $1', [reservationId]);
     return res.rows[0] || null;
   }
 
   async getActiveReservationForListing(listingId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getActiveReservationForListing(listingId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getActiveReservationForListing(listingId);
+    }
     const sql = `
       SELECT * FROM marketplace_reservations
       WHERE listing_id = $1 AND status = 'PENDING' AND expires_at > NOW()
@@ -336,7 +436,13 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
   }
 
   async expireReservation(reservationId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.expireReservation(reservationId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.expireReservation(reservationId);
+    }
 
     const client = await this.pool.connect();
     try {
@@ -375,7 +481,13 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
   }
 
   async releaseReservation(reservationId, actorId = 'SYSTEM', reason = null) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.releaseReservation(reservationId, actorId, reason);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.releaseReservation(reservationId, actorId, reason);
+    }
 
     const client = await this.pool.connect();
     try {
@@ -414,7 +526,13 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
   }
 
   async convertReservation(reservationId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.convertReservation(reservationId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.convertReservation(reservationId);
+    }
     const sql = `
       UPDATE marketplace_reservations
       SET status = 'CONVERTED', converted_at = NOW()
@@ -430,7 +548,13 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
   }
 
   async reconcileExpiredReservations() {
-    if (this.degraded || !this.pool) return this.fallbackRepo.reconcileExpiredReservations();
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.reconcileExpiredReservations();
+    }
     const res = await this.query(
       "SELECT id FROM marketplace_reservations WHERE status = 'PENDING' AND expires_at <= NOW()"
     );
@@ -444,7 +568,13 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
 
   // Deliveries
   async createDelivery(deliveryData) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.createDelivery(deliveryData);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createDelivery(deliveryData);
+    }
     const id = deliveryData.id || `dlv-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
       INSERT INTO marketplace_deliveries (
@@ -470,24 +600,55 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     return res.rows[0];
   }
 
+  async getDeliveryById(deliveryId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getDeliveryById(deliveryId);
+    }
+    const res = await this.query('SELECT * FROM marketplace_deliveries WHERE id = $1', [deliveryId]);
+    return res.rows[0] || null;
+  }
+
   async getDeliveryByOrderId(orderId) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.getDeliveryByOrderId(orderId);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getDeliveryByOrderId(orderId);
+    }
     const res = await this.query('SELECT * FROM marketplace_deliveries WHERE order_id = $1', [orderId]);
     return res.rows[0] || null;
   }
 
   async updateDeliveryStatus(deliveryId, status, metadata = {}) {
-    if (this.degraded || !this.pool) return this.fallbackRepo.updateDeliveryStatus(deliveryId, status, metadata);
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.updateDeliveryStatus(deliveryId, status, metadata);
+    }
     const sql = `
       UPDATE marketplace_deliveries
-      SET status = $2,
-          delivered_at = CASE WHEN $2 = 'DELIVERED' THEN NOW() ELSE delivered_at END,
-          confirmed_at = CASE WHEN $2 = 'CONFIRMED' THEN NOW() ELSE confirmed_at END,
+      SET status = $2::varchar,
+          delivery_reference = COALESCE($3, delivery_reference),
+          notes = COALESCE($4, notes),
+          delivered_at = CASE WHEN $2::varchar = 'DELIVERED' THEN NOW() ELSE delivered_at END,
+          confirmed_at = CASE WHEN $2::varchar = 'CONFIRMED' THEN NOW() ELSE confirmed_at END,
           updated_at = NOW()
       WHERE id = $1
       RETURNING *;
     `;
-    const res = await this.query(sql, [deliveryId, status]);
+    const res = await this.query(sql, [
+      deliveryId,
+      status,
+      metadata.delivery_reference || null,
+      metadata.notes || metadata.failure_reason || null
+    ]);
     return res.rows[0] || null;
   }
 }

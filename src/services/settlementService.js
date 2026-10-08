@@ -20,10 +20,38 @@ class SettlementService {
    * Guarded by ARGUS Trust Engine and physical gate admission evidence.
    */
   static async executeSettlement({ orderId, sellerId, officerId, idempotencyKey, bankAccount }) {
-    const order = state.orders ? state.orders.find(o => o.id === orderId) : null;
+    let order = state.orders ? state.orders.find(o => o.id === orderId) : null;
+    if (!order) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        const dbOrder = await moneyRepo.getOrderById(orderId);
+        if (dbOrder) {
+          if (!state.orders) state.orders = [];
+          state.orders.push(dbOrder);
+          order = dbOrder;
+        }
+      } catch (e) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+      }
+    }
     if (!order) throw new Error('Order not found');
 
-    const escrow = state.escrows ? state.escrows.find(e => e.order_id === orderId) : null;
+    let escrow = state.escrows ? state.escrows.find(e => e.order_id === orderId) : null;
+    if (!escrow) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        const dbEscrow = await moneyRepo.getEscrowByOrderId(orderId);
+        if (dbEscrow) {
+          if (!state.escrows) state.escrows = [];
+          state.escrows.push(dbEscrow);
+          escrow = dbEscrow;
+        }
+      } catch (e) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+      }
+    }
     if (!escrow) throw new Error('Escrow not found');
 
     if (sellerId && order.seller_id !== sellerId) {
@@ -52,6 +80,15 @@ class SettlementService {
     if (existingForOrder) {
       return { settlement: existingForOrder, idempotent: true, duplicatePrevented: true };
     }
+
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      const dbSettlement = await moneyRepo.getSettlementByOrderId(orderId);
+      if (dbSettlement) {
+        return { settlement: dbSettlement, idempotent: true, duplicatePrevented: true };
+      }
+    } catch (e) {}
 
     // 3. Operational & Trust Gate Invariant: Hold states block settlement
     if (order.status === 'DISPUTED' || escrow.status === 'DISPUTED') {
@@ -131,6 +168,31 @@ class SettlementService {
       const { DurableFinancialStore } = require('../settlement/DurableFinancialStore');
       DurableFinancialStore.persist('settlement_records', state.settlement_records);
     } catch (_) {}
+
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      const repoResult = await moneyRepo.createSettlement({
+        id: settlementId,
+        order_id: orderId,
+        seller_id: order.seller_id,
+        officer_id: officerId || null,
+        amount: escrow.amount,
+        currency: order.currency || 'IDR',
+        status: 'EXECUTED',
+        settlement_mode: settlementMode,
+        payout_ref: payoutRef,
+        bank_account: effectiveBankAccount,
+        idempotency_key: idempotencyKey
+      });
+      if (repoResult && repoResult.idempotent) {
+        return { settlement: repoResult.settlement, idempotent: true, duplicatePrevented: true };
+      }
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     await recordAuditLog('SETTLEMENT', settlementId, 'EXECUTED', officerId || 'SYSTEM', {
       order_id: orderId,

@@ -72,6 +72,14 @@ class InMemoryMoneyRepository extends MoneyRepository {
     return this.orders.get(orderId) || null;
   }
 
+  async listOrdersByBuyerId(buyerId) {
+    const list = [];
+    for (const o of this.orders.values()) {
+      if (o.buyer_id === buyerId) list.push(o);
+    }
+    return list;
+  }
+
   async updateOrderStatus(orderId, status, metadata = {}) {
     const order = this.orders.get(orderId);
     if (!order) return null;

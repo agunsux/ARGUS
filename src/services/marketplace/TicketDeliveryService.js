@@ -104,7 +104,21 @@ class TicketDeliveryService {
 
     const unlock = await deliveryMutex.acquire(orderId);
     try {
-      const order = (state.orders || []).find(o => o.id === orderId);
+      let order = (state.orders || []).find(o => o.id === orderId);
+      if (!order) {
+        try {
+          const { getMoneyRepository } = require('../../storage');
+          const moneyRepo = getMoneyRepository();
+          const dbOrder = await moneyRepo.getOrderById(orderId);
+          if (dbOrder) {
+            if (!state.orders) state.orders = [];
+            state.orders.push(dbOrder);
+            order = dbOrder;
+          }
+        } catch (e) {
+          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+        }
+      }
       if (!order) {
         const err = new Error(`Order '${orderId}' not found`);
         err.code = 'ORDER_NOT_FOUND';
@@ -166,10 +180,27 @@ class TicketDeliveryService {
         failure_reason: null
       };
 
-      if (!state.deliveries) {
-        state.deliveries = [];
-      }
       state.deliveries.push(delivery);
+
+      try {
+        const { getMarketplaceRepository } = require('../../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        await marketplaceRepo.createDelivery({
+          id: deliveryId,
+          order_id: order.id,
+          ticket_id: delivery.ticket_id,
+          buyer_id: order.buyer_id,
+          seller_id: order.seller_id,
+          delivery_method: deliveryMethod,
+          status: DELIVERY_STATUS.PENDING,
+          delivery_reference: delivery.delivery_reference,
+          notes: delivery.notes
+        });
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw repoErr;
+        }
+      }
 
       // 5. Update Order and Ticket Lifecycle States
       order.marketplace_status = MARKETPLACE_ORDER_STATUS.FULFILLMENT_PENDING;
@@ -203,10 +234,57 @@ class TicketDeliveryService {
   }
 
   /**
+   * Retrieves delivery by ID with DB fallback.
+   */
+  static async getDeliveryById(deliveryId) {
+    let delivery = this.getDelivery(deliveryId);
+    if (!delivery) {
+      try {
+        const { getMarketplaceRepository } = require('../../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        delivery = await marketplaceRepo.getDeliveryById(deliveryId);
+        if (delivery) {
+          if (!state.deliveries) state.deliveries = [];
+          if (!state.deliveries.some(d => d.id === delivery.id)) {
+            state.deliveries.push(delivery);
+          }
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw err;
+        }
+      }
+    }
+    return delivery;
+  }
+
+  /**
    * Retrieves delivery by order ID.
    */
   static getDeliveryByOrderId(orderId) {
     return (state.deliveries || []).find(d => d.order_id === orderId) || null;
+  }
+
+  static async getDeliveryByOrderIdAsync(orderId) {
+    let delivery = this.getDeliveryByOrderId(orderId);
+    if (!delivery) {
+      try {
+        const { getMarketplaceRepository } = require('../../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        delivery = await marketplaceRepo.getDeliveryByOrderId(orderId);
+        if (delivery) {
+          if (!state.deliveries) state.deliveries = [];
+          if (!state.deliveries.some(d => d.id === delivery.id)) {
+            state.deliveries.push(delivery);
+          }
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw err;
+        }
+      }
+    }
+    return delivery;
   }
 
   /**
@@ -215,7 +293,7 @@ class TicketDeliveryService {
    * @PERSISTENCE_BOUNDARY
    */
   static async markDelivered(deliveryId, { deliveryReference, notes, actorId } = {}) {
-    const delivery = this.getDelivery(deliveryId);
+    let delivery = await this.getDeliveryById(deliveryId);
     if (!delivery) {
       const err = new Error(`Delivery '${deliveryId}' not found`);
       err.code = 'DELIVERY_NOT_FOUND';
@@ -253,6 +331,20 @@ class TicketDeliveryService {
         ticket.updated_at = now;
       }
 
+      try {
+        const { getMarketplaceRepository } = require('../../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        await marketplaceRepo.updateDeliveryStatus(deliveryId, DELIVERY_STATUS.DELIVERED, {
+          delivery_reference: delivery.delivery_reference,
+          notes: delivery.notes
+        });
+        await marketplaceRepo.updateTicketStatus(delivery.ticket_id, TICKET_STATUS.TRANSFERRED);
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw repoErr;
+        }
+      }
+
       await recordAuditLog('TICKET_DELIVERY', deliveryId, 'DELIVERED', actorId || delivery.seller_id, {
         order_id: delivery.order_id,
         delivery_reference: delivery.delivery_reference
@@ -274,7 +366,7 @@ class TicketDeliveryService {
    * @PERSISTENCE_BOUNDARY
    */
   static async confirmReceipt(deliveryId, actorId) {
-    const delivery = this.getDelivery(deliveryId);
+    let delivery = await this.getDeliveryById(deliveryId);
     if (!delivery) {
       const err = new Error(`Delivery '${deliveryId}' not found`);
       err.code = 'DELIVERY_NOT_FOUND';
@@ -314,6 +406,16 @@ class TicketDeliveryService {
       delivery.status = DELIVERY_STATUS.CONFIRMED;
       delivery.confirmed_at = now;
 
+      try {
+        const { getMarketplaceRepository } = require('../../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        await marketplaceRepo.updateDeliveryStatus(deliveryId, DELIVERY_STATUS.CONFIRMED);
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw repoErr;
+        }
+      }
+
       // Update Order to FULFILLED
       const order = (state.orders || []).find(o => o.id === delivery.order_id);
       if (order) {
@@ -342,7 +444,7 @@ class TicketDeliveryService {
    * @PERSISTENCE_BOUNDARY
    */
   static async markDeliveryFailed(deliveryId, reason = 'Delivery failed', actorId = 'SYSTEM') {
-    const delivery = this.getDelivery(deliveryId);
+    let delivery = await this.getDeliveryById(deliveryId);
     if (!delivery) {
       const err = new Error(`Delivery '${deliveryId}' not found`);
       err.code = 'DELIVERY_NOT_FOUND';
@@ -364,10 +466,23 @@ class TicketDeliveryService {
       delivery.failure_reason = reason;
 
       // Revert ticket to SOLD so transfer can be retried
-      const ticket = TicketInventoryService.findTicket(delivery.ticket_id);
+      let ticket = TicketInventoryService.findTicket(delivery.ticket_id);
       if (ticket) {
         ticket.status = TICKET_STATUS.SOLD;
         ticket.updated_at = now;
+      }
+
+      try {
+        const { getMarketplaceRepository } = require('../../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        await marketplaceRepo.updateDeliveryStatus(deliveryId, DELIVERY_STATUS.FAILED, {
+          failure_reason: reason
+        });
+        await marketplaceRepo.updateTicketStatus(delivery.ticket_id, TICKET_STATUS.SOLD);
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw repoErr;
+        }
       }
 
       await recordAuditLog('TICKET_DELIVERY', deliveryId, 'FAILED', actorId, {
@@ -415,9 +530,33 @@ class TicketDeliveryService {
     const unlock = await deliveryMutex.acquire(lockKey);
     try {
       // 1. Locate Order
-      const order = orderId
+      let order = orderId
         ? (state.orders || []).find(o => o.id === orderId)
         : (state.orders || []).find(o => o.ticket_id === ticketId);
+
+      if (!order && orderId) {
+        try {
+          const { getMoneyRepository } = require('../../storage');
+          const moneyRepo = getMoneyRepository();
+          const dbOrder = await moneyRepo.getOrderById(orderId);
+          if (dbOrder) {
+            order = {
+              id: dbOrder.id,
+              buyer_id: dbOrder.buyer_id,
+              seller_id: dbOrder.seller_id,
+              ticket_id: dbOrder.ticket_id,
+              listing_id: dbOrder.listing_id,
+              status: dbOrder.status
+            };
+            if (!state.orders) state.orders = [];
+            state.orders.push(order);
+          }
+        } catch (dbErr) {
+          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+            throw dbErr;
+          }
+        }
+      }
 
       if (!order) {
         const err = new Error(`Order not found for entry confirmation`);
@@ -427,7 +566,17 @@ class TicketDeliveryService {
 
       // 2. Locate Ticket
       const effectiveTicketId = ticketId || order.ticket_id;
-      const ticket = TicketInventoryService.findTicket(effectiveTicketId);
+      let ticket = TicketInventoryService.findTicket(effectiveTicketId);
+      if (!ticket) {
+        try {
+          ticket = await TicketInventoryService.getTicketById(effectiveTicketId);
+        } catch (tErr) {
+          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+            throw tErr;
+          }
+        }
+      }
+
       if (!ticket) {
         const err = new Error(`Ticket '${effectiveTicketId}' not found`);
         err.code = 'TICKET_NOT_FOUND';
@@ -464,6 +613,16 @@ class TicketDeliveryService {
       ticket.used_gate = gate;
       ticket.used_venue_id = venueId;
       ticket.used_by_actor = actorId;
+
+      try {
+        const { getMarketplaceRepository } = require('../../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        await marketplaceRepo.updateTicketStatus(effectiveTicketId, TICKET_STATUS.USED);
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw repoErr;
+        }
+      }
 
       // Update Order status
       order.operational_stage = 'ENTRY_CONFIRMED';

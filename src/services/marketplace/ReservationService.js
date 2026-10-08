@@ -107,7 +107,21 @@ class ReservationService {
     const unlock = await reservationMutex.acquire(listingId);
     try {
       // 1. Locate listing inside critical section
-      const listing = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
+      let listing = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
+      if (!listing) {
+        try {
+          const { getMarketplaceRepository } = require('../../storage');
+          const repo = getMarketplaceRepository();
+          const dbListing = await repo.getListingById(listingId);
+          if (dbListing) {
+            if (!state.listings) state.listings = [];
+            state.listings.push(dbListing);
+            listing = dbListing;
+          }
+        } catch (e) {
+          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+        }
+      }
       if (!listing) {
         const err = new Error(`Listing '${listingId}' not found`);
         err.code = 'LISTING_NOT_FOUND';
@@ -130,7 +144,10 @@ class ReservationService {
       }
 
       // 3. Locate and verify canonical ticket
-      const ticket = TicketInventoryService.findTicket(listing.ticket_id);
+      let ticket = TicketInventoryService.findTicket(listing.ticket_id);
+      if (!ticket) {
+        ticket = await TicketInventoryService.getTicketById(listing.ticket_id);
+      }
       if (!ticket) {
         const err = new Error(`Associated ticket '${listing.ticket_id}' not found`);
         err.code = 'TICKET_NOT_FOUND';
@@ -172,7 +189,17 @@ class ReservationService {
       const expiresAt = new Date(now.getTime() + ttlMs);
       const reservationId = `res-${uuidv4()}`;
 
-      // 6. @PERSISTENCE_BOUNDARY — Synchronous State Transitions
+      // Durable Repository Sync with PostgreSQL Row Locks (FOR UPDATE)
+      const { getMarketplaceRepository } = require('../../storage');
+      const repo = getMarketplaceRepository();
+      await repo.createReservation({
+        id: reservationId,
+        listing_id: listingId,
+        ticket_id: ticket.ticket_id || ticket.id,
+        buyer_id: buyerId
+      }, ttlMs);
+
+      // 6. @PERSISTENCE_BOUNDARY — Synchronous State Transitions (Memory Projection)
       listing.status = LISTING_STATUS.RESERVED;
       listing.reserved_at = now.toISOString();
       listing.reserved_by = buyerId;
@@ -200,18 +227,6 @@ class ReservationService {
         state.reservations = [];
       }
       state.reservations.push(reservation);
-
-      // Durable Repository Sync (when repository is active)
-      try {
-        const { getMarketplaceRepository } = require('../../storage');
-        const repo = getMarketplaceRepository();
-        await repo.createReservation({
-          id: reservationId,
-          listing_id: listingId,
-          ticket_id: ticket.ticket_id || ticket.id,
-          buyer_id: buyerId
-        }, ttlMs);
-      } catch (_) {}
 
       await recordAuditLog('INVENTORY_RESERVATION', reservationId, 'RESERVED', buyerId, {
         listing_id: listingId,
@@ -279,7 +294,11 @@ class ReservationService {
         const { getMarketplaceRepository } = require('../../storage');
         const repo = getMarketplaceRepository();
         await repo.releaseReservation(reservationId, actorId, reason);
-      } catch (_) {}
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw repoErr;
+        }
+      }
 
       await recordAuditLog('INVENTORY_RESERVATION', reservationId, 'RELEASED', actorId, {
         listing_id: reservation.listing_id,
@@ -345,7 +364,11 @@ class ReservationService {
             const { getMarketplaceRepository } = require('../../storage');
             const repo = getMarketplaceRepository();
             await repo.expireReservation(res.id);
-          } catch (_) {}
+          } catch (repoErr) {
+            if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+              throw repoErr;
+            }
+          }
 
           await recordAuditLog('INVENTORY_RESERVATION', res.id, 'EXPIRED_RECOVERED', 'SYSTEM', {
             listing_id: res.listing_id,
@@ -404,7 +427,11 @@ class ReservationService {
       const { getMarketplaceRepository } = require('../../storage');
       const repo = getMarketplaceRepository();
       await repo.convertReservation(reservationId);
-    } catch (_) {}
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     await recordAuditLog('INVENTORY_RESERVATION', reservationId, 'CONVERTED_TO_ORDER', reservation.buyer_id, {
       order_id: orderId,

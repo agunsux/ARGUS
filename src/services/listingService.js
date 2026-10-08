@@ -205,6 +205,32 @@ class ListingService {
     };
     state.listings.push(listing);
 
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      await marketplaceRepo.createListing({
+        id: listingId,
+        ticket_id: ticketId,
+        seller_id: sellerId,
+        canonical_event_id: eventId,
+        price: parseInt(price, 10),
+        currency: 'IDR',
+        status: LISTING_STATUS.PENDING_VERIFICATION,
+        seat_info: seatInfo,
+        face_value: parseInt(faceValue, 10),
+        pricing: listing.pricing,
+        expires_at: null,
+        metadata: {
+          evidence_bundle_id: evidenceBundleId || null,
+          user_created_event: isUserCreatedEvent
+        }
+      });
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
+
     // 6. Audit log
     await recordAuditLog('LISTING', listingId, 'SUBMITTED_FOR_VERIFICATION', sellerId, {
       ticket_id: ticketId,
@@ -240,6 +266,19 @@ class ListingService {
       listing.status = LISTING_STATUS.ACTIVE;
       if (ticket) ticket.status = 'ACTIVE';
 
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.ACTIVE);
+        if (ticket) {
+          await marketplaceRepo.updateTicketStatus(ticket.id || ticket.ticket_id, 'ACTIVE');
+        }
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw repoErr;
+        }
+      }
+
       await recordAuditLog('LISTING', listingId, 'VERIFIED_AND_ACTIVATED', officerId, {
         ticket_id: listing.ticket_id
       });
@@ -254,6 +293,19 @@ class ListingService {
       listing.status = LISTING_STATUS.REJECTED;
       listing.rejection_reason = reason;
       if (ticket) ticket.status = 'REJECTED';
+
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.REJECTED);
+        if (ticket) {
+          await marketplaceRepo.updateTicketStatus(ticket.id || ticket.ticket_id, 'REJECTED');
+        }
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw repoErr;
+        }
+      }
 
       await recordAuditLog('LISTING', listingId, 'REJECTED', officerId, {
         ticket_id: listing.ticket_id,

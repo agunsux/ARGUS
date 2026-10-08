@@ -192,6 +192,35 @@ class TransactionQuoteService {
 
     state.quotes.push(quote);
 
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      await moneyRepo.createQuote({
+        quote_id: quoteId,
+        listing_id: listingId,
+        buyer_id: buyerId,
+        seller_id: effectiveSellerId,
+        ticket_price: price,
+        quantity: qty,
+        buyer_fee: fees.buyer_fee,
+        seller_fee: fees.seller_fee,
+        buyer_tax: taxes.total_buyer_tax,
+        seller_tax: taxes.total_seller_tax_withholding,
+        payment_fee: pgFee,
+        buyer_total: buyerTotal,
+        seller_payout: sellerNetPayout,
+        currency: fees.currency || 'IDR',
+        pricing_policy_version: fees.policy_version || effectivePolicyVersion,
+        tax_policy_version: taxPolicyVersion || '2026.1-ID-TAX',
+        status: QUOTE_STATUS.ACTIVE,
+        expires_at: expiresAt
+      });
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
+
     await recordAuditLog('QUOTE', quoteId, 'GENERATED', buyerId || 'SYSTEM', {
       listing_id: listingId,
       ticket_price: price,
@@ -215,6 +244,55 @@ class TransactionQuoteService {
       quote.status = QUOTE_STATUS.EXPIRED;
     }
 
+    return quote;
+  }
+
+  /**
+   * Retrieve quote by ID with DB fallback
+   */
+  static async getQuoteById(quoteId) {
+    let quote = this.getQuote(quoteId);
+    if (!quote) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        const dbQuote = await moneyRepo.getQuoteById(quoteId);
+        if (dbQuote) {
+          quote = {
+            id: dbQuote.quote_id,
+            quote_id: dbQuote.quote_id,
+            listing_id: dbQuote.listing_id,
+            buyer_id: dbQuote.buyer_id,
+            seller_id: dbQuote.seller_id,
+            ticket_price: parseInt(dbQuote.ticket_price, 10),
+            quantity: parseInt(dbQuote.quantity, 10) || 1,
+            buyer_platform_fee: parseInt(dbQuote.buyer_fee, 10) || 0,
+            seller_platform_fee: parseInt(dbQuote.seller_fee, 10) || 0,
+            buyer_fee: parseInt(dbQuote.buyer_fee, 10) || 0,
+            seller_fee: parseInt(dbQuote.seller_fee, 10) || 0,
+            buyer_tax_amount: parseInt(dbQuote.buyer_tax, 10) || 0,
+            seller_tax_withholding: parseInt(dbQuote.seller_tax, 10) || 0,
+            payment_processing_fee: parseInt(dbQuote.payment_fee, 10) || 0,
+            buyer_total: parseInt(dbQuote.buyer_total, 10),
+            seller_net_payout: parseInt(dbQuote.seller_payout, 10),
+            currency: dbQuote.currency || 'IDR',
+            fee_policy_version: dbQuote.pricing_policy_version || 'TIKUM_FEE_POLICY_V1',
+            status: dbQuote.status,
+            expires_at: dbQuote.expires_at,
+            consumed_at: dbQuote.consumed_at,
+            created_at: dbQuote.created_at
+          };
+          this.init();
+          if (!state.quotes.some(q => q.quote_id === quote.quote_id)) {
+            state.quotes.push(quote);
+          }
+        }
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw repoErr;
+        }
+      }
+    }
     return quote;
   }
 
@@ -255,19 +333,33 @@ class TransactionQuoteService {
    * Consume quote when order is successfully created
    */
   static async consumeQuote(quoteId, orderId, actorId = 'SYSTEM') {
-    const quote = this.validateQuote(quoteId);
+    let quote = this.getQuote(quoteId);
+    if (!quote) {
+      quote = await this.getQuoteById(quoteId);
+    }
+    const validatedQuote = this.validateQuote(quoteId);
 
-    quote.status = QUOTE_STATUS.CONSUMED;
-    quote.order_id = orderId;
-    quote.consumed_at = new Date().toISOString();
+    validatedQuote.status = QUOTE_STATUS.CONSUMED;
+    validatedQuote.order_id = orderId;
+    validatedQuote.consumed_at = new Date().toISOString();
+
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      await moneyRepo.consumeQuote(quoteId);
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw repoErr;
+      }
+    }
 
     await recordAuditLog('QUOTE', quoteId, 'CONSUMED', actorId, {
       order_id: orderId,
-      buyer_total: quote.buyer_total,
-      seller_net_payout: quote.seller_net_payout
+      buyer_total: validatedQuote.buyer_total,
+      seller_net_payout: validatedQuote.seller_net_payout
     });
 
-    return quote;
+    return validatedQuote;
   }
 }
 
