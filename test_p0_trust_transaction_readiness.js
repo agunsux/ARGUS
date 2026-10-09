@@ -235,7 +235,7 @@ async function runTrustAndReadinessSuite() {
   await testAsync('3.1 Record payment is strictly idempotent against duplicate webhooks', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-lany-jakarta-2026',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 1 - Seat 11',
       faceValue: 1250000,
       price: 1500000,
@@ -270,7 +270,7 @@ async function runTrustAndReadinessSuite() {
   await testAsync('3.2 Releasing already released escrow is idempotent and does not duplicate disbursement', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-lany-jakarta-2026',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 1 - Seat 12',
       faceValue: 1250000,
       price: 1500000,
@@ -319,7 +319,7 @@ async function runTrustAndReadinessSuite() {
   await testAsync('4.1 Opening dispute freezes escrow and blocks releaseToSeller', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-lany-jakarta-2026',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 1 - Seat 13',
       faceValue: 1250000,
       price: 1500000,
@@ -362,7 +362,7 @@ async function runTrustAndReadinessSuite() {
   await testAsync('4.2 Releasing escrow without confirmed gate entry is strictly blocked', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-lany-jakarta-2026',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 1 - Seat 14',
       faceValue: 1250000,
       price: 1500000,
@@ -437,7 +437,7 @@ async function runTrustAndReadinessSuite() {
     const rawBarcode = 'SECRET-RAW-TICKET-BARCODE-999';
     const expectedHash = crypto.createHash('sha256').update(rawBarcode.trim()).digest('hex');
 
-    const event = state.events.find(e => e.id === 'event-lany-jakarta-2026');
+    const event = state.events.find(e => e.id === 'event-pestapora-2026');
     if (event) {
       event.is_verified = true;
       event.verification_status = 'VERIFIED';
@@ -446,7 +446,7 @@ async function runTrustAndReadinessSuite() {
 
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-lany-jakarta-2026',
+      eventId: 'event-pestapora-2026',
       seatInfo: 'CAT 1 - Seat 15',
       faceValue: 1250000,
       price: 1500000,
@@ -469,6 +469,61 @@ async function runTrustAndReadinessSuite() {
     assert.strictEqual(pubListing.barcode_hash, undefined);
     assert.strictEqual(pubListing.raw_barcode, undefined);
     assert.strictEqual(pubListing.pic_contact, null);
+  });
+
+  await testAsync('6.2 Order tracking endpoint (/api/mvp/track/:id) hides pic_contact from unauthenticated third parties guessing order IDs', async () => {
+    const http = require('http');
+    const app = require('./src/server');
+    const server = http.createServer(app);
+    await new Promise(resolve => server.listen(0, resolve));
+    const port = server.address().port;
+
+    try {
+      const order = state.orders[0];
+      assert.ok(order, 'Existing order must exist');
+
+      // Unauthenticated third-party request
+      const unauthRes = await fetch(`http://127.0.0.1:${port}/api/mvp/track/${order.id}`);
+      assert.strictEqual(unauthRes.status, 200);
+      const unauthData = await unauthRes.json();
+      assert.strictEqual(unauthData.transaction.pic_contact, null, 'Unauthenticated caller must not see pic_contact');
+
+      // Authenticated owner request
+      const authRes = await fetch(`http://127.0.0.1:${port}/api/mvp/track/${order.id}`, {
+        headers: { 'x-user-id': order.buyer_id }
+      });
+      assert.strictEqual(authRes.status, 200);
+      const authData = await authRes.json();
+      const picAssign = state.event_pics.find(ep => ep.event_id === order.event_id && ep.status === 'ACTIVE');
+      if (picAssign) {
+        assert.strictEqual(authData.transaction.pic_contact, picAssign.contact_phone, 'Order buyer must see assigned pic_contact');
+      }
+    } finally {
+      server.close();
+    }
+  });
+
+  await testAsync('6.3 Direct order details endpoint (/api/mvp/orders/:id) forbids unauthorized users from accessing other buyers orders', async () => {
+    const http = require('http');
+    const app = require('./src/server');
+    const server = http.createServer(app);
+    await new Promise(resolve => server.listen(0, resolve));
+    const port = server.address().port;
+
+    try {
+      const order = state.orders[0];
+      assert.ok(order, 'Existing order must exist');
+
+      // Unauthorized request with another registered buyer user id (buyer-2)
+      const forbiddenRes = await fetch(`http://127.0.0.1:${port}/api/mvp/orders/${order.id}`, {
+        headers: { 'x-user-id': 'buyer-2' }
+      });
+      assert.strictEqual(forbiddenRes.status, 403);
+      const forbiddenData = await forbiddenRes.json();
+      assert.strictEqual(forbiddenData.code, 'FORBIDDEN');
+    } finally {
+      server.close();
+    }
   });
 
   // ---------------------------------------------------------------------------

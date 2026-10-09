@@ -832,6 +832,8 @@ router.get('/track/:id', async (req, res) => {
     const venue = state.venues.find(v => v.id === event.venue_id) || {};
     const verification = state.entry_verifications.find(ev => ev.order_id === order.id) || null;
     const picAssign = state.event_pics.find(ep => ep.event_id === order.event_id && ep.status === 'ACTIVE');
+    const callerId = resolveAuth(req);
+    const isPartyToOrder = Boolean(callerId && (order.buyer_id === callerId || order.seller_id === callerId || isAdminRole(req.user?.role)));
 
     return res.json({
       success: true,
@@ -856,7 +858,7 @@ router.get('/track/:id', async (req, res) => {
         },
         seat_info: ticket.seat_info || order.seat_info,
         pic_assigned: !!picAssign,
-        pic_contact: picAssign ? picAssign.contact_phone : null
+        pic_contact: isPartyToOrder && picAssign ? picAssign.contact_phone : null
       }
     });
   }
@@ -978,6 +980,16 @@ router.get('/orders/:id', async (req, res) => {
 
   if (!order) {
     return res.status(404).json({ error: 'Order not found', code: 'NOT_FOUND' });
+  }
+
+  const callerId = resolveAuth(req);
+  if (callerId) {
+    const isOwnerOrStaff = order.buyer_id === callerId || order.seller_id === callerId || isAdminRole(req.user?.role) || isPicRole(req.user?.role);
+    if (!isOwnerOrStaff) {
+      return res.status(403).json({ error: 'Forbidden: You do not have permission to view this order', code: 'FORBIDDEN' });
+    }
+  } else if (process.env.NODE_ENV === 'production') {
+    return res.status(401).json({ error: 'Authentication required to view order details', code: 'AUTH_REQUIRED' });
   }
 
   let ticket = state.tickets.find(t => t.id === order.ticket_id);
