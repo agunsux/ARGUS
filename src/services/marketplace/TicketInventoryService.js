@@ -228,6 +228,7 @@ class TicketInventoryService {
       await marketplaceRepo.createTicket({
         id: ticketId,
         canonical_event_id: canonicalEventId,
+        seller_id: sellerId,
         original_owner_id: sellerId,
         current_owner_id: sellerId,
         ticket_type: ticketType,
