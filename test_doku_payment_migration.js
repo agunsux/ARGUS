@@ -159,16 +159,16 @@ async function runSuite() {
       assert.strictEqual(doku.getName(), 'doku');
     });
 
-    await check('1.2 Midtrans is Backup #1, Xendit is Backup #2, and iPaymu is Backup #3', async () => {
+    await check('1.2 iPaymu is Backup #1, Midtrans is Backup #2, and Xendit is Backup #3', async () => {
+      assert.ok(paymentManager.hasProvider('ipaymu'));
       assert.ok(paymentManager.hasProvider('midtrans'));
       assert.ok(paymentManager.hasProvider('xendit'));
-      assert.ok(paymentManager.hasProvider('ipaymu'));
+      const ipaymu = paymentManager.getProvider('ipaymu');
       const midtrans = paymentManager.getProvider('midtrans');
       const xendit = paymentManager.getProvider('xendit');
-      const ipaymu = paymentManager.getProvider('ipaymu');
+      assert.strictEqual(ipaymu.getName(), 'ipaymu');
       assert.ok(midtrans instanceof MidtransPaymentProvider);
       assert.ok(xendit instanceof XenditPaymentProvider);
-      assert.strictEqual(ipaymu.getName(), 'ipaymu');
     });
 
     await check('1.3 RCB is completely absent from live provider registry', async () => {
@@ -714,14 +714,14 @@ async function runSuite() {
       }, (err) => err.code === 'ESCROW_CAPABILITY_REQUIRED');
     });
 
-    await check('8.3 Non-escrow transaction successfully routes to Midtrans, Xendit, and iPaymu backups', async () => {
+    await check('8.3 Non-escrow transaction successfully routes to iPaymu, Midtrans, and Xendit backups', async () => {
       const b1 = PaymentRoutingService.resolveProvider({
         countryCode: 'ID',
         currency: 'IDR',
         tier: 'BACKUP_1',
         requiresEscrow: false
       });
-      assert.strictEqual(b1.providerName, 'midtrans');
+      assert.strictEqual(b1.providerName, 'ipaymu');
 
       const b2 = PaymentRoutingService.resolveProvider({
         countryCode: 'ID',
@@ -729,7 +729,7 @@ async function runSuite() {
         tier: 'BACKUP_2',
         requiresEscrow: false
       });
-      assert.strictEqual(b2.providerName, 'xendit');
+      assert.strictEqual(b2.providerName, 'midtrans');
 
       const b3 = PaymentRoutingService.resolveProvider({
         countryCode: 'ID',
@@ -737,7 +737,7 @@ async function runSuite() {
         tier: 'BACKUP_3',
         requiresEscrow: false
       });
-      assert.strictEqual(b3.providerName, 'ipaymu');
+      assert.strictEqual(b3.providerName, 'xendit');
     });
 
     // -------------------------------------------------------------------------

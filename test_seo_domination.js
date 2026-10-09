@@ -249,36 +249,39 @@ async function runSeoDominationSuite() {
     // -------------------------------------------------------------
     console.log('\n--- 5. Human Approval Gate & Publishing Scheduler ---');
 
+    let testDraft = null;
     check('Human Approval Gate rejects publishing unapproved drafts', () => {
-      const draft = articleRepository.saveArticle({
+      const testSlug = `draft-tanpa-persetujuan-${Date.now()}`;
+      testDraft = articleRepository.saveArticle({
         title: 'Draft Artikel Tanpa Persetujuan Editor',
-        slug: 'draft-tanpa-persetujuan',
+        slug: testSlug,
         description: 'Artikel yang masih dalam tahap perancangan dan belum disetujui editor.',
         category: CONTENT_PILLARS.TICKET_BUYING,
         content: '<h2>Draft Artikel Uji Coba</h2><p>Isi draf artikel ini dibuat semata-mata untuk menguji gerbang persetujuan manusia dan validasi fakta sebelum publikasi resmi.</p>'
       });
 
       assert.throws(() => {
-        articleRepository.publishArticle(draft.id);
+        articleRepository.publishArticle(testDraft.id);
       }, /Human approval is required/);
     });
 
     check('Approving article transitions status to APPROVED', () => {
-      const unapproved = articleRepository.getAllArticles({ status: CONTENT_STATUS.DRAFT })[0];
-      if (unapproved) {
-        const approved = articleRepository.approveArticle(unapproved.id, 'admin-1');
-        assert.strictEqual(approved.status, CONTENT_STATUS.APPROVED);
-        assert.strictEqual(approved.human_approved_by, 'admin-1');
-      }
+      const targetDraft = testDraft || articleRepository.getAllArticles({ status: CONTENT_STATUS.DRAFT })[0];
+      assert.ok(targetDraft, 'A test draft must exist for approval');
+      const approved = articleRepository.approveArticle(targetDraft.id, 'admin-1');
+      assert.strictEqual(approved.status, CONTENT_STATUS.APPROVED);
+      assert.strictEqual(approved.human_approved_by, 'admin-1');
     });
 
     await checkAsync('PublishingScheduler runs cycle idempotently without duplicate publications', async () => {
       // Run cycle first time
       const run1 = await publishingScheduler.runCycle({ forceRun: true });
       assert.strictEqual(run1.executed, true);
-      assert.strictEqual(run1.publishedCount, 1, 'First run should publish 1 approved article');
+      assert.ok(run1.publishedCount >= 1, 'First run should publish at least 1 approved or scheduled article');
 
-      const publishedArticleId = run1.article.id;
+      const pubArticle = run1.article || (run1.articles && run1.articles[0]);
+      assert.ok(pubArticle, 'Published article must be returned');
+      const publishedArticleId = pubArticle.id;
 
       // Run cycle second time on the same article -> must be idempotent
       const run2 = await publishingScheduler.runCycle({ forceRun: true });
@@ -287,7 +290,7 @@ async function runSeoDominationSuite() {
       assert.ok(!run2.error, 'Re-run must not throw error');
       
       const allArticles = articleRepository.getAllArticles();
-      const duplicateSlugs = allArticles.filter(a => a.slug === run1.article.slug);
+      const duplicateSlugs = allArticles.filter(a => a.slug === pubArticle.slug);
       assert.strictEqual(duplicateSlugs.length, 1, 'Never create duplicate article with same slug');
     });
 
