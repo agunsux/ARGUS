@@ -40,7 +40,7 @@ async function verifyProduction() {
     
     // Check canonical business info
     assert.ok(res.body.includes('SHINERVA HQ'), `Missing SHINERVA HQ on ${r}`);
-    assert.ok(res.body.includes('agunsux@gmail.com'), `Missing agunsux@gmail.com on ${r}`);
+    assert.ok(res.body.includes('support@tikum.app'), `Missing support@tikum.app on ${r}`);
     assert.ok(res.body.includes('081299927378'), `Missing 081299927378 on ${r}`);
     assert.ok(res.body.includes('Jl. Pasirluyu No. 79'), `Missing Pasirluyu on ${r}`);
     assert.ok(res.body.includes('Bandung 40254'), `Missing Bandung 40254 on ${r}`);
@@ -57,7 +57,7 @@ async function verifyProduction() {
     for (const p of placeholders) {
       assert.strictEqual(res.body.includes(p), false, `Found placeholder ${p} on ${r}`);
     }
-    console.log(`  -> Checked: SHINERVA HQ, agunsux@gmail.com, 081299927378, Jl. Pasirluyu No. 79, Bandung 40254, Indonesia (ALL PRESENT & VERIFIED)`);
+    console.log(`  -> Checked: SHINERVA HQ, support@tikum.app, 081299927378, Jl. Pasirluyu No. 79, Bandung 40254, Indonesia (ALL PRESENT & VERIFIED)`);
   }
 
   // Check /api/business-profile
@@ -66,7 +66,7 @@ async function verifyProduction() {
   assert.strictEqual(apiRes.statusCode, 200);
   const profile = JSON.parse(apiRes.body);
   assert.strictEqual(profile.name, 'SHINERVA HQ');
-  assert.strictEqual(profile.email, 'agunsux@gmail.com');
+  assert.strictEqual(profile.email, 'support@tikum.app');
   assert.strictEqual(profile.phone, '081299927378');
   assert.strictEqual(profile.address.street, 'Jl. Pasirluyu No. 79');
   assert.strictEqual(profile.address.city, 'Bandung');

@@ -537,6 +537,15 @@ class CanonicalEventRegistry {
         reason: `Event ${eventId} is in terminal lifecycle status ${event.lifecycle_status || event.status} and cannot be resurrected.`
       };
     }
+
+    // Defensive array & provenance initialization
+    event.event_history = Array.isArray(event.event_history) ? event.event_history : [];
+    event.observations = Array.isArray(event.observations) ? event.observations : [];
+    event.sources = Array.isArray(event.sources) ? event.sources : [];
+    event.conflicts = Array.isArray(event.conflicts) ? event.conflicts : [];
+    event.field_provenance = event.field_provenance && typeof event.field_provenance === 'object' ? event.field_provenance : {};
+    event.verification_reasons = Array.isArray(event.verification_reasons) ? event.verification_reasons : [];
+
     const now = new Date().toISOString();
     const observedAt = observation.observed_at || now;
     const publishedAt = observation.published_at || incomingRecord.published_at || null;
@@ -1110,6 +1119,8 @@ class CanonicalEventRegistry {
       if (event.expires_at && now > new Date(event.expires_at).getTime()) {
         event.verification_status = VERIFICATION_STATUS.EXPIRED;
         event.is_verified = false;
+        event.verification_reasons = Array.isArray(event.verification_reasons) ? event.verification_reasons : [];
+        event.event_history = Array.isArray(event.event_history) ? event.event_history : [];
         event.verification_reasons.push('Verification expired due to temporal TTL threshold');
         event.event_history.push({
           timestamp: new Date().toISOString(),

@@ -230,7 +230,7 @@ async function runTests() {
       assert.strictEqual(businessProfile.helloEmail, 'hello@tikum.app');
       assert.strictEqual(businessProfile.picEmail, 'pic@tikum.app');
       // Verify canonical email for iPaymu test backward-compatibility remains intact
-      assert.strictEqual(businessProfile.email, 'agunsux@gmail.com');
+      assert.strictEqual(businessProfile.email, 'support@tikum.app');
     });
 
     // -------------------------------------------------------------
@@ -433,7 +433,7 @@ async function runTests() {
       const unauth = await request('/api/mvp/admin/email-test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: { recipient: 'agunsux@gmail.com' }
+        body: { recipient: 'support@tikum.app' }
       });
       assert.strictEqual(unauth.statusCode, 401);
 
@@ -441,7 +441,7 @@ async function runTests() {
       const forbidden = await request('/api/mvp/admin/email-test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': 'buyer-1' },
-        body: { officerId: 'buyer-1', recipient: 'agunsux@gmail.com' }
+        body: { officerId: 'buyer-1', recipient: 'support@tikum.app' }
       });
       assert.strictEqual(forbidden.statusCode, 403);
 

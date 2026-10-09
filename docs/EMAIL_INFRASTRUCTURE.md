@@ -29,7 +29,7 @@ Customer / External Sender / Admin
 Cloudflare Email Routing (Apex MX at tikum.app)
           │
           ▼
-Configured Destination Inbox (e.g. agunsux@gmail.com)
+Configured Destination Inbox (e.g. support@tikum.app)
 
 OUTBOUND TRANSACTIONAL (Zero-Cost Outbound Delivery):
 Application Layer (Auth / Order / Payment / Dispute / Alert)

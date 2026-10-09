@@ -25,11 +25,11 @@ const businessProfile = {
 
   // Official Business Entity for iPaymu compliance
   name: 'SHINERVA HQ',
-  email: 'agunsux@gmail.com',
+  email: 'support@tikum.app',
   phone: '081299927378',
   whatsappNumber: '081299927378',
   whatsappUrl: 'https://wa.me/6281299927378',
-  emailUrl: 'mailto:agunsux@gmail.com',
+  emailUrl: 'mailto:support@tikum.app',
 
   // Official Business & Transactional Email Routing Identities (Cloudflare Email Routing)
   supportEmail: 'support@tikum.app',

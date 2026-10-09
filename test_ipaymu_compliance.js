@@ -69,11 +69,11 @@ async function runTests() {
     // Test 1: Canonical business profile config integrity
     check('Canonical business profile has exact required values', () => {
       assert.strictEqual(businessProfile.name, 'SHINERVA HQ');
-      assert.strictEqual(businessProfile.email, 'agunsux@gmail.com');
+      assert.strictEqual(businessProfile.email, 'support@tikum.app');
       assert.strictEqual(businessProfile.phone, '081299927378');
       assert.strictEqual(businessProfile.whatsappNumber, '081299927378');
       assert.strictEqual(businessProfile.whatsappUrl, 'https://wa.me/6281299927378');
-      assert.strictEqual(businessProfile.emailUrl, 'mailto:agunsux@gmail.com');
+      assert.strictEqual(businessProfile.emailUrl, 'mailto:support@tikum.app');
       assert.strictEqual(businessProfile.address.street, 'Jl. Pasirluyu No. 79');
       assert.strictEqual(businessProfile.address.city, 'Bandung');
       assert.strictEqual(businessProfile.address.postalCode, '40254');
@@ -86,7 +86,7 @@ async function runTests() {
       assert.strictEqual(apiRes.statusCode, 200);
       const json = JSON.parse(apiRes.body);
       assert.strictEqual(json.name, 'SHINERVA HQ');
-      assert.strictEqual(json.email, 'agunsux@gmail.com');
+      assert.strictEqual(json.email, 'support@tikum.app');
       assert.strictEqual(json.phone, '081299927378');
       assert.strictEqual(json.address.city, 'Bandung');
       assert.strictEqual(json.address.postalCode, '40254');
@@ -118,9 +118,9 @@ async function runTests() {
       check(`Route ${route} contains exact business name "SHINERVA HQ"`, () => {
         assert.ok(html.includes('SHINERVA HQ'), `Missing SHINERVA HQ in ${route}`);
       });
-      check(`Route ${route} contains exact email "agunsux@gmail.com"`, () => {
-        assert.ok(html.includes('agunsux@gmail.com'), `Missing agunsux@gmail.com in ${route}`);
-        assert.ok(html.includes('mailto:agunsux@gmail.com'), `Missing mailto:agunsux@gmail.com in ${route}`);
+      check(`Route ${route} contains exact email "support@tikum.app"`, () => {
+        assert.ok(html.includes('support@tikum.app'), `Missing support@tikum.app in ${route}`);
+        assert.ok(html.includes('mailto:support@tikum.app'), `Missing mailto:support@tikum.app in ${route}`);
       });
       check(`Route ${route} contains exact phone & WhatsApp link "081299927378"`, () => {
         assert.ok(html.includes('081299927378'), `Missing 081299927378 text in ${route}`);
@@ -150,7 +150,7 @@ async function runTests() {
     check('Homepage (/) returns 200 and has compliant footer', () => {
       assert.strictEqual(homeRes.statusCode, 200);
       assert.ok(homeRes.body.includes('SHINERVA HQ'));
-      assert.ok(homeRes.body.includes('agunsux@gmail.com'));
+      assert.ok(homeRes.body.includes('support@tikum.app'));
       assert.ok(homeRes.body.includes('081299927378'));
       assert.ok(homeRes.body.includes('Jl. Pasirluyu No. 79'));
       assert.ok(homeRes.body.includes('Bandung 40254'));
@@ -209,7 +209,7 @@ async function runTests() {
       assert.ok(refundHtml.includes('Penundaan Acara (Event Postponement / Reschedule)'));
       assert.ok(refundHtml.includes('Alur &amp; Prosedur Pengajuan Sengketa'));
       assert.ok(refundHtml.includes('Mekanisme &amp; Durasi Pencairan Pengembalian Dana'));
-      assert.ok(refundHtml.includes('agunsux@gmail.com'));
+      assert.ok(refundHtml.includes('support@tikum.app'));
       assert.ok(refundHtml.includes('081299927378'));
     });
 
@@ -217,7 +217,7 @@ async function runTests() {
     const contactHtml = responses['/contact'].body;
     check('Contact page clearly displays all canonical contact channels and support steps', () => {
       assert.ok(contactHtml.includes('SHINERVA HQ'));
-      assert.ok(contactHtml.includes('agunsux@gmail.com'));
+      assert.ok(contactHtml.includes('support@tikum.app'));
       assert.ok(contactHtml.includes('081299927378'));
       assert.ok(contactHtml.includes('Jl. Pasirluyu No. 79'));
       assert.ok(contactHtml.includes('Bandung 40254'));
@@ -264,7 +264,7 @@ async function runTests() {
     check('SSR /events discovery page renders canonical footer', () => {
       assert.strictEqual(eventsRes.statusCode, 200);
       assert.ok(eventsRes.body.includes('SHINERVA HQ'));
-      assert.ok(eventsRes.body.includes('agunsux@gmail.com'));
+      assert.ok(eventsRes.body.includes('support@tikum.app'));
       assert.ok(eventsRes.body.includes('081299927378'));
       assert.ok(eventsRes.body.includes('Jl. Pasirluyu No. 79'));
       assert.ok(eventsRes.body.includes('Bandung 40254'));

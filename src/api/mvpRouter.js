@@ -1789,7 +1789,6 @@ router.get('/admin/email-status', (req, res) => {
 // In-memory rate limiting map for admin test emails (max 3 per 5 minutes per officer)
 const adminTestRateLimits = new Map();
 const ALLOWED_TEST_RECIPIENTS = new Set([
-  'agunsux@gmail.com',
   'admin@tikum.app',
   'support@tikum.app',
   'hello@tikum.app',
@@ -1823,7 +1822,7 @@ router.post('/admin/email-test', async (req, res) => {
     adminTestRateLimits.set(officerId, timestamps);
 
     // Recipient validation: strictly restricted to verified business addresses or officer email
-    const requestedRecipient = req.body?.recipient ? req.body.recipient.trim().toLowerCase() : 'agunsux@gmail.com';
+    const requestedRecipient = req.body?.recipient ? req.body.recipient.trim().toLowerCase() : 'support@tikum.app';
     const officerEmail = (officer.email || '').toLowerCase();
     if (!ALLOWED_TEST_RECIPIENTS.has(requestedRecipient) && requestedRecipient !== officerEmail) {
       return res.status(400).json({

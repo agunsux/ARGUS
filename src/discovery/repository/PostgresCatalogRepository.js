@@ -214,17 +214,11 @@ class PostgresCatalogRepository extends CatalogRepository {
     const archivedAt = eventData.archived_at || null;
     const publicVisibility = eventData.public_visibility !== false;
     let homepageVisibility = eventData.homepage_visibility === true;
-    const metadataObj = {
-      ...(eventData.metadata || {}),
-      artist: eventData.artist || (eventData.metadata && eventData.metadata.artist) || null,
-      artists: Array.isArray(eventData.artists) && eventData.artists.length > 0
-        ? eventData.artists
-        : (eventData.metadata && Array.isArray(eventData.metadata.artists) ? eventData.metadata.artists : (eventData.artist ? [eventData.artist] : []))
-    };
-    const metadata = JSON.stringify(metadataObj);
 
-    // Check anti-resurrection
+    // Check anti-resurrection and retrieve existing event for preservation
     const existing = await this.getEventById(id);
+    const existingMeta = existing ? (existing.metadata || {}) : {};
+
     if (existing) {
       const isTerminal = (
         existing.archive_status === 'ARCHIVED' ||
@@ -237,6 +231,42 @@ class PostgresCatalogRepository extends CatalogRepository {
         homepageVisibility = false;
       }
     }
+
+    const imageUrl = eventData.image_url || eventData.poster_url || eventData.event_image || (eventData.metadata && eventData.metadata.image_url) || existingMeta.image_url || existingMeta.poster_url || null;
+
+    const metadataObj = {
+      ...existingMeta,
+      ...(eventData.metadata || {}),
+      artist: eventData.artist || (eventData.metadata && eventData.metadata.artist) || existingMeta.artist || null,
+      artists: Array.isArray(eventData.artists) && eventData.artists.length > 0
+        ? eventData.artists
+        : (eventData.metadata && Array.isArray(eventData.metadata.artists) ? eventData.metadata.artists : (existingMeta.artists || (eventData.artist ? [eventData.artist] : []))),
+      image_url: imageUrl,
+      poster_url: eventData.poster_url || imageUrl || existingMeta.poster_url || null,
+      event_image: eventData.event_image || imageUrl || existingMeta.event_image || null,
+      thumbnail_url: eventData.thumbnail_url || (eventData.metadata && eventData.metadata.thumbnail_url) || existingMeta.thumbnail_url || imageUrl,
+      image_verified: eventData.image_verified ?? (eventData.metadata && eventData.metadata.image_verified) ?? existingMeta.image_verified ?? Boolean(imageUrl),
+      image_status: eventData.image_status || (eventData.metadata && eventData.metadata.image_status) || existingMeta.image_status || (imageUrl ? 'VERIFIED' : 'NONE'),
+      image_type: eventData.image_type || (eventData.metadata && eventData.metadata.image_type) || existingMeta.image_type || (imageUrl ? 'OFFICIAL_POSTER' : null),
+      image_confidence: eventData.image_confidence || (eventData.metadata && eventData.metadata.image_confidence) || existingMeta.image_confidence || (imageUrl ? 'HIGH' : null),
+      image_source_type: eventData.image_source_type || (eventData.metadata && eventData.metadata.image_source_type) || existingMeta.image_source_type || null,
+      image_source_url: eventData.image_source_url || (eventData.metadata && eventData.metadata.image_source_url) || existingMeta.image_source_url || null,
+      image_credit: eventData.image_credit || (eventData.metadata && eventData.metadata.image_credit) || existingMeta.image_credit || null,
+      image_license_status: eventData.image_license_status || (eventData.metadata && eventData.metadata.image_license_status) || existingMeta.image_license_status || null,
+      is_fallback_image: eventData.is_fallback_image ?? (eventData.metadata && eventData.metadata.is_fallback_image) ?? existingMeta.is_fallback_image ?? false,
+      fallback_meta: eventData.fallback_meta || (eventData.metadata && eventData.metadata.fallback_meta) || existingMeta.fallback_meta || null,
+      description: eventData.description || (eventData.metadata && eventData.metadata.description) || existingMeta.description || null,
+      event_history: Array.isArray(eventData.event_history) ? eventData.event_history : (eventData.metadata && Array.isArray(eventData.metadata.event_history) ? eventData.metadata.event_history : (Array.isArray(existingMeta.event_history) ? existingMeta.event_history : [])),
+      observations: Array.isArray(eventData.observations) ? eventData.observations : (eventData.metadata && Array.isArray(eventData.metadata.observations) ? eventData.metadata.observations : (Array.isArray(existingMeta.observations) ? existingMeta.observations : [])),
+      sources: Array.isArray(eventData.sources) ? eventData.sources : (eventData.metadata && Array.isArray(eventData.metadata.sources) ? eventData.metadata.sources : (Array.isArray(existingMeta.sources) ? existingMeta.sources : [])),
+      conflicts: Array.isArray(eventData.conflicts) ? eventData.conflicts : (eventData.metadata && Array.isArray(eventData.metadata.conflicts) ? eventData.metadata.conflicts : (Array.isArray(existingMeta.conflicts) ? existingMeta.conflicts : [])),
+      field_provenance: eventData.field_provenance || (eventData.metadata && eventData.metadata.field_provenance) || existingMeta.field_provenance || {},
+      verification_reasons: Array.isArray(eventData.verification_reasons) ? eventData.verification_reasons : (eventData.metadata && Array.isArray(eventData.metadata.verification_reasons) ? eventData.verification_reasons : (Array.isArray(existingMeta.verification_reasons) ? existingMeta.verification_reasons : [])),
+      event_quality_score: eventData.event_quality_score ?? (eventData.metadata && eventData.metadata.event_quality_score) ?? existingMeta.event_quality_score ?? null,
+      marketplace_eligibility: eventData.marketplace_eligibility || (eventData.metadata && eventData.metadata.marketplace_eligibility) || existingMeta.marketplace_eligibility || null,
+      quality_factors: eventData.quality_factors || (eventData.metadata && eventData.metadata.quality_factors) || existingMeta.quality_factors || null
+    };
+    const metadata = JSON.stringify(metadataObj);
 
     const sql = `
       INSERT INTO canonical_events (
@@ -510,6 +540,8 @@ class PostgresCatalogRepository extends CatalogRepository {
       : (meta.artist ? [meta.artist] : []);
     const artist = meta.artist || (artists.length > 0 ? artists[0] : null);
 
+    const imageUrl = meta.image_url || meta.poster_url || meta.event_image || null;
+
     return {
       id: row.id,
       event_id: row.id,
@@ -545,6 +577,32 @@ class PostgresCatalogRepository extends CatalogRepository {
       archived_at: row.archived_at ? (row.archived_at instanceof Date ? row.archived_at.toISOString() : row.archived_at) : null,
       public_visibility: row.public_visibility === true,
       homepage_visibility: row.homepage_visibility === true,
+      // Visual provenance attributes
+      image_url: imageUrl,
+      poster_url: meta.poster_url || imageUrl,
+      event_image: meta.event_image || imageUrl,
+      thumbnail_url: meta.thumbnail_url || imageUrl,
+      image_verified: meta.image_verified ?? Boolean(imageUrl),
+      image_status: meta.image_status || (imageUrl ? 'VERIFIED' : 'NONE'),
+      image_type: meta.image_type || (imageUrl ? 'OFFICIAL_POSTER' : null),
+      image_confidence: meta.image_confidence || (imageUrl ? 'HIGH' : null),
+      image_source_type: meta.image_source_type || null,
+      image_source_url: meta.image_source_url || null,
+      image_credit: meta.image_credit || null,
+      image_license_status: meta.image_license_status || null,
+      is_fallback_image: meta.is_fallback_image ?? false,
+      fallback_meta: meta.fallback_meta || null,
+      description: meta.description || null,
+      // Domain history & provenance arrays (defensive: always arrays/objects)
+      event_history: Array.isArray(meta.event_history) ? meta.event_history : [],
+      observations: Array.isArray(meta.observations) ? meta.observations : [],
+      sources: Array.isArray(meta.sources) ? meta.sources : [],
+      conflicts: Array.isArray(meta.conflicts) ? meta.conflicts : [],
+      field_provenance: meta.field_provenance && typeof meta.field_provenance === 'object' ? meta.field_provenance : {},
+      verification_reasons: Array.isArray(meta.verification_reasons) ? meta.verification_reasons : [],
+      event_quality_score: meta.event_quality_score ?? null,
+      marketplace_eligibility: meta.marketplace_eligibility || null,
+      quality_factors: meta.quality_factors || null,
       metadata: meta,
       created_at: row.created_at instanceof Date ? row.created_at.toISOString() : (row.created_at || null),
       updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : (row.updated_at || null)
