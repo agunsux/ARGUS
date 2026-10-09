@@ -9,6 +9,7 @@
 const { Pool } = require('pg');
 const { MoneyRepository } = require('./MoneyRepository');
 const { InMemoryMoneyRepository } = require('./InMemoryMoneyRepository');
+const { assertTestDatabaseIsolation } = require('./testIsolation');
 
 class PostgresMoneyRepository extends MoneyRepository {
   constructor(options = {}) {
@@ -71,6 +72,7 @@ class PostgresMoneyRepository extends MoneyRepository {
         });
 
         await this.pool.query('SELECT NOW()');
+        await assertTestDatabaseIsolation(this.pool);
         this.initialized = true;
         this.degraded = false;
         return true;

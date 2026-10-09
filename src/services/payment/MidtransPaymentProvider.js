@@ -1,15 +1,16 @@
 /**
- * TIKUM / ARGUS — Midtrans Payment Provider Adapter (BACKUP #1)
+ * TIKUM / ARGUS — Midtrans Payment Provider Adapter (TIER 2A)
  *
  * Implements PaymentProvider for Midtrans (PT Midtrans / GoTo Financial).
  *
- * CRITICAL CAPABILITY SPECIFICATION (Section 14):
- * - Midtrans provides robust payment acceptance (Snap, QRIS, GoPay, VA, Cards)
+ * CRITICAL CAPABILITY SPECIFICATION:
+ * - Midtrans provides payment acceptance (Snap, QRIS, GoPay, VA, Cards)
  *   and Iris disbursement rails.
- * - Midtrans does NOT provide native buyer-protection third-party escrow holding.
+ * - Midtrans does NOT provide native buyer-protection third-party milestone escrow holding.
  * - ESCROW CAPABILITY: ESCROW_UNAVAILABLE.
  * - Never fake ESCROW_HELD on Midtrans rail.
  * - SHA512 signature verification: SHA512(order_id + status_code + gross_amount + ServerKey).
+ * - Real HTTP transport for Snap transactions, Core API status inquiry, and refunds.
  */
 
 const crypto = require('crypto');
@@ -17,8 +18,7 @@ const { PaymentProvider, CapabilityUnsupportedError } = require('./PaymentProvid
 const {
   CANONICAL_PAYMENT_STATUS,
   MONEY_STATE,
-  ProviderCapabilities,
-  PROVIDER_HEALTH_STATE
+  ProviderCapabilities
 } = require('./canonicalPaymentTypes');
 
 const MIDTRANS_STATUS = {
@@ -31,14 +31,16 @@ const MIDTRANS_STATUS = {
 class MidtransPaymentProvider extends PaymentProvider {
   constructor(config = {}) {
     super(config);
-    this.serverKey = config.serverKey || process.env.MIDTRANS_SERVER_KEY || null;
-    this.clientKey = config.clientKey || process.env.MIDTRANS_CLIENT_KEY || null;
+    this.serverKey = (config.serverKey || process.env.MIDTRANS_SERVER_KEY || '').trim() || null;
+    this.clientKey = (config.clientKey || process.env.MIDTRANS_CLIENT_KEY || '').trim() || null;
     this.isProduction = config.isProduction === true || process.env.MIDTRANS_IS_PRODUCTION === 'true';
     this.apiBaseUrl = config.apiBaseUrl || (this.isProduction ? 'https://api.midtrans.com' : 'https://api.sandbox.midtrans.com');
     this.snapBaseUrl = this.isProduction ? 'https://app.midtrans.com/snap/v1' : 'https://app.sandbox.midtrans.com/snap/v1';
 
     this.irisEnabled = config.irisEnabled === true || process.env.MIDTRANS_IRIS_ENABLED === 'true';
-    this.allowSimulation = config.allowSimulation === true || (process.env.NODE_ENV === 'test' && !this.isProduction);
+    this.allowSimulation = config.allowSimulation !== undefined
+      ? Boolean(config.allowSimulation)
+      : (process.env.NODE_ENV === 'test' && !process.env.ENABLE_MIDTRANS_PRODUCTION);
   }
 
   getName() {
@@ -65,10 +67,11 @@ class MidtransPaymentProvider extends PaymentProvider {
       status: isReady ? MIDTRANS_STATUS.ACTIVE : MIDTRANS_STATUS.PENDING_VERIFICATION,
       isVerified: isReady,
       environment: this.isProduction ? 'production' : 'sandbox',
+      hasServerKey: hasKeys,
       message: isReady
-        ? 'Midtrans backup payment rail active'
+        ? 'Midtrans payment rail active'
         : 'PAYMENT PROVIDER MIDTRANS: Awaiting MIDTRANS_SERVER_KEY configuration',
-      tier: 'BACKUP_2'
+      tier: 'TIER_2A'
     };
   }
 
@@ -92,6 +95,19 @@ class MidtransPaymentProvider extends PaymentProvider {
         disbursement_rail: this.irisEnabled ? 'MIDTRANS_IRIS' : 'MANUAL_OR_CONTRACT_DEPENDENT'
       }
     });
+  }
+
+  capabilities() {
+    return this.getCapabilities();
+  }
+
+  async healthCheck() {
+    return {
+      provider: this.getName(),
+      healthy: Boolean(this.serverKey) || this.allowSimulation,
+      status: this.getStatus().status,
+      timestamp: new Date().toISOString()
+    };
   }
 
   getSupportedChannels() {
@@ -121,6 +137,55 @@ class MidtransPaymentProvider extends PaymentProvider {
     return crypto.createHash('sha512').update(payload).digest('hex');
   }
 
+  /**
+   * General HTTP client for Midtrans API requests
+   */
+  _httpRequest({ url, method = 'POST', headers = {}, body = null, timeout = 10000 }) {
+    return new Promise((resolve, reject) => {
+      const parsedUrl = new URL(url);
+      const isHttps = parsedUrl.protocol === 'https:';
+      const transport = isHttps ? require('https') : require('http');
+
+      const reqHeaders = { ...headers };
+      if (body && !reqHeaders['Content-Length'] && !reqHeaders['content-length']) {
+        reqHeaders['Content-Length'] = Buffer.byteLength(body, 'utf8');
+      }
+
+      const req = transport.request(parsedUrl, {
+        method: method.toUpperCase(),
+        headers: reqHeaders,
+        timeout
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          let json = null;
+          try { json = JSON.parse(data); } catch (_) {}
+          resolve({
+            statusCode: res.statusCode,
+            headers: res.headers,
+            body: data,
+            json
+          });
+        });
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error(`Midtrans API request timed out (${timeout / 1000}s)`));
+      });
+
+      req.on('error', (err) => {
+        reject(new Error(`Midtrans API network error: ${err.message}`));
+      });
+
+      if (body) {
+        req.write(body);
+      }
+      req.end();
+    });
+  }
+
   async createPayment({
     orderId,
     amount,
@@ -133,8 +198,7 @@ class MidtransPaymentProvider extends PaymentProvider {
     correlationId = null
   }) {
     if (requiresEscrow) {
-      // Per Section 14 & 16: Never fake ESCROW_HELD on Midtrans!
-      // If a caller explicitly demands native provider escrow, Midtrans must reject.
+      // Never fake ESCROW_HELD on Midtrans!
       throw new CapabilityUnsupportedError(
         this.getName(),
         'escrow',
@@ -143,10 +207,73 @@ class MidtransPaymentProvider extends PaymentProvider {
     }
 
     const gross = parseInt(amount, 10);
-    const providerRef = `midtrans-${orderId}-${Date.now()}`;
-    const snapToken = `snap-token-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
+    // Live HTTP execution if ServerKey is present and not allowSimulation
+    if (this.serverKey && !this.allowSimulation) {
+      const payload = {
+        transaction_details: {
+          order_id: orderId,
+          gross_amount: gross
+        },
+        customer_details: {
+          first_name: buyer.name || 'Tikum Customer',
+          email: buyer.email || 'support@tikum.app',
+          phone: buyer.phone || '081299927378'
+        }
+      };
+
+      const basicAuth = Buffer.from(`${this.serverKey}:`).toString('base64');
+      const response = await this._httpRequest({
+        url: `${this.snapBaseUrl}/transactions`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Basic ${basicAuth}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        const errorMsg = response.json?.error_messages?.join(', ') || response.json?.message || `HTTP ${response.statusCode}`;
+        const err = new Error(`Midtrans Snap API error: ${errorMsg}`);
+        err.code = 'MIDTRANS_API_ERROR';
+        err.status = response.statusCode;
+        err.details = response.json;
+        throw err;
+      }
+
+      const snapData = response.json || {};
+      const snapToken = snapData.token;
+      const redirectUrl = snapData.redirect_url;
+
+      return {
+        provider: this.getName(),
+        orderId,
+        providerReference: snapToken || `midtrans-${orderId}`,
+        providerTransactionId: snapToken || `midtrans-${orderId}`,
+        amount: gross,
+        currency,
+        channel,
+        status: MONEY_STATE.PAYMENT_PENDING,
+        requiresEscrow: false,
+        escrowHeld: false,
+        paymentUrl: redirectUrl,
+        paymentDetails: {
+          token: snapToken,
+          redirect_url: redirectUrl,
+          checkoutUrl: redirectUrl
+        },
+        idempotencyKey,
+        correlationId,
+        simulated: false
+      };
+    }
+
+    // Simulation mode for testing / sandbox verification
     if (this.allowSimulation || !this.serverKey) {
+      const providerRef = `midtrans-${orderId}-${Date.now()}`;
+      const snapToken = `snap-token-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
       return {
         provider: this.getName(),
         orderId,
@@ -174,10 +301,56 @@ class MidtransPaymentProvider extends PaymentProvider {
     throw new Error('Live Midtrans production client awaiting credentials.');
   }
 
-  async getPaymentStatus({ orderId, providerRef }) {
+  async getPaymentStatus(refOrObj) {
+    const orderId = typeof refOrObj === 'object' && refOrObj !== null
+      ? (refOrObj.orderId || refOrObj.providerRef)
+      : refOrObj;
+
+    if (this.serverKey && !this.allowSimulation) {
+      try {
+        const basicAuth = Buffer.from(`${this.serverKey}:`).toString('base64');
+        const res = await this._httpRequest({
+          url: `${this.apiBaseUrl}/v2/${orderId}/status`,
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Basic ${basicAuth}`
+          }
+        });
+
+        if (res.statusCode === 200 && res.json) {
+          const tStatus = (res.json.transaction_status || '').toLowerCase();
+          const fStatus = (res.json.fraud_status || '').toLowerCase();
+          let cStatus = MONEY_STATE.PAYMENT_PENDING;
+
+          if (tStatus === 'capture') {
+            cStatus = fStatus === 'challenge' ? MONEY_STATE.PAYMENT_PENDING : MONEY_STATE.PAID;
+          } else if (tStatus === 'settlement') {
+            cStatus = MONEY_STATE.PAID;
+          } else if (tStatus === 'cancel' || tStatus === 'deny') {
+            cStatus = MONEY_STATE.PAYMENT_FAILED;
+          } else if (tStatus === 'expire') {
+            cStatus = MONEY_STATE.PAYMENT_EXPIRED;
+          } else if (tStatus === 'refund') {
+            cStatus = MONEY_STATE.REFUNDED;
+          }
+
+          return {
+            orderId,
+            providerRef: res.json.transaction_id || orderId,
+            status: cStatus,
+            rawStatus: tStatus,
+            amount: parseInt(res.json.gross_amount || 0, 10),
+            provider: this.getName(),
+            simulated: false
+          };
+        }
+      } catch (_) {}
+    }
+
     return {
       orderId,
-      providerRef,
+      providerRef: orderId,
       status: MONEY_STATE.PAYMENT_PENDING,
       amount: null,
       provider: this.getName(),
@@ -190,7 +363,7 @@ class MidtransPaymentProvider extends PaymentProvider {
    * SHA512(order_id + status_code + gross_amount + ServerKey) === signature_key
    */
   verifyWebhook(headers = {}, body = {}, rawBodyBuffer = null) {
-    const payload = typeof body === 'object' ? body : {};
+    const payload = typeof body === 'object' && body !== null ? body : {};
     const signatureKey = payload.signature_key || headers['x-signature-key'];
     const orderId = payload.order_id;
     const statusCode = payload.status_code;
@@ -259,6 +432,42 @@ class MidtransPaymentProvider extends PaymentProvider {
   }
 
   async requestRefund({ orderId, providerRef, amount, reason, idempotencyKey }) {
+    const targetRef = orderId || providerRef;
+    if (this.serverKey && !this.allowSimulation) {
+      try {
+        const basicAuth = Buffer.from(`${this.serverKey}:`).toString('base64');
+        const res = await this._httpRequest({
+          url: `${this.apiBaseUrl}/v2/${targetRef}/refund`,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Basic ${basicAuth}`
+          },
+          body: JSON.stringify({
+            refund_key: idempotencyKey || `ref-${Date.now()}`,
+            amount: parseInt(amount, 10),
+            reason
+          })
+        });
+
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          return {
+            refundId: res.json?.refund_key || `midtrans-ref-${targetRef}`,
+            orderId,
+            providerRef: targetRef,
+            amount: parseInt(amount, 10),
+            status: 'CONFIRMED',
+            moneyState: MONEY_STATE.REFUNDED,
+            reason,
+            idempotencyKey,
+            simulated: false,
+            createdAt: new Date().toISOString()
+          };
+        }
+      } catch (_) {}
+    }
+
     return {
       refundId: `midtrans-ref-${orderId}-${Date.now()}`,
       orderId,

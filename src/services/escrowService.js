@@ -330,43 +330,14 @@ class EscrowService {
       const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
       moneyRepo = getMoneyRepository();
       const marketplaceRepo = getMarketplaceRepository();
-      if (marketplaceRepo && listing) {
-        try {
-          const dbListing = await marketplaceRepo.getListingById(listing.id);
-          if (!dbListing) {
-            let ticketId = listing.ticket_id || `tkt-${listing.id}`;
-            const activeListingWithTicket = await marketplaceRepo.query(
-              "SELECT id FROM marketplace_listings WHERE ticket_id = $1 AND status IN ('ACTIVE', 'RESERVED') LIMIT 1",
-              [ticketId]
-            );
-            if (activeListingWithTicket && activeListingWithTicket.rows && activeListingWithTicket.rows.length > 0 && activeListingWithTicket.rows[0].id !== listing.id) {
-              ticketId = `tkt-${listing.id}`;
-              listing.ticket_id = ticketId;
-            }
-            const dbTicket = await marketplaceRepo.getTicketById(ticketId);
-            if (!dbTicket) {
-              await marketplaceRepo.createTicket({
-                id: ticketId,
-                seller_id: listing.seller_id || 'seller-1',
-                current_owner_id: listing.seller_id || 'seller-1',
-                canonical_event_id: listing.event_id || 'event-pestapora-2026',
-                ticket_type: 'GENERAL_ADMISSION',
-                face_value: listing.face_value || listing.price || 1000000,
-                currency: listing.currency || 'IDR',
-                status: 'VERIFIED'
-              });
-            }
-            await marketplaceRepo.createListing({
-              id: listing.id,
-              ticket_id: ticketId,
-              seller_id: listing.seller_id || 'seller-1',
-              canonical_event_id: listing.event_id || 'event-pestapora-2026',
-              price: listing.price || 1000000,
-              currency: listing.currency || 'IDR',
-              status: listing.status || 'ACTIVE'
-            });
-          }
-        } catch (_) {}
+      if (marketplaceRepo && listing && !marketplaceRepo.degraded) {
+        const dbListing = await marketplaceRepo.getListingById(listing.id);
+        if (!dbListing && process.env.NODE_ENV === 'production') {
+          const err = new Error(`Listing '${listing.id}' not found in marketplace repository`);
+          err.code = 'LISTING_NOT_FOUND';
+          err.status = 404;
+          throw err;
+        }
       }
       await moneyRepo.createOrder({
         id: orderId,

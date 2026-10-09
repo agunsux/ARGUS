@@ -84,62 +84,7 @@ router.post('/v1/payments/create', async (req, res) => {
         }
       }
     }
-    if (!order && (orderId === 'order-doku-sandbox-gate-1' || orderId.startsWith('order-doku-sandbox-gate-') || orderId.startsWith('sandbox-') || orderId.startsWith('test-sandbox-'))) {
-      const { DurableFinancialStore } = require('../settlement/DurableFinancialStore');
-      order = {
-        id: orderId,
-        buyer_id: req.body?.buyerId || buyerId || 'buyer-1',
-        seller_id: 'seller-1',
-        ticket_id: 'ticket-demo-pestapora',
-        event_id: 'event-pestapora-2026',
-        listing_id: 'list-demo-pestapora',
-        status: 'PAYMENT_PENDING',
-        total_amount: req.body?.amount ? parseInt(req.body.amount, 10) : 50000,
-        buyer_total: req.body?.amount ? parseInt(req.body.amount, 10) : 50000,
-        seller_payout: 47500,
-        service_fee: 2500,
-        currency: 'IDR',
-        is_sandbox: true,
-        created_at: new Date().toISOString()
-      };
-      if (!state.orders) state.orders = [];
-      state.orders.push(order);
-      if (!state.escrows) state.escrows = [];
-      if (!state.escrows.find(e => e.order_id === orderId)) {
-        state.escrows.push({
-          id: `esc-${orderId}`,
-          order_id: orderId,
-          buyer_id: order.buyer_id,
-          seller_id: 'seller-1',
-          amount: order.buyer_total,
-          currency: 'IDR',
-          status: 'PENDING_PAYMENT',
-          held_by: 'DOKU_SANDBOX_ESCROW',
-          is_sandbox: true,
-          created_at: new Date().toISOString()
-        });
-      }
-      DurableFinancialStore.persist('orders', state.orders);
-      DurableFinancialStore.persist('escrows', state.escrows);
-      try {
-        const { getMoneyRepository } = require('../storage');
-        const moneyRepo = getMoneyRepository();
-        await moneyRepo.createOrder(order);
-        await moneyRepo.createEscrow({
-          id: `esc-${orderId}`,
-          order_id: orderId,
-          buyer_id: order.buyer_id,
-          seller_id: 'seller-1',
-          amount: order.buyer_total,
-          currency: 'IDR',
-          status: 'PENDING_PAYMENT',
-          held_by: 'TIKUM_INTERNAL_ESCROW',
-          is_sandbox: true
-        });
-      } catch (repoSyncErr) {
-        // Non-fatal in memory-fallback environments
-      }
-    }
+
 
     if (!order) {
       return res.status(404).json({ error: `Order '${orderId}' not found`, code: 'ORDER_NOT_FOUND' });
@@ -361,25 +306,8 @@ router.get('/v1/payments/sandbox/diagnostics', async (req, res) => {
 router.get('/v1/payments/sandbox/details/:orderId', (req, res) => {
   const orderId = req.params.orderId;
   let order = (state.orders || []).find(o => o.id === orderId);
-  if (!order && (orderId === 'order-doku-sandbox-gate-1' || orderId.startsWith('order-doku-sandbox-gate-') || orderId.startsWith('sandbox-'))) {
-    order = {
-      id: orderId,
-      buyer_id: 'test-sandbox-buyer-001',
-      seller_id: 'seller-1',
-      ticket_id: 'ticket-demo-pestapora',
-      event_id: 'event-pestapora-2026',
-      listing_id: 'list-demo-pestapora',
-      status: 'PAYMENT_PENDING',
-      total_amount: 50000,
-      buyer_total: 50000,
-      seller_payout: 47500,
-      service_fee: 2500,
-      currency: 'IDR',
-      is_sandbox: true,
-      created_at: new Date().toISOString()
-    };
-    if (!state.orders) state.orders = [];
-    state.orders.push(order);
+  if (!order) {
+    return res.status(404).json({ error: `Order '${orderId}' not found`, code: 'ORDER_NOT_FOUND' });
   }
   let escrow = (state.escrows || []).find(e => e.order_id === orderId);
   if (!escrow && order) {

@@ -26,12 +26,16 @@ const { state, recordAuditLog } = require('../../database');
 const { DurableFinancialStore } = require('../../settlement/DurableFinancialStore');
 
 const PROVIDER_TIER = {
-  PRIMARY: 'PRIMARY_PROVIDER',
-  BACKUP_1: 'BACKUP_1_PROVIDER',
-  BACKUP_2: 'BACKUP_2_PROVIDER',
-  BACKUP_3: 'BACKUP_3_PROVIDER',
-  SECONDARY: 'BACKUP_1_PROVIDER',
-  FALLBACK: 'BACKUP_2_PROVIDER'
+  PRIMARY: 'TIER_1A_PRIMARY',
+  TIER_1A: 'TIER_1A_PRIMARY',
+  TIER_1B: 'TIER_1B_BACKUP',
+  BACKUP_1: 'TIER_1B_BACKUP',
+  SECONDARY: 'TIER_1B_BACKUP',
+  TIER_2A: 'TIER_2A_BACKUP',
+  BACKUP_2: 'TIER_2A_BACKUP',
+  FALLBACK: 'TIER_2A_BACKUP',
+  TIER_2B: 'TIER_2B_BACKUP',
+  BACKUP_3: 'TIER_2B_BACKUP'
 };
 
 const PAYMENT_ATTEMPT_STATUS = {
@@ -187,11 +191,12 @@ class PaymentRoutingService {
     }
 
     let targetName;
-    if (tier === 'BACKUP_1' || tier === 'SECONDARY') {
+    const tUpper = (tier || 'PRIMARY').toUpperCase();
+    if (tUpper === 'TIER_1B' || tUpper === 'BACKUP_1' || tUpper === 'SECONDARY') {
       targetName = marketConfig.backup_1 || marketConfig.secondary || marketConfig.primary;
-    } else if (tier === 'BACKUP_2' || tier === 'FALLBACK') {
+    } else if (tUpper === 'TIER_2A' || tUpper === 'BACKUP_2' || tUpper === 'FALLBACK') {
       targetName = marketConfig.backup_2 || marketConfig.fallback || marketConfig.primary;
-    } else if (tier === 'BACKUP_3') {
+    } else if (tUpper === 'TIER_2B' || tUpper === 'BACKUP_3') {
       targetName = marketConfig.backup_3 || marketConfig.primary;
     } else {
       targetName = marketConfig.primary || 'doku';

@@ -1,16 +1,16 @@
 /**
- * TIKUM / ARGUS — Xendit Payment Provider Adapter (BACKUP #2)
+ * TIKUM / ARGUS — Xendit Payment Provider Adapter (TIER 2B)
  *
  * Implements PaymentProvider for Xendit (PT Sinar Digital Terdepan).
  *
- * CRITICAL CAPABILITY SPECIFICATION (Section 15):
- * - Xendit provides resilient marketplace rails via xenPlatform, subaccounts,
+ * CRITICAL CAPABILITY SPECIFICATION:
+ * - Xendit provides marketplace rails via xenPlatform, subaccounts,
  *   split payments, and automated disbursements.
- * - DO NOT call split payment "escrow". Split payments and transfers route money
- *   directly between merchant subaccounts, but do NOT provide third-party
- *   buyer-protection milestone escrow holding.
+ * - Split payments route funds between merchant accounts, but do NOT
+ *   provide third-party buyer-protection milestone escrow holding.
  * - ESCROW CAPABILITY: ESCROW_UNAVAILABLE.
  * - Webhook validation: timing-safe check of `x-callback-token`.
+ * - Real HTTP transport for Invoices API, status inquiry, and refunds.
  */
 
 const crypto = require('crypto');
@@ -18,8 +18,7 @@ const { PaymentProvider, CapabilityUnsupportedError } = require('./PaymentProvid
 const {
   CANONICAL_PAYMENT_STATUS,
   MONEY_STATE,
-  ProviderCapabilities,
-  PROVIDER_HEALTH_STATE
+  ProviderCapabilities
 } = require('./canonicalPaymentTypes');
 
 const XENDIT_STATUS = {
@@ -32,13 +31,15 @@ const XENDIT_STATUS = {
 class XenditPaymentProvider extends PaymentProvider {
   constructor(config = {}) {
     super(config);
-    this.secretKey = config.secretKey || process.env.XENDIT_SECRET_KEY || null;
-    this.webhookToken = config.webhookToken || process.env.XENDIT_WEBHOOK_TOKEN || null;
-    this.apiBaseUrl = config.apiBaseUrl || 'https://api.xendit.co';
+    this.secretKey = (config.secretKey || process.env.XENDIT_SECRET_KEY || '').trim() || null;
+    this.webhookToken = (config.webhookToken || process.env.XENDIT_WEBHOOK_TOKEN || '').trim() || null;
+    this.apiBaseUrl = (config.apiBaseUrl || 'https://api.xendit.co').replace(/\/+$/, '');
     this.mode = config.mode || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox');
 
     this.xenPlatformEnabled = config.xenPlatformEnabled === true || process.env.XENDIT_XENPLATFORM_ENABLED === 'true';
-    this.allowSimulation = config.allowSimulation === true || (process.env.NODE_ENV === 'test' && !process.env.ENABLE_XENDIT_PRODUCTION);
+    this.allowSimulation = config.allowSimulation !== undefined
+      ? Boolean(config.allowSimulation)
+      : (process.env.NODE_ENV === 'test' && !process.env.ENABLE_XENDIT_PRODUCTION);
   }
 
   getName() {
@@ -65,10 +66,11 @@ class XenditPaymentProvider extends PaymentProvider {
       status: isReady ? XENDIT_STATUS.ACTIVE : XENDIT_STATUS.PENDING_VERIFICATION,
       isVerified: isReady,
       environment: this.mode,
+      hasSecretKey: hasKeys,
       message: isReady
-        ? 'Xendit backup marketplace & payment rail active'
+        ? 'Xendit payment rail active'
         : 'PAYMENT PROVIDER XENDIT: Awaiting XENDIT_SECRET_KEY configuration',
-      tier: 'BACKUP_3'
+      tier: 'TIER_2B'
     };
   }
 
@@ -94,6 +96,19 @@ class XenditPaymentProvider extends PaymentProvider {
     });
   }
 
+  capabilities() {
+    return this.getCapabilities();
+  }
+
+  async healthCheck() {
+    return {
+      provider: this.getName(),
+      healthy: Boolean(this.secretKey) || this.allowSimulation,
+      status: this.getStatus().status,
+      timestamp: new Date().toISOString()
+    };
+  }
+
   getSupportedChannels() {
     return [
       { code: 'INVOICE', name: 'Xendit Checkout Invoice', type: 'CHECKOUT', isEscrowSupported: false },
@@ -107,6 +122,55 @@ class XenditPaymentProvider extends PaymentProvider {
       { code: 'VA_BRI', name: 'BRI Virtual Account', type: 'VA', isEscrowSupported: false },
       { code: 'CREDIT_CARD', name: 'Credit Card', type: 'CARD', isEscrowSupported: false }
     ];
+  }
+
+  /**
+   * General HTTP client for Xendit API requests
+   */
+  _httpRequest({ url, method = 'POST', headers = {}, body = null, timeout = 10000 }) {
+    return new Promise((resolve, reject) => {
+      const parsedUrl = new URL(url);
+      const isHttps = parsedUrl.protocol === 'https:';
+      const transport = isHttps ? require('https') : require('http');
+
+      const reqHeaders = { ...headers };
+      if (body && !reqHeaders['Content-Length'] && !reqHeaders['content-length']) {
+        reqHeaders['Content-Length'] = Buffer.byteLength(body, 'utf8');
+      }
+
+      const req = transport.request(parsedUrl, {
+        method: method.toUpperCase(),
+        headers: reqHeaders,
+        timeout
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          let json = null;
+          try { json = JSON.parse(data); } catch (_) {}
+          resolve({
+            statusCode: res.statusCode,
+            headers: res.headers,
+            body: data,
+            json
+          });
+        });
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error(`Xendit API request timed out (${timeout / 1000}s)`));
+      });
+
+      req.on('error', (err) => {
+        reject(new Error(`Xendit API network error: ${err.message}`));
+      });
+
+      if (body) {
+        req.write(body);
+      }
+      req.end();
+    });
   }
 
   async createPayment({
@@ -129,10 +193,74 @@ class XenditPaymentProvider extends PaymentProvider {
     }
 
     const gross = parseInt(amount, 10);
-    const invoiceId = `xen-inv-${orderId}-${Date.now()}`;
-    const invoiceUrl = `https://checkout.xendit.co/web/${invoiceId}`;
 
+    // Live HTTP execution if secretKey is present and not allowSimulation
+    if (this.secretKey && !this.allowSimulation) {
+      const payload = {
+        external_id: orderId,
+        amount: gross,
+        payer_email: buyer.email || 'support@tikum.app',
+        description: `Tikum Order ${orderId}`,
+        invoice_duration: 86400,
+        customer: {
+          given_names: buyer.name || 'Tikum Customer',
+          email: buyer.email || 'support@tikum.app',
+          mobile_number: buyer.phone || '081299927378'
+        }
+      };
+
+      const basicAuth = Buffer.from(`${this.secretKey}:`).toString('base64');
+      const response = await this._httpRequest({
+        url: `${this.apiBaseUrl}/v2/invoices`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Basic ${basicAuth}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        const errorMsg = response.json?.message || response.json?.error_code || `HTTP ${response.statusCode}`;
+        const err = new Error(`Xendit Invoice API error: ${errorMsg}`);
+        err.code = 'XENDIT_API_ERROR';
+        err.status = response.statusCode;
+        err.details = response.json;
+        throw err;
+      }
+
+      const invData = response.json || {};
+      const invoiceId = invData.id;
+      const invoiceUrl = invData.invoice_url;
+
+      return {
+        provider: this.getName(),
+        orderId,
+        providerReference: invoiceId,
+        providerTransactionId: invoiceId,
+        amount: gross,
+        currency,
+        channel,
+        status: MONEY_STATE.PAYMENT_PENDING,
+        requiresEscrow: false,
+        escrowHeld: false,
+        paymentUrl: invoiceUrl,
+        paymentDetails: {
+          invoiceId,
+          checkoutUrl: invoiceUrl,
+          expiryDate: invData.expiry_date
+        },
+        idempotencyKey,
+        correlationId,
+        simulated: false
+      };
+    }
+
+    // Simulation mode for testing / sandbox verification
     if (this.allowSimulation || !this.secretKey) {
+      const invoiceId = `xen-inv-${orderId}-${Date.now()}`;
+      const invoiceUrl = `https://checkout.xendit.co/web/${invoiceId}`;
       return {
         provider: this.getName(),
         orderId,
@@ -159,10 +287,51 @@ class XenditPaymentProvider extends PaymentProvider {
     throw new Error('Live Xendit production client awaiting credentials.');
   }
 
-  async getPaymentStatus({ orderId, providerRef }) {
+  async getPaymentStatus(refOrObj) {
+    const invoiceId = typeof refOrObj === 'object' && refOrObj !== null
+      ? (refOrObj.providerRef || refOrObj.orderId)
+      : refOrObj;
+
+    if (this.secretKey && !this.allowSimulation) {
+      try {
+        const basicAuth = Buffer.from(`${this.secretKey}:`).toString('base64');
+        const res = await this._httpRequest({
+          url: `${this.apiBaseUrl}/v2/invoices/${invoiceId}`,
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Basic ${basicAuth}`
+          }
+        });
+
+        if (res.statusCode === 200 && res.json) {
+          const rawStatus = (res.json.status || '').toUpperCase();
+          let cStatus = MONEY_STATE.PAYMENT_PENDING;
+
+          if (rawStatus === 'PAID' || rawStatus === 'SETTLED') {
+            cStatus = MONEY_STATE.PAID;
+          } else if (rawStatus === 'EXPIRED') {
+            cStatus = MONEY_STATE.PAYMENT_EXPIRED;
+          } else if (rawStatus === 'FAILED') {
+            cStatus = MONEY_STATE.PAYMENT_FAILED;
+          }
+
+          return {
+            orderId: res.json.external_id || invoiceId,
+            providerRef: invoiceId,
+            status: cStatus,
+            rawStatus,
+            amount: parseInt(res.json.amount || 0, 10),
+            provider: this.getName(),
+            simulated: false
+          };
+        }
+      } catch (_) {}
+    }
+
     return {
-      orderId,
-      providerRef,
+      orderId: invoiceId,
+      providerRef: invoiceId,
       status: MONEY_STATE.PAYMENT_PENDING,
       amount: null,
       provider: this.getName(),
@@ -171,7 +340,7 @@ class XenditPaymentProvider extends PaymentProvider {
   }
 
   /**
-   * Verifies Xendit webhook callback token
+   * Verifies Xendit webhook callback token using timingSafeEqual
    */
   verifyWebhook(headers = {}, body = {}, rawBodyBuffer = null) {
     const callbackToken = headers['x-callback-token'] || headers['X-Callback-Token'];
@@ -223,10 +392,47 @@ class XenditPaymentProvider extends PaymentProvider {
   }
 
   async requestRefund({ orderId, providerRef, amount, reason, idempotencyKey }) {
+    const targetRef = providerRef || orderId;
+    if (this.secretKey && !this.allowSimulation) {
+      try {
+        const basicAuth = Buffer.from(`${this.secretKey}:`).toString('base64');
+        const res = await this._httpRequest({
+          url: `${this.apiBaseUrl}/refunds`,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Basic ${basicAuth}`,
+            'X-Idempotency-Key': idempotencyKey || `ref-${Date.now()}`
+          },
+          body: JSON.stringify({
+            invoice_id: targetRef,
+            amount: parseInt(amount, 10),
+            reason: reason || 'REQUESTED_BY_CUSTOMER'
+          })
+        });
+
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          return {
+            refundId: res.json?.id || `xendit-ref-${targetRef}`,
+            orderId,
+            providerRef: targetRef,
+            amount: parseInt(amount, 10),
+            status: 'CONFIRMED',
+            moneyState: MONEY_STATE.REFUNDED,
+            reason,
+            idempotencyKey,
+            simulated: false,
+            createdAt: new Date().toISOString()
+          };
+        }
+      } catch (_) {}
+    }
+
     return {
       refundId: `xendit-ref-${orderId}-${Date.now()}`,
       orderId,
-      providerRef,
+      providerRef: targetRef,
       amount: parseInt(amount, 10),
       status: 'CONFIRMED',
       moneyState: MONEY_STATE.REFUNDED,

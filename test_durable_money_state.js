@@ -12,25 +12,7 @@
 
 const assert = require('assert');
 const crypto = require('crypto');
-const fs = require('fs');
-
-if (!process.env.DATABASE_URL && fs.existsSync('.env.local')) {
-  try {
-    const envContent = fs.readFileSync('.env.local', 'utf8');
-    for (const line of envContent.split('\n')) {
-      if (line.startsWith('DATABASE_URL=')) {
-        let val = line.substring('DATABASE_URL='.length).trim().replace(/['"]/g, '');
-        try {
-          const u = new URL(val);
-          u.searchParams.delete('channel_binding');
-          val = u.toString();
-        } catch (_) {}
-        process.env.DATABASE_URL = val;
-        break;
-      }
-    }
-  } catch (_) {}
-}
+process.env.NODE_ENV = 'test';
 
 const {
   getMarketplaceRepository,
@@ -445,7 +427,7 @@ async function runTests() {
   // ─────────────────────────────────────────────────────────────
   console.log('\n── Section 6: Live Neon PostgreSQL Verification ──');
 
-  if (process.env.DATABASE_URL) {
+  if (process.env.TEST_DATABASE_URL) {
     await test('Test 14: Live Neon PostgreSQL verifies double-sale prevention via SELECT FOR UPDATE', async () => {
       const liveRepo = new PostgresMarketplaceRepository();
       await liveRepo.init();
@@ -632,7 +614,7 @@ async function runTests() {
       });
     });
   } else {
-    console.log('  [NOTICE] DATABASE_URL not set; skipping live Neon database section');
+    console.log('  [NOTICE] TEST_DATABASE_URL not set; skipping live Neon database section');
   }
 
   console.log('\n================================================================');

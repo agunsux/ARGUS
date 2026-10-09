@@ -18,23 +18,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { spawnSync } = require('child_process');
 
-if (!process.env.DATABASE_URL && fs.existsSync('.env.local')) {
-  try {
-    const envContent = fs.readFileSync('.env.local', 'utf8');
-    for (const line of envContent.split('\n')) {
-      if (line.startsWith('DATABASE_URL=')) {
-        let val = line.substring('DATABASE_URL='.length).trim().replace(/['"]/g, '');
-        try {
-          const u = new URL(val);
-          u.searchParams.delete('channel_binding');
-          val = u.toString();
-        } catch (_) {}
-        process.env.DATABASE_URL = val;
-        break;
-      }
-    }
-  } catch (_) {}
-}
+process.env.NODE_ENV = 'test';
 
 const {
   getUserRepository,

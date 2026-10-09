@@ -9,6 +9,7 @@
 const { Pool } = require('pg');
 const { MarketplaceRepository } = require('./MarketplaceRepository');
 const { InMemoryMarketplaceRepository } = require('./InMemoryMarketplaceRepository');
+const { assertTestDatabaseIsolation } = require('./testIsolation');
 
 class PostgresMarketplaceRepository extends MarketplaceRepository {
   constructor(options = {}) {
@@ -71,23 +72,26 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
         });
 
         await this.pool.query('SELECT NOW()');
-        await this.pool.query(`
-          INSERT INTO marketplace_tickets (
-            id, seller_id, current_owner_id, canonical_event_id, ticket_type,
-            section, row_id, seat, quantity, face_value, currency,
-            ticket_format, transfer_method, status
-          ) VALUES (
-            'ticket-demo-pestapora', 'seller-1', 'seller-1', 'event-pestapora-2026', 'GENERAL_ADMISSION',
-            'General', 'A', '1', 1, 1250000, 'IDR',
-            'E_TICKET', 'MOBILE_TRANSFER', 'VERIFIED'
-          ) ON CONFLICT (id) DO NOTHING;
+        await assertTestDatabaseIsolation(this.pool);
+        if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEMO_SEEDING === 'true') {
+          await this.pool.query(`
+            INSERT INTO marketplace_tickets (
+              id, seller_id, current_owner_id, canonical_event_id, ticket_type,
+              section, row_id, seat, quantity, face_value, currency,
+              ticket_format, transfer_method, status
+            ) VALUES (
+              'ticket-demo-pestapora', 'seller-1', 'seller-1', 'event-pestapora-2026', 'GENERAL_ADMISSION',
+              'General', 'A', '1', 1, 1250000, 'IDR',
+              'E_TICKET', 'MOBILE_TRANSFER', 'VERIFIED'
+            ) ON CONFLICT (id) DO NOTHING;
 
-          INSERT INTO marketplace_listings (
-            id, ticket_id, seller_id, canonical_event_id, price, currency, status
-          ) VALUES (
-            'list-demo-pestapora', 'ticket-demo-pestapora', 'seller-1', 'event-pestapora-2026', 1500000, 'IDR', 'ACTIVE'
-          ) ON CONFLICT (id) DO NOTHING;
-        `);
+            INSERT INTO marketplace_listings (
+              id, ticket_id, seller_id, canonical_event_id, price, currency, status
+            ) VALUES (
+              'list-demo-pestapora', 'ticket-demo-pestapora', 'seller-1', 'event-pestapora-2026', 1500000, 'IDR', 'ACTIVE'
+            ) ON CONFLICT (id) DO NOTHING;
+          `);
+        }
         this.initialized = true;
         this.degraded = false;
         return true;

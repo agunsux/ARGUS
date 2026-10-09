@@ -17,6 +17,11 @@ function getCatalogRepository(forceNew = false) {
     return activeRepository;
   }
 
+  if (process.env.NODE_ENV === 'test' && !process.env.TEST_DATABASE_URL) {
+    activeRepository = new InMemoryCatalogRepository();
+    return activeRepository;
+  }
+
   if (process.env.DATABASE_URL) {
     activeRepository = new PostgresCatalogRepository();
   } else {

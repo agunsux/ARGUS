@@ -13,6 +13,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { UserRepository } = require('./UserRepository');
 const { InMemoryUserRepository } = require('./InMemoryUserRepository');
+const { assertTestDatabaseIsolation } = require('./testIsolation');
 
 const DEFAULT_HASH = '$2b$12$4S3malXpyvpXvygwPeNE1.Yc6W2iP9APUve9Gi1EqG3Jt39bDUZS.'; // 'pilot123'
 
@@ -83,6 +84,7 @@ class PostgresUserRepository extends UserRepository {
           client.release();
         }
 
+        await assertTestDatabaseIsolation(this.pool);
         await this.runMigrations();
         await this.seedBaselineUsers();
 
@@ -199,6 +201,9 @@ class PostgresUserRepository extends UserRepository {
   }
 
   async seedBaselineUsers() {
+    if (process.env.NODE_ENV === 'production' || process.env.ENABLE_DEMO_SEEDING !== 'true') {
+      return false;
+    }
     const isProd = process.env.NODE_ENV === 'production';
     const adminPass = process.env.ARGUS_ADMIN_PASSWORD
       ? bcrypt.hashSync(process.env.ARGUS_ADMIN_PASSWORD, 12)
