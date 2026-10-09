@@ -57,7 +57,9 @@ const state = {
   inbox_messages: [],
   contact_inquiries: [],
   partners: [],
-  partner_inventory: []
+  partner_inventory: [],
+  consignment_agreements: [],
+  pic_duty_authorizations: []
 };
 
 try {
@@ -1379,6 +1381,8 @@ function resetDatabase() {
   state.event_lifecycles = [];
   state.partners = [];
   state.partner_inventory = [];
+  state.consignment_agreements = [];
+  state.pic_duty_authorizations = [];
 
   try {
     const { MarketplacePricingEngine } = require('./pricing/MarketplacePricingEngine');
