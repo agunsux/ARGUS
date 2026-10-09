@@ -474,7 +474,7 @@ router.get('/events', (req, res) => {
       venue_city: event.venue_city || venue.city || 'Jakarta',
       venue_details: venue,
       pic_assigned: !!pic,
-      pic_contact: pic ? pic.contact_phone : null,
+      pic_contact: null, // PII protected: disclosed only to authenticated buyers on confirmed orders
       active_listings_count: activeListings.length,
       min_price: minPrice
     };

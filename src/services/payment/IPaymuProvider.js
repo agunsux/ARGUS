@@ -288,6 +288,11 @@ class IPaymuProvider extends PaymentProvider {
 
     // 2. Real HTTP execution if credentials configured and live connection enabled
     if (this.apiKey && this.virtualAccount && !this.allowSimulation) {
+      // Live production gate: production API requires explicit merchant production enablement flag
+      if (this.isProduction && process.env.ENABLE_IPAYMU_PRODUCTION !== 'true') {
+        throw new Error('Live iPaymu production API client awaiting merchant production activation.');
+      }
+
       const paymentChannelCode = channelUpper.includes('BCA') ? 'bca'
         : channelUpper.includes('MANDIRI') ? 'mandiri'
         : channelUpper.includes('BNI') ? 'bni'
@@ -391,6 +396,9 @@ class IPaymuProvider extends PaymentProvider {
   async getPaymentStatus({ orderId, providerRef }) {
     const id = providerRef || orderId;
     if (this.apiKey && this.virtualAccount && !this.allowSimulation) {
+      if (this.isProduction && process.env.ENABLE_IPAYMU_PRODUCTION !== 'true') {
+        throw new Error('Live iPaymu production API client awaiting merchant production activation.');
+      }
       try {
         const payload = { transactionId: id };
         const signed = this.buildSignedRequest({

@@ -19,7 +19,6 @@ class ListingService {
    */
   static hashBarcode(rawBarcode) {
     return crypto.createHash('sha256').update(rawBarcode.trim()).digest('hex');
-    return crypto.createHash('sha256').update(rawBarcode.trim().toUpperCase()).digest('hex');
   }
 
   /**
@@ -380,7 +379,7 @@ class ListingService {
           verification_status: listing.status === 'ACTIVE' ? 'VERIFIED' : listing.status,
           pic_available: !!picAssign,
           pic_support_available: !!picAssign,
-          pic_contact: picAssign ? picAssign.contact_phone : null,
+          pic_contact: null, // PII protected: disclosed only to authenticated buyers on confirmed orders
           seller_id: listing.seller_id,
           seller_name: seller.name,
           event_id: listing.event_id,

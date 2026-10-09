@@ -210,6 +210,10 @@ class MidtransPaymentProvider extends PaymentProvider {
 
     // Live HTTP execution if ServerKey is present and not allowSimulation
     if (this.serverKey && !this.allowSimulation) {
+      if (this.isProduction && process.env.ENABLE_MIDTRANS_PRODUCTION !== 'true') {
+        throw new Error('Live Midtrans production API client awaiting merchant production activation.');
+      }
+
       const payload = {
         transaction_details: {
           order_id: orderId,
@@ -307,6 +311,10 @@ class MidtransPaymentProvider extends PaymentProvider {
       : refOrObj;
 
     if (this.serverKey && !this.allowSimulation) {
+      if (this.isProduction && process.env.ENABLE_MIDTRANS_PRODUCTION !== 'true') {
+        throw new Error('Live Midtrans production API client awaiting merchant production activation.');
+      }
+
       try {
         const basicAuth = Buffer.from(`${this.serverKey}:`).toString('base64');
         const res = await this._httpRequest({
@@ -434,6 +442,10 @@ class MidtransPaymentProvider extends PaymentProvider {
   async requestRefund({ orderId, providerRef, amount, reason, idempotencyKey }) {
     const targetRef = orderId || providerRef;
     if (this.serverKey && !this.allowSimulation) {
+      if (this.isProduction && process.env.ENABLE_MIDTRANS_PRODUCTION !== 'true') {
+        throw new Error('Live Midtrans production API client awaiting merchant production activation.');
+      }
+
       try {
         const basicAuth = Buffer.from(`${this.serverKey}:`).toString('base64');
         const res = await this._httpRequest({

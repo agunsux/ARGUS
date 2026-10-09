@@ -196,6 +196,10 @@ class XenditPaymentProvider extends PaymentProvider {
 
     // Live HTTP execution if secretKey is present and not allowSimulation
     if (this.secretKey && !this.allowSimulation) {
+      if ((this.mode === 'production' || process.env.NODE_ENV === 'production') && process.env.ENABLE_XENDIT_PRODUCTION !== 'true') {
+        throw new Error('Live Xendit production API client awaiting merchant production activation.');
+      }
+
       const payload = {
         external_id: orderId,
         amount: gross,
@@ -293,6 +297,10 @@ class XenditPaymentProvider extends PaymentProvider {
       : refOrObj;
 
     if (this.secretKey && !this.allowSimulation) {
+      if ((this.mode === 'production' || process.env.NODE_ENV === 'production') && process.env.ENABLE_XENDIT_PRODUCTION !== 'true') {
+        throw new Error('Live Xendit production API client awaiting merchant production activation.');
+      }
+
       try {
         const basicAuth = Buffer.from(`${this.secretKey}:`).toString('base64');
         const res = await this._httpRequest({
@@ -394,6 +402,10 @@ class XenditPaymentProvider extends PaymentProvider {
   async requestRefund({ orderId, providerRef, amount, reason, idempotencyKey }) {
     const targetRef = providerRef || orderId;
     if (this.secretKey && !this.allowSimulation) {
+      if ((this.mode === 'production' || process.env.NODE_ENV === 'production') && process.env.ENABLE_XENDIT_PRODUCTION !== 'true') {
+        throw new Error('Live Xendit production API client awaiting merchant production activation.');
+      }
+
       try {
         const basicAuth = Buffer.from(`${this.secretKey}:`).toString('base64');
         const res = await this._httpRequest({
