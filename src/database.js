@@ -155,7 +155,8 @@ function resetDatabase() {
     { id: 'venue-eldorado', name: 'Eldorado Dome', city: 'Bandung', gate_info: 'Lobby Utama Eldorado' },
     { id: 'venue-grand-city', name: 'Grand City Convention Center', city: 'Surabaya', gate_info: 'Exhibition Hall Lt. 3' },
     { id: 'venue-gbt', name: 'Stadion Gelora Bung Tomo (GBT)', city: 'Surabaya', gate_info: 'Gate 1-4 Gate Utama' },
-    { id: 'venue-peninsula', name: 'Peninsula Island Nusa Dua', city: 'Bali', gate_info: 'Main Entrance Nusa Dua Gate' }
+    { id: 'venue-peninsula', name: 'Peninsula Island Nusa Dua', city: 'Bali', gate_info: 'Main Entrance Nusa Dua Gate' },
+    { id: 'venue-istora-senayan', name: 'Istora Senayan Jakarta', city: 'Jakarta', gate_info: 'Pintu Masuk Utama Istora Senayan' }
   ];
 
   state.events = [
@@ -506,17 +507,19 @@ function resetDatabase() {
     official_ticket_url: null,
     poster_url: null
   },
-
-  // --- 2. UNVERIFIED SEED CANDIDATES (INTERNAL ONLY - ZERO TRUST PUBLIC GATE) ---
   {
     id: 'event-pestapora-2026',
     slug: 'pestapora-2026-jakarta',
     name: 'Pestapora 2026',
     title: 'Pestapora 2026',
     artists: ['Tulus', 'Hindia', 'The Changcuters', 'Danilla', 'Isyana Sarasvati', 'Feast'],
-    date: '2026-10-25',
-    start_date: '2026-10-25',
-    end_date: '2026-10-28',
+    date: '2026-09-25',
+    start_date: '2026-09-25',
+    end_date: '2026-09-27',
+    event_start_at: '2026-09-25T14:00:00+07:00',
+    event_end_at: '2026-09-27T23:59:00+07:00',
+    event_timezone: 'Asia/Jakarta',
+    archive_at: '2026-09-30T23:59:00+07:00',
     venue_id: 'venue-kemayoran',
     venue: 'Gambir Expo / JIExpo Kemayoran',
     venue_name: 'Gambir Expo / JIExpo Kemayoran',
@@ -529,15 +532,15 @@ function resetDatabase() {
       handoff_type: 'PHYSICAL_WRISTBAND',
       venue_gate_authority: 'Boss Creator & Venue Security'
     },
-    status: 'UPCOMING',
-    lifecycle_status: 'UPCOMING',
-    source: 'SEED_UNVERIFIED',
-    source_type: 'UNVERIFIED_SEED',
-    source_url: null,
-    source_account: null,
-    source_published_at: null,
-    source_last_checked_at: null,
-    verification_status: 'UNVERIFIED',
+    status: 'ARCHIVED',
+    lifecycle_status: 'ARCHIVED',
+    source: 'SEED_ARCHIVE',
+    source_type: 'HISTORICAL_ARCHIVE',
+    source_url: 'https://pestapora.com',
+    source_account: '@boss.creator',
+    source_published_at: '2026-05-01T10:00:00+07:00',
+    source_last_checked_at: '2026-09-28T00:00:00+07:00',
+    verification_status: 'EXPIRED',
     verified_at: null,
     evidence_hash: null,
     created_by_user_id: null,
@@ -545,8 +548,11 @@ function resetDatabase() {
     official_link: 'https://pestapora.com',
     official_event_url: 'https://pestapora.com',
     official_ticket_url: null,
-    poster_url: null
+    poster_url: null,
+    notes: 'Concluded festival 25-27 September 2026 at Gambir Expo. Archived under H+3 rule as of 2026-09-30.'
   },
+
+  // --- 2. UNVERIFIED SEED CANDIDATES (INTERNAL ONLY - ZERO TRUST PUBLIC GATE) ---
   {
     id: 'event-synchronize-2026',
     slug: 'synchronize-fest-2026-jakarta',

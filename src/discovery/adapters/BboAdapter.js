@@ -40,10 +40,10 @@ class BboAdapter extends EventSourceAdapter {
     const cityRaw = s.city || s.venue_city || 'Jakarta';
     const venueNorm = EventNormalizationService.normalizeVenue(venueRaw, cityRaw);
 
-    const startDate = s.start_date || s.date || null;
+    const startDate = s.start_date || s.date || s.event_date || null;
     const endDate = s.end_date || null;
     const eventUrl = s.official_event_url || s.event_url || s.official_ticket_url || s.ticket_url || s.url || s.source_url || (s.source_event_id ? `https://bbo.co.id/event/${s.source_event_id}` : 'https://bbo.co.id/');
-    const sourceEventId = s.source_event_id || s.bbo_event_id || s.id || null;
+    const sourceEventId = s.source_event_id || s.bbo_event_id || s.id || (raw && raw.id) || null;
 
     const price = s.price !== undefined && s.price !== null ? Number(s.price) : (s.min_price !== undefined ? Number(s.min_price) : (s.max_price !== undefined ? Number(s.max_price) : null));
     const minPrice = s.min_price !== undefined && s.min_price !== null ? Number(s.min_price) : price;
@@ -52,6 +52,24 @@ class BboAdapter extends EventSourceAdapter {
     const organizer = s.organizer_name || s.organizer || s.promoter || 'BBO Partner';
 
     return {
+      // Raw Source Facts & Provenance
+      raw_source: {
+        rawId: sourceEventId,
+        rawTitle: rawTitle,
+        rawVenue: venueRaw,
+        rawCity: cityRaw,
+        rawDate: startDate,
+        rawOrganizer: organizer,
+        rawPlatform: 'BBO',
+        source_name: 'BBO',
+        raw_payload: raw
+      },
+      raw_payload: raw,
+      rawTitle: rawTitle,
+      rawVenue: venueRaw,
+      rawCity: cityRaw,
+      rawDate: startDate,
+      rawOrganizer: organizer,
       // Common Event Contract (Phase 2)
       title: rawTitle,
       normalizedTitle: normTitle,
@@ -136,6 +154,37 @@ class BboAdapter extends EventSourceAdapter {
     }
 
     return records;
+  }
+
+  /**
+   * Probes public BBO web endpoints legitimately without WAF/firewall bypass.
+   * Returns honest telemetry regarding accessibility.
+   */
+  async probePublicWeb() {
+    const targetUrl = 'https://bbo.co.id/feature-bbo-events.html';
+    try {
+      const res = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'TikumEventBot/1.0 (+https://tikum.app/bot-info; ops@tikum.app)',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        }
+      });
+      return {
+        endpoint: targetUrl,
+        http_status: res.status,
+        is_blocked: res.status === 403,
+        reason: res.status === 403 ? 'WAF_CHALLENGE' : `HTTP_${res.status}`,
+        timestamp: new Date().toISOString()
+      };
+    } catch (err) {
+      return {
+        endpoint: targetUrl,
+        http_status: null,
+        is_blocked: true,
+        reason: err.message,
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 }
 

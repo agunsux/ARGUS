@@ -197,7 +197,6 @@ class VenueOperationsService {
         description: i.description
       })),
       escalation_contacts: [
-        { role: 'Event Lead PIC', name: 'Agus Hendra', phone: '081199887766' },
         { role: 'ARGUS Ops Hotline', phone: '081299927378' }
       ]
     };

@@ -226,6 +226,7 @@ app.get('/contact', (req, res) => res.sendFile(path.join(publicDir, 'contact.htm
 app.get('/refund-policy', (req, res) => res.sendFile(path.join(publicDir, 'refund-policy.html'), sendFileOpts));
 app.get('/refund', (req, res) => res.redirect('/refund-policy'));
 app.get('/baton', (req, res) => res.sendFile(path.join(publicDir, 'baton.html'), sendFileOpts));
+app.get('/hero', (req, res) => res.sendFile(path.join(publicDir, 'hero.html'), sendFileOpts));
 
 // Root and health endpoints for API health check (local + Vercel rewrite)
 app.get('/', (req, res, next) => {

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konser Pilihan Terverifikasi — Nassar & Ye | TIKUM</title>
+  <meta name="description" content="Sorotan konser resmi terverifikasi TIKUM: King Nassar (Lost In The Jungle) oleh Boss Creator & YE Live in Jakarta di GBK. Data resmi, tanggal valid, dan zero fake inventory.">
+  <link rel="canonical" href="https://tikum.app/hero">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --card-bg: #111827;
+      --card-border: #1f2937;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent: #10b981;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --badge-verified: #065f46;
+      --badge-verified-text: #34d399;
+      --badge-soldout: #7f1d1d;
+      --badge-soldout-text: #f87171;
+      --badge-onsale: #1e3a8a;
+      --badge-onsale-text: #60a5fa;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(11, 15, 23, 0.95);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: white;
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      font-size: 0.7rem;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-weight: 600;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+
+    .nav-link:hover {
+      color: var(--text);
+    }
+
+    .hero-banner {
+      padding: 3.5rem 1.5rem 2rem;
+      text-align: center;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+    }
+
+    .hero-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+      letter-spacing: -0.03em;
+    }
+
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .main-grid {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1.5rem 4rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 2rem;
+      flex: 1;
+    }
+
+    .concert-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .concert-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    .poster-wrap {
+      position: relative;
+      height: 280px;
+      background: #1f2937;
+      overflow: hidden;
+    }
+
+    .poster-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .poster-overlay {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      right: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      backdrop-filter: blur(8px);
+    }
+
+    .badge-verified {
+      background: var(--badge-verified);
+      color: var(--badge-verified-text);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+
+    .badge-soldout {
+      background: var(--badge-soldout);
+      color: var(--badge-soldout-text);
+      border: 1px solid rgba(248, 113, 113, 0.4);
+    }
+
+    .badge-onsale {
+      background: var(--badge-onsale);
+      color: var(--badge-onsale-text);
+      border: 1px solid rgba(96, 165, 250, 0.4);
+    }
+
+    .card-body {
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .promoter-tag {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #60a5fa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .concert-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .meta-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .meta-item strong {
+      color: var(--text);
+    }
+
+    .notice-box {
+      background: rgba(31, 41, 55, 0.6);
+      border-left: 3px solid #3b82f6;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: #d1d5db;
+      margin-bottom: 1.5rem;
+    }
+
+    .resale-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: rgba(17, 24, 39, 0.8);
+      border: 1px solid rgba(75, 85, 99, 0.4);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .resale-zero {
+      color: #9ca3af;
+      font-weight: 600;
+    }
+
+    .btn-group {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      background: var(--primary);
+      color: white;
+      text-decoration: none;
+      padding: 0.85rem 1.25rem;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      text-decoration: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .btn-secondary:hover {
+      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .trust-strip {
+      max-width: 1200px;
+      margin: 0 auto 3rem;
+      padding: 2rem 1.5rem;
+      background: rgba(17, 24, 39, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .trust-col h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .trust-col p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    footer {
+      border-top: 1px solid var(--card-border);
+      background: #080c14;
+      padding: 3rem 1.5rem 2rem;
+      margin-top: auto;
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 2rem;
+    }
+
+    .footer-contact h5 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .footer-contact p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .footer-contact a {
+      color: #60a5fa;
+      text-decoration: none;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(31, 41, 55, 0.6);
+      padding-top: 1.5rem;
+      font-size: 0.8rem;
+      color: #6b7280;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <a href="/" class="brand">
+        <div class="brand-logo">T</div>
+        <div>
+          <span class="brand-title">TIKUM</span>
+        </div>
+        <span class="brand-badge">PROVENANCE VERIFIED</span>
+      </a>
+      <nav class="nav-links">
+        <a href="/" class="nav-link">Beranda</a>
+        <a href="/events" class="nav-link">Jelajah Konser</a>
+        <a href="/panduan-pembeli" class="nav-link">Buyer Protection</a>
+        <a href="/kontak" class="nav-link">Bantuan</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero-banner">
+    <div class="hero-eyebrow">
+      <span>●</span> Official Concert Radar • Verified Pipeline
+    </div>
+    <h1 class="hero-title">Sorotan Konser Terverifikasi</h1>
+    <p class="hero-subtitle">
+      Data konser resmi dengan validasi tanggal, promotor otoritatif, dan visual provenance terkonfirmasi. TIKUM menerapkan <em>Zero Fake Inventory</em> — tidak ada stok palsu atau kuota buatan.
+    </p>
+  </section>
+
+  <main class="main-grid" id="heroConcertGrid">
+    <!-- 1. King Nassar: Lost In The Jungle -->
+    <article class="concert-card" id="card-nassar">
+      <div class="poster-wrap">
+        <img 
+          src="https://assets.loket.com/images/nassar-lost-in-the-jungle.jpg" 
+          alt="Poster King Nassar Concert: Lost In The Jungle" 
+          class="poster-img"
+          onerror="this.src='/img/placeholder-event.png'"
+        >
+        <div class="poster-overlay">
+          <span class="badge badge-verified">✓ PROMOTER VERIFIED</span>
+          <span class="badge badge-soldout">PRIMARY: SOLD OUT</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="promoter-tag">Boss Creator Present</div>
+        <h2 class="concert-title">King Nassar: Lost In The Jungle</h2>
+        <div class="meta-list">
+          <div class="meta-item">
+            <span>📅</span>
+            <div><strong>Sabtu, 7 November 2026</strong> • 19:00 WIB</div>
+          </div>
+          <div class="meta-item">
+            <span>📍</span>
+            <div><strong>Istora Senayan Jakarta</strong> • Jakarta Pusat</div>
+          </div>
+          <div class="meta-item">
+            <span>👥</span>
+            <div>Artis: <strong>King Nassar & Erwin Gutawa Orchestra</strong></div>
+          </div>
+        </div>
+
+        <div class="notice-box">
+          Tiket primary resmi melalui Tiket.com / myBCA telah berstatus <strong>Sold Out</strong>. 
+          Pemberitahuan resmi dapat dicek di website promotor Boss Creator.
+        </div>
+
+        <div class="resale-status">
+          <span>Stok Resale Sekunder TIKUM:</span>
+          <span class="resale-zero">0 Tiket (Belum Ada)</span>
+        </div>
+
+        <div class="btn-group">
+          <a href="https://bosscreator.id/" target="_blank" rel="noopener noreferrer" class="btn-primary">
+            Lihat Pengumuman Resmi Boss Creator ↗
+          </a>
+          <a href="/panduan-pembeli" class="btn-secondary">
+            Pelajari Proteksi Pembeli TIKUM
+          </a>
+        </div>
+      </div>
+    </article>
+
+    <!-- 2. YE Live in Jakarta -->
+    <article class="concert-card" id="card-ye">
+      <div class="poster-wrap">
+        <img 
+          src="https://assets.loket.com/lp/sdk/prod/assets/banner/banner_1788163846_6a953706d288e.jpg" 
+          alt="Poster YE Live in Jakarta di Gelora Bung Karno" 
+          class="poster-img"
+          onerror="this.src='/img/placeholder-event.png'"
+        >
+        <div class="poster-overlay">
+          <span class="badge badge-verified">✓ OFFICIAL CHANNEL</span>
+          <span class="badge badge-onsale">PRIMARY: ON SALE</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="promoter-tag">Raw Vision Collective & Yeezy</div>
+        <h2 class="concert-title">YE Live in Jakarta</h2>
+        <div class="meta-list">
+          <div class="meta-item">
+            <span>📅</span>
+            <div><strong>Sabtu, 24 Oktober 2026</strong> • 20:00 WIB</div>
+          </div>
+          <div class="meta-item">
+            <span>📍</span>
+            <div><strong>Gelora Bung Karno (Main Stadium)</strong> • Jakarta</div>
+          </div>
+          <div class="meta-item">
+            <span>👥</span>
+            <div>Artis: <strong>Ye / Kanye West</strong></div>
+          </div>
+        </div>
+
+        <div class="notice-box">
+          Tiket resmi primary dialokasikan melalui website resmi <strong>yejakarta.com</strong> via widget Loket resmi.
+        </div>
+
+        <div class="resale-status">
+          <span>Stok Resale Sekunder TIKUM:</span>
+          <span class="resale-zero">0 Tiket (Belum Ada)</span>
+        </div>
+
+        <div class="btn-group">
+          <a href="https://yejakarta.com/" target="_blank" rel="noopener noreferrer" class="btn-primary">
+            Kunjungi Website Resmi yejakarta.com ↗
+          </a>
+          <a href="/panduan-pembeli" class="btn-secondary">
+            Pelajari Proteksi Pembeli TIKUM
+          </a>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <section class="trust-strip">
+    <div class="trust-grid">
+      <div class="trust-col">
+        <h4>🛡️ Zero-Fake Supply Guarantee</h4>
+        <p>TIKUM memisahkan keberadaan event resmi dengan ketersediaan tiket resale. Kami tidak pernah menciptakan listing fiktif demi impresi katalog.</p>
+      </div>
+      <div class="trust-col">
+        <h4>🔍 Factual Source Provenance</h4>
+        <p>Setiap tanggal, venue, dan status konser divalidasi langsung dari pengumuman promotor dan mitra ticketing resmi (Boss Creator, Tiket.com, Loket.com, yejakarta.com).</p>
+      </div>
+      <div class="trust-col">
+        <h4>⚖️ 100% Escrow Buyer Protection</h4>
+        <p>Dana pembelian tiket sekunder di TIKUM diamankan di rekening escrow resmi sampai pembeli sukses masuk ke venue.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div>
+          <h5 style="color: #fff; margin-bottom: 0.5rem; font-size: 1.1rem; font-weight: 800;">TIKUM (TIKET HUKUM)</h5>
+          <p style="font-size: 0.85rem; color: #9ca3af; max-width: 400px;">
+            Marketplace sekunder tiket event aman pertama di Indonesia dengan perlindungan pembeli escrow dan verifikasi berlapis.
+          </p>
+        </div>
+        <div class="footer-contact">
+          <h5>Korespondensi & Bantuan</h5>
+          <p>Email: <a href="mailto:support@tikum.app">support@tikum.app</a></p>
+          <p>Operasional: PT Shinerva Digital Nusantara (SHINERVA HQ)</p>
+          <p>Jakarta Selatan, DKI Jakarta, Indonesia</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>© 2026 TIKUM (PT Shinerva Digital Nusantara). Hak cipta dilindungi undang-undang.</div>
+        <div>
+          <a href="/terms" style="color: #6b7280; text-decoration: none; margin-right: 1rem;">Syarat & Ketentuan</a>
+          <a href="/privacy" style="color: #6b7280; text-decoration: none;">Kebijakan Privasi</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

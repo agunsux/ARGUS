@@ -273,6 +273,17 @@ class LoketAdapter extends EventSourceAdapter {
       source_publication_timestamp: s.source_publication_timestamp || s.published_at || s.discovery_retrieved_at || null,
       source_last_checked_at: s.source_last_checked_at || s.retrieved_at || new Date().toISOString(),
       raw_source_metadata: s.raw_source_metadata || s.raw || raw || null,
+      raw_source: {
+        rawId: sourceEventId,
+        rawTitle: title,
+        rawVenue: venue,
+        rawCity: city,
+        rawDate: startDate,
+        rawOrganizer: promoter,
+        rawPlatform: 'LOKET',
+        source_name: 'LOKET',
+        raw_payload: raw
+      },
       status: s.status || (raw?.sales_status === 2 ? 'SOLD_OUT' : 'UPCOMING')
     };
   }

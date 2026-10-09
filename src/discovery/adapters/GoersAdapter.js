@@ -96,6 +96,17 @@ class GoersAdapter extends EventSourceAdapter {
 
     const organizer = s.organizer_name || s.organizer || s.promoter || 'Goers Partner';
 
+    if (raw && typeof raw === 'object') {
+      raw.rawId = sourceEventId;
+      raw.rawTitle = rawTitle;
+      raw.rawVenue = rawVenue;
+      raw.rawCity = raw.city || raw.venue_city || cityRaw;
+      raw.rawDate = raw.start_date || raw.date || startDate;
+      raw.rawOrganizer = rawOrganizer;
+      raw.rawPlatform = 'GOERSapp';
+      raw.source_name = 'GOERSapp';
+    }
+
     return {
       // Common Event Contract & Raw Provenance
       raw_source: raw,
