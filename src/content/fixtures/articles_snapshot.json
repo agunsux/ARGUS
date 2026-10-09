@@ -1,192 +1,30 @@
 [
   {
-    "id": "art-campaign-17",
-    "title": "Kenapa Tikum Dibangun? Mengubah Cara Transaksi Tiket di Indonesia",
-    "slug": "kenapa-tikum-dibangun-mengubah-secondary-ticketing-indonesia",
-    "description": "Kisah di balik Tikum tiket: marketplace secondary ticketing aman di Indonesia dengan sistem escrow terproteksi, verifikasi berkas, dan PIC di venue.",
-    "category": "tikum",
+    "id": "art-buying-1",
+    "title": "Panduan Memilih Kategori Tiket Konser: Festival vs Seating",
+    "slug": "panduan-memilih-kategori-tiket-konser-festival-vs-seating",
+    "description": "Tips menentukan kategori tiket konser terbaik: kelebihan tiket standing festival vs nomor kursi seating di stadion besar seperti GBK dan JIS.",
+    "category": "ticket-guides",
     "keywords": [
-      "Tikum tiket",
-      "Tikum secondary ticketing",
-      "marketplace tiket aman",
-      "escrow tiket",
-      "jual beli tiket konser aman",
-      "tiket konser sold out",
-      "anti scam tiket",
-      "PIC venue"
+      "kategori tiket konser",
+      "standing vs seating konser",
+      "tips nonton konser"
     ],
-    "search_intent": "commercial",
-    "content": "\n      <p><strong>Tikum hadir dengan pendekatan baru terhadap secondary ticketing di Indonesia: membangun ekosistem jual beli tiket konser yang mengutamakan rasa aman, perlindungan dana escrow, dan pendampingan nyata di lapangan.</strong></p>\n\n      <p>Setiap kali konser musisi besar diumumkan di Indonesia, antusiasme masyarakat selalu luar biasa. Namun di balik kegembiraan itu, ribuan penonton mengalami kerugian hingga miliaran rupiah akibat penipuan transfer langsung di media sosial, duplikasi barcode, dan calo anonim yang menghilang setelah menerima uang. Tikum dibangun untuk mengakhiri kecemasan tersebut.</p>\n\n      <h2>Masalah Nyata di Pasar Sekunder Indonesia</h2>\n      <p>Pasar sekunder tiket di Indonesia tumbuh organik karena kebutuhan riil: kuota tiket primary habis dalam menit, sementara ribuan pemilik tiket mengalami perubahan rencana mendadak. Masalahnya bukan pada keberadaan pasar sekunder itu sendiri, melainkan pada kanal transaksi yang tidak memiliki infrastruktur kepercayaan:</p>\n      <ul>\n        <li><strong>Tangkapan layar bukan bukti:</strong> Gambar barcode e-ticket dapat dipalsukan hanya dalam hitungan menit menggunakan alat edit sederhana.</li>\n        <li><strong>Transfer bank satu arah:</strong> Begitu uang ditransfer antar-rekening pribadi, pembeli kehilangan daya tawar dan kontrol atas dananya.</li>\n        <li><strong>Ketiadaan bantuan hari-H:</strong> Saat turnstile gate di venue menolak tiket, penonton di media sosial tidak memiliki titik eskalasi sama sekali.</li>\n      </ul>\n\n      <h2>Solusi Tikum: Trust Infrastructure untuk Live Events</h2>\n      <p>Tikum dirancang dengan 9 pilar diferensiasi operasional yang saling melengkapi:</p>\n\n      <h3>9 Pilar Kepercayaan Tikum</h3>\n      <ol>\n        <li><strong>Escrow / Protected Payment Flow:</strong> Dana pembeli aman di rekening penampungan netral hingga syarat transaksi terpenuhi.</li>\n        <li><strong>Ticket Verification Protocol:</strong> Validasi dokumen identitas dan bukti pembelian resmi sebelum listing tiket disetujui.</li>\n        <li><strong>Venue PIC &amp; Field Presence:</strong> Kehadiran Person in Charge (PIC) di area venue konser untuk mendampingi penukaran fisik dan verifikasi masuk.</li>\n        <li><strong>Buyer Protection:</strong> Hak pengembalian dana penuh jika tiket terbukti tidak valid atau ditolak oleh sistem resmi promotor.</li>\n        <li><strong>Seller Protection:</strong> Jaminan dana sah terkunci di escrow sebelum tiket diserahkan, bebas dari bukti transfer palsu.</li>\n        <li><strong>Transparent Transaction Flow:</strong> Seluruh tahapan transaksi dapat dipantau secara real-time oleh kedua belah pihak.</li>\n        <li><strong>Evidence-Based Dispute Resolution:</strong> Penyelesaian sengketa berbasis bukti teknis (slip turnstile, timestamp, foto error).</li>\n        <li><strong>Local Indonesian Customer Support:</strong> Layanan dukungan pelanggan berbahasa Indonesia yang tanggap dan memahami konteks lokal.</li>\n        <li><strong>Anti-Scam Operating Model:</strong> Pencegahan sistematis akun fiktif, blacklist penipu, dan pelaporan terintegrasi.</li>\n      </ol>\n\n      <h2>Apa yang Dikelola Hari Ini vs Roadmap Masa Depan</h2>\n      <p>Kami meyakini kejujuran adalah mata uang kepercayaan tertinggi. Oleh karena itu, penting membedakan apa yang telah beroperasi saat ini dan rencana pengembangan ke depan:</p>\n      <ul>\n        <li><strong>Berjalan Hari Ini (Live Today):</strong> Marketplace secondary ticketing dengan pembayaran escrow terproteksi, verifikasi manual dokumen tiket, pendampingan PIC pada event-event pilihan, dan mekanisme sengketa berbasis bukti.</li>\n        <li><strong>Peta Jalan Masa Depan (Roadmap):</strong> Integrasi API verifikasi langsung dengan promotor, reputasi skor kredibilitas penjual, dan ekspansi otomatisasi verifikasi turnstile skala nasional.</li>\n      </ul>\n\n      <h3>Komitmen Mematuhi Ketentuan Promotor</h3>\n      <p>Tikum adalah platform independen yang menghormati ketentuan dan regulasi masing-masing penyelenggara acara. Kami selalu mengingatkan pengguna bahwa syarat penukaran tiket, pencocokan kartu identitas, dan kebijakan pemindahan hak tonton sepenuhnya mengacu pada ketentuan resmi promotor.</p>\n    ",
+    "search_intent": "informational",
+    "content": "\n        <h2>Memilih Pengalaman Nonton Konser yang Tepat</h2>\n        <p>Setiap kategori tiket menawarkan kenyamanan dan sudut pandang yang berbeda. Menentukan pilihan sejak awal akan menghindarkan Anda dari penyesalan di hari acara.</p>\n\n        <h2>Kategori Festival (Standing Area)</h2>\n        <p>Cocok untuk Anda yang menginginkan euforia maksimal, dekat dengan panggung utama, dan siap mengantre lebih awal untuk mendapatkan spot barikade depan.</p>\n\n        <h2>Kategori Seating (Numbered Seat)</h2>\n        <p>Pilihan ideal jika Anda mengutamakan kenyamanan, tidak ingin lelah berdiri selama berjam-jam, dan datang bersama keluarga atau teman.</p>\n      ",
     "author": "Tim Editorial Tikum",
     "status": "published",
     "scheduled_at": null,
-    "published_at": "2026-10-06T09:00:00+07:00",
-    "updated_at": "2026-10-06T17:16:45.678Z",
-    "canonical_url": "https://tikum.app/blog/kenapa-tikum-dibangun-mengubah-secondary-ticketing-indonesia",
-    "source_references": [
-      "Grand Design Reseller Platform Tikum",
-      "APMI Live Event Ecosystem Analysis"
-    ],
-    "target_event_id": null,
-    "target_venue_id": null,
-    "target_city": null,
-    "seo_score": 100,
-    "quality_score": 100,
-    "trust_score": 100,
-    "readability_score": 75,
-    "internal_links": [
-      {
-        "anchor": "Panduan Lengkap Secondary Ticketing",
-        "url": "/blog/panduan-lengkap-secondary-ticketing-di-indonesia",
-        "title": "Baca Panduan Lengkap Secondary Ticketing di Indonesia"
-      },
-      {
-        "anchor": "cara kerja Tikum",
-        "url": "/how-it-works",
-        "title": "Pelajari Cara Kerja Tikum"
-      },
-      {
-        "anchor": "rekening penampungan escrow",
-        "url": "/escrow",
-        "title": "Infrastruktur Escrow Tikum"
-      },
-      {
-        "anchor": "perlindungan penjual",
-        "url": "/seller-protection",
-        "title": "Jaminan Perlindungan Penjual"
-      },
-      {
-        "anchor": "katalog event terverifikasi",
-        "url": "/events",
-        "title": "Eksplorasi Seluruh Event Terverifikasi di Indonesia"
-      }
-    ],
-    "human_approved_by": "admin-1",
-    "human_approved_at": "2026-10-06T08:30:00+07:00",
-    "publish_error": null,
-    "created_at": "2026-10-06T08:00:00+07:00",
-    "faq": [
-      {
-        "q": "Apa itu Tikum tiket dan apa fokus utamanya?",
-        "a": "Tikum adalah marketplace secondary ticketing di Indonesia yang dibangun dengan fokus pada keamanan transaksi: penahanan dana escrow, verifikasi berkas tiket, dan kehadiran perwakilan PIC di venue konser."
-      },
-      {
-        "q": "Apa yang membedakan Tikum dari jual beli tiket di media sosial?",
-        "a": "Di media sosial, pembeli harus mentransfer langsung ke rekening asing tanpa perlindungan. Di Tikum, uang pembeli tertahan di rekening escrow netral hingga tiket berhasil divalidasi pada hari acara."
-      },
-      {
-        "q": "Apakah Tikum menjamin bebas penipuan 100%?",
-        "a": "Tidak ada platform yang dapat secara jujur mengklaim risiko nol. Tikum meminimalisasi risiko fraud secara sistematis melalui escrow, verifikasi dokumen, pencatatan jejak audit, dan resolusi sengketa berbasis bukti."
-      },
-      {
-        "q": "Bagaimana peran PIC Tikum di lokasi acara?",
-        "a": "Untuk event-event yang didukung, PIC Tikum hadir di area venue untuk membantu koordinasi serah terima fisik wristband dan mendokumentasikan kendala teknis gerbang masuk."
-      }
-    ]
-  },
-  {
-    "id": "art-campaign-18",
-    "title": "Viagogo, StubHub, atau Marketplace Lokal untuk Tiket Konser?",
-    "slug": "viagogo-stubhub-atau-marketplace-lokal-perbandingan",
-    "description": "Perbandingan Viagogo Indonesia, StubHub, dan marketplace lokal: analisis metode pembayaran rupiah, dukungan PIC venue, customer service, dan biaya.",
-    "category": "secondary-ticketing",
-    "keywords": [
-      "Viagogo Indonesia",
-      "StubHub Indonesia",
-      "secondary ticket marketplace",
-      "beli tiket resale"
-    ],
-    "search_intent": "informational",
-    "content": "\n      <p><strong>Memilih antara platform secondary ticketing internasional dan platform lokal terverifikasi memerlukan pertimbangan objektif atas karakteristik konser di Indonesia.</strong> Setiap platform memiliki model operasional berbeda yang berdampak langsung pada pengalaman hari-H penonton.</p>\n\n      <h2>Karakteristik Unik Konser di Indonesia</h2>\n      <p>Tidak seperti negara barat di mana tiket digital langsung dipindai di pintu masuk stasiun, konser di Indonesia sering mewajibkan penukaran gelang (wristband exchange) beberapa hari sebelum acara dengan syarat surat kuasa fisik dan fotokopi KTP pemilik pertama. Prosedur lokal ini sering membingungkan penjual dan pembeli pada platform global.</p>\n\n      <h3>Analisis Kelebihan dan Batasan Platform Global</h3>\n      <p>Platform global memiliki jangkauan inventaris tiket seluruh dunia yang luas. Namun ketika pembeli di Jakarta mengalami kendala teknis penukaran gelang pada jam 15:00 di hari konser, pusat bantuan global yang beroperasi di zona waktu berbeda dengan respon email berjam-jam sering kali terlambat membantu.</p>\n\n      <h2>Perbandingan Faktor Utama Transaksi</h2>\n      <table style=\"width:100%; border-collapse:collapse; margin:20px 0;\">\n        <thead>\n          <tr style=\"background:#1e293b;\">\n            <th style=\"padding:10px 14px; text-align:left; color:#f8fafc;\">Parameter Kebutuhan</th>\n            <th style=\"padding:10px 14px; text-align:left; color:#38bdf8;\">Platform Resale Global</th>\n            <th style=\"padding:10px 14px; text-align:left; color:#4ade80;\">Marketplace Lokal Terverifikasi (Tikum)</th>\n          </tr>\n        </thead>\n        <tbody>\n          <tr>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Bahasa Layanan Pelanggan</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Mayoritas Bahasa Inggris / Bot terjemahan</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Bahasa Indonesia asli & respons cepat</td>\n          </tr>\n          <tr>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Metode Pembayaran</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Kartu kredit valas (biaya konversi FX)</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Rupiah (IDR), QRIS, Virtual Account bank lokal</td>\n          </tr>\n          <tr>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Dukungan di Venue Fisik</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Tidak ada perwakilan di lapangan</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Dukungan PIC di venue pada event tertentu</td>\n          </tr>\n        </tbody>\n      </table>\n\n      <h3>Pertimbangan Akhir untuk Pembeli</h3>\n      <p>Bagi penonton di Indonesia yang menginginkan kepastian komunikasi, kemudahan pembayaran rupiah, dan bantuan operasional saat penukaran gelang fisik, platform lokal terstruktur menawarkan relevansi yang jauh lebih tinggi.</p>\n    ",
-    "author": "Tim Editorial Tikum",
-    "status": "scheduled",
-    "scheduled_at": "2026-11-27T09:00:00+07:00",
-    "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.678Z",
-    "canonical_url": "https://tikum.app/blog/viagogo-stubhub-atau-marketplace-lokal-perbandingan",
-    "source_references": [
-      "Perbandingan Model Bisnis Tiketing Sekunder Global",
-      "Kajian Perlindungan Konsumen Lintas Batas"
-    ],
+    "published_at": "2026-10-09T08:07:48.915Z",
+    "updated_at": "2026-10-09T08:07:48.915Z",
+    "canonical_url": "https://tikum.app/blog/panduan-memilih-kategori-tiket-konser-festival-vs-seating",
+    "source_references": [],
     "target_event_id": null,
     "target_venue_id": null,
     "target_city": null,
     "seo_score": 90,
     "quality_score": 100,
-    "trust_score": 35,
-    "readability_score": 25,
-    "internal_links": [
-      {
-        "anchor": "Panduan Lengkap Secondary Ticketing",
-        "url": "/blog/panduan-lengkap-secondary-ticketing-di-indonesia",
-        "title": "Baca Panduan Lengkap Secondary Ticketing di Indonesia"
-      },
-      {
-        "anchor": "rekening penampungan escrow",
-        "url": "/escrow",
-        "title": "Mekanisme Rekening Escrow Tikum"
-      },
-      {
-        "anchor": "prosedur resolusi sengketa",
-        "url": "/disputes",
-        "title": "Prosedur Penyelesaian Sengketa"
-      },
-      {
-        "anchor": "perlindungan pembeli Tikum",
-        "url": "/buyer-protection",
-        "title": "Perlindungan Pembeli Tikum"
-      },
-      {
-        "anchor": "katalog event terverifikasi",
-        "url": "/events",
-        "title": "Eksplorasi Seluruh Event Terverifikasi di Indonesia"
-      }
-    ],
-    "human_approved_by": "admin-1",
-    "human_approved_at": "2026-10-06T08:30:00+07:00",
-    "publish_error": null,
-    "created_at": "2026-10-06T08:00:00+07:00",
-    "faq": [
-      {
-        "q": "Apakah platform global seperti Viagogo aman untuk konser di Indonesia?",
-        "a": "Platform global memiliki garansi pembeli resmi internasional, namun tantangan utamanya adalah customer service yang tidak berbahasa Indonesia, tidak adanya pendampingan fisik untuk penukaran gelang di venue, dan biaya konversi valuta asing."
-      },
-      {
-        "q": "Apa keunggulan marketplace lokal seperti Tikum dibanding platform global?",
-        "a": "Dukungan customer service berbahasa Indonesia, metode pembayaran lokal (QRIS, Virtual Account, e-wallet), pemahaman mendalam atas regulasi promotor Indonesia, dan kehadiran PIC di sekitar lokasi venue."
-      }
-    ]
-  },
-  {
-    "id": "art-campaign-19",
-    "title": "Tiket Konser Sold Out? Panduan Mencari Tiket Secondary yang Aman",
-    "slug": "event-favorit-sold-out-panduan-mencari-tiket-secondary",
-    "description": "Panduan mencari tiket konser sold out secondary secara aman: verifikasi syarat promotor, penukaran wristband, dan menghindari calo liar tak berizin.",
-    "category": "ticket-guides",
-    "keywords": [
-      "tiket konser sold out secondary",
-      "tiket coldplay resale",
-      "tiket kpop sold out",
-      "tiket konser habis"
-    ],
-    "search_intent": "informational",
-    "content": "\n      <p><strong>Gagal mendapatkan tiket saat penjualan resmi pertama bukan akhir dari segalanya.</strong> Dengan kerangka kerja verifikasi yang tepat, Anda tetap dapat memperoleh tiket sekunder yang sah tanpa harus mempertaruhkan tabungan Anda kepada calo jalanan.</p>\n\n      <h2>Kerangka 4 Langkah Mencari Tiket Sold Out</h2>\n      <ol>\n        <li><strong>Pantau Arus Tiket Ber-Escrow:</strong> Cari tiket di katalog terverifikasi Tikum di mana setiap listing wajib melalui tahapan kurasi data dan dilindungi penahanan dana otomatis.</li>\n        <li><strong>Ketahui Karakteristik Tiap Genre:</strong> Konser K-Pop biasanya menerapkan pencocokan identitas kartu identitas yang sangat ketat, sementara festival multi-day memerlukan penukaran gelang terpisah.</li>\n        <li><strong>Hindari Tawaran yang Terlalu Murah:</strong> Jika harga resmi Rp 2.500.000 dan tiket sudah sold out, waspadai penawaran di media sosial yang menjual seharga Rp 1.500.000—itu hampir pasti umpan scam.</li>\n        <li><strong>Koordinasikan Jadwal Serah Terima:</strong> Tentukan apakah tiket diserahkan berupa file PDF sebelum acara atau wristband fisik di lokasi penukaran bersama PIC Tikum.</li>\n      </ol>\n\n      <h3>Kekhasan Kategori Standing vs Seating</h3>\n      <p>Periksa nomor queue (antrean) jika membeli tiket festival standing, atau nomor section dan row jika membeli tiket seating bernomor. Jangan terima tiket jika data kategori tempat duduk tidak dicantumkan secara transparan.</p>\n    ",
-    "author": "Tim Editorial Tikum",
-    "status": "scheduled",
-    "scheduled_at": "2026-12-01T09:00:00+07:00",
-    "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.678Z",
-    "canonical_url": "https://tikum.app/blog/event-favorit-sold-out-panduan-mencari-tiket-secondary",
-    "source_references": [
-      "Panduan Menonton Konser Musik Aman APMI",
-      "Tikum Event Catalog Guidelines"
-    ],
-    "target_event_id": null,
-    "target_venue_id": null,
-    "target_city": null,
-    "seo_score": 100,
-    "quality_score": 100,
-    "trust_score": 70,
+    "trust_score": 0,
     "readability_score": 25,
     "internal_links": [
       {
@@ -211,44 +49,35 @@
       }
     ],
     "human_approved_by": "admin-1",
-    "human_approved_at": "2026-10-06T08:30:00+07:00",
+    "human_approved_at": "2026-10-09T08:07:48.904Z",
     "publish_error": null,
-    "created_at": "2026-10-06T08:00:00+07:00",
-    "faq": [
-      {
-        "q": "Bagaimana mencari tiket konser K-Pop yang sold out tanpa tertipu?",
-        "a": "Pastikan penjual bersedia menyediakan surat kuasa bermeterai dan fotokopi KTP pemesan asli, serta transaksikan tiket tersebut melalui sistem escrow Tikum."
-      },
-      {
-        "q": "Apakah harga tiket sekunder akan turun menjelang hari konser?",
-        "a": "Pada beberapa konser, harga tiket sekunder cenderung melandai pada H-3 hingga hari-H karena penjual yang berhalangan hadir ingin segera melepas tiket mereka."
-      }
-    ]
+    "created_at": "2026-10-09T08:07:43.285Z",
+    "faq": []
   },
   {
-    "id": "art-campaign-20",
-    "title": "Panduan Lengkap Secondary Ticketing di Indonesia: Regulasi & Tips",
-    "slug": "panduan-lengkap-secondary-ticketing-di-indonesia",
-    "description": "Panduan lengkap secondary ticketing Indonesia: hukum resale, cara kerja rekening escrow, pencegahan penipuan, verifikasi tiket, dan perlindungan konsumen.",
+    "id": "art-campaign-01",
+    "title": "Secondary Ticketing Indonesia: Cara Beli Tiket Event Lebih Aman",
+    "slug": "secondary-ticketing-indonesia-cara-baru-beli-tiket-event",
+    "description": "Panduan secondary ticketing Indonesia: cara aman beli tiket konser sold out, perbedaan tiket primer vs sekunder, serta perlindungan escrow dan PIC di venue.",
     "category": "secondary-ticketing",
     "keywords": [
       "secondary ticketing Indonesia",
-      "jual beli tiket secondary",
-      "ticket resale Indonesia",
-      "marketplace tiket Indonesia",
-      "tiket konser aman"
+      "jual beli tiket konser",
+      "tiket resale Indonesia",
+      "marketplace tiket",
+      "tiket konser sold out"
     ],
     "search_intent": "informational",
-    "content": "\n      <p><strong>Secondary ticketing di Indonesia adalah ekosistem transaksi tiket setelah penjualan resmi pertama selesai.</strong> Panduan komprehensif ini merangkum seluruh aspek penting pasar tiket sekunder: legalitas dan syarat promotor, cara kerja sistem pembayaran escrow, metode verifikasi keaslian tiket, peran perwakilan fisik di venue, serta panduan lengkap perlindungan pembeli dan penjual.</p>\n\n      <h2>1. Apa Itu Secondary Ticketing dan Mengapa Terjadi?</h2>\n      <p>Secondary ticketing bukanlah anomali, melainkan respons alami terhadap keterbatasan kapasitas venue hiburan di Indonesia. Ketika ratusan ribu orang memperebutkan puluhan ribu tiket resmi di primary market, pasar sekunder menjadi jembatan likuiditas bagi mereka yang berhalangan hadir maupun mereka yang mencari kesempatan kedua.</p>\n\n      <h2>2. Mengapa Kanal Transaksi Tradisional Gagal Melindungi Penonton</h2>\n      <p>Transaksi lewat media sosial dan grup chat informal memiliki kelemahan mendasar: ketiadaan pihak ketiga yang netral untuk memegang dana, mudahnya manipulasi tangkapan layar e-ticket, dan tingginya kasus <a href=\"/blog/apa-itu-double-selling-tiket-modus-scam\">double selling tiket</a> di mana satu barcode dijual ke banyak pembeli berbeda.</p>\n\n      <h2>3. Pilar Keamanan Secondary Ticketing Modern</h2>\n      <p>Infrastruktur kepercayaan di pasar sekunder bertumpu pada empat pilar utama:</p>\n      <ul>\n        <li><strong>Penahanan Dana Escrow:</strong> Pembayaran ditahan secara aman di rekening penampungan dan hanya dilepas ke penjual setelah tiket divalidasi berhasil. Pelajari selengkapnya di artikel <a href=\"/blog/kenapa-tikum-menggunakan-escrow-untuk-transaksi-tiket\">Kenapa Tikum Menggunakan Escrow</a>.</li>\n        <li><strong>Verifikasi Dokumen:</strong> Pengecekan ketat identitas penjual dan dokumen pembelian resmi. Baca selengkapnya di panduan <a href=\"/blog/bagaimana-cara-memverifikasi-tiket-konser-sebelum-membayar\">Cara Memverifikasi Tiket Konser Sebelum Membayar</a>.</li>\n        <li><strong>Kehadiran PIC di Venue:</strong> Representasi lapangan yang mendampingi penukaran gelang dan memverifikasi kendala gerbang turnstile. Simak penjelasannya di <a href=\"/blog/kenapa-tikum-punya-pic-di-venue\">Kenapa Tikum Punya PIC di Venue</a>.</li>\n        <li><strong>Resolusi Sengketa Berbasis Bukti:</strong> Pengembalian dana penuh jika tiket terbukti tidak dapat digunakan karena kesalahan penjual.</li>\n      </ul>\n\n      <h3>Daftar Rujukan Penting Kluster Otoritas</h3>\n      <p>Jelajahi panduan mendalam kami seputar keamanan dan ekosistem tiket:</p>\n      <ul>\n        <li><a href=\"/blog/10-modus-penipuan-tiket-konser-harus-diwaspadai\">10 Modus Penipuan Tiket Konser yang Harus Diwaspadai</a></li>\n        <li><a href=\"/blog/cara-aman-membeli-tiket-konser-dari-secondary-market\">Panduan Pembeli: Cara Aman Membeli Tiket Secondary Market</a></li>\n        <li><a href=\"/blog/cara-menjual-tiket-konser-dengan-aman\">Panduan Penjual: Cara Menjual Tiket Konser dengan Aman</a></li>\n        <li><a href=\"/blog/escrow-vs-transfer-langsung-mana-yang-lebih-aman\">Perbandingan: Escrow vs Transfer Langsung</a></li>\n        <li><a href=\"/blog/checklist-anti-scam-sebelum-membeli-tiket-konser-online\">Checklist 10 Poin Anti-Scam Sebelum Membeli Tiket Online</a></li>\n        <li><a href=\"/blog/apa-yang-harus-dilakukan-jika-tiket-bermasalah-saat-hari-konser\">Prosedur Darurat: Apa yang Harus Dilakukan Jika Tiket Bermasalah di Venue</a></li>\n        <li><a href=\"/blog/kenapa-harga-tiket-resale-bisa-lebih-mahal\">Transparansi: Kenapa Harga Tiket Resale Bisa Berbeda dari Harga Resmi</a></li>\n        <li><a href=\"/blog/viagogo-stubhub-atau-marketplace-lokal-perbandingan\">Analisis: Viagogo, StubHub, atau Marketplace Lokal Terverifikasi</a></li>\n        <li><a href=\"/blog/kenapa-tikum-dibangun-mengubah-secondary-ticketing-indonesia\">Manifesto Tikum: Mengubah Cara Orang Bertransaksi Secondary Ticketing di Indonesia</a></li>\n      </ul>\n\n      <h2>4. Kesimpulan</h2>\n      <p>Masa depan industri live event di Indonesia bergantung pada ekosistem yang sehat dan tepercaya. Tikum hadir sebagai katalis transformasi tersebut—menghadirkan trust infrastructure yang melindungi pembeli, menghargai penjual jujur, dan menghormati ketentuan promotor acara.</p>\n    ",
+    "content": "\n      <p><strong>Secondary ticketing adalah pasar jual beli tiket setelah penjualan resmi pertama selesai.</strong> Masalah utamanya di Indonesia bukan sekadar ketersediaan atau harga tiket, melainkan bagaimana memastikan tiket tersebut benar-benar valid dan pembeli tidak menjadi korban penipuan saat bertransaksi.</p>\n\n      <p>Ketika konser musisi ternama diumumkan di Jakarta atau kota besar lainnya, kuota tiket resmi kerap ludes dalam hitungan menit. Di sisi lain, ribuan penonton mengalami perubahan rencana mendadak—jadwal kerja bertabrakan, keperluan keluarga, atau kondisi kesehatan—sehingga perlu melepaskan tiket mereka. Dari situlah secondary ticketing lahir secara organik.</p>\n\n      <h2>Masalah Terbesar: Transaksi Informal Penuh Risiko</h2>\n      <p>Selama bertahun-tahun di Indonesia, pertukaran tiket sekunder terjadi di kanal informal seperti kolom komentar media sosial, grup perpesanan, atau akun jastip anonim. Di kanal-kanal ini, pembeli berada pada posisi sangat rentan.</p>\n\n      <h3>Kelemahan Transaksi Direct Transfer</h3>\n      <ul>\n        <li><strong>Kewajiban transfer buta:</strong> Pembeli dipaksa mentransfer uang terlebih dahulu ke rekening bank pribadi tanpa jaminan tiket akan dikirim.</li>\n        <li><strong>Tangkapan layar palsu:</strong> Gambar e-ticket atau barcode dapat dimanipulasi dengan mudah menggunakan aplikasi edit gambar dasar.</li>\n        <li><strong>Hilangnya jejak pelaku:</strong> Akun anonim dapat langsung memblokir nomor telepon pembeli setelah dana diterima.</li>\n      </ul>\n\n      <h2>4 Pilar Model Baru Secondary Ticketing di Tikum</h2>\n      <p>Tikum membangun marketplace secondary ticketing dengan fokus pada keamanan transaksi, escrow, dan dukungan operasional di venue. Empat pilar utamanya adalah:</p>\n\n      <h3>Mekanisme Perlindungan Transaksi</h3>\n      <ol>\n        <li><strong>Escrow (Penahanan Dana Netral):</strong> Uang pembeli tidak langsung masuk ke rekening penjual. Dana disimpan di rekening penampungan netral hingga syarat transaksi terpenuhi.</li>\n        <li><strong>Verifikasi Dokumen Tiket:</strong> Penjual wajib mengunggah dokumen bukti pembelian resmi yang divalidasi sebelum listing dinyatakan aktif.</li>\n        <li><strong>Pendampingan PIC di Venue:</strong> Representasi Person in Charge (PIC) Tikum hadir di sekitar venue pada hari acara untuk mendampingi penukaran fisik atau validasi masuk.</li>\n        <li><strong>Perlindungan Berbasis Bukti:</strong> Jika tiket terbukti ditolak oleh turnstile gate resmi karena duplikasi atau ketidakvalidan, pembeli terlindungi mekanisme sengketa dan pengembalian dana.</li>\n      </ol>\n\n      <h2>Perbedaan Primary Ticketing vs Secondary Ticketing Terstruktur</h2>\n      <table style=\"width:100%; border-collapse:collapse; margin:20px 0;\">\n        <thead>\n          <tr style=\"background:#1e293b;\">\n            <th style=\"padding:10px 14px; text-align:left; color:#f8fafc;\">Parameter</th>\n            <th style=\"padding:10px 14px; text-align:left; color:#38bdf8;\">Primary Ticketing</th>\n            <th style=\"padding:10px 14px; text-align:left; color:#4ade80;\">Secondary Terstruktur (Tikum)</th>\n          </tr>\n        </thead>\n        <tbody>\n          <tr>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Penyedia Tiket</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Promotor resmi & vendor tiket utama</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Pemilik tiket asli yang berhalangan hadir</td>\n          </tr>\n          <tr>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Perlindungan Pembayaran</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Payment gateway terintegrasi</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Escrow otomatis hingga validasi hari-H</td>\n          </tr>\n          <tr>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Bantuan Lapangan</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Helpdesk promotor resmi</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">PIC lapangan Tikum di sekitar venue</td>\n          </tr>\n        </tbody>\n      </table>\n\n      <h3>Menuju Budaya Transaksi yang Transparan</h3>\n      <p>Secondary ticketing bukan musuh penonton, melainkan jembatan kebutuhan. Yang harus dihentikan adalah penipuan berkedok jual beli tiket. Melalui edukasi dan teknologi perlindungan, penggemar musik dan event di Indonesia kini memiliki alternatif bertransaksi yang jauh lebih rasional dan terlindungi.</p>\n    ",
     "author": "Tim Editorial Tikum",
-    "status": "scheduled",
-    "scheduled_at": "2026-12-04T09:00:00+07:00",
-    "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.678Z",
-    "canonical_url": "https://tikum.app/blog/panduan-lengkap-secondary-ticketing-di-indonesia",
+    "status": "published",
+    "scheduled_at": null,
+    "published_at": "2026-09-29T09:00:00+07:00",
+    "updated_at": "2026-10-09T08:07:43.286Z",
+    "canonical_url": "https://tikum.app/blog/secondary-ticketing-indonesia-cara-baru-beli-tiket-event",
     "source_references": [
-      "Grand Design Reseller Platform Tikum",
-      "APMI National Ticketing Standard Framework"
+      "Asosiasi Promotor Musik Indonesia (APMI)",
+      "Kementerian Perdagangan RI"
     ],
     "target_event_id": null,
     "target_venue_id": null,
@@ -259,6 +88,11 @@
     "readability_score": 50,
     "internal_links": [
       {
+        "anchor": "Panduan Lengkap Secondary Ticketing",
+        "url": "/blog/panduan-lengkap-secondary-ticketing-di-indonesia",
+        "title": "Baca Panduan Lengkap Secondary Ticketing di Indonesia"
+      },
+      {
         "anchor": "rekening penampungan escrow",
         "url": "/escrow",
         "title": "Mekanisme Rekening Escrow Tikum"
@@ -280,21 +114,25 @@
       }
     ],
     "human_approved_by": "admin-1",
-    "human_approved_at": "2026-10-06T08:30:00+07:00",
+    "human_approved_at": "2026-09-29T08:30:00+07:00",
     "publish_error": null,
-    "created_at": "2026-10-06T08:00:00+07:00",
+    "created_at": "2026-09-29T08:00:00+07:00",
     "faq": [
       {
         "q": "Apa itu secondary ticketing di Indonesia?",
-        "a": "Pasar jual beli tiket event setelah penjualan resmi pertama usai, menghubungkan pemilik tiket yang berhalangan hadir dengan penggemar yang belum mendapatkan tiket."
+        "a": "Secondary ticketing adalah pasar jual beli tiket setelah penjualan resmi pertama (primary ticketing) berlangsung, biasanya karena pemilik awal berhalangan hadir atau tiket resmi sudah habis terjual."
       },
       {
-        "q": "Bagaimana masa depan pasar sekunder tiket di Indonesia?",
-        "a": "Pasar sekunder di Indonesia bergerak dari kanal informal liar menuju ekosistem terstruktur yang berbasis teknologi escrow, transparansi harga, dan perlindungan konsumen dua arah."
+        "q": "Mengapa secondary ticketing marak di Indonesia?",
+        "a": "Tingginya antusiasme konser besar dan cepatnya tiket primary habis dalam hitungan menit membuat banyak penggemar mencari tiket alternatif dari penonton lain."
       },
       {
-        "q": "Bagaimana cara memulai transaksi tiket yang aman?",
-        "a": "Kunjungi marketplace Tikum, pilih event terverifikasi, dan nikmati perlindungan pembayaran escrow serta pendampingan operasional di venue."
+        "q": "Bagaimana cara memastikan jual beli tiket sekunder aman?",
+        "a": "Gunakan platform dengan sistem rekening penampungan escrow, verifikasi keabsahan identitas penjual, dan dukungan penanganan kendala di area venue."
+      },
+      {
+        "q": "Apakah Tikum menjamin tidak ada risiko sama sekali?",
+        "a": "Tidak ada platform yang dapat menjanjikan risiko nol secara mutlak. Tikum dirancang untuk meminimalisasi risiko penipuan secara sistematis melalui penahanan dana aman dan verifikasi bukti."
       }
     ]
   },
@@ -316,7 +154,7 @@
     "status": "published",
     "scheduled_at": null,
     "published_at": "2026-10-02T09:00:00+07:00",
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.286Z",
     "canonical_url": "https://tikum.app/blog/kenapa-tikum-menggunakan-escrow-untuk-transaksi-tiket",
     "source_references": [
       "Protokol Transaksi Keuangan Digital Kemendag RI",
@@ -395,10 +233,10 @@
     "search_intent": "informational",
     "content": "\n      <p><strong>Mayoritas masalah tiket konser terjadi di lapangan pada hari acara, bukan di depan layar ponsel beberapa minggu sebelumnya.</strong> Saat antrean penukaran gelang mengular atau pintu turnstile menolak barcode, pembeli yang bertransaksi via media sosial tidak memiliki tempat mengadu. Di sinilah kehadiran PIC venue Tikum menjadi pembeda mendasar.</p>\n\n      <h2>Celah Besar Marketplace Murni Digital</h2>\n      <p>Marketplace P2P biasa berhenti beroperasi begitu file e-ticket terkirim ke email pembeli. Namun di dunia nyata, konser musik memiliki kompleksitas fisik:</p>\n      <ul>\n        <li>Kewajiban membawa surat kuasa bermeterai dan fotokopi KTP pemilik asli saat penukaran wristband.</li>\n        <li>Risiko barcode ganda yang telah di-scan oleh orang lain beberapa detik lebih awal.</li>\n        <li>Kebingungan titik penukaran tiket kategori festival vs seating.</li>\n      </ul>\n\n      <h2>Model Kepercayaan Online-to-Offline (O2O)</h2>\n      <p>Tikum menggabungkan keamanan software escrow di cloud dengan kehadiran manusia terlatih di lokasi acara:</p>\n\n      <h3>Peran Nyata PIC Lapangan</h3>\n      <ol>\n        <li><strong>Bantuan Serah Terima Fisik:</strong> Memfasilitasi serah terima wristband atau surat kuasa di titik temu yang disepakati di luar gerbang.</li>\n        <li><strong>Pencatatan Bukti Lapangan:</strong> Jika tiket mengalami penolakan di pintu masuk scanner, PIC mendokumentasikan log error untuk dasar investigasi tim sengketa.</li>\n        <li><strong>Titik Eskalasi Nyata:</strong> Memberikan ketenangan psikologis bagi penonton bahwa mereka didampingi ekosistem yang bertanggung jawab.</li>\n      </ol>\n\n      <h2>Batas Kewenangan yang Jelas</h2>\n      <p>Perlu dipahami secara transparan bahwa PIC Tikum bukan bagian dari manajemen promotor dan tidak memiliki hak melanggar ketentuan resmi acara. Keberadaan PIC semata-mata adalah instrumen perlindungan konsumen independen untuk memastikan transaksi tiket sekunder diselesaikan secara adil dan berbasis bukti.</p>\n    ",
     "author": "Tim Riset Keamanan Tikum",
-    "status": "scheduled",
+    "status": "published",
     "scheduled_at": "2026-10-09T09:00:00+07:00",
-    "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "published_at": "2026-10-09T08:07:44.092Z",
+    "updated_at": "2026-10-09T08:07:44.092Z",
     "canonical_url": "https://tikum.app/blog/kenapa-tikum-punya-pic-di-venue",
     "source_references": [
       "Standard Operating Procedures Ground Ops Tikum",
@@ -476,7 +314,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-10-13T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.286Z",
     "canonical_url": "https://tikum.app/blog/10-modus-penipuan-tiket-konser-harus-diwaspadai",
     "source_references": [
       "Laporan Patroli Siber Bareskrim Polri",
@@ -563,7 +401,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-10-16T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.287Z",
     "canonical_url": "https://tikum.app/blog/cara-aman-membeli-tiket-konser-dari-secondary-market",
     "source_references": [
       "Petunjuk Teknis Penukaran Tiket Konser APMI",
@@ -636,7 +474,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-10-20T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.287Z",
     "canonical_url": "https://tikum.app/blog/kenapa-tiket-konser-cepat-sold-out-secondary-market",
     "source_references": [
       "Kajian Ekonomi Kreatif Kemenparekraf RI",
@@ -709,7 +547,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-10-23T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.287Z",
     "canonical_url": "https://tikum.app/blog/kenapa-beli-tiket-konser-lewat-dm-instagram-atau-x-berisiko",
     "source_references": [
       "Panduan Literasi Keuangan Digital OJK",
@@ -782,7 +620,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-10-27T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.287Z",
     "canonical_url": "https://tikum.app/blog/bagaimana-cara-memverifikasi-tiket-konser-sebelum-membayar",
     "source_references": [
       "Spesifikasi Teknis Sistem Tiket Elektronik APMI",
@@ -855,7 +693,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-10-30T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.287Z",
     "canonical_url": "https://tikum.app/blog/apa-itu-double-selling-tiket-modus-scam",
     "source_references": [
       "Analisis Kejahatan Akses Kontrol Venue",
@@ -938,7 +776,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-11-03T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.287Z",
     "canonical_url": "https://tikum.app/blog/escrow-vs-transfer-langsung-mana-yang-lebih-aman",
     "source_references": [
       "Kajian Hukum Perjanjian E-Commerce Universitas Indonesia",
@@ -1016,7 +854,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-11-06T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.287Z",
     "canonical_url": "https://tikum.app/blog/cara-menjual-tiket-konser-dengan-aman",
     "source_references": [
       "Standar Perlindungan Merchant Fintek Indonesia",
@@ -1084,7 +922,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-11-10T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.287Z",
     "canonical_url": "https://tikum.app/blog/marketplace-tiket-yang-aman-harus-melindungi-pembeli-dan-penjual",
     "source_references": [
       "Prinsip Perlindungan Konsumen Seimbang Kemendag",
@@ -1157,7 +995,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-11-13T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.287Z",
     "canonical_url": "https://tikum.app/blog/apa-itu-secondary-ticket-market-panduan-lengkap",
     "source_references": [
       "UU Perlindungan Konsumen No. 8 Tahun 1999",
@@ -1230,7 +1068,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-11-17T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.287Z",
     "canonical_url": "https://tikum.app/blog/kenapa-harga-tiket-resale-bisa-lebih-mahal",
     "source_references": [
       "Prinsip Transparansi Harga Kemendag RI",
@@ -1303,7 +1141,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-11-20T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.287Z",
     "canonical_url": "https://tikum.app/blog/checklist-anti-scam-sebelum-membeli-tiket-konser-online",
     "source_references": [
       "Checklist Keamanan Siber Patroli Siber Polri",
@@ -1382,7 +1220,7 @@
     "status": "scheduled",
     "scheduled_at": "2026-11-24T09:00:00+07:00",
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.677Z",
+    "updated_at": "2026-10-09T08:07:43.287Z",
     "canonical_url": "https://tikum.app/blog/apa-yang-harus-dilakukan-jika-tiket-bermasalah-saat-hari-konser",
     "source_references": [
       "Protokol Lapangan Tikum Venue Operations",
@@ -1438,29 +1276,32 @@
     ]
   },
   {
-    "id": "art-campaign-01",
-    "title": "Secondary Ticketing Indonesia: Cara Beli Tiket Event Lebih Aman",
-    "slug": "secondary-ticketing-indonesia-cara-baru-beli-tiket-event",
-    "description": "Panduan secondary ticketing Indonesia: cara aman beli tiket konser sold out, perbedaan tiket primer vs sekunder, serta perlindungan escrow dan PIC di venue.",
-    "category": "secondary-ticketing",
+    "id": "art-campaign-17",
+    "title": "Kenapa Tikum Dibangun? Mengubah Cara Transaksi Tiket di Indonesia",
+    "slug": "kenapa-tikum-dibangun-mengubah-secondary-ticketing-indonesia",
+    "description": "Kisah di balik Tikum tiket: marketplace secondary ticketing aman di Indonesia dengan sistem escrow terproteksi, verifikasi berkas, dan PIC di venue.",
+    "category": "tikum",
     "keywords": [
-      "secondary ticketing Indonesia",
-      "jual beli tiket konser",
-      "tiket resale Indonesia",
-      "marketplace tiket",
-      "tiket konser sold out"
+      "Tikum tiket",
+      "Tikum secondary ticketing",
+      "marketplace tiket aman",
+      "escrow tiket",
+      "jual beli tiket konser aman",
+      "tiket konser sold out",
+      "anti scam tiket",
+      "PIC venue"
     ],
-    "search_intent": "informational",
-    "content": "\n      <p><strong>Secondary ticketing adalah pasar jual beli tiket setelah penjualan resmi pertama selesai.</strong> Masalah utamanya di Indonesia bukan sekadar ketersediaan atau harga tiket, melainkan bagaimana memastikan tiket tersebut benar-benar valid dan pembeli tidak menjadi korban penipuan saat bertransaksi.</p>\n\n      <p>Ketika konser musisi ternama diumumkan di Jakarta atau kota besar lainnya, kuota tiket resmi kerap ludes dalam hitungan menit. Di sisi lain, ribuan penonton mengalami perubahan rencana mendadak—jadwal kerja bertabrakan, keperluan keluarga, atau kondisi kesehatan—sehingga perlu melepaskan tiket mereka. Dari situlah secondary ticketing lahir secara organik.</p>\n\n      <h2>Masalah Terbesar: Transaksi Informal Penuh Risiko</h2>\n      <p>Selama bertahun-tahun di Indonesia, pertukaran tiket sekunder terjadi di kanal informal seperti kolom komentar media sosial, grup perpesanan, atau akun jastip anonim. Di kanal-kanal ini, pembeli berada pada posisi sangat rentan.</p>\n\n      <h3>Kelemahan Transaksi Direct Transfer</h3>\n      <ul>\n        <li><strong>Kewajiban transfer buta:</strong> Pembeli dipaksa mentransfer uang terlebih dahulu ke rekening bank pribadi tanpa jaminan tiket akan dikirim.</li>\n        <li><strong>Tangkapan layar palsu:</strong> Gambar e-ticket atau barcode dapat dimanipulasi dengan mudah menggunakan aplikasi edit gambar dasar.</li>\n        <li><strong>Hilangnya jejak pelaku:</strong> Akun anonim dapat langsung memblokir nomor telepon pembeli setelah dana diterima.</li>\n      </ul>\n\n      <h2>4 Pilar Model Baru Secondary Ticketing di Tikum</h2>\n      <p>Tikum membangun marketplace secondary ticketing dengan fokus pada keamanan transaksi, escrow, dan dukungan operasional di venue. Empat pilar utamanya adalah:</p>\n\n      <h3>Mekanisme Perlindungan Transaksi</h3>\n      <ol>\n        <li><strong>Escrow (Penahanan Dana Netral):</strong> Uang pembeli tidak langsung masuk ke rekening penjual. Dana disimpan di rekening penampungan netral hingga syarat transaksi terpenuhi.</li>\n        <li><strong>Verifikasi Dokumen Tiket:</strong> Penjual wajib mengunggah dokumen bukti pembelian resmi yang divalidasi sebelum listing dinyatakan aktif.</li>\n        <li><strong>Pendampingan PIC di Venue:</strong> Representasi Person in Charge (PIC) Tikum hadir di sekitar venue pada hari acara untuk mendampingi penukaran fisik atau validasi masuk.</li>\n        <li><strong>Perlindungan Berbasis Bukti:</strong> Jika tiket terbukti ditolak oleh turnstile gate resmi karena duplikasi atau ketidakvalidan, pembeli terlindungi mekanisme sengketa dan pengembalian dana.</li>\n      </ol>\n\n      <h2>Perbedaan Primary Ticketing vs Secondary Ticketing Terstruktur</h2>\n      <table style=\"width:100%; border-collapse:collapse; margin:20px 0;\">\n        <thead>\n          <tr style=\"background:#1e293b;\">\n            <th style=\"padding:10px 14px; text-align:left; color:#f8fafc;\">Parameter</th>\n            <th style=\"padding:10px 14px; text-align:left; color:#38bdf8;\">Primary Ticketing</th>\n            <th style=\"padding:10px 14px; text-align:left; color:#4ade80;\">Secondary Terstruktur (Tikum)</th>\n          </tr>\n        </thead>\n        <tbody>\n          <tr>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Penyedia Tiket</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Promotor resmi & vendor tiket utama</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Pemilik tiket asli yang berhalangan hadir</td>\n          </tr>\n          <tr>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Perlindungan Pembayaran</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Payment gateway terintegrasi</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Escrow otomatis hingga validasi hari-H</td>\n          </tr>\n          <tr>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Bantuan Lapangan</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Helpdesk promotor resmi</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">PIC lapangan Tikum di sekitar venue</td>\n          </tr>\n        </tbody>\n      </table>\n\n      <h3>Menuju Budaya Transaksi yang Transparan</h3>\n      <p>Secondary ticketing bukan musuh penonton, melainkan jembatan kebutuhan. Yang harus dihentikan adalah penipuan berkedok jual beli tiket. Melalui edukasi dan teknologi perlindungan, penggemar musik dan event di Indonesia kini memiliki alternatif bertransaksi yang jauh lebih rasional dan terlindungi.</p>\n    ",
+    "search_intent": "commercial",
+    "content": "\n      <p><strong>Tikum hadir dengan pendekatan baru terhadap secondary ticketing di Indonesia: membangun ekosistem jual beli tiket konser yang mengutamakan rasa aman, perlindungan dana escrow, dan pendampingan nyata di lapangan.</strong></p>\n\n      <p>Setiap kali konser musisi besar diumumkan di Indonesia, antusiasme masyarakat selalu luar biasa. Namun di balik kegembiraan itu, ribuan penonton mengalami kerugian hingga miliaran rupiah akibat penipuan transfer langsung di media sosial, duplikasi barcode, dan calo anonim yang menghilang setelah menerima uang. Tikum dibangun untuk mengakhiri kecemasan tersebut.</p>\n\n      <h2>Masalah Nyata di Pasar Sekunder Indonesia</h2>\n      <p>Pasar sekunder tiket di Indonesia tumbuh organik karena kebutuhan riil: kuota tiket primary habis dalam menit, sementara ribuan pemilik tiket mengalami perubahan rencana mendadak. Masalahnya bukan pada keberadaan pasar sekunder itu sendiri, melainkan pada kanal transaksi yang tidak memiliki infrastruktur kepercayaan:</p>\n      <ul>\n        <li><strong>Tangkapan layar bukan bukti:</strong> Gambar barcode e-ticket dapat dipalsukan hanya dalam hitungan menit menggunakan alat edit sederhana.</li>\n        <li><strong>Transfer bank satu arah:</strong> Begitu uang ditransfer antar-rekening pribadi, pembeli kehilangan daya tawar dan kontrol atas dananya.</li>\n        <li><strong>Ketiadaan bantuan hari-H:</strong> Saat turnstile gate di venue menolak tiket, penonton di media sosial tidak memiliki titik eskalasi sama sekali.</li>\n      </ul>\n\n      <h2>Solusi Tikum: Trust Infrastructure untuk Live Events</h2>\n      <p>Tikum dirancang dengan 9 pilar diferensiasi operasional yang saling melengkapi:</p>\n\n      <h3>9 Pilar Kepercayaan Tikum</h3>\n      <ol>\n        <li><strong>Escrow / Protected Payment Flow:</strong> Dana pembeli aman di rekening penampungan netral hingga syarat transaksi terpenuhi.</li>\n        <li><strong>Ticket Verification Protocol:</strong> Validasi dokumen identitas dan bukti pembelian resmi sebelum listing tiket disetujui.</li>\n        <li><strong>Venue PIC &amp; Field Presence:</strong> Kehadiran Person in Charge (PIC) di area venue konser untuk mendampingi penukaran fisik dan verifikasi masuk.</li>\n        <li><strong>Buyer Protection:</strong> Hak pengembalian dana penuh jika tiket terbukti tidak valid atau ditolak oleh sistem resmi promotor.</li>\n        <li><strong>Seller Protection:</strong> Jaminan dana sah terkunci di escrow sebelum tiket diserahkan, bebas dari bukti transfer palsu.</li>\n        <li><strong>Transparent Transaction Flow:</strong> Seluruh tahapan transaksi dapat dipantau secara real-time oleh kedua belah pihak.</li>\n        <li><strong>Evidence-Based Dispute Resolution:</strong> Penyelesaian sengketa berbasis bukti teknis (slip turnstile, timestamp, foto error).</li>\n        <li><strong>Local Indonesian Customer Support:</strong> Layanan dukungan pelanggan berbahasa Indonesia yang tanggap dan memahami konteks lokal.</li>\n        <li><strong>Anti-Scam Operating Model:</strong> Pencegahan sistematis akun fiktif, blacklist penipu, dan pelaporan terintegrasi.</li>\n      </ol>\n\n      <h2>Apa yang Dikelola Hari Ini vs Roadmap Masa Depan</h2>\n      <p>Kami meyakini kejujuran adalah mata uang kepercayaan tertinggi. Oleh karena itu, penting membedakan apa yang telah beroperasi saat ini dan rencana pengembangan ke depan:</p>\n      <ul>\n        <li><strong>Berjalan Hari Ini (Live Today):</strong> Marketplace secondary ticketing dengan pembayaran escrow terproteksi, verifikasi manual dokumen tiket, pendampingan PIC pada event-event pilihan, dan mekanisme sengketa berbasis bukti.</li>\n        <li><strong>Peta Jalan Masa Depan (Roadmap):</strong> Integrasi API verifikasi langsung dengan promotor, reputasi skor kredibilitas penjual, dan ekspansi otomatisasi verifikasi turnstile skala nasional.</li>\n      </ul>\n\n      <h3>Komitmen Mematuhi Ketentuan Promotor</h3>\n      <p>Tikum adalah platform independen yang menghormati ketentuan dan regulasi masing-masing penyelenggara acara. Kami selalu mengingatkan pengguna bahwa syarat penukaran tiket, pencocokan kartu identitas, dan kebijakan pemindahan hak tonton sepenuhnya mengacu pada ketentuan resmi promotor.</p>\n    ",
     "author": "Tim Editorial Tikum",
     "status": "published",
     "scheduled_at": null,
-    "published_at": "2026-09-29T09:00:00+07:00",
-    "updated_at": "2026-10-06T17:16:45.676Z",
-    "canonical_url": "https://tikum.app/blog/secondary-ticketing-indonesia-cara-baru-beli-tiket-event",
+    "published_at": "2026-10-06T09:00:00+07:00",
+    "updated_at": "2026-10-09T08:07:43.287Z",
+    "canonical_url": "https://tikum.app/blog/kenapa-tikum-dibangun-mengubah-secondary-ticketing-indonesia",
     "source_references": [
-      "Asosiasi Promotor Musik Indonesia (APMI)",
-      "Kementerian Perdagangan RI"
+      "Grand Design Reseller Platform Tikum",
+      "APMI Live Event Ecosystem Analysis"
     ],
     "target_event_id": null,
     "target_venue_id": null,
@@ -1468,7 +1309,88 @@
     "seo_score": 100,
     "quality_score": 100,
     "trust_score": 100,
-    "readability_score": 50,
+    "readability_score": 75,
+    "internal_links": [
+      {
+        "anchor": "Panduan Lengkap Secondary Ticketing",
+        "url": "/blog/panduan-lengkap-secondary-ticketing-di-indonesia",
+        "title": "Baca Panduan Lengkap Secondary Ticketing di Indonesia"
+      },
+      {
+        "anchor": "cara kerja Tikum",
+        "url": "/how-it-works",
+        "title": "Pelajari Cara Kerja Tikum"
+      },
+      {
+        "anchor": "rekening penampungan escrow",
+        "url": "/escrow",
+        "title": "Infrastruktur Escrow Tikum"
+      },
+      {
+        "anchor": "perlindungan penjual",
+        "url": "/seller-protection",
+        "title": "Jaminan Perlindungan Penjual"
+      },
+      {
+        "anchor": "katalog event terverifikasi",
+        "url": "/events",
+        "title": "Eksplorasi Seluruh Event Terverifikasi di Indonesia"
+      }
+    ],
+    "human_approved_by": "admin-1",
+    "human_approved_at": "2026-10-06T08:30:00+07:00",
+    "publish_error": null,
+    "created_at": "2026-10-06T08:00:00+07:00",
+    "faq": [
+      {
+        "q": "Apa itu Tikum tiket dan apa fokus utamanya?",
+        "a": "Tikum adalah marketplace secondary ticketing di Indonesia yang dibangun dengan fokus pada keamanan transaksi: penahanan dana escrow, verifikasi berkas tiket, dan kehadiran perwakilan PIC di venue konser."
+      },
+      {
+        "q": "Apa yang membedakan Tikum dari jual beli tiket di media sosial?",
+        "a": "Di media sosial, pembeli harus mentransfer langsung ke rekening asing tanpa perlindungan. Di Tikum, uang pembeli tertahan di rekening escrow netral hingga tiket berhasil divalidasi pada hari acara."
+      },
+      {
+        "q": "Apakah Tikum menjamin bebas penipuan 100%?",
+        "a": "Tidak ada platform yang dapat secara jujur mengklaim risiko nol. Tikum meminimalisasi risiko fraud secara sistematis melalui escrow, verifikasi dokumen, pencatatan jejak audit, dan resolusi sengketa berbasis bukti."
+      },
+      {
+        "q": "Bagaimana peran PIC Tikum di lokasi acara?",
+        "a": "Untuk event-event yang didukung, PIC Tikum hadir di area venue untuk membantu koordinasi serah terima fisik wristband dan mendokumentasikan kendala teknis gerbang masuk."
+      }
+    ]
+  },
+  {
+    "id": "art-campaign-18",
+    "title": "Viagogo, StubHub, atau Marketplace Lokal untuk Tiket Konser?",
+    "slug": "viagogo-stubhub-atau-marketplace-lokal-perbandingan",
+    "description": "Perbandingan Viagogo Indonesia, StubHub, dan marketplace lokal: analisis metode pembayaran rupiah, dukungan PIC venue, customer service, dan biaya.",
+    "category": "secondary-ticketing",
+    "keywords": [
+      "Viagogo Indonesia",
+      "StubHub Indonesia",
+      "secondary ticket marketplace",
+      "beli tiket resale"
+    ],
+    "search_intent": "informational",
+    "content": "\n      <p><strong>Memilih antara platform secondary ticketing internasional dan platform lokal terverifikasi memerlukan pertimbangan objektif atas karakteristik konser di Indonesia.</strong> Setiap platform memiliki model operasional berbeda yang berdampak langsung pada pengalaman hari-H penonton.</p>\n\n      <h2>Karakteristik Unik Konser di Indonesia</h2>\n      <p>Tidak seperti negara barat di mana tiket digital langsung dipindai di pintu masuk stasiun, konser di Indonesia sering mewajibkan penukaran gelang (wristband exchange) beberapa hari sebelum acara dengan syarat surat kuasa fisik dan fotokopi KTP pemilik pertama. Prosedur lokal ini sering membingungkan penjual dan pembeli pada platform global.</p>\n\n      <h3>Analisis Kelebihan dan Batasan Platform Global</h3>\n      <p>Platform global memiliki jangkauan inventaris tiket seluruh dunia yang luas. Namun ketika pembeli di Jakarta mengalami kendala teknis penukaran gelang pada jam 15:00 di hari konser, pusat bantuan global yang beroperasi di zona waktu berbeda dengan respon email berjam-jam sering kali terlambat membantu.</p>\n\n      <h2>Perbandingan Faktor Utama Transaksi</h2>\n      <table style=\"width:100%; border-collapse:collapse; margin:20px 0;\">\n        <thead>\n          <tr style=\"background:#1e293b;\">\n            <th style=\"padding:10px 14px; text-align:left; color:#f8fafc;\">Parameter Kebutuhan</th>\n            <th style=\"padding:10px 14px; text-align:left; color:#38bdf8;\">Platform Resale Global</th>\n            <th style=\"padding:10px 14px; text-align:left; color:#4ade80;\">Marketplace Lokal Terverifikasi (Tikum)</th>\n          </tr>\n        </thead>\n        <tbody>\n          <tr>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Bahasa Layanan Pelanggan</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Mayoritas Bahasa Inggris / Bot terjemahan</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Bahasa Indonesia asli & respons cepat</td>\n          </tr>\n          <tr>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Metode Pembayaran</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Kartu kredit valas (biaya konversi FX)</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Rupiah (IDR), QRIS, Virtual Account bank lokal</td>\n          </tr>\n          <tr>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Dukungan di Venue Fisik</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Tidak ada perwakilan di lapangan</td>\n            <td style=\"padding:10px 14px; border-bottom:1px solid #1e293b;\">Dukungan PIC di venue pada event tertentu</td>\n          </tr>\n        </tbody>\n      </table>\n\n      <h3>Pertimbangan Akhir untuk Pembeli</h3>\n      <p>Bagi penonton di Indonesia yang menginginkan kepastian komunikasi, kemudahan pembayaran rupiah, dan bantuan operasional saat penukaran gelang fisik, platform lokal terstruktur menawarkan relevansi yang jauh lebih tinggi.</p>\n    ",
+    "author": "Tim Editorial Tikum",
+    "status": "scheduled",
+    "scheduled_at": "2026-11-27T09:00:00+07:00",
+    "published_at": null,
+    "updated_at": "2026-10-09T08:07:43.287Z",
+    "canonical_url": "https://tikum.app/blog/viagogo-stubhub-atau-marketplace-lokal-perbandingan",
+    "source_references": [
+      "Perbandingan Model Bisnis Tiketing Sekunder Global",
+      "Kajian Perlindungan Konsumen Lintas Batas"
+    ],
+    "target_event_id": null,
+    "target_venue_id": null,
+    "target_city": null,
+    "seo_score": 90,
+    "quality_score": 100,
+    "trust_score": 35,
+    "readability_score": 25,
     "internal_links": [
       {
         "anchor": "Panduan Lengkap Secondary Ticketing",
@@ -1497,52 +1419,181 @@
       }
     ],
     "human_approved_by": "admin-1",
-    "human_approved_at": "2026-09-29T08:30:00+07:00",
+    "human_approved_at": "2026-10-06T08:30:00+07:00",
     "publish_error": null,
-    "created_at": "2026-09-29T08:00:00+07:00",
+    "created_at": "2026-10-06T08:00:00+07:00",
     "faq": [
       {
-        "q": "Apa itu secondary ticketing di Indonesia?",
-        "a": "Secondary ticketing adalah pasar jual beli tiket setelah penjualan resmi pertama (primary ticketing) berlangsung, biasanya karena pemilik awal berhalangan hadir atau tiket resmi sudah habis terjual."
+        "q": "Apakah platform global seperti Viagogo aman untuk konser di Indonesia?",
+        "a": "Platform global memiliki garansi pembeli resmi internasional, namun tantangan utamanya adalah customer service yang tidak berbahasa Indonesia, tidak adanya pendampingan fisik untuk penukaran gelang di venue, dan biaya konversi valuta asing."
       },
       {
-        "q": "Mengapa secondary ticketing marak di Indonesia?",
-        "a": "Tingginya antusiasme konser besar dan cepatnya tiket primary habis dalam hitungan menit membuat banyak penggemar mencari tiket alternatif dari penonton lain."
-      },
-      {
-        "q": "Bagaimana cara memastikan jual beli tiket sekunder aman?",
-        "a": "Gunakan platform dengan sistem rekening penampungan escrow, verifikasi keabsahan identitas penjual, dan dukungan penanganan kendala di area venue."
-      },
-      {
-        "q": "Apakah Tikum menjamin tidak ada risiko sama sekali?",
-        "a": "Tidak ada platform yang dapat menjanjikan risiko nol secara mutlak. Tikum dirancang untuk meminimalisasi risiko penipuan secara sistematis melalui penahanan dana aman dan verifikasi bukti."
+        "q": "Apa keunggulan marketplace lokal seperti Tikum dibanding platform global?",
+        "a": "Dukungan customer service berbahasa Indonesia, metode pembayaran lokal (QRIS, Virtual Account, e-wallet), pemahaman mendalam atas regulasi promotor Indonesia, dan kehadiran PIC di sekitar lokasi venue."
       }
     ]
   },
   {
-    "id": "art-buying-1",
-    "title": "Panduan Memilih Kategori Tiket Konser: Festival vs Seating",
-    "slug": "panduan-memilih-kategori-tiket-konser-festival-vs-seating",
-    "description": "Tips menentukan kategori tiket konser terbaik: kelebihan tiket standing festival vs nomor kursi seating di stadion besar seperti GBK dan JIS.",
+    "id": "art-campaign-19",
+    "title": "Tiket Konser Sold Out? Panduan Mencari Tiket Secondary yang Aman",
+    "slug": "event-favorit-sold-out-panduan-mencari-tiket-secondary",
+    "description": "Panduan mencari tiket konser sold out secondary secara aman: verifikasi syarat promotor, penukaran wristband, dan menghindari calo liar tak berizin.",
     "category": "ticket-guides",
     "keywords": [
-      "kategori tiket konser",
-      "standing vs seating konser",
-      "tips nonton konser"
+      "tiket konser sold out secondary",
+      "tiket coldplay resale",
+      "tiket kpop sold out",
+      "tiket konser habis"
     ],
     "search_intent": "informational",
-    "content": "\n        <h2>Memilih Pengalaman Nonton Konser yang Tepat</h2>\n        <p>Setiap kategori tiket menawarkan kenyamanan dan sudut pandang yang berbeda. Menentukan pilihan sejak awal akan menghindarkan Anda dari penyesalan di hari acara.</p>\n\n        <h2>Kategori Festival (Standing Area)</h2>\n        <p>Cocok untuk Anda yang menginginkan euforia maksimal, dekat dengan panggung utama, dan siap mengantre lebih awal untuk mendapatkan spot barikade depan.</p>\n\n        <h2>Kategori Seating (Numbered Seat)</h2>\n        <p>Pilihan ideal jika Anda mengutamakan kenyamanan, tidak ingin lelah berdiri selama berjam-jam, dan datang bersama keluarga atau teman.</p>\n      ",
+    "content": "\n      <p><strong>Gagal mendapatkan tiket saat penjualan resmi pertama bukan akhir dari segalanya.</strong> Dengan kerangka kerja verifikasi yang tepat, Anda tetap dapat memperoleh tiket sekunder yang sah tanpa harus mempertaruhkan tabungan Anda kepada calo jalanan.</p>\n\n      <h2>Kerangka 4 Langkah Mencari Tiket Sold Out</h2>\n      <ol>\n        <li><strong>Pantau Arus Tiket Ber-Escrow:</strong> Cari tiket di katalog terverifikasi Tikum di mana setiap listing wajib melalui tahapan kurasi data dan dilindungi penahanan dana otomatis.</li>\n        <li><strong>Ketahui Karakteristik Tiap Genre:</strong> Konser K-Pop biasanya menerapkan pencocokan identitas kartu identitas yang sangat ketat, sementara festival multi-day memerlukan penukaran gelang terpisah.</li>\n        <li><strong>Hindari Tawaran yang Terlalu Murah:</strong> Jika harga resmi Rp 2.500.000 dan tiket sudah sold out, waspadai penawaran di media sosial yang menjual seharga Rp 1.500.000—itu hampir pasti umpan scam.</li>\n        <li><strong>Koordinasikan Jadwal Serah Terima:</strong> Tentukan apakah tiket diserahkan berupa file PDF sebelum acara atau wristband fisik di lokasi penukaran bersama PIC Tikum.</li>\n      </ol>\n\n      <h3>Kekhasan Kategori Standing vs Seating</h3>\n      <p>Periksa nomor queue (antrean) jika membeli tiket festival standing, atau nomor section dan row jika membeli tiket seating bernomor. Jangan terima tiket jika data kategori tempat duduk tidak dicantumkan secara transparan.</p>\n    ",
     "author": "Tim Editorial Tikum",
-    "status": "draft",
+    "status": "scheduled",
+    "scheduled_at": "2026-12-01T09:00:00+07:00",
+    "published_at": null,
+    "updated_at": "2026-10-09T08:07:43.287Z",
+    "canonical_url": "https://tikum.app/blog/event-favorit-sold-out-panduan-mencari-tiket-secondary",
+    "source_references": [
+      "Panduan Menonton Konser Musik Aman APMI",
+      "Tikum Event Catalog Guidelines"
+    ],
+    "target_event_id": null,
+    "target_venue_id": null,
+    "target_city": null,
+    "seo_score": 100,
+    "quality_score": 100,
+    "trust_score": 70,
+    "readability_score": 25,
+    "internal_links": [
+      {
+        "anchor": "Panduan Lengkap Secondary Ticketing",
+        "url": "/blog/panduan-lengkap-secondary-ticketing-di-indonesia",
+        "title": "Baca Panduan Lengkap Secondary Ticketing di Indonesia"
+      },
+      {
+        "anchor": "perlindungan pembeli Tikum",
+        "url": "/buyer-protection",
+        "title": "Perlindungan Pembeli Tikum"
+      },
+      {
+        "anchor": "rekening penampungan escrow",
+        "url": "/escrow",
+        "title": "Infrastruktur Escrow Tikum"
+      },
+      {
+        "anchor": "katalog event terverifikasi",
+        "url": "/events",
+        "title": "Eksplorasi Seluruh Event Terverifikasi di Indonesia"
+      }
+    ],
+    "human_approved_by": "admin-1",
+    "human_approved_at": "2026-10-06T08:30:00+07:00",
+    "publish_error": null,
+    "created_at": "2026-10-06T08:00:00+07:00",
+    "faq": [
+      {
+        "q": "Bagaimana mencari tiket konser K-Pop yang sold out tanpa tertipu?",
+        "a": "Pastikan penjual bersedia menyediakan surat kuasa bermeterai dan fotokopi KTP pemesan asli, serta transaksikan tiket tersebut melalui sistem escrow Tikum."
+      },
+      {
+        "q": "Apakah harga tiket sekunder akan turun menjelang hari konser?",
+        "a": "Pada beberapa konser, harga tiket sekunder cenderung melandai pada H-3 hingga hari-H karena penjual yang berhalangan hadir ingin segera melepas tiket mereka."
+      }
+    ]
+  },
+  {
+    "id": "art-campaign-20",
+    "title": "Panduan Lengkap Secondary Ticketing di Indonesia: Regulasi & Tips",
+    "slug": "panduan-lengkap-secondary-ticketing-di-indonesia",
+    "description": "Panduan lengkap secondary ticketing Indonesia: hukum resale, cara kerja rekening escrow, pencegahan penipuan, verifikasi tiket, dan perlindungan konsumen.",
+    "category": "secondary-ticketing",
+    "keywords": [
+      "secondary ticketing Indonesia",
+      "jual beli tiket secondary",
+      "ticket resale Indonesia",
+      "marketplace tiket Indonesia",
+      "tiket konser aman"
+    ],
+    "search_intent": "informational",
+    "content": "\n      <p><strong>Secondary ticketing di Indonesia adalah ekosistem transaksi tiket setelah penjualan resmi pertama selesai.</strong> Panduan komprehensif ini merangkum seluruh aspek penting pasar tiket sekunder: legalitas dan syarat promotor, cara kerja sistem pembayaran escrow, metode verifikasi keaslian tiket, peran perwakilan fisik di venue, serta panduan lengkap perlindungan pembeli dan penjual.</p>\n\n      <h2>1. Apa Itu Secondary Ticketing dan Mengapa Terjadi?</h2>\n      <p>Secondary ticketing bukanlah anomali, melainkan respons alami terhadap keterbatasan kapasitas venue hiburan di Indonesia. Ketika ratusan ribu orang memperebutkan puluhan ribu tiket resmi di primary market, pasar sekunder menjadi jembatan likuiditas bagi mereka yang berhalangan hadir maupun mereka yang mencari kesempatan kedua.</p>\n\n      <h2>2. Mengapa Kanal Transaksi Tradisional Gagal Melindungi Penonton</h2>\n      <p>Transaksi lewat media sosial dan grup chat informal memiliki kelemahan mendasar: ketiadaan pihak ketiga yang netral untuk memegang dana, mudahnya manipulasi tangkapan layar e-ticket, dan tingginya kasus <a href=\"/blog/apa-itu-double-selling-tiket-modus-scam\">double selling tiket</a> di mana satu barcode dijual ke banyak pembeli berbeda.</p>\n\n      <h2>3. Pilar Keamanan Secondary Ticketing Modern</h2>\n      <p>Infrastruktur kepercayaan di pasar sekunder bertumpu pada empat pilar utama:</p>\n      <ul>\n        <li><strong>Penahanan Dana Escrow:</strong> Pembayaran ditahan secara aman di rekening penampungan dan hanya dilepas ke penjual setelah tiket divalidasi berhasil. Pelajari selengkapnya di artikel <a href=\"/blog/kenapa-tikum-menggunakan-escrow-untuk-transaksi-tiket\">Kenapa Tikum Menggunakan Escrow</a>.</li>\n        <li><strong>Verifikasi Dokumen:</strong> Pengecekan ketat identitas penjual dan dokumen pembelian resmi. Baca selengkapnya di panduan <a href=\"/blog/bagaimana-cara-memverifikasi-tiket-konser-sebelum-membayar\">Cara Memverifikasi Tiket Konser Sebelum Membayar</a>.</li>\n        <li><strong>Kehadiran PIC di Venue:</strong> Representasi lapangan yang mendampingi penukaran gelang dan memverifikasi kendala gerbang turnstile. Simak penjelasannya di <a href=\"/blog/kenapa-tikum-punya-pic-di-venue\">Kenapa Tikum Punya PIC di Venue</a>.</li>\n        <li><strong>Resolusi Sengketa Berbasis Bukti:</strong> Pengembalian dana penuh jika tiket terbukti tidak dapat digunakan karena kesalahan penjual.</li>\n      </ul>\n\n      <h3>Daftar Rujukan Penting Kluster Otoritas</h3>\n      <p>Jelajahi panduan mendalam kami seputar keamanan dan ekosistem tiket:</p>\n      <ul>\n        <li><a href=\"/blog/10-modus-penipuan-tiket-konser-harus-diwaspadai\">10 Modus Penipuan Tiket Konser yang Harus Diwaspadai</a></li>\n        <li><a href=\"/blog/cara-aman-membeli-tiket-konser-dari-secondary-market\">Panduan Pembeli: Cara Aman Membeli Tiket Secondary Market</a></li>\n        <li><a href=\"/blog/cara-menjual-tiket-konser-dengan-aman\">Panduan Penjual: Cara Menjual Tiket Konser dengan Aman</a></li>\n        <li><a href=\"/blog/escrow-vs-transfer-langsung-mana-yang-lebih-aman\">Perbandingan: Escrow vs Transfer Langsung</a></li>\n        <li><a href=\"/blog/checklist-anti-scam-sebelum-membeli-tiket-konser-online\">Checklist 10 Poin Anti-Scam Sebelum Membeli Tiket Online</a></li>\n        <li><a href=\"/blog/apa-yang-harus-dilakukan-jika-tiket-bermasalah-saat-hari-konser\">Prosedur Darurat: Apa yang Harus Dilakukan Jika Tiket Bermasalah di Venue</a></li>\n        <li><a href=\"/blog/kenapa-harga-tiket-resale-bisa-lebih-mahal\">Transparansi: Kenapa Harga Tiket Resale Bisa Berbeda dari Harga Resmi</a></li>\n        <li><a href=\"/blog/viagogo-stubhub-atau-marketplace-lokal-perbandingan\">Analisis: Viagogo, StubHub, atau Marketplace Lokal Terverifikasi</a></li>\n        <li><a href=\"/blog/kenapa-tikum-dibangun-mengubah-secondary-ticketing-indonesia\">Manifesto Tikum: Mengubah Cara Orang Bertransaksi Secondary Ticketing di Indonesia</a></li>\n      </ul>\n\n      <h2>4. Kesimpulan</h2>\n      <p>Masa depan industri live event di Indonesia bergantung pada ekosistem yang sehat dan tepercaya. Tikum hadir sebagai katalis transformasi tersebut—menghadirkan trust infrastructure yang melindungi pembeli, menghargai penjual jujur, dan menghormati ketentuan promotor acara.</p>\n    ",
+    "author": "Tim Editorial Tikum",
+    "status": "scheduled",
+    "scheduled_at": "2026-12-04T09:00:00+07:00",
+    "published_at": null,
+    "updated_at": "2026-10-09T08:07:43.287Z",
+    "canonical_url": "https://tikum.app/blog/panduan-lengkap-secondary-ticketing-di-indonesia",
+    "source_references": [
+      "Grand Design Reseller Platform Tikum",
+      "APMI National Ticketing Standard Framework"
+    ],
+    "target_event_id": null,
+    "target_venue_id": null,
+    "target_city": null,
+    "seo_score": 100,
+    "quality_score": 100,
+    "trust_score": 100,
+    "readability_score": 50,
+    "internal_links": [
+      {
+        "anchor": "rekening penampungan escrow",
+        "url": "/escrow",
+        "title": "Mekanisme Rekening Escrow Tikum"
+      },
+      {
+        "anchor": "prosedur resolusi sengketa",
+        "url": "/disputes",
+        "title": "Prosedur Penyelesaian Sengketa"
+      },
+      {
+        "anchor": "perlindungan pembeli Tikum",
+        "url": "/buyer-protection",
+        "title": "Perlindungan Pembeli Tikum"
+      },
+      {
+        "anchor": "katalog event terverifikasi",
+        "url": "/events",
+        "title": "Eksplorasi Seluruh Event Terverifikasi di Indonesia"
+      }
+    ],
+    "human_approved_by": "admin-1",
+    "human_approved_at": "2026-10-06T08:30:00+07:00",
+    "publish_error": null,
+    "created_at": "2026-10-06T08:00:00+07:00",
+    "faq": [
+      {
+        "q": "Apa itu secondary ticketing di Indonesia?",
+        "a": "Pasar jual beli tiket event setelah penjualan resmi pertama usai, menghubungkan pemilik tiket yang berhalangan hadir dengan penggemar yang belum mendapatkan tiket."
+      },
+      {
+        "q": "Bagaimana masa depan pasar sekunder tiket di Indonesia?",
+        "a": "Pasar sekunder di Indonesia bergerak dari kanal informal liar menuju ekosistem terstruktur yang berbasis teknologi escrow, transparansi harga, dan perlindungan konsumen dua arah."
+      },
+      {
+        "q": "Bagaimana cara memulai transaksi tiket yang aman?",
+        "a": "Kunjungi marketplace Tikum, pilih event terverifikasi, dan nikmati perlindungan pembayaran escrow serta pendampingan operasional di venue."
+      }
+    ]
+  },
+  {
+    "id": "art-1791533264088-141",
+    "title": "Draft Artikel Tanpa Persetujuan Editor",
+    "slug": "draft-tanpa-persetujuan",
+    "description": "Artikel yang masih dalam tahap perancangan dan belum disetujui editor.",
+    "category": "TICKET_BUYING",
+    "keywords": [],
+    "search_intent": "informational",
+    "content": "<h2>Draft Artikel Uji Coba</h2><p>Isi draf artikel ini dibuat semata-mata untuk menguji gerbang persetujuan manusia dan validasi fakta sebelum publikasi resmi.</p>",
+    "author": "Tim Editorial Tikum",
+    "status": "approved",
     "scheduled_at": null,
     "published_at": null,
-    "updated_at": "2026-10-06T17:16:45.675Z",
-    "canonical_url": "https://tikum.app/blog/panduan-memilih-kategori-tiket-konser-festival-vs-seating",
+    "updated_at": "2026-10-09T08:07:44.090Z",
+    "canonical_url": "https://tikum.app/blog/draft-tanpa-persetujuan",
     "source_references": [],
     "target_event_id": null,
     "target_venue_id": null,
     "target_city": null,
-    "seo_score": 90,
+    "seo_score": 65,
     "quality_score": 100,
     "trust_score": 0,
     "readability_score": 25,
@@ -1568,10 +1619,10 @@
         "title": "Eksplorasi Seluruh Event Terverifikasi di Indonesia"
       }
     ],
-    "human_approved_by": null,
-    "human_approved_at": null,
+    "human_approved_by": "admin-1",
+    "human_approved_at": "2026-10-09T08:07:44.090Z",
     "publish_error": null,
-    "created_at": "2026-10-06T17:16:45.675Z",
+    "created_at": "2026-10-09T08:07:44.088Z",
     "faq": []
   }
 ]

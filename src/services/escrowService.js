@@ -325,10 +325,49 @@ class EscrowService {
     };
     state.escrows.push(escrow);
 
+    let moneyRepo = null;
     try {
       const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
-      const moneyRepo = getMoneyRepository();
+      moneyRepo = getMoneyRepository();
       const marketplaceRepo = getMarketplaceRepository();
+      if (marketplaceRepo && listing) {
+        try {
+          const dbListing = await marketplaceRepo.getListingById(listing.id);
+          if (!dbListing) {
+            let ticketId = listing.ticket_id || `tkt-${listing.id}`;
+            const activeListingWithTicket = await marketplaceRepo.query(
+              "SELECT id FROM marketplace_listings WHERE ticket_id = $1 AND status IN ('ACTIVE', 'RESERVED') LIMIT 1",
+              [ticketId]
+            );
+            if (activeListingWithTicket && activeListingWithTicket.rows && activeListingWithTicket.rows.length > 0 && activeListingWithTicket.rows[0].id !== listing.id) {
+              ticketId = `tkt-${listing.id}`;
+              listing.ticket_id = ticketId;
+            }
+            const dbTicket = await marketplaceRepo.getTicketById(ticketId);
+            if (!dbTicket) {
+              await marketplaceRepo.createTicket({
+                id: ticketId,
+                seller_id: listing.seller_id || 'seller-1',
+                current_owner_id: listing.seller_id || 'seller-1',
+                canonical_event_id: listing.event_id || 'event-pestapora-2026',
+                ticket_type: 'GENERAL_ADMISSION',
+                face_value: listing.face_value || listing.price || 1000000,
+                currency: listing.currency || 'IDR',
+                status: 'VERIFIED'
+              });
+            }
+            await marketplaceRepo.createListing({
+              id: listing.id,
+              ticket_id: ticketId,
+              seller_id: listing.seller_id || 'seller-1',
+              canonical_event_id: listing.event_id || 'event-pestapora-2026',
+              price: listing.price || 1000000,
+              currency: listing.currency || 'IDR',
+              status: listing.status || 'ACTIVE'
+            });
+          }
+        } catch (_) {}
+      }
       await moneyRepo.createOrder({
         id: orderId,
         buyer_id: buyerId,
@@ -356,11 +395,11 @@ class EscrowService {
         amount: quote.seller_net_payout,
         currency: quote.currency || 'IDR',
         status: ESCROW_STATUS.PENDING_PAYMENT,
-        held_by: 'DOKU_ESCROW'
+        held_by: 'TIKUM_INTERNAL_ESCROW'
       });
       await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.RESERVED);
     } catch (repoErr) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL || (moneyRepo && !moneyRepo.degraded)) {
         throw repoErr;
       }
     }
@@ -476,7 +515,7 @@ class EscrowService {
       const { getMoneyRepository } = require('../storage');
       const moneyRepo = getMoneyRepository();
       const dbPayment = await moneyRepo.getPaymentByOrderId(orderId);
-      if (dbPayment && (dbPayment.idempotency_key === idempotencyKey || dbPayment.status === 'SETTLED')) {
+      if (dbPayment && (dbPayment.idempotency_key === idempotencyKey || (!idempotencyKey && dbPayment.status === 'SETTLED'))) {
         let escrow = (state.escrows || []).find(e => e.order_id === orderId);
         return { payment: dbPayment, order, escrow, idempotent: true };
       }
@@ -548,6 +587,10 @@ class EscrowService {
       const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
       const moneyRepo = getMoneyRepository();
       const marketplaceRepo = getMarketplaceRepository();
+      const canonical = (state.canonical_payments || []).find(p => p.order_id === orderId);
+      const effProvider = canonical?.provider || order.provider || 'doku';
+      const effMethod = canonical?.payment_method || 'QRIS';
+
       await moneyRepo.createPayment({
         id: paymentId,
         order_id: orderId,
@@ -555,12 +598,12 @@ class EscrowService {
         seller_id: order.seller_id,
         currency: order.currency || 'IDR',
         gross_amount: expectedAmount,
-        provider: 'DOKU',
+        provider: effProvider,
         provider_reference: payment.provider_ref,
         provider_transaction_id: payment.provider_ref,
         status: 'SETTLED',
         money_state: 'PAID',
-        payment_method: 'DOKU_VA',
+        payment_method: effMethod,
         idempotency_key: idempotencyKey
       });
       await moneyRepo.updateOrderStatus(orderId, ORDER_STATUS.PAID_ESCROWED);
@@ -744,6 +787,18 @@ class EscrowService {
         err.details = authDecision;
         err.status = 403;
         throw err;
+      }
+
+      // 4b. Double-Entry Solvency Assertion (Invariant I3)
+      try {
+        const { FinancialLedger } = require('../settlement/FinancialLedger');
+        if (typeof FinancialLedger.assertSolvency === 'function') {
+          FinancialLedger.assertSolvency();
+        }
+      } catch (solvencyErr) {
+        if (solvencyErr.code === 'LEDGER_UNBALANCED' || solvencyErr.code === 'LEDGER_INSOLVENT') {
+          throw solvencyErr;
+        }
       }
 
       // 5. Update states

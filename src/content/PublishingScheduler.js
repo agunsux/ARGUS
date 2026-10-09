@@ -108,6 +108,7 @@ class PublishingScheduler {
         executed: true,
         publishedCount: scheduledPublished.length,
         articles: scheduledPublished,
+        article: scheduledPublished[0],
         message: `Successfully published ${scheduledPublished.length} scheduled article(s).`
       };
     }
