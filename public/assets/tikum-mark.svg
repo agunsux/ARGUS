@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" aria-label="Tikum Gathering Mark">
+  <!-- Tikum Gathering Mark (Rob Janoff principle: One shape, one clean notch) -->
+  <!-- Solid circle at (100, 100) R=64 with clean notch cut at (146, 54) R=26 -->
+  <path d="M 123.74 40.57 A 64 64 0 1 1 159.43 76.26 A 26 26 0 0 1 123.74 40.57 Z" fill="#B8472F" />
+</svg>

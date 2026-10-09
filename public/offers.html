@@ -19,11 +19,8 @@
   <meta name="twitter:title" content="Tikum — Sistem Tawaran Harga | by Shinerva">
   <meta name="twitter:description" content="Negosiasi harga tiket terstruktur dan transparan di Tikum.">
 
-  <link rel="icon" type="image/svg+xml" href="/assets/tikum-mark-p2p.svg">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <style>
@@ -48,11 +45,11 @@
       transition: all 0.2s;
     }
     .tab-btn:hover {
-      color: #fff;
+      color: var(--terra-600);
     }
     .tab-btn.active {
-      color: var(--cyan);
-      border-bottom-color: var(--cyan);
+      color: var(--terra-600);
+      border-bottom-color: var(--terra-600);
     }
     .offer-card {
       background: var(--surface);
@@ -63,7 +60,7 @@
       transition: border-color 0.2s;
     }
     .offer-card:hover {
-      border-color: #334155;
+      border-color: var(--terra-600);
     }
     .countdown-pill {
       font-size: 12px;
@@ -95,7 +92,7 @@
   <header class="site-header">
     <div class="header-container">
       <a href="/" class="brand">
-        <img src="/assets/tikum-mark-p2p.svg" class="brand-logo" width="34" height="34" alt="Tikum">
+        <img src="/assets/tikum-mark-2color.svg" class="brand-logo" width="34" height="34" alt="Tikum">
         <div>
           <div class="brand-title">Tikum</div>
           <span class="brand-subtitle">Verified Ticket Marketplace</span>
@@ -127,7 +124,7 @@
     <!-- Pilot User Switcher -->
     <div class="card" style="padding: 14px 20px; margin-bottom: 24px; background: rgba(30, 41, 59, 0.5); border-color: #334155; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
       <div style="display: flex; align-items: center; gap: 10px;">
-        <i class="fa-solid fa-user-gear" style="color: var(--cyan); font-size: 18px;"></i>
+        <i class="fa-solid fa-user-gear" style="color: var(--terra-600); font-size: 18px;"></i>
         <div>
           <strong style="font-size: 13px; color: #fff;">Pilih Identitas Akun (Demo Mode):</strong>
           <div style="font-size: 11px; color: var(--text-muted);">Ganti pengguna untuk mensimulasikan perspektif pembeli vs penjual</div>
@@ -182,7 +179,7 @@
 
     <!-- Loading State -->
     <div id="offersLoading" style="text-align: center; padding: 50px 20px;">
-      <i class="fa-solid fa-spinner fa-spin" style="font-size: 28px; color: var(--cyan); margin-bottom: 12px;"></i>
+      <i class="fa-solid fa-spinner fa-spin" style="font-size: 28px; color: var(--terra-600); margin-bottom: 12px;"></i>
       <div style="font-size: 14px; color: var(--text-muted);">Mengambil daftar tawaran resmi dari server Tikum...</div>
     </div>
 
@@ -203,7 +200,7 @@
 
   <!-- Accept Modal Confirmation (Seller) -->
   <div id="acceptModal" class="modal-overlay">
-    <div class="card" style="max-width: 480px; width: 100%; border-color: var(--success); box-shadow: 0 25px 50px rgba(0,0,0,0.8); margin: 0; background: #0f172a;">
+    <div class="card" style="max-width: 480px; width: 100%; border-color: var(--success); box-shadow: 0 25px 50px rgba(0,0,0,0.8); margin: 0; background: var(--surface);">
       <div class="hero-pill" style="margin-bottom: 12px; background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);">
         <i class="fa-solid fa-check"></i> KONFIRMASI PENERIMAAN TAWARAN
       </div>
@@ -230,7 +227,7 @@
 
   <!-- Decline Modal with Strict Enum Reasons (Seller) -->
   <div id="declineModal" class="modal-overlay">
-    <div class="card" style="max-width: 480px; width: 100%; border-color: var(--danger); box-shadow: 0 25px 50px rgba(0,0,0,0.8); margin: 0; background: #0f172a;">
+    <div class="card" style="max-width: 480px; width: 100%; border-color: var(--danger); box-shadow: 0 25px 50px rgba(0,0,0,0.8); margin: 0; background: var(--surface);">
       <div class="hero-pill" style="margin-bottom: 12px; background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
         <i class="fa-solid fa-xmark"></i> TOLAK TAWARAN RESMI
       </div>
@@ -270,7 +267,7 @@
 
   <!-- Counter Modal for Structured Price Counter-Offer (Seller & Buyer) -->
   <div id="counterModal" class="modal-overlay">
-    <div class="card" style="max-width: 480px; width: 100%; border-color: var(--cyan); box-shadow: 0 25px 50px rgba(0,0,0,0.8); margin: 0; background: #0f172a;">
+    <div class="card" style="max-width: 480px; width: 100%; border-color: var(--terra-600); box-shadow: 0 25px 50px rgba(0,0,0,0.8); margin: 0; background: var(--surface);">
       <div class="hero-pill" style="margin-bottom: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);">
         <i class="fa-solid fa-arrows-rotate"></i> TAWARAN BALIK / COUNTER-OFFER
       </div>
@@ -328,7 +325,7 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <img src="/assets/tikum-mark-p2p.svg" width="20" height="20" alt="Tikum"> TIKUM — by SHINERVA
+          <img src="/assets/tikum-mark-2color.svg" width="20" height="20" alt="Tikum"> TIKUM — by SHINERVA
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
           Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
@@ -347,7 +344,7 @@
         <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
           <div>
             <span style="color: var(--text-dim);">Email:</span>
-            <a href="mailto:agunsux@gmail.com" style="color: var(--cyan); text-decoration: none; margin-left: 6px;">agunsux@gmail.com</a>
+            <a href="mailto:agunsux@gmail.com" style="color: var(--terra-600); text-decoration: none; margin-left: 6px;">agunsux@gmail.com</a>
           </div>
           <div>
             <span style="color: var(--text-dim);">WhatsApp:</span>
@@ -515,7 +512,7 @@
                   ${offer.event_title || 'Tiket Event'}
                 </h3>
                 <div style="font-size: 12px; color: var(--text-muted);">
-                  <i class="fa-solid fa-couch"></i> ${offer.seat_info || 'General Admission'} &bull; ID Listing: <code class="mono" style="color: var(--cyan);">${offer.listing_id}</code>
+                  <i class="fa-solid fa-couch"></i> ${offer.seat_info || 'General Admission'} &bull; ID Listing: <code class="mono" style="color: var(--terra-600);">${offer.listing_id}</code>
                 </div>
               </div>
               <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">

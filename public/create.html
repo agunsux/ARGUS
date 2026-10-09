@@ -19,11 +19,8 @@
   <meta name="twitter:title" content="Tikum — Buat Transfer Tiket Terverifikasi | by Shinerva">
   <meta name="twitter:description" content="Daftarkan tiket sekunder Anda dengan verifikasi anti-duplikasi barcode dan pencairan dana escrow aman.">
 
-  <link rel="icon" type="image/svg+xml" href="/assets/tikum-mark-p2p.svg">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -33,7 +30,7 @@
   <header class="site-header">
     <div class="header-container">
       <a href="/" class="brand">
-        <img src="/assets/tikum-mark-p2p.svg" class="brand-logo" width="34" height="34" alt="Tikum">
+        <img src="/assets/tikum-mark-2color.svg" class="brand-logo" width="34" height="34" alt="Tikum">
         <div>
           <div class="brand-title">Tikum</div>
           <span class="brand-subtitle">Verified Ticket Marketplace</span>
@@ -119,6 +116,34 @@
     </div>
 
     <!-- Main Creation Form Card -->
+    <!-- Stepper Indicator (Event -> Detail Tiket -> Bukti Tiket -> Harga -> Konfirmasi) -->
+    <div class="stepper-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; background:var(--surface); border:1px solid var(--line-300); padding:16px 20px; border-radius:var(--radius-card); box-shadow:var(--shadow-soft); overflow-x:auto;">
+      <div class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
+        <div style="width:26px; height:26px; border-radius:50%; background:var(--terra-600); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">1</div>
+        <span style="font-size:12.5px; font-weight:700; color:var(--ink-900);">Event</span>
+      </div>
+      <div style="height:1px; flex:1; min-width:16px; background:var(--line-300); margin:0 8px;"></div>
+      <div class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
+        <div style="width:26px; height:26px; border-radius:50%; background:var(--sand-50); border:1px solid var(--line-300); color:var(--ink-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">2</div>
+        <span style="font-size:12.5px; color:var(--ink-700);">Detail Tiket</span>
+      </div>
+      <div style="height:1px; flex:1; min-width:16px; background:var(--line-300); margin:0 8px;"></div>
+      <div class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
+        <div style="width:26px; height:26px; border-radius:50%; background:var(--sand-50); border:1px solid var(--line-300); color:var(--ink-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">3</div>
+        <span style="font-size:12.5px; color:var(--ink-700);">Bukti Tiket</span>
+      </div>
+      <div style="height:1px; flex:1; min-width:16px; background:var(--line-300); margin:0 8px;"></div>
+      <div class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
+        <div style="width:26px; height:26px; border-radius:50%; background:var(--sand-50); border:1px solid var(--line-300); color:var(--ink-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">4</div>
+        <span style="font-size:12.5px; color:var(--ink-700);">Harga</span>
+      </div>
+      <div style="height:1px; flex:1; min-width:16px; background:var(--line-300); margin:0 8px;"></div>
+      <div class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
+        <div style="width:26px; height:26px; border-radius:50%; background:var(--sand-50); border:1px solid var(--line-300); color:var(--ink-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">5</div>
+        <span style="font-size:12.5px; color:var(--ink-700);">Konfirmasi</span>
+      </div>
+    </div>
+
     <div id="formCard" class="card">
       <form id="listingForm" onsubmit="handleCreateListing(event)">
         
@@ -257,6 +282,31 @@
               </select>
             </div>
 
+            <div class="form-group" style="grid-column: 1 / -1; margin-top:10px; padding:16px; background:var(--sand-50); border:1px solid var(--line-300); border-radius:var(--radius-card);">
+              <label style="font-size:13px; font-weight:700; color:var(--ink-900); display:block; margin-bottom:6px;">
+                <i class="fa-solid fa-id-card" style="color:var(--terra-600);"></i> Verifikasi Identitas Penjual &amp; Perlindungan UU PDP No. 27/2022
+              </label>
+              <p style="font-size:12px; color:var(--ink-700); line-height:1.6; margin-bottom:12px;">
+                Sesuai ketentuan <strong>UU Perlindungan Data Pribadi (UU PDP No. 27/2022)</strong>, dokumen foto identitas KTP dan swafoto wajah hanya diproses untuk tujuan verifikasi kepemilikan tiket resmi dan pencegahan penjualan tiket duplikat di turnstile venue. Data tersimpan dengan enkripsi standar industri dan tidak diserahkan ke pihak luar tanpa izin Anda.
+              </p>
+              <div class="grid-2">
+                <div>
+                  <label for="ktpFile" style="font-size:12px; font-weight:600; color:var(--ink-900);">Foto KTP / Kartu Identitas</label>
+                  <input type="file" id="ktpFile" class="form-control" accept="image/*,.pdf" style="font-size:12px; margin-top:4px;">
+                </div>
+                <div>
+                  <label for="selfieFile" style="font-size:12px; font-weight:600; color:var(--ink-900);">Swafoto / Foto Wajah Penjual</label>
+                  <input type="file" id="selfieFile" class="form-control" accept="image/*" style="font-size:12px; margin-top:4px;">
+                </div>
+              </div>
+              <div style="margin-top:12px; display:flex; align-items:flex-start; gap:8px;">
+                <input type="checkbox" id="pdpConsent" required checked style="accent-color:var(--terra-600); width:16px; height:16px; margin-top:2px;">
+                <label for="pdpConsent" style="font-size:12px; color:var(--ink-700); cursor:pointer;">
+                  Saya menyetujui pemrosesan data identitas untuk verifikasi keabsahan tiket sesuai UU Perlindungan Data Pribadi (UU PDP No. 27/2022).
+                </label>
+              </div>
+            </div>
+
             <div class="form-group">
               <label for="evidenceFile">Bukti Pembelian / PDF Tiket (Opsional)</label>
               <input type="file" id="evidenceFile" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
@@ -283,7 +333,7 @@
         <!-- Submit Button & Real Server Feedback -->
         <div id="formError" class="notice-box notice-warning" style="display: none;"></div>
 
-        <button type="submit" id="btnSubmitListing" class="btn" style="width: 100%; padding: 14px; font-size: 15px;">
+        <button type="submit" id="btnSubmitListing" class="btn btn-primary" style="background-color:var(--terra-600); color:#fff; border:none;" style="width: 100%; padding: 14px; font-size: 15px;">
           <i class="fa-solid fa-shield-check"></i> Daftarkan Tiket ke Tikum
         </button>
       </form>
@@ -396,7 +446,7 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <img src="/assets/tikum-mark-p2p.svg" width="20" height="20" alt="Tikum"> TIKUM — by SHINERVA
+          <img src="/assets/tikum-mark-2color.svg" width="20" height="20" alt="Tikum"> TIKUM — by SHINERVA
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
           Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.

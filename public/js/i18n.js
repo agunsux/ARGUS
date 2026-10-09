@@ -301,6 +301,51 @@
       "lead": "Temukan ribuan penikmat musik, olahraga, dan festival di ekosistem tiket sekunder yang terlindungi.",
       "ctaFind": "Cari Tiket Sekarang",
       "ctaSell": "Jual Tiket Anda"
+    },
+    "home": {
+      "headline": "Tiket sold out? Aman di Tikum.",
+      "subhead": "Beli tiket resmi & resale terverifikasi dari sesama penggemar tanpa was-was penipuan.",
+      "searchPlaceholder": "Cari event, musisi, venue, atau kota...",
+      "catAll": "Semua Event",
+      "catConcerts": "Konser",
+      "catSports": "Olahraga",
+      "catComedy": "Stand Up Comedy",
+      "catExhibitions": "Pameran",
+      "catOther": "Hiburan Lain",
+      "trustEscrow": "Dana ditahan escrow",
+      "trustPic": "Petugas Tikum di venue",
+      "trustPayment": "Bayar QRIS, e-wallet, VA",
+      "popularTitle": "Event Populer",
+      "popularSub": "Tiket pilihan yang paling banyak dicari saat ini.",
+      "newTitle": "Baru Masuk",
+      "newSub": "Tiket terverifikasi yang baru saja didaftarkan penjual.",
+      "fromPrice": "Mulai",
+      "allInNote": "Harga all-in (sudah termasuk biaya layanan)",
+      "viewEvent": "Pilih Tiket",
+      "emptyState": "Belum ada tiket terverifikasi untuk kategori ini."
+    },
+    "checkout": {
+      "title": "Ringkasan Pembelian",
+      "escrowExplainer": "Dana kamu ditahan Tikum sampai kamu masuk venue.",
+      "ticketPrice": "Harga Tiket",
+      "platformFee": "Biaya Layanan Tikum (6% Policy V1)",
+      "totalPrice": "Total yang Kamu Bayar (All-In)",
+      "choosePayment": "Pilih Metode Pembayaran",
+      "payButton": "Bayar Sekarang",
+      "heldNote": "Penjual baru menerima dana setelah kamu sukses scan masuk gerbang."
+    },
+    "track": {
+      "offlineBanner": "Koneksi tidak stabil. Menampilkan status tersimpan terakhir.",
+      "ticketVerified": "Tiket Berhasil Diverifikasi",
+      "entryConfirmed": "Sukses Masuk Venue (Gate Turnstile)"
+    },
+    "sell": {
+      "stepEvent": "Pilih Event",
+      "stepDetail": "Detail Tiket",
+      "stepEvidence": "Bukti Tiket",
+      "stepPrice": "Tentukan Harga",
+      "stepConfirm": "Konfirmasi Listing",
+      "pdpConsent": "Sesuai UU Pelindungan Data Pribadi (UU PDP No. 27/2022), data identitas Anda dienkripsi dan hanya digunakan untuk verifikasi keaslian tiket."
     }
   },
   "en": {
@@ -546,6 +591,51 @@
       "lead": "Join thousands of music, sports, and festival fans in a protected secondary ticket ecosystem.",
       "ctaFind": "Find Tickets Now",
       "ctaSell": "Sell Your Tickets"
+    },
+    "home": {
+      "headline": "Tickets sold out? Safe on Tikum.",
+      "subhead": "Buy verified secondary tickets from real fans with escrow protection and on-site assistance.",
+      "searchPlaceholder": "Search artist, event, venue, or city...",
+      "catAll": "All Events",
+      "catConcerts": "Concerts",
+      "catSports": "Sports",
+      "catComedy": "Stand Up Comedy",
+      "catExhibitions": "Exhibitions",
+      "catOther": "Other Entertainment",
+      "trustEscrow": "Funds secured in escrow",
+      "trustPic": "Tikum team on-site at venue",
+      "trustPayment": "Pay QRIS, e-wallet, VA",
+      "popularTitle": "Popular Events",
+      "popularSub": "Most requested tickets on the marketplace right now.",
+      "newTitle": "Recently Listed",
+      "newSub": "Verified tickets newly listed by sellers.",
+      "fromPrice": "From",
+      "allInNote": "All-in price (including platform service fee)",
+      "viewEvent": "Select Tickets",
+      "emptyState": "No verified tickets found for this category."
+    },
+    "checkout": {
+      "title": "Purchase Summary",
+      "escrowExplainer": "Your payment is held in escrow until you enter the venue.",
+      "ticketPrice": "Ticket Price",
+      "platformFee": "Tikum Service Fee (6% Policy V1)",
+      "totalPrice": "Total Buyer Payment (All-In)",
+      "choosePayment": "Select Payment Method",
+      "payButton": "Pay Now",
+      "heldNote": "Seller is only paid out after you successfully pass through turnstile gates."
+    },
+    "track": {
+      "offlineBanner": "Unstable network connection. Showing cached last-known state.",
+      "ticketVerified": "Ticket Authenticity Verified",
+      "entryConfirmed": "Venue Entry Confirmed (Turnstile Gate)"
+    },
+    "sell": {
+      "stepEvent": "Select Event",
+      "stepDetail": "Ticket Details",
+      "stepEvidence": "Proof of Purchase",
+      "stepPrice": "Set Price",
+      "stepConfirm": "Confirm Listing",
+      "pdpConsent": "Under Indonesian Personal Data Protection Act (UU PDP No. 27/2022), your ID evidence is strictly encrypted and used solely for ticket authentication."
     }
   },
   "zh-CN": {

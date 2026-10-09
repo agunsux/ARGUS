@@ -1,0 +1,123 @@
+/**
+ * TIKUM DESIGN TOKENS (Single Source of Truth)
+ *
+ * Design Direction:
+ * - Feeling: calm, warm, trustworthy (Fintech safety meets ticketing energy)
+ * - References: Bank Jago (warmth, generous whitespace) & TickPick (all-in pricing, scanability)
+ * - Rules: Terracotta <= 10% screen area, all text passes WCAG AA contrast
+ *
+ * Tokens Specification:
+ * - Primary Action: Terracotta (#B8472F)
+ * - Background: Warm Sand (#FAF6F2)
+ * - Cards & Surfaces: Pure White (#FFFFFF)
+ * - Ink: Deep charcoal (#2B2724)
+ * - Trust / Verification: Deep Forest Green (#2F7D5B)
+ * - Accent / Highlight: Warm Amber (#F2A33A)
+ * - Error: Deep Crimson (#A3162A)
+ */
+
+/* ==========================================================================
+   SELF-HOSTED FONTS: Plus Jakarta Sans (500 & 700 only, subset latin)
+   ========================================================================== */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/plus-jakarta-sans-500.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/plus-jakarta-sans-700.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  /* ==========================================================================
+     COLOR TOKENS (Strictly Defensible Contrast Ratios)
+     ========================================================================== */
+
+  /* Terracotta — Single primary action per screen (<= 10% total surface) */
+  --terra-600: #B8472F;  /* Primary brand / CTA (White text contrast: 5.31:1, AA) */
+  --terra-700: #9E3A25;  /* Hover / Pressed state (White text contrast: 7.02:1, AAA) */
+  --terra-100: #F7E4DC;  /* Soft tint (selected chips, active pills) */
+
+  /* Warm Sand & Surfaces */
+  --sand-50:   #FAF6F2;  /* Page background (warm, never pure harsh white) */
+  --surface:   #FFFFFF;  /* Cards, modals, surface containers */
+
+  /* Ink / Text Hierarchy (Max 2 type weights per screen: 500 & 700) */
+  --ink-900:   #2B2724;  /* Primary text (Contrast on sand-50: 13.56:1, AAA) */
+  --ink-700:   #4A443F;  /* Secondary text / captions (Contrast on sand-50: 7.39:1, AAA) */
+  --ink-500:   #8A827B;  /* Tertiary / placeholder only (never for critical body) */
+
+  /* Borders & Dividers */
+  --line-300:  #D9D3CD;  /* Card borders, input strokes */
+  --line-100:  #F1EDE8;  /* Subtle dividers, skeletons */
+
+  /* Semantic Accents */
+  --amber-500: #F2A33A;  /* Jago-echo accent: ONLY for Venue Protected & 1 promo cue/screen */
+  --ok-600:    #2F7D5B;  /* Trust / Verified / Escrow Locked / Gate Confirmed */
+  --danger-600:#A3162A;  /* Error / Dispute / Blocked (Terracotta is NEVER used for errors) */
+
+  /* ==========================================================================
+     TYPOGRAPHY SCALE (Plus Jakarta Sans, weights 500 and 700 only)
+     ========================================================================== */
+  --font-family-base: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --font-size-12: 12px;
+  --font-size-14: 14px;
+  --font-size-16: 16px;
+  --font-size-20: 20px;
+  --font-size-28: 28px;
+  --font-size-40: clamp(28px, 5vw, 40px);
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+
+  /* ==========================================================================
+     SHAPE & 8-PT SPATIAL SYSTEM
+     ========================================================================== */
+  --space-2:  2px;
+  --space-4:  4px;
+  --space-8:  8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-64: 64px;
+
+  /* Radii */
+  --radius-sm:   8px;    /* Badges, small pills, tags */
+  --radius-card: 12px;   /* Cards, form inputs, modals */
+  --radius-pill: 999px;  /* Filter chips, primary CTA pills */
+
+  /* Elevation: EXACTLY ONE SOFT SHADOW TOKEN */
+  --shadow-soft: 0 1px 2px rgba(43, 39, 36, 0.04), 0 8px 24px rgba(43, 39, 36, 0.06);
+
+  /* Motion: 150-200ms ease-out (opacity & transform only) */
+  --transition-fast: 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-base: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Touch Targets (Mobile-first >= 44px) */
+  --touch-target-min: 44px;
+}
+
+/* Accessible Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

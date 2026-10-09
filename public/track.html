@@ -19,11 +19,8 @@
   <meta name="twitter:title" content="Tikum — Pelacakan Transaksi &amp; Audit Trail Real-Time | by Shinerva">
   <meta name="twitter:description" content="Pelacakan status transaksi tiket, verifikasi turnstile venue, dan audit trail real-time di Tikum.">
 
-  <link rel="icon" type="image/svg+xml" href="/assets/tikum-mark-p2p.svg">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -33,7 +30,7 @@
   <header class="site-header">
     <div class="header-container">
       <a href="/" class="brand">
-        <img src="/assets/tikum-mark-p2p.svg" class="brand-logo" width="34" height="34" alt="Tikum">
+        <img src="/assets/tikum-mark-2color.svg" class="brand-logo" width="34" height="34" alt="Tikum">
         <div>
           <div class="brand-title">Tikum</div>
           <span class="brand-subtitle">Verified Ticket Marketplace</span>
@@ -96,6 +93,13 @@
 
     <!-- Tracking Result Display -->
     <div id="trackResult" style="display: none;">
+      <!-- Offline / Low-Signal Banner -->
+      <div id="offlineBanner" class="notice-box notice-warning" style="display: none; margin-bottom: 16px; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-wifi" style="color: var(--amber-500); font-size: 16px;"></i>
+        <div>
+          <strong>Mode Offline:</strong> Koneksi tidak stabil. Menampilkan status tersimpan terakhir dari perangkat Anda.
+        </div>
+      </div>
 
       <!-- Header Summary Card -->
       <div class="card">
@@ -213,7 +217,7 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <img src="/assets/tikum-mark-p2p.svg" width="20" height="20" alt="Tikum"> TIKUM — by SHINERVA
+          <img src="/assets/tikum-mark-2color.svg" width="20" height="20" alt="Tikum"> TIKUM — by SHINERVA
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
           Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
@@ -293,10 +297,12 @@
       const loadingEl = document.getElementById('trackLoading');
       const notFoundEl = document.getElementById('trackNotFound');
       const resultEl = document.getElementById('trackResult');
+      const offlineBanner = document.getElementById('offlineBanner');
 
       loadingEl.style.display = 'block';
       notFoundEl.style.display = 'none';
       resultEl.style.display = 'none';
+      if (offlineBanner) offlineBanner.style.display = 'none';
 
       try {
         const res = await fetch(`/api/mvp/track/${encodeURIComponent(id)}`);
@@ -311,10 +317,28 @@
           throw new Error('Format data transaksi tidak valid dari server.');
         }
 
+        // Cache for offline resilience
+        try {
+          localStorage.setItem('tikum_track_' + id, JSON.stringify(data.transaction));
+        } catch (e) {}
+
         renderTracking(data.transaction);
         resultEl.style.display = 'block';
 
       } catch (err) {
+        // Attempt offline cache retrieval
+        const cached = localStorage.getItem('tikum_track_' + id);
+        if (cached) {
+          try {
+            const cachedTx = JSON.parse(cached);
+            loadingEl.style.display = 'none';
+            renderTracking(cachedTx);
+            if (offlineBanner) offlineBanner.style.display = 'flex';
+            resultEl.style.display = 'block';
+            return;
+          } catch (parseErr) {}
+        }
+
         loadingEl.style.display = 'none';
         notFoundEl.style.display = 'block';
         document.getElementById('trackNotFoundText').innerText = 
@@ -360,7 +384,7 @@
     }
 
     function renderOrderTimeline(tx, container) {
-      const isPaid = tx.status === 'PAID' || tx.status === 'ESCROW_LOCKED' || tx.status === 'ENTRY_CONFIRMED' || tx.status === 'SETTLED';
+      const isPaid = tx.status === 'PAID' || tx.status === 'ESCROW_LOCKED' || tx.status === 'TICKET_VERIFIED' || tx.status === 'ENTRY_CONFIRMED' || tx.status === 'SETTLED';
       const isEntry = tx.status === 'ENTRY_CONFIRMED' || tx.status === 'SETTLED';
       const isSettled = tx.status === 'SETTLED';
       const isDispute = tx.status === 'DISPUTED' || tx.status === 'REFUNDED';

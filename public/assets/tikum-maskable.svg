@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Warm Sand Background for Maskable Icon -->
+  <rect width="512" height="512" fill="#FAF6F2" />
+  <!-- Tikum Mark inside 80% safe zone -->
+  <g transform="translate(106, 106) scale(1.5)">
+    <path d="M 123.74 40.57 A 64 64 0 1 1 159.43 76.26 A 26 26 0 0 1 123.74 40.57 Z" fill="#B8472F" />
+    <circle cx="146" cy="54" r="14" fill="#F2A33A" />
+  </g>
+</svg>

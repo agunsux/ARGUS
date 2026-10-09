@@ -19,11 +19,8 @@
   <meta name="twitter:title" content="Tikum — Pembelian &amp; Perlindungan Transaksi Tiket | by Shinerva">
   <meta name="twitter:description" content="Transaksi tiket aman dengan rekening penampungan internal (escrow) dan pendampingan fisik di gerbang venue.">
 
-  <link rel="icon" type="image/svg+xml" href="/assets/tikum-mark-p2p.svg">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -33,7 +30,7 @@
   <header class="site-header">
     <div class="header-container">
       <a href="/" class="brand">
-        <img src="/assets/tikum-mark-p2p.svg" class="brand-logo" width="34" height="34" alt="Tikum">
+        <img src="/assets/tikum-mark-2color.svg" class="brand-logo" width="34" height="34" alt="Tikum">
         <div>
           <div class="brand-title">Tikum</div>
           <span class="brand-subtitle">Verified Ticket Marketplace</span>
@@ -75,6 +72,17 @@
     <!-- Main Payment & Order Surface -->
     <div id="paySurface" style="display: none;">
       
+      <!-- Persistent Simulation / Demo Notice Banner -->
+      <div class="simulation-banner notice-box" style="background: #FFFBEB; border: 1.5px solid #F59E0B; border-radius: var(--radius-card); padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px;">
+        <i class="fa-solid fa-flask" style="color: #D97706; font-size: 20px; margin-top: 2px;"></i>
+        <div>
+          <strong style="color: #92400E; font-size: 13.5px; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px;">MODE SIMULASI — BUKAN PEMBAYARAN LIVE</strong>
+          <p style="color: #B45309; font-size: 13px; margin: 0; line-height: 1.5;">
+            Platform TIKUM saat ini beroperasi dalam tahap pilot uji coba internal. <strong>Tidak ada pemotongan atau penagihan dana riil</strong>. Kode QRIS, nomor Virtual Account, dan simulasi e-wallet di bawah ini merupakan <strong>data demonstrasi</strong> untuk memverifikasi alur pencatatan escrow internal.
+          </p>
+        </div>
+      </div>
+
       <div style="margin-bottom: 24px;">
         <div class="hero-pill"><i class="fa-solid fa-vault"></i> REKENING PENAMPUNGAN TERLINDUNGI</div>
         <h1 style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Konfirmasi Pesanan &amp; Perlindungan Pembeli</h1>
@@ -157,21 +165,106 @@
       </div>
 
       <!-- Order Creation & Payment Trigger -->
+      <!-- Escrow Explainer Banner -->
+      <div class="card" style="background:var(--surface); border:1px solid var(--line-300); padding:20px; border-radius:var(--radius-card); margin-bottom:20px; box-shadow:var(--shadow-soft);">
+        <div style="display:flex; align-items:flex-start; gap:14px;">
+          <div style="width:40px; height:40px; border-radius:50%; background:var(--terra-100); color:var(--terra-600); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
+            <i class="fa-solid fa-vault"></i>
+          </div>
+          <div>
+            <h3 style="font-size:16px; font-weight:700; margin:0 0 4px; color:var(--ink-900);">Dana kamu ditahan Tikum sampai kamu masuk venue</h3>
+            <p style="font-size:13px; color:var(--ink-700); margin:0; line-height:1.5;">
+              Penjual baru menerima pencairan setelah tiket terbukti valid dan kamu berhasil melewati turnstile gerbang acara. Jika gagal masuk karena tiket tidak valid, dana dikembalikan sesuai kebijakan refund.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Provider-Agnostic Payment Method Selector -->
+      <div class="card" style="background:var(--surface); border:1px solid var(--line-300); padding:20px; border-radius:var(--radius-card); margin-bottom:20px; box-shadow:var(--shadow-soft);">
+        <h3 class="card-title" style="margin-bottom:14px;"><i class="fa-solid fa-wallet" style="color:var(--terra-600);"></i> Pilih Metode Pembayaran</h3>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <label style="border:1.5px solid var(--terra-600); background:var(--terra-100); padding:14px 16px; border-radius:var(--radius-card); display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <input type="radio" name="payMethod" value="qris" checked onchange="togglePayDetails('qris')" style="accent-color:var(--terra-600); width:18px; height:18px;">
+              <div>
+                <strong style="font-size:14px; color:var(--ink-900);">QRIS Instan</strong>
+                <div style="font-size:12px; color:var(--ink-700);">BCA, Mandiri, BRI, BNI, GoPay, OVO, DANA, ShopeePay</div>
+              </div>
+            </div>
+            <span style="font-size:11px; font-weight:700; color:var(--ok-600); background:#E8F5E9; padding:4px 8px; border-radius:var(--radius-pill); border:1px solid #C8E6C9;">Bebas Biaya</span>
+          </label>
+
+          <label style="border:1px solid var(--line-300); background:var(--surface); padding:14px 16px; border-radius:var(--radius-card); display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <input type="radio" name="payMethod" value="ewallet" onchange="togglePayDetails('ewallet')" style="accent-color:var(--terra-600); width:18px; height:18px;">
+              <div>
+                <strong style="font-size:14px; color:var(--ink-900);">E-Wallet</strong>
+                <div style="font-size:12px; color:var(--ink-700);">GoPay, OVO, DANA, ShopeePay</div>
+              </div>
+            </div>
+          </label>
+
+          <label style="border:1px solid var(--line-300); background:var(--surface); padding:14px 16px; border-radius:var(--radius-card); display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <input type="radio" name="payMethod" value="va" onchange="togglePayDetails('va')" style="accent-color:var(--terra-600); width:18px; height:18px;">
+              <div>
+                <strong style="font-size:14px; color:var(--ink-900);">Virtual Account (Transfer Bank)</strong>
+                <div style="font-size:12px; color:var(--ink-700);">BCA, Mandiri, BNI, BRI, Permata</div>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <!-- QRIS Mockup -->
+        <div id="qrisBox" style="margin-top:16px; padding:16px; background:var(--sand-50); border:1px solid var(--line-300); border-radius:var(--radius-card); text-align:center;">
+          <div style="display:inline-block; font-size:11px; font-weight:700; color:#92400E; background:#FEF3C7; border:1px solid #FCD34D; border-radius:4px; padding:2px 8px; margin-bottom:8px;">DATA DEMONSTRASI — BUKAN PENAGIHAN RIIL</div>
+          <div style="font-size:12px; font-weight:700; color:var(--ink-700); margin-bottom:8px;">
+            <i class="fa-regular fa-clock" style="color:var(--amber-500);"></i> Selesaikan dalam: <span id="qrisCountdown" style="color:var(--terra-600); font-variant-numeric:tabular-nums; font-weight:700;">14:59</span>
+          </div>
+          <div style="width:130px; height:130px; background:#fff; border:1px solid var(--line-300); border-radius:8px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:8px;">
+            <i class="fa-solid fa-qrcode" style="font-size:90px; color:var(--ink-900);"></i>
+          </div>
+          <div style="font-size:12px; color:var(--ink-700);">Pindai kode QRIS menggunakan m-Banking atau aplikasi E-Wallet Anda (Simulasi).</div>
+        </div>
+
+        <!-- VA Mockup -->
+        <div id="vaBox" style="display:none; margin-top:16px; padding:16px; background:var(--sand-50); border:1px solid var(--line-300); border-radius:var(--radius-card);">
+          <div style="display:inline-block; font-size:11px; font-weight:700; color:#92400E; background:#FEF3C7; border:1px solid #FCD34D; border-radius:4px; padding:2px 8px; margin-bottom:8px;">DATA DEMONSTRASI — VIRTUAL ACCOUNT SIMULASI</div>
+          <div style="font-size:12px; color:var(--ink-700); margin-bottom:6px;">Nomor Virtual Account Rekening Penampungan:</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; background:#fff; padding:10px 14px; border:1px solid var(--line-300); border-radius:8px;">
+            <code id="vaNumberText" style="font-size:15px; font-weight:700; color:var(--ink-900); letter-spacing:1px;">8801 2938 4819 0291</code>
+            <button type="button" id="btnCopyVa" onclick="navigator.clipboard.writeText('8801293848190291'); this.innerText='Tersalin!';" style="padding:6px 12px; background:var(--terra-100); color:var(--terra-600); border:1px solid var(--line-300); border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;">
+              <i class="fa-regular fa-copy"></i> Salin VA
+            </button>
+          </div>
+        </div>
+
+        <!-- Ewallet Mockup -->
+        <div id="ewalletBox" style="display:none; margin-top:16px; padding:16px; background:var(--sand-50); border:1px solid var(--line-300); border-radius:var(--radius-card); text-align:center;">
+          <div style="display:inline-block; font-size:11px; font-weight:700; color:#92400E; background:#FEF3C7; border:1px solid #FCD34D; border-radius:4px; padding:2px 8px; margin-bottom:8px;">SIMULASI INTERNAL — TIDAK MENGHUBUNGI E-WALLET RIIL</div>
+          <div style="font-size:13px; color:var(--ink-900); font-weight:700; margin-bottom:4px;">Notifikasi Simulasi Aplikasi E-Wallet</div>
+          <div style="font-size:12px; color:var(--ink-700);">Permintaan pembayaran disimulasikan secara internal untuk pengujian pilot.</div>
+        </div>
+      </div>
+
       <div id="orderActionCard" class="card">
-        <h3 class="card-title"><i class="fa-solid fa-lock"></i> Selesaikan Pemesanan &amp; Kunci Dana</h3>
+        <h3 class="card-title"><i class="fa-solid fa-lock"></i> Selesaikan Pemesanan &amp; Kunci Dana (Simulasi)</h3>
 
         <div class="form-group">
-          <label for="buyerSelect">Pilih Identitas Akun Pembeli (Pilot Mode):</label>
+          <label for="buyerSelect" style="font-weight:700; font-size:13px; color:var(--ink-900); display:flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-flask-vial" style="color:var(--amber-500);"></i> Akun Pengujian Pilot (Internal / Demo Test Only):
+          </label>
           <select id="buyerSelect" class="form-control mono">
-            <option value="usr-buyer-01">usr-buyer-01 (Siti Rahmawati — Pembeli Terdaftar)</option>
-            <option value="usr-buyer-02">usr-buyer-02 (Ahmad Fauzi — Pembeli Terdaftar)</option>
+            <option value="usr-buyer-01">usr-buyer-01 (Siti Rahmawati — Akun Pengujian Pilot)</option>
+            <option value="usr-buyer-02">usr-buyer-02 (Ahmad Fauzi — Akun Pengujian Pilot)</option>
           </select>
         </div>
 
         <div class="notice-box notice-info" style="font-size: 12px;">
           <i class="fa-solid fa-circle-info"></i>
           <div>
-            <strong>Keterbukaan Integrasi Gateway:</strong> Pada tahap pilot saat ini, transaksi diproses melalui simulasi rekening penampungan internal Tikum. Dana ditahan di ledger kami hingga PIC lapangan mencatat verifikasi masuk venue.
+            <strong>Keterbukaan Integrasi Gateway:</strong> Pada tahap pilot saat ini, transaksi diproses melalui simulasi rekening penampungan internal Tikum. Tidak ada penagihan riil ke gateway pembayaran eksternal.
           </div>
         </div>
 
@@ -179,10 +272,10 @@
 
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px;">
           <button id="btnOrderSubmit" class="btn" style="flex: 1; min-width: 220px; padding: 14px; font-size: 14px;" onclick="handleCreateOrder()">
-            <i class="fa-solid fa-lock"></i> Beli Langsung (Harga Normal)
+            <i class="fa-solid fa-flask"></i> Simulasikan Pemesanan &amp; Kunci Dana (Demo)
           </button>
           <button id="btnOpenOfferModal" class="btn btn-secondary" style="flex: 1; min-width: 220px; padding: 14px; font-size: 14px; border-color: #3b82f6; color: #60a5fa;" onclick="openOfferModal()">
-            <i class="fa-solid fa-handshake"></i> Ajukan Tawaran Harga
+            <i class="fa-solid fa-handshake"></i> Ajukan Tawaran Harga (Demo)
           </button>
         </div>
       </div>
@@ -194,8 +287,8 @@
             <i class="fa-solid fa-check-double"></i>
           </div>
           <div>
-            <h3 style="font-size: 18px; font-weight: 700; color: #34d399; margin: 0;">Pesanan Berhasil Dicatat di Ledger</h3>
-            <div style="font-size: 13px; color: var(--text-muted);">Dana telah diamankan di rekening penampungan transaksi internal Tikum.</div>
+            <h3 style="font-size: 18px; font-weight: 700; color: #34d399; margin: 0;">Simulasi Pesanan Berhasil Dicatat di Ledger Internal</h3>
+            <div style="font-size: 13px; color: var(--text-muted);">Status demonstrasi: Dana ditandai HELD pada sistem ledger internal Tikum (tidak ada transaksi riil ke gateway pembayaran).</div>
           </div>
         </div>
 
@@ -324,7 +417,7 @@
     <div class="footer-container">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <img src="/assets/tikum-mark-p2p.svg" width="20" height="20" alt="Tikum"> TIKUM — by SHINERVA
+          <img src="/assets/tikum-mark-2color.svg" width="20" height="20" alt="Tikum"> TIKUM — by SHINERVA
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
           Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.

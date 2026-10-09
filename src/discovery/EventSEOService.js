@@ -203,8 +203,8 @@ class EventSEOService {
                     <strong style="font-size:13.5px; color:var(--color-text-secondary, #4B5563);">Rp ${fee.toLocaleString('id-ID')}</strong>
                   </div>
                   <div>
-                    <span style="color:var(--color-brand-primary, #5227CC); font-weight:700; display:block; margin-bottom:2px;">Total Pembeli (All-In)</span>
-                    <strong style="font-size:15px; font-weight:800; color:var(--color-brand-primary, #5227CC);">Rp ${totalPrice.toLocaleString('id-ID')}</strong>
+                    <span style="color:var(--color-brand-primary, #B8472F); font-weight:700; display:block; margin-bottom:2px;">Total Pembeli (All-In)</span>
+                    <strong style="font-size:15px; font-weight:800; color:var(--color-brand-primary, #B8472F);">Rp ${totalPrice.toLocaleString('id-ID')}</strong>
                   </div>
                 </div>
 

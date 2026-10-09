@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 52" width="200" height="52" aria-label="tikum logo 2-color">
+  <!-- 2-Color Mark -->
+  <g transform="translate(2, 2) scale(0.24)">
+    <path d="M 123.74 40.57 A 64 64 0 1 1 159.43 76.26 A 26 26 0 0 1 123.74 40.57 Z" fill="#B8472F" />
+    <circle cx="146" cy="54" r="14" fill="#F2A33A" />
+  </g>
+  <!-- Lowercase Wordmark in Plus Jakarta Sans 700 -->
+  <text x="58" y="36" font-family="'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-size="34" font-weight="700" letter-spacing="-0.03em" fill="#2B2724">tikum</text>
+</svg>
