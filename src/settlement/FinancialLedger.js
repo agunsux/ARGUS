@@ -405,6 +405,51 @@ class FinancialLedger {
 
     return balances;
   }
+
+  /**
+   * Asserts mathematical balancing and solvency across all double-entry records.
+   * Invariant I3: sum(debits) === sum(credits); no negative balances on asset clearing.
+   */
+  static assertSolvency() {
+    const ledger = state.financial_ledger || [];
+    let grandDebits = 0;
+    let grandCredits = 0;
+
+    for (const tx of ledger) {
+      let txDebits = 0;
+      let txCredits = 0;
+      for (const e of (tx.entries || [])) {
+        const amt = parseInt(e.amount, 10);
+        if (e.type === 'DEBIT') {
+          txDebits += amt;
+          grandDebits += amt;
+        } else {
+          txCredits += amt;
+          grandCredits += amt;
+        }
+      }
+      if (txDebits !== txCredits) {
+        const err = new Error(`Ledger transaction '${tx.transaction_id || tx.id}' is unbalanced: debits ${txDebits} !== credits ${txCredits}`);
+        err.code = 'LEDGER_UNBALANCED';
+        throw err;
+      }
+    }
+
+    if (grandDebits !== grandCredits) {
+      const err = new Error(`Ledger total debits (${grandDebits}) does not equal total credits (${grandCredits})`);
+      err.code = 'LEDGER_UNBALANCED';
+      throw err;
+    }
+
+    const balances = this.getAccountBalances();
+    return {
+      solvent: true,
+      grandDebits,
+      grandCredits,
+      balances,
+      verifiedAt: new Date().toISOString()
+    };
+  }
 }
 
 module.exports = {

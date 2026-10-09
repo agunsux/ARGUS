@@ -11,7 +11,7 @@
  */
 
 const crypto = require('crypto');
-const { PaymentProvider } = require('./PaymentProvider');
+const { PaymentProvider, CapabilityUnsupportedError } = require('./PaymentProvider');
 
 const IPAYMU_STATUS = {
   PENDING_VERIFICATION: 'PENDING_VERIFICATION',
@@ -87,6 +87,7 @@ class IPaymuProvider extends PaymentProvider {
       message: readiness.is_ready
         ? 'iPaymu provider fully verified and active'
         : 'PAYMENT PROVIDER: PENDING VERIFICATION — Real-money activation gated until merchant approval is complete',
+      tier: 'BACKUP_1',
       readiness: readiness.checklist
     };
   }
@@ -214,13 +215,15 @@ class IPaymuProvider extends PaymentProvider {
         orderId,
         providerRef,
         status: 'PENDING_VERIFICATION',
-        providerStatus: 'PROVIDER_UNVERIFIED'
+        providerStatus: 'PROVIDER_UNVERIFIED',
+        simulated: true
       };
     }
     return {
       orderId,
       providerRef,
-      status: 'PENDING'
+      status: 'PENDING',
+      simulated: true
     };
   }
 
@@ -260,6 +263,14 @@ class IPaymuProvider extends PaymentProvider {
       cancelled: true,
       reason
     };
+  }
+
+  async createPayout() {
+    throw new CapabilityUnsupportedError(this.getName(), 'payout', 'NOT_ENABLED: iPaymu automated payout not active');
+  }
+
+  async getPayoutStatus() {
+    throw new CapabilityUnsupportedError(this.getName(), 'payout', 'NOT_ENABLED: iPaymu automated payout not active');
   }
 
   getCapabilities() {

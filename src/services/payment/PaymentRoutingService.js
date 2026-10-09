@@ -2,13 +2,18 @@
  * TIKUM / ARGUS — Payment Routing & Safe Failover Architecture
  *
  * Strategic Architecture:
- * 1. Multi-provider tiering:
- *    - PRIMARY: DOKU (Escrow & Hold & Release Settlement)
- *    - BACKUP #1: MIDTRANS (Snap, Iris, Core API)
- *    - BACKUP #2: XENDIT (xenPlatform, Invoices, Disbursements)
+ * 1. Multi-provider tiering (Decided Priority Order):
+ *    - 1) PRIMARY: DOKU (Escrow & Hold & Release Settlement)
+ *    - 2) BACKUP #1: IPAYMU (Verified payment rail)
+ *    - 3) BACKUP #2: MIDTRANS (Snap, Iris, Core API)
+ *    - 4) BACKUP #3: XENDIT (xenPlatform, Invoices, Disbursements)
+ *    - REMOVED: RCB (Completely deleted from architecture)
+ *
  * 2. Strict failover safety invariants (Section 13):
- *    - Allowed failover: payment initialization / checkout creation fails BEFORE payment submission.
- *    - Unsafe automatic failover: provider timeout, ambiguous status, missing webhook, unconfirmed payment.
+ *    - A payment attempt is PINNED to one provider for its lifetime (provider + provider_ref stored).
+ *    - Never silently re-route an in-flight payment.
+ *    - Failover only when creating a NEW attempt, driven by circuit breaker (failures/timeouts/5xx)
+ *      or explicit ops kill-switch per provider.
  *    - INVARIANT: Never fail over if previous attempt is in PENDING, UNKNOWN, or SUCCESS state.
  *    - INVARIANT: Never silently downgrade an escrow-required transaction to an ordinary non-escrow rail.
  *    - Zero double-charging.
@@ -34,18 +39,19 @@ const PAYMENT_ATTEMPT_STATUS = {
   PENDING: 'PENDING',
   SUCCESS: 'SUCCESS',
   FAILED: 'FAILED',
-  EXPIRED: 'EXPIRED'
+  EXPIRED: 'EXPIRED',
+  SUPERSEDED: 'SUPERSEDED'
 };
 
-// Regional routing configuration matrix (Indonesia first, ASEAN extensible)
+// Regional routing configuration matrix (Priority: DOKU -> iPaymu -> Midtrans -> Xendit)
 const ROUTING_CONFIG = {
   ID: {
     primary: 'doku',
-    backup_1: 'midtrans',
-    backup_2: 'xendit',
-    backup_3: 'ipaymu',
-    secondary: 'midtrans',
-    fallback: 'xendit',
+    backup_1: 'ipaymu',
+    backup_2: 'midtrans',
+    backup_3: 'xendit',
+    secondary: 'ipaymu',
+    fallback: 'midtrans',
     allowedCurrencies: ['IDR']
   },
   SG: {
@@ -68,7 +74,91 @@ const ROUTING_CONFIG = {
   }
 };
 
+// Circuit Breakers state per provider
+const circuitBreakers = {
+  doku: { failures: 0, state: 'CLOSED', nextProbe: 0 },
+  ipaymu: { failures: 0, state: 'CLOSED', nextProbe: 0 },
+  midtrans: { failures: 0, state: 'CLOSED', nextProbe: 0 },
+  xendit: { failures: 0, state: 'CLOSED', nextProbe: 0 }
+};
+
+// Ops kill-switches per provider (can be toggled at runtime or via environment)
+const opsKillSwitches = {
+  doku: false,
+  ipaymu: false,
+  midtrans: false,
+  xendit: false
+};
+
 class PaymentRoutingService {
+  /**
+   * Toggles operational kill-switch for a specific provider
+   */
+  static setKillSwitch(providerName, disabled = true) {
+    const p = (providerName || '').toLowerCase();
+    if (opsKillSwitches[p] !== undefined) {
+      opsKillSwitches[p] = Boolean(disabled);
+    }
+  }
+
+  /**
+   * Records a provider failure (5xx, timeout, network error) for circuit breaker
+   */
+  static recordProviderFailure(providerName) {
+    const p = (providerName || '').toLowerCase();
+    const cb = circuitBreakers[p];
+    if (!cb) return;
+
+    cb.failures += 1;
+    if (cb.failures >= 5) {
+      cb.state = 'OPEN';
+      cb.nextProbe = Date.now() + 30000; // 30s probe window
+    }
+  }
+
+  /**
+   * Records a provider success, resetting the circuit breaker
+   */
+  static recordProviderSuccess(providerName) {
+    const p = (providerName || '').toLowerCase();
+    const cb = circuitBreakers[p];
+    if (!cb) return;
+
+    cb.failures = 0;
+    cb.state = 'CLOSED';
+    cb.nextProbe = 0;
+  }
+
+  /**
+   * Checks whether a provider is operational and available
+   */
+  static isProviderAvailable(providerName) {
+    const p = (providerName || '').toLowerCase();
+    if (opsKillSwitches[p] || process.env[`KILL_SWITCH_${p.toUpperCase()}`] === 'true') {
+      return false;
+    }
+
+    const cb = circuitBreakers[p];
+    if (!cb) return true;
+
+    if (cb.state === 'OPEN') {
+      if (Date.now() >= cb.nextProbe) {
+        cb.state = 'HALF_OPEN';
+        return true;
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  static getCircuitBreakerStatus() {
+    return {
+      circuit_breakers: { ...circuitBreakers },
+      kill_switches: { ...opsKillSwitches }
+    };
+  }
+
   /**
    * Resolves appropriate provider deterministically based on country, currency, channel, and tier
    */
@@ -132,7 +222,53 @@ class PaymentRoutingService {
   }
 
   /**
-   * Records a deterministic payment attempt in database state & durable disk store
+   * Resolves the next available provider taking circuit breakers and kill switches into account.
+   * Priority: DOKU -> iPaymu -> Midtrans -> Xendit
+   */
+  static resolveNextAvailableProvider({
+    countryCode = 'ID',
+    currency = 'IDR',
+    requiresEscrow = false,
+    orderId = null
+  } = {}) {
+    // If order already has an active pinned attempt, check it first
+    if (orderId && state.payment_attempts) {
+      const activeAttempt = state.payment_attempts.find(
+        a => a.orderId === orderId && (a.status === PAYMENT_ATTEMPT_STATUS.PENDING || a.status === PAYMENT_ATTEMPT_STATUS.UNKNOWN)
+      );
+      if (activeAttempt) {
+        const pinnedProvider = paymentManager.getProvider(activeAttempt.provider);
+        return {
+          providerName: activeAttempt.provider,
+          tier: 'PINNED',
+          provider: pinnedProvider,
+          isPinned: true,
+          attempt: activeAttempt
+        };
+      }
+    }
+
+    const tiers = ['PRIMARY', 'BACKUP_1', 'BACKUP_2', 'BACKUP_3'];
+    for (const tier of tiers) {
+      try {
+        const resolved = this.resolveProvider({ countryCode, currency, tier, requiresEscrow });
+        if (this.isProviderAvailable(resolved.providerName)) {
+          return resolved;
+        }
+      } catch (err) {
+        if (err.code === 'ESCROW_CAPABILITY_REQUIRED') {
+          // Escrow required cannot route to non-escrow rail; stop failover
+          throw err;
+        }
+      }
+    }
+
+    throw new Error('All configured payment providers are currently unavailable or circuit-broken.');
+  }
+
+  /**
+   * Records a deterministic payment attempt in database state & durable disk store.
+   * Enforces provider pinning for the attempt's lifetime.
    */
   static recordPaymentAttempt({
     paymentAttemptId,
@@ -184,6 +320,7 @@ class PaymentRoutingService {
   /**
    * Asserts whether failover to another provider is safely permissible.
    * INVARIANT: Never failover if prior attempt status is UNKNOWN or PENDING!
+   * A payment attempt is PINNED to one provider for its lifetime.
    */
   static assertFailoverAllowed(orderId, requiresEscrow = false, targetProvider = null) {
     if (!state.payment_attempts) return true;
@@ -228,5 +365,7 @@ module.exports = {
   PaymentRoutingService,
   PROVIDER_TIER,
   PAYMENT_ATTEMPT_STATUS,
-  ROUTING_CONFIG
+  ROUTING_CONFIG,
+  circuitBreakers,
+  opsKillSwitches
 };

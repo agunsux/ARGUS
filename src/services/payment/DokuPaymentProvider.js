@@ -265,26 +265,35 @@ class DokuPaymentProvider extends PaymentProvider {
    * Generates SHA-256 Base64 digest of request body
    */
   generateDigest(rawBody = '') {
-    return crypto.createHash('sha256').update(rawBody || '').digest('base64');
+    const content = typeof rawBody === 'string' ? rawBody : (rawBody ? JSON.stringify(rawBody) : '');
+    return crypto.createHash('sha256').update(content, 'utf8').digest('base64');
   }
 
   /**
    * Generates official DOKU HMAC-SHA256 signature
+   * Component formula per developers.doku.com:
+   * POST: Client-Id, Request-Id, Request-Timestamp, Request-Target, Digest
+   * GET:  Client-Id, Request-Id, Request-Timestamp, Request-Target
    */
-  generateSignature({ requestId, requestTimestamp, requestTarget, rawBody = '', digest = null, secretKey = null }) {
+  generateSignature({ requestId, requestTimestamp, requestTarget, rawBody = null, digest = null, secretKey = null, isGet = false }) {
     const key = secretKey || this.secretKey;
     if (!key) {
       throw new Error('DOKU secret key is not configured');
     }
-    const effDigest = digest || this.generateDigest(rawBody);
-    const signatureComponent = [
+
+    const components = [
       `Client-Id:${this.clientId || ''}`,
       `Request-Id:${requestId}`,
       `Request-Timestamp:${requestTimestamp}`,
-      `Request-Target:${requestTarget}`,
-      `Digest:${effDigest}`
-    ].join('\n');
+      `Request-Target:${requestTarget}`
+    ];
 
+    if (!isGet && (digest !== null || rawBody !== null)) {
+      const effDigest = digest !== null ? digest : this.generateDigest(rawBody || '');
+      components.push(`Digest:${effDigest}`);
+    }
+
+    const signatureComponent = components.join('\n');
     const hmac = crypto.createHmac('sha256', key)
       .update(signatureComponent)
       .digest('base64');
@@ -293,21 +302,93 @@ class DokuPaymentProvider extends PaymentProvider {
   }
 
   /**
-   * Internal HTTP POST client for DOKU API
+   * Builds an authenticated, signed HTTP request object for DOKU API
+   * Signs the exact serialized wire string once.
    */
-  _httpPost({ url, headers, body }) {
+  buildSignedRequest({
+    method = 'GET',
+    target,
+    body = null,
+    requestId = null,
+    requestTimestamp = null,
+    secretKey = null
+  }) {
+    const { v4: uuidv4 } = require('uuid');
+    const reqId = requestId || uuidv4();
+    const reqTimestamp = requestTimestamp || (new Date().toISOString().slice(0, 19) + 'Z');
+    const key = secretKey || this.secretKey;
+    if (!key) {
+      throw new Error('DOKU secret key is not configured');
+    }
+
+    const upperMethod = (method || 'GET').toUpperCase();
+    const hasBody = Boolean(body) && (upperMethod === 'POST' || upperMethod === 'PUT' || upperMethod === 'PATCH');
+    const rawBody = hasBody ? (typeof body === 'string' ? body : JSON.stringify(body)) : null;
+
+    let digest = null;
+    const components = [
+      `Client-Id:${this.clientId || ''}`,
+      `Request-Id:${reqId}`,
+      `Request-Timestamp:${reqTimestamp}`,
+      `Request-Target:${target}`
+    ];
+
+    if (hasBody) {
+      digest = this.generateDigest(rawBody);
+      components.push(`Digest:${digest}`);
+    }
+
+    const componentString = components.join('\n');
+    const hmac = crypto.createHmac('sha256', key)
+      .update(componentString)
+      .digest('base64');
+    const signature = `HMACSHA256=${hmac}`;
+
+    const headers = {
+      'Client-Id': this.clientId || '',
+      'Request-Id': reqId,
+      'Request-Timestamp': reqTimestamp,
+      'Signature': signature
+    };
+
+    if (hasBody) {
+      headers['Digest'] = digest;
+      headers['Content-Type'] = 'application/json';
+      headers['Content-Length'] = Buffer.byteLength(rawBody, 'utf8');
+    }
+
+    const baseUrl = (this.apiBaseUrl || 'https://api-sandbox.doku.com').replace(/\/+$/, '');
+
+    return {
+      method: upperMethod,
+      target,
+      url: `${baseUrl}${target}`,
+      headers,
+      body: rawBody,
+      componentString,
+      digest,
+      signature
+    };
+  }
+
+  /**
+   * General HTTP client for DOKU API (supports GET and POST)
+   */
+  _httpRequest({ url, method = 'GET', headers = {}, body = null, timeout = 10000 }) {
     return new Promise((resolve, reject) => {
       const parsedUrl = new URL(url);
       const isHttps = parsedUrl.protocol === 'https:';
       const transport = isHttps ? require('https') : require('http');
 
+      const reqHeaders = { ...headers };
+      if (body && !reqHeaders['Content-Length'] && !reqHeaders['content-length']) {
+        reqHeaders['Content-Length'] = Buffer.byteLength(body, 'utf8');
+      }
+
       const req = transport.request(parsedUrl, {
-        method: 'POST',
-        headers: {
-          ...headers,
-          'Content-Length': Buffer.byteLength(body)
-        },
-        timeout: 10000
+        method: method.toUpperCase(),
+        headers: reqHeaders,
+        timeout
       }, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
@@ -327,16 +408,22 @@ class DokuPaymentProvider extends PaymentProvider {
 
       req.on('timeout', () => {
         req.destroy();
-        reject(new Error('DOKU API request timed out (10s)'));
+        reject(new Error(`DOKU API request timed out (${timeout / 1000}s)`));
       });
 
       req.on('error', (err) => {
         reject(new Error(`DOKU API network error: ${err.message}`));
       });
 
-      req.write(body);
+      if (body) {
+        req.write(body);
+      }
       req.end();
     });
+  }
+
+  _httpPost({ url, headers, body }) {
+    return this._httpRequest({ url, method: 'POST', headers, body });
   }
 
   _handleCreatePaymentResponse({ orderId, gross, currency, channel, requiresEscrow, effIdempotency, effCorrelation, invoiceNumber, response }) {
@@ -459,72 +546,19 @@ class DokuPaymentProvider extends PaymentProvider {
     };
 
     const rawBody = JSON.stringify(payload);
-    const requestTarget = '/checkout/v1/payment';
-    const baseUrl = (this.apiBaseUrl || 'https://api-sandbox.doku.com').replace(/\/+$/, '');
-    const digest = this.generateDigest(rawBody);
+    const signedReq = this.buildSignedRequest({
+      method: 'POST',
+      target: '/checkout/v1/payment',
+      body: payload,
+      requestId,
+      requestTimestamp
+    });
 
-    const tryKeys = [this.secretKey];
-    if (this.apiKey && this.apiKey !== this.secretKey) {
-      tryKeys.push(this.apiKey);
-    }
-    if (process.env.DOKU_PUBLIC_KEY && !tryKeys.includes(process.env.DOKU_PUBLIC_KEY.trim())) {
-      tryKeys.push(process.env.DOKU_PUBLIC_KEY.trim());
-    }
-
-    const headerOptions = [false, true];
-    let lastRes = null;
-    let response = null;
-    const attemptLog = [];
-
-    for (const key of tryKeys) {
-      for (const withDigest of headerOptions) {
-        const signature = this.generateSignature({
-          requestId,
-          requestTimestamp,
-          requestTarget,
-          digest,
-          secretKey: key
-        });
-
-        const reqHeaders = {
-          'Client-Id': this.clientId,
-          'Request-Id': requestId,
-          'Request-Timestamp': requestTimestamp,
-          'Signature': signature,
-          'Content-Type': 'application/json'
-        };
-        if (withDigest) {
-          reqHeaders['Digest'] = digest;
-        }
-
-        const res = await this._httpPost({
-          url: `${baseUrl}${requestTarget}`,
-          headers: reqHeaders,
-          body: rawBody
-        });
-
-        attemptLog.push({
-          keyPrefix: key.slice(0, 4) + '...' + key.slice(-4),
-          withDigest,
-          statusCode: res.statusCode,
-          error: res.json?.error?.message || res.json?.message || null
-        });
-
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          response = res;
-          break;
-        }
-        lastRes = res;
-      }
-      if (response) break;
-    }
-
-    if (!response) {
-      response = lastRes;
-      if (response && response.json) {
-        response.json.attempts = attemptLog;
-      }
-    }
+    const response = await this._httpPost({
+      url: signedReq.url,
+      headers: signedReq.headers,
+      body: signedReq.body
+    });
 
     return this._handleCreatePaymentResponse({
       orderId,
@@ -542,17 +576,61 @@ class DokuPaymentProvider extends PaymentProvider {
   /**
    * Queries payment status on DOKU rail
    */
-  async getPaymentStatus({ orderId, providerRef }) {
-    if (this.allowSimulation || !this.secretKey) {
+  async getPaymentStatus({ orderId, providerRef, invoiceNumber }) {
+    const inv = invoiceNumber || providerRef || `INV-DOKU-${orderId}`;
+    if (this.allowSimulation || !this.secretKey || !this.clientId) {
       return {
         orderId,
-        providerRef,
+        providerRef: inv,
         status: MONEY_STATE.PAYMENT_PENDING,
         amount: null,
-        provider: this.getName()
+        provider: this.getName(),
+        simulated: true
       };
     }
-    throw new Error('Live DOKU payment status inquiry awaiting production credentials.');
+
+    const target = `/orders/v1/status/${inv}`;
+    const signedReq = this.buildSignedRequest({
+      method: 'GET',
+      target
+    });
+
+    const res = await this._httpRequest({
+      url: signedReq.url,
+      method: signedReq.method,
+      headers: signedReq.headers
+    });
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      const err = new Error(`DOKU Status Inquiry API error: HTTP ${res.statusCode}`);
+      err.code = 'DOKU_STATUS_ERROR';
+      err.status = res.statusCode;
+      err.details = res.json;
+      throw err;
+    }
+
+    const data = res.json || {};
+    const transaction = data.transaction || {};
+    const rawStatus = (transaction.status || data.status || '').toUpperCase();
+    let canonicalStatus = MONEY_STATE.PAYMENT_PENDING;
+    if (rawStatus === 'SUCCESS' || rawStatus === 'SETTLED' || rawStatus === 'PAID') {
+      canonicalStatus = MONEY_STATE.PAID;
+    } else if (rawStatus === 'FAILED') {
+      canonicalStatus = MONEY_STATE.PAYMENT_FAILED;
+    } else if (rawStatus === 'EXPIRED') {
+      canonicalStatus = MONEY_STATE.PAYMENT_EXPIRED;
+    }
+
+    return {
+      orderId,
+      providerRef: inv,
+      status: canonicalStatus,
+      rawStatus,
+      amount: parseInt(data.order?.amount || transaction.amount || 0, 10),
+      currency: data.order?.currency || 'IDR',
+      provider: this.getName(),
+      rawResponse: data
+    };
   }
 
   /**
@@ -750,6 +828,19 @@ class DokuPaymentProvider extends PaymentProvider {
     }
 
     throw new Error('Live DOKU payout disburse API awaiting production credentials.');
+  }
+
+  /**
+   * Queries payout status on DOKU rail
+   */
+  async getPayoutStatus({ payoutId, providerRef }) {
+    const id = payoutId || providerRef;
+    return {
+      payoutId: id,
+      status: 'DISBURSED',
+      provider: this.getName(),
+      simulated: true
+    };
   }
 
   /**

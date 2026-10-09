@@ -97,6 +97,13 @@ class PaymentProvider {
   }
 
   /**
+   * Alias for getCapabilities() matching standardized PaymentProvider interface
+   */
+  capabilities() {
+    return this.getCapabilities();
+  }
+
+  /**
    * Returns supported payment channels with escrow capability metadata.
    * @returns {Array<{ code: string, name: string, type: string, isEscrowSupported: boolean }>}
    */
@@ -118,24 +125,24 @@ class PaymentProvider {
   /**
    * Creates a payment intent / invoice on the provider rail.
    */
-  async createPayment({
-    orderId,
-    amount,
-    currency = 'IDR',
-    channel,
-    buyer = {},
-    requiresEscrow = true,
-    metadata = {},
-    idempotencyKey = null,
-    correlationId = null
-  }) {
+  async createPayment(orderOrParams, maybeMethod) {
+    if (orderOrParams && typeof orderOrParams === 'object' && !orderOrParams.orderId && maybeMethod) {
+      return this.createPayment({
+        orderId: orderOrParams.id || orderOrParams.order_id,
+        amount: orderOrParams.buyer_total || orderOrParams.amount,
+        channel: maybeMethod
+      });
+    }
     throw new Error('createPayment() must be implemented by payment provider');
   }
 
   /**
    * Queries provider for current payment status.
    */
-  async getPaymentStatus({ orderId, providerRef }) {
+  async getPaymentStatus(refOrParams) {
+    if (typeof refOrParams === 'string') {
+      return this.getPaymentStatus({ providerRef: refOrParams });
+    }
     throw new Error('getPaymentStatus() must be implemented by payment provider');
   }
 
@@ -155,6 +162,25 @@ class PaymentProvider {
   }
 
   /**
+   * Verifies and parses incoming webhook request in a single call.
+   */
+  verifyAndParseWebhook(req = {}) {
+    const headers = req.headers || {};
+    const body = req.body || {};
+    const rawBodyBuffer = req.rawBodyBuffer || req.rawBody || null;
+
+    const isValid = this.verifyWebhook(headers, body, rawBodyBuffer);
+    if (!isValid) {
+      const err = new Error(`Invalid webhook signature for provider '${this.getName()}'`);
+      err.code = 'INVALID_WEBHOOK_SIGNATURE';
+      err.status = 401;
+      throw err;
+    }
+
+    return this.parseWebhook(body, headers);
+  }
+
+  /**
    * Issues refund to buyer through the provider adapter.
    */
   async requestRefund({ orderId, providerRef, amount, reason, idempotencyKey }) {
@@ -163,6 +189,20 @@ class PaymentProvider {
       throw new CapabilityUnsupportedError(this.getName(), 'refund');
     }
     throw new Error('requestRefund() must be implemented by payment provider');
+  }
+
+  /**
+   * Standard refund method supporting both object and positional (ref, amount, idemKey) signatures
+   */
+  async refund(refOrParams, maybeAmount, maybeIdemKey) {
+    if (typeof refOrParams === 'object' && refOrParams !== null) {
+      return this.requestRefund(refOrParams);
+    }
+    return this.requestRefund({
+      providerRef: refOrParams,
+      amount: maybeAmount,
+      idempotencyKey: maybeIdemKey
+    });
   }
 
   /**
@@ -201,21 +241,31 @@ class PaymentProvider {
   /**
    * Creates payout / disbursement to seller bank account.
    */
-  async createPayout({ orderId, sellerId, amount, bankAccount = {}, idempotencyKey }) {
+  async createPayout(firstArg, maybeAmount, maybeIdemKey) {
     const caps = this.getCapabilities();
     if (!caps.payout) {
       throw new CapabilityUnsupportedError(this.getName(), 'payout');
     }
-    throw new Error('createPayout() must be implemented by payment provider');
+    if (typeof firstArg === 'object' && firstArg !== null && (firstArg.orderId || firstArg.bankAccount)) {
+      throw new Error('createPayout() must be implemented by payment provider');
+    }
+    return this.createPayout({
+      bankAccount: firstArg,
+      amount: maybeAmount,
+      idempotencyKey: maybeIdemKey
+    });
   }
 
   /**
    * Queries payout status on provider rail.
    */
-  async getPayoutStatus({ payoutId, providerRef }) {
+  async getPayoutStatus(refOrParams) {
     const caps = this.getCapabilities();
     if (!caps.payout) {
       throw new CapabilityUnsupportedError(this.getName(), 'payout');
+    }
+    if (typeof refOrParams === 'string') {
+      return this.getPayoutStatus({ payoutId: refOrParams, providerRef: refOrParams });
     }
     throw new Error('getPayoutStatus() must be implemented by payment provider');
   }
@@ -257,10 +307,6 @@ class PaymentProvider {
   // Backward compatibility alias for existing code
   async capture(params) {
     return this.createHold(params);
-  }
-
-  async refund(params) {
-    return this.requestRefund(params);
   }
 
   async cancel({ orderId, providerRef, reason }) {

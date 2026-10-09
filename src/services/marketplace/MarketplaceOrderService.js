@@ -204,7 +204,23 @@ class MarketplaceOrderService {
    * @returns {Object} Payment session details
    */
   static async initiatePayment({ orderId, buyerId, channel, providerName = 'test_provider' }) {
-    const order = (state.orders || []).find(o => o.id === orderId);
+    let order = (state.orders || []).find(o => o.id === orderId);
+    if (!order) {
+      try {
+        const { getMoneyRepository } = require('../../storage');
+        const moneyRepo = getMoneyRepository();
+        if (moneyRepo) {
+          const dbOrder = await moneyRepo.getOrderById(orderId);
+          if (dbOrder) {
+            if (!state.orders) state.orders = [];
+            state.orders.push(dbOrder);
+            order = dbOrder;
+          }
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
+      }
+    }
     if (!order) {
       const err = new Error(`Order '${orderId}' not found`);
       err.code = 'ORDER_NOT_FOUND';
@@ -499,7 +515,23 @@ class MarketplaceOrderService {
    * Transitions order status within allowed state machine constraints.
    */
   static async transitionOrderStatus(orderId, targetStatus, actorId, reason = null) {
-    const order = (state.orders || []).find(o => o.id === orderId);
+    let order = (state.orders || []).find(o => o.id === orderId);
+    if (!order) {
+      try {
+        const { getMoneyRepository } = require('../../storage');
+        const moneyRepo = getMoneyRepository();
+        if (moneyRepo) {
+          const dbOrder = await moneyRepo.getOrderById(orderId);
+          if (dbOrder) {
+            if (!state.orders) state.orders = [];
+            state.orders.push(dbOrder);
+            order = dbOrder;
+          }
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
+      }
+    }
     if (!order) {
       const err = new Error(`Order '${orderId}' not found`);
       err.code = 'ORDER_NOT_FOUND';
@@ -519,6 +551,16 @@ class MarketplaceOrderService {
     const previousStatus = currentStatus;
     order.marketplace_status = targetStatus;
     order.updated_at = new Date().toISOString();
+
+    try {
+      const { getMoneyRepository } = require('../../storage');
+      const moneyRepo = getMoneyRepository();
+      if (moneyRepo) {
+        await moneyRepo.updateOrderStatus(orderId, targetStatus, { reason, actor_id: actorId });
+      }
+    } catch (dbErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw dbErr;
+    }
 
     await recordAuditLog('MARKETPLACE_ORDER', orderId, `STATUS_${targetStatus}`, actorId, {
       previous_status: previousStatus,

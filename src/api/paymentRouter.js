@@ -66,6 +66,24 @@ router.post('/v1/payments/create', async (req, res) => {
     }
 
     let order = state.orders ? state.orders.find(o => o.id === orderId) : null;
+    if (!order) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        if (moneyRepo) {
+          const dbOrder = await moneyRepo.getOrderById(orderId);
+          if (dbOrder) {
+            if (!state.orders) state.orders = [];
+            state.orders.push(dbOrder);
+            order = dbOrder;
+          }
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw err;
+        }
+      }
+    }
     if (!order && (orderId === 'order-doku-sandbox-gate-1' || orderId.startsWith('order-doku-sandbox-gate-') || orderId.startsWith('sandbox-') || orderId.startsWith('test-sandbox-'))) {
       const { DurableFinancialStore } = require('../settlement/DurableFinancialStore');
       order = {
@@ -103,6 +121,24 @@ router.post('/v1/payments/create', async (req, res) => {
       }
       DurableFinancialStore.persist('orders', state.orders);
       DurableFinancialStore.persist('escrows', state.escrows);
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        await moneyRepo.createOrder(order);
+        await moneyRepo.createEscrow({
+          id: `esc-${orderId}`,
+          order_id: orderId,
+          buyer_id: order.buyer_id,
+          seller_id: 'seller-1',
+          amount: order.buyer_total,
+          currency: 'IDR',
+          status: 'PENDING_PAYMENT',
+          held_by: 'TIKUM_INTERNAL_ESCROW',
+          is_sandbox: true
+        });
+      } catch (repoSyncErr) {
+        // Non-fatal in memory-fallback environments
+      }
     }
 
     if (!order) {
@@ -450,10 +486,24 @@ async function processWebhookRequest(req, res, targetProvider) {
 }
 
 /**
+ * ALL /api/v1/payments/webhook/rcb
+ * Explicit HTTP 410 Gone for decommissioned RCB provider (Phase E)
+ */
+router.all('/v1/payments/webhook/rcb', (req, res) => {
+  res.status(410).json({
+    error: 'Provider RCB has been permanently removed from Tikum live payment architecture.',
+    code: 'PROVIDER_GONE'
+  });
+});
+
+/**
  * POST /api/v1/payments/webhook/:provider
  * Multi-provider webhook endpoint (e.g. doku, midtrans, xendit)
  */
-router.post('/v1/payments/webhook/:provider', async (req, res) => {
+router.all('/v1/payments/webhook/:provider', async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed. Webhooks only accept POST.', code: 'METHOD_NOT_ALLOWED' });
+  }
   await processWebhookRequest(req, res, req.params.provider);
 });
 
@@ -461,7 +511,10 @@ router.post('/v1/payments/webhook/:provider', async (req, res) => {
  * POST /api/v1/payments/webhook
  * Default provider webhook endpoint (defaults to doku)
  */
-router.post('/v1/payments/webhook', async (req, res) => {
+router.all('/v1/payments/webhook', async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed. Webhooks only accept POST.', code: 'METHOD_NOT_ALLOWED' });
+  }
   const provider = req.header('x-provider') || paymentManager.defaultProvider || 'doku';
   await processWebhookRequest(req, res, provider);
 });

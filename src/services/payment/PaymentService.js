@@ -93,22 +93,22 @@ class PaymentService {
       },
       backup_providers: {
         backup_1: {
+          name: 'ipaymu',
+          status: ipaymuStatus.status,
+          is_verified: ipaymuStatus.isVerified,
+          message: ipaymuStatus.message
+        },
+        backup_2: {
           name: 'midtrans',
           status: midtransStatus.status,
           is_verified: midtransStatus.isVerified,
           message: midtransStatus.message
         },
-        backup_2: {
+        backup_3: {
           name: 'xendit',
           status: xenditStatus.status,
           is_verified: xenditStatus.isVerified,
           message: xenditStatus.message
-        },
-        backup_3: {
-          name: 'ipaymu',
-          status: ipaymuStatus.status,
-          is_verified: ipaymuStatus.isVerified,
-          message: ipaymuStatus.message
         }
       },
       legacy_rcb: {
@@ -186,7 +186,33 @@ class PaymentService {
     }
 
     // 3. Resolve Order details for canonical recording
-    const order = state.orders ? state.orders.find(o => o.id === orderId) : null;
+    let order = state.orders ? state.orders.find(o => o.id === orderId) : null;
+    if (!order) {
+      try {
+        const { getMoneyRepository } = require('../../storage');
+        const moneyRepo = getMoneyRepository();
+        if (moneyRepo) {
+          const dbOrder = await moneyRepo.getOrderById(orderId);
+          if (dbOrder) {
+            if (!state.orders) state.orders = [];
+            state.orders.push(dbOrder);
+            order = dbOrder;
+          }
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw err;
+        }
+      }
+    }
+
+    if (!order) {
+      const err = new Error(`Order '${orderId}' not found in canonical ledger or state`);
+      err.code = 'ORDER_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
+
     const internalPaymentId = `pay-${uuidv4()}`;
 
     // 4. Delegate to provider adapter
@@ -232,29 +258,32 @@ class PaymentService {
     state.canonical_payments.push(canonicalRecord);
     DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
 
+    let moneyRepo = null;
     try {
       const { getMoneyRepository } = require('../../storage');
-      const moneyRepo = getMoneyRepository();
-      await moneyRepo.createPayment({
-        id: internalPaymentId,
-        internal_payment_id: internalPaymentId,
-        order_id: orderId,
-        buyer_id: canonicalRecord.buyer_id,
-        seller_id: canonicalRecord.seller_id,
-        provider: targetProviderName,
-        provider_transaction_id: providerTxId,
-        provider_reference: providerRef,
-        currency,
-        gross_amount: canonicalRecord.gross_amount,
-        provider_fee: canonicalRecord.provider_fee,
-        status: canonicalRecord.status,
-        money_state: canonicalRecord.money_state,
-        payment_method: canonicalRecord.payment_method,
-        idempotency_key: effectiveIdempotencyKey,
-        metadata: canonicalRecord.metadata
-      });
+      moneyRepo = getMoneyRepository();
+      if (moneyRepo) {
+        await moneyRepo.createPayment({
+          id: internalPaymentId,
+          internal_payment_id: internalPaymentId,
+          order_id: orderId,
+          buyer_id: canonicalRecord.buyer_id,
+          seller_id: canonicalRecord.seller_id,
+          provider: targetProviderName,
+          provider_transaction_id: providerTxId,
+          provider_reference: providerRef,
+          currency,
+          gross_amount: canonicalRecord.gross_amount,
+          provider_fee: canonicalRecord.provider_fee,
+          status: canonicalRecord.status,
+          money_state: canonicalRecord.money_state,
+          payment_method: canonicalRecord.payment_method,
+          idempotency_key: effectiveIdempotencyKey,
+          metadata: canonicalRecord.metadata
+        });
+      }
     } catch (repoErr) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL || (moneyRepo && !moneyRepo.degraded)) {
         throw repoErr;
       }
     }
@@ -473,15 +502,66 @@ class PaymentService {
           });
         }
       }
+      // Invariant I2: Server-to-server status inquiry re-query
+      if (typeof provider.getPaymentStatus === 'function') {
+        try {
+          const verified = await provider.getPaymentStatus({
+            orderId: event.orderId,
+            providerRef: event.providerRef,
+            invoiceNumber: event.orderId ? `INV-DOKU-${event.orderId}` : event.providerRef
+          });
+          if (verified && !verified.simulated && verified.status !== MONEY_STATE.PAID) {
+            const err = new Error(`Server-to-server status inquiry did not confirm PAID (status: ${verified.status})`);
+            err.code = 'GATEWAY_STATUS_UNCONFIRMED';
+            err.status = 409;
+            throw err;
+          }
+        } catch (inqErr) {
+          if (inqErr.code === 'GATEWAY_STATUS_UNCONFIRMED') throw inqErr;
+        }
+      }
+
       if (order) {
-        await EscrowService.recordPayment({
-          orderId: event.orderId,
-          providerRef: event.providerRef,
-          idempotencyKey: `wh-pay-${event.providerRef}`,
-          amountPaid: event.amount
-        });
-        order.marketplace_status = 'PAID';
-        order.payment_money_state = MONEY_STATE.ESCROW_HELD;
+        const expectedAmt = parseInt(order.buyer_total !== undefined ? order.buyer_total : order.total_amount, 10);
+        if (event.amount && parseInt(event.amount, 10) !== expectedAmt) {
+          const err = new Error(`Payment amount mismatch. Expected ${expectedAmt}, got ${event.amount}`);
+          err.code = 'AMOUNT_MISMATCH';
+          err.status = 422;
+          throw err;
+        }
+        if (event.currency && order.currency && event.currency.toUpperCase() !== order.currency.toUpperCase()) {
+          const err = new Error(`Payment currency mismatch. Expected ${order.currency}, got ${event.currency}`);
+          err.code = 'CURRENCY_MISMATCH';
+          err.status = 422;
+          throw err;
+        }
+
+        if (order.status === 'EXPIRED' || order.status === 'CANCELLED') {
+          // Invariant I7: Late payments after expiry credited once and routed to review/refund
+          await EscrowService.recordPayment({
+            orderId: event.orderId,
+            providerRef: event.providerRef,
+            idempotencyKey: `wh-pay-${event.providerRef}`,
+            amountPaid: event.amount
+          });
+          order.status = 'LATE_PAYMENT_PENDING_REVIEW';
+          order.marketplace_status = 'LATE_PAYMENT';
+          await recordAuditLog('ORDER', order.id, 'LATE_PAYMENT_CAPTURED', 'GATEWAY', {
+            provider: targetProviderName,
+            provider_ref: event.providerRef,
+            amount: event.amount,
+            action: 'FLAGGED_FOR_MANUAL_REVIEW_OR_REFUND'
+          });
+        } else {
+          await EscrowService.recordPayment({
+            orderId: event.orderId,
+            providerRef: event.providerRef,
+            idempotencyKey: `wh-pay-${event.providerRef}`,
+            amountPaid: event.amount
+          });
+          order.marketplace_status = 'PAID';
+          order.payment_money_state = MONEY_STATE.ESCROW_HELD;
+        }
       }
 
       webhookRecord.processing_status = 'PROCESSED';

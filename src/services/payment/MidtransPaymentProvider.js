@@ -68,7 +68,7 @@ class MidtransPaymentProvider extends PaymentProvider {
       message: isReady
         ? 'Midtrans backup payment rail active'
         : 'PAYMENT PROVIDER MIDTRANS: Awaiting MIDTRANS_SERVER_KEY configuration',
-      tier: 'BACKUP_1'
+      tier: 'BACKUP_2'
     };
   }
 
@@ -180,7 +180,8 @@ class MidtransPaymentProvider extends PaymentProvider {
       providerRef,
       status: MONEY_STATE.PAYMENT_PENDING,
       amount: null,
-      provider: this.getName()
+      provider: this.getName(),
+      simulated: true
     };
   }
 
@@ -307,6 +308,19 @@ class MidtransPaymentProvider extends PaymentProvider {
       idempotencyKey,
       simulated: true,
       createdAt: new Date().toISOString()
+    };
+  }
+
+  async getPayoutStatus({ payoutId, providerRef }) {
+    if (!this.irisEnabled && !this.allowSimulation) {
+      throw new CapabilityUnsupportedError(this.getName(), 'payout', 'Midtrans Iris disbursement not active');
+    }
+    const id = payoutId || providerRef;
+    return {
+      payoutId: id,
+      status: 'DISBURSED',
+      provider: this.getName(),
+      simulated: true
     };
   }
 

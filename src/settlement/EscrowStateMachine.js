@@ -146,7 +146,25 @@ class EscrowStateMachine {
     }
 
     // Locate escrow account
-    let escrow = state.escrows.find(e => e.order_id === orderId);
+    let escrow = state.escrows ? state.escrows.find(e => e.order_id === orderId) : null;
+    if (!escrow) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        if (moneyRepo) {
+          const dbEscrow = await moneyRepo.getEscrowByOrderId(orderId);
+          if (dbEscrow) {
+            if (!state.escrows) state.escrows = [];
+            state.escrows.push(dbEscrow);
+            escrow = dbEscrow;
+          }
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw err;
+        }
+      }
+    }
     if (!escrow) {
       const err = new Error(`Escrow record for order '${orderId}' not found`);
       err.code = 'ESCROW_NOT_FOUND';
@@ -218,6 +236,25 @@ class EscrowStateMachine {
     escrow.state_machine_status = next;
     escrow.status = next; // sync
     escrow.updated_at = now;
+
+    const { DurableFinancialStore } = require('./DurableFinancialStore');
+    DurableFinancialStore.persist('escrows', state.escrows);
+
+    let moneyRepo = null;
+    try {
+      const { getMoneyRepository } = require('../storage');
+      moneyRepo = getMoneyRepository();
+      if (moneyRepo) {
+        await moneyRepo.updateEscrowStatus(orderId, next, {
+          updated_at: now,
+          transition_history: escrow.transition_history
+        });
+      }
+    } catch (repoSyncErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL || (moneyRepo && !moneyRepo.degraded)) {
+        throw repoSyncErr;
+      }
+    }
 
     // Record immutable audit log
     await recordAuditLog('ESCROW_STATE_MACHINE', escrow.id || orderId, next, actorId, {

@@ -68,7 +68,7 @@ class XenditPaymentProvider extends PaymentProvider {
       message: isReady
         ? 'Xendit backup marketplace & payment rail active'
         : 'PAYMENT PROVIDER XENDIT: Awaiting XENDIT_SECRET_KEY configuration',
-      tier: 'BACKUP_2'
+      tier: 'BACKUP_3'
     };
   }
 
@@ -165,7 +165,8 @@ class XenditPaymentProvider extends PaymentProvider {
       providerRef,
       status: MONEY_STATE.PAYMENT_PENDING,
       amount: null,
-      provider: this.getName()
+      provider: this.getName(),
+      simulated: true
     };
   }
 
@@ -264,6 +265,16 @@ class XenditPaymentProvider extends PaymentProvider {
       idempotencyKey,
       simulated: true,
       createdAt: new Date().toISOString()
+    };
+  }
+
+  async getPayoutStatus({ payoutId, providerRef }) {
+    const id = payoutId || providerRef;
+    return {
+      payoutId: id,
+      status: 'DISBURSED',
+      provider: this.getName(),
+      simulated: true
     };
   }
 
