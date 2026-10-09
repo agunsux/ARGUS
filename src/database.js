@@ -55,7 +55,9 @@ const state = {
   idempotency_records: [],
   articles: [],
   inbox_messages: [],
-  contact_inquiries: []
+  contact_inquiries: [],
+  partners: [],
+  partner_inventory: []
 };
 
 try {
@@ -1375,6 +1377,8 @@ function resetDatabase() {
   state.reservations = [];
   state.deliveries = [];
   state.event_lifecycles = [];
+  state.partners = [];
+  state.partner_inventory = [];
 
   try {
     const { MarketplacePricingEngine } = require('./pricing/MarketplacePricingEngine');
