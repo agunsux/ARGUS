@@ -773,10 +773,17 @@ function handleGetEvents(req, res) {
       ...e,
       distance_km: dist,
       active_listings_count: activeListings.length,
+      resale_available: activeListings.length > 0,
+      resale_listings_count: activeListings.length,
+      resale_price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null,
+      resale_price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : null,
+      primary_price_min: (e.min_price !== undefined && e.min_price !== null) ? Number(e.min_price) : null,
+      primary_price_max: (e.max_price !== undefined && e.max_price !== null) ? Number(e.max_price) : null,
       price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : (e.min_price || null),
       price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : (e.max_price || null),
       demand_score: e.popularity_score || 0,
       ticketing_status: e.status === 'SOLD_OUT' ? 'SOLD_OUT' : (e.official_ticket_url ? 'ON_SALE' : 'UPCOMING'),
+      official_ticket_status: e.status === 'SOLD_OUT' ? 'SOLD_OUT' : (e.official_ticket_url ? 'ON_SALE' : (e.ticket_status || 'UPCOMING')),
       start_time: e.start_time || (e.event_start_at ? e.event_start_at.split('T')[1]?.substring(0, 5) : null),
       end_time: e.end_time || (e.event_end_at ? e.event_end_at.split('T')[1]?.substring(0, 5) : null)
     };
@@ -1002,10 +1009,18 @@ router.get('/api/events/home-feed', (req, res) => {
       image_confidence: imgConf,
       last_verified_at: e.last_verified_at || e.verified_at || now.toISOString(),
       source_last_seen_at: e.source_last_checked_at || e.last_seen_at || e.updated_at || now.toISOString(),
+      active_listings_count: activeListings.length,
+      resale_available: activeListings.length > 0,
+      resale_listings_count: activeListings.length,
+      resale_price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null,
+      resale_price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : null,
+      primary_price_min: (e.min_price !== undefined && e.min_price !== null) ? Number(e.min_price) : null,
+      primary_price_max: (e.max_price !== undefined && e.max_price !== null) ? Number(e.max_price) : null,
       price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : (e.min_price || null),
       price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : (e.max_price || null),
       demand_score: e.popularity_score || 0,
       ticketing_status: e.status === 'SOLD_OUT' ? 'SOLD_OUT' : (e.official_ticket_url ? 'ON_SALE' : 'UPCOMING'),
+      official_ticket_status: e.status === 'SOLD_OUT' ? 'SOLD_OUT' : (e.official_ticket_url ? 'ON_SALE' : (e.ticket_status || 'UPCOMING')),
       start_time: e.start_time || (temporal.event_start_at ? temporal.event_start_at.split('T')[1]?.substring(0, 5) : null),
       end_time: e.end_time || (temporal.event_end_at ? temporal.event_end_at.split('T')[1]?.substring(0, 5) : null)
     };
@@ -2236,7 +2251,7 @@ router.get('/api/discovery/hero-concerts', async (req, res) => {
         resale_inventory_count: 0,
         resale_available: false,
         resale_notice: 'Belum ada tiket resale sekunder terverifikasi di TIKUM untuk event ini. TIKUM tidak membuat stok palsu atau harga fiktif.',
-        buyer_protection_policy: 'TIKUM 100% Buyer Protection: Setiap tiket diverifikasi resmi sebelum serah terima.',
+        buyer_protection_policy: 'TIKUM Buyer Protection: Setiap tiket diverifikasi resmi sebelum serah terima.',
         observed_at: ev.source_last_checked_at || ev.source_published_at || '2026-10-10T00:00:00+07:00',
         evidence_hash: ev.evidence_hash || null
       };

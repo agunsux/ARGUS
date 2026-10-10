@@ -79,15 +79,15 @@
     "brand": {
       "name": "Tikum",
       "byline": "by Shinerva",
-      "tagline": "Tiket Second. Tanpa Scam.",
+      "tagline": "TIKUM — Pasar Tiket Event Terverifikasi",
       "slogan": "Beli Tiket Resale dengan Percaya Diri.",
-      "copy": "Marketplace tiket sekunder terpercaya yang dirancang untuk mengurangi penipuan tiket dengan verifikasi berlapis, transaksi terlindungi escrow, dan bantuan langsung staf PIC di venue.",
+      "copy": "Marketplace tiket sekunder terpercaya yang dirancang untuk transaksi aman dengan verifikasi sumber resmi dan opsi pendampingan staf PIC di venue.",
       "venueSupport": "Orang sungguhan. Di venue.",
       "copyright": "© 2026 Tikum — by Shinerva. Seluruh hak cipta dilindungi undang-undang."
     },
     "meta": {
-      "title": "Tikum — Tiket Second. Tanpa Scam. | by Shinerva",
-      "description": "Marketplace tiket sekunder terpercaya. Dirancang untuk mengurangi penipuan tiket dengan verifikasi resmi, transaksi terlindungi escrow, dan pendampingan PIC di gerbang venue."
+      "title": "TIKUM — Pasar Tiket Event Terverifikasi | by Shinerva",
+      "description": "Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli. Platform penemuan event berbayar dan bertiket di Indonesia dengan verifikasi sumber resmi."
     },
     "nav": {
       "events": "Semua Event",
@@ -107,8 +107,8 @@
       "findTickets": "Cari Tiket"
     },
     "hero": {
-      "headline": "Tiket Second. Tanpa Scam.",
-      "subhead": "Marketplace tiket sekunder dengan verifikasi, perlindungan transaksi, dan dukungan event yang nyata.",
+      "headline": "TIKUM — Pasar Tiket Event Terverifikasi",
+      "subhead": "Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli.",
       "ctaFind": "Cari Tiket",
       "ctaSell": "Jual Tiket",
       "featuredBadge": "PENGUMUMAN RESMI TERVERIFIKASI"
@@ -369,15 +369,15 @@
     "brand": {
       "name": "Tikum",
       "byline": "by Shinerva",
-      "tagline": "Secondary Tickets. Built to Reduce Ticket Fraud.",
+      "tagline": "TIKUM — Verified Event Ticket Marketplace",
       "slogan": "Buy Resale Tickets With Confidence.",
-      "copy": "A trusted secondary-ticket marketplace built around verification, protected transactions, and real human support at the venue.",
+      "copy": "A trusted secondary ticket marketplace built around official source verification, protected transactions, and on-site human support.",
       "venueSupport": "Real people. At the venue.",
       "copyright": "© 2026 Tikum — by Shinerva. All rights reserved."
     },
     "meta": {
-      "title": "Tikum — Secondary Tickets. Built to Reduce Ticket Fraud. | by Shinerva",
-      "description": "Trusted secondary ticket marketplace designed to reduce ticket fraud through verified sellers, escrow protection, and on-site venue PIC support."
+      "title": "TIKUM — Verified Event Ticket Marketplace | by Shinerva",
+      "description": "Discover events, check ticket status, and see resale availability before you buy. Verified event discovery and protected ticket marketplace."
     },
     "nav": {
       "events": "Events",
@@ -397,8 +397,8 @@
       "findTickets": "Find Tickets"
     },
     "hero": {
-      "headline": "Secondary Tickets. Built to Reduce Ticket Fraud.",
-      "subhead": "Secondary ticket marketplace with verified listings, transaction protection, and real event support.",
+      "headline": "TIKUM — Verified Event Ticket Marketplace",
+      "subhead": "Discover events, check ticket status, and see resale availability before you buy.",
       "ctaFind": "Find Tickets",
       "ctaSell": "Sell Tickets",
       "featuredBadge": "FEATURED OFFICIAL ANNOUNCEMENT"
@@ -642,15 +642,15 @@
     "brand": {
       "name": "Tikum",
       "byline": "by Shinerva",
-      "tagline": "二手门票·防范诈骗",
+      "tagline": "TIKUM — 已验证活动门票市场",
       "slogan": "安心购买转售门票。",
-      "copy": "值得信赖的二手门票交易平台，依托严格票源核验、资金托管保障以及现场工作人员（PIC）实地协助。",
+      "copy": "值得信赖的活动门票市场，依托官方来源核验、受保护的交易流程以及演出场地实地协助。",
       "venueSupport": "真人团队，常驻现场。",
       "copyright": "© 2026 Tikum — by Shinerva. 版权所有。"
     },
     "meta": {
-      "title": "Tikum — 二手门票·防范诈骗 | by Shinerva",
-      "description": "经过严格核验的二手门票市场。依托安全托管基础设施与演出场地专属现场支持，降低票务欺诈风险。"
+      "title": "TIKUM — 已验证活动门票市场 | by Shinerva",
+      "description": "在购买前发现活动、检查门票状态并了解转售可用性。具有官方来源核验的印尼活动与演出门票平台。"
     },
     "nav": {
       "events": "全部活动",
@@ -670,8 +670,8 @@
       "findTickets": "查找门票"
     },
     "hero": {
-      "headline": "二手门票·防范诈骗",
-      "subhead": "具有房源验证、交易保护和真实活动现场支持的二手门票交易平台。",
+      "headline": "TIKUM — 已验证活动门票市场",
+      "subhead": "在购买前发现活动、检查门票状态并了解转售可用性。",
       "ctaFind": "查找门票",
       "ctaSell": "转售门票",
       "featuredBadge": "官方核验公布"
@@ -870,15 +870,15 @@
     "brand": {
       "name": "Tikum",
       "byline": "by Shinerva",
-      "tagline": "Verified Resale. Real Support.",
+      "tagline": "TIKUM — 公式検証済みイベントチケットマーケット",
       "slogan": "確かなリセール、確かなサポート。",
-      "copy": "検証済みチケット、エスクロー保護取引、そして会場でのリアルスタッフ対応。",
+      "copy": "公式情報検証と会場でのスタッフ対応を備えた安心のイベントチケットマーケットプレイス。",
       "venueSupport": "会場に、本物のスタッフを。",
       "copyright": "© 2026 Tikum — by Shinerva. All rights reserved."
     },
     "meta": {
-      "title": "Tikum — 検証済みリセール · 会場対面サポート | by Shinerva",
-      "description": "安心の公式検証リセールマーケットプレイス。エスクローによる資金保護と会場ゲートでの専任サポート。"
+      "title": "TIKUM — 公式検証済みイベントチケットマーケット | by Shinerva",
+      "description": "購入前にイベントを検索し、公式チケット状況とリセール在庫を確認。公式ソース検証を備えたチケットプラットフォーム。"
     },
     "nav": {
       "events": "全イベント",
@@ -898,8 +898,8 @@
       "findTickets": "チケットを探す"
     },
     "hero": {
-      "headline": "二次流通チケット。確かな信頼と安全を。",
-      "subhead": "出品検証、エスクロー取引保護、現地会場サポートを備えた二次流通チケットマーケットプレイス。",
+      "headline": "TIKUM — 公式検証済みイベントチケットマーケット",
+      "subhead": "購入前にイベントを検索し、公式チケット状況とリセール在庫を確認。",
       "ctaFind": "チケットを探す",
       "ctaSell": "チケットを出品",
       "featuredBadge": "注目の公式発表 · 検証済み"
@@ -1098,15 +1098,15 @@
     "brand": {
       "name": "Tikum",
       "byline": "by Shinerva",
-      "tagline": "Verified Resale. Real Support.",
+      "tagline": "TIKUM — 검증된 이벤트 티켓 마켓플레이스",
       "slogan": "믿을 수 있는 티켓 리셀, 현장 지원까지.",
-      "copy": "검증된 리스팅, 에스크로 보호 거래, 그리고 필요한 순간 현장에서 제공되는 실제 인력 지원.",
+      "copy": "공식 정보 검증과 안전한 거래 프로세스 및 공연장 현장 지원을 제공하는 티켓 마켓플레이스.",
       "venueSupport": "현장에서 함께하는 실제 담당자.",
       "copyright": "© 2026 Tikum — by Shinerva. All rights reserved."
     },
     "meta": {
-      "title": "Tikum — 검증된 리셀 · 현장 전담 지원 | by Shinerva",
-      "description": "검증된 2차 티켓 마켓플레이스. 내부 에스크로 인프라 보호 및 공연장 현장 전담 지원."
+      "title": "TIKUM — 검증된 이벤트 티켓 마켓플레이스 | by Shinerva",
+      "description": "구매하기 전에 이벤트를 찾고, 티켓 상태와 리셀 재고를 미리 확인하세요. 공식 소스 검증 티켓 플랫폼."
     },
     "nav": {
       "events": "전체 공연",
@@ -1126,8 +1126,8 @@
       "findTickets": "티켓 찾기"
     },
     "hero": {
-      "headline": "안심 2차 티켓 거래. 사기 방지 보장.",
-      "subhead": "검증된 티켓 등록, 에스크로 거래 보호, 공연장 현장 운영 지원을 제공하는 2차 티켓 마켓플레이스.",
+      "headline": "TIKUM — 검증된 이벤트 티켓 마켓플레이스",
+      "subhead": "구매하기 전에 이벤트를 찾고, 티켓 상태와 리셀 재고를 미리 확인하세요.",
       "ctaFind": "티켓 찾기",
       "ctaSell": "티켓 판매하기",
       "featuredBadge": "공식 발표 · 검증 완료"
@@ -1326,15 +1326,15 @@
     "brand": {
       "name": "Tikum",
       "byline": "by Shinerva",
-      "tagline": "Entradas de reventa. Diseñado para reducir el fraude.",
+      "tagline": "TIKUM — Mercado de Entradas Verificadas",
       "slogan": "Compra entradas de reventa con total confianza.",
-      "copy": "Un marketplace seguro de entradas de reventa diseñado con verificación estricta, transacciones protegidas por custodia y asistencia presencial en el recinto.",
+      "copy": "Un marketplace seguro de entradas de eventos diseñado con verificación de fuentes oficiales y asistencia presencial en el recinto.",
       "venueSupport": "Personas reales en el recinto.",
       "copyright": "© 2026 Tikum — by Shinerva. Todos los derechos reservados."
     },
     "meta": {
-      "title": "Tikum — Entradas de reventa. Diseñado para reducir el fraude. | by Shinerva",
-      "description": "Marketplace de entradas de reventa de confianza, diseñado para reducir el fraude mediante vendedores verificados, custodia de fondos y coordinadores en el recinto."
+      "title": "TIKUM — Mercado de Entradas Verificadas | by Shinerva",
+      "description": "Descubra eventos, compruebe el estado de las entradas y conozca la disponibilidad de reventa antes de comprar. Plataforma de eventos verificados en Indonesia."
     },
     "nav": {
       "events": "Eventos",
@@ -1354,8 +1354,8 @@
       "findTickets": "Buscar Entradas"
     },
     "hero": {
-      "headline": "Entradas de Reventa. Diseñado para Reducir el Fraude.",
-      "subhead": "Mercado de entradas secundarias con verificación, transacciones protegidas y soporte presencial en el evento.",
+      "headline": "TIKUM — Mercado de Entradas Verificadas",
+      "subhead": "Descubra eventos, compruebe el estado de las entradas y conozca la disponibilidad de reventa antes de comprar.",
       "ctaFind": "Buscar Entradas",
       "ctaSell": "Vender Entrada",
       "featuredBadge": "ANUNCIO OFICIAL VERIFICADO"
@@ -1554,15 +1554,15 @@
     "brand": {
       "name": "Tikum",
       "byline": "by Shinerva",
-      "tagline": "Verified Resale. Real Support.",
+      "tagline": "TIKUM — Marketplace de Ingressos Verificados",
       "slogan": "Compre Ingressos de Revenda com Confiança.",
-      "copy": "Anúncios verificados, transações protegidas e suporte presencial quando você precisar.",
+      "copy": "Anúncios verificados com fontes oficiais, transações protegidas e suporte presencial no evento.",
       "venueSupport": "Pessoas reais. No local do evento.",
       "copyright": "© 2026 Tikum — by Shinerva. Todos os direitos reservados."
     },
     "meta": {
-      "title": "Tikum — Revenda Verificada · Suporte Real no Local | by Shinerva",
-      "description": "Marketplace de revenda de ingressos verificado. Protegido por custódia (escrow) e suporte presencial no local do evento."
+      "title": "TIKUM — Marketplace de Ingressos Verificados | by Shinerva",
+      "description": "Descubra eventos, confira o status dos ingressos e conheça a disponibilidade de revenda antes de comprar. Plataforma de eventos com verificação de fontes oficiais."
     },
     "nav": {
       "events": "Eventos",
@@ -1582,8 +1582,8 @@
       "findTickets": "Encontrar Ingressos"
     },
     "hero": {
-      "headline": "Ingressos de Revenda. Desenvolvido para Reduzir Fraudes.",
-      "subhead": "Marketplace de ingressos secundários com listagens verificadas, transações protegidas e suporte presencial no evento.",
+      "headline": "TIKUM — Marketplace de Ingressos Verificados",
+      "subhead": "Descubra eventos, confira o status dos ingressos e conheça a disponibilidade de revenda antes de comprar.",
       "ctaFind": "Encontrar Ingressos",
       "ctaSell": "Vender Ingresso",
       "featuredBadge": "ANÚNCIO OFICIAL EM DESTAQUE"
@@ -1782,15 +1782,15 @@
     "brand": {
       "name": "Tikum",
       "byline": "by Shinerva",
-      "tagline": "Billets de revente. Conçu pour réduire la fraude.",
+      "tagline": "TIKUM — Marché de Billets d'Événements Vérifiés",
       "slogan": "Achetez des billets de revente en toute confiance.",
-      "copy": "Une plateforme de revente de billets fiable, conçue autour de la vérification, de transactions sécurisées sous séquestre et d’une assistance humaine sur place.",
+      "copy": "Une plateforme de billetterie d'événements fiable avec vérification des sources officielles et assistance humaine sur place.",
       "venueSupport": "Des personnes réelles sur place.",
       "copyright": "© 2026 Tikum — by Shinerva. Tous droits réservés."
     },
     "meta": {
-      "title": "Tikum — Billets de revente. Conçu pour réduire la fraude. | by Shinerva",
-      "description": "Plateforme fiable de revente de billets conçue pour réduire la fraude grâce à des vendeurs vérifiés, la protection sous séquestre et des coordinateurs sur place."
+      "title": "TIKUM — Marché de Billets d'Événements Vérifiés | by Shinerva",
+      "description": "Découvrez les événements, vérifiez le statut des billets et consultez la disponibilité de revente avant d'acheter. Plateforme d'événements vérifiés en Indonésie."
     },
     "nav": {
       "events": "Événements",
@@ -1810,8 +1810,8 @@
       "findTickets": "Trouver des Billets"
     },
     "hero": {
-      "headline": "Billets de Revente. Conçu pour Réduire la Fraude.",
-      "subhead": "Plateforme de revente de billets avec vérification des annonces, protection des transactions et assistance physique sur place.",
+      "headline": "TIKUM — Marché de Billets d'Événements Vérifiés",
+      "subhead": "Découvrez les événements, vérifiez le statut des billets et consultez la disponibilité de revente avant d'acheter.",
       "ctaFind": "Trouver des Billets",
       "ctaSell": "Vendre un Billet",
       "featuredBadge": "ANNONCE OFFICIELLE VÉRIFIÉE"
@@ -2010,15 +2010,15 @@
     "brand": {
       "name": "Tikum",
       "byline": "by Shinerva",
-      "tagline": "تذاكر ثانوية. صُممت للحد من الاحتيال.",
+      "tagline": "TIKUM — سوق تذاكر الفعاليات المعتمدة",
       "slogan": "شراء تذاكر إعادة البيع بكل ثقة.",
-      "copy": "سوق تذاكر موثوق لإعادة البيع يعتمد على التحقق الدقيق، المعاملات المحمية بالضمان، ودعم بشري حقيقي في موقع الفعالية.",
+      "copy": "سوق تذاكر موثوق يعتمد على التحقق من المصادر الرسمية ودعم بشري ميداني في موقع الفعالية.",
       "venueSupport": "أشخاص حقيقيون. في موقع الفعالية.",
       "copyright": "© 2026 Tikum — by Shinerva. جميع الحقوق محفوظة."
     },
     "meta": {
-      "title": "Tikum — تذاكر ثانوية. صُممت للحد من الاحتيال. | by Shinerva",
-      "description": "سوق تذاكر موثوق لإعادة البيع، صُمم للحد من الاحتيال عبر بائعين موثقين، حماية أموال الضمان، وتواجد ميداني لمشرفي الدعم في موقع الفعالية."
+      "title": "TIKUM — سوق تذاكر الفعاليات المعتمدة | by Shinerva",
+      "description": "اكتشف الفعاليات، تحقق من حالة التذاكر، واعرف مدى توفر إعادة البيع قبل الشراء. منصة الفعاليات المعتمدة في إندونيسيا."
     },
     "nav": {
       "events": "جميع الفعاليات",
@@ -2038,8 +2038,8 @@
       "findTickets": "البحث عن التذاكر"
     },
     "hero": {
-      "headline": "تذاكر ثانوية. صُممت للحد من الاحتيال.",
-      "subhead": "سوق التذاكر الثانوية مع التحقق من القوائم، حماية المعاملات، ودعم ميداني حقيقي في موقع الفعالية.",
+      "headline": "TIKUM — سوق تذاكر الفعاليات المعتمدة",
+      "subhead": "اكتشف الفعاليات، تحقق من حالة التذاكر، واعرف مدى توفر إعادة البيع قبل الشراء.",
       "ctaFind": "البحث عن تذاكر",
       "ctaSell": "بيع تذكرة",
       "featuredBadge": "إعلان رسمي موثق"
@@ -2238,15 +2238,15 @@
     "brand": {
       "name": "Tikum",
       "byline": "by Shinerva",
-      "tagline": "रीसेल टिकटें। टिकट धोखाधड़ी रोकने के लिए निर्मित।",
+      "tagline": "TIKUM — सत्यापित इवेंट टिकट मार्केटप्लेस",
       "slogan": "विश्वास के साथ टिकट खरीदें।",
-      "copy": "एक विश्वसनीय रीसेल टिकट मार्केटप्लेस जो सत्यापन, सुरक्षित एस्क्रो लेन-देन और कार्यक्रम स्थल पर वास्तविक मानव सहायता के लिए निर्मित है।",
+      "copy": "एक विश्वसनीय इवेंट टिकट मार्केटप्लेस जो आधिकारिक स्रोत सत्यापन और कार्यक्रम स्थल पर प्रत्यक्ष सहायता प्रदान करता है।",
       "venueSupport": "स्थल पर वास्तविक लोग।",
       "copyright": "© 2026 Tikum — by Shinerva. सर्वाधिकार सुरक्षित।"
     },
     "meta": {
-      "title": "Tikum — रीसेल टिकटें। टिकट धोखाधड़ी रोकने के लिए निर्मित। | by Shinerva",
-      "description": "विश्वसनीय रीसेल टिकट मार्केटप्लेस, जो सत्यापित विक्रेताओं, एस्क्रो सुरक्षा और स्थल पर उपस्थित समन्वयकों (PIC) द्वारा टिकट धोखाधड़ी कम करने के लिए बनाया गया है।"
+      "title": "TIKUM — सत्यापित इवेंट टिकट मार्केटप्लेस | by Shinerva",
+      "description": "खरीदने से पहले इवेंट खोजें, टिकट की स्थिति जांचें और रीसेल उपलब्धता जानें। इंडोनेशिया में आधिकारिक स्रोत सत्यापन युक्त इवेंट प्लेटफॉर्म।"
     },
     "nav": {
       "events": "सभी कार्यक्रम",
@@ -2266,8 +2266,8 @@
       "findTickets": "टिकट खोजें"
     },
     "hero": {
-      "headline": "रीसेल टिकटें। टिकट धोखाधड़ी रोकने के लिए निर्मित।",
-      "subhead": "सत्यापित लिस्टिंग, सुरक्षित एस्क्रो लेनदेन और कार्यक्रम स्थल पर प्रत्यक्ष सहायता के साथ रीसेल टिकट मार्केटप्लेस।",
+      "headline": "TIKUM — सत्यापित इवेंट टिकट मार्केटप्लेस",
+      "subhead": "खरीदने से पहले इवेंट खोजें, टिकट की स्थिति जांचें और रीसेल उपलब्धता जानें।",
       "ctaFind": "टिकट खोजें",
       "ctaSell": "टिकट बेचें",
       "featuredBadge": "आधिकारिक तौर पर सत्यापित घोषणा"
@@ -2622,7 +2622,7 @@
       }
 
       // Localized Document Title & Meta Tags
-      const localizedTitle = t('meta.title', 'Tikum — Tiket Second. Tanpa Scam. | by Shinerva');
+      const localizedTitle = t('meta.title', 'TIKUM — Pasar Tiket Event Terverifikasi | by Shinerva');
       document.title = localizedTitle;
 
       const metaDesc = document.querySelector('meta[name="description"]');

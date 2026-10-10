@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Tikum — Verified Ticket Marketplace by Shinerva</title>
-  <meta name="description" content="Tikum adalah platform penemuan seluruh event berbayar dan bertiket di Indonesia dan Asia Tenggara. Konser, Olahraga, Stand Up Comedy, Pameran, dan Hiburan dengan verifikasi sumber resmi dan perlindungan turnstile.">
+  <meta name="description" content="Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli. Platform penemuan event berbayar dan bertiket di Indonesia dengan verifikasi sumber resmi.">
   <link rel="canonical" href="https://tikum.app/">
   <link rel="alternate" hreflang="id" href="https://tikum.app/">
   <link rel="alternate" hreflang="en" href="https://tikum.app/?lang=en">
@@ -23,15 +23,15 @@
 
   <!-- OpenGraph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Tikum — Verified Ticket Marketplace by Shinerva">
-  <meta property="og:description" content="Temukan seluruh event berbayar dan bertiket di Indonesia dengan verifikasi sumber resmi, rekening escrow terlindungi, dan staf PIC di venue.">
+  <meta property="og:title" content="TIKUM — Pasar Tiket Event Terverifikasi | by Shinerva">
+  <meta property="og:description" content="Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli. Dilengkapi verifikasi sumber resmi dan asistensi di venue.">
   <meta property="og:url" content="https://tikum.app/">
   <meta property="og:site_name" content="TIKUM">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Tikum — Verified Ticket Marketplace by Shinerva">
-  <meta name="twitter:description" content="Temukan seluruh event berbayar dan bertiket di Indonesia dengan perlindungan turnstile dan staf PIC di venue.">
+  <meta name="twitter:title" content="TIKUM — Pasar Tiket Event Terverifikasi | by Shinerva">
+  <meta name="twitter:description" content="Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli.">
 
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/assets/tikum-maskable.svg">
@@ -47,7 +47,7 @@
       <img src="/assets/tikum-mark-2color.svg" class="brand-logo" width="34" height="34" alt="Tikum">
       <div>
         <div class="brand-title">Tikum</div>
-        <div class="brand-subtitle">Verified Ticket Marketplace</div>
+        <div class="brand-subtitle">Pasar Tiket Event Terverifikasi</div>
       </div>
     </a>
     <nav class="ln-nav-links">
@@ -79,7 +79,7 @@
 
   <!-- Trust Strip -->
   <div class="trust-strip">
-    <div class="trust-item"><i class="fa-solid fa-vault" style="color:var(--ok-600);"></i> <span>Dana ditahan escrow</span></div>
+    <div class="trust-item"><i class="fa-solid fa-shield-check" style="color:var(--ok-600);"></i> <span>Verifikasi Sumber Resmi</span></div>
     <div class="trust-item"><i class="fa-solid fa-user-check" style="color:var(--terra-600);"></i> <span>Petugas Tikum di venue</span></div>
     <div class="trust-item"><i class="fa-solid fa-wallet" style="color:var(--amber-500);"></i> <span>Bayar QRIS / e-wallet / VA</span></div>
     <div class="trust-item"><i class="fa-solid fa-receipt" style="color:var(--ok-600);"></i> <span>Harga transparan all-in</span></div>
@@ -141,9 +141,9 @@
         <p class="trust-card-desc">Setiap event dan listing tiket diverifikasi silang dengan promotor resmi untuk mencegah peredaran barcode palsu atau duplikat.</p>
       </div>
       <div class="trust-card">
-        <div class="trust-card-icon"><i class="fa-solid fa-vault"></i></div>
-        <h3 class="trust-card-title">Rekening Escrow Terlindungi</h3>
-        <p class="trust-card-desc">Dana pembeli ditahan dengan aman di rekening penampungan internal (escrow) dan baru dicairkan ke penjual setelah pembeli sukses masuk venue.</p>
+        <div class="trust-card-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <h3 class="trust-card-title">Proteksi Transaksi Bertahap</h3>
+        <p class="trust-card-desc">Dana transaksi dialokasikan secara aman dan pencairan ke penjual diverifikasi setelah tiket tervalidasi berhasil saat serah terima.</p>
       </div>
       <div class="trust-card">
         <div class="trust-card-icon"><i class="fa-solid fa-user-shield"></i></div>
@@ -385,7 +385,7 @@
           <img src="/assets/tikum-mark-2color.svg" width="24" height="24" alt="Tikum"> TIKUM — by SHINERVA
         </div>
         <p style="color: var(--color-text-muted, #6B7280); font-size: 13px; line-height: 1.6; margin-bottom: 14px; max-width: 400px;">
-          Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik staf di gerbang venue.
+          Pasar tiket event terverifikasi by Shinerva. Dilengkapi verifikasi sumber resmi dan asistensi staf di gerbang venue.
         </p>
         <div class="footer-address" style="color: var(--color-text-muted, #6B7280); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: var(--text-light);">Kantor Operasional &amp; Surat:</div>
@@ -729,10 +729,26 @@
     }
 
     function resolveStatus(e) {
-      if (e.ticket_status === 'SOLD_OUT' || e.status === 'SOLD_OUT') return { css: 'status-soldout', text: 'SOLD OUT' };
-      if (e.ticket_status === 'COMING_SOON') return { css: 'status-comingsoon', text: 'COMING SOON' };
-      if (e.official_ticket_url) return { css: 'status-onsale', text: 'ON SALE' };
-      return { css: 'status-comingsoon', text: 'SEGERA' };
+      const resaleCount = (typeof e.resale_listings_count === 'number')
+        ? e.resale_listings_count
+        : (typeof e.active_listings_count === 'number' ? e.active_listings_count : 0);
+      const hasResale = Boolean(e.resale_available || resaleCount > 0);
+
+      if (hasResale) {
+        return { css: 'status-resale', text: 'Resale tersedia' };
+      }
+
+      const rawStatus = (e.official_ticket_status || e.ticket_status || e.status || '').toUpperCase();
+      if (rawStatus === 'SOLD_OUT' || rawStatus === 'HABIS') {
+        return { css: 'status-soldout', text: 'Tiket resmi sold out' };
+      }
+      if (rawStatus === 'COMING_SOON' || rawStatus === 'SEGERA') {
+        return { css: 'status-comingsoon', text: 'Segera dibuka' };
+      }
+      if (e.official_ticket_url && (rawStatus === 'ON_SALE' || rawStatus === 'UPCOMING' || !rawStatus)) {
+        return { css: 'status-onsale', text: 'Tiket resmi tersedia' };
+      }
+      return { css: 'status-unconfirmed', text: 'Status belum dikonfirmasi' };
     }
 
     function getCategoryVisual(cat) {
@@ -808,6 +824,41 @@
       return 'Konser';
     }
 
+    const TIKUM_WHATSAPP_NUMBER = '6281299927378';
+
+    function isValidSupportPhone(num) {
+      if (!num || typeof num !== 'string') return false;
+      const clean = num.replace(/[^0-9]/g, '');
+      if (clean.length < 10 || clean.length > 15) return false;
+      if (/^(\d)\1+$/.test(clean)) return false;
+      let seqCount = 1;
+      for (let i = 1; i < clean.length; i++) {
+        if (clean.charCodeAt(i) === clean.charCodeAt(i - 1) + 1) {
+          seqCount++;
+          if (seqCount >= 5) return false;
+        } else {
+          seqCount = 1;
+        }
+      }
+      return clean.startsWith('628') || clean.startsWith('08');
+    }
+
+    function handleWaitlistClick(evt, eventTitle, eventSlug) {
+      if (evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
+      }
+      const title = eventTitle || 'Event';
+      const eventUrl = window.location.origin + '/events/' + encodeURIComponent(eventSlug);
+      if (isValidSupportPhone(TIKUM_WHATSAPP_NUMBER)) {
+        const text = `Halo TIKUM, saya tertarik jika ada tiket resale terverifikasi untuk event: ${title} (${eventUrl}). Mohon berkabar jika ada penjual terverifikasi.`;
+        const waUrl = `https://wa.me/${TIKUM_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+        window.open(waUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        window.location.href = `/contact?subject=waitlist&event=${encodeURIComponent(eventSlug)}`;
+      }
+    }
+
     /**
      * Card hierarchy conforming to the TIKUM marketplace system:
      * IMAGE -> CATEGORY -> EVENT NAME -> DATE -> VENUE/CITY -> PRICE FROM -> VERIFICATION / PIC BADGE
@@ -818,12 +869,35 @@
       const city = e.city || e.venue_city || '';
       const venue = e.venue_name || e.venue || '';
       const loc = [venue, city].filter(Boolean).join(' · ');
-      const priceStr = e.min_price ? `Mulai Rp ${formatRupiah(e.min_price)}` : 'Harga TBA';
       const dateStr = formatDate(e.date || e.start_date);
       const slug = e.slug || e.event_id || e.id;
       const verifDate = e.verified_at || '';
       const categoryLabel = resolveCategoryLabel(e);
       const isPriority = Boolean(opts && opts.priority);
+
+      const resaleCount = (typeof e.resale_listings_count === 'number')
+        ? e.resale_listings_count
+        : (typeof e.active_listings_count === 'number' ? e.active_listings_count : 0);
+      const hasResale = Boolean(e.resale_available || resaleCount > 0);
+
+      let priceLabel = '';
+      let priceDisplay = '';
+      let resaleCue = '';
+      let waitlistBtn = '';
+
+      if (hasResale) {
+        const resalePrice = e.resale_price_min || e.price_min;
+        priceLabel = 'Resale mulai';
+        priceDisplay = resalePrice ? `Rp ${formatRupiah(resalePrice)}` : 'Harga tertera';
+        resaleCue = '';
+        waitlistBtn = '';
+      } else {
+        const officialPrice = e.primary_price_min || e.min_price;
+        priceLabel = 'Harga resmi promotor';
+        priceDisplay = officialPrice ? `Mulai Rp ${formatRupiah(officialPrice)}` : 'TBA';
+        resaleCue = '<div class="card-resale-empty-cue"><i class="fa-solid fa-circle-info"></i> Belum ada tiket resale di TIKUM</div>';
+        waitlistBtn = `<button type="button" class="btn-waitlist" onclick="handleWaitlistClick(event, '${escapeHtml(title)}', '${escapeHtml(slug)}')"><i class="fa-brands fa-whatsapp"></i> Kabari Saya Saat Tiket Ada</button>`;
+      }
 
       let radarBadge = '';
       if (e.discovery_source_id === 'src-songkick-jakarta' || e.discovery_source_id === 'src-bandsintown-jakarta') {
@@ -846,15 +920,20 @@
           ${renderPosterMedia(e, categoryLabel, status.text, radarBadge, isPriority)}
           <div class="poster-body">
             <div class="poster-date"><i class="fa-regular fa-calendar"></i> ${dateStr}</div>
-            <div class="poster-title">${title}</div>
-            <div class="poster-sub"><i class="fa-solid fa-location-dot"></i> ${loc}</div>
+            <div class="poster-title">${escapeHtml(title)}</div>
+            <div class="poster-sub"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(loc)}</div>
             <div class="poster-price-row">
-              <span class="poster-price">${priceStr}</span>
+              <div class="poster-price-col">
+                <span class="poster-price-label">${priceLabel}</span>
+                <span class="poster-price">${priceDisplay}</span>
+              </div>
               <span class="badge-card-trust" onclick="showVerifModal(event, '${verifDate}')" title="Event Terverifikasi Resmi">
                 <i class="fa-solid fa-shield-check"></i> Terverifikasi
               </span>
             </div>
+            ${resaleCue}
             ${picBadge}
+            ${waitlistBtn}
           </div>
         </a>
       `;
@@ -869,8 +948,8 @@
       if (!e) {
         mount.innerHTML = `
           <div class="ln-hero-inner">
-            <div class="ln-kicker"><i class="fa-solid fa-shield-check"></i> Tikum — Verified Ticket Marketplace</div>
-            <h1 class="ln-hero-title">Tiket sold out? Aman di Tikum.</h1>
+            <div class="ln-kicker"><i class="fa-solid fa-shield-check"></i> TIKUM — Pasar Tiket Event Terverifikasi</div>
+            <h1 class="ln-hero-title">Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli.</h1>
             <p class="ln-hero-meta">Katalog Upcoming akan muncul di sini setelah ada pengumuman resmi dari promotor atau penyelenggara terverifikasi.</p>
           </div>`;
         mount.style.backgroundImage = '';

@@ -1275,9 +1275,10 @@ a:hover {
   padding: 4px 8px;
   border-radius: var(--radius-sm);
   text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.95);
-  color: var(--ink-900);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  background: rgba(255, 255, 255, 0.94);
+  color: #18181B; /* High-contrast fixed dark ink for light mode */
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
 .ln-badge {
@@ -1354,15 +1355,37 @@ a:hover {
   padding-top: var(--space-10, 10px);
   border-top: 1px solid var(--line-100);
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 6px;
+}
+
+.poster-price-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 110px;
+}
+
+.poster-price-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-500);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .poster-price {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--ink-900);
   font-variant-numeric: tabular-nums;
+  line-height: 1.25;
 }
 
 .badge-card-trust {
@@ -1377,6 +1400,45 @@ a:hover {
   align-items: center;
   gap: 3px;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.card-resale-empty-cue {
+  font-size: 11px;
+  color: var(--ink-500);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+.btn-waitlist {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #047857;
+  background: rgba(4, 120, 87, 0.08);
+  border: 1px solid rgba(4, 120, 87, 0.25);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.btn-waitlist:hover {
+  background: rgba(4, 120, 87, 0.15);
+  border-color: #047857;
+  color: #065F46;
 }
 
 .card-pic-cue {
@@ -1930,3 +1992,44 @@ body.dark-mode .site-footer {
   background-color: #141210;
   border-top-color: var(--line-300);
 }
+
+body.dark-mode .card-category-pill {
+  background: rgba(24, 24, 27, 0.92);
+  color: #F8FAFC; /* Crisp readable light text in dark mode */
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .badge-card-trust {
+  background: rgba(6, 78, 59, 0.4);
+  color: #34D399;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+body.dark-mode .btn-waitlist {
+  color: #34D399;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+body.dark-mode .btn-waitlist:hover {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #34D399;
+}
+
+.status-resale {
+  background: rgba(4, 120, 87, 0.9) !important;
+  color: #FFFFFF !important;
+}
+
+.status-unconfirmed {
+  background: rgba(75, 85, 99, 0.85) !important;
+  color: #E5E7EB !important;
+}
+
+@media (max-width: 1024px) {
+  .ln-nav-links {
+    display: none;
+  }
+}
+
