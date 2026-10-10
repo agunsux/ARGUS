@@ -2248,7 +2248,7 @@ router.get('/api/discovery/hero-concerts', async (req, res) => {
         organizer: 'Boss Creator',
         officialUrl: 'https://bosscreator.id/',
         ticketUrl: 'https://www.tiket.com/to-do/king-nassar-lost-in-the-jungle',
-        posterUrl: 'https://assets.loket.com/images/nassar-lost-in-the-jungle.jpg',
+        posterUrl: '/assets/placeholder-nassar.svg',
         imageCredit: 'King Nassar Concert: Lost In The Jungle / Boss Creator',
         primaryTicketStatus: 'SOLD_OUT'
       }));

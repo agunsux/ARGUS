@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="nassarBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#061c14" />
+      <stop offset="45%" stop-color="#0a2a1e" />
+      <stop offset="80%" stop-color="#071812" />
+      <stop offset="100%" stop-color="#040b08" />
+    </linearGradient>
+    <radialGradient id="nassarGlow" cx="50%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.25" />
+      <stop offset="70%" stop-color="#059669" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="50%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="goldTextGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="40%" stop-color="#fef3c7" />
+      <stop offset="100%" stop-color="#fcd34d" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="360" fill="url(#nassarBg)" />
+  <circle cx="300" cy="150" r="240" fill="url(#nassarGlow)" />
+
+  <!-- Botanical/Jungle vector silhouettes (ambient) -->
+  <g opacity="0.08" fill="#34d399">
+    <path d="M-20,380 Q100,200 40,80 Q200,240 260,380 Z" />
+    <path d="M620,380 Q500,180 560,60 Q400,220 340,380 Z" />
+    <path d="M220,380 Q300,160 380,380 Z" />
+  </g>
+
+  <!-- Top Frame / Promoter -->
+  <g transform="translate(300, 48)">
+    <rect x="-110" y="-14" width="220" height="28" rx="6" fill="rgba(0,0,0,0.4)" stroke="rgba(245, 158, 11, 0.4)" stroke-width="1" />
+    <text text-anchor="middle" y="4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="800" fill="#f59e0b" letter-spacing="2">BOSS CREATOR PRESENT</text>
+  </g>
+
+  <!-- Crown / Star Vector Motif -->
+  <g transform="translate(300, 95)" fill="url(#goldGrad)" opacity="0.9">
+    <polygon points="0,-18 6,-6 19,-6 9,2 13,15 0,7 -13,15 -9,2 -19,-6 -6,-6" transform="scale(0.8)" />
+  </g>
+
+  <!-- Concert Titles -->
+  <text x="300" y="152" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Playfair Display', serif" font-size="34" font-weight="900" fill="url(#goldTextGrad)" letter-spacing="2">KING NASSAR</text>
+  <text x="300" y="185" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#a7f3d0" letter-spacing="4">LOST IN THE JUNGLE</text>
+
+  <!-- Line divider with diamond -->
+  <line x1="180" y1="205" x2="420" y2="205" stroke="rgba(255,255,255,0.15)" stroke-width="1" />
+  <polygon points="300,202 304,205 300,208 296,205" fill="#f59e0b" />
+
+  <!-- Guest artist -->
+  <text x="300" y="230" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#cbd5e1" letter-spacing="0.5">Bersama Erwin Gutawa Orchestra</text>
+
+  <!-- Date & Venue Bar -->
+  <g transform="translate(300, 275)">
+    <rect x="-210" y="-16" width="420" height="32" rx="16" fill="rgba(6, 28, 20, 0.7)" stroke="rgba(52, 211, 153, 0.3)" stroke-width="1" />
+    <text text-anchor="middle" y="5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#ffffff" letter-spacing="0.5">
+      📅 7 NOVEMBER 2026 &nbsp;•&nbsp; 📍 ISTORA SENAYAN JAKARTA
+    </text>
+  </g>
+
+  <!-- Status / Verification Footer -->
+  <g transform="translate(300, 332)">
+    <circle cx="-95" cy="-4" r="4" fill="#34d399" />
+    <text text-anchor="middle" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="700" fill="#6ee7b7" letter-spacing="1">PROMOTER VERIFIED • PRIMARY SOLD OUT</text>
+  </g>
+</svg>

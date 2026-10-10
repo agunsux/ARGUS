@@ -1268,8 +1268,8 @@ class CanonicalEventRegistry {
         official_link: 'https://bosscreator.id/',
         official_event_url: 'https://bosscreator.id/',
         official_ticket_url: 'https://www.tiket.com/to-do/king-nassar-lost-in-the-jungle',
-        poster_url: 'https://assets.loket.com/images/nassar-lost-in-the-jungle.jpg',
-        image_url: 'https://assets.loket.com/images/nassar-lost-in-the-jungle.jpg',
+        poster_url: '/assets/placeholder-nassar.svg',
+        image_url: '/assets/placeholder-nassar.svg',
         image_credit: 'King Nassar Concert: Lost In The Jungle / Boss Creator',
         primary_ticket_status: 'SOLD_OUT',
         resale_inventory_count: 0

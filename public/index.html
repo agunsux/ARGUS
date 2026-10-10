@@ -735,37 +735,51 @@
       return { css: 'status-comingsoon', text: 'SEGERA' };
     }
 
-    function getCategoryIcon(cat) {
+    function getCategoryVisual(cat) {
       const c = (cat || '').toUpperCase();
-      if (c.includes('SPORT') || c.includes('OLAHRAGA') || c.includes('BADMINTON') || c.includes('FOOTBALL')) return 'fa-futbol';
-      if (c.includes('COMEDY') || c.includes('STANDUP')) return 'fa-microphone';
-      if (c.includes('FESTIVAL')) return 'fa-guitar';
-      if (c.includes('EXHIBITION') || c.includes('PAMERAN')) return 'fa-palette';
-      return 'fa-music';
+      if (c.includes('SPORT') || c.includes('OLAHRAGA') || c.includes('BADMINTON') || c.includes('FOOTBALL')) {
+        return { icon: 'fa-futbol', gradient: 'linear-gradient(145deg, #0e1e24, #081115)', accent: '#38bdf8' };
+      }
+      if (c.includes('COMEDY') || c.includes('STANDUP')) {
+        return { icon: 'fa-microphone', gradient: 'linear-gradient(145deg, #241812, #0d0f14)', accent: '#fb923c' };
+      }
+      if (c.includes('FESTIVAL')) {
+        return { icon: 'fa-guitar', gradient: 'linear-gradient(145deg, #1d152c, #0c0d16)', accent: '#c084fc' };
+      }
+      if (c.includes('EXHIBITION') || c.includes('PAMERAN')) {
+        return { icon: 'fa-palette', gradient: 'linear-gradient(145deg, #10241c, #09120e)', accent: '#34d399' };
+      }
+      return { icon: 'fa-music', gradient: 'linear-gradient(145deg, #231612, #0e1017)', accent: 'var(--primary, #E05A3A)' };
     }
 
-    function renderPosterMedia(e, categoryLabel, statusText, radarBadge) {
+    function renderPosterMedia(e, categoryLabel, statusText, radarBadge, isPriority = false) {
       const img = e.image_url && e.is_fallback_image !== true && e.image_status !== 'FALLBACK' ? e.image_url : '';
-      const icon = getCategoryIcon(e.category || categoryLabel);
+      const visual = getCategoryVisual(e.category || categoryLabel);
       const title = escapeHtml(e.title || e.canonical_name || 'Event');
+      const venue = escapeHtml(e.venue_name || e.venue || e.city || '');
+      const priorityAttr = isPriority ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
 
       const placeholderInner = `
-        <div class="poster-placeholder" style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(145deg, #1e293b, #0f172a); color: #94a3b8; text-align: center; padding: 20px; box-sizing: border-box;">
-          <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; color: var(--primary, #B8472F); font-size: 22px;">
-            <i class="fa-solid ${icon}"></i>
+        <div class="poster-fallback-art" style="background: ${visual.gradient};">
+          <div class="poster-fallback-badge">
+            <i class="fa-solid ${visual.icon}" style="color: ${visual.accent};"></i>
           </div>
-          <div style="font-weight: 700; font-size: 13px; color: #f1f5f9; max-width: 90%; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${title}</div>
-          <div style="font-size: 11px; color: #64748b; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">${escapeHtml(categoryLabel)}</div>
+          <div class="poster-fallback-title">${title}</div>
+          <div class="poster-fallback-meta">${escapeHtml(categoryLabel)}${venue ? ' · ' + venue : ''}</div>
+          <div class="poster-fallback-verified">
+            <i class="fa-solid fa-shield-check" style="color: #34D399; font-size: 10px;"></i> Katalog Resmi TIKUM
+          </div>
         </div>
       `;
 
       if (img) {
         return `
-          <div class="poster-media" style="position: relative; overflow: hidden; background: #0f172a;">
-            <img src="${img}" alt="${title}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-            <div class="poster-fallback-wrap" style="display: none; width: 100%; height: 100%;">
+          <div class="poster-media">
+            <img src="${img}" alt="Poster resmi ${title}" width="250" height="312" ${priorityAttr} decoding="async" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+            <div class="poster-fallback-wrap" style="display: none;">
               ${placeholderInner}
             </div>
+            <div class="poster-scrim"></div>
             <div class="card-category-pill">${categoryLabel}</div>
             <div class="ln-badge ln-badge--status">${statusText}</div>
             ${radarBadge}
@@ -773,8 +787,10 @@
         `;
       } else {
         return `
-          <div class="poster-media" style="position: relative; overflow: hidden; background: #0f172a;">
-            ${placeholderInner}
+          <div class="poster-media">
+            <div class="poster-fallback-wrap" style="display: flex;">
+              ${placeholderInner}
+            </div>
             <div class="card-category-pill">${categoryLabel}</div>
             <div class="ln-badge ln-badge--status">${statusText}</div>
             ${radarBadge}
@@ -796,7 +812,7 @@
      * Card hierarchy conforming to the TIKUM marketplace system:
      * IMAGE -> CATEGORY -> EVENT NAME -> DATE -> VENUE/CITY -> PRICE FROM -> VERIFICATION / PIC BADGE
      */
-    function renderPosterCard(e) {
+    function renderPosterCard(e, opts = {}) {
       const status = resolveStatus(e);
       const title = e.title || e.canonical_name || 'Event';
       const city = e.city || e.venue_city || '';
@@ -807,6 +823,7 @@
       const slug = e.slug || e.event_id || e.id;
       const verifDate = e.verified_at || '';
       const categoryLabel = resolveCategoryLabel(e);
+      const isPriority = Boolean(opts && opts.priority);
 
       let radarBadge = '';
       if (e.discovery_source_id === 'src-songkick-jakarta' || e.discovery_source_id === 'src-bandsintown-jakarta') {
@@ -826,7 +843,7 @@
 
       return `
         <a href="/events/${slug}" class="poster-card">
-          ${renderPosterMedia(e, categoryLabel, status.text, radarBadge)}
+          ${renderPosterMedia(e, categoryLabel, status.text, radarBadge, isPriority)}
           <div class="poster-body">
             <div class="poster-date"><i class="fa-regular fa-calendar"></i> ${dateStr}</div>
             <div class="poster-title">${title}</div>
@@ -905,7 +922,8 @@
 
     function renderRail(title, lead, events, opts = {}) {
       if (!events || events.length === 0) return '';
-      const cards = events.map(renderPosterCard).join('');
+      const isPriority = Boolean(opts && opts.priority);
+      const cards = events.map((e, idx) => renderPosterCard(e, { priority: isPriority && idx < 4 })).join('');
       return `
         <section class="ln-section" ${opts.anchor ? `id="${opts.anchor}"` : ''}>
           <div style="padding:0 24px;">
@@ -921,7 +939,8 @@
 
     function renderGridSection(title, lead, events, opts = {}) {
       if (!events || events.length === 0) return '';
-      const cards = events.map(renderPosterCard).join('');
+      const isPriority = Boolean(opts && opts.priority);
+      const cards = events.map((e, idx) => renderPosterCard(e, { priority: isPriority && idx < 4 })).join('');
       return `
         <section class="ln-section" ${opts.anchor ? `id="${opts.anchor}"` : ''}>
           <div style="padding:0 24px;">
@@ -984,7 +1003,7 @@
       renderHeroFeature(justAnnounced[0] || upcoming[0]);
 
       main.innerHTML = [
-        renderRail('Baru Diumumkan', 'Pengumuman resmi terbaru dari promotor & penyelenggara terverifikasi', justAnnounced.length ? justAnnounced : upcoming.slice(0, 8)),
+        renderRail('Baru Diumumkan', 'Pengumuman resmi terbaru dari promotor & penyelenggara terverifikasi', justAnnounced.length ? justAnnounced : upcoming.slice(0, 8), { priority: true }),
         radarConcerts.length ? renderRail('Radar Konser Jabodetabek (Songkick & Bandsintown)', 'Konser terkurasi dari radar Songkick & Bandsintown yang lolos verifikasi ganda promotor/artis', radarConcerts) : '',
         renderGridSection('Upcoming Shows', 'Seluruh event Indonesia yang sudah terverifikasi sumber resminya', upcoming, { anchor: 'upcomingShows' }),
         lastCall.length ? renderRail('Last Call for Tickets', 'Berlangsung dalam 7 hari ke depan', lastCall) : '',

@@ -1105,6 +1105,10 @@ a:hover {
   scroll-snap-type: x mandatory;
   scrollbar-width: thin;
   scrollbar-color: var(--line-300) transparent;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  will-change: scroll-position;
 }
 
 .ln-rail::-webkit-scrollbar {
@@ -1137,21 +1141,127 @@ a:hover {
   display: flex;
   flex-direction: column;
   position: relative;
-  transition: transform var(--transition-fast), border-color var(--transition-fast);
+  content-visibility: auto;
+  contain-intrinsic-size: 250px 380px;
+  transform: translateZ(0);
 }
 
-.poster-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--terra-600);
+@media (hover: hover) and (pointer: fine) {
+  .poster-card {
+    transition: transform var(--transition-fast), border-color var(--transition-fast);
+  }
+  .poster-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--terra-600);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ln-rail {
+    scroll-behavior: auto;
+  }
+  .poster-card {
+    transition: none !important;
+  }
+  .poster-card:hover {
+    transform: none !important;
+  }
 }
 
 .poster-media {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
-  background-color: var(--sand-50);
-  background-size: cover;
-  background-position: center;
+  background-color: #0f172a;
+  overflow: hidden;
+  contain: paint;
+}
+
+.poster-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  display: block;
+}
+
+.poster-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(15,23,42,0.15) 0%, rgba(15,23,42,0) 40%, rgba(15,23,42,0.7) 100%);
+  z-index: 2;
+}
+
+.poster-fallback-wrap {
+  width: 100%;
+  height: 100%;
+}
+
+.poster-fallback-art {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  text-align: center;
+  padding: 18px 14px;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+.poster-fallback-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.poster-fallback-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #f8fafc;
+  max-width: 92%;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 6px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.poster-fallback-meta {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 8px;
+}
+
+.poster-fallback-verified {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .card-category-pill {
