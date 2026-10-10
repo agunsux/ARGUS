@@ -2,8 +2,10 @@
  * BBO Events Source Adapter (bbo.co.id)
  * Trusted Primary Event Source
  *
- * Supports structured event feeds, server-rendered listings, and snapshot store.
- * Produces the TIKUM Common Event Contract with deterministic fields.
+ * OPERATIONAL MODE: SNAPSHOT-ONLY
+ *   - No live network crawler or API integration is currently implemented.
+ *   - Reads exclusively from committed OfficialSourceSnapshotStore or fixtures.
+ *   - Produces the TIKUM Common Event Contract with deterministic fields.
  */
 
 const { EventSourceAdapter } = require('./EventSourceAdapter');

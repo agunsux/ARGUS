@@ -776,8 +776,12 @@ async function main() {
     pestapora.source_url = 'https://pestapora.com';
     pestapora.evidence_hash = 'sha256-verified-pestapora-test-proof';
     pestapora.verified_at = referenceNow.toISOString();
+    pestapora.status = 'UPCOMING';
+    pestapora.lifecycle_status = 'UPCOMING';
+    const pestaListing = state.listings.find(l => l.event_id === 'event-pestapora-2026');
+    if (pestaListing) pestaListing.status = 'ACTIVE';
 
-    const verifiedListings = ListingService.getActiveListings().filter(l => {
+    const verifiedListings = ListingService.getActiveListings(null, referenceNow).filter(l => {
       const ev = state.events.find(e => e.id === l.event_id);
       if (!ev) return false;
       return EventTemporalLifecycleEngine.isEventUpcoming(ev, referenceNow);

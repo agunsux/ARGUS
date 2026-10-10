@@ -223,7 +223,7 @@ class PostgresUserRepository extends UserRepository {
       { id: 'seller-1', email: 'budi.seller@example.com', name: 'Budi Santoso', role: 'SELLER', password_hash: sellerPass },
       { id: 'buyer-1', email: 'dewi.buyer@example.com', name: 'Dewi Lestari', role: 'BUYER', password_hash: buyerPass },
       { id: 'buyer-2', email: 'rina.buyer@example.com', name: 'Rina Wijaya', role: 'BUYER', password_hash: buyerPass },
-      { id: 'pic-1', email: 'agus.pic@argus.id', name: 'Agus Hendra (Event PIC)', role: 'pic', password_hash: picPass },
+      { id: 'pic-1', email: 'pic.test@argus.id', name: 'Test PIC Officer', role: 'pic', password_hash: picPass },
       { id: 'seller-xp-1', email: 'seller-xp-1@test.tikum.app', name: 'Seller Cross-Process', role: 'SELLER', password_hash: DEFAULT_HASH },
       { id: 'buyer-xp-1', email: 'buyer-xp-1@test.tikum.app', name: 'Buyer Cross-Process', role: 'BUYER', password_hash: DEFAULT_HASH }
     ];

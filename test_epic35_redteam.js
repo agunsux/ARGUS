@@ -73,9 +73,18 @@ async function apiRequest(endpoint, { method = 'GET', headers = {}, body = null 
 
 // Helper to seed a standard verified listing and paid escrow order
 async function setupPaidOrder({ sellerId = 'seller-1', buyerId = 'buyer-1', barcode = 'BC-TEST-' + uuidv4() } = {}) {
+  if (!state.event_pics.some(ep => ep.event_id === 'event-joyland-2026' && ep.pic_user_id === 'pic-1')) {
+    EventPicService.assignPic({
+      eventId: 'event-joyland-2026',
+      venueId: 'venue-gbk',
+      picUserId: 'pic-1',
+      contactPhone: '+6281100000000'
+    });
+  }
+
   const listingRes = await ListingService.createListing({
     sellerId,
-    eventId: 'event-pestapora-2026',
+    eventId: 'event-joyland-2026',
     seatInfo: 'CAT 1 - Gate Test',
     faceValue: 1250000,
     price: 1500000,
@@ -622,7 +631,7 @@ async function runRedTeamSuite() {
         picUserId: 'pic-1',
         orderId: order.id,
         photoFile: true,
-        currentDateStr: '2026-10-25'
+        currentDateStr: '2026-11-27'
       });
 
       const prevEnv = process.env.NODE_ENV;

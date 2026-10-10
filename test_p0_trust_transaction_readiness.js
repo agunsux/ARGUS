@@ -232,10 +232,35 @@ async function runTrustAndReadinessSuite() {
   // ---------------------------------------------------------------------------
   console.log('\n── Section 3: Idempotency & Concurrency Invariants ──');
 
+  const testEventId = 'event-pilot-readiness-2026';
+  let testEvent = state.events.find(e => e.id === testEventId);
+  if (!testEvent) {
+    testEvent = {
+      id: testEventId,
+      name: 'TIKUM Pilot Readiness Concert 2026',
+      date: '2026-12-01',
+      start_date: '2026-12-01',
+      end_date: '2026-12-01',
+      venue: 'GBK Senayan',
+      is_verified: true,
+      verification_status: 'VERIFIED',
+      evidence_hash: 'sha256-test-pilot-readiness',
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING'
+    };
+    state.events.push(testEvent);
+  } else {
+    testEvent.is_verified = true;
+    testEvent.verification_status = 'VERIFIED';
+    testEvent.evidence_hash = 'sha256-test-pilot-readiness';
+    testEvent.status = 'UPCOMING';
+    testEvent.lifecycle_status = 'UPCOMING';
+  }
+
   await testAsync('3.1 Record payment is strictly idempotent against duplicate webhooks', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-pestapora-2026',
+      eventId: testEventId,
       seatInfo: 'CAT 1 - Seat 11',
       faceValue: 1250000,
       price: 1500000,
@@ -270,7 +295,7 @@ async function runTrustAndReadinessSuite() {
   await testAsync('3.2 Releasing already released escrow is idempotent and does not duplicate disbursement', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-pestapora-2026',
+      eventId: testEventId,
       seatInfo: 'CAT 1 - Seat 12',
       faceValue: 1250000,
       price: 1500000,
@@ -291,6 +316,12 @@ async function runTrustAndReadinessSuite() {
     });
 
     const { EventPicService } = require('./src/services/eventPicService');
+    EventPicService.assignPic({
+      eventId: testEventId,
+      venueId: 'venue-gbk',
+      picUserId: 'pic-1',
+      contactPhone: '+6281100000000'
+    });
     await EventPicService.recordEntryVerification({
       picUserId: 'pic-1',
       orderId: orderRes.order.id,
@@ -319,7 +350,7 @@ async function runTrustAndReadinessSuite() {
   await testAsync('4.1 Opening dispute freezes escrow and blocks releaseToSeller', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-pestapora-2026',
+      eventId: testEventId,
       seatInfo: 'CAT 1 - Seat 13',
       faceValue: 1250000,
       price: 1500000,
@@ -362,7 +393,7 @@ async function runTrustAndReadinessSuite() {
   await testAsync('4.2 Releasing escrow without confirmed gate entry is strictly blocked', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-pestapora-2026',
+      eventId: testEventId,
       seatInfo: 'CAT 1 - Seat 14',
       faceValue: 1250000,
       price: 1500000,
@@ -437,16 +468,16 @@ async function runTrustAndReadinessSuite() {
     const rawBarcode = 'SECRET-RAW-TICKET-BARCODE-999';
     const expectedHash = crypto.createHash('sha256').update(rawBarcode.trim()).digest('hex');
 
-    const event = state.events.find(e => e.id === 'event-pestapora-2026');
+    const event = state.events.find(e => e.id === testEventId);
     if (event) {
       event.is_verified = true;
       event.verification_status = 'VERIFIED';
-      event.evidence_hash = 'sha256-test-lany';
+      event.evidence_hash = 'sha256-test-pilot-readiness';
     }
 
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-pestapora-2026',
+      eventId: testEventId,
       seatInfo: 'CAT 1 - Seat 15',
       faceValue: 1250000,
       price: 1500000,
@@ -539,7 +570,17 @@ async function runTrustAndReadinessSuite() {
   });
 
   await testAsync('7.2 Event with confirmed PIC assignment returns PIC_AVAILABLE or PIC_ON_SITE', async () => {
-    const eventId = 'event-pestapora-2026';
+    const eventId = testEventId;
+    state.event_pics.push({
+      id: 'pic-assign-test-72',
+      event_id: eventId,
+      pic_user_id: 'pic-1',
+      operator_id: 'pic-1',
+      contact_phone: '+6281299998888',
+      operational_window: { start: '2026-12-01T08:00:00Z', end: '2026-12-01T23:59:59Z' },
+      status: 'ACTIVE',
+      assigned_at: new Date().toISOString()
+    });
     const result = VenueAssistService.getAvailabilityForEvent(eventId);
     assert.strictEqual(result.available, true);
     assert.ok(result.status === PIC_AVAILABILITY_STATUS.PIC_AVAILABLE || result.status === PIC_AVAILABILITY_STATUS.PIC_ON_SITE);

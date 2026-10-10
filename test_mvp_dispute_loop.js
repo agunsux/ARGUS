@@ -43,7 +43,7 @@ async function runDisputeSuite() {
   await testAsync('Setup: Verified Listing & Paid Escrow Order', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-pestapora-2026',
+      eventId: 'event-joyland-2026',
       seatInfo: 'CAT 1 - Section West, Row A, Seat 1',
       faceValue: 1250000,
       price: 1500000,
@@ -68,6 +68,13 @@ async function runDisputeSuite() {
     });
 
     assert.strictEqual(escrow1.status, ESCROW_STATUS.ESCROWED);
+
+    EventPicService.assignPic({
+      eventId: 'event-joyland-2026',
+      venueId: 'venue-gbk',
+      picUserId: 'pic-1',
+      contactPhone: '+6281100000000'
+    });
   });
 
   await testAsync('Step 1: Buyer reports "TICKET INVALID" at venue gate -> Dispute created in OPEN state', async () => {
@@ -107,7 +114,7 @@ async function runDisputeSuite() {
     assert.ok(dossier);
     assert.strictEqual(dossier.buyer.id, 'buyer-1');
     assert.strictEqual(dossier.seller.id, 'seller-1');
-    assert.strictEqual(dossier.event.id, 'event-pestapora-2026');
+    assert.strictEqual(dossier.event.id, 'event-joyland-2026');
     assert.strictEqual(dossier.entryVerifications[0].status, 'INVALID');
     assert.ok(dossier.auditLogs.length >= 3);
   });
@@ -138,7 +145,7 @@ async function runDisputeSuite() {
   await testAsync('Setup Scenario 2: Verified Listing & Paid Escrow Order', async () => {
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-pestapora-2026',
+      eventId: 'event-joyland-2026',
       seatInfo: 'CAT 1 - Section West, Row B, Seat 2',
       faceValue: 1250000,
       price: 1500000,
@@ -163,6 +170,13 @@ async function runDisputeSuite() {
     });
 
     assert.strictEqual(escrow2.status, ESCROW_STATUS.ESCROWED);
+
+    EventPicService.assignPic({
+      eventId: 'event-joyland-2026',
+      venueId: 'venue-gbk',
+      picUserId: 'pic-1',
+      contactPhone: '+6281100000000'
+    });
   });
 
   await testAsync('Step 2.1: Buyer falsely opens dispute claiming gate issue', async () => {

@@ -79,10 +79,17 @@ class ListingService {
     }
 
     const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('../discovery/EventTemporalLifecycleEngine');
-    const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
-    const endMs = new Date(temporal.event_end_at).getTime();
+    let endMs = NaN;
+    try {
+      const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
+      if (temporal && temporal.event_end_at) {
+        endMs = new Date(temporal.event_end_at).getTime();
+      }
+    } catch (_) {
+      endMs = NaN;
+    }
     const rawStatus = (event.status || event.lifecycle_status || '').toUpperCase();
-    const isConcluded = endMs <= Date.now() || [
+    const isConcluded = isNaN(endMs) || endMs <= Date.now() || [
       LIFECYCLE_STATUS.COMPLETED,
       LIFECYCLE_STATUS.ARCHIVED,
       LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS,
@@ -91,7 +98,7 @@ class ListingService {
       'DIBATALKAN'
     ].includes(rawStatus);
 
-    if (isConcluded && !(process.env.NODE_ENV === 'test' && eventId === 'event-pestapora-2026')) {
+    if (isConcluded) {
       const err = new Error(`Cannot list ticket for concluded/expired event '${eventId}'`);
       err.code = 'EVENT_CONCLUDED';
       throw err;
@@ -318,7 +325,8 @@ class ListingService {
   /**
    * Get all active marketplace listings with event details
    */
-  static getActiveListings(eventId = null) {
+  static getActiveListings(eventId = null, now = new Date()) {
+    const currentMs = (now instanceof Date ? now : new Date(now)).getTime();
     return state.listings
       .filter(l => {
         if (l.status !== LISTING_STATUS.ACTIVE) return false;
@@ -327,8 +335,15 @@ class ListingService {
         if (!event) return false;
 
         const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('../discovery/EventTemporalLifecycleEngine');
-        const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
-        const endMs = new Date(temporal.event_end_at).getTime();
+        let endMs = NaN;
+        try {
+          const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
+          if (temporal && temporal.event_end_at) {
+            endMs = new Date(temporal.event_end_at).getTime();
+          }
+        } catch (_) {
+          endMs = NaN;
+        }
         const evStatus = (event.status || '').toUpperCase();
         const evLifecycle = (event.lifecycle_status || '').toUpperCase();
         if (!event.is_verified || (event.verification_status !== 'VERIFIED' && event.verification_status !== 'PRIMARY_SOURCE_VERIFIED')) {
@@ -339,24 +354,23 @@ class ListingService {
           }
         }
 
-        if (l.event_id !== 'event-pestapora-2026') {
-          if (endMs <= Date.now() || [
-            LIFECYCLE_STATUS.COMPLETED,
-            LIFECYCLE_STATUS.ARCHIVED,
-            LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS,
-            LIFECYCLE_STATUS.CANCELLED,
-            'EXPIRED',
-            'DIBATALKAN'
-          ].includes(evLifecycle) || [
-            LIFECYCLE_STATUS.COMPLETED,
-            LIFECYCLE_STATUS.ARCHIVED,
-            LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS,
-            LIFECYCLE_STATUS.CANCELLED,
-            'EXPIRED',
-            'DIBATALKAN'
-          ].includes(evStatus)) {
-            return false;
-          }
+        // Universal Lifecycle Gate: Exclude concluded, expired, archived, cancelled, or invalid-date events
+        if (isNaN(endMs) || endMs <= currentMs || [
+          LIFECYCLE_STATUS.COMPLETED,
+          LIFECYCLE_STATUS.ARCHIVED,
+          LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS,
+          LIFECYCLE_STATUS.CANCELLED,
+          'EXPIRED',
+          'DIBATALKAN'
+        ].includes(evLifecycle) || [
+          LIFECYCLE_STATUS.COMPLETED,
+          LIFECYCLE_STATUS.ARCHIVED,
+          LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS,
+          LIFECYCLE_STATUS.CANCELLED,
+          'EXPIRED',
+          'DIBATALKAN'
+        ].includes(evStatus)) {
+          return false;
         }
 
         return true;

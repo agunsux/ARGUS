@@ -46,19 +46,27 @@ async function runAll() {
   // ---------------------------------------------------------------------------
   await runTest('Test 1: Marketplace listings return all 10 canonical attributes', async () => {
     // Ensure target event has verified authoritative provenance
-    const pest = state.events.find(e => e.id === 'event-pestapora-2026');
-    if (pest) {
-      pest.is_verified = true;
-      pest.verification_status = 'VERIFIED';
-      pest.evidence_hash = 'sha256-evidence-pestapora-test';
-      pest.verified_at = new Date().toISOString();
-      pest.source_url = 'https://pestapora.com';
+    const joyland = state.events.find(e => e.id === 'event-joyland-2026');
+    if (joyland) {
+      joyland.is_verified = true;
+      joyland.verification_status = 'VERIFIED';
+      joyland.evidence_hash = 'sha256-evidence-joyland-test';
+      joyland.verified_at = new Date().toISOString();
+      joyland.source_url = 'https://joylandfest.com';
     }
+
+    const { EventPicService } = require('./src/services/eventPicService');
+    EventPicService.assignPic({
+      eventId: 'event-joyland-2026',
+      venueId: 'venue-gbk',
+      picUserId: 'pic-1',
+      contactPhone: '+6281100000000'
+    });
 
     // Create a listing
     const listingRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-pestapora-2026',
+      eventId: 'event-joyland-2026',
       seatInfo: 'CAT 1 - Tribune Barat Row 12',
       faceValue: 1500000,
       price: 1800000,
@@ -71,7 +79,7 @@ async function runAll() {
     const l = activeListings.find(item => item.id === listingRes.listing.id);
 
     assert.ok(l, 'Listing must be returned in active listings');
-    assert.ok(l.event_title.includes('Pestapora'), 'Event title must match Pestapora');
+    assert.ok(l.event_title.includes('Joyland'), 'Event title must match Joyland');
     assert.ok(l.venue_name, 'Venue must be present');
     assert.ok(l.event_date, 'Date/time must be present');
     assert.strictEqual(l.ticket_category, 'CAT 1', 'Ticket category must be extracted');
@@ -94,7 +102,7 @@ async function runAll() {
   await runTest('Test 2: Seller can counter-offer with strict boundary & anti-chat enforcement', async () => {
     const listingRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-pestapora-2026',
+      eventId: 'event-joyland-2026',
       seatInfo: 'VIP - Row 1',
       faceValue: 3000000,
       price: 3500000,
@@ -163,7 +171,7 @@ async function runAll() {
   await runTest('Test 3: Buyer accepts counter-offer -> Order created & listing locked', async () => {
     const listingRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-pestapora-2026',
+      eventId: 'event-joyland-2026',
       seatInfo: 'CAT 2 - Row 5',
       faceValue: 1000000,
       price: 1500000,

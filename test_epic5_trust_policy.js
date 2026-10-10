@@ -541,6 +541,15 @@ async function runEpic5Suite() {
   await testAsync('Scenario 11: PIC outside operational window -> FAIL', async () => {
     const { order } = await setupBaselineOrder({ orderId: 'ord-scen-11', eventId: 'event-pestapora-2026' });
 
+    state.event_pics.push({
+      id: 'pic-assign-scen-11',
+      event_id: order.event_id,
+      venue_id: 'venue-kemayoran',
+      pic_user_id: 'pic-1',
+      status: 'ACTIVE',
+      contact_phone: '+6281100000000'
+    });
+
     // Event is on 2026-09-25. Attempt before operational window (2026-09-24 10:00:00)
     let windowBlocked = false;
     try {
@@ -590,9 +599,16 @@ async function runEpic5Suite() {
   await testAsync('Scenario 13: PIC wrong gate -> FAIL (PIC_GATE_MISMATCH)', async () => {
     const { order } = await setupBaselineOrder({ orderId: 'ord-scen-13', eventId: 'event-pestapora-2026' });
 
-    // Ensure PIC assignment has gate 'Gate 1'
-    const assign = state.event_pics.find(ep => ep.pic_user_id === 'pic-1' && ep.event_id === 'event-pestapora-2026');
-    if (assign) assign.venue_gate = 'Gate 1';
+    state.event_pics = state.event_pics.filter(ep => !(ep.pic_user_id === 'pic-1' && ep.event_id === order.event_id));
+    state.event_pics.push({
+      id: 'pic-assign-scen-13',
+      event_id: order.event_id,
+      venue_id: 'venue-kemayoran',
+      pic_user_id: 'pic-1',
+      venue_gate: 'Gate 1',
+      status: 'ACTIVE',
+      contact_phone: '+6281100000000'
+    });
 
     let gateMismatchBlocked = false;
     try {
@@ -992,9 +1008,16 @@ async function runEpic5Suite() {
     const { OfferService, OFFER_STATUS } = require('./src/services/offerService');
 
     // 1. Create and verify listing
+    EventPicService.assignPic({
+      eventId: 'event-joyland-2026',
+      venueId: 'venue-gbk',
+      picUserId: 'pic-1',
+      contactPhone: '+6281100000000'
+    });
+
     const listingRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-pestapora-2026',
+      eventId: 'event-joyland-2026',
       seatInfo: 'VIP Row 10',
       faceValue: 2000000,
       price: 2500000,

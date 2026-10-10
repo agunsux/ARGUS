@@ -14,6 +14,7 @@
  * 5. EconomicsEngine: Unit economics, variable costs, contribution margin, and ledger reconciliation
  * 6. API Endpoints: Calculation preview, quote lookup, admin policy management, contribution margin report
  */
+process.env.NODE_ENV = 'test';
 
 const assert = require('assert');
 const http = require('http');
@@ -468,7 +469,7 @@ async function runSuite() {
   let activeQuote;
   await asyncTest('3.1 Generates immutable quote and satisfies double-entry balancing equation', async () => {
     activeQuote = await TransactionQuoteService.generateQuote({
-      listingId: 'list-demo-pestapora',
+      listingId: 'list-test-active',
       ticketPrice: 1000000,
       buyerId: 'buyer-1',
       sellerId: 'seller-1',
@@ -517,7 +518,7 @@ async function runSuite() {
 
   await asyncTest('3.5 Expired quote is rejected after TTL elapses', async () => {
     const expiredQuote = await TransactionQuoteService.generateQuote({
-      listingId: 'list-demo-pestapora',
+      listingId: 'list-test-active',
       ticketPrice: 500000,
       buyerId: 'buyer-1',
       ttlMinutes: -1 // Expired 1 minute ago
@@ -538,7 +539,7 @@ async function runSuite() {
   await asyncTest('4.1 Generate locked quote and create order with two-sided pricing and taxes', async () => {
     // Generate locked quote for listing
     e2eQuote = await TransactionQuoteService.generateQuote({
-      listingId: 'list-demo-pestapora',
+      listingId: 'list-test-active',
       ticketPrice: 1500000,
       buyerId: 'buyer-1',
       sellerId: 'seller-1',
@@ -560,7 +561,7 @@ async function runSuite() {
 
     const orderRes = await EscrowService.createOrder({
       buyerId: 'buyer-1',
-      listingId: 'list-demo-pestapora',
+      listingId: 'list-test-active',
       quoteId: e2eQuote.id
     });
 
@@ -852,7 +853,7 @@ async function runSuite() {
   await asyncTest('6.3 POST /api/mvp/pricing/calculate with lockQuote: Generates locked Quote ID', async () => {
     const res = await apiPost('/api/mvp/pricing/calculate', {
       ticketPrice: 3000000,
-      listingId: 'list-demo-pestapora',
+      listingId: 'list-test-active',
       buyerId: 'buyer-1',
       lockQuote: true
     });

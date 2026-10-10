@@ -2198,13 +2198,16 @@ router.get('/api/discovery/audit/source-to-database', async (req, res) => {
  */
 router.get('/api/discovery/hero-concerts', async (req, res) => {
   try {
+    const heroEvents = canonicalRegistry.getHeroEvents();
     const allState = (state && Array.isArray(state.events)) ? state.events : [];
     const allCanonical = canonicalRegistry.getAllEvents();
 
-    const nassarEvent = allState.find(e => e.id === 'event-nassar-lost-in-the-jungle-2026' || (e.slug && e.slug.includes('nassar'))) ||
+    const nassarEvent = heroEvents.find(e => (e.slug && e.slug.includes('nassar')) || (e.title && e.title.toLowerCase().includes('nassar'))) ||
+                        allState.find(e => e.id === 'event-nassar-lost-in-the-jungle-2026' || (e.slug && e.slug.includes('nassar'))) ||
                         allCanonical.find(e => (e.slug && e.slug.includes('nassar')) || (e.title && e.title.toLowerCase().includes('nassar')));
 
-    const yeEvent = allState.find(e => e.id === 'kanye-west-ye-tour-jakarta-2026' || (e.slug && e.slug.includes('ye-live')) || (e.slug && e.slug.includes('kanye'))) ||
+    const yeEvent = heroEvents.find(e => (e.slug && e.slug.includes('ye-live')) || (e.slug && e.slug.includes('kanye')) || (e.title && e.title.toLowerCase().includes('ye tour'))) ||
+                    allState.find(e => e.id === 'kanye-west-ye-tour-jakarta-2026' || (e.slug && e.slug.includes('ye-live')) || (e.slug && e.slug.includes('kanye'))) ||
                     allCanonical.find(e => (e.slug && e.slug.includes('ye-live')) || (e.slug && e.slug.includes('kanye')) || (e.title && e.title.toLowerCase().includes('ye tour')));
 
     const formatHeroCard = (ev, defaultMeta) => {
@@ -2233,7 +2236,9 @@ router.get('/api/discovery/hero-concerts', async (req, res) => {
         resale_inventory_count: 0,
         resale_available: false,
         resale_notice: 'Belum ada tiket resale sekunder terverifikasi di TIKUM untuk event ini. TIKUM tidak membuat stok palsu atau harga fiktif.',
-        buyer_protection_policy: 'TIKUM 100% Buyer Protection: Setiap tiket diverifikasi resmi sebelum serah terima.'
+        buyer_protection_policy: 'TIKUM 100% Buyer Protection: Setiap tiket diverifikasi resmi sebelum serah terima.',
+        observed_at: ev.source_last_checked_at || ev.source_published_at || '2026-10-10T00:00:00+07:00',
+        evidence_hash: ev.evidence_hash || null
       };
     };
 

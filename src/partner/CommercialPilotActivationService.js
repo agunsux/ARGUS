@@ -138,8 +138,8 @@ class CommercialPilotActivationService {
       ],
       operational_handoff_protocol: {
         meeting_point: 'Gambir Expo Gate B Public Concourse (Area Terbuka Publik)',
-        pic_officer: 'Agus Hendra (Lead PIC Jabodetabek)',
-        pic_contact: '081199887766',
+        pic_officer: null, // Pending formal partner authorization and appointment
+        pic_contact: null,
         dry_run_date: '2026-10-24 (H-1)',
         event_date: '2026-10-25 (H-Day)'
       }

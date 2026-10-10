@@ -133,9 +133,25 @@ function resetDatabase() {
     { id: 'admin-1', name: 'Trust Officer ARGUS', email: 'ops@argus.id', phone: '081234567890', role: 'admin', status: 'ACTIVE', password: process.env.ARGUS_ADMIN_PASSWORD ? hashPassword(process.env.ARGUS_ADMIN_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_ADMIN_PASSWORD ? hashPassword(process.env.ARGUS_ADMIN_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null },
     { id: 'seller-1', name: 'Budi Santoso', email: 'budi.seller@example.com', phone: '082223334445', role: 'seller', status: 'ACTIVE', password: process.env.ARGUS_SELLER_PASSWORD ? hashPassword(process.env.ARGUS_SELLER_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_SELLER_PASSWORD ? hashPassword(process.env.ARGUS_SELLER_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null },
     { id: 'buyer-1', name: 'Dewi Lestari', email: 'dewi.buyer@example.com', phone: '085556667778', role: 'buyer', status: 'ACTIVE', password: process.env.ARGUS_BUYER_PASSWORD ? hashPassword(process.env.ARGUS_BUYER_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_BUYER_PASSWORD ? hashPassword(process.env.ARGUS_BUYER_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null },
-    { id: 'buyer-2', name: 'Rina Wijaya', email: 'rina.buyer@example.com', phone: '085556667779', role: 'buyer', status: 'ACTIVE', password: process.env.ARGUS_BUYER2_PASSWORD ? hashPassword(process.env.ARGUS_BUYER2_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_BUYER2_PASSWORD ? hashPassword(process.env.ARGUS_BUYER2_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null },
-    { id: 'pic-1', name: 'Agus Hendra (Event PIC)', email: 'agus.pic@argus.id', phone: '081199887766', role: 'pic', status: 'ACTIVE', password: process.env.ARGUS_PIC_PASSWORD ? hashPassword(process.env.ARGUS_PIC_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_PIC_PASSWORD ? hashPassword(process.env.ARGUS_PIC_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null }
+    { id: 'buyer-2', name: 'Rina Wijaya', email: 'rina.buyer@example.com', phone: '085556667779', role: 'buyer', status: 'ACTIVE', password: process.env.ARGUS_BUYER2_PASSWORD ? hashPassword(process.env.ARGUS_BUYER2_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_BUYER2_PASSWORD ? hashPassword(process.env.ARGUS_BUYER2_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null }
   ];
+
+  if (isTest) {
+    state.users.push({
+      id: 'pic-1',
+      name: 'Test PIC Officer',
+      email: 'pic.test@argus.id',
+      phone: '081100000000',
+      role: 'pic',
+      status: 'ACTIVE',
+      operational_status: 'TEST_ONLY',
+      password: defaultPassHash,
+      password_hash: defaultPassHash,
+      created_at: now,
+      updated_at: now,
+      last_login_at: null
+    });
+  }
 
   bootstrapAdminUser();
 
@@ -1225,35 +1241,8 @@ function resetDatabase() {
   }
 ];
 
-  state.event_pics = [
-    {
-      id: 'pic-assign-coldplay',
-      event_id: 'event-coldplay',
-      venue_id: 'venue-gbk',
-      pic_user_id: 'pic-1',
-      event_date: '2023-11-15',
-      status: 'CONCLUDED',
-      contact_phone: '081199887766'
-    },
-    {
-      id: 'pic-assign-pestapora',
-      event_id: 'event-pestapora-2026',
-      venue_id: 'venue-kemayoran',
-      pic_user_id: 'pic-1',
-      event_date: '2026-10-25',
-      status: 'ACTIVE',
-      contact_phone: '081199887766'
-    },
-    {
-      id: 'pic-assign-lany',
-      event_id: 'event-lany-jakarta-2026',
-      venue_id: 'venue-indonesia-arena',
-      pic_user_id: 'pic-1',
-      event_date: '2026-10-09',
-      status: 'ACTIVE',
-      contact_phone: '081199887766'
-    }
-  ];
+  // Zero Fabricated PIC Invariant: No event on-site PIC assignments exist until verified and appointed
+  state.event_pics = [];
 
   state.tickets = [
     {
@@ -1270,7 +1259,7 @@ function resetDatabase() {
       id: 'ticket-demo-pestapora',
       event_id: 'event-pestapora-2026',
       current_owner_id: 'seller-1',
-      status: 'VERIFIED',
+      status: 'EXPIRED',
       seat_info: '3-Day Pass General, Row A, Seat 1',
       face_value: 1250000,
       price: 1500000,
@@ -1298,12 +1287,37 @@ function resetDatabase() {
       event_id: 'event-pestapora-2026',
       face_value: 1250000,
       price: 1500000,
-      status: 'ACTIVE',
-      rejection_reason: null,
+      status: 'EXPIRED',
+      rejection_reason: 'Event concluded on 2026-09-27 and transitioned to ARCHIVED',
       evidence_bundle_id: 'bdl-seed-1',
       created_at: '2026-09-01T10:00:00Z'
     }
   ];
+
+  if (isTest) {
+    state.tickets.push({
+      id: 'ticket-test-active',
+      event_id: 'event-joyland-2026',
+      seller_id: 'seller-1',
+      seat_info: 'CAT 1 - Seat T1',
+      face_value: 1250000,
+      price: 1500000,
+      status: 'AVAILABLE',
+      barcode_hash: 'hash-barcode-joyland-test-1'
+    });
+    state.listings.push({
+      id: 'list-test-active',
+      ticket_id: 'ticket-test-active',
+      seller_id: 'seller-1',
+      event_id: 'event-joyland-2026',
+      face_value: 1250000,
+      price: 1500000,
+      status: 'ACTIVE',
+      rejection_reason: null,
+      evidence_bundle_id: 'bdl-seed-1',
+      created_at: now
+    });
+  }
 
   state.evidence_bundles = [
     {

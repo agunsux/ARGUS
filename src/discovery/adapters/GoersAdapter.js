@@ -2,8 +2,11 @@
  * GOERS Source Adapter
  * Trusted Primary Event Source
  * 
- * Supports structured catalog feeds, snapshot store, and safe mock fixtures.
- * Produces the TIKUM Common Event Contract with deterministic fields.
+ * OPERATIONAL MODE: SNAPSHOT-FIRST / PASSIVE
+ *   - Public web probing to https://www.goersapp.com/events returns HTTP 403 (Cloudflare Bot Management).
+ *   - Partner feed (GOERS_FEED_URL) is currently null / unconfigured.
+ *   - Reads exclusively from committed OfficialSourceSnapshotStore or fixtures without bypassing access controls.
+ *   - Produces the TIKUM Common Event Contract with deterministic fields.
  */
 
 const { EventSourceAdapter } = require('./EventSourceAdapter');

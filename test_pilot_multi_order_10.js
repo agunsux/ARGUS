@@ -49,12 +49,19 @@ async function runPilot() {
 
   // 10 listings, deterministic barcodes
   const orders = [];
+  EventPicService.assignPic({
+    eventId: 'event-joyland-2026',
+    venueId: 'venue-gbk',
+    picUserId: 'pic-1',
+    contactPhone: '+6281100000000'
+  });
+
   await testAsync('Setup: 10 listings verified, 10 orders paid & escrowed', async () => {
     for (let i = 0; i < 10; i++) {
       const seller = sellers[i % 5];
       const lr = await ListingService.createListing({
         sellerId: seller,
-        eventId: 'event-pestapora-2026',
+        eventId: 'event-joyland-2026',
         seatInfo: 'CAT 1 - Seat ' + (100 + i),
         faceValue: 1250000,
         price: 1500000,
@@ -75,9 +82,9 @@ async function runPilot() {
   });
 
   test('PIC dashboard: ONE EVENT -> MANY ORDERS -> ONE PIC with admission_protocol', () => {
-    const dash = EventPicService.getPicEventDashboard('pic-1', 'event-pestapora-2026');
+    const dash = EventPicService.getPicEventDashboard('pic-1', 'event-joyland-2026');
     assert.strictEqual(dash.stats.total_orders, 10);
-    assert.strictEqual(dash.operational_cell.event_id, 'event-pestapora-2026');
+    assert.strictEqual(dash.operational_cell.event_id, 'event-joyland-2026');
     assert.strictEqual(dash.orders.length, 10);
     assert.ok(dash.operational_cell.admission_protocol);
     assert.strictEqual(dash.operational_cell.admission_protocol.type, 'PHYSICAL_WRISTBAND');

@@ -16,6 +16,7 @@
  * 12. No payment activation occurred (iPaymu live remains inactive / pilot sandbox).
  * 13. Existing API behavior remains intact (/api/business-profile, /api/discovery/events, /health).
  */
+process.env.NODE_ENV = 'test';
 
 const assert = require('assert');
 const fs = require('fs');
@@ -218,7 +219,7 @@ async function runBrandBoundaryTests() {
 
     const picUser = state.users.find(u => u.id === 'pic-1');
     assert.ok(picUser, 'pic-1 user fixture must exist');
-    assert.strictEqual(picUser.email, 'agus.pic@argus.id');
+    assert.strictEqual(picUser.email, 'pic.test@argus.id');
 
     // Admin console surface retains internal ARGUS Trust Engine branding
     const adminHtml = fs.readFileSync(path.join(publicDir, 'admin.html'), 'utf8');
