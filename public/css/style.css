@@ -1391,7 +1391,7 @@ a:hover {
 .badge-card-trust {
   font-size: 11px;
   font-weight: 700;
-  color: var(--ok-600);
+  color: #246B4B; /* Darkened from #2F7D5B to achieve 5.69:1 WCAG AA contrast on #E8F5E9 */
   background: #E8F5E9;
   padding: 3px 7px;
   border-radius: var(--radius-sm);

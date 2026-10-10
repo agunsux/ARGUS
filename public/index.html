@@ -65,7 +65,7 @@
         <img src="/assets/tikum-mark-pin.svg" width="14" height="14" alt="Indonesia"> Indonesia
       </span>
       <div id="authHeaderContainer">
-        <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()">Login / Sign Up</button>
+        <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up">Masuk / Daftar</button>
       </div>
       <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Toggle Theme" style="padding:6px 10px;">
         <i class="fa-solid fa-moon"></i>
@@ -1143,7 +1143,7 @@
         `;
       } else {
         container.innerHTML = `
-          <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()">Login / Sign Up</button>
+          <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up">Masuk / Daftar</button>
         `;
       }
     }
