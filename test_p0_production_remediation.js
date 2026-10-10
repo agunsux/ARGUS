@@ -317,6 +317,80 @@ async function runSuite() {
     assert.strictEqual(state.venue_shifts ? state.venue_shifts.length : 0, 0);
   });
 
+  // Test 11: Coldplay 2023 listings are EXPIRED and excluded from active listings
+  await runTest('11. Coldplay 2023 legacy listings are EXPIRED and excluded from getActiveListings', async () => {
+    resetDatabase();
+    const activeListings = ListingService.getActiveListings('event-coldplay');
+    assert.strictEqual(activeListings.length, 0, 'No active listings may exist for Coldplay');
+
+    // Confirm list-demo-1 is seeded as EXPIRED
+    const demoListing = state.listings.find(l => l.id === 'list-demo-1');
+    assert.ok(demoListing, 'list-demo-1 must exist');
+    assert.strictEqual(demoListing.status, 'EXPIRED');
+  });
+
+  // Test 12: CuratedCatalogPolicy source capabilities matrix
+  await runTest('12. CuratedCatalogPolicy source capability matrix matches reality', async () => {
+    const { CuratedCatalogPolicy, SOURCE_MODES } = require('./src/discovery/CuratedCatalogPolicy');
+    
+    // LOKET has live network verified capability on targeted endpoint
+    const loketCap = CuratedCatalogPolicy.getSourceCapability('src-loket');
+    assert.strictEqual(loketCap.approved_mode, SOURCE_MODES.LIVE_NETWORK_VERIFIED);
+    assert.strictEqual(loketCap.has_live_network, true);
+
+    // GOERS is passive without partner feed (never bypasses Cloudflare)
+    const goersCap = CuratedCatalogPolicy.getSourceCapability('src-goers');
+    assert.strictEqual(goersCap.approved_mode, SOURCE_MODES.READY_PASSIVE);
+    assert.strictEqual(goersCap.has_live_network, false);
+    assert.strictEqual(goersCap.anti_bot_policy, 'ZERO_CLOUDFLARE_BYPASS');
+
+    // BBO is snapshot-only (no live crawler)
+    const bboCap = CuratedCatalogPolicy.getSourceCapability('src-bbo');
+    assert.strictEqual(bboCap.approved_mode, SOURCE_MODES.SNAPSHOT_ONLY);
+    assert.strictEqual(bboCap.has_live_network, false);
+  });
+
+  // Test 13: CuratedCatalogPolicy strictly forbids labelling snapshot as live
+  await runTest('13. CuratedCatalogPolicy rejects labelling snapshot as live ingestion', async () => {
+    const { CuratedCatalogPolicy } = require('./src/discovery/CuratedCatalogPolicy');
+    
+    // Valid: honest snapshot claim
+    assert.ok(CuratedCatalogPolicy.validateSourceProvenanceClaim('src-bbo', false, true));
+
+    // Violation: claiming live when source has no live network
+    assert.throws(() => {
+      CuratedCatalogPolicy.validateSourceProvenanceClaim('src-bbo', true, false);
+    }, /does not support live network ingestion/);
+
+    // Violation: claiming live while reading from snapshot
+    assert.throws(() => {
+      CuratedCatalogPolicy.validateSourceProvenanceClaim('src-loket', true, true);
+    }, /attempted to label snapshot\/fixture data as live ingestion/);
+  });
+
+  // Test 14: CuratedCatalogPolicy quarantine on date/venue conflicts & resale separation
+  await runTest('14. CuratedCatalogPolicy quarantine on conflicts and resale separation', async () => {
+    const { CuratedCatalogPolicy } = require('./src/discovery/CuratedCatalogPolicy');
+    
+    // Resale separation: 0 inventory -> false
+    const zeroResale = CuratedCatalogPolicy.evaluateResaleAvailability(0);
+    assert.strictEqual(zeroResale.resale_available, false);
+    assert.strictEqual(zeroResale.resale_inventory_count, 0);
+
+    // Resale separation: 2 inventory -> true
+    const hasResale = CuratedCatalogPolicy.evaluateResaleAvailability(2);
+    assert.strictEqual(hasResale.resale_available, true);
+    assert.strictEqual(hasResale.resale_inventory_count, 2);
+
+    // Quarantine: conflict on event date
+    const dateConflict = CuratedCatalogPolicy.shouldQuarantineEvent([{ field: 'start_date', valueA: '2026-10-24', valueB: '2026-11-01' }]);
+    assert.strictEqual(dateConflict, true, 'Date conflict must trigger quarantine');
+
+    // Clean event: no conflict
+    const cleanEvent = CuratedCatalogPolicy.shouldQuarantineEvent([], 'VERIFIED');
+    assert.strictEqual(cleanEvent, false);
+  });
+
   console.log('================================================================');
   console.log(`P0 REMEDIATION SUITE COMPLETE: ${passedTests} passed, ${failedTests} failed`);
   console.log('================================================================');
