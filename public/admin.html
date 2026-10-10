@@ -356,6 +356,7 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
   </style>
+  <script src="/js/i18n.js"></script>
 </head>
 <body>
 
@@ -373,7 +374,7 @@
       <!-- Quick Operational Search -->
       <div class="ops-search-box">
         <i class="fa-solid fa-magnifying-glass ops-search-icon"></i>
-        <input type="text" id="adminSearchInput" class="ops-search-input" placeholder="Cari Event, Tiket, Order, Penjual, Pembeli..." onkeyup="handleQuickSearch(event)">
+        <input type="text" id="adminSearchInput" class="ops-search-input" placeholder="Cari Event, Tiket, Order, Penjual, Pembeli..." data-i18n-placeholder="admin.searchPlaceholder" onkeyup="handleQuickSearch(event)">
       </div>
     </div>
 
@@ -383,10 +384,13 @@
         <span class="tag tag-success"><i class="fa-solid fa-circle" style="font-size: 6px;"></i> ONLINE</span>
         <span id="operatorIdentity" class="mono" style="color: #fff; font-weight: 600;">ops@argus.id</span>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="fetchDashboardOverview()" title="Muat ulang seluruh data">
-        <i class="fa-solid fa-rotate"></i> Sync
+      <button id="langToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" title="Ganti Bahasa / Switch Language" style="display: inline-flex; align-items: center; gap: 4px;">
+        <i class="fa-solid fa-globe"></i> <span id="opsLangLabel">ID</span>
       </button>
-      <button class="btn btn-secondary btn-sm" onclick="handleLogout()" title="Keluar dari sesi admin">
+      <button class="btn btn-secondary btn-sm" onclick="fetchDashboardOverview()" title="Muat ulang seluruh data" data-i18n-title="admin.syncTitle">
+        <i class="fa-solid fa-rotate"></i> <span data-i18n="admin.syncBtn">Sync</span>
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="handleLogout()" title="Keluar dari sesi admin" data-i18n-title="admin.logoutTitle">
         <i class="fa-solid fa-arrow-right-from-bracket"></i>
       </button>
     </div>
@@ -397,67 +401,67 @@
 
     <!-- Sidebar Navigation -->
     <aside class="ops-sidebar">
-      <div class="sidebar-heading">Operational Workspace</div>
+      <div class="sidebar-heading" data-i18n="admin.sidebarWorkspace">Operational Workspace</div>
       <button class="nav-item active" onclick="switchView('overview', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-gauge-high"></i> Overview</span>
+        <span class="nav-item-left"><i class="fa-solid fa-gauge-high"></i> <span data-i18n="admin.tabOverview">Overview</span></span>
         <span id="sidebarAlertCount" class="nav-badge danger" style="display: none;">0</span>
       </button>
       <button class="nav-item" onclick="switchView('events', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-calendar-days"></i> Events</span>
+        <span class="nav-item-left"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="admin.tabEvents">Events</span></span>
         <span id="sidebarEventsCount" class="nav-badge">-</span>
       </button>
       <button class="nav-item" onclick="switchView('listings', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-ticket"></i> Listings</span>
+        <span class="nav-item-left"><i class="fa-solid fa-ticket"></i> <span data-i18n="admin.tabListings">Listings</span></span>
         <span id="sidebarTicketsCount" class="nav-badge">-</span>
       </button>
       <button class="nav-item" onclick="switchView('orders', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-money-bill-transfer"></i> Orders</span>
+        <span class="nav-item-left"><i class="fa-solid fa-money-bill-transfer"></i> <span data-i18n="admin.tabOrders">Orders</span></span>
         <span id="sidebarOrdersCount" class="nav-badge">-</span>
       </button>
       <button class="nav-item" onclick="switchView('sellers', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-store"></i> Sellers</span>
+        <span class="nav-item-left"><i class="fa-solid fa-store"></i> <span data-i18n="admin.tabSellers">Sellers</span></span>
       </button>
       <button class="nav-item" onclick="switchView('buyers', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-user-group"></i> Buyers</span>
+        <span class="nav-item-left"><i class="fa-solid fa-user-group"></i> <span data-i18n="admin.tabBuyers">Buyers</span></span>
       </button>
       <button class="nav-item" onclick="switchView('payments', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-vault"></i> Payments &amp; Ledger</span>
+        <span class="nav-item-left"><i class="fa-solid fa-vault"></i> <span data-i18n="admin.tabPayments">Payments &amp; Ledger</span></span>
       </button>
       <button class="nav-item" onclick="switchView('disputes', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-scale-balanced"></i> Disputes</span>
+        <span class="nav-item-left"><i class="fa-solid fa-scale-balanced"></i> <span data-i18n="admin.tabDisputes">Disputes</span></span>
         <span id="sidebarDisputesCount" class="nav-badge warning" style="display: none;">0</span>
       </button>
       <button class="nav-item" onclick="switchView('incidents', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-triangle-exclamation"></i> Incidents</span>
+        <span class="nav-item-left"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="admin.tabIncidents">Incidents</span></span>
         <span id="sidebarIncidentsCount" class="nav-badge danger" style="display: none;">0</span>
       </button>
       <button class="nav-item" onclick="switchView('trust', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-user-shield"></i> Trust &amp; Verification</span>
+        <span class="nav-item-left"><i class="fa-solid fa-user-shield"></i> <span data-i18n="admin.tabTrust">Trust &amp; Verification</span></span>
         <span id="sidebarTrustCount" class="nav-badge warning" style="display: none;">0</span>
       </button>
       <button class="nav-item" onclick="switchView('venue-pic', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-person-shelter"></i> Venue / PIC</span>
+        <span class="nav-item-left"><i class="fa-solid fa-person-shelter"></i> <span data-i18n="admin.tabVenuePic">Venue / PIC</span></span>
       </button>
       <button class="nav-item" onclick="switchView('event-supply', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-satellite-dish"></i> Supply &amp; Coverage</span>
+        <span class="nav-item-left"><i class="fa-solid fa-satellite-dish"></i> <span data-i18n="admin.tabSupply">Supply &amp; Coverage</span></span>
         <span id="sidebarSupplyAlertCount" class="nav-badge warning" style="display: none;">0</span>
       </button>
       <button class="nav-item" onclick="switchView('sources', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-tower-broadcast"></i> Sources</span>
+        <span class="nav-item-left"><i class="fa-solid fa-tower-broadcast"></i> <span data-i18n="admin.tabSources">Sources</span></span>
         <span id="sidebarSourcesBadge" class="nav-badge">-</span>
       </button>
       <button class="nav-item" onclick="switchView('editorial', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-newspaper"></i> Editorial &amp; SEO Blog</span>
+        <span class="nav-item-left"><i class="fa-solid fa-newspaper"></i> <span data-i18n="admin.tabEditorial">Editorial &amp; SEO Blog</span></span>
         <span id="sidebarBlogCount" class="nav-badge">-</span>
       </button>
       <button class="nav-item" onclick="switchView('inbox', this)">
-        <span class="nav-item-left"><i class="fa-solid fa-inbox"></i> Inbox (@tikum.app)</span>
+        <span class="nav-item-left"><i class="fa-solid fa-inbox"></i> <span data-i18n="admin.tabInbox">Inbox (@tikum.app)</span></span>
         <span id="sidebarInboxCount" class="nav-badge" style="display: none; background: #0284c7; color: #fff;">0</span>
       </button>
 
-      <div class="sidebar-heading" style="margin-top: 16px;">Platform Control</div>
+      <div class="sidebar-heading" style="margin-top: 16px;" data-i18n="admin.sidebarPlatform">Platform Control</div>
       <a href="/" class="nav-item" target="_blank">
-        <span class="nav-item-left"><i class="fa-solid fa-arrow-up-right-from-square"></i> Portal Publik</span>
+        <span class="nav-item-left"><i class="fa-solid fa-arrow-up-right-from-square"></i> <span data-i18n="admin.navPublicPortal">Portal Publik</span></span>
       </a>
     </aside>
 
@@ -475,32 +479,32 @@
         <!-- 1. Top-Level Operational Cards (Real Data Only, "N/A" if unavailable) -->
         <div class="kpi-grid">
           <div class="kpi-card">
-            <div class="kpi-label">Active Events <i class="fa-solid fa-calendar-check" style="color: #38bdf8;"></i></div>
+            <div class="kpi-label"><span data-i18n="admin.kpiActiveEvents">Active Events</span> <i class="fa-solid fa-calendar-check" style="color: #38bdf8;"></i></div>
             <div id="kpiActiveEvents" class="kpi-value">-</div>
             <div class="kpi-sub">Upcoming &amp; On Sale</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Tickets Listed <i class="fa-solid fa-tags" style="color: #34d399;"></i></div>
+            <div class="kpi-label"><span data-i18n="admin.kpiTicketsListed">Tickets Listed</span> <i class="fa-solid fa-tags" style="color: #34d399;"></i></div>
             <div id="kpiTicketsListed" class="kpi-value">-</div>
             <div class="kpi-sub">Active Marketplace Listings</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Total Orders <i class="fa-solid fa-receipt" style="color: #60a5fa;"></i></div>
+            <div class="kpi-label"><span data-i18n="admin.kpiTotalOrders">Total Orders</span> <i class="fa-solid fa-receipt" style="color: #60a5fa;"></i></div>
             <div id="kpiTotalOrders" class="kpi-value">-</div>
             <div class="kpi-sub">All-Time Transactions</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Pending Payments <i class="fa-solid fa-clock" style="color: #f59e0b;"></i></div>
+            <div class="kpi-label"><span data-i18n="admin.kpiPendingPayments">Pending Payments</span> <i class="fa-solid fa-clock" style="color: #f59e0b;"></i></div>
             <div id="kpiPendingPayments" class="kpi-value">-</div>
             <div class="kpi-sub">Within Payment Window</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Open Disputes <i class="fa-solid fa-scale-balanced" style="color: #ef4444;"></i></div>
+            <div class="kpi-label"><span data-i18n="admin.kpiOpenDisputes">Open Disputes</span> <i class="fa-solid fa-scale-balanced" style="color: #ef4444;"></i></div>
             <div id="kpiOpenDisputes" class="kpi-value">-</div>
             <div class="kpi-sub">Investigasi Aktif</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Active Incidents <i class="fa-solid fa-triangle-exclamation" style="color: #f87171;"></i></div>
+            <div class="kpi-label"><span data-i18n="admin.kpiActiveIncidents">Active Incidents</span> <i class="fa-solid fa-triangle-exclamation" style="color: #f87171;"></i></div>
             <div id="kpiActiveIncidents" class="kpi-value">-</div>
             <div class="kpi-sub">Insiden Gate / Venue</div>
           </div>
@@ -509,12 +513,12 @@
         <!-- 1b. Canonical Supply / Marketplace / Source Health (P0 truth strip) -->
         <div class="kpi-grid">
           <div class="kpi-card">
-            <div class="kpi-label">Canonical Events <i class="fa-solid fa-database" style="color: #38bdf8;"></i></div>
+            <div class="kpi-label"><span data-i18n="admin.kpiCanonicalEvents">Canonical Events</span> <i class="fa-solid fa-database" style="color: #38bdf8;"></i></div>
             <div id="kpiCanonicalTotal" class="kpi-value">-</div>
             <div id="kpiCanonicalBreakdown" class="kpi-sub">Verified: - | Pending: -</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Stale / Expired <i class="fa-solid fa-hourglass-half" style="color: #fbbf24;"></i></div>
+            <div class="kpi-label"><span data-i18n="admin.kpiStaleExpired">Stale / Expired</span> <i class="fa-solid fa-hourglass-half" style="color: #fbbf24;"></i></div>
             <div id="kpiCanonicalStale" class="kpi-value">-</div>
             <div class="kpi-sub">Perlu re-verifikasi sumber</div>
           </div>
@@ -1635,19 +1639,20 @@
 
     function renderTag(val) {
       const v = (val || '').toUpperCase();
+      const label = window.TikumI18n ? window.TikumI18n.translateStatus(val) : (val || 'N/A');
       if (v === 'CRITICAL' || v === 'DISPUTED' || v === 'FROZEN' || v === 'FAILED' || v === 'SUSPENDED' || v.includes('FAIL')) {
-        return `<span class="tag tag-critical">${val}</span>`;
+        return `<span class="tag tag-critical">${label}</span>`;
       }
       if (v === 'HIGH' || v === 'INCIDENT' || v === 'WARNING' || v === 'REJECTED') {
-        return `<span class="tag tag-high">${val}</span>`;
+        return `<span class="tag tag-high">${label}</span>`;
       }
       if (v === 'MEDIUM' || v === 'PENDING' || v === 'PENDING_PAYMENT' || v === 'RESERVED' || v === 'INVESTIGATING' || v === 'UNVERIFIED') {
-        return `<span class="tag tag-medium">${val}</span>`;
+        return `<span class="tag tag-medium">${label}</span>`;
       }
       if (v === 'ACTIVE' || v === 'VERIFIED' || v === 'SETTLED' || v === 'RELEASED' || v === 'CONFIRMED' || v === 'CLEAR' || v === 'ONLINE') {
-        return `<span class="tag tag-success">${val}</span>`;
+        return `<span class="tag tag-success">${label}</span>`;
       }
-      return `<span class="tag tag-neutral">${val || 'N/A'}</span>`;
+      return `<span class="tag tag-neutral">${label}</span>`;
     }
 
     // Load Overview Data from Backend API
@@ -3494,6 +3499,14 @@
         showToast('Gagal update status: ' + err.message, 'danger');
       }
     }
+
+    window.addEventListener('tikum:languageChanged', function() {
+      if (typeof fetchDashboardOverview === 'function') fetchDashboardOverview();
+      const activeNav = document.querySelector('.nav-item.active');
+      if (activeNav && typeof currentView !== 'undefined' && currentView !== 'overview') {
+        switchView(currentView, activeNav);
+      }
+    });
 
     (async function initOpsConsole() {
       const sessionOk = await loadAdminSession();

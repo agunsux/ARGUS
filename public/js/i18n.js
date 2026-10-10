@@ -104,7 +104,21 @@
       "support": "Bantuan",
       "account": "Akun",
       "signIn": "Masuk / Daftar",
-      "findTickets": "Cari Tiket"
+      "findTickets": "Cari Tiket",
+      "offers": "Tawaran Harga",
+      "track": "Lacak Transaksi",
+      "adminConsole": "Console Internal",
+      "blog": "Blog & Panduan",
+      "faq": "FAQ",
+      "home": "Beranda",
+      "backToHome": "Kembali ke Beranda",
+      "logout": "Keluar"
+    ,
+      "featuredEvents": "Konser Pilihan",
+      "allEvents": "Semua Event",
+      "exhibitions": "Pameran",
+      "entertainment": "Hiburan Lainnya",
+      "subtitle": "Pasar Tiket Event Terverifikasi"
     },
     "hero": {
       "headline": "TIKUM — Pasar Tiket Event Terverifikasi",
@@ -126,6 +140,11 @@
       "pillarVenue": "Dukungan Venue PIC",
       "pillarProtected": "Transaksi Terlindungi (Escrow)",
       "pillarPricing": "Harga Transparan"
+    ,
+      "officialSource": "Verifikasi Sumber Resmi",
+      "venuePic": "Petugas Tikum di venue",
+      "paymentMethods": "Bayar QRIS / e-wallet / VA",
+      "transparentPrice": "Harga transparan all-in"
     },
     "trustStates": {
       "VERIFIED": "Listing Terverifikasi",
@@ -201,7 +220,20 @@
       "terms": "Syarat & Ketentuan",
       "privacy": "Kebijakan Privasi",
       "cookie": "Kebijakan Cookie",
-      "disclaimer": "Pernyataan Sanggahan"
+      "disclaimer": "Pernyataan Sanggahan",
+      "aboutBrand": "Marketplace tiket sekunder terverifikasi. Transaksi aman dengan rekening penampungan internal (escrow) dan pendampingan fisik di gerbang venue.",
+      "operationalOffice": "Kantor Operasional & Surat:",
+      "officialContact": "Kontak Resmi",
+      "customerSupport": "Layanan Pengguna:",
+      "legalCorrespondence": "Korespondensi Legal:",
+      "servicesAndLegal": "Layanan & Legalitas",
+      "contactUs": "Kontak Kami",
+      "privacyPolicy": "Kebijakan Privasi (UU PDP)",
+      "copyright": "© 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. TIKUM — by SHINERVA."
+    ,
+      "faq": "FAQ / Pertanyaan Umum",
+      "refundPolicy": "Kebijakan Pengembalian Dana (Refund)",
+      "allRightsReserved": "© 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. TIKUM — by SHINERVA."
     },
     "status": {
       "LISTED": "Tersedia",
@@ -219,7 +251,35 @@
       "ACCEPTED": "Disepakati",
       "REJECTED": "Ditolak",
       "COUNTERED": "Penawaran Balasan",
-      "EXPIRED": "Kedaluwarsa"
+      "EXPIRED": "Kedaluwarsa",
+      "DRAFT": "Draf",
+      "PENDING_VERIFICATION": "Menunggu Verifikasi",
+      "ACTIVE": "Aktif",
+      "TICKET_VERIFIED": "Tiket Terverifikasi",
+      "ONLINE": "Aktif Online",
+      "STANDBY": "Siaga di Lokasi",
+      "ON_DUTY": "Bertugas di Gerbang",
+      "DISPATCHED": "Menuju Titik Temu",
+      "BUSY": "Menangani Kendala",
+      "OFFLINE": "Tidak Aktif",
+      "UNAVAILABLE": "Tidak Tersedia",
+      "ESCROWED": "Dana Ditahan di Escrow",
+      "RELEASE_PENDING": "Menunggu Pencairan Dana",
+      "RELEASED": "Dana Dicairkan ke Penjual",
+      "REFUND_PENDING": "Menunggu Proses Refund",
+      "BUYER_FAVORED": "Sengketa Selesai (Refund Pembeli)",
+      "SELLER_FAVORED": "Sengketa Selesai (Pencairan Penjual)",
+      "MUTUAL_RESOLUTION": "Penyelesaian Bersama",
+      "SELLER_NO_SHOW": "Penjual Tidak Hadir",
+      "GATE_REJECTION": "Tiket Ditolak di Gerbang",
+      "COUNTERFEIT_TICKET": "Tiket Palsu / Duplikat",
+      "CATEGORY_MISMATCH": "Kategori Tiket Tidak Sesuai",
+      "AUTO_REFUND_PROCESSED": "Refund Diproses Otomatis",
+      "MANUAL_REFUND_REQUIRED": "Memerlukan Verifikasi Refund Manual",
+      "PRIMARY_SOURCE_VERIFIED": "Terverifikasi Sumber Resmi",
+      "UNVERIFIED": "Belum Terverifikasi",
+      "UNDER_REVIEW": "Dalam Pemeriksaan",
+      "OPEN": "Terbuka"
     },
     "common": {
       "loading": "Memuat data...",
@@ -231,7 +291,28 @@
       "viewTickets": "Lihat Tiket",
       "details": "Detail",
       "officialTickets": "Tiket Resmi",
-      "noResults": "Tidak ada event terverifikasi yang sesuai dengan pencarian Anda."
+      "noResults": "Tidak ada event terverifikasi yang sesuai dengan pencarian Anda.",
+      "viewDetails": "Lihat Detail Event",
+      "seeMore": "Lihat Selengkapnya",
+      "action": "Aksi",
+      "date": "Tanggal",
+      "time": "Waktu",
+      "venue": "Venue",
+      "city": "Kota",
+      "price": "Harga",
+      "quantity": "Jumlah",
+      "category": "Kategori",
+      "verified": "Terverifikasi",
+      "verifiedAt": "Diverifikasi",
+      "retry": "Coba Lagi",
+      "back": "Kembali",
+      "submit": "Kirim",
+      "save": "Simpan",
+      "cancel": "Batal",
+      "confirm": "Konfirmasi",
+      "close": "Tutup",
+      "yes": "Ya",
+      "no": "Tidak"
     },
     "venuePicSection": {
       "kicker": "Diferensiasi Utama TIKUM",
@@ -346,6 +427,416 @@
       "stepPrice": "Tentukan Harga",
       "stepConfirm": "Konfirmasi Listing",
       "pdpConsent": "Sesuai UU Pelindungan Data Pribadi (UU PDP No. 27/2022), data identitas Anda dienkripsi dan hanya digunakan untuk verifikasi keaslian tiket."
+    },
+    "auth": {
+      "title": "Masuk ke Tikum",
+      "subtitle": "Masukkan email Anda untuk menerima magic link. Tanpa perlu kata sandi.",
+      "emailLabel": "Alamat Email",
+      "emailPlaceholder": "nama@email.com",
+      "sendMagicLink": "Kirim Magic Link",
+      "sending": "Mengirim...",
+      "autoCreateNote": "Jika Anda belum memiliki akun, akun baru akan otomatis dibuatkan secara aman saat verifikasi pertama.",
+      "checkEmailTitle": "Cek email Anda",
+      "checkEmailSubtitle": "Kami telah mengirim magic link ke alamat email Anda di",
+      "linkValidity": "Tautan ini hanya berlaku selama 15 menit.",
+      "resend": "Kirim Ulang Magic Link",
+      "backToLogin": "Kembali ke Masuk",
+      "invalidEmail": "Format alamat email tidak valid.",
+      "sessionExpired": "Sesi login Anda telah kedaluwarsa. Silakan masuk kembali.",
+      "accessDenied": "Akses ditolak. Anda tidak memiliki izin untuk halaman ini.",
+      "adminTitle": "TIKUM OPERATIONS CONTROL",
+      "adminSubtitle": "Admin Sign In",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "signInBtn": "Masuk",
+      "verifying": "Memverifikasi...",
+      "adminAccessFootnote": "Akses terbatas untuk ADMIN / OPS / TRUST_OFFICER / SUPER_ADMIN.",
+      "returnToHomepage": "Kembali ke halaman utama"
+    },
+    "account": {
+      "myAccount": "Akun Saya",
+      "profile": "Profil Pengguna",
+      "email": "Alamat Email",
+      "role": "Peran Akun",
+      "memberSince": "Bergabung Sejak",
+      "orders": "Riwayat Pesanan",
+      "listings": "Tiket Dijual",
+      "settings": "Pengaturan Akun",
+      "logout": "Keluar dari Akun",
+      "noOrders": "Belum ada pesanan tiket yang tercatat.",
+      "noListings": "Belum ada tiket yang Anda daftarkan untuk dijual.",
+      "sessionLoading": "Memeriksa sesi akun...",
+      "notSignedIn": "Anda belum masuk.",
+      "signInPrompt": "Silakan masuk untuk melihat tiket dan riwayat transaksi Anda.",
+      "dangerZone": "Zona Berbahaya",
+      "deactivateAccount": "Nonaktifkan Akun"
+    },
+    "events": {
+      "catalogTitle": "Katalog Event & Tiket Terverifikasi",
+      "catalogSubtitle": "Daftar konser musik, festival, dan pertunjukan langsung di Indonesia dengan sumber resmi terverifikasi.",
+      "officialSource": "Sumber Resmi",
+      "officialTickets": "Kanal Tiket Resmi",
+      "resaleInventory": "Tiket Resale Terverifikasi di Tikum",
+      "zeroResaleTitle": "Saat Ini Belum Ada Tiket Resale Terverifikasi",
+      "zeroResaleDesc": "Belum ada pengguna yang mendaftarkan tiket untuk event ini, atau seluruh inventaris telah terjual.",
+      "demandCapturePrompt": "Ingin notifikasi saat tiket terverifikasi tersedia?",
+      "demandCapturePlaceholder": "Masukkan WhatsApp atau Email Anda",
+      "demandCaptureBtn": "Ingatkan Saya",
+      "demandCaptureSuccess": "Permintaan dicatat! Kami akan menghubungi Anda segera setelah tiket resale terverifikasi tersedia.",
+      "concludedEventBadge": "Acara Telah Berlangsung",
+      "concludedEventNotice": "Dokumentasi acara terlaksana. Penjualan tiket dan reservasi telah ditutup.",
+      "dateLabel": "Tanggal Pelaksanaan",
+      "venueLabel": "Lokasi / Venue",
+      "cityLabel": "Kota",
+      "promoterLabel": "Penyelenggara / Promotor",
+      "categoryLabel": "Kategori Event",
+      "priceRange": "Rentang Harga Tiket Resmi",
+      "viewEvent": "Lihat Detail Event",
+      "buyViaEscrow": "Beli Aman via Escrow",
+      "allEvents": "Semua Event",
+      "upcomingEvents": "Event Mendatang",
+      "pastEvents": "Arsip Event Lampau"
+    ,
+      "concerts": "Konser",
+      "sports": "Olahraga",
+      "comedy": "Stand Up Comedy",
+      "exhibitions": "Pameran",
+      "entertainment": "Hiburan Lainnya",
+      "allCities": "Semua Kota",
+      "allDates": "Semua Waktu",
+      "thisWeek": "Minggu Ini",
+      "thisMonth": "Bulan Ini",
+      "next3Months": "3 Bulan Ke Depan",
+      "officialPromoterPrice": "Harga resmi promotor",
+      "resaleFrom": "Resale mulai",
+      "resaleAvailable": "Resale tersedia",
+      "officialTicketsAvailable": "Tiket resmi tersedia",
+      "officialTicketsSoldOut": "Tiket resmi sold out",
+      "openingSoon": "Segera dibuka",
+      "unconfirmedStatus": "Status belum dikonfirmasi",
+      "noResaleTickets": "Belum ada tiket resale di TIKUM",
+      "notifyWhenAvailable": "Kabari Saya Saat Tiket Ada",
+      "picAtVenue": "TIKUM PIC di venue",
+      "verifiedCatalog": "Katalog Resmi TIKUM",
+      "radarVerified": "Radar Terverifikasi"
+    },
+    "search": {
+      "placeholder": "Cari konser, artis, festival, atau kota...",
+      "noResults": "Tidak ada event yang ditemukan untuk kata kunci tersebut.",
+      "filterByCity": "Filter berdasarkan Kota",
+      "filterByCategory": "Filter berdasarkan Kategori",
+      "filterByDate": "Filter berdasarkan Tanggal",
+      "clearFilters": "Bersihkan Filter",
+      "resultsCount": "{count} event ditemukan"
+    },
+    "ticket": {
+      "category": "Kategori Tiket",
+      "section": "Section / Zona",
+      "seat": "Nomor Kursi",
+      "quantity": "Jumlah Tiket",
+      "faceValue": "Harga Asli (Promotor)",
+      "resalePrice": "Harga Resale",
+      "totalPrice": "Total Pembayaran (All-In)",
+      "feeNotice": "Sudah termasuk biaya layanan platform dan proteksi transaksi.",
+      "barcodeVerification": "Verifikasi Barcode Anti-Duplikasi",
+      "verifiedSeller": "Penjual Terverifikasi",
+      "ticketAvailable": "Tiket Tersedia",
+      "soldOut": "Habis Terjual"
+    },
+    "listing": {
+      "createTitle": "Daftarkan Tiket untuk Transfer Terverifikasi",
+      "createSubtitle": "Setiap penawaran tiket wajib terikat pada event nyata dan melalui tahapan verifikasi barcode anti-duplikasi sebelum dapat dibeli.",
+      "selectEvent": "Pilih Event",
+      "ticketDetails": "Rincian Tiket",
+      "uploadProof": "Unggah Bukti Tiket / Invoice",
+      "proofHelper": "Unggah tangkapan layar e-ticket atau konfirmasi pembelian resmi. Data sensitif Anda dilindungi UU PDP.",
+      "setPrice": "Tentukan Harga Jual",
+      "termsConsent": "Saya menyetujui Syarat & Ketentuan serta Kebijakan Privasi Tikum.",
+      "submitListing": "Daftarkan Tiket",
+      "submitting": "Mendaftarkan...",
+      "successTitle": "Listing Berhasil Dibuat",
+      "successDesc": "Data tiket Anda telah dicatat dan menunggu verifikasi keaslian oleh kurator Tikum.",
+      "listingId": "ID Listing Resmi",
+      "currentStatus": "Status Listing",
+      "pdpNotice": "Sesuai UU Pelindungan Data Pribadi (UU PDP No. 27/2022), data identitas Anda dienkripsi dan hanya digunakan untuk verifikasi keaslian tiket."
+    },
+    "seller": {
+      "dashboardTitle": "Portal Penjual Tiket",
+      "activeListings": "Listing Aktif",
+      "soldTickets": "Tiket Terjual",
+      "payoutBalance": "Saldo Siap Cair",
+      "payoutHistory": "Riwayat Pencairan",
+      "verificationStatus": "Status Verifikasi Penjual",
+      "verifiedBadge": "Penjual Terverifikasi",
+      "handoffInstruction": "Instruksi Serah Terima",
+      "handoffDesc": "Temui pembeli di titik temu resmi venue atau kirim tiket melalui staf PIC Tikum sebelum batas waktu acara."
+    },
+    "buyer": {
+      "protectionTitle": "Perlindungan Pembeli Tikum",
+      "protectionSubtitle": "Setiap transaksi dilindungi oleh rekening penampungan internal (escrow) dan diverifikasi di gerbang venue.",
+      "step1": "Pilih Tiket Terverifikasi",
+      "step2": "Bayar ke Rekening Penampungan (Escrow)",
+      "step3": "Terima Kode Verifikasi Gate",
+      "step4": "Tiket Lolos Masuk, Dana Baru Dicairkan"
+    },
+    "orders": {
+      "orderId": "ID Pesanan",
+      "orderDate": "Tanggal Pesanan",
+      "eventTitle": "Nama Event",
+      "totalPaid": "Total Dibayar",
+      "orderStatus": "Status Pesanan",
+      "viewDetails": "Lihat Rincian",
+      "trackOrder": "Lacak Status Transaksi",
+      "noOrders": "Belum ada pesanan aktif."
+    },
+    "transactions": {
+      "title": "Lacak Transaksi & Audit Trail",
+      "subtitle": "Setiap mutasi status pesanan dicatat secara permanen di audit log Tikum.",
+      "searchPlaceholder": "Masukkan ID Pesanan (ord-...) atau ID Listing (list-...)",
+      "checkBtn": "Periksa Status",
+      "timelineTitle": "Tahapan Verifikasi Transaksi",
+      "step1": "Pesanan Dibuat",
+      "step2": "Dana Ditahan di Escrow",
+      "step3": "Serah Terima Tiket (PIC)",
+      "step4": "Verifikasi Masuk Gerbang",
+      "step5": "Pencairan Dana ke Penjual",
+      "challengeCode": "Kode Tantangan Masuk",
+      "challengeHelper": "Tunjukkan kode ini kepada staf PIC Tikum di depan gerbang acara.",
+      "notFound": "ID transaksi tidak ditemukan dalam catatan sistem."
+    },
+    "handoff": {
+      "title": "Stasiun Serah Terima Tiket (BATON)",
+      "subtitle": "Protokol penyerahan tiket aman di venue dengan asistensi staf PIC.",
+      "challengeSeller": "Kode Verifikasi Penjual",
+      "challengeBuyer": "Kode Verifikasi Pembeli",
+      "confirmHandoff": "Konfirmasi Serah Terima",
+      "handoffSuccess": "Serah terima tiket berhasil diverifikasi."
+    },
+    "entry": {
+      "title": "Konfirmasi Masuk Gerbang",
+      "gateVerified": "Tiket Berhasil Dipindai di Turnstile",
+      "entryConfirmedDesc": "Pembeli berhasil masuk ke dalam area acara. Sistem escrow siap mencairkan pembayaran.",
+      "gateIssue": "Terjadi Masalah di Gerbang?",
+      "reportGateIssue": "Laporkan Masalah Pemindaian"
+    },
+    "disputes": {
+      "title": "Pusat Penyelesaian Sengketa",
+      "subtitle": "Jika terjadi kendala tiket di gerbang venue, dana Anda tetap aman di escrow sampai investigasi selesai.",
+      "reasonLabel": "Pilih Alasan Sengketa",
+      "reasonSellerNoShow": "Penjual Tidak Hadir di Titik Temu",
+      "reasonGateRejection": "Barcode Tiket Ditolak di Gerbang (Turnstile)",
+      "reasonDuplicate": "Barcode Tiket Sudah Digunakan Orang Lain",
+      "reasonMismatch": "Kategori / Kursi Tidak Sesuai Deskripsi",
+      "evidenceLabel": "Unggah Bukti Penolakan Gerbang",
+      "evidenceHelper": "Foto gerbang, rekaman video, atau formulir penolakan dari petugas turnstile venue.",
+      "submitDispute": "Ajukan Sengketa Transaksi",
+      "submitting": "Mengirimkan Laporan...",
+      "disputeSubmitted": "Sengketa Berhasil Diajukan",
+      "disputeNotice": "Status pesanan dikunci menjadi DISPUTED. Dana di rekening penampungan ditahan sementara hingga petugas investigasi mengambil keputusan."
+    },
+    "support": {
+      "title": "Pusat Bantuan & Layanan Pengguna",
+      "subtitle": "Hubungi tim operasional Tikum untuk bantuan transaksi, kendala verifikasi, atau panduan acara.",
+      "inquiryType": "Jenis Bantuan",
+      "inquiryGeneral": "Pertanyaan Umum / Info Tiket",
+      "inquiryTransaction": "Kendala Transaksi / Pembayaran",
+      "inquiryVenue": "Bantuan Staf PIC di Lokasi Venue",
+      "inquiryDispute": "Eskalasi Sengketa Transaksi",
+      "nameLabel": "Nama Lengkap",
+      "emailLabel": "Alamat Email",
+      "phoneLabel": "Nomor WhatsApp",
+      "messageLabel": "Pesan / Kendala Anda",
+      "sendBtn": "Kirim Pesan",
+      "sendingBtn": "Mengirimkan...",
+      "successMsg": "Pesan Anda berhasil dikirim. Tim dukungan kami akan segera menghubungi Anda.",
+      "directWhatsapp": "Chat WhatsApp Resmi",
+      "directEmail": "Email Layanan Pengguna"
+    },
+    "profile": {
+      "title": "Profil Pengguna",
+      "personalInfo": "Informasi Pribadi",
+      "name": "Nama Lengkap",
+      "email": "Email Terdaftar",
+      "phone": "Nomor Telepon",
+      "kycStatus": "Status Verifikasi Identitas (KYC)",
+      "kycVerified": "Identitas Terverifikasi",
+      "kycPending": "Verifikasi Belum Lengkap"
+    },
+    "settings": {
+      "title": "Pengaturan Akun",
+      "language": "Bahasa Tampilan",
+      "theme": "Mode Tampilan",
+      "notifications": "Preferensi Notifikasi",
+      "emailNotifications": "Notifikasi Email Transaksi",
+      "security": "Keamanan Akun"
+    },
+    "admin": {
+      "consoleTitle": "TIKUM OPERATIONS CONTROL",
+      "consoleSubtitle": "Powered by ARGUS Trust Engine · SHINERVA HQ",
+      "searchPlaceholder": "Cari Event, Tiket, Order, Penjual, Pembeli...",
+      "onlineStatus": "ONLINE",
+      "syncBtn": "Sinkronisasi",
+      "logout": "Keluar",
+      "tabOverview": "Overview",
+      "tabEvents": "Events",
+      "tabListings": "Listings",
+      "tabOrders": "Orders",
+      "tabSellers": "Sellers",
+      "tabBuyers": "Buyers",
+      "tabPayments": "Payments & Buku Kas",
+      "tabDisputes": "Disputes",
+      "tabIncidents": "Incidents",
+      "tabTrust": "Trust & Verifikasi",
+      "tabVenuePic": "Venue / PIC",
+      "tabSupply": "Pasokan & Radar",
+      "tabSources": "Kanal Tiket",
+      "tabEditorial": "Editorial & Blog",
+      "tabInbox": "Inbox & Kontak",
+      "kpiTotalVolume": "Total Volume",
+      "kpiEscrowHeld": "Saldo Escrow",
+      "kpiActiveListings": "Listing Aktif",
+      "kpiOpenDisputes": "Sengketa Terbuka",
+      "kpiActivePics": "PIC Lapangan",
+      "colId": "ID",
+      "colEvent": "Event",
+      "colUser": "Pengguna",
+      "colPrice": "Harga",
+      "colStatus": "Status",
+      "colActions": "Aksi",
+      "colDate": "Tanggal",
+      "btnApprove": "Setujui",
+      "btnReject": "Tolak",
+      "btnInspect": "Periksa Bukti",
+      "btnRelease": "Cairkan ke Penjual",
+      "btnRefund": "Refund Pembeli",
+      "btnDispatchPic": "Tugaskan PIC",
+      "btnResolve": "Selesaikan Sengketa",
+      "noData": "Tidak ada data yang tersedia untuk filter ini.",
+      "loginTitle": "TIKUM Operations Console — Masuk Admin",
+      "accessRequired": "Akun ini tidak memiliki akses ke Operations Console.",
+      "userSuspended": "Akun ini sedang ditangguhkan. Hubungi super admin.",
+      "loginFailed": "Login admin gagal. Periksa email dan password."
+    ,
+      "sidebarWorkspace": "Operational Workspace",
+      "sidebarPlatform": "Platform Control",
+      "navPublicPortal": "Portal Publik",
+      "kpiActiveEvents": "Event Aktif",
+      "kpiTicketsListed": "Listing Tiket",
+      "kpiTotalOrders": "Total Pesanan",
+      "kpiPendingPayments": "Pembayaran Tertunda",
+      "kpiActiveIncidents": "Insiden Aktif",
+      "kpiCanonicalEvents": "Event Kanonikal",
+      "kpiStaleExpired": "Kedaluwarsa / Usang",
+      "syncTitle": "Muat ulang seluruh data",
+      "logoutTitle": "Keluar dari sesi admin",
+      "recentActivity": "Aktivitas Terbaru",
+      "noActivity": "Belum ada catatan aktivitas."
+    },
+    "verification": {
+      "title": "Verifikasi Keaslian Tiket",
+      "subtitle": "Pemeriksaan integritas metadata tiket resmi dan pencegahan penjualan ganda.",
+      "badgeVerified": "Tiket Terverifikasi Resmi",
+      "badgePending": "Menunggu Verifikasi Kurator",
+      "badgeRejected": "Tiket Ditolak",
+      "hashIntegrity": "Integritas Hash Bukti",
+      "officialSourceCheck": "Pencocokan Sumber Promotor Resmi"
+    },
+    "venue": {
+      "title": "Operasional Venue & PIC",
+      "subtitle": "Dukungan fisik di lokasi acara untuk memastikan kelancaran masuk gerbang penonton.",
+      "picOfficer": "Petugas PIC Lapangan",
+      "meetingPoint": "Titik Temu Resmi Tikum",
+      "gateSupport": "Pendampingan Gerbang Turnstile",
+      "dispatchStatus": "Status Penugasan PIC",
+      "contactPic": "Hubungi Petugas PIC di Lokasi"
+    },
+    "pic": {
+      "officerName": "Nama Petugas PIC",
+      "statusStandby": "Siaga di Lokasi",
+      "statusOnDuty": "Bertugas di Gerbang",
+      "statusDispatched": "Menuju Titik Temu",
+      "statusOffline": "Tidak Bertugas",
+      "verifyHandoffBtn": "Verifikasi Serah Terima",
+      "verifyAdmissionBtn": "Konfirmasi Masuk Gerbang",
+      "reportIncidentBtn": "Laporkan Insiden di Venue"
+    },
+    "incidents": {
+      "title": "Insiden Operasional Gerbang",
+      "subtitle": "Laporan kendala fisik, penolakan turnstile, atau ketidakhadiran di venue.",
+      "typeSellerNoShow": "Penjual Tidak Hadir (Seller No-Show)",
+      "typeGateRejection": "Penolakan Pemindai Gerbang (Gate Rejection)",
+      "typeCounterfeit": "Tiket Palsu / Duplikat (Counterfeit)",
+      "typeCategoryMismatch": "Ketidaksesuaian Kategori / Seat",
+      "severityLow": "Rendah",
+      "severityMedium": "Sedang",
+      "severityHigh": "Tinggi",
+      "severityCritical": "Kritis",
+      "resolveIncident": "Selesaikan Insiden"
+    },
+    "refunds": {
+      "title": "Pengembalian Dana (Refund)",
+      "subtitle": "Proses pengembalian dana pembeli jika tiket tidak valid atau terjadi pembatalan event oleh promotor.",
+      "refundStatus": "Status Pengembalian Dana",
+      "railStatus": "Jalur Pembayaran Refund",
+      "autoProcessed": "Refund Diproses Otomatis",
+      "manualRequired": "Memerlukan Verifikasi Manual Petugas",
+      "completed": "Dana Telah Dikembalikan",
+      "refundPolicyNotice": "Pengembalian dana diproses penuh sesuai Kebijakan Refund Tikum tanpa potongan sepihak."
+    },
+    "notifications": {
+      "title": "Pemberitahuan Sistem",
+      "orderCreated": "Pesanan berhasil dibuat. Silakan selesaikan pembayaran.",
+      "paymentReceived": "Pembayaran Anda telah diterima dan diamankan di rekening penampungan.",
+      "ticketReady": "Tiket Anda siap digunakan untuk masuk ke venue.",
+      "admissionSuccess": "Tiket sukses dipindai di pintu masuk. Selamat menikmati konser!",
+      "disputeOpened": "Sengketa telah dibuka. Petugas kami sedang melakukan investigasi."
+    },
+    "validation": {
+      "requiredField": "Bidang ini wajib diisi.",
+      "invalidEmail": "Format alamat email tidak valid.",
+      "invalidPhone": "Format nomor telepon / WhatsApp tidak valid.",
+      "minPrice": "Harga tiket minimal Rp 10.000.",
+      "priceExceedsMax": "Harga tiket melebihi batas wajar.",
+      "termsRequired": "Anda wajib menyetujui Syarat & Ketentuan untuk melanjutkan."
+    },
+    "errors": {
+      "generic": "Terjadi gangguan sistem. Silakan coba beberapa saat lagi.",
+      "UNAUTHORIZED": "Sesi login diperlukan atau telah berakhir. Silakan masuk kembali.",
+      "ORDER_EXPIRED": "Waktu pemesanan telah habis. Silakan pilih tiket kembali.",
+      "ESCROW_LOCKED": "Dana pesanan sedang terkunci di rekening bersama (escrow).",
+      "LISTING_NOT_ACTIVE": "Tiket ini sudah tidak aktif atau sedang dalam transaksi lain.",
+      "TICKET_ALREADY_SOLD": "Tiket ini telah terjual kepada pembeli lain.",
+      "GATE_DISPUTE_OPENED": "Kendala turnstile dilaporkan. Dana escrow ditangguhkan untuk investigasi.",
+      "RATE_LIMITED": "Terlalu banyak permintaan. Silakan tunggu beberapa saat.",
+      "PAYMENT_FAILED": "Pembayaran tidak berhasil diproses. Silakan gunakan metode lain.",
+      "AUTH_REQUIRED": "Sesi login diperlukan. Silakan masuk terlebih dahulu.",
+      "FORBIDDEN": "Akses ditolak. Anda tidak memiliki hak untuk aksi ini.",
+      "ADMIN_ACCESS_REQUIRED": "Akses terbatas khusus administrator dan staf operasi.",
+      "USER_SUSPENDED": "Akun ini sedang ditangguhkan. Silakan hubungi tim dukungan.",
+      "LISTING_NOT_FOUND": "Listing tiket tidak ditemukan di sistem.",
+      "ORDER_NOT_FOUND": "Pesanan tidak ditemukan di sistem.",
+      "EVENT_NOT_FOUND": "Event tidak ditemukan dalam katalog resmi.",
+      "INVALID_CREDENTIALS": "Email atau kata sandi tidak sesuai.",
+      "PAYMENT_EXPIRED": "Batas waktu pembayaran telah habis. Pesanan telah dibatalkan.",
+      "ALREADY_REFUNDED": "Transaksi ini telah dikembalikan dananya sebelumnya.",
+      "SELLER_NO_SHOW": "Penjual terkonfirmasi tidak hadir di titik temu.",
+      "GATE_REJECTION": "Tiket ditolak oleh pemindai gerbang acara.",
+      "NETWORK_ERROR": "Gagal terhubung ke server. Periksa koneksi internet Anda.",
+      "INVALID_BODY": "Format data permintaan tidak valid.",
+      "FILE_TOO_LARGE": "Ukuran berkas melebihi batas maksimum."
+    },
+    "accessibility": {
+      "langToggleAria": "Pilih bahasa tampilan (Bahasa Indonesia / English)",
+      "themeToggleAria": "Ganti mode tampilan terang atau gelap",
+      "menuAria": "Menu navigasi utama",
+      "closeModalAria": "Tutup jendela dialog",
+      "openSearchAria": "Buka pencarian event"
+    },
+    "seo": {
+      "homeTitle": "TIKUM — Pasar Tiket Event Terverifikasi | by Shinerva",
+      "homeDesc": "Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli. Platform penemuan event berbayar dan bertiket di Indonesia dengan verifikasi sumber resmi.",
+      "eventsTitle": "Katalog Konser & Event Terverifikasi — TIKUM",
+      "eventsDesc": "Jadwal konser musik, festival, dan pertunjukan langsung di Indonesia dengan status ketersediaan tiket resmi dan resale terverifikasi."
     }
   },
   "en": {
@@ -394,7 +885,21 @@
       "support": "Support",
       "account": "Account",
       "signIn": "Sign In / Register",
-      "findTickets": "Find Tickets"
+      "findTickets": "Find Tickets",
+      "offers": "Price Offers",
+      "track": "Track Order",
+      "adminConsole": "Operations Console",
+      "blog": "Blog & Guides",
+      "faq": "FAQ",
+      "home": "Home",
+      "backToHome": "Back to Home",
+      "logout": "Sign Out"
+    ,
+      "featuredEvents": "Featured Concerts",
+      "allEvents": "All Events",
+      "exhibitions": "Exhibitions",
+      "entertainment": "Other Entertainment",
+      "subtitle": "Verified Ticket Marketplace"
     },
     "hero": {
       "headline": "TIKUM — Verified Event Ticket Marketplace",
@@ -416,6 +921,11 @@
       "pillarVenue": "On-Site Venue Support",
       "pillarProtected": "Protected Transactions (Escrow)",
       "pillarPricing": "Transparent Upfront Pricing"
+    ,
+      "officialSource": "Official Source Verification",
+      "venuePic": "Tikum Officers at Venue",
+      "paymentMethods": "Pay with QRIS / e-wallet / VA",
+      "transparentPrice": "Transparent all-in pricing"
     },
     "trustStates": {
       "VERIFIED": "Verified Listing",
@@ -491,7 +1001,20 @@
       "terms": "Terms of Service",
       "privacy": "Privacy Policy",
       "cookie": "Cookie Policy",
-      "disclaimer": "Disclaimer"
+      "disclaimer": "Disclaimer",
+      "aboutBrand": "Verified secondary ticket marketplace. Secure transactions with internal escrow repository and physical assistance at the venue gate.",
+      "operationalOffice": "Operational Office & Mailing Address:",
+      "officialContact": "Official Contact",
+      "customerSupport": "Customer Support:",
+      "legalCorrespondence": "Legal Correspondence:",
+      "servicesAndLegal": "Services & Legal",
+      "contactUs": "Contact Us",
+      "privacyPolicy": "Privacy Policy (PDP Law)",
+      "copyright": "© 2026 SHINERVA HQ. All rights reserved. TIKUM — by SHINERVA."
+    ,
+      "faq": "FAQ / Frequently Asked Questions",
+      "refundPolicy": "Refund Policy",
+      "allRightsReserved": "© 2026 SHINERVA HQ. All rights reserved. TIKUM — by SHINERVA."
     },
     "status": {
       "LISTED": "Listed",
@@ -509,7 +1032,35 @@
       "ACCEPTED": "Accepted",
       "REJECTED": "Rejected",
       "COUNTERED": "Counter Offer",
-      "EXPIRED": "Expired"
+      "EXPIRED": "Expired",
+      "DRAFT": "Draft",
+      "PENDING_VERIFICATION": "Pending Verification",
+      "ACTIVE": "Active",
+      "TICKET_VERIFIED": "Ticket Verified",
+      "ONLINE": "Online",
+      "STANDBY": "On Standby",
+      "ON_DUTY": "On Duty at Gate",
+      "DISPATCHED": "Dispatched",
+      "BUSY": "Handling Incident",
+      "OFFLINE": "Offline",
+      "UNAVAILABLE": "Unavailable",
+      "ESCROWED": "Funds Held in Escrow",
+      "RELEASE_PENDING": "Pending Settlement Release",
+      "RELEASED": "Settlement Released to Seller",
+      "REFUND_PENDING": "Pending Refund Processing",
+      "BUYER_FAVORED": "Dispute Resolved (Buyer Refund)",
+      "SELLER_FAVORED": "Dispute Resolved (Seller Release)",
+      "MUTUAL_RESOLUTION": "Mutual Resolution",
+      "SELLER_NO_SHOW": "Seller No-Show",
+      "GATE_REJECTION": "Gate Rejection",
+      "COUNTERFEIT_TICKET": "Counterfeit / Duplicate Ticket",
+      "CATEGORY_MISMATCH": "Category / Seat Mismatch",
+      "AUTO_REFUND_PROCESSED": "Auto-Refund Processed",
+      "MANUAL_REFUND_REQUIRED": "Manual Refund Verification Required",
+      "PRIMARY_SOURCE_VERIFIED": "Verified Primary Source",
+      "UNVERIFIED": "Unverified",
+      "UNDER_REVIEW": "Under Review",
+      "OPEN": "Open"
     },
     "common": {
       "loading": "Loading data...",
@@ -521,7 +1072,28 @@
       "viewTickets": "View Tickets",
       "details": "Details",
       "officialTickets": "Official Tickets",
-      "noResults": "No verified events found matching your search."
+      "noResults": "No verified events found matching your search.",
+      "viewDetails": "View Event Details",
+      "seeMore": "See More",
+      "action": "Action",
+      "date": "Date",
+      "time": "Time",
+      "venue": "Venue",
+      "city": "City",
+      "price": "Price",
+      "quantity": "Quantity",
+      "category": "Category",
+      "verified": "Verified",
+      "verifiedAt": "Verified at",
+      "retry": "Try Again",
+      "back": "Back",
+      "submit": "Submit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "close": "Close",
+      "yes": "Yes",
+      "no": "No"
     },
     "venuePicSection": {
       "kicker": "Key TIKUM Differentiator",
@@ -636,6 +1208,416 @@
       "stepPrice": "Set Price",
       "stepConfirm": "Confirm Listing",
       "pdpConsent": "Under Indonesian Personal Data Protection Act (UU PDP No. 27/2022), your ID evidence is strictly encrypted and used solely for ticket authentication."
+    },
+    "auth": {
+      "title": "Sign In to Tikum",
+      "subtitle": "Enter your email to receive a secure magic link. No password required.",
+      "emailLabel": "Email Address",
+      "emailPlaceholder": "name@email.com",
+      "sendMagicLink": "Send Magic Link",
+      "sending": "Sending...",
+      "autoCreateNote": "If you do not have an account yet, a new account will be created automatically upon first verification.",
+      "checkEmailTitle": "Check your email",
+      "checkEmailSubtitle": "We sent a secure magic link to your email address at",
+      "linkValidity": "This link is valid for 15 minutes only.",
+      "resend": "Resend Magic Link",
+      "backToLogin": "Back to Sign In",
+      "invalidEmail": "Invalid email address format.",
+      "sessionExpired": "Your session has expired. Please sign in again.",
+      "accessDenied": "Access denied. You do not have permission to view this page.",
+      "adminTitle": "TIKUM OPERATIONS CONTROL",
+      "adminSubtitle": "Admin Sign In",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "signInBtn": "Sign In",
+      "verifying": "Verifying...",
+      "adminAccessFootnote": "Restricted access: ADMIN / OPS / TRUST_OFFICER / SUPER_ADMIN only.",
+      "returnToHomepage": "Return to homepage"
+    },
+    "account": {
+      "myAccount": "My Account",
+      "profile": "User Profile",
+      "email": "Email Address",
+      "role": "Account Role",
+      "memberSince": "Member Since",
+      "orders": "Order History",
+      "listings": "Listed Tickets",
+      "settings": "Account Settings",
+      "logout": "Sign Out",
+      "noOrders": "No ticket orders recorded yet.",
+      "noListings": "You have not listed any tickets for sale yet.",
+      "sessionLoading": "Verifying account session...",
+      "notSignedIn": "You are not signed in.",
+      "signInPrompt": "Please sign in to view your tickets and transaction history.",
+      "dangerZone": "Danger Zone",
+      "deactivateAccount": "Deactivate Account"
+    },
+    "events": {
+      "catalogTitle": "Verified Event & Ticket Catalog",
+      "catalogSubtitle": "Directory of live concerts, festivals, and performances across Indonesia with verified official sources.",
+      "officialSource": "Official Source",
+      "officialTickets": "Official Ticketing Channels",
+      "resaleInventory": "Verified Resale Tickets on Tikum",
+      "zeroResaleTitle": "Currently No Verified Resale Tickets Available",
+      "zeroResaleDesc": "No sellers have registered tickets for this event yet, or all secondary inventory has been sold.",
+      "demandCapturePrompt": "Want an alert when verified tickets become available?",
+      "demandCapturePlaceholder": "Enter your WhatsApp or Email",
+      "demandCaptureBtn": "Remind Me",
+      "demandCaptureSuccess": "Request recorded! We will notify you as soon as verified resale tickets become available.",
+      "concludedEventBadge": "Event Concluded",
+      "concludedEventNotice": "Historical event archive. Ticket sales and reservations have ended.",
+      "dateLabel": "Event Date",
+      "venueLabel": "Location / Venue",
+      "cityLabel": "City",
+      "promoterLabel": "Promoter / Organizer",
+      "categoryLabel": "Event Category",
+      "priceRange": "Official Primary Ticket Price Range",
+      "viewEvent": "View Event Details",
+      "buyViaEscrow": "Buy Safely via Escrow",
+      "allEvents": "All Events",
+      "upcomingEvents": "Upcoming Shows",
+      "pastEvents": "Past Events Archive"
+    ,
+      "concerts": "Concerts",
+      "sports": "Sports",
+      "comedy": "Stand Up Comedy",
+      "exhibitions": "Exhibitions",
+      "entertainment": "Other Entertainment",
+      "allCities": "All Cities",
+      "allDates": "All Dates",
+      "thisWeek": "This Week",
+      "thisMonth": "This Month",
+      "next3Months": "Next 3 Months",
+      "officialPromoterPrice": "Official promoter price",
+      "resaleFrom": "Resale from",
+      "resaleAvailable": "Resale available",
+      "officialTicketsAvailable": "Official tickets available",
+      "officialTicketsSoldOut": "Official tickets sold out",
+      "openingSoon": "Opening soon",
+      "unconfirmedStatus": "Status unconfirmed",
+      "noResaleTickets": "No resale tickets yet on TIKUM",
+      "notifyWhenAvailable": "Notify Me When Available",
+      "picAtVenue": "TIKUM PIC at venue",
+      "verifiedCatalog": "TIKUM Official Catalog",
+      "radarVerified": "Verified Radar"
+    },
+    "search": {
+      "placeholder": "Search concerts, artists, festivals, or cities...",
+      "noResults": "No events found matching your search keywords.",
+      "filterByCity": "Filter by City",
+      "filterByCategory": "Filter by Category",
+      "filterByDate": "Filter by Date",
+      "clearFilters": "Clear Filters",
+      "resultsCount": "{count} events found"
+    },
+    "ticket": {
+      "category": "Ticket Category",
+      "section": "Section / Zone",
+      "seat": "Seat Number",
+      "quantity": "Quantity",
+      "faceValue": "Original Face Value",
+      "resalePrice": "Resale Price",
+      "totalPrice": "Total Payment (All-In)",
+      "feeNotice": "Includes platform service fee and escrow transaction protection.",
+      "barcodeVerification": "Anti-Duplication Barcode Verification",
+      "verifiedSeller": "Verified Seller",
+      "ticketAvailable": "Tickets Available",
+      "soldOut": "Sold Out"
+    },
+    "listing": {
+      "createTitle": "List Ticket for Verified Transfer",
+      "createSubtitle": "Every ticket listing must be linked to a verified event and pass anti-duplication verification before it can be purchased.",
+      "selectEvent": "Select Event",
+      "ticketDetails": "Ticket Details",
+      "uploadProof": "Upload Ticket Proof / Invoice",
+      "proofHelper": "Upload e-ticket screenshot or official purchase receipt. Sensitive data is protected under the PDP Act.",
+      "setPrice": "Set Listing Price",
+      "termsConsent": "I agree to Tikum's Terms & Conditions and Privacy Policy.",
+      "submitListing": "Submit Listing",
+      "submitting": "Submitting...",
+      "successTitle": "Listing Successfully Created",
+      "successDesc": "Your ticket listing has been recorded and is awaiting authenticity verification by Tikum curators.",
+      "listingId": "Official Listing ID",
+      "currentStatus": "Listing Status",
+      "pdpNotice": "Under the Indonesian Personal Data Protection Act (UU PDP No. 27/2022), your ID evidence is strictly encrypted and used solely for ticket authentication."
+    },
+    "seller": {
+      "dashboardTitle": "Seller Portal",
+      "activeListings": "Active Listings",
+      "soldTickets": "Sold Tickets",
+      "payoutBalance": "Available Balance",
+      "payoutHistory": "Payout History",
+      "verificationStatus": "Seller Verification Status",
+      "verifiedBadge": "Verified Seller",
+      "handoffInstruction": "Handoff Instructions",
+      "handoffDesc": "Meet the buyer at the designated venue checkpoint or hand over tickets through a Tikum PIC officer before event entry cutoff."
+    },
+    "buyer": {
+      "protectionTitle": "Tikum Buyer Protection",
+      "protectionSubtitle": "Every transaction is secured in an internal escrow repository and verified at the venue gate.",
+      "step1": "Choose a Verified Ticket",
+      "step2": "Pay into Protected Escrow",
+      "step3": "Receive Gate Verification Code",
+      "step4": "Pass Gate Turnstile, Settlement Released"
+    },
+    "orders": {
+      "orderId": "Order ID",
+      "orderDate": "Order Date",
+      "eventTitle": "Event Name",
+      "totalPaid": "Total Paid",
+      "orderStatus": "Order Status",
+      "viewDetails": "View Details",
+      "trackOrder": "Track Order Status",
+      "noOrders": "No active orders found."
+    },
+    "transactions": {
+      "title": "Track Order Status & Audit Trail",
+      "subtitle": "Every ticket state change is cryptographically audited and permanently recorded in Tikum's audit trail.",
+      "searchPlaceholder": "Enter Order ID (ord-...) or Listing ID (list-...)",
+      "checkBtn": "Check Status",
+      "timelineTitle": "Transaction Verification Stages",
+      "step1": "Order Created",
+      "step2": "Funds Held in Escrow",
+      "step3": "Ticket Handoff (PIC)",
+      "step4": "Gate Admission Verified",
+      "step5": "Settlement Released to Seller",
+      "challengeCode": "Gate Admission Code",
+      "challengeHelper": "Present this code to the Tikum PIC officer at the event gate entrance.",
+      "notFound": "Transaction ID was not found in system records."
+    },
+    "handoff": {
+      "title": "Ticket Handoff Station (BATON)",
+      "subtitle": "Secure on-site handoff protocol assisted by dedicated field PIC officers.",
+      "challengeSeller": "Seller Verification Code",
+      "challengeBuyer": "Buyer Verification Code",
+      "confirmHandoff": "Confirm Ticket Handoff",
+      "handoffSuccess": "Ticket handoff successfully verified."
+    },
+    "entry": {
+      "title": "Gate Admission Confirmation",
+      "gateVerified": "Ticket Successfully Scanned at Turnstile",
+      "entryConfirmedDesc": "Buyer has successfully entered the venue hall. Escrow system is ready for seller settlement.",
+      "gateIssue": "Experienced a Gate Issue?",
+      "reportGateIssue": "Report Turnstile Scanning Issue"
+    },
+    "disputes": {
+      "title": "Dispute Resolution Center",
+      "subtitle": "If any ticket issues occur at the venue gate, your funds remain secure in escrow until investigation is resolved.",
+      "reasonLabel": "Select Dispute Reason",
+      "reasonSellerNoShow": "Seller Failed to Show Up at Meeting Point",
+      "reasonGateRejection": "Ticket Barcode Rejected at Turnstile Gate",
+      "reasonDuplicate": "Ticket Barcode Already Used by Someone Else",
+      "reasonMismatch": "Ticket Category or Seat Does Not Match Description",
+      "evidenceLabel": "Upload Gate Rejection Proof",
+      "evidenceHelper": "Gate photo, video footage, or turnstile refusal slip from venue staff.",
+      "submitDispute": "File Transaction Dispute",
+      "submitting": "Submitting Dispute...",
+      "disputeSubmitted": "Dispute Successfully Filed",
+      "disputeNotice": "Order state is locked to DISPUTED. Escrow funds remain frozen until an operations officer reviews the evidence."
+    },
+    "support": {
+      "title": "Support & Customer Assistance",
+      "subtitle": "Contact Tikum operations team for order assistance, verification issues, or event coordination.",
+      "inquiryType": "Inquiry Type",
+      "inquiryGeneral": "General Inquiries / Ticket Info",
+      "inquiryTransaction": "Payment / Order Issue",
+      "inquiryVenue": "On-Site PIC Staff Assistance",
+      "inquiryDispute": "Dispute Escalation",
+      "nameLabel": "Full Name",
+      "emailLabel": "Email Address",
+      "phoneLabel": "WhatsApp Number",
+      "messageLabel": "Your Message / Details",
+      "sendBtn": "Send Message",
+      "sendingBtn": "Sending...",
+      "successMsg": "Your message has been sent. Our support team will reach out to you promptly.",
+      "directWhatsapp": "Official WhatsApp Chat",
+      "directEmail": "Customer Support Email"
+    },
+    "profile": {
+      "title": "User Profile",
+      "personalInfo": "Personal Information",
+      "name": "Full Name",
+      "email": "Registered Email",
+      "phone": "Phone Number",
+      "kycStatus": "Identity Verification (KYC)",
+      "kycVerified": "Identity Verified",
+      "kycPending": "Verification Incomplete"
+    },
+    "settings": {
+      "title": "Account Settings",
+      "language": "Display Language",
+      "theme": "Theme Mode",
+      "notifications": "Notification Preferences",
+      "emailNotifications": "Transactional Email Updates",
+      "security": "Account Security"
+    },
+    "admin": {
+      "consoleTitle": "TIKUM OPERATIONS CONTROL",
+      "consoleSubtitle": "Powered by ARGUS Trust Engine · SHINERVA HQ",
+      "searchPlaceholder": "Search Event, Ticket, Order, Seller, Buyer...",
+      "onlineStatus": "ONLINE",
+      "syncBtn": "Sync Data",
+      "logout": "Log Out",
+      "tabOverview": "Overview",
+      "tabEvents": "Events",
+      "tabListings": "Listings",
+      "tabOrders": "Orders",
+      "tabSellers": "Sellers",
+      "tabBuyers": "Buyers",
+      "tabPayments": "Payments & Ledger",
+      "tabDisputes": "Disputes",
+      "tabIncidents": "Incidents",
+      "tabTrust": "Trust & Verification",
+      "tabVenuePic": "Venue / PIC",
+      "tabSupply": "Supply & Coverage",
+      "tabSources": "Ticket Sources",
+      "tabEditorial": "Editorial & Blog",
+      "tabInbox": "Inbox & Contacts",
+      "kpiTotalVolume": "Total Volume",
+      "kpiEscrowHeld": "Escrow Held",
+      "kpiActiveListings": "Active Listings",
+      "kpiOpenDisputes": "Open Disputes",
+      "kpiActivePics": "Field PICs",
+      "colId": "ID",
+      "colEvent": "Event",
+      "colUser": "User",
+      "colPrice": "Price",
+      "colStatus": "Status",
+      "colActions": "Actions",
+      "colDate": "Date",
+      "btnApprove": "Approve",
+      "btnReject": "Reject",
+      "btnInspect": "Inspect Proof",
+      "btnRelease": "Release to Seller",
+      "btnRefund": "Refund Buyer",
+      "btnDispatchPic": "Dispatch PIC",
+      "btnResolve": "Resolve Dispute",
+      "noData": "No data available for the selected filter.",
+      "loginTitle": "TIKUM Operations Console — Admin Sign In",
+      "accessRequired": "This account does not have access to the Operations Console.",
+      "userSuspended": "This account is suspended. Contact a super administrator.",
+      "loginFailed": "Admin sign in failed. Check email and password."
+    ,
+      "sidebarWorkspace": "Operational Workspace",
+      "sidebarPlatform": "Platform Control",
+      "navPublicPortal": "Public Portal",
+      "kpiActiveEvents": "Active Events",
+      "kpiTicketsListed": "Tickets Listed",
+      "kpiTotalOrders": "Total Orders",
+      "kpiPendingPayments": "Pending Payments",
+      "kpiActiveIncidents": "Active Incidents",
+      "kpiCanonicalEvents": "Canonical Events",
+      "kpiStaleExpired": "Stale / Expired",
+      "syncTitle": "Refresh all data",
+      "logoutTitle": "Log out of admin session",
+      "recentActivity": "Recent Activity",
+      "noActivity": "No activity recorded yet."
+    },
+    "verification": {
+      "title": "Ticket Authenticity Verification",
+      "subtitle": "Official metadata integrity verification and duplicate resale prevention.",
+      "badgeVerified": "Verified Official Ticket",
+      "badgePending": "Pending Curator Verification",
+      "badgeRejected": "Ticket Rejected",
+      "hashIntegrity": "Evidence Hash Integrity",
+      "officialSourceCheck": "Official Promoter Matching"
+    },
+    "venue": {
+      "title": "Venue & Field PIC Operations",
+      "subtitle": "On-site physical presence ensuring seamless venue admission for attendees.",
+      "picOfficer": "Field PIC Officer",
+      "meetingPoint": "Official Tikum Meeting Point",
+      "gateSupport": "Turnstile Gate Assistance",
+      "dispatchStatus": "PIC Dispatch Status",
+      "contactPic": "Contact Field PIC On-Site"
+    },
+    "pic": {
+      "officerName": "PIC Officer Name",
+      "statusStandby": "On Standby at Venue",
+      "statusOnDuty": "On Duty at Gate",
+      "statusDispatched": "Heading to Meeting Point",
+      "statusOffline": "Off Duty",
+      "verifyHandoffBtn": "Verify Ticket Handoff",
+      "verifyAdmissionBtn": "Confirm Gate Admission",
+      "reportIncidentBtn": "Report Venue Incident"
+    },
+    "incidents": {
+      "title": "Turnstile Gate Incidents",
+      "subtitle": "Reports of gate scanning failures, turnstile refusals, or seller absences.",
+      "typeSellerNoShow": "Seller No-Show at Meeting Point",
+      "typeGateRejection": "Gate Scanner Rejection (Turnstile)",
+      "typeCounterfeit": "Counterfeit / Duplicate Ticket",
+      "typeCategoryMismatch": "Category / Seat Mismatch",
+      "severityLow": "Low",
+      "severityMedium": "Medium",
+      "severityHigh": "High",
+      "severityCritical": "Critical",
+      "resolveIncident": "Resolve Incident"
+    },
+    "refunds": {
+      "title": "Refund Management",
+      "subtitle": "Buyer refund processing for invalid tickets or official promoter cancellations.",
+      "refundStatus": "Refund Status",
+      "railStatus": "Refund Rail Status",
+      "autoProcessed": "Auto-Refund Processed",
+      "manualRequired": "Manual Officer Sign-Off Required",
+      "completed": "Funds Successfully Refunded",
+      "refundPolicyNotice": "Refunds are processed in full under Tikum's Refund Policy without unilateral deduction."
+    },
+    "notifications": {
+      "title": "System Notifications",
+      "orderCreated": "Order created successfully. Please complete payment.",
+      "paymentReceived": "Your payment was received and secured in the escrow repository.",
+      "ticketReady": "Your ticket is ready for venue gate admission.",
+      "admissionSuccess": "Ticket scanned successfully at turnstile. Enjoy the show!",
+      "disputeOpened": "A dispute has been opened. Our operations team is investigating."
+    },
+    "validation": {
+      "requiredField": "This field is required.",
+      "invalidEmail": "Invalid email address format.",
+      "invalidPhone": "Invalid phone or WhatsApp number format.",
+      "minPrice": "Minimum ticket price is IDR 10,000.",
+      "priceExceedsMax": "Ticket price exceeds acceptable bounds.",
+      "termsRequired": "You must agree to the Terms & Conditions to proceed."
+    },
+    "errors": {
+      "generic": "A system error occurred. Please try again shortly.",
+      "UNAUTHORIZED": "Login session required or expired. Please sign in again.",
+      "ORDER_EXPIRED": "Order window has expired. Please select tickets again.",
+      "ESCROW_LOCKED": "Order funds are securely locked in the escrow vault.",
+      "LISTING_NOT_ACTIVE": "This ticket listing is no longer active or is in another transaction.",
+      "TICKET_ALREADY_SOLD": "This ticket has already been sold to another buyer.",
+      "GATE_DISPUTE_OPENED": "Turnstile gate issue reported. Escrow funds suspended pending review.",
+      "RATE_LIMITED": "Too many requests. Please wait a moment and try again.",
+      "PAYMENT_FAILED": "Payment could not be processed. Please try another payment method.",
+      "AUTH_REQUIRED": "Authentication required. Please sign in first.",
+      "FORBIDDEN": "Forbidden. You do not have permission for this action.",
+      "ADMIN_ACCESS_REQUIRED": "Restricted access: administrators and ops staff only.",
+      "USER_SUSPENDED": "This account has been suspended. Please contact support.",
+      "LISTING_NOT_FOUND": "Ticket listing not found in the system.",
+      "ORDER_NOT_FOUND": "Order not found in the system.",
+      "EVENT_NOT_FOUND": "Event not found in official catalog.",
+      "INVALID_CREDENTIALS": "Invalid email or password.",
+      "PAYMENT_EXPIRED": "Payment window has expired. The order has been cancelled.",
+      "ALREADY_REFUNDED": "This transaction has already been refunded.",
+      "SELLER_NO_SHOW": "Seller confirmed absent at meeting point.",
+      "GATE_REJECTION": "Ticket was rejected at the turnstile gate.",
+      "NETWORK_ERROR": "Failed to connect to server. Check your network connection.",
+      "INVALID_BODY": "Invalid request payload format.",
+      "FILE_TOO_LARGE": "File size exceeds the allowed limit."
+    },
+    "accessibility": {
+      "langToggleAria": "Select display language (Bahasa Indonesia / English)",
+      "themeToggleAria": "Toggle dark or light display theme",
+      "menuAria": "Main navigation menu",
+      "closeModalAria": "Close dialog window",
+      "openSearchAria": "Open event search"
+    },
+    "seo": {
+      "homeTitle": "TIKUM — Verified Event Ticket Marketplace | by Shinerva",
+      "homeDesc": "Discover events, check ticket status, and see resale availability before you buy. Indonesia's verified live event discovery platform.",
+      "eventsTitle": "Verified Concerts & Events Catalog — TIKUM",
+      "eventsDesc": "Schedule of live concerts, festivals, and performances across Indonesia with official ticketing channels and verified secondary resale."
     }
   },
   "zh-CN": {
@@ -2489,27 +3471,41 @@
     const clean = langCode.trim().toLowerCase();
     if (clean === 'id' || clean === 'in' || clean.startsWith('id-') || clean.startsWith('in-')) return 'id';
     if (clean === 'en' || clean.startsWith('en-')) return 'en';
-    if (clean === 'zh' || clean.startsWith('zh-') || clean.startsWith('zh_')) return 'zh-CN';
-    if (clean === 'ar' || clean.startsWith('ar-')) return 'ar';
-    if (clean === 'hi' || clean.startsWith('hi-')) return 'hi';
-    if (clean === 'es' || clean.startsWith('es-')) return 'es';
-    if (clean === 'fr' || clean.startsWith('fr-')) return 'fr';
-    if (clean === 'ja' || clean.startsWith('ja-')) return 'ja';
-    if (clean === 'ko' || clean.startsWith('ko-')) return 'ko';
-    if (clean === 'pt' || clean.startsWith('pt-')) return 'pt-BR';
     if (translations[clean]) return clean;
     return null;
   }
 
-  /**
-   * Language resolution priority:
-   * 1. Explicit user selection (URL query parameter ?lang= or ?locale=)
-   * 2. Stored preference (localStorage.getItem('tikum_lang'))
-   * 3. Browser locale (navigator.language / navigator.languages)
-   * 4. Default id-ID ('id')
-   */
-  function resolveInitialLanguage() {
-    // Tikum is strictly locked to Indonesian ('id') for live events
+  function resolveInitialLanguage(overrideSearch, overrideStorage) {
+    // 1. Explicit user selection (URL query parameter ?lang= or ?locale=)
+    try {
+      let searchStr = '';
+      if (typeof overrideSearch === 'string') {
+        searchStr = overrideSearch;
+      } else if (!isNode && typeof window !== 'undefined' && window.location && window.location.search) {
+        searchStr = window.location.search;
+      }
+      if (searchStr) {
+        const query = searchStr.startsWith('?') ? searchStr.slice(1) : searchStr;
+        const params = new URLSearchParams(query);
+        const urlLang = params.get('lang') || params.get('locale');
+        const norm = normalizeLang(urlLang);
+        if (norm) return norm;
+      }
+    } catch (e) {}
+
+    // 2. Stored user preference (localStorage 'tikum_lang')
+    try {
+      let saved = null;
+      if (overrideStorage !== undefined) {
+        saved = overrideStorage;
+      } else if (hasStorage) {
+        saved = localStorage.getItem('tikum_lang');
+      }
+      const normSaved = normalizeLang(saved);
+      if (normSaved) return normSaved;
+    } catch (e) {}
+
+    // 3. Default fallback: Indonesian ('id')
     return 'id';
   }
 
@@ -2535,8 +3531,20 @@
     return cur;
   }
 
-  function t(key, fallback) {
-    const activeDict = translations[currentLang] || translations.id;
+  function t(key, fallbackOrLang, maybeLang) {
+    let targetLang = currentLang;
+    let fallback = undefined;
+
+    if (maybeLang && (translations[maybeLang] || normalizeLang(maybeLang))) {
+      targetLang = normalizeLang(maybeLang) || maybeLang;
+      fallback = fallbackOrLang;
+    } else if (typeof fallbackOrLang === 'string' && (translations[fallbackOrLang] || ['id', 'en'].includes(fallbackOrLang))) {
+      targetLang = normalizeLang(fallbackOrLang) || fallbackOrLang;
+    } else {
+      fallback = fallbackOrLang;
+    }
+
+    const activeDict = translations[targetLang] || translations[currentLang] || translations.id;
     let res = getNested(activeDict, key);
     if (res !== undefined) return res;
     // Fallback hierarchy: requested locale -> English -> Indonesian
@@ -2600,6 +3608,26 @@
     }
   }
 
+  function translateStatus(statusCode, lang) {
+    if (!statusCode) return '-';
+    const code = String(statusCode).trim();
+    const key = `status.${code}`;
+    return t(key, code, lang);
+  }
+
+  function translateError(errorCode, fallbackMsg, lang) {
+    let fallback = fallbackMsg;
+    let targetLang = lang;
+    if (typeof fallbackMsg === 'string' && ['id', 'en'].includes(fallbackMsg) && !lang) {
+      targetLang = fallbackMsg;
+      fallback = undefined;
+    }
+    if (!errorCode) return fallback || t('errors.generic', targetLang) || 'Terjadi kesalahan sistem.';
+    const code = String(errorCode).trim();
+    const key = `errors.${code}`;
+    return t(key, fallback || code, targetLang);
+  }
+
   function applyLanguage(lang) {
     const norm = normalizeLang(lang) || 'id';
     currentLang = norm;
@@ -2639,8 +3667,27 @@
         if (translated !== undefined) {
           if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
             el.placeholder = translated;
+          } else if (el.hasAttribute('data-i18n-html')) {
+            el.innerHTML = translated;
           } else {
-            el.textContent = translated;
+            // Check if el contains an icon or child elements that should be preserved
+            const icon = el.querySelector('i, svg');
+            if (icon && !el.hasAttribute('data-i18n-replace-all')) {
+              // Preserve icon, replace text node
+              const textNode = Array.from(el.childNodes).find(n => n.nodeType === 3 && n.textContent.trim().length > 0);
+              if (textNode) {
+                textNode.textContent = ' ' + translated.trim();
+              } else {
+                const span = el.querySelector('span:not(.badge):not(.pill):not(.nav-badge)');
+                if (span) {
+                  span.textContent = translated;
+                } else {
+                  el.innerHTML = icon.outerHTML + ' <span>' + translated + '</span>';
+                }
+              }
+            } else {
+              el.textContent = translated;
+            }
           }
         }
       });
@@ -2652,18 +3699,52 @@
         if (translated) el.placeholder = translated;
       });
 
-      // Update Header Lang Switcher Trigger
-      const langBtn = document.getElementById('langToggle') || document.getElementById('btnLangToggle');
-      if (langBtn) {
-        const matched = LANGUAGES.find(l => l.code === norm || l.codeAlias === norm);
-        const displayLabel = matched ? matched.pill : norm.toUpperCase();
-        const innerLabel = langBtn.querySelector('#langLabel');
+      // Translate titles / aria
+      document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const key = el.getAttribute('data-i18n-title');
+        const translated = t(key);
+        if (translated) {
+          el.setAttribute('title', translated);
+          el.setAttribute('aria-label', translated);
+        }
+      });
+
+      document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+        const key = el.getAttribute('data-i18n-aria');
+        const translated = t(key);
+        if (translated) el.setAttribute('aria-label', translated);
+      });
+
+      // Update Header Lang Switcher Triggers
+      const langBtns = document.querySelectorAll('#langToggle, #btnLangToggle, .lang-toggle-btn');
+      langBtns.forEach(langBtn => {
+        const displayLabel = norm === 'id' ? 'ID' : 'EN';
+        const innerLabel = langBtn.querySelector('#langLabel, #opsLangLabel, #langCode, .lang-label');
         if (innerLabel) {
           innerLabel.textContent = displayLabel;
+        } else if (langBtn.querySelector('i, svg')) {
+          const textNode = Array.from(langBtn.childNodes).find(n => n.nodeType === 3 && n.textContent.trim());
+          if (textNode) {
+            textNode.textContent = ' ' + displayLabel;
+          } else {
+            langBtn.appendChild(document.createTextNode(' ' + displayLabel));
+          }
         } else {
           langBtn.textContent = displayLabel;
         }
-      }
+        langBtn.setAttribute('title', norm === 'id' ? 'Ganti Bahasa (English)' : 'Ubah ke Bahasa Indonesia');
+        langBtn.setAttribute('aria-label', norm === 'id' ? 'Beralih ke Bahasa Inggris' : 'Beralih ke Bahasa Indonesia');
+
+        if (!langBtn.getAttribute('data-bound-lang-click')) {
+          langBtn.setAttribute('data-bound-lang-click', '1');
+          langBtn.addEventListener('click', function(e) {
+            if (!langBtn.getAttribute('onclick')) {
+              e.preventDefault();
+              toggleLang();
+            }
+          });
+        }
+      });
 
       // Notify dynamic rendering engines
       window.dispatchEvent(new CustomEvent('tikum:languageChanged', { detail: { lang: norm } }));
@@ -2689,6 +3770,11 @@
         icon.className = currentTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
       }
     }
+  }
+
+  function toggleLang() {
+    const nextLang = currentLang === 'en' ? 'id' : 'en';
+    applyLanguage(nextLang);
   }
 
   function openLangModal() {
@@ -2719,17 +3805,20 @@
     getTheme: () => currentTheme,
     setLang: applyLanguage,
     setTheme: applyTheme,
+    translateStatus,
+    translateError,
     formatDate,
     formatNumber,
     formatCurrency,
     getLocaleTag,
     normalizeLang,
     resolveInitialLanguage,
-    toggleLang: () => openLangModal(),
+    toggleLang,
     openLangModal,
     closeLangModal,
     toggleTheme: () => applyTheme(currentTheme === 'dark' ? 'light' : 'dark'),
     translations,
+    DICTIONARY: translations,
     languages: LANGUAGES,
     tier2Languages: TIER2_LOCALES,
     getTier2Locales: () => TIER2_LOCALES.map(l => ({ ...l })),

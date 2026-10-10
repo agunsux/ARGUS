@@ -123,31 +123,35 @@
   </style>
 </head>
 <body>
+  <div style="position: absolute; top: 16px; right: 20px;">
+    <button id="langToggle" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="background:#1e293b; border:1px solid #334155; color:#38bdf8; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;" title="Switch Language">ID</button>
+  </div>
   <main class="login-card">
     <div class="brand">
       <div class="brand-badge">&#128737;</div>
-      <h1>TIKUM OPERATIONS CONTROL</h1>
-      <p>Admin Sign In</p>
+      <h1 data-i18n="admin.consoleTitle">TIKUM OPERATIONS CONTROL</h1>
+      <p data-i18n="admin.consoleSubtitle">Admin Sign In</p>
     </div>
 
     <form id="adminLoginForm" autocomplete="on">
-      <label for="email">Email</label>
-      <input type="email" id="email" name="email" required autocomplete="username" placeholder="nama@tikum.app">
+      <label for="email" data-i18n="auth.emailLabel">Email</label>
+      <input type="email" id="email" name="email" required autocomplete="username" placeholder="nama@tikum.app" data-i18n-placeholder="auth.emailPlaceholder">
 
-      <label for="password">Password</label>
-      <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••">
+      <label for="password" data-i18n="auth.passwordLabel">Password</label>
+      <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••" data-i18n-placeholder="auth.passwordPlaceholder">
 
-      <button type="submit" id="loginButton">Masuk</button>
+      <button type="submit" id="loginButton" data-i18n="auth.signInBtn">Masuk</button>
     </form>
 
     <div id="loginError" class="error" role="alert"></div>
 
     <div class="footnote">
-      Akses terbatas untuk ADMIN / OPS / TRUST_OFFICER / SUPER_ADMIN.<br>
-      <a href="/">Kembali ke halaman utama</a>
+      <span data-i18n="auth.adminAccessFootnote">Akses terbatas untuk ADMIN / OPS / TRUST_OFFICER / SUPER_ADMIN.</span><br>
+      <a href="/" data-i18n="auth.returnToHomepage">Kembali ke halaman utama</a>
     </div>
   </main>
 
+  <script src="/js/i18n.js"></script>
   <script>
     (function () {
       var form = document.getElementById('adminLoginForm');
@@ -157,9 +161,9 @@
       var params = new URLSearchParams(window.location.search);
       var queryError = params.get('error');
       if (queryError === 'ADMIN_ACCESS_REQUIRED') {
-        showError('Akun ini tidak memiliki akses ke Operations Console.');
+        showError(window.TikumI18n ? window.TikumI18n.translateError('ADMIN_ACCESS_REQUIRED') : 'Akun ini tidak memiliki akses ke Operations Console.');
       } else if (queryError === 'USER_SUSPENDED') {
-        showError('Akun ini sedang ditangguhkan. Hubungi super admin.');
+        showError(window.TikumI18n ? window.TikumI18n.translateError('USER_SUSPENDED') : 'Akun ini sedang ditangguhkan. Hubungi super admin.');
       }
 
       function showError(message) {
@@ -171,7 +175,7 @@
         event.preventDefault();
         errorBox.style.display = 'none';
         button.disabled = true;
-        button.textContent = 'Memverifikasi...';
+        button.textContent = window.TikumI18n ? window.TikumI18n.t('auth.verifying', 'Memverifikasi...') : 'Memverifikasi...';
 
         try {
           var res = await fetch('/api/admin/login', {
@@ -193,17 +197,17 @@
           }
 
           if (res.status === 403) {
-            showError((data && data.error) || 'Akun ini tidak memiliki akses admin.');
+            showError((data && data.error) ? (window.TikumI18n ? window.TikumI18n.translateError(data.code || 'FORBIDDEN', data.error) : data.error) : 'Akun ini tidak memiliki akses admin.');
           } else if (res.status === 401) {
-            showError('Email atau password salah.');
+            showError(window.TikumI18n ? window.TikumI18n.translateError('INVALID_CREDENTIALS') : 'Email atau password salah.');
           } else {
             showError((data && data.error) || ('Login gagal (HTTP ' + res.status + ').'));
           }
         } catch (err) {
-          showError('Tidak dapat menghubungi server. Coba lagi.');
+          showError(window.TikumI18n ? window.TikumI18n.translateError('NETWORK_ERROR') : 'Tidak dapat menghubungi server. Coba lagi.');
         } finally {
           button.disabled = false;
-          button.textContent = 'Masuk';
+          button.textContent = window.TikumI18n ? window.TikumI18n.t('auth.signInBtn', 'Masuk') : 'Masuk';
         }
       });
     })();

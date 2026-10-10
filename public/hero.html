@@ -442,10 +442,11 @@
         <span class="brand-badge">PROVENANCE VERIFIED</span>
       </a>
       <nav class="nav-links">
-        <a href="/" class="nav-link">Beranda</a>
-        <a href="/events" class="nav-link">Jelajah Konser</a>
-        <a href="/panduan-pembeli" class="nav-link">Buyer Protection</a>
-        <a href="/kontak" class="nav-link">Bantuan</a>
+        <a href="/" class="nav-link" data-i18n="nav.home">Beranda</a>
+        <a href="/events" class="nav-link" data-i18n="nav.events">Jelajah Konser</a>
+        <a href="/panduan-pembeli" class="nav-link" data-i18n="footer.buyerProt">Buyer Protection</a>
+        <a href="/contact" class="nav-link" data-i18n="nav.help">Bantuan</a>
+        <button id="langToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="background:#1e293b; border:1px solid #334155; color:#38bdf8; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;" title="Ganti Bahasa">ID</button>
       </nav>
     </div>
   </header>
@@ -617,5 +618,6 @@
       </div>
     </div>
   </footer>
+  <script src="/js/i18n.js"></script>
 </body>
 </html>

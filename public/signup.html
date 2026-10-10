@@ -201,8 +201,9 @@
       </a>
       <div style="display: flex; align-items: center; gap: 12px;">
         <a href="/" style="font-size: 14px; color: var(--text-muted); text-decoration: none;">
-          <i class="fa-solid fa-house"></i> Beranda
+          <i class="fa-solid fa-house"></i> <span data-i18n="nav.home">Beranda</span>
         </a>
+        <button id="langToggle" class="theme-toggle-btn" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" title="Ganti Bahasa"><i class="fa-solid fa-globe"></i> <span id="langLabel">ID</span></button>
         <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
           <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
         </button>
@@ -227,11 +228,11 @@
         <form onsubmit="handleSignup(event)">
           <div class="auth-input-group">
             <label for="signupEmail">Alamat Email</label>
-            <input type="email" id="signupEmail" class="auth-input" placeholder="nama@email.com" required autocomplete="email">
+            <input type="email" id="signupEmail" class="auth-input" placeholder="nama@email.com" data-i18n-placeholder="auth.emailPlaceholder" required autocomplete="email">
           </div>
 
           <button type="submit" class="auth-btn" id="btnSignupSubmit">
-            <span>Kirim Magic Link</span>
+            <span data-i18n="auth.sendMagicLink">Kirim Magic Link</span>
             <i class="fa-solid fa-arrow-right"></i>
           </button>
         </form>

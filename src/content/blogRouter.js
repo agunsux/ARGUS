@@ -147,11 +147,12 @@ function renderBlogNavHeader(activeCategory = null) {
         </div>
       </a>
       <nav class="main-nav">
-        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
-        <a href="/blog" class="nav-link active"><i class="fa-solid fa-newspaper"></i> Panduan &amp; Artikel</a>
-        <a href="/how-it-works" class="nav-link"><i class="fa-solid fa-circle-nodes"></i> Cara Kerja</a>
-        <a href="/buyer-protection" class="nav-link"><i class="fa-solid fa-shield-check"></i> Perlindungan</a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Jual Tiket</a>
+        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">Katalog Event</span></a>
+        <a href="/blog" class="nav-link active"><i class="fa-solid fa-newspaper"></i> <span data-i18n="nav.blog">Panduan &amp; Artikel</span></a>
+        <a href="/how-it-works" class="nav-link"><i class="fa-solid fa-circle-nodes"></i> <span data-i18n="footer.how">Cara Kerja</span></a>
+        <a href="/buyer-protection" class="nav-link"><i class="fa-solid fa-shield-check"></i> <span data-i18n="footer.buyerProt">Perlindungan</span></a>
+        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
+        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700; margin-left: 8px;">ID</button>
       </nav>
     </div>
   </header>`;

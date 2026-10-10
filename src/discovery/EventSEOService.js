@@ -370,13 +370,13 @@ class EventSEOService {
         </div>
       </a>
       <nav class="main-nav">
-        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
-        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> Tawaran Tiket</a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Jual Tiket</a>
-        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Status</a>
+        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">Katalog Event</span></a>
+        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> <span data-i18n="nav.offers">Tawaran Tiket</span></a>
+        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
+        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="nav.track">Lacak Status</span></a>
         <div class="nav-controls" style="display: inline-flex; gap: 8px; margin-left: 12px; align-items: center;">
-          <button id="btnLangToggle" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px; font-weight: 700;">EN</button>
-          <button id="btnThemeToggle" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px;" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon"></i></button>
+          <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 12px; font-weight: 700;">ID</button>
+          <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 12px;" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon"></i></button>
         </div>
       </nav>
     </div>
@@ -384,8 +384,8 @@ class EventSEOService {
 
   <main class="event-seo-container">
     <nav style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
-      <a href="/" style="color: #94a3b8; text-decoration: none;">Beranda</a> &rsaquo; 
-      <a href="/events" style="color: #94a3b8; text-decoration: none;">Event</a> &rsaquo; 
+      <a href="/" style="color: #94a3b8; text-decoration: none;" data-i18n="nav.home">Beranda</a> &rsaquo;
+      <a href="/events" style="color: #94a3b8; text-decoration: none;" data-i18n="nav.events">Event</a> &rsaquo;
       <a href="/events/city/${encodeURIComponent(city.toLowerCase())}" style="color: #94a3b8; text-decoration: none;">${city}</a> &rsaquo; 
       <span style="color: #f8fafc;">${event.canonical_name}</span>
     </nav>

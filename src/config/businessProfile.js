@@ -63,11 +63,11 @@ function renderFooterHtml() {
         <div style="font-weight: 800; font-size: 16px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
           <i class="fa-solid fa-shield-halved" style="color: #06b6d4;"></i> TIKUM — by SHINERVA
         </div>
-        <p style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
+        <p style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;" data-i18n="footer.aboutBrand">
           Marketplace tiket sekunder terverifikasi. Transaksi aman dengan rekening penampungan internal (escrow) dan pendampingan fisik di gerbang venue.
         </p>
         <div class="footer-address" style="color: #94a3b8; font-size: 13px; line-height: 1.6;">
-          <div style="font-weight: 700; color: #cbd5e1;">Kantor Operasional &amp; Surat:</div>
+          <div style="font-weight: 700; color: #cbd5e1;" data-i18n="footer.operationalOffice">Kantor Operasional &amp; Surat:</div>
           <div>${businessProfile.address.entity}</div>
           <div>${businessProfile.address.street}</div>
           <div>${businessProfile.address.city} ${businessProfile.address.postalCode}</div>
@@ -76,14 +76,14 @@ function renderFooterHtml() {
       </div>
 
       <div class="footer-col footer-contact-col">
-        <div style="font-weight: 700; color: #fff; margin-bottom: 12px; font-size: 14px;">Kontak Resmi</div>
+        <div style="font-weight: 700; color: #fff; margin-bottom: 12px; font-size: 14px;" data-i18n="footer.officialContact">Kontak Resmi</div>
         <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
           <div>
-            <span style="color: #64748b;">Layanan Pengguna:</span>
+            <span style="color: #64748b;" data-i18n="footer.customerSupport">Layanan Pengguna:</span>
             <a href="mailto:support@tikum.app" style="color: #06b6d4; text-decoration: none; margin-left: 6px; font-weight: 600;">support@tikum.app</a>
           </div>
           <div>
-            <span style="color: #64748b;">Korespondensi Legal:</span>
+            <span style="color: #64748b;" data-i18n="footer.legalCorrespondence">Korespondensi Legal:</span>
             <a href="${businessProfile.emailUrl}" style="color: #94a3b8; text-decoration: none; margin-left: 6px;">${businessProfile.email}</a>
           </div>
           <div>
@@ -94,17 +94,17 @@ function renderFooterHtml() {
       </div>
 
       <div class="footer-col footer-links-col">
-        <div style="font-weight: 700; color: #fff; margin-bottom: 12px; font-size: 14px;">Layanan &amp; Legalitas</div>
+        <div style="font-weight: 700; color: #fff; margin-bottom: 12px; font-size: 14px;" data-i18n="footer.servicesAndLegal">Layanan &amp; Legalitas</div>
         <div class="footer-links" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-          <a href="${businessProfile.legalLinks.faq}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-circle-question"></i> FAQ / Pertanyaan Umum</a>
-          <a href="${businessProfile.legalLinks.terms}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-file-contract"></i> Syarat &amp; Ketentuan</a>
-          <a href="${businessProfile.legalLinks.refundPolicy}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-rotate-left"></i> Kebijakan Pengembalian Dana (Refund)</a>
-          <a href="${businessProfile.legalLinks.contact}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-address-book"></i> Kontak Kami</a>
-          <a href="${businessProfile.legalLinks.privacy}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-user-shield"></i> Kebijakan Privasi (UU PDP)</a>
+          <a href="${businessProfile.legalLinks.faq}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-circle-question"></i> <span data-i18n="footer.faq">FAQ / Pertanyaan Umum</span></a>
+          <a href="${businessProfile.legalLinks.terms}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-file-contract"></i> <span data-i18n="footer.terms">Syarat &amp; Ketentuan</span></a>
+          <a href="${businessProfile.legalLinks.refundPolicy}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="footer.refundPolicy">Kebijakan Pengembalian Dana (Refund)</span></a>
+          <a href="${businessProfile.legalLinks.contact}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contactUs">Kontak Kami</span></a>
+          <a href="${businessProfile.legalLinks.privacy}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-user-shield"></i> <span data-i18n="footer.privacyPolicy">Kebijakan Privasi (UU PDP)</span></a>
         </div>
       </div>
     </div>
-    <div style="max-width: 1200px; margin: 32px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: #64748b;">
+    <div style="max-width: 1200px; margin: 32px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: #64748b;" data-i18n="footer.allRightsReserved">
       &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. TIKUM — by SHINERVA.
     </div>
   </footer>

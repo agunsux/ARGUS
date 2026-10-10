@@ -35,12 +35,13 @@ function renderNavHeader(activeSection = '') {
         </div>
       </a>
       <nav class="main-nav">
-        <a href="/events" class="nav-link ${activeSection === 'events' ? 'active' : ''}"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
-        <a href="/venues" class="nav-link ${activeSection === 'venues' ? 'active' : ''}"><i class="fa-solid fa-building"></i> Venue</a>
-        <a href="/cities" class="nav-link ${activeSection === 'cities' ? 'active' : ''}"><i class="fa-solid fa-city"></i> Kota</a>
-        <a href="/blog" class="nav-link ${activeSection === 'blog' ? 'active' : ''}"><i class="fa-solid fa-newspaper"></i> Panduan</a>
-        <a href="/how-it-works" class="nav-link ${activeSection === 'trust' ? 'active' : ''}"><i class="fa-solid fa-shield-check"></i> Cara Kerja</a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Jual Tiket</a>
+        <a href="/events" class="nav-link ${activeSection === 'events' ? 'active' : ''}"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">Katalog Event</span></a>
+        <a href="/venues" class="nav-link ${activeSection === 'venues' ? 'active' : ''}"><i class="fa-solid fa-building"></i> <span data-i18n="venue.directoryTitle">Venue</span></a>
+        <a href="/cities" class="nav-link ${activeSection === 'cities' ? 'active' : ''}"><i class="fa-solid fa-city"></i> <span data-i18n="events.cityLabel">Kota</span></a>
+        <a href="/blog" class="nav-link ${activeSection === 'blog' ? 'active' : ''}"><i class="fa-solid fa-newspaper"></i> <span data-i18n="nav.blog">Panduan</span></a>
+        <a href="/how-it-works" class="nav-link ${activeSection === 'trust' ? 'active' : ''}"><i class="fa-solid fa-shield-check"></i> <span data-i18n="footer.how">Cara Kerja</span></a>
+        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
+        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700; margin-left: 8px;">ID</button>
       </nav>
     </div>
   </header>`;

@@ -47,25 +47,25 @@
       <img src="/assets/tikum-mark-2color.svg" class="brand-logo" width="34" height="34" alt="Tikum">
       <div>
         <div class="brand-title">Tikum</div>
-        <div class="brand-subtitle">Pasar Tiket Event Terverifikasi</div>
+        <div class="brand-subtitle" data-i18n="nav.subtitle">Pasar Tiket Event Terverifikasi</div>
       </div>
     </a>
     <nav class="ln-nav-links">
-      <a class="ln-nav-link" href="/hero" style="color:#059669; font-weight:700;"><i class="fa-solid fa-star"></i> Konser Pilihan</a>
-      <a class="ln-nav-link" href="#upcoming">Semua Event</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('MUSIC'); return false;">Konser</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('SPORT'); return false;">Olahraga</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('COMEDY'); return false;">Stand Up Comedy</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('EXHIBITION'); return false;">Pameran</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('HIBURAN'); return false;">Hiburan Lainnya</a>
-      <a class="ln-nav-link" href="/faq">Bantuan</a>
+      <a class="ln-nav-link" href="/hero" style="color:#059669; font-weight:700;"><i class="fa-solid fa-star"></i> <span data-i18n="nav.featuredEvents">Konser Pilihan</span></a>
+      <a class="ln-nav-link" href="#upcoming" data-i18n="nav.allEvents">Semua Event</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('MUSIC'); return false;" data-i18n="nav.concerts">Konser</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('SPORT'); return false;" data-i18n="nav.sports">Olahraga</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('COMEDY'); return false;" data-i18n="nav.comedy">Stand Up Comedy</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('EXHIBITION'); return false;" data-i18n="nav.exhibitions">Pameran</a>
+      <a class="ln-nav-link" href="#" onclick="applyNavCategory('HIBURAN'); return false;" data-i18n="nav.entertainment">Hiburan Lainnya</a>
+      <a class="ln-nav-link" href="/faq" data-i18n="nav.help">Bantuan</a>
     </nav>
     <div class="header-actions">
       <span class="ln-nav-link header-location-badge" style="cursor:default; display:inline-flex; align-items:center; gap:6px;">
         <img src="/assets/tikum-mark-pin.svg" width="14" height="14" alt="Indonesia"> Indonesia
       </span>
       <div id="authHeaderContainer">
-        <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up">Masuk / Daftar</button>
+        <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up" data-i18n="auth.signInSignUp">Masuk / Daftar</button>
       </div>
       <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Toggle Theme" style="padding:6px 10px;">
         <i class="fa-solid fa-moon"></i>
@@ -79,33 +79,33 @@
 
   <!-- Trust Strip -->
   <div class="trust-strip">
-    <div class="trust-item"><i class="fa-solid fa-shield-check" style="color:var(--ok-600);"></i> <span>Verifikasi Sumber Resmi</span></div>
-    <div class="trust-item"><i class="fa-solid fa-user-check" style="color:var(--terra-600);"></i> <span>Petugas Tikum di venue</span></div>
-    <div class="trust-item"><i class="fa-solid fa-wallet" style="color:var(--amber-500);"></i> <span>Bayar QRIS / e-wallet / VA</span></div>
-    <div class="trust-item"><i class="fa-solid fa-receipt" style="color:var(--ok-600);"></i> <span>Harga transparan all-in</span></div>
+    <div class="trust-item"><i class="fa-solid fa-shield-check" style="color:var(--ok-600);"></i> <span data-i18n="trust.officialSource">Verifikasi Sumber Resmi</span></div>
+    <div class="trust-item"><i class="fa-solid fa-user-check" style="color:var(--terra-600);"></i> <span data-i18n="trust.venuePic">Petugas Tikum di venue</span></div>
+    <div class="trust-item"><i class="fa-solid fa-wallet" style="color:var(--amber-500);"></i> <span data-i18n="trust.paymentMethods">Bayar QRIS / e-wallet / VA</span></div>
+    <div class="trust-item"><i class="fa-solid fa-receipt" style="color:var(--ok-600);"></i> <span data-i18n="trust.transparentPrice">Harga transparan all-in</span></div>
     <div class="trust-item" id="feedFreshnessItem" style="display:none;"><i class="fa-solid fa-bolt" style="color:var(--ok-600);"></i> <span id="feedFreshnessText">Live Auto-Refresh Active</span></div>
   </div>
 
   <!-- Search & Discovery Controls -->
   <div class="filters-container" style="padding-top:20px;">
     <div class="search-bar" style="flex:1; min-width:280px; margin:0;">
-      <input type="text" id="searchInput" class="search-input" placeholder="Cari konser, pertandingan, atau acara..." oninput="debounceSearch()">
-      <button class="search-btn" onclick="renderAllSections()"><i class="fa-solid fa-magnifying-glass"></i> Cari</button>
+      <input type="text" id="searchInput" class="search-input" placeholder="Cari konser, pertandingan, atau acara..." data-i18n-placeholder="search.inputPlaceholder" oninput="debounceSearch()">
+      <button class="search-btn" onclick="renderAllSections()"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="search.btnSearch">Cari</span></button>
     </div>
   </div>
 
   <div class="filters-container" id="upcoming">
     <div class="filter-pills">
-      <div class="pill active" data-category="" onclick="setCategory(this, '')">Semua Event</div>
-      <div class="pill" data-category="MUSIC" onclick="setCategory(this, 'MUSIC')">Konser</div>
-      <div class="pill" data-category="SPORT" onclick="setCategory(this, 'SPORT')">Olahraga</div>
-      <div class="pill" data-category="COMEDY" onclick="setCategory(this, 'COMEDY')">Stand Up Comedy</div>
-      <div class="pill" data-category="EXHIBITION" onclick="setCategory(this, 'EXHIBITION')">Pameran</div>
-      <div class="pill" data-category="HIBURAN" onclick="setCategory(this, 'HIBURAN')">Hiburan Lainnya</div>
+      <div class="pill active" data-category="" onclick="setCategory(this, '')" data-i18n="events.allEvents">Semua Event</div>
+      <div class="pill" data-category="MUSIC" onclick="setCategory(this, 'MUSIC')" data-i18n="events.concerts">Konser</div>
+      <div class="pill" data-category="SPORT" onclick="setCategory(this, 'SPORT')" data-i18n="events.sports">Olahraga</div>
+      <div class="pill" data-category="COMEDY" onclick="setCategory(this, 'COMEDY')" data-i18n="events.comedy">Stand Up Comedy</div>
+      <div class="pill" data-category="EXHIBITION" onclick="setCategory(this, 'EXHIBITION')" data-i18n="events.exhibitions">Pameran</div>
+      <div class="pill" data-category="HIBURAN" onclick="setCategory(this, 'HIBURAN')" data-i18n="events.entertainment">Hiburan Lainnya</div>
     </div>
     <div class="filters-row-selects" style="display:flex; gap:10px;">
       <select id="cityFilter" class="select-filter" onchange="renderAllSections()">
-        <option value="">Semua Kota</option>
+        <option value="" data-i18n="events.allCities">Semua Kota</option>
         <option value="Jakarta">Jakarta</option>
         <option value="Bandung">Bandung</option>
         <option value="Surabaya">Surabaya</option>
@@ -116,10 +116,10 @@
         <option value="Makassar">Makassar</option>
       </select>
       <select id="dateFilter" class="select-filter" onchange="renderAllSections()">
-        <option value="">Semua Waktu</option>
-        <option value="week">Minggu Ini</option>
-        <option value="month">Bulan Ini</option>
-        <option value="3months">3 Bulan Ke Depan</option>
+        <option value="" data-i18n="events.allDates">Semua Waktu</option>
+        <option value="week" data-i18n="events.thisWeek">Minggu Ini</option>
+        <option value="month" data-i18n="events.thisMonth">Bulan Ini</option>
+        <option value="3months" data-i18n="events.next3Months">3 Bulan Ke Depan</option>
       </select>
     </div>
   </div>
@@ -388,7 +388,7 @@
           Pasar tiket event terverifikasi by Shinerva. Dilengkapi verifikasi sumber resmi dan asistensi staf di gerbang venue.
         </p>
         <div class="footer-address" style="color: var(--color-text-muted, #6B7280); font-size: 13px; line-height: 1.6;">
-          <div style="font-weight: 700; color: var(--text-light);">Kantor Operasional &amp; Surat:</div>
+          <div style="font-weight: 700; color: var(--text-light);" data-i18n="footer.operationalOffice">Kantor Operasional &amp; Surat:</div>
           <div>SHINERVA HQ</div>
           <div>Jl. Pasirluyu No. 79</div>
           <div>Bandung 40254</div>
@@ -397,14 +397,14 @@
       </div>
 
       <div class="footer-col footer-contact-col">
-        <h4>Kontak Resmi</h4>
+        <h4 data-i18n="footer.officialContact">Kontak Resmi</h4>
         <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
           <div>
-            <span style="color: var(--color-text-muted, #6B7280);">Layanan Pelanggan:</span>
+            <span style="color: var(--color-text-muted, #6B7280);" data-i18n="footer.customerSupport">Layanan Pelanggan:</span>
             <a href="mailto:support@tikum.app" style="color: var(--primary); text-decoration: none; margin-left: 6px; font-weight: 600;">support@tikum.app</a>
           </div>
           <div>
-            <span style="color: var(--color-text-muted, #6B7280);">Korespondensi Legal:</span>
+            <span style="color: var(--color-text-muted, #6B7280);" data-i18n="footer.legalCorrespondence">Korespondensi Legal:</span>
             <a href="mailto:support@tikum.app" style="color: var(--color-text-muted, #6B7280); text-decoration: none; margin-left: 6px;">support@tikum.app</a>
           </div>
           <div>
@@ -415,14 +415,14 @@
       </div>
 
       <div class="footer-col footer-links-col">
-        <h4>Layanan &amp; Legalitas</h4>
+        <h4 data-i18n="footer.servicesAndLegal">Layanan &amp; Legalitas</h4>
         <div class="footer-links">
           <a href="/blog"><i class="fa-solid fa-newspaper"></i> Blog &amp; Panduan Tiket</a>
-          <a href="/faq"><i class="fa-solid fa-circle-question"></i> FAQ / Bantuan</a>
-          <a href="/terms"><i class="fa-solid fa-file-contract"></i> Syarat &amp; Ketentuan</a>
-          <a href="/refund-policy"><i class="fa-solid fa-rotate-left"></i> Kebijakan Pengembalian Dana (Refund)</a>
-          <a href="/contact"><i class="fa-solid fa-address-book"></i> Kontak Kami</a>
-          <a href="/privacy"><i class="fa-solid fa-user-shield"></i> Kebijakan Privasi (UU PDP)</a>
+          <a href="/faq"><i class="fa-solid fa-circle-question"></i> <span data-i18n="footer.faq">FAQ / Bantuan</span></a>
+          <a href="/terms"><i class="fa-solid fa-file-contract"></i> <span data-i18n="footer.terms">Syarat &amp; Ketentuan</span></a>
+          <a href="/refund-policy"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="footer.refundPolicy">Kebijakan Pengembalian Dana (Refund)</span></a>
+          <a href="/contact"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contactUs">Kontak Kami</span></a>
+          <a href="/privacy"><i class="fa-solid fa-user-shield"></i> <span data-i18n="footer.privacyPolicy">Kebijakan Privasi (UU PDP)</span></a>
         </div>
       </div>
     </div>
@@ -591,7 +591,9 @@
     }
 
     function toggleLang() {
-      // Indonesian default: language indicator
+      if (window.TikumI18n && typeof window.TikumI18n.toggleLang === 'function') {
+        window.TikumI18n.toggleLang();
+      }
     }
 
     function debounceSearch() {
@@ -895,8 +897,8 @@
         const officialPrice = e.primary_price_min || e.min_price;
         priceLabel = 'Harga resmi promotor';
         priceDisplay = officialPrice ? `Mulai Rp ${formatRupiah(officialPrice)}` : 'TBA';
-        resaleCue = '<div class="card-resale-empty-cue"><i class="fa-solid fa-circle-info"></i> Belum ada tiket resale di TIKUM</div>';
-        waitlistBtn = `<button type="button" class="btn-waitlist" onclick="handleWaitlistClick(event, '${escapeHtml(title)}', '${escapeHtml(slug)}')"><i class="fa-brands fa-whatsapp"></i> Kabari Saya Saat Tiket Ada</button>`;
+        resaleCue = '<div class="card-resale-empty-cue" data-i18n="events.noResaleTickets"><i class="fa-solid fa-circle-info"></i> Belum ada tiket resale di TIKUM</div>';
+        waitlistBtn = `<button type="button" class="btn-waitlist" onclick="handleWaitlistClick(event, '${escapeHtml(title)}', '${escapeHtml(slug)}')" data-i18n="events.notifyWhenAvailable"><i class="fa-brands fa-whatsapp"></i> Kabari Saya Saat Tiket Ada</button>`;
       }
 
       let radarBadge = '';
@@ -924,10 +926,10 @@
             <div class="poster-sub"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(loc)}</div>
             <div class="poster-price-row">
               <div class="poster-price-col">
-                <span class="poster-price-label">${priceLabel}</span>
+                <span class="poster-price-label" data-i18n="${hasResale ? 'events.resaleFrom' : 'events.officialPromoterPrice'}">${priceLabel}</span>
                 <span class="poster-price">${priceDisplay}</span>
               </div>
-              <span class="badge-card-trust" onclick="showVerifModal(event, '${verifDate}')" title="Event Terverifikasi Resmi">
+              <span class="badge-card-trust" onclick="showVerifModal(event, '${verifDate}')" title="Event Terverifikasi Resmi" data-i18n="common.verified">
                 <i class="fa-solid fa-shield-check"></i> Terverifikasi
               </span>
             </div>
@@ -1091,6 +1093,9 @@
         sports.length ? renderRail('Olahraga', 'Pertandingan dan turnamen olahraga resmi', sports) : '',
         renderAttribution()
       ].join('');
+      if (window.TikumI18n && typeof window.TikumI18n.applyLanguage === 'function') {
+        window.TikumI18n.applyLanguage(window.TikumI18n.getLang());
+      }
     }
 
     // ==========================================
@@ -1244,6 +1249,12 @@
         }
       }
     }
+
+    window.addEventListener('tikum:languageChanged', function() {
+      const heroEvent = (homeFeed && homeFeed.sections && homeFeed.sections.hero) || allEvents[0];
+      renderHeroFeature(heroEvent);
+      renderAllSections();
+    });
 
     // Init
     document.addEventListener('DOMContentLoaded', () => {

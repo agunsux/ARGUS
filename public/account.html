@@ -271,6 +271,7 @@
         <span style="font-weight:800; font-size:18px; color:inherit;">Tikum</span>
       </a>
       <div class="header-actions">
+        <button id="langToggle" class="theme-toggle-btn" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" title="Ganti Bahasa"><i class="fa-solid fa-globe"></i> <span id="langLabel">ID</span></button>
         <a href="/" style="font-size: 14px; color: var(--text-muted); text-decoration: none; margin-right: 8px;">
           <i class="fa-solid fa-house"></i> Beranda
         </a>
@@ -314,7 +315,7 @@
       <!-- Information Tiles -->
       <div class="info-grid">
         <div class="info-tile">
-          <div class="info-tile-label">Status Akun</div>
+          <div class="info-tile-label" data-i18n="profile.kycStatus">Status Akun</div>
           <div class="info-tile-value">
             <span class="badge-verified">
               <i class="fa-solid fa-shield-check"></i> Verified
