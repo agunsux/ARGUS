@@ -171,6 +171,16 @@ class EventIngestionPipeline {
       meets_price_threshold: sanitizedPayload.meets_price_threshold,
       price_status: sanitizedPayload.price_status,
 
+      // S1 & S2 Tier, Seating & Map Standards
+      price_tiers: EventNormalizationService.normalizePriceTiers(
+        sanitizedPayload.price_tiers || sanitizedPayload.tiers || sanitizedPayload.tickets,
+        sanitizedPayload.min_price !== undefined ? sanitizedPayload.min_price : sanitizedPayload.price,
+        sanitizedPayload.max_price !== undefined ? sanitizedPayload.max_price : sanitizedPayload.price,
+        sanitizedPayload.currency || 'IDR'
+      ),
+      seating_type: EventNormalizationService.normalizeSeatingAndMap(venueNorm, sanitizedPayload).seating_type,
+      seat_map_url: EventNormalizationService.normalizeSeatingAndMap(venueNorm, sanitizedPayload).seat_map_url,
+
       // Zero-Fake Policy Verification Attributes
       artist_official_url: sanitizedPayload.artist_official_url || null,
       artist_official_source_type: sanitizedPayload.artist_official_source_type || null,

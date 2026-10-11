@@ -588,9 +588,13 @@ class PostgresCatalogRepository extends CatalogRepository {
       source_id: meta.source_id || meta.provenance?.discovery_source || (row.is_verified ? 'src-official-verified' : 'src-loket'),
       evidence_hash: meta.evidence_hash || meta.image_evidence_hash || (row.canonical_name ? crypto.createHash('sha256').update(String(row.canonical_name) + String(row.start_date || '')).digest('hex') : null),
       verified_at: meta.verified_at || meta.image_verified_at || (row.is_verified ? (row.updated_at ? (row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at) : (row.created_at ? (row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at) : new Date().toISOString())) : null),
-      last_verified_at: meta.last_verified_at || meta.verified_at || (row.is_verified ? new Date().toISOString() : null),
-      meets_price_threshold: (row.max_price || row.min_price || 0) >= 500000,
-      price_status: meta.price_status || ((row.max_price || row.min_price || 0) >= 500000 ? 'HIGH_VALUE_QUALIFIED' : 'STANDARD_VALUE'),
+      meets_price_threshold: (row.max_price || row.min_price || 0) >= 500000 || meta.price_status === 'PRICE_PARTIAL',
+      price_status: meta.price_status || meta.pricing_status || ((row.max_price || row.min_price || 0) >= 500000 ? 'HIGH_VALUE_QUALIFIED' : 'STANDARD_VALUE'),
+      // S1 & S2 Tier, Seating & Map Standards
+      price_tiers: meta.price_tiers || (row.min_price ? [{ name: 'General Admission', price: parseFloat(row.min_price), currency: 'IDR' }] : []),
+      seating_type: meta.seating_type || (row.category === 'CONCERT' || row.category === 'FESTIVAL' ? 'MIXED' : 'ASSIGNED_SEATING'),
+      seat_map_url: meta.seat_map_url || null,
+      tier_enrichment_needed: Boolean(meta.tier_enrichment_needed || meta.price_status === 'PRICE_PARTIAL'),
       // Visual provenance attributes
       image_url: imageUrl,
       poster_url: meta.poster_url || imageUrl,
@@ -617,7 +621,12 @@ class PostgresCatalogRepository extends CatalogRepository {
       event_quality_score: meta.event_quality_score ?? null,
       marketplace_eligibility: meta.marketplace_eligibility || null,
       quality_factors: meta.quality_factors || null,
-      metadata: meta,
+      metadata: {
+        ...meta,
+        price_tiers: meta.price_tiers || (row.min_price ? [{ name: 'General Admission', price: parseFloat(row.min_price), currency: 'IDR' }] : []),
+        seating_type: meta.seating_type || (row.category === 'CONCERT' || row.category === 'FESTIVAL' ? 'MIXED' : 'ASSIGNED_SEATING'),
+        seat_map_url: meta.seat_map_url || null
+      },
       created_at: row.created_at instanceof Date ? row.created_at.toISOString() : (row.created_at || null),
       updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : (row.updated_at || null)
     };

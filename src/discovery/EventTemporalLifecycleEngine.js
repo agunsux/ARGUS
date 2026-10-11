@@ -768,6 +768,62 @@ class EventTemporalLifecycleEngine {
       report
     };
   }
+
+  /**
+   * Staleness Gate Predicate:
+   * For events occurring within 7 days (imminent transaction risk window),
+   * if the event has not had verified_at or last_verified_at reconfirmed
+   * within the last 48 hours, trading is considered stale.
+   *
+   * @param {object} event - Event record
+   * @param {Date} now - Reference timestamp
+   * @returns {boolean} true if event verification is stale for trading
+   */
+  static isEventStaleForTrading(event, now = new Date()) {
+    if (!event) return true;
+    const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
+    const temporal = this.computeTemporalAttributes(event);
+    const startMs = new Date(temporal.event_start_at).getTime();
+    const daysUntilEvent = (startMs - nowMs) / (1000 * 60 * 60 * 24);
+
+    // Only gate imminent events (T <= 7 days)
+    if (daysUntilEvent > 0 && daysUntilEvent <= 7) {
+      const verifiedAt = event.verified_at || event.last_verified_at || event.updated_at;
+      if (!verifiedAt) return true;
+      const verifiedMs = new Date(verifiedAt).getTime();
+      const hoursSinceVerification = (nowMs - verifiedMs) / (1000 * 60 * 60);
+      return hoursSinceVerification > 48;
+    }
+
+    return false;
+  }
+
+  /**
+   * Deterministic Trading Eligibility Check:
+   * Protects consumers from purchasing tickets for cancelled, postponed,
+   * expired, or stale-unverified events.
+   *
+   * @param {object} event - Event record
+   * @param {Date} now - Reference timestamp
+   * @returns {{ eligible: boolean, reason?: string }}
+   */
+  static isEventEligibleForTrading(event, now = new Date()) {
+    if (!event) return { eligible: false, reason: 'EVENT_NOT_FOUND' };
+    const rawStatus = (event.lifecycle_status || event.status || event.event_status || '').toUpperCase();
+    if (rawStatus === 'CANCELLED' || rawStatus === 'DIBATALKAN') {
+      return { eligible: false, reason: 'EVENT_CANCELLED' };
+    }
+    if (rawStatus === 'POSTPONED') {
+      return { eligible: false, reason: 'EVENT_POSTPONED' };
+    }
+    if (this.isEventArchived(event, now) || !this.isEventUpcoming(event, now)) {
+      return { eligible: false, reason: 'EVENT_NOT_UPCOMING' };
+    }
+    if (this.isEventStaleForTrading(event, now)) {
+      return { eligible: false, reason: 'EVENT_VERIFICATION_STALE' };
+    }
+    return { eligible: true };
+  }
 }
 
 module.exports = {

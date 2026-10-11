@@ -2138,6 +2138,103 @@ router.post('/api/cron/discovery-sync', handleDiscoverySyncCron);
 router.get('/api/discovery/cron/sync', handleDiscoverySyncCron);
 router.post('/api/discovery/cron/sync', handleDiscoverySyncCron);
 
+/**
+ * GET/POST /api/discovery/jobs/chunked-sync
+ * Also mapped to /api/cron/discovery-chunked-sync
+ * Resumable Chunked Ingestion Endpoint (Vercel Cron & Admin)
+ */
+async function handleChunkedDiscoveryCron(req, res) {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers ? (req.headers.authorization || req.header?.('authorization')) : null;
+  const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
+  const querySecret = req.query?.secret;
+  const candidate = bearerToken || querySecret;
+
+  if (cronSecret && typeof cronSecret === 'string' && cronSecret.trim().length > 0) {
+    if (!candidate) {
+      const adminUser = resolveDiscoveryActor(req);
+      if (!adminUser) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthorized: Missing cron secret or admin credentials',
+          code: 'AUTH_REQUIRED'
+        });
+      }
+    } else {
+      const secretBuf = Buffer.from(cronSecret);
+      const candBuf = Buffer.from(candidate);
+      if (secretBuf.length !== candBuf.length || !crypto.timingSafeEqual(secretBuf, candBuf)) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthorized: Invalid cron secret',
+          code: 'INVALID_CRON_SECRET'
+        });
+      }
+    }
+  }
+
+  const { ingestionScheduler } = require('./EventIngestionScheduler');
+  try {
+    const batchSize = req.body?.batch_size || req.query?.batch_size || 5;
+    const timeBudgetMs = req.body?.time_budget_ms || req.query?.time_budget_ms || 25000;
+    const result = await ingestionScheduler.runChunkedDiscoveryJob({
+      batchSize,
+      timeBudgetMs,
+      actorId: 'VERCEL_CRON'
+    });
+
+    if (result.status === 'LOCKED') {
+      return res.status(409).json({ success: false, ...result });
+    }
+
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+/**
+ * GET/POST /api/discovery/jobs/targeted-sync
+ * Also mapped to /api/cron/targeted-imminent-sync
+ */
+async function handleTargetedImminentCron(req, res) {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers ? (req.headers.authorization || req.header?.('authorization')) : null;
+  const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
+  const candidate = bearerToken || req.query?.secret;
+
+  if (cronSecret && typeof cronSecret === 'string' && cronSecret.trim().length > 0) {
+    if (!candidate && !resolveDiscoveryActor(req)) {
+      return res.status(401).json({ success: false, error: 'Unauthorized: Missing secret', code: 'AUTH_REQUIRED' });
+    }
+    if (candidate) {
+      const secretBuf = Buffer.from(cronSecret);
+      const candBuf = Buffer.from(candidate);
+      if (secretBuf.length !== candBuf.length || !crypto.timingSafeEqual(secretBuf, candBuf)) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Invalid secret', code: 'INVALID_CRON_SECRET' });
+      }
+    }
+  }
+
+  const { ingestionScheduler } = require('./EventIngestionScheduler');
+  try {
+    const report = await ingestionScheduler.runTargetedImminentEventCheck();
+    res.json({ success: true, ...report });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+router.get('/api/discovery/jobs/chunked-sync', handleChunkedDiscoveryCron);
+router.post('/api/discovery/jobs/chunked-sync', handleChunkedDiscoveryCron);
+router.get('/api/cron/discovery-chunked-sync', handleChunkedDiscoveryCron);
+router.post('/api/cron/discovery-chunked-sync', handleChunkedDiscoveryCron);
+
+router.get('/api/discovery/jobs/targeted-sync', handleTargetedImminentCron);
+router.post('/api/discovery/jobs/targeted-sync', handleTargetedImminentCron);
+router.get('/api/cron/targeted-imminent-sync', handleTargetedImminentCron);
+router.post('/api/cron/targeted-imminent-sync', handleTargetedImminentCron);
+
 // Aliases for /admin root mounts
 router.post('/admin/reconcile', (req, res, next) => {
   req.url = '/api/discovery/admin/reconcile';

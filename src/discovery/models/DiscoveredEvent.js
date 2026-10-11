@@ -31,6 +31,7 @@ const DISCOVERY_CATEGORIES = {
 const PRICE_STATUS = {
   HIGH_VALUE_QUALIFIED: 'HIGH_VALUE_QUALIFIED',
   QUALIFIED: 'QUALIFIED',
+  PRICE_PARTIAL: 'PRICE_PARTIAL',
   STANDARD_VALUE: 'STANDARD_VALUE',
   PRICE_TIERED: 'PRICE_TIERED',
   EXCLUDED_PRICE_TOO_LOW: 'EXCLUDED_PRICE_TOO_LOW',
@@ -188,6 +189,14 @@ class DiscoveredEvent {
       return PRICE_STATUS.PRICE_TIERED;
     }
 
+    // "Mulai Dari" Starting Price Partial:
+    // Only triggered when upper bound is unknown (open-ended starting price) or explicitly flagged as partial
+    if (this.is_partial_price || this.starting_from || (this.price_min !== null && (this.price_max === null || this.has_more_tiers))) {
+      if (['CONCERT', 'FESTIVAL', 'COMEDY', 'SPORTS', 'THEATER', 'FANMEET'].includes(this.category)) {
+        return PRICE_STATUS.PRICE_PARTIAL;
+      }
+    }
+
     if (maxP > 0 && maxP < minThreshold) {
       return PRICE_STATUS.EXCLUDED_PRICE_TOO_LOW;
     }
@@ -197,7 +206,7 @@ class DiscoveredEvent {
 
   isQualified(minThreshold = 300000) {
     const status = this.evaluatePriceStatus(minThreshold);
-    return status === PRICE_STATUS.QUALIFIED || status === PRICE_STATUS.PRICE_TIERED || status === PRICE_STATUS.HIGH_VALUE_QUALIFIED;
+    return status === PRICE_STATUS.QUALIFIED || status === PRICE_STATUS.PRICE_TIERED || status === PRICE_STATUS.HIGH_VALUE_QUALIFIED || status === PRICE_STATUS.PRICE_PARTIAL;
   }
 
   isHighValue(highValueThreshold = 500000) {

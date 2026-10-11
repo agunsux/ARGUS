@@ -1,0 +1,7 @@
+event_name,category,city,venue,min_price,max_price,primary_ticketing_partner,source_url,expected_status,notes
+"LaLaLa Festival Jakarta 2027",Festival,Tangerang,"ICE BSD",1350000,28000000,LOKET.com,https://lalalafest.com/,ACTIVE,"Tier-1 mega festival in Greater Jakarta; Multi-tier VIP and GA"
+"LANY: A Beautiful Blur Tour Jakarta",Concert,Jakarta,"Beach City International Stadium",1000000,3500000,Tiket.com,https://tiket.com/event/lany-jakarta,BLOCKED,"Primary ticketing blocked by Anti-Bot/Cloudflare; requires manual curator or direct promoter ingestion"
+"Atsuko Okatsuka: Big Bowl Tour Jakarta",Comedy,Jakarta,"Soehanna Hall",550000,1750000,Megatix,https://megatix.co.id/events/atsuko-jakarta,ACTIVE,"International comedy tour; verified single and multi-tier pricing"
+"Morgan Jay: Goofy Guy Tour",Comedy,Jakarta,"Usmar Ismail Hall",650000,1250000,Megatix,https://megatix.co.id/events/morgan-jay-jakarta,ACTIVE,"Stand-up musical comedy tour; pricing evidence verified"
+"Abdur Arsyad: Kontras Special Tour",Comedy,Jakarta,"Graha Bhakti Budaya TIM",250000,500000,LOKET.com,https://loket.com/event/abdur-kontras,ACTIVE,"National stand-up comedy tour; tiered ticketing"
+"Pandji Pragiwaksono: Mens Rea",Comedy,Jakarta,"Indonesia Arena",450000,1500000,LOKET.com,https://loket.com/event/pandji-mens-rea,ACTIVE,"Large scale arena comedy; multi-tier seating and VIP tickets"

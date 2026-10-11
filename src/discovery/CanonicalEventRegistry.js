@@ -171,6 +171,40 @@ class CanonicalEventRegistry {
     const categoryGroup = EventNormalizationService.mapCategoryToGroup ? EventNormalizationService.mapCategoryToGroup(eventType) : 'OTHER';
     const initPubAt = eventData.published_at || (sources[0] && sources[0].published_at) || eventData.source_published_at || null;
 
+    // Pricing & S1/S2 Tier Standards computation
+    const rawMinP = eventData.min_price !== undefined && eventData.min_price !== null ? parseFloat(eventData.min_price) : (eventData.price ? parseFloat(eventData.price) : null);
+    const rawMaxP = eventData.max_price !== undefined && eventData.max_price !== null ? parseFloat(eventData.max_price) : (rawMinP || null);
+    const highestPrice = Math.max(rawMinP || 0, rawMaxP || 0, parseFloat(eventData.price || 0));
+    const lowestPrice = Math.min(...[rawMinP, rawMaxP, parseFloat(eventData.price || 0)].filter(p => typeof p === 'number' && p > 0));
+
+    const isHighTierCategory = ['CONCERT', 'FESTIVAL', 'COMEDY', 'SPORTS', 'WORLD_TOUR', 'SOLO_CONCERT', 'STANDUP_COMEDY'].includes(eventType) ||
+      ['MUSIC', 'SPORTS', 'FESTIVALS_EXPERIENCES', 'SHOWS_COMEDY'].includes(categoryGroup);
+
+    let computedPriceStatus;
+    let computedMeetsThreshold;
+
+    if (highestPrice >= 500000) {
+      computedPriceStatus = 'QUALIFIED';
+      computedMeetsThreshold = true;
+    } else if (lowestPrice > 0 && isHighTierCategory && (!eventData.price_tiers || eventData.price_tiers.length <= 1)) {
+      // "Mulai Dari" Starting Price Trap: high-tier entertainment with starting price < 500k is enqueued for enrichment
+      computedPriceStatus = 'PRICE_PARTIAL';
+      computedMeetsThreshold = true; // Tentatively qualified for priority audit
+    } else if (lowestPrice > 0) {
+      computedPriceStatus = 'STANDARD_VALUE';
+      computedMeetsThreshold = false;
+    } else {
+      computedPriceStatus = 'UNKNOWN';
+      computedMeetsThreshold = false;
+    }
+
+    const finalPriceStatus = eventData.price_status || computedPriceStatus;
+    const finalMeetsThreshold = eventData.meets_price_threshold !== undefined ? eventData.meets_price_threshold : computedMeetsThreshold;
+
+    const priceTiers = eventData.price_tiers || EventNormalizationService.normalizePriceTiers([], rawMinP, rawMaxP, resolvedCurrency);
+    const seatingType = eventData.seating_type || (venueNorm.capacity_tier === 'STADIUM_MEGA' || venueNorm.capacity_tier === 'ARENA_LARGE' ? 'MIXED' : 'ASSIGNED_SEATING');
+    const seatMapUrl = eventData.seat_map_url || null;
+
     // Construct Canonical Event Model conforming to Part 6 & P0 Invariants
     const canonicalEvent = {
       event_id: eventId,
@@ -245,12 +279,16 @@ class CanonicalEventRegistry {
       event_image: visual.image_url || eventData.event_image || null,
       poster_url: visual.image_url || eventData.poster_url || null,
 
-      // Pricing & Official Links
-      min_price: eventData.min_price || eventData.ticket_price || null,
-      max_price: eventData.max_price || null,
-      price: eventData.price || eventData.min_price || null,
-      price_status: eventData.price_status || (eventData.min_price || eventData.price || eventData.max_price ? (Math.max(eventData.min_price || 0, eventData.max_price || 0, eventData.price || 0) > 500000 ? 'QUALIFIED' : 'EXCLUDED_PRICE_TOO_LOW') : 'UNKNOWN'),
-      meets_price_threshold: eventData.meets_price_threshold !== undefined ? eventData.meets_price_threshold : (Math.max(eventData.min_price || 0, eventData.max_price || 0, eventData.price || 0) > 500000),
+      // Pricing & S1/S2 Standards
+      min_price: rawMinP,
+      max_price: rawMaxP,
+      price: eventData.price || rawMinP || null,
+      price_status: finalPriceStatus,
+      meets_price_threshold: finalMeetsThreshold,
+      price_tiers: priceTiers,
+      seating_type: seatingType,
+      seat_map_url: seatMapUrl,
+      tier_enrichment_needed: finalPriceStatus === 'PRICE_PARTIAL',
       image_locked: eventData.image_locked || (visual.image_url ? true : false),
       image_verified_against_source_event: eventData.image_verified_against_source_event !== undefined ? eventData.image_verified_against_source_event : (visual.image_url ? true : false),
       image_source_id: eventData.image_source_id || (sources[0] && sources[0].source_id) || null,
@@ -948,9 +986,35 @@ class CanonicalEventRegistry {
     if (incomingRecord.artist_official_source_type) event.artist_official_source_type = incomingRecord.artist_official_source_type;
     if (incomingRecord.artist_verification_status) event.artist_verification_status = incomingRecord.artist_verification_status;
     if (incomingRecord.promoter_official_url) event.promoter_official_url = incomingRecord.promoter_official_url;
-    if (incomingRecord.promoter_verification_status) event.promoter_verification_status = incomingRecord.promoter_verification_status;
     if (incomingRecord.official_event_url) event.event_official_url = incomingRecord.official_event_url;
     if (incomingRecord.official_ticket_url) event.ticketing_official_url = incomingRecord.official_ticket_url;
+
+    // S1 & S2 Tier, Seating & Map Updates from observation
+    event.metadata = event.metadata || {};
+    if (incomingRecord.price_tiers && Array.isArray(incomingRecord.price_tiers) && incomingRecord.price_tiers.length > 0) {
+      event.price_tiers = incomingRecord.price_tiers;
+      event.metadata.price_tiers = incomingRecord.price_tiers;
+    }
+    if (incomingRecord.min_price || incomingRecord.max_price || incomingRecord.price) {
+      const inMin = parseFloat(incomingRecord.min_price || incomingRecord.price || 0);
+      const inMax = parseFloat(incomingRecord.max_price || incomingRecord.price || 0);
+      if (inMin > 0 && (!event.min_price || inMin < event.min_price)) event.min_price = inMin;
+      if (inMax > 0 && (!event.max_price || inMax > event.max_price)) event.max_price = inMax;
+      if (event.max_price >= 500000 || event.min_price >= 500000) {
+        event.price_status = 'QUALIFIED';
+        event.meets_price_threshold = true;
+        event.metadata.pricing_status = 'QUALIFIED';
+        event.metadata.tier_enrichment_needed = false;
+      }
+    }
+    if (incomingRecord.seating_type) {
+      event.seating_type = incomingRecord.seating_type;
+      event.metadata.seating_type = incomingRecord.seating_type;
+    }
+    if (incomingRecord.seat_map_url) {
+      event.seat_map_url = incomingRecord.seat_map_url;
+      event.metadata.seat_map_url = incomingRecord.seat_map_url;
+    }
 
     if (event.status !== 'CANCELLED' && event.lifecycle_status !== LIFECYCLE_STATUS.CANCELLED) {
       const reEval = EventVerificationService.evaluateEvent(event, event.sources || []);

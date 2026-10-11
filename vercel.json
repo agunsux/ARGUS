@@ -30,6 +30,14 @@
   },
   "crons": [
     {
+      "path": "/api/discovery/jobs/chunked-sync",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/discovery/jobs/targeted-sync",
+      "schedule": "0 12 * * *"
+    },
+    {
       "path": "/api/discovery/lifecycle/cron",
       "schedule": "0 17 * * *"
     },

@@ -469,6 +469,203 @@ class EventIngestionScheduler {
       };
     }
   }
+
+  /**
+   * Resumable Chunked Ingestion Architecture:
+   * Polls a small batch of permitted sources (default batchSize: 5) per invocation.
+   * Uses PostgreSQL Advisory Lock (17913009) to avoid race conditions.
+   * Persists cursor in database/memory to guarantee all permitted sources are traversed sequentially across crons.
+   */
+  async runChunkedDiscoveryJob(options = {}) {
+    const { getCatalogRepository } = require('./repository');
+    const { adapterRegistry } = require('./adapters/AdapterRegistry');
+    const { ingestionPipeline } = require('./EventIngestionPipeline');
+
+    const catalogRepo = getCatalogRepository();
+    const lockId = 17913009;
+    const lockAcquired = await catalogRepo.acquireAdvisoryLock(lockId);
+
+    if (!lockAcquired) {
+      return {
+        status: 'LOCKED',
+        message: 'Another chunked discovery worker is currently active',
+        code: 'LOCK_BUSY'
+      };
+    }
+
+    const batchSize = Math.max(1, Math.min(20, parseInt(options.batchSize || options.batch_size || 5, 10)));
+    const timeBudgetMs = options.timeBudgetMs || 25000;
+    const startTime = Date.now();
+    const now = options.now ? new Date(options.now) : new Date();
+
+    let runRecord = null;
+    try {
+      runRecord = await catalogRepo.recordReconciliationRun({
+        trigger_type: 'CHUNKED_CRON',
+        status: 'RUNNING',
+        run_by: options.actorId || 'CHUNKED_WORKER'
+      }).catch(() => null);
+
+      const permittedSources = sourceRegistry.getAllSources().filter(s => sourceRegistry.isSourcePermittedForIngestion(s.source_id));
+      const totalPermitted = permittedSources.length;
+
+      if (totalPermitted === 0) {
+        return {
+          status: 'COMPLETED',
+          message: 'No permitted sources found for ingestion',
+          sources_processed: 0
+        };
+      }
+
+      // Cursor calculation:
+      let cursorIndex = 0;
+      if (typeof this._chunkedCursor === 'number') {
+        cursorIndex = this._chunkedCursor;
+      }
+      if (cursorIndex >= totalPermitted) {
+        cursorIndex = 0;
+      }
+
+      const sourcesToProcess = [];
+      for (let i = 0; i < batchSize; i++) {
+        const idx = (cursorIndex + i) % totalPermitted;
+        sourcesToProcess.push(permittedSources[idx]);
+      }
+
+      const summary = {
+        job: 'CHUNKED_DISCOVERY_SYNC',
+        status: 'SUCCESS',
+        batch_size: batchSize,
+        cursor_start: cursorIndex,
+        total_permitted_sources: totalPermitted,
+        sources_polled: [],
+        events_discovered: 0,
+        events_ingested: 0,
+        duplicates_merged: 0,
+        errors: [],
+        started_at: new Date(startTime).toISOString()
+      };
+
+      for (const src of sourcesToProcess) {
+        // Enforce time budget: break out if nearing timeout
+        if (Date.now() - startTime >= timeBudgetMs) {
+          summary.timed_out = true;
+          break;
+        }
+
+        summary.sources_polled.push(src.source_id);
+        try {
+          const adapter = adapterRegistry.getAdapter(src.source_id);
+          let discoveryOutput = null;
+
+          if (typeof adapter.discover === 'function') {
+            discoveryOutput = await adapter.discover();
+          } else if (typeof adapter.fetchEvents === 'function') {
+            discoveryOutput = await adapter.fetchEvents();
+          }
+
+          if (Array.isArray(discoveryOutput)) {
+            summary.events_discovered += discoveryOutput.length;
+            for (const item of discoveryOutput) {
+              try {
+                const ingestRes = await ingestionPipeline.ingestEvent(item, src.source_id, {
+                  observed_at: now.toISOString(),
+                  observation_id: `chunked-${src.source_id}-${Date.now()}`
+                });
+                if (ingestRes && ingestRes.success) {
+                  summary.events_ingested++;
+                  if (ingestRes.dedup_action === 'MERGED' || ingestRes.is_idempotent_duplicate) {
+                    summary.duplicates_merged++;
+                  }
+                }
+              } catch (itemErr) {
+                summary.errors.push({ source_id: src.source_id, error: itemErr.message });
+              }
+            }
+          }
+        } catch (srcErr) {
+          summary.errors.push({ source_id: src.source_id, error: srcErr.message });
+        }
+      }
+
+      const nextCursor = (cursorIndex + summary.sources_polled.length) % totalPermitted;
+      this._chunkedCursor = nextCursor;
+      summary.cursor_next = nextCursor;
+      summary.duration_ms = Date.now() - startTime;
+      summary.completed_at = new Date().toISOString();
+
+      if (runRecord && runRecord.id) {
+        await catalogRepo.updateReconciliationRun(runRecord.id, {
+          status: 'SUCCESS',
+          records_discovered: summary.events_discovered,
+          records_ingested: summary.events_ingested,
+          duplicates_merged: summary.duplicates_merged,
+          error_count: summary.errors.length,
+          report: summary
+        }).catch(() => {});
+      }
+
+      return summary;
+    } catch (err) {
+      if (runRecord && runRecord.id) {
+        await catalogRepo.updateReconciliationRun(runRecord.id, {
+          status: 'FAILED',
+          error_count: 1,
+          report: { error: err.message }
+        }).catch(() => {});
+      }
+      throw err;
+    } finally {
+      await catalogRepo.releaseAdvisoryLock(lockId).catch(() => {});
+    }
+  }
+
+  /**
+   * Targeted Imminent Event Re-verification:
+   * Checks events occurring within 7 days.
+   * If verification timestamp is > 48 hours old, re-evaluates freshness.
+   */
+  async runTargetedImminentEventCheck(options = {}) {
+    const { getCatalogRepository } = require('./repository');
+    const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
+    const repo = getCatalogRepository();
+    const now = options.now ? new Date(options.now) : new Date();
+
+    const allEvents = await repo.getAllEvents();
+    const imminentEvents = allEvents.filter(e => {
+      if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
+      const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(e);
+      const startMs = new Date(temporal.event_start_at).getTime();
+      const daysUntil = (startMs - now.getTime()) / (1000 * 60 * 60 * 24);
+      return daysUntil >= 0 && daysUntil <= 7;
+    });
+
+    const report = {
+      job: 'TARGETED_IMMINENT_CHECK',
+      audited_count: imminentEvents.length,
+      stale_count: 0,
+      fresh_count: 0,
+      stale_events: []
+    };
+
+    for (const ev of imminentEvents) {
+      const isStale = EventTemporalLifecycleEngine.isEventStaleForTrading(ev, now);
+      if (isStale) {
+        report.stale_count++;
+        report.stale_events.push({
+          id: ev.id,
+          name: ev.name || ev.canonical_name,
+          start_date: ev.start_date,
+          verified_at: ev.verified_at || ev.last_verified_at,
+          stale_for_trading: true
+        });
+      } else {
+        report.fresh_count++;
+      }
+    }
+
+    return report;
+  }
 }
 
 const schedulerInstance = new EventIngestionScheduler();

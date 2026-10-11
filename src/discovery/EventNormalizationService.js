@@ -1428,6 +1428,66 @@ class EventNormalizationService {
       }
     };
   }
+
+  /**
+   * Normalizes ticket price tiers into S1 Tier Standard format:
+   * Array of { name: string, price: number, quota?: number, currency: string, seating_type?: string }
+   */
+  static normalizePriceTiers(rawTiers, minPrice, maxPrice, currency = 'IDR') {
+    if (Array.isArray(rawTiers) && rawTiers.length > 0) {
+      return rawTiers.map(t => {
+        const name = typeof t === 'string' ? t : (t.name || t.tier_name || t.category || 'General Admission');
+        const price = typeof t === 'object' && t.price !== undefined ? parseFloat(t.price) : (typeof t === 'number' ? t : parseFloat(minPrice || 0));
+        const quota = typeof t === 'object' && t.quota !== undefined ? parseInt(t.quota, 10) : null;
+        const seatingType = (typeof t === 'object' && (t.seating_type || t.type)) || (name.toLowerCase().includes('vip') || name.toLowerCase().includes('seat') ? 'ASSIGNED_SEATING' : 'FREE_STANDING');
+        return {
+          name: name.trim(),
+          price: isNaN(price) ? 0 : price,
+          currency: currency || 'IDR',
+          quota: isNaN(quota) ? null : quota,
+          seating_type: seatingType
+        };
+      });
+    }
+
+    const minP = parseFloat(minPrice);
+    const maxP = parseFloat(maxPrice);
+    if (!isNaN(minP) && minP > 0) {
+      if (!isNaN(maxP) && maxP > minP) {
+        return [
+          { name: 'General Admission / Early Bird', price: minP, currency, quota: null, seating_type: 'FREE_STANDING' },
+          { name: 'VIP / Premium', price: maxP, currency, quota: null, seating_type: 'ASSIGNED_SEATING' }
+        ];
+      }
+      return [
+        { name: 'General Admission', price: minP, currency, quota: null, seating_type: 'FREE_STANDING' }
+      ];
+    }
+
+    return [];
+  }
+
+  /**
+   * Resolves S2 Seating Classification and Map Assets.
+   */
+  static normalizeSeatingAndMap(venueRecord = {}, rawPayload = {}) {
+    const rawSeating = (rawPayload.seating_type || rawPayload.admission_type || '').toUpperCase();
+    let seatingType = 'FREE_STANDING';
+    if (rawSeating.includes('ASSIGNED') || rawSeating.includes('NUMBERED') || rawSeating.includes('SEAT')) {
+      seatingType = 'ASSIGNED_SEATING';
+    } else if (rawSeating.includes('MIX') || rawSeating.includes('FESTIVAL')) {
+      seatingType = 'MIXED';
+    } else if (venueRecord && (venueRecord.capacity_tier === 'STADIUM_MEGA' || venueRecord.capacity_tier === 'ARENA_LARGE')) {
+      seatingType = 'MIXED';
+    }
+
+    const seatMapUrl = rawPayload.seat_map_url || rawPayload.venue_map_url || rawPayload.venue_map || (venueRecord && venueRecord.seat_map_url) || null;
+
+    return {
+      seating_type: seatingType,
+      seat_map_url: seatMapUrl
+    };
+  }
 }
 
 module.exports = {
