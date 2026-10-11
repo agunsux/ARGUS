@@ -218,8 +218,8 @@
       </div>
 
       <div id="signupFormView">
-        <h1 class="auth-title">Daftar Akun Baru</h1>
-        <p class="auth-subtitle">
+        <h1 class="auth-title" data-i18n="auth.registerTitle">Daftar Akun Baru</h1>
+        <p class="auth-subtitle" data-i18n="auth.registerSubtitle">
           Masukkan email Anda untuk menerima magic link pendaftaran. Tanpa repot mengingat kata sandi.
         </p>
 
@@ -227,7 +227,7 @@
 
         <form onsubmit="handleSignup(event)">
           <div class="auth-input-group">
-            <label for="signupEmail">Alamat Email</label>
+            <label for="signupEmail" data-i18n="auth.emailLabel">Alamat Email</label>
             <input type="email" id="signupEmail" class="auth-input" placeholder="nama@email.com" data-i18n-placeholder="auth.emailPlaceholder" required autocomplete="email">
           </div>
 
@@ -238,21 +238,21 @@
         </form>
 
         <p style="margin-top: 20px; font-size: 12px; color: var(--text-muted); line-height: 1.5; text-align: center;">
-          Sudah memiliki akun? Cukup masukkan email di atas atau kunjungi <a href="/login" style="color: var(--primary); font-weight: 600;">halaman masuk</a>.
+          <span data-i18n="auth.alreadyHaveAccount">Sudah memiliki akun? Cukup masukkan email di atas atau kunjungi</span> <a href="/login" style="color: var(--primary); font-weight: 600;" data-i18n="auth.loginPage">halaman masuk</a>.
         </p>
       </div>
 
       <div id="confirmationView" style="display: none; text-align: center;">
         <i class="fa-solid fa-envelope-circle-check" style="font-size: 48px; color: var(--primary); margin-bottom: 16px;"></i>
-        <h2 style="font-size: 20px; font-weight: 800; margin: 0 0 8px;">Cek email Anda</h2>
+        <h2 style="font-size: 20px; font-weight: 800; margin: 0 0 8px;" data-i18n="auth.checkEmailTitle">Cek email Anda</h2>
         <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
-          Kami telah mengirim magic link ke alamat email Anda di <strong id="sentEmail">-</strong>.
+          <span data-i18n="auth.checkEmailSubtitle">Kami telah mengirim magic link ke alamat email Anda di</span> <strong id="sentEmail">-</strong>.
         </p>
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5;">
-          Link berlaku selama 15 menit dan hanya dapat digunakan sekali.
+          <span data-i18n="auth.linkValidity">Tautan ini hanya berlaku selama 15 menit.</span>
         </p>
         <button class="auth-btn" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color);" onclick="resetForm()">
-          Kirim Ulang atau Ganti Email
+          <span data-i18n="auth.resendOrChange">Kirim Ulang atau Ganti Email</span>
         </button>
       </div>
     </div>

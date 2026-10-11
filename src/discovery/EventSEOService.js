@@ -366,7 +366,7 @@ class EventSEOService {
         <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
           <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle">Verified Ticket Marketplace</span>
+          <span class="brand-subtitle" data-i18n="brand.subtitle">Pasar Tiket Event Terverifikasi</span>
         </div>
       </a>
       <nav class="main-nav">
@@ -419,7 +419,7 @@ class EventSEOService {
 
     <!-- Section 1: Official Ticket Destination (Strictly Separated) -->
     <section>
-      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-ticket"></i> Kanal Tiket Resmi</h2>
+      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-ticket"></i> <span data-i18n="events.officialTickets">Kanal Tiket Resmi</span></h2>
       ${officialTicketHtml}
     </section>
 
@@ -436,13 +436,13 @@ class EventSEOService {
 
     <!-- Section 2: Tikum Secondary Resale Market -->
     <section style="margin-top: 30px;">
-      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-shield-halved"></i> Tiket Resale Terverifikasi di Tikum</h2>
+      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-shield-halved"></i> <span data-i18n="events.resaleInventory">Tiket Resale Terverifikasi di Tikum</span></h2>
       ${resaleHtml}
     </section>
 
     <!-- Admission & Trust Protocol -->
     <section class="card" style="background: #0f172a; border-color: #1e293b; padding: 20px; margin-top: 30px; border-radius: 12px;">
-      <h3 style="font-size: 16px; margin-bottom: 8px;"><i class="fa-solid fa-user-shield"></i> Protokol Verifikasi Gerbang (TIKUM PIC)</h3>
+      <h3 style="font-size: 16px; margin-bottom: 8px;"><i class="fa-solid fa-user-shield"></i> <span data-i18n="events.gateProtocol">Protokol Verifikasi Gerbang (TIKUM PIC)</span></h3>
       <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
         Tipe Tiket: <strong>${event.admission_protocol?.type || 'BARCODE_PLUS_ID'}</strong>. 
         ${event.admission_protocol?.description || 'Verifikasi tiket digital dan fisik di gate acara bersama Event PIC Tikum.'}

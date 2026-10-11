@@ -95,7 +95,7 @@
         <img src="/assets/tikum-mark-2color.svg" class="brand-logo" width="34" height="34" alt="Tikum">
         <div>
           <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle">Verified Ticket Marketplace</span>
+          <span class="brand-subtitle" data-i18n="brand.subtitle">Pasar Tiket Event Terverifikasi</span>
         </div>
       </a>
 
@@ -181,17 +181,17 @@
     <!-- Loading State -->
     <div id="offersLoading" style="text-align: center; padding: 50px 20px;">
       <i class="fa-solid fa-spinner fa-spin" style="font-size: 28px; color: var(--terra-600); margin-bottom: 12px;"></i>
-      <div style="font-size: 14px; color: var(--text-muted);">Mengambil daftar tawaran resmi dari server Tikum...</div>
+      <div style="font-size: 14px; color: var(--text-muted);" data-i18n="offers.loading">Mengambil daftar tawaran resmi dari server Tikum...</div>
     </div>
 
     <!-- Empty State -->
     <div id="offersEmpty" class="card" style="display: none; text-align: center; padding: 50px 20px;">
       <i class="fa-solid fa-handshake-slash" style="font-size: 36px; color: var(--text-dim); margin-bottom: 12px;"></i>
-      <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px;">Belum Ada Tawaran</h3>
-      <p id="emptyMsg" style="font-size: 13px; color: var(--text-muted); max-width: 420px; margin: 0 auto 16px;">
+      <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px;" data-i18n="offers.emptyTitle">Belum Ada Tawaran</h3>
+      <p id="emptyMsg" style="font-size: 13px; color: var(--text-muted); max-width: 420px; margin: 0 auto 16px;" data-i18n="offers.emptyDesc">
         Anda belum memiliki penawaran aktif. Kunjungi katalog tiket untuk mengajukan tawaran terstruktur.
       </p>
-      <a href="/" class="btn btn-sm"><i class="fa-solid fa-magnifying-glass"></i> Jelajahi Event &amp; Tiket</a>
+      <a href="/" class="btn btn-sm"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="offers.browseTickets">Jelajahi Event &amp; Tiket</span></a>
     </div>
 
     <!-- Offers List Container -->
@@ -203,9 +203,9 @@
   <div id="acceptModal" class="modal-overlay">
     <div class="card" style="max-width: 480px; width: 100%; border-color: var(--success); box-shadow: 0 25px 50px rgba(0,0,0,0.8); margin: 0; background: var(--surface);">
       <div class="hero-pill" style="margin-bottom: 12px; background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);">
-        <i class="fa-solid fa-check"></i> KONFIRMASI PENERIMAAN TAWARAN
+        <i class="fa-solid fa-check"></i> <span data-i18n="offers.acceptTitle">KONFIRMASI PENERIMAAN TAWARAN</span>
       </div>
-      <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;">Terima Tawaran Pembeli?</h3>
+      <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;" data-i18n="offers.acceptHeading">Terima Tawaran Pembeli?</h3>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6;">
         Anda akan menerima tawaran senilai <strong id="acceptAmountText" style="color: #34d399;">Rp -</strong>.
       </p>
@@ -213,14 +213,14 @@
       <div class="notice-box notice-warning" style="font-size: 12px; margin-bottom: 16px;">
         <i class="fa-solid fa-triangle-exclamation"></i>
         <div>
-          <strong>Konsekuensi Penjualan:</strong> Listing tiket Anda akan di-<em>reserve</em> khusus untuk pembeli ini dengan batas waktu bayar 2 jam. <strong>Semua tawaran lain untuk listing ini otomatis dibatalkan (SUPERSEDED).</strong>
+          <strong data-i18n="offers.acceptConsequence">Konsekuensi Penjualan:</strong> <span data-i18n="offers.acceptConsequenceDesc">Listing tiket Anda akan di-reserve khusus untuk pembeli ini dengan batas waktu bayar 2 jam. Semua tawaran lain untuk listing ini otomatis dibatalkan (SUPERSEDED).</span>
         </div>
       </div>
 
       <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button class="btn btn-secondary" onclick="closeAcceptModal()">Batal</button>
+        <button class="btn btn-secondary" onclick="closeAcceptModal()" data-i18n="offers.cancel">Batal</button>
         <button id="btnConfirmAccept" class="btn btn-success" onclick="confirmAcceptOffer()">
-          <i class="fa-solid fa-check"></i> Ya, Terima Tawaran Ini
+          <i class="fa-solid fa-check"></i> <span data-i18n="offers.confirmAccept">Ya, Terima Tawaran Ini</span>
         </button>
       </div>
     </div>
@@ -230,35 +230,35 @@
   <div id="declineModal" class="modal-overlay">
     <div class="card" style="max-width: 480px; width: 100%; border-color: var(--danger); box-shadow: 0 25px 50px rgba(0,0,0,0.8); margin: 0; background: var(--surface);">
       <div class="hero-pill" style="margin-bottom: 12px; background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
-        <i class="fa-solid fa-xmark"></i> TOLAK TAWARAN RESMI
+        <i class="fa-solid fa-xmark"></i> <span data-i18n="offers.declineTitle">TOLAK TAWARAN RESMI</span>
       </div>
-      <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;">Pilih Alasan Penolakan</h3>
+      <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;" data-i18n="offers.declineHeading">Pilih Alasan Penolakan</h3>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-        Sesuai regulasi Tikum, penolakan tawaran wajib menggunakan alasan terstandarisasi tanpa teks bebas:
+        <span data-i18n="offers.declineStandardNotice">Sesuai regulasi Tikum, penolakan tawaran wajib menggunakan alasan terstandarisasi tanpa teks bebas:</span>
       </p>
 
       <div class="form-group" style="margin-bottom: 16px;">
         <label for="declineReasonSelect" style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 6px; display: block;">
-          Alasan Penolakan (Enum Resmi):
+          <span data-i18n="offers.declineEnum">Alasan Penolakan (Enum Resmi):</span>
         </label>
         <select id="declineReasonSelect" class="form-control" style="width: 100%; padding: 10px 12px; font-size: 13px;">
-          <option value="PRICE_TOO_LOW">Harga terlalu rendah</option>
-          <option value="CHANGED_MIND_NOT_SELLING">Berubah pikiran / tidak jadi jual</option>
-          <option value="PREFER_ANOTHER_BUYER">Memilih pembeli lain</option>
-          <option value="LISTING_WILL_BE_UPDATED">Listing akan diperbarui / diedit</option>
-          <option value="OTHER">Lainnya</option>
+          <option value="PRICE_TOO_LOW" data-i18n="offers.reasonPriceTooLow">Harga terlalu rendah</option>
+          <option value="CHANGED_MIND_NOT_SELLING" data-i18n="offers.reasonChangedMind">Berubah pikiran / tidak jadi jual</option>
+          <option value="PREFER_ANOTHER_BUYER" data-i18n="offers.reasonPreferAnother">Memilih pembeli lain</option>
+          <option value="LISTING_WILL_BE_UPDATED" data-i18n="offers.reasonListingUpdated">Listing akan diperbarui / diedit</option>
+          <option value="OTHER" data-i18n="offers.reasonOther">Lainnya</option>
         </select>
       </div>
 
       <div class="notice-box notice-info" style="font-size: 11px; margin-bottom: 16px;">
         <i class="fa-solid fa-clock-rotate-left"></i>
         <div>
-          Pembeli akan dikenakan masa tunggu (cooldown) 6 jam pada listing ini sebelum dapat mengajukan tawaran baru.
+          <span data-i18n="offers.cooldownNotice">Pembeli akan dikenakan masa tunggu (cooldown) 6 jam pada listing ini sebelum dapat mengajukan tawaran baru.</span>
         </div>
       </div>
 
       <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button class="btn btn-secondary" onclick="closeDeclineModal()">Batal</button>
+        <button class="btn btn-secondary" onclick="closeDeclineModal()" data-i18n="offers.cancel">Batal</button>
         <button id="btnConfirmDecline" class="btn btn-danger" onclick="confirmDeclineOffer()">
           <i class="fa-solid fa-ban"></i> Konfirmasi Tolak
         </button>
@@ -313,7 +313,7 @@
     </a>
     <a href="/create" class="mobile-nav-item">
       <i class="fa-solid fa-plus-circle"></i>
-      <span data-i18n="nav.sell">Jual</span>
+      <span data-i18n="nav.sellTicket">Jual</span>
     </a>
     <a href="/account" class="mobile-nav-item">
       <i class="fa-solid fa-user"></i>

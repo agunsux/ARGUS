@@ -265,6 +265,8 @@ if (require.main === module && !process.env.VERCEL) {
   startPublishingSchedulerJob();
   dbPromise.then(async () => {
     try {
+      const { canonicalRegistry } = require('./discovery/CanonicalEventRegistry');
+      await canonicalRegistry.hydrateFromRepository().catch(() => {});
       await EventTemporalLifecycleEngine.reconcileAllEvents();
       // Periodic temporal lifecycle reconciliation (every 10 minutes)
       setInterval(() => {

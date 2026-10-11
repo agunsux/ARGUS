@@ -240,7 +240,7 @@ async function runAll() {
     };
 
     const resA = await ingestionPipeline.ingestEvent(payloadA, 'src-loket');
-    const resB = await ingestionPipeline.ingestEvent(payloadB, 'src-tiket-com');
+    const resB = await ingestionPipeline.ingestEvent(payloadB, 'src-goers');
 
     const canonical = canonicalRegistry.getEventById(resA.canonical_event.event_id);
     assert.ok(canonical.conflicts && canonical.conflicts.length > 0, 'Conflict record must exist');

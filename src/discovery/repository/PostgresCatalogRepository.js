@@ -13,6 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { Pool } = require('pg');
 const { CatalogRepository } = require('./CatalogRepository');
 const { InMemoryCatalogRepository } = require('./InMemoryCatalogRepository');
@@ -184,10 +185,16 @@ class PostgresCatalogRepository extends CatalogRepository {
       return this.fallbackRepo.upsertCanonicalEvent(eventData);
     }
 
-    const id = eventData.id || eventData.event_id;
+    let id = eventData.id || eventData.event_id;
+    const slug = eventData.slug;
+
+    // Check anti-resurrection and retrieve existing event for preservation
+    const existing = (id ? await this.getEventById(id) : null) || (slug ? await this.getEventBySlug(slug) : null);
+    if (existing && existing.id) {
+      id = existing.id;
+    }
     if (!id) throw new Error('Event must have an id');
 
-    const slug = eventData.slug;
     const title = eventData.canonical_name || eventData.title || eventData.name;
     const eventType = eventData.event_type || eventData.category || 'CONCERT';
     const category = eventData.category || eventType;
@@ -215,8 +222,6 @@ class PostgresCatalogRepository extends CatalogRepository {
     const publicVisibility = eventData.public_visibility !== false;
     let homepageVisibility = eventData.homepage_visibility === true;
 
-    // Check anti-resurrection and retrieve existing event for preservation
-    const existing = await this.getEventById(id);
     const existingMeta = existing ? (existing.metadata || {}) : {};
 
     if (existing) {
@@ -372,7 +377,8 @@ class PostgresCatalogRepository extends CatalogRepository {
     if (this.degraded || !this.pool) {
       return this.fallbackRepo.attachSourceLink(linkData);
     }
-    const id = linkData.id || `${linkData.event_id}_${linkData.source_id}_${linkData.source_record_id || 'default'}`;
+    const rawId = linkData.id || `${linkData.event_id}_${linkData.source_id}_${linkData.source_record_id || 'default'}`;
+    const id = rawId.length <= 64 ? rawId : `esl-${crypto.createHash('sha256').update(rawId).digest('hex').substring(0, 56)}`;
     const sql = `
       INSERT INTO event_source_links (
         id, event_id, source_id, source_record_id, role, tier, source_url, ticket_url, confidence, attached_at
@@ -577,6 +583,14 @@ class PostgresCatalogRepository extends CatalogRepository {
       archived_at: row.archived_at ? (row.archived_at instanceof Date ? row.archived_at.toISOString() : row.archived_at) : null,
       public_visibility: row.public_visibility === true,
       homepage_visibility: row.homepage_visibility === true,
+      // Source & Verification Provenance attributes
+      source_url: meta.source_url || meta.provenance?.official_source || meta.provenance?.ticket_source || row.official_event_url || row.official_ticket_url || null,
+      source_id: meta.source_id || meta.provenance?.discovery_source || (row.is_verified ? 'src-official-verified' : 'src-loket'),
+      evidence_hash: meta.evidence_hash || meta.image_evidence_hash || (row.canonical_name ? crypto.createHash('sha256').update(String(row.canonical_name) + String(row.start_date || '')).digest('hex') : null),
+      verified_at: meta.verified_at || meta.image_verified_at || (row.is_verified ? (row.updated_at ? (row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at) : (row.created_at ? (row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at) : new Date().toISOString())) : null),
+      last_verified_at: meta.last_verified_at || meta.verified_at || (row.is_verified ? new Date().toISOString() : null),
+      meets_price_threshold: (row.max_price || row.min_price || 0) >= 500000,
+      price_status: meta.price_status || ((row.max_price || row.min_price || 0) >= 500000 ? 'HIGH_VALUE_QUALIFIED' : 'STANDARD_VALUE'),
       // Visual provenance attributes
       image_url: imageUrl,
       poster_url: meta.poster_url || imageUrl,

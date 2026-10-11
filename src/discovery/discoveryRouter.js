@@ -123,6 +123,26 @@ function getActiveResaleListings(eventId) {
   }
 }
 
+// Ensure in-memory canonical registry is hydrated from repository (Postgres or fallback)
+let hydrationPromise = null;
+async function ensureRegistryHydrated(req, res, next) {
+  if (canonicalRegistry.getAllEvents().length === 0) {
+    if (!hydrationPromise) {
+      hydrationPromise = canonicalRegistry.hydrateFromRepository().finally(() => {
+        hydrationPromise = null;
+      });
+    }
+    try {
+      await hydrationPromise;
+    } catch (_) {}
+  }
+  next();
+}
+
+router.use('/events', ensureRegistryHydrated);
+router.use('/api/events', ensureRegistryHydrated);
+router.use('/api/discovery', ensureRegistryHydrated);
+
 // ==========================================
 // 1. PUBLIC SSR SEO LANDING PAGES
 // ==========================================
@@ -310,7 +330,7 @@ router.get('/events', (req, res) => {
         <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
           <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle">Event Discovery &amp; Verified Marketplace</span>
+          <span class="brand-subtitle" data-i18n="brand.subtitle">Pasar Tiket Event Terverifikasi</span>
         </div>
       </a>
       <nav class="main-nav">
@@ -328,18 +348,18 @@ router.get('/events', (req, res) => {
 
   <main class="container" style="padding-top:40px; padding-bottom:60px;">
     <div style="text-align:center; max-width:700px; margin:0 auto 30px;">
-      <div class="hero-pill"><i class="fa-solid fa-compass"></i> INDONESIA EVENT DISCOVERY REGISTRY</div>
-      <h1 style="font-size:32px; font-weight:800; letter-spacing:-0.5px; margin:14px 0;">Temukan Acara Langsung &amp; Akses Tiket Terpercaya</h1>
-      <p style="color:#94a3b8; font-size:15px;">
+      <div class="hero-pill" data-i18n="discovery.heroPill"><i class="fa-solid fa-compass"></i> INDONESIA EVENT DISCOVERY REGISTRY</div>
+      <h1 style="font-size:32px; font-weight:800; letter-spacing:-0.5px; margin:14px 0;" data-i18n="discovery.heroTitle">Temukan Acara Langsung &amp; Akses Tiket Terpercaya</h1>
+      <p style="color:#94a3b8; font-size:15px;" data-i18n="discovery.heroSubtitle">
         Pusat direktori event terverifikasi dari berbagai kanal resmi promotor, venue, dan federasi di Indonesia.
       </p>
     </div>
 
     <!-- Search Form -->
     <form method="GET" action="/events" style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:16px; margin-bottom:30px; display:flex; gap:12px; flex-wrap:wrap;">
-      <input type="text" name="q" value="${q || ''}" placeholder="Cari nama event, musisi, atau tempat..." class="form-control" style="flex:2; min-width:200px;" />
+      <input type="text" name="q" value="${q || ''}" placeholder="Cari nama event, musisi, atau tempat..." data-i18n="discovery.searchPlaceholder" class="form-control" style="flex:2; min-width:200px;" />
       <select name="city" class="form-control" style="flex:1; min-width:140px;">
-        <option value="">Semua Kota</option>
+        <option value="" data-i18n="discovery.allCities">Semua Kota</option>
         <option value="Jakarta" ${city === 'Jakarta' ? 'selected' : ''}>Jakarta</option>
         <option value="Bandung" ${city === 'Bandung' ? 'selected' : ''}>Bandung</option>
         <option value="Surabaya" ${city === 'Surabaya' ? 'selected' : ''}>Surabaya</option>
@@ -347,18 +367,18 @@ router.get('/events', (req, res) => {
         <option value="Bali" ${city === 'Bali' ? 'selected' : ''}>Bali</option>
       </select>
       <select name="category" class="form-control" style="flex:1; min-width:140px;">
-        <option value="">Semua Kategori</option>
+        <option value="" data-i18n="discovery.allCategories">Semua Kategori</option>
         <option value="CONCERT" ${category === 'CONCERT' ? 'selected' : ''}>Konser</option>
         <option value="FESTIVAL" ${category === 'FESTIVAL' ? 'selected' : ''}>Festival</option>
         <option value="FOOTBALL" ${category === 'FOOTBALL' ? 'selected' : ''}>Sepak Bola</option>
         <option value="BASKETBALL" ${category === 'BASKETBALL' ? 'selected' : ''}>Bola Basket</option>
         <option value="COMEDY" ${category === 'COMEDY' ? 'selected' : ''}>Stand-Up Comedy</option>
       </select>
-      <button type="submit" class="btn btn-cyan"><i class="fa-solid fa-magnifying-glass"></i> Filter</button>
+      <button type="submit" class="btn btn-cyan"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="discovery.filter">Filter</span></button>
     </form>
 
     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">
-      ${itemsHtml.length > 0 ? itemsHtml : `<div style="grid-column:1/-1; text-align:center; padding:60px; color:#64748b;">Tidak ada event yang sesuai dengan filter pencarian.</div>`}
+      ${itemsHtml.length > 0 ? itemsHtml : `<div style="grid-column:1/-1; text-align:center; padding:60px; color:#64748b;" data-i18n="discovery.noFilterResults">Tidak ada event yang sesuai dengan filter pencarian.</div>`}
     </div>
   </main>
 

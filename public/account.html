@@ -293,8 +293,8 @@
     <!-- Unauthenticated State -->
     <div id="unauthView" class="account-card unauth-state" style="display: none;">
       <i class="fa-solid fa-lock" style="font-size: 40px; color: var(--text-muted); margin-bottom: 16px;"></i>
-      <h2 style="margin: 0 0 8px; font-size: 22px;">Sesi Belum Masuk</h2>
-      <p style="color: var(--text-muted); margin: 0 0 24px; font-size: 14px;">
+      <h2 style="margin: 0 0 8px; font-size: 22px;" data-i18n="account.unauthTitle">Sesi Belum Masuk</h2>
+      <p style="color: var(--text-muted); margin: 0 0 24px; font-size: 14px;" data-i18n="account.unauthDesc">
         Silakan masuk menggunakan email Anda untuk mengakses akun Tikum.
       </p>
       <a href="/login" style="display: inline-block; background: var(--primary); color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
@@ -307,7 +307,7 @@
       <div class="profile-hero">
         <div class="avatar-circle" id="userAvatar">U</div>
         <div class="profile-meta">
-          <h1>Akun Saya</h1>
+          <h1 data-i18n="nav.account">Akun Saya</h1>
           <p id="userEmailText">memuat@email.com</p>
         </div>
       </div>
@@ -324,7 +324,7 @@
         </div>
 
         <div class="info-tile">
-          <div class="info-tile-label">Member Since</div>
+          <div class="info-tile-label" data-i18n="account.memberSince">Member Since</div>
           <div class="info-tile-value" id="memberSinceText">
             <i class="fa-regular fa-calendar-check" style="color: var(--primary);"></i>
             <span>2026-09-24</span>
@@ -332,7 +332,7 @@
         </div>
 
         <div class="info-tile">
-          <div class="info-tile-label">Peran Pengguna</div>
+          <div class="info-tile-label" data-i18n="account.userRole">Peran Pengguna</div>
           <div class="info-tile-value" id="userRoleText" style="text-transform: capitalize;">
             Buyer
           </div>
@@ -343,25 +343,25 @@
       <div class="quick-links">
         <a href="/track" class="quick-link-btn">
           <i class="fa-solid fa-ticket" style="color: var(--primary);"></i>
-          <span>Tiket Saya</span>
+          <span data-i18n="nav.myTickets">Tiket Saya</span>
         </a>
         <a href="/offers" class="quick-link-btn">
           <i class="fa-solid fa-handshake" style="color: var(--primary);"></i>
-          <span>Tawaran Saya</span>
+          <span data-i18n="nav.offers">Tawaran Saya</span>
         </a>
         <a href="/create" class="quick-link-btn">
           <i class="fa-solid fa-plus-circle" style="color: var(--primary);"></i>
-          <span>Jual Tiket</span>
+          <span data-i18n="nav.sellTicket">Jual Tiket</span>
         </a>
       </div>
 
       <!-- Actions Bar -->
       <div class="actions-bar">
         <span style="font-size: 13px; color: var(--text-muted);">
-          Keamanan terverifikasi dengan proteksi sesi HttpOnly.
+          <span data-i18n="account.securityNote">Keamanan terverifikasi dengan proteksi sesi HttpOnly.</span>
         </span>
         <button id="btnLogout" class="btn-logout">
-          <i class="fa-solid fa-right-from-bracket"></i> Logout
+          <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="nav.logout">Keluar</span>
         </button>
       </div>
     </div>
@@ -379,7 +379,7 @@
     </a>
     <a href="/create" class="mobile-nav-item">
       <i class="fa-solid fa-plus-circle"></i>
-      <span data-i18n="nav.sell">Jual</span>
+      <span data-i18n="nav.sellTicket">Jual</span>
     </a>
     <a href="/account" class="mobile-nav-item active">
       <i class="fa-solid fa-user"></i>

@@ -26,7 +26,7 @@ class MarketSupplyExpansionService {
   constructor(options = {}) {
     this.loketSource = new LoketDiscoverySource(options);
     this.officialSource = new OfficialEventDiscoverySource(options);
-    this.minPriceThreshold = options.minPriceThreshold || 300000;
+    this.minPriceThreshold = options.minPriceThreshold || 500000;
     this.repository = options.repository || null;
   }
 
@@ -68,7 +68,8 @@ class MarketSupplyExpansionService {
     const stats = {
       total_discovered: candidates.length,
       verified_count: 0,
-      qualified_count: 0,
+      qualified_count: 0, // High-value (>= Rp 500k) audit priority count
+      standard_value_count: 0, // Valid live ticketed events (< Rp 500k)
       existing_duplicates: 0,
       rejected_count: 0,
       review_required_count: 0,
@@ -76,6 +77,10 @@ class MarketSupplyExpansionService {
         CONCERT: 0,
         SPORTS: 0,
         COMEDY: 0,
+        FESTIVAL: 0,
+        THEATER: 0,
+        EXHIBITION: 0,
+        FANMEET: 0,
         OTHER: 0
       },
       priority_breakdown: {
@@ -118,11 +123,16 @@ class MarketSupplyExpansionService {
       }
       seenBatchKeys.add(batchKey);
 
-      // 3. Price qualification check
-      const isQual = candidate.isQualified(minPrice);
-      if (isQual) {
+      // 3. Price qualification check (Rp 500k is priority audit metric; live ticketed events >= minPrice qualify)
+      const isHighVal = candidate.isHighValue ? candidate.isHighValue(500000) : (Math.max(candidate.price_min || 0, candidate.price_max || 0) >= 500000);
+      if (isHighVal) {
         stats.qualified_count++;
       } else {
+        stats.standard_value_count++;
+      }
+
+      const isQual = candidate.isQualified(minPrice);
+      if (!isQual) {
         stats.rejected_count++;
         classified.would_reject.push({
           candidate,
@@ -302,8 +312,9 @@ class MarketSupplyExpansionService {
           ingestedEvents.push(saved);
 
           // Attach provenance link to event_source_links
+          const targetEventId = saved.id || saved.event_id || eventId;
           await repo.attachSourceLink({
-            event_id: eventId,
+            event_id: targetEventId,
             source_id: candidate.source_id,
             source_record_id: candidate.source_event_id || candidate.slug,
             role: candidate.is_verified ? 'AUTHORITATIVE' : 'DISCOVERY',

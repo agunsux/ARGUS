@@ -33,7 +33,7 @@
         <img src="/assets/tikum-mark-2color.svg" class="brand-logo" width="34" height="34" alt="Tikum">
         <div>
           <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle">Verified Ticket Marketplace</span>
+          <span class="brand-subtitle" data-i18n="brand.subtitle">Pasar Tiket Event Terverifikasi</span>
         </div>
       </a>
 
@@ -184,23 +184,23 @@
         <!-- Section 2: Ticket Information -->
         <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
           <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
-            2. Detail Kursi &amp; Tiket
+            <span data-i18n="create.wizardStep2">2. Detail Kursi &amp; Tiket</span>
           </div>
 
           <div class="form-group">
-            <label for="seatInfo">Kategori / Baris / Nomor Kursi *</label>
+            <label for="seatInfo" data-i18n="create.seatInfoLabel">Kategori / Baris / Nomor Kursi *</label>
             <input 
               type="text" 
               id="seatInfo" 
               class="form-control" 
-              placeholder="Contoh: CAT 1 VIP, Row B, Seat 14 atau Festival GA Pintu A" 
+              placeholder="Contoh: CAT 1 VIP, Row B, Seat 14 atau Festival GA Pintu A" data-i18n-placeholder="create.seatInfoPlaceholder"
               required
             >
           </div>
 
           <div class="grid-2">
             <div class="form-group">
-              <label for="faceValue">Harga Resmi Asli (Rp) *</label>
+              <label for="faceValue" data-i18n="create.faceValueLabel">Harga Resmi Asli (Rp) *</label>
               <input 
                 type="number" 
                 id="faceValue" 
@@ -209,11 +209,11 @@
                 min="10000" 
                 required
               >
-              <span style="font-size: 11px; color: var(--text-dim);">Harga nominal pada tiket promotor</span>
+              <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.faceValueSub">Harga nominal pada tiket promotor</span>
             </div>
 
             <div class="form-group">
-              <label for="sellingPrice">Harga Jual Anda (Rp) *</label>
+              <label for="sellingPrice" data-i18n="create.sellingPriceLabel">Harga Jual Anda (Rp) *</label>
               <input 
                 type="number" 
                 id="sellingPrice" 
@@ -223,30 +223,30 @@
                 required
                 oninput="calculateFeePreview()"
               >
-              <span style="font-size: 11px; color: var(--text-dim);">Nominal bersih yang Anda terima jika tiket valid</span>
+              <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.sellingPriceSub">Nominal bersih yang Anda terima jika tiket valid</span>
             </div>
           </div>
 
           <!-- Canonical Price Calculation Preview -->
           <div class="price-breakdown">
             <div style="font-weight: 700; font-size: 12px; margin-bottom: 8px; color: var(--cyan); text-transform: uppercase;">
-              <i class="fa-solid fa-calculator"></i> Kalkulasi Transparan Sistem (Sesuai Backend)
+              <i class="fa-solid fa-calculator"></i> <span data-i18n="create.calcTitle">Kalkulasi Transparan Sistem (Sesuai Backend)</span>
             </div>
             <div class="price-row">
               <span>Nominal Bersih Penjual:</span>
-              <span>Harga Jual Anda:</span>
+              <span data-i18n="create.calcSellerTitle">Harga Jual Anda:</span>
               <span id="calcSellerAmount" class="mono">Rp 0</span>
             </div>
             <div class="price-row">
               <span>Biaya Layanan &amp; Verifikasi PIC Lapangan (10%):</span>
               <span id="calcFeeAmount" class="mono">Rp 0</span>
-              <span>Tikum Seller Fee (6%, min Rp 10.000, maks Rp 300.000):</span>
+              <span data-i18n="create.calcFeeTitle">Tikum Seller Fee (6%, min Rp 10.000, maks Rp 300.000):</span>
               <span id="calcFeeAmount" class="mono" style="color: var(--warning);">-Rp 0</span>
             </div>
             <div class="price-row total">
               <span>Total yang Dibayar Pembeli di Halaman Checkout:</span>
               <span id="calcTotalAmount" class="mono">Rp 0</span>
-              <span>Estimasi Payout Bersih yang Anda Terima:</span>
+              <span data-i18n="create.calcPayoutTitle">Estimasi Payout Bersih yang Anda Terima:</span>
               <span id="calcTotalAmount" class="mono" style="color: var(--success);">Rp 0</span>
             </div>
           </div>
@@ -255,63 +255,63 @@
         <!-- Section 3: Anti-Duplicate Security -->
         <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
           <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
-            3. Barcode &amp; Protokol Keamanan
+            <span data-i18n="create.wizardStep3">3. Barcode &amp; Protokol Keamanan</span>
           </div>
 
           <div class="form-group">
-            <label for="barcode">Nomor Barcode / Serial / Kode Unik Tiket *</label>
+            <label for="barcode" data-i18n="create.barcodeLabel">Nomor Barcode / Serial / Kode Unik Tiket *</label>
             <input 
               type="text" 
               id="barcode" 
               class="form-control mono" 
-              placeholder="Masukkan kode unik barcode / e-voucher Anda" 
+              placeholder="Masukkan kode unik barcode / e-voucher Anda" data-i18n-placeholder="create.barcodePlaceholder"
               required
             >
             <span style="font-size: 11px; color: var(--text-dim);">
-              <i class="fa-solid fa-lock"></i> Barcode akan otomatis di-hash dengan kriptografi SHA-256 pada server untuk mencegah penjualan berulang.
+              <i class="fa-solid fa-lock"></i> <span data-i18n="create.barcodeSub">Barcode akan otomatis di-hash dengan kriptografi SHA-256 pada server untuk mencegah penjualan berulang.</span>
             </span>
           </div>
 
           <div class="grid-2">
             <div class="form-group">
-              <label for="admissionProtocol">Metode Masuk Venue (Protokol Masuk)</label>
+              <label for="admissionProtocol" data-i18n="create.protocolLabel">Metode Masuk Venue (Protokol Masuk)</label>
               <select id="admissionProtocol" class="form-control">
-                <option value="QR_SCAN_ONLY">Pemindaian QR / E-Voucher Digital</option>
-                <option value="WRISTBAND_PICKUP">Penukaran Wristband / Gelang Fisik</option>
-                <option value="IDENTITY_CHECK">Pemeriksaan Identitas NIK + E-Tiket</option>
-                <option value="GATE_ESCORT">Pendampingan Langsung oleh PIC di Gerbang</option>
+                <option value="QR_SCAN_ONLY" data-i18n="create.protocolQr">Pemindaian QR / E-Voucher Digital</option>
+                <option value="WRISTBAND_PICKUP" data-i18n="create.protocolWristband">Penukaran Wristband / Gelang Fisik</option>
+                <option value="IDENTITY_CHECK" data-i18n="create.protocolIdentity">Pemeriksaan Identitas NIK + E-Tiket</option>
+                <option value="GATE_ESCORT" data-i18n="create.protocolEscort">Pendampingan Langsung oleh PIC di Gerbang</option>
               </select>
             </div>
 
             <div class="form-group" style="grid-column: 1 / -1; margin-top:10px; padding:16px; background:var(--sand-50); border:1px solid var(--line-300); border-radius:var(--radius-card);">
               <label style="font-size:13px; font-weight:700; color:var(--ink-900); display:block; margin-bottom:6px;">
-                <i class="fa-solid fa-id-card" style="color:var(--terra-600);"></i> Verifikasi Identitas Penjual &amp; Perlindungan UU PDP No. 27/2022
+                <i class="fa-solid fa-id-card" style="color:var(--terra-600);"></i> <span data-i18n="create.kycSectionTitle">Verifikasi Identitas Penjual &amp; Perlindungan UU PDP No. 27/2022</span>
               </label>
-              <p style="font-size:12px; color:var(--ink-700); line-height:1.6; margin-bottom:12px;">
-                Sesuai ketentuan <strong>UU Perlindungan Data Pribadi (UU PDP No. 27/2022)</strong>, dokumen foto identitas KTP dan swafoto wajah hanya diproses untuk tujuan verifikasi kepemilikan tiket resmi dan pencegahan penjualan tiket duplikat di turnstile venue. Data tersimpan dengan enkripsi standar industri dan tidak diserahkan ke pihak luar tanpa izin Anda.
+              <p style="font-size:12px; color:var(--ink-700); line-height:1.6; margin-bottom:12px;" data-i18n="create.kycSectionDesc">
+                Sesuai ketentuan UU Perlindungan Data Pribadi (UU PDP No. 27/2022), dokumen foto identitas KTP dan swafoto wajah hanya diproses untuk tujuan verifikasi kepemilikan tiket resmi dan pencegahan penjualan tiket duplikat di turnstile venue. Data tersimpan dengan enkripsi standar industri dan tidak diserahkan ke pihak luar tanpa izin Anda.
               </p>
               <div class="grid-2">
                 <div>
-                  <label for="ktpFile" style="font-size:12px; font-weight:600; color:var(--ink-900);">Foto KTP / Kartu Identitas</label>
+                  <label for="ktpFile" style="font-size:12px; font-weight:600; color:var(--ink-900);" data-i18n="create.ktpLabel">Foto KTP / Kartu Identitas</label>
                   <input type="file" id="ktpFile" class="form-control" accept="image/*,.pdf" style="font-size:12px; margin-top:4px;">
                 </div>
                 <div>
-                  <label for="selfieFile" style="font-size:12px; font-weight:600; color:var(--ink-900);">Swafoto / Foto Wajah Penjual</label>
+                  <label for="selfieFile" style="font-size:12px; font-weight:600; color:var(--ink-900);" data-i18n="create.selfieLabel">Swafoto / Foto Wajah Penjual</label>
                   <input type="file" id="selfieFile" class="form-control" accept="image/*" style="font-size:12px; margin-top:4px;">
                 </div>
               </div>
               <div style="margin-top:12px; display:flex; align-items:flex-start; gap:8px;">
                 <input type="checkbox" id="pdpConsent" required checked style="accent-color:var(--terra-600); width:16px; height:16px; margin-top:2px;">
-                <label for="pdpConsent" style="font-size:12px; color:var(--ink-700); cursor:pointer;">
+                <label for="pdpConsent" style="font-size:12px; color:var(--ink-700); cursor:pointer;" data-i18n="create.pdpConsent">
                   Saya menyetujui pemrosesan data identitas untuk verifikasi keabsahan tiket sesuai UU Perlindungan Data Pribadi (UU PDP No. 27/2022).
                 </label>
               </div>
             </div>
 
             <div class="form-group">
-              <label for="evidenceFile">Bukti Pembelian / PDF Tiket (Opsional)</label>
+              <label for="evidenceFile" data-i18n="create.evidenceLabel">Bukti Pembelian / PDF Tiket (Opsional)</label>
               <input type="file" id="evidenceFile" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
-              <span style="font-size: 11px; color: var(--text-dim);">Dokumen dienkripsi AES-256 (UU PDP No. 27/2022)</span>
+              <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.evidenceSub">Dokumen dienkripsi AES-256 (UU PDP No. 27/2022)</span>
             </div>
           </div>
         </div>
@@ -319,14 +319,14 @@
         <!-- Section 4: Operational Seller Credentials -->
         <div style="margin-bottom: 24px;">
           <div class="form-group">
-            <label for="sellerId">Identitas Akun Penjual Terverifikasi (Pilot Mode)</label>
+            <label for="sellerId" data-i18n="create.sellerIdLabel">Identitas Akun Penjual Terverifikasi (Pilot Mode)</label>
             <select id="sellerId" class="form-control mono">
               <option value="usr-seller-01">usr-seller-01 (Budi Santoso — KYC NIK Terverifikasi)</option>
               <option value="usr-seller-02">usr-seller-02 (Dewi Lestari — KYC NIK Terverifikasi)</option>
               <option value="usr-seller-unverified">usr-seller-unverified (Akun Belum Verifikasi NIK - Uji Tolak)</option>
             </select>
             <span style="font-size: 11px; color: var(--text-dim);">
-              Sistem Tikum mewajibkan status seller verified sebelum listing dapat dibuat.
+              <span data-i18n="create.sellerIdSub">Sistem Tikum mewajibkan status seller verified sebelum listing dapat dibuat.</span>
             </span>
           </div>
         </div>
@@ -335,7 +335,7 @@
         <div id="formError" class="notice-box notice-warning" style="display: none;"></div>
 
         <button type="submit" id="btnSubmitListing" class="btn btn-primary" style="background-color:var(--terra-600); color:#fff; border:none;" style="width: 100%; padding: 14px; font-size: 15px;">
-          <i class="fa-solid fa-shield-check"></i> Daftarkan Tiket ke Tikum
+          <i class="fa-solid fa-shield-check"></i> <span data-i18n="create.submitBtn">Daftarkan Tiket ke Tikum</span>
         </button>
       </form>
     </div>
@@ -434,7 +434,7 @@
     </a>
     <a href="/create" class="mobile-nav-item active">
       <i class="fa-solid fa-plus-circle"></i>
-      <span data-i18n="nav.sell">Jual</span>
+      <span data-i18n="nav.sellTicket">Jual</span>
     </a>
     <a href="/account" class="mobile-nav-item">
       <i class="fa-solid fa-user"></i>

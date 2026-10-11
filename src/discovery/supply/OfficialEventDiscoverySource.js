@@ -29,7 +29,7 @@ class OfficialEventDiscoverySource extends EventDiscoverySource {
         source_event_id: 'lalalafest-jakarta-2027',
         title: 'LaLaLa Festival Jakarta 2027',
         canonical_name: 'LaLaLa Festival Jakarta 2027',
-        category: DISCOVERY_CATEGORIES.CONCERT,
+        category: DISCOVERY_CATEGORIES.FESTIVAL,
         artists: [
           'Olivia Dean',
           'St. Vincent',
@@ -250,6 +250,219 @@ class OfficialEventDiscoverySource extends EventDiscoverySource {
           venue_source: 'Indonesia Arena',
           discovery_source: 'src-official-thescript',
           notes: ['Verified via official band website and promoter announcement']
+        }
+      },
+
+      // 6. Abdur Arsyad: Kontras Special Tour Jakarta (Stand-Up Comedy)
+      {
+        source_id: 'src-official-standupindo',
+        source_event_id: 'abdur-arsyad-kontras-jakarta-2026',
+        title: 'Abdur Arsyad: Kontras Special Tour Jakarta',
+        canonical_name: 'Abdur Arsyad: Kontras Special Tour Jakarta',
+        category: DISCOVERY_CATEGORIES.COMEDY,
+        artists: ['Abdur Arsyad'],
+        artist: 'Abdur Arsyad',
+        start_date: '2026-11-28',
+        start_datetime: '2026-11-28T19:30:00+07:00',
+        timezone: 'Asia/Jakarta',
+        venue_name: 'Pusat Perfilman H. Usmar Ismail (Usmar Ismail Hall)',
+        city: 'Jakarta Selatan',
+        province: 'DKI Jakarta',
+        country: 'Indonesia',
+        organizer_name: 'Standupindo / Abdur Arsyad Management',
+        official_event_url: 'https://standupindo.id',
+        official_ticket_url: 'https://goersapp.com',
+        official_ticketing_provider: 'GOERS',
+        price_currency: 'IDR',
+        price_min: 250000,
+        price_max: 500000,
+        price_tiers: [
+          { name: 'Silver Regular', price: 250000, status: 'AVAILABLE' },
+          { name: 'VIP Gold', price: 500000, status: 'AVAILABLE' }
+        ],
+        event_status: 'UPCOMING',
+        verification_status: 'PRIMARY_SOURCE_VERIFIED',
+        is_verified: true,
+        image_url: null,
+        provenance: {
+          official_source: 'https://standupindo.id',
+          ticket_source: 'https://goersapp.com',
+          promoter_source: 'Standupindo',
+          venue_source: 'Usmar Ismail Hall Jakarta',
+          discovery_source: 'src-official-standupindo',
+          notes: ['Verified via official Standupindo tour schedule and GOERS ticketing portal']
+        }
+      },
+
+      // 7. Pandji Pragiwaksono: Mens Rea Jakarta (Stand-Up Comedy)
+      {
+        source_id: 'src-official-comika',
+        source_event_id: 'pandji-mens-rea-jakarta-2026',
+        title: 'Pandji Pragiwaksono: Mens Rea Jakarta',
+        canonical_name: 'Pandji Pragiwaksono: Mens Rea Jakarta',
+        category: DISCOVERY_CATEGORIES.COMEDY,
+        artists: ['Pandji Pragiwaksono'],
+        artist: 'Pandji Pragiwaksono',
+        start_date: '2026-12-19',
+        start_datetime: '2026-12-19T19:00:00+07:00',
+        timezone: 'Asia/Jakarta',
+        venue_name: 'Indonesia Arena',
+        city: 'Jakarta Pusat',
+        province: 'DKI Jakarta',
+        country: 'Indonesia',
+        organizer_name: 'Comika Media Asia',
+        official_event_url: 'https://comika.id',
+        official_ticket_url: 'https://comika.id/mens-rea',
+        official_ticketing_provider: 'Comika Ticketing',
+        price_currency: 'IDR',
+        price_min: 450000,
+        price_max: 1500000,
+        price_tiers: [
+          { name: 'Tribun Reguler', price: 450000, status: 'AVAILABLE' },
+          { name: 'VIP Arena Seated', price: 1500000, status: 'AVAILABLE' }
+        ],
+        event_status: 'UPCOMING',
+        verification_status: 'PRIMARY_SOURCE_VERIFIED',
+        is_verified: true,
+        image_url: null,
+        provenance: {
+          official_source: 'https://comika.id',
+          ticket_source: 'https://comika.id/mens-rea',
+          promoter_source: 'Comika Media Asia',
+          venue_source: 'Indonesia Arena GBK',
+          discovery_source: 'src-official-comika',
+          notes: ['Verified via Comika Media official tour announcement and ticketing system']
+        }
+      },
+
+      // 8. Djakarta Warehouse Project 2026 (DWP - Major Music Festival)
+      {
+        source_id: 'src-official-dwp',
+        source_event_id: 'dwp-jakarta-2026',
+        title: 'Djakarta Warehouse Project 2026 (DWP)',
+        canonical_name: 'Djakarta Warehouse Project 2026 (DWP)',
+        category: DISCOVERY_CATEGORIES.FESTIVAL,
+        artists: ['DWP 2026 Lineup'],
+        artist: 'DWP 2026 Lineup',
+        start_date: '2026-12-11',
+        end_date: '2026-12-13',
+        start_datetime: '2026-12-11T16:00:00+07:00',
+        end_datetime: '2026-12-13T23:59:00+07:00',
+        timezone: 'Asia/Jakarta',
+        venue_name: 'JIEXPO Kemayoran',
+        city: 'Jakarta Pusat',
+        province: 'DKI Jakarta',
+        country: 'Indonesia',
+        organizer_name: 'Ismaya Live',
+        official_event_url: 'https://dwpfest.com',
+        official_ticket_url: 'https://www.loket.com',
+        official_ticketing_provider: 'LOKET',
+        price_currency: 'IDR',
+        price_min: 990000,
+        price_max: 4200000,
+        price_tiers: [
+          { name: 'GA 3-Day Pass Early Entry', price: 990000, status: 'AVAILABLE' },
+          { name: 'GA 3-Day Pass Presale', price: 1450000, status: 'AVAILABLE' },
+          { name: 'VIP 3-Day Pass', price: 4200000, status: 'AVAILABLE' }
+        ],
+        event_status: 'UPCOMING',
+        verification_status: 'PRIMARY_SOURCE_VERIFIED',
+        is_verified: true,
+        image_url: 'https://dwpfest.com/og-dwp.jpg',
+        provenance: {
+          official_source: 'https://dwpfest.com',
+          ticket_source: 'https://www.loket.com',
+          promoter_source: 'Ismaya Live',
+          venue_source: 'JIEXPO Kemayoran',
+          discovery_source: 'src-official-dwp',
+          notes: ['Verified via Ismaya Live official calendar and DWP official domain']
+        }
+      },
+
+      // 9. Joyland Festival Jakarta 2026 (Music Festival)
+      {
+        source_id: 'src-official-joyland',
+        source_event_id: 'joyland-jakarta-2026',
+        title: 'Joyland Festival Jakarta 2026',
+        canonical_name: 'Joyland Festival Jakarta 2026',
+        category: DISCOVERY_CATEGORIES.FESTIVAL,
+        artists: ['Joyland 2026 Lineup'],
+        artist: 'Joyland 2026 Lineup',
+        start_date: '2026-11-27',
+        end_date: '2026-11-29',
+        start_datetime: '2026-11-27T14:00:00+07:00',
+        end_datetime: '2026-11-29T23:00:00+07:00',
+        timezone: 'Asia/Jakarta',
+        venue_name: 'GBK Baseball Stadium Senayan',
+        city: 'Jakarta Pusat',
+        province: 'DKI Jakarta',
+        country: 'Indonesia',
+        organizer_name: 'Plainsong Live',
+        official_event_url: 'https://joylandfest.com',
+        official_ticket_url: 'https://www.loket.com',
+        official_ticketing_provider: 'LOKET',
+        price_currency: 'IDR',
+        price_min: 780000,
+        price_max: 1650000,
+        price_tiers: [
+          { name: 'Early Entry 3-Day Pass', price: 780000, status: 'AVAILABLE' },
+          { name: 'Regular 3-Day Pass', price: 1250000, status: 'AVAILABLE' },
+          { name: 'VIP 3-Day Pass', price: 1650000, status: 'AVAILABLE' }
+        ],
+        event_status: 'UPCOMING',
+        verification_status: 'PRIMARY_SOURCE_VERIFIED',
+        is_verified: true,
+        image_url: null,
+        provenance: {
+          official_source: 'https://joylandfest.com',
+          ticket_source: 'https://www.loket.com',
+          promoter_source: 'Plainsong Live',
+          venue_source: 'GBK Baseball Stadium Senayan',
+          discovery_source: 'src-official-joyland',
+          notes: ['Verified via Plainsong Live announcement and official Joyland portal']
+        }
+      },
+
+      // 10. Synchronize Festival 2026 (Music Festival)
+      {
+        source_id: 'src-official-synchronize',
+        source_event_id: 'synchronize-jakarta-2026',
+        title: 'Synchronize Festival 2026',
+        canonical_name: 'Synchronize Festival 2026',
+        category: DISCOVERY_CATEGORIES.FESTIVAL,
+        artists: ['Synchronize Fest Lineup'],
+        artist: 'Synchronize Fest Lineup',
+        start_date: '2026-10-02',
+        end_date: '2026-10-04',
+        start_datetime: '2026-10-02T13:00:00+07:00',
+        end_datetime: '2026-10-04T23:59:00+07:00',
+        timezone: 'Asia/Jakarta',
+        venue_name: 'Gambir Expo Kemayoran',
+        city: 'Jakarta Pusat',
+        province: 'DKI Jakarta',
+        country: 'Indonesia',
+        organizer_name: 'demajors & Dyandra Promosindo',
+        official_event_url: 'https://synchronizefestival.com',
+        official_ticket_url: 'https://www.loket.com',
+        official_ticketing_provider: 'LOKET',
+        price_currency: 'IDR',
+        price_min: 450000,
+        price_max: 950000,
+        price_tiers: [
+          { name: 'Presale 3-Day Pass', price: 450000, status: 'AVAILABLE' },
+          { name: 'Regular 3-Day Pass', price: 950000, status: 'AVAILABLE' }
+        ],
+        event_status: 'UPCOMING',
+        verification_status: 'PRIMARY_SOURCE_VERIFIED',
+        is_verified: true,
+        image_url: null,
+        provenance: {
+          official_source: 'https://synchronizefestival.com',
+          ticket_source: 'https://www.loket.com',
+          promoter_source: 'demajors & Dyandra Promosindo',
+          venue_source: 'Gambir Expo Kemayoran',
+          discovery_source: 'src-official-synchronize',
+          notes: ['Verified via demajors / Dyandra official announcement']
         }
       }
     ];

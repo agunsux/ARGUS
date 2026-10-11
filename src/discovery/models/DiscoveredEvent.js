@@ -21,11 +21,17 @@ const DISCOVERY_CATEGORIES = {
   CONCERT: 'CONCERT',
   SPORTS: 'SPORTS',
   COMEDY: 'COMEDY',
+  FESTIVAL: 'FESTIVAL',
+  THEATER: 'THEATER',
+  EXHIBITION: 'EXHIBITION',
+  FANMEET: 'FANMEET',
   OTHER: 'OTHER'
 };
 
 const PRICE_STATUS = {
+  HIGH_VALUE_QUALIFIED: 'HIGH_VALUE_QUALIFIED',
   QUALIFIED: 'QUALIFIED',
+  STANDARD_VALUE: 'STANDARD_VALUE',
   PRICE_TIERED: 'PRICE_TIERED',
   EXCLUDED_PRICE_TOO_LOW: 'EXCLUDED_PRICE_TOO_LOW',
   UNKNOWN: 'UNKNOWN'
@@ -39,10 +45,10 @@ const QUALITY_GRADES = {
 };
 
 const EVENT_PRIORITY = {
-  P0: 'P0', // Major concerts/festivals, international artists, major sports, major stand-up
-  P1: 'P1', // Strong commercial events >= Rp 300k
-  P2: 'P2', // Other verified events
-  P3: 'P3'  // Low-price / low-demand
+  P0: 'P0', // Major concerts/festivals, international artists, major sports, major stand-up (>= 500k)
+  P1: 'P1', // Strong commercial events >= Rp 500k
+  P2: 'P2', // Other verified live events (< Rp 500k)
+  P3: 'P3'  // Low-price / low-demand / review
 };
 
 class DiscoveredEvent {
@@ -142,14 +148,26 @@ class DiscoveredEvent {
       return rawCategory.toUpperCase();
     }
     const combined = `${title} ${organizer} ${rawCategory || ''}`.toLowerCase();
-    if (/konser|concert|festival|fest|music|musik|orchestra|symphony|band|live|tour|recital/i.test(combined)) {
-      return DISCOVERY_CATEGORIES.CONCERT;
+    if (/festival|fest\b/i.test(combined)) {
+      return DISCOVERY_CATEGORIES.FESTIVAL;
+    }
+    if (/the musical|musical|musikal|teater|theater|theatre|opera|drama|pertunjukan panggung/i.test(combined)) {
+      return DISCOVERY_CATEGORIES.THEATER;
+    }
+    if (/fan meeting|fanmeeting|fan-meet|fan meet|jumpa fans/i.test(combined)) {
+      return DISCOVERY_CATEGORIES.FANMEET;
+    }
+    if (/exhibition|pameran|expo|fair|comic con|comic-con|bazaar|convention/i.test(combined)) {
+      return DISCOVERY_CATEGORIES.EXHIBITION;
+    }
+    if (/stand up|standup|stand-up|comedy|komedi|lucu|tawa|open mic|special show/i.test(combined)) {
+      return DISCOVERY_CATEGORIES.COMEDY;
     }
     if (/marathon|run|race|rally|rallycross|motogp|match|league|tournament|sport|badminton|football|soccer|basketball|tennis|f1|championship/i.test(combined)) {
       return DISCOVERY_CATEGORIES.SPORTS;
     }
-    if (/stand up|standup|comedy|komedi|lucu|tawa/i.test(combined)) {
-      return DISCOVERY_CATEGORIES.COMEDY;
+    if (/konser|concert|music|musik|orchestra|symphony|band|live|tour|recital|gig/i.test(combined)) {
+      return DISCOVERY_CATEGORIES.CONCERT;
     }
     return DISCOVERY_CATEGORIES.OTHER;
   }
@@ -179,7 +197,12 @@ class DiscoveredEvent {
 
   isQualified(minThreshold = 300000) {
     const status = this.evaluatePriceStatus(minThreshold);
-    return status === PRICE_STATUS.QUALIFIED || status === PRICE_STATUS.PRICE_TIERED;
+    return status === PRICE_STATUS.QUALIFIED || status === PRICE_STATUS.PRICE_TIERED || status === PRICE_STATUS.HIGH_VALUE_QUALIFIED;
+  }
+
+  isHighValue(highValueThreshold = 500000) {
+    const maxP = Math.max(this.price_min || 0, this.price_max || 0);
+    return maxP >= highValueThreshold;
   }
 
   computeQualityScore() {
@@ -197,16 +220,18 @@ class DiscoveredEvent {
     const effectivePrice = Math.max(this.price_min || 0, this.price_max || 0);
     if (effectivePrice >= 1000000) score += 25;
     else if (effectivePrice >= 500000) score += 20;
-    else if (effectivePrice >= 300000) score += 15;
-    else if (effectivePrice > 0) score += 5;
+    else if (effectivePrice >= 250000) score += 15;
+    else if (effectivePrice > 0) score += 10;
 
     // 3. Category & Demand Signal (0 - 25 pts)
-    if (this.category === DISCOVERY_CATEGORIES.CONCERT) {
+    if (this.category === DISCOVERY_CATEGORIES.CONCERT || this.category === DISCOVERY_CATEGORIES.FESTIVAL) {
       score += 25;
     } else if (this.category === DISCOVERY_CATEGORIES.SPORTS) {
       score += 22;
-    } else if (this.category === DISCOVERY_CATEGORIES.COMEDY) {
+    } else if (this.category === DISCOVERY_CATEGORIES.COMEDY || this.category === DISCOVERY_CATEGORIES.THEATER || this.category === DISCOVERY_CATEGORIES.FANMEET) {
       score += 20;
+    } else if (this.category === DISCOVERY_CATEGORIES.EXHIBITION) {
+      score += 15;
     } else {
       score += 8;
     }
@@ -218,17 +243,17 @@ class DiscoveredEvent {
     return Math.min(100, score);
   }
 
-  computeQualityGrade() {
+  computeQualityGrade(minThreshold = 300000) {
     const score = this.computeQualityScore();
-    const isQual = this.isQualified(300000);
+    const isQual = this.isQualified(minThreshold);
 
-    if (score >= 75 && isQual) {
+    if (score >= 70 && isQual) {
       return QUALITY_GRADES.A; // MUST INGEST
     }
-    if (score >= 50 && isQual) {
+    if (score >= 45 && isQual) {
       return QUALITY_GRADES.B; // INGEST
     }
-    if (isQual || score >= 40) {
+    if (isQual || score >= 35) {
       return QUALITY_GRADES.C; // REVIEW
     }
     return QUALITY_GRADES.D; // REJECT
@@ -237,24 +262,27 @@ class DiscoveredEvent {
   computePriority() {
     const grade = this.computeQualityGrade();
     const isPriorityCategory = this.category === DISCOVERY_CATEGORIES.CONCERT ||
+      this.category === DISCOVERY_CATEGORIES.FESTIVAL ||
       this.category === DISCOVERY_CATEGORIES.SPORTS ||
-      this.category === DISCOVERY_CATEGORIES.COMEDY;
-    const isQual = this.isQualified(300000);
+      this.category === DISCOVERY_CATEGORIES.COMEDY ||
+      this.category === DISCOVERY_CATEGORIES.THEATER ||
+      this.category === DISCOVERY_CATEGORIES.FANMEET;
     const effectivePrice = Math.max(this.price_min || 0, this.price_max || 0);
+    const isHighVal = this.isHighValue(500000);
 
     // Filter out corporate workshops, training, bootcamps from P0/P1
     const isEducationalOrTraining = /bootcamp|training|workshop|course|kelas|class|seminar|webinar|conference|summit|sertifikasi/i.test(this.canonical_name);
 
-    if (isPriorityCategory && isQual && grade === QUALITY_GRADES.A) {
+    if (isPriorityCategory && isHighVal && grade === QUALITY_GRADES.A) {
       return EVENT_PRIORITY.P0;
     }
-    if (isPriorityCategory && isQual) {
+    if (isPriorityCategory && isHighVal) {
       return EVENT_PRIORITY.P1;
     }
-    if (!isEducationalOrTraining && isQual && effectivePrice >= 500000) {
+    if (!isEducationalOrTraining && (isHighVal || (effectivePrice >= 250000 && isPriorityCategory))) {
       return EVENT_PRIORITY.P1;
     }
-    if (isQual) {
+    if (this.isQualified()) {
       return EVENT_PRIORITY.P2;
     }
     return EVENT_PRIORITY.P3;
@@ -303,6 +331,13 @@ class DiscoveredEvent {
       official_ticketing_provider: this.official_ticketing_provider,
       min_price: this.price_min,
       max_price: this.price_max,
+      source_url: this.official_event_url || this.official_ticket_url || null,
+      source_id: this.source_id,
+      evidence_hash: this.evidence_hash,
+      verified_at: this.verified_at || new Date().toISOString(),
+      last_verified_at: this.verified_at || new Date().toISOString(),
+      price_status: this.price_status,
+      meets_price_threshold: (this.price_max || this.price_min || 0) >= 500000,
       is_verified: this.is_verified,
       verification_status: this.verification_status,
       lifecycle_status: 'UPCOMING',

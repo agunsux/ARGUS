@@ -33,7 +33,7 @@
         <img src="/assets/tikum-mark-2color.svg" class="brand-logo" width="34" height="34" alt="Tikum">
         <div>
           <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle">Verified Ticket Marketplace</span>
+          <span class="brand-subtitle" data-i18n="brand.subtitle">Pasar Tiket Event Terverifikasi</span>
         </div>
       </a>
 
@@ -131,7 +131,7 @@
               <strong id="transPriceText" class="mono" style="color: var(--cyan);">-</strong>
             </div>
             <div>
-              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;">Protokol Masuk Venue:</div>
+              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;" data-i18n="track.entryProtocol">Protokol Masuk Venue:</div>
               <span id="transProtocolText" class="badge badge-slate">-</span>
             </div>
           </div>
@@ -205,7 +205,7 @@
     </a>
     <a href="/create" class="mobile-nav-item">
       <i class="fa-solid fa-plus-circle"></i>
-      <span data-i18n="nav.sell">Jual</span>
+      <span data-i18n="nav.sellTicket">Jual</span>
     </a>
     <a href="/account" class="mobile-nav-item">
       <i class="fa-solid fa-user"></i>
@@ -390,23 +390,30 @@
       const isSettled = tx.status === 'SETTLED';
       const isDispute = tx.status === 'DISPUTED' || tx.status === 'REFUNDED';
 
+      const t = (k, f) => (window.TikumI18n ? window.TikumI18n.t(k, f) : f);
+      const translateStatus = (s) => (window.TikumI18n ? window.TikumI18n.translateStatus(s) : s);
+
+      const escrowStatusRaw = tx.escrow_status || (isPaid ? 'HELD' : 'PENDING');
+      const escrowStatusText = translateStatus(escrowStatusRaw);
+      const entryStatusText = tx.entry_status ? translateStatus(tx.entry_status) : t('track.waitingEventDay', 'MENUNGGU HARI ACARA');
+
       let html = `
         <div class="timeline-step completed">
           <div class="timeline-marker"><i class="fa-solid fa-check"></i></div>
-          <div class="timeline-title">Pesanan Dibuat di Tikum</div>
-          <div class="timeline-desc">Tiket dikunci dari marketplace dan terikat pada pembeli.</div>
+          <div class="timeline-title">${t('track.orderCreatedTitle', 'Pesanan Dibuat di Tikum')}</div>
+          <div class="timeline-desc">${t('track.orderCreatedDesc', 'Tiket dikunci dari marketplace dan terikat pada pembeli.')}</div>
         </div>
 
         <div class="timeline-step ${isPaid ? 'completed' : 'current'}">
           <div class="timeline-marker">${isPaid ? '<i class="fa-solid fa-check"></i>' : '2'}</div>
-          <div class="timeline-title">Dana Diamankan di Rekening Penampungan Internal</div>
-          <div class="timeline-desc">Status Penampungan: <strong>${tx.escrow_status || (isPaid ? 'HELD' : 'PENDING')}</strong>. Dana terlindungi dan tidak dapat dicairkan penjual sebelum verifikasi venue.</div>
+          <div class="timeline-title">${t('track.escrowHeldTitle', 'Dana Diamankan di Rekening Penampungan Internal')}</div>
+          <div class="timeline-desc">${t('track.escrowHeldDesc', 'Status Penampungan: {status}. Dana terlindungi dan tidak dapat dicairkan penjual sebelum verifikasi venue.').replace('{status}', '<strong>' + escrowStatusText + '</strong>')}</div>
         </div>
 
         <div class="timeline-step ${isEntry ? 'completed' : (isPaid && !isDispute ? 'current' : '')}">
           <div class="timeline-marker">${isEntry ? '<i class="fa-solid fa-check"></i>' : '3'}</div>
-          <div class="timeline-title">Verifikasi Pintu Masuk di Venue oleh Event PIC</div>
-          <div class="timeline-desc">Status Masuk: <strong>${tx.entry_status || 'MENUNGGU HARI ACARA'}</strong>. Verifikasi tatap muka dan kode sandi OTP 6-digit di gerbang venue.</div>
+          <div class="timeline-title">${t('track.venueEntryTitle', 'Verifikasi Pintu Masuk di Venue oleh Event PIC')}</div>
+          <div class="timeline-desc">${t('track.venueEntryDesc', 'Status Masuk: {status}. Verifikasi tatap muka dan kode sandi OTP 6-digit di gerbang venue.').replace('{status}', '<strong>' + entryStatusText + '</strong>')}</div>
         </div>
       `;
 
@@ -414,16 +421,16 @@
         html += `
           <div class="timeline-step current" style="border-left-color: var(--danger);">
             <div class="timeline-marker" style="background: #dc2626; border-color: #f87171; color: #fff;"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <div class="timeline-title" style="color: #f87171;">Protokol Sengketa Tiket Aktif (${tx.status})</div>
-            <div class="timeline-desc">Laporan sengketa gerbang sedang diinvestigasi oleh TIKUM PIC dan Tim Resolusi Tikum.</div>
+            <div class="timeline-title" style="color: #f87171;">${t('track.disputeActiveTitle', 'Protokol Sengketa Tiket Aktif ({status})').replace('{status}', translateStatus(tx.status))}</div>
+            <div class="timeline-desc">${t('track.disputeActiveDesc', 'Laporan sengketa gerbang sedang diinvestigasi oleh TIKUM PIC dan Tim Resolusi Tikum.')}</div>
           </div>
         `;
       } else {
         html += `
           <div class="timeline-step ${isSettled ? 'completed' : ''}">
             <div class="timeline-marker">${isSettled ? '<i class="fa-solid fa-check"></i>' : '4'}</div>
-            <div class="timeline-title">Pencairan Dana ke Penjual (Settlement)</div>
-            <div class="timeline-desc">Dana hanya dicairkan kepada penjual setelah verifikasi masuk sukses tercatat di ledger audit.</div>
+            <div class="timeline-title">${t('track.settlementTitle', 'Pencairan Dana ke Penjual (Settlement)')}</div>
+            <div class="timeline-desc">${t('track.settlementDesc', 'Dana hanya dicairkan kepada penjual setelah verifikasi masuk sukses tercatat di ledger audit.')}</div>
           </div>
         `;
       }
@@ -436,34 +443,43 @@
       const isSold = tx.status === 'SOLD';
       const isReserved = tx.status === 'RESERVED' || isSold;
 
+      const t = (k, f) => (window.TikumI18n ? window.TikumI18n.t(k, f) : f);
+      const translateStatus = (s) => (window.TikumI18n ? window.TikumI18n.translateStatus(s) : s);
+
       let html = `
         <div class="timeline-step completed">
           <div class="timeline-marker"><i class="fa-solid fa-check"></i></div>
-          <div class="timeline-title">Pengajuan Tiket oleh Penjual</div>
-          <div class="timeline-desc">Barcode dan bukti kepemilikan di-hash menggunakan SHA-256.</div>
+          <div class="timeline-title">${t('track.listingSubmittedTitle', 'Pengajuan Tiket oleh Penjual')}</div>
+          <div class="timeline-desc">${t('track.listingSubmittedDesc', 'Barcode dan bukti kepemilikan di-hash menggunakan SHA-256.')}</div>
         </div>
 
         <div class="timeline-step ${isVerified ? 'completed' : 'current'}">
           <div class="timeline-marker">${isVerified ? '<i class="fa-solid fa-check"></i>' : '2'}</div>
-          <div class="timeline-title">Kurasi &amp; Verifikasi Keaslian Tiket</div>
-          <div class="timeline-desc">Pemeriksaan integritas tiket oleh Tim Verifikasi Tikum. Status saat ini: <strong>${tx.status}</strong>.</div>
+          <div class="timeline-title">${t('track.curationTitle', 'Kurasi & Verifikasi Keaslian Tiket')}</div>
+          <div class="timeline-desc">${t('track.curationDesc', 'Pemeriksaan integritas tiket oleh Tim Verifikasi Tikum. Status saat ini: {status}.').replace('{status}', '<strong>' + translateStatus(tx.status) + '</strong>')}</div>
         </div>
 
         <div class="timeline-step ${isReserved ? 'completed' : ''}">
           <div class="timeline-marker">${isReserved ? '<i class="fa-solid fa-check"></i>' : '3'}</div>
-          <div class="timeline-title">Reservasi oleh Calon Pembeli</div>
-          <div class="timeline-desc">Tiket dikunci untuk transaksi pembeli dan menunggu proses pembayaran rekening penampungan.</div>
+          <div class="timeline-title">${t('track.reservationTitle', 'Reservasi oleh Calon Pembeli')}</div>
+          <div class="timeline-desc">${t('track.reservationDesc', 'Tiket dikunci untuk transaksi pembeli dan menunggu proses pembayaran rekening penampungan.')}</div>
         </div>
 
         <div class="timeline-step ${isSold ? 'completed' : ''}">
           <div class="timeline-marker">${isSold ? '<i class="fa-solid fa-check"></i>' : '4'}</div>
-          <div class="timeline-title">Tiket Terjual — Menunggu Hari Acara</div>
-          <div class="timeline-desc">Dana diamankan di penampungan hingga serah terima fisik/gate verification selesai.</div>
+          <div class="timeline-title">${t('track.soldTitle', 'Tiket Terjual — Menunggu Hari Acara')}</div>
+          <div class="timeline-desc">${t('track.soldDesc', 'Dana diamankan di penampungan hingga serah terima fisik/gate verification selesai.')}</div>
         </div>
       `;
 
       container.innerHTML = html;
     }
+
+    window.addEventListener('tikum:languageChanged', function() {
+      if (lastFetchedTx) {
+        renderTimeline(lastFetchedTx);
+      }
+    });
 
     // Initialize on page load
     const initialId = getIdFromUrl();
