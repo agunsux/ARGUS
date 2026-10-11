@@ -10,6 +10,7 @@
  */
 
 const { CatalogRepository } = require('./CatalogRepository');
+const { EventVisualProvenanceService } = require('../EventVisualProvenanceService');
 
 class InMemoryCatalogRepository extends CatalogRepository {
   constructor() {
@@ -20,6 +21,7 @@ class InMemoryCatalogRepository extends CatalogRepository {
     this.snapshots = new Map(); // id -> snapshot
     this.reconciliationRuns = new Map(); // id -> run
     this.locks = new Set(); // active lock IDs
+    this.schedulerStates = new Map(); // job_name -> state row
     this.initialized = false;
     this.degraded = false;
   }
@@ -84,10 +86,22 @@ class InMemoryCatalogRepository extends CatalogRepository {
       }
     }
 
+    const preferredImg = existing
+      ? EventVisualProvenanceService.selectPreferredImage(existing, eventData)
+      : EventVisualProvenanceService.resolveCatalogEventImageProvenance(eventData, eventData.metadata || {});
+
     const merged = {
       ...(existing || {}),
       ...eventData,
       id,
+      ...preferredImg,
+      poster_url: preferredImg.image_url,
+      event_image: preferredImg.image_url,
+      metadata: {
+        ...(existing?.metadata || {}),
+        ...(eventData.metadata || {}),
+        ...preferredImg
+      },
       updated_at: new Date().toISOString()
     };
     if (!merged.created_at) {
@@ -170,6 +184,70 @@ class InMemoryCatalogRepository extends CatalogRepository {
   async releaseAdvisoryLock(lockId) {
     this.locks.delete(lockId);
     return true;
+  }
+
+  async acquireJobLease(jobName, leaseOwner, ttlMs = 55000, now = new Date()) {
+    const nowMs = (now instanceof Date ? now : new Date(now)).getTime();
+    const existing = this.schedulerStates.get(jobName);
+    if (existing && existing.lease_expires_at) {
+      const expMs = new Date(existing.lease_expires_at).getTime();
+      if (expMs > nowMs && existing.lease_owner && existing.lease_owner !== leaseOwner) {
+        return { acquired: false, state: existing };
+      }
+    }
+    const nextState = {
+      job_name: jobName,
+      source_cursor: existing ? existing.source_cursor : 0,
+      page_cursor: existing ? existing.page_cursor : 1,
+      last_source_id: existing ? existing.last_source_id : null,
+      lease_owner: leaseOwner,
+      lease_acquired_at: new Date(nowMs).toISOString(),
+      lease_expires_at: new Date(nowMs + ttlMs).toISOString(),
+      last_run_id: existing ? existing.last_run_id : null,
+      last_status: existing ? existing.last_status : null,
+      updated_at: new Date(nowMs).toISOString()
+    };
+    this.schedulerStates.set(jobName, nextState);
+    return { acquired: true, state: { ...nextState } };
+  }
+
+  async updateJobCursorAndReleaseLease(jobName, leaseOwner, statePatch = {}) {
+    const existing = this.schedulerStates.get(jobName) || {
+      job_name: jobName,
+      source_cursor: 0,
+      page_cursor: 1,
+      last_source_id: null,
+      lease_owner: null,
+      lease_acquired_at: null,
+      lease_expires_at: null,
+      last_run_id: null,
+      last_status: null
+    };
+    const release = statePatch.releaseLease !== false;
+    const sourceCursor = statePatch.source_cursor !== undefined ? statePatch.source_cursor : statePatch.sourceCursor;
+    const pageCursor = statePatch.page_cursor !== undefined ? statePatch.page_cursor : statePatch.pageCursor;
+    const lastSourceId = statePatch.last_source_id !== undefined ? statePatch.last_source_id : statePatch.lastSourceId;
+    const lastRunId = statePatch.last_run_id !== undefined ? statePatch.last_run_id : statePatch.lastRunId;
+    const lastStatus = statePatch.last_status !== undefined ? statePatch.last_status : statePatch.lastStatus;
+
+    const updated = {
+      ...existing,
+      source_cursor: sourceCursor !== undefined ? Number(sourceCursor) : existing.source_cursor,
+      page_cursor: pageCursor !== undefined ? Number(pageCursor) : existing.page_cursor,
+      last_source_id: lastSourceId !== undefined ? lastSourceId : existing.last_source_id,
+      last_run_id: lastRunId !== undefined ? lastRunId : existing.last_run_id,
+      last_status: lastStatus !== undefined ? lastStatus : existing.last_status,
+      lease_owner: release ? null : (leaseOwner || existing.lease_owner),
+      lease_expires_at: release ? null : existing.lease_expires_at,
+      updated_at: new Date().toISOString()
+    };
+    this.schedulerStates.set(jobName, updated);
+    return { ...updated };
+  }
+
+  async getJobSchedulerState(jobName) {
+    const existing = this.schedulerStates.get(jobName);
+    return existing ? { ...existing } : null;
   }
 
   isDegraded() {

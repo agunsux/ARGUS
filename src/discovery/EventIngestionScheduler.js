@@ -26,7 +26,8 @@ const JOB_TYPES = {
   EVENT_VERIFICATION_DAILY: 'EVENT_VERIFICATION_DAILY',
   SOURCE_HEALTH_CHECK: 'SOURCE_HEALTH_CHECK',
   EXPIRATION_SWEEP: 'EXPIRATION_SWEEP',
-  EVENT_LIFECYCLE_SWEEP: 'EVENT_LIFECYCLE_SWEEP'
+  EVENT_LIFECYCLE_SWEEP: 'EVENT_LIFECYCLE_SWEEP',
+  IMAGE_HEALTH_CHECK: 'IMAGE_HEALTH_CHECK'
 };
 
 const JOB_STATUS = {
@@ -122,6 +123,17 @@ class EventIngestionScheduler {
       run_count: 0,
       enabled: false
     });
+
+    this.jobs.set(JOB_TYPES.IMAGE_HEALTH_CHECK, {
+      name: JOB_TYPES.IMAGE_HEALTH_CHECK,
+      description: 'Bounded chunked verification of event image URLs (HTTP status + image/* content-type)',
+      cronExpression: '30 */6 * * *', // Every 6 hours
+      status: JOB_STATUS.IDLE,
+      last_run_at: null,
+      last_result: null,
+      run_count: 0,
+      enabled: false
+    });
   }
 
   /**
@@ -129,7 +141,7 @@ class EventIngestionScheduler {
    * @param {string} jobName - One of JOB_TYPES
    * @returns {object} Job result
    */
-  async runJob(jobName) {
+  async runJob(jobName, options = {}) {
     const job = this.jobs.get(jobName);
     if (!job) {
       throw new Error(`Unknown job: ${jobName}. Valid jobs: ${Object.keys(JOB_TYPES).join(', ')}`);
@@ -166,6 +178,10 @@ class EventIngestionScheduler {
 
         case JOB_TYPES.EVENT_REFRESH_DAILY:
           result = await this._runRefreshJob();
+          break;
+
+        case JOB_TYPES.IMAGE_HEALTH_CHECK:
+          result = await this.runImageHealthCheckChunk(options);
           break;
 
         default:
@@ -471,10 +487,11 @@ class EventIngestionScheduler {
   }
 
   /**
-   * Resumable Chunked Ingestion Architecture:
+   * Resumable Chunked Ingestion Architecture (W0.3):
    * Polls a small batch of permitted sources (default batchSize: 5) per invocation.
-   * Uses PostgreSQL Advisory Lock (17913009) to avoid race conditions.
-   * Persists cursor in database/memory to guarantee all permitted sources are traversed sequentially across crons.
+   * Uses a database-backed lease lock (`discovery_scheduler_state`) with TTL expiration
+   * and persists `(source_cursor, page_cursor)` in PostgreSQL so stateless serverless
+   * invocations resume deterministically without in-memory state.
    */
   async runChunkedDiscoveryJob(options = {}) {
     const { getCatalogRepository } = require('./repository');
@@ -482,28 +499,56 @@ class EventIngestionScheduler {
     const { ingestionPipeline } = require('./EventIngestionPipeline');
 
     const catalogRepo = getCatalogRepository();
-    const lockId = 17913009;
-    const lockAcquired = await catalogRepo.acquireAdvisoryLock(lockId);
+    const jobName = options.jobName || 'CHUNKED_DISCOVERY_SYNC';
+    const leaseOwner = options.leaseOwner || `worker-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const leaseTtlMs = options.leaseTtlMs || 55000;
 
-    if (!lockAcquired) {
+    const advisoryLockAcquired = await catalogRepo.acquireAdvisoryLock(17913009);
+    if (!advisoryLockAcquired) {
       return {
         status: 'LOCKED',
-        message: 'Another chunked discovery worker is currently active',
+        message: 'Another chunked discovery worker holds advisory lock 17913009',
         code: 'LOCK_BUSY'
       };
     }
 
+    let leaseResult = null;
+    if (typeof catalogRepo.acquireJobLease === 'function') {
+      leaseResult = await catalogRepo.acquireJobLease(jobName, leaseOwner, leaseTtlMs);
+      if (!leaseResult || !leaseResult.acquired) {
+        await catalogRepo.releaseAdvisoryLock(17913009).catch(() => {});
+        return {
+          status: 'LOCKED',
+          message: 'Another chunked discovery worker holds an active DB lease',
+          code: 'LOCK_BUSY',
+          lease_state: leaseResult ? leaseResult.state : null
+        };
+      }
+    }
+
     const batchSize = Math.max(1, Math.min(20, parseInt(options.batchSize || options.batch_size || 5, 10)));
     const timeBudgetMs = options.timeBudgetMs || 25000;
+    const maxRetries = options.maxRetries !== undefined ? Number(options.maxRetries) : 1;
+    const retryBackoffMs = options.retryBackoffMs !== undefined ? Number(options.retryBackoffMs) : 50;
     const startTime = Date.now();
     const now = options.now ? new Date(options.now) : new Date();
 
+    const schedulerState = (leaseResult && leaseResult.state) || {
+      source_cursor: 0,
+      page_cursor: 1
+    };
+
+    let nextSourceCursor = Number(schedulerState.source_cursor || 0);
+    let nextPageCursor = Number(schedulerState.page_cursor || 1);
+    let lastSourceId = schedulerState.last_source_id || null;
+    let finalStatus = 'SUCCESS';
     let runRecord = null;
+
     try {
       runRecord = await catalogRepo.recordReconciliationRun({
-        trigger_type: 'CHUNKED_CRON',
+        trigger_type: options.triggerType || 'CHUNKED_CRON',
         status: 'RUNNING',
-        run_by: options.actorId || 'CHUNKED_WORKER'
+        run_by: options.actorId || leaseOwner
       }).catch(() => null);
 
       const permittedSources = sourceRegistry.getAllSources().filter(s => sourceRegistry.isSourcePermittedForIngestion(s.source_id));
@@ -517,51 +562,77 @@ class EventIngestionScheduler {
         };
       }
 
-      // Cursor calculation:
-      let cursorIndex = 0;
-      if (typeof this._chunkedCursor === 'number') {
-        cursorIndex = this._chunkedCursor;
-      }
-      if (cursorIndex >= totalPermitted) {
+      // Normalize DB-persisted cursor index:
+      let cursorIndex = nextSourceCursor;
+      if (cursorIndex < 0 || cursorIndex >= totalPermitted) {
         cursorIndex = 0;
       }
 
       const sourcesToProcess = [];
       for (let i = 0; i < batchSize; i++) {
         const idx = (cursorIndex + i) % totalPermitted;
-        sourcesToProcess.push(permittedSources[idx]);
+        sourcesToProcess.push({ source: permittedSources[idx], index: idx });
       }
 
       const summary = {
-        job: 'CHUNKED_DISCOVERY_SYNC',
+        job: jobName,
         status: 'SUCCESS',
+        lease_owner: leaseOwner,
+        lock_acquired: true,
+        lock_released: false,
         batch_size: batchSize,
         cursor_start: cursorIndex,
+        page_cursor_start: nextPageCursor,
         total_permitted_sources: totalPermitted,
         sources_polled: [],
+        source_outcomes: [],
         events_discovered: 0,
         events_ingested: 0,
         duplicates_merged: 0,
+        blocked_or_unavailable_count: 0,
+        retries_attempted: 0,
         errors: [],
         started_at: new Date(startTime).toISOString()
       };
 
-      for (const src of sourcesToProcess) {
+      let sourcesCompletedInBatch = 0;
+      let stoppedOnPage = null;
+
+      for (const entry of sourcesToProcess) {
+        const src = entry.source;
         // Enforce time budget: break out if nearing timeout
         if (Date.now() - startTime >= timeBudgetMs) {
           summary.timed_out = true;
+          finalStatus = 'PARTIAL';
           break;
         }
 
         summary.sources_polled.push(src.source_id);
+        lastSourceId = src.source_id;
+
         try {
           const adapter = adapterRegistry.getAdapter(src.source_id);
           let discoveryOutput = null;
+          const pageToFetch = (sourcesCompletedInBatch === 0 && nextPageCursor > 1) ? nextPageCursor : 1;
 
-          if (typeof adapter.discover === 'function') {
-            discoveryOutput = await adapter.discover();
-          } else if (typeof adapter.fetchEvents === 'function') {
-            discoveryOutput = await adapter.fetchEvents();
+          let attempt = 0;
+          while (true) {
+            try {
+              if (typeof adapter.discover === 'function') {
+                discoveryOutput = await adapter.discover({ page: pageToFetch, maxPages: options.maxPagesPerSource || 2 });
+              } else if (typeof adapter.fetchEvents === 'function') {
+                discoveryOutput = await adapter.fetchEvents({ page: pageToFetch, maxPages: options.maxPagesPerSource || 2 });
+              }
+              break;
+            } catch (fetchErr) {
+              if (attempt < maxRetries && (Date.now() - startTime + retryBackoffMs < timeBudgetMs)) {
+                attempt++;
+                summary.retries_attempted++;
+                await new Promise(r => setTimeout(r, retryBackoffMs * attempt));
+                continue;
+              }
+              throw fetchErr;
+            }
           }
 
           if (Array.isArray(discoveryOutput)) {
@@ -582,21 +653,79 @@ class EventIngestionScheduler {
                 summary.errors.push({ source_id: src.source_id, error: itemErr.message });
               }
             }
+            summary.source_outcomes.push({
+              source_id: src.source_id,
+              status: 'SCANNED_OK',
+              discovered: discoveryOutput.length,
+              page: pageToFetch
+            });
+            sourcesCompletedInBatch++;
+          } else if (discoveryOutput && typeof discoveryOutput === 'object') {
+            const outStatus = discoveryOutput.status || 'DATA_UNAVAILABLE';
+            if (['BLOCKED', 'ERROR', 'TIMEOUT', 'RATE_LIMITED', 'WAF_CHALLENGE'].includes(outStatus)) {
+              summary.blocked_or_unavailable_count++;
+              finalStatus = 'PARTIAL';
+            } else if (outStatus === 'DATA_UNAVAILABLE') {
+              summary.passive_or_unconfigured_count = (summary.passive_or_unconfigured_count || 0) + 1;
+            }
+            summary.source_outcomes.push({
+              source_id: src.source_id,
+              status: outStatus,
+              reason: discoveryOutput.reason || discoveryOutput.message || null,
+              page: pageToFetch
+            });
+            if (discoveryOutput.has_more && discoveryOutput.next_page) {
+              stoppedOnPage = Number(discoveryOutput.next_page);
+              nextSourceCursor = entry.index;
+              nextPageCursor = stoppedOnPage;
+              finalStatus = 'PARTIAL';
+              break;
+            }
+            sourcesCompletedInBatch++;
+          } else {
+            sourcesCompletedInBatch++;
           }
         } catch (srcErr) {
           summary.errors.push({ source_id: src.source_id, error: srcErr.message });
+          summary.source_outcomes.push({
+            source_id: src.source_id,
+            status: 'ERROR',
+            error: srcErr.message
+          });
+          finalStatus = 'PARTIAL';
+          sourcesCompletedInBatch++;
         }
       }
 
-      const nextCursor = (cursorIndex + summary.sources_polled.length) % totalPermitted;
-      this._chunkedCursor = nextCursor;
-      summary.cursor_next = nextCursor;
+      if (stoppedOnPage === null) {
+        nextSourceCursor = (cursorIndex + sourcesCompletedInBatch) % totalPermitted;
+        nextPageCursor = 1;
+      }
+
+      if (summary.errors.length > 0 || summary.blocked_or_unavailable_count > 0 || summary.timed_out) {
+        finalStatus = 'PARTIAL';
+      }
+
+      summary.status = finalStatus;
+      summary.cursor_next = nextSourceCursor;
+      summary.page_cursor_next = nextPageCursor;
       summary.duration_ms = Date.now() - startTime;
       summary.completed_at = new Date().toISOString();
 
+      if (typeof catalogRepo.updateJobCursorAndReleaseLease === 'function') {
+        await catalogRepo.updateJobCursorAndReleaseLease(jobName, leaseOwner, {
+          source_cursor: nextSourceCursor,
+          page_cursor: nextPageCursor,
+          last_source_id: lastSourceId,
+          last_run_id: runRecord ? runRecord.id : null,
+          last_status: finalStatus
+        }).catch(() => {});
+        summary.lock_released = true;
+      }
+
       if (runRecord && runRecord.id) {
         await catalogRepo.updateReconciliationRun(runRecord.id, {
-          status: 'SUCCESS',
+          status: finalStatus,
           records_discovered: summary.events_discovered,
           records_ingested: summary.events_ingested,
           duplicates_merged: summary.duplicates_merged,
@@ -607,16 +736,26 @@ class EventIngestionScheduler {
 
       return summary;
     } catch (err) {
+      finalStatus = 'FAILED';
       if (runRecord && runRecord.id) {
         await catalogRepo.updateReconciliationRun(runRecord.id, {
           status: 'FAILED',
           error_count: 1,
-          report: { error: err.message }
+          report: { error: err.message, lease_owner: leaseOwner }
         }).catch(() => {});
       }
       throw err;
     } finally {
-      await catalogRepo.releaseAdvisoryLock(lockId).catch(() => {});
+      if (typeof catalogRepo.updateJobCursorAndReleaseLease === 'function') {
+        await catalogRepo.updateJobCursorAndReleaseLease(jobName, leaseOwner, {
+          source_cursor: nextSourceCursor,
+          page_cursor: nextPageCursor,
+          last_source_id: lastSourceId,
+          last_run_id: runRecord ? runRecord.id : null,
+          last_status: finalStatus
+        }).catch(() => {});
+      }
+      await catalogRepo.releaseAdvisoryLock(17913009).catch(() => {});
     }
   }
 
@@ -665,6 +804,86 @@ class EventIngestionScheduler {
     }
 
     return report;
+  }
+
+  /**
+   * Bounded Chunked Image Health Check (Section 7):
+   * Validates event image URLs in small serverless-safe chunks without blocking catalog API requests.
+   * Separates image health from event lifecycle/verification (404 image -> BROKEN fallback, never cancels event).
+   */
+  async runImageHealthCheckChunk(options = {}) {
+    const { getCatalogRepository } = require('./repository');
+    const { EventVisualProvenanceService } = require('./EventVisualProvenanceService');
+
+    const repo = options.repository || getCatalogRepository();
+    const batchSize = Math.max(1, Math.min(25, Number(options.batchSize || 10)));
+    const timeBudgetMs = Number(options.timeBudgetMs || 15000);
+    const timeoutMs = Number(options.timeoutMs || 4000);
+    const startTime = Date.now();
+
+    const allEvents = Array.isArray(options.events) ? options.events : await repo.getAllEvents();
+    const candidates = allEvents.filter(e => Boolean(e.image_url || e.broken_image_url || e.metadata?.image_url));
+    const cursorStart = Math.max(0, Number(options.cursor || 0)) % Math.max(1, candidates.length);
+    const slice = [];
+    for (let i = 0; i < Math.min(batchSize, candidates.length); i++) {
+      slice.push(candidates[(cursorStart + i) % candidates.length]);
+    }
+
+    const summary = {
+      job: JOB_TYPES.IMAGE_HEALTH_CHECK,
+      total_candidates: candidates.length,
+      cursor_start: cursorStart,
+      checked_count: 0,
+      healthy_count: 0,
+      broken_count: 0,
+      transient_failure_count: 0,
+      results: [],
+      timed_out: false
+    };
+
+    for (const ev of slice) {
+      if (Date.now() - startTime >= timeBudgetMs) {
+        summary.timed_out = true;
+        break;
+      }
+
+      const urlToCheck = ev.image_url || ev.metadata?.image_url || ev.broken_image_url;
+      const healthRes = await EventVisualProvenanceService.checkImageHealth(urlToCheck, {
+        fetchFn: options.fetchFn,
+        timeoutMs
+      });
+      const updated = EventVisualProvenanceService.applyImageHealthResult(ev, healthRes);
+
+      summary.checked_count++;
+      if (healthRes.ok) {
+        summary.healthy_count++;
+      } else if (healthRes.image_status === 'BROKEN') {
+        summary.broken_count++;
+      } else if (healthRes.image_status === 'TRANSIENT_FAILURE') {
+        summary.transient_failure_count++;
+      }
+
+      if (options.persist === true && !repo.readOnly && typeof repo.upsertCanonicalEvent === 'function') {
+        await repo.upsertCanonicalEvent(updated).catch(() => {});
+      }
+
+      summary.results.push({
+        event_id: ev.id || ev.event_id,
+        canonical_name: ev.canonical_name || ev.title,
+        checked_url: urlToCheck,
+        http_status: healthRes.http_status,
+        content_type: healthRes.content_type,
+        image_status: updated.image_status,
+        image_url_after: updated.image_url,
+        event_lifecycle_status: updated.lifecycle_status,
+        event_is_verified: updated.is_verified
+      });
+    }
+
+    summary.cursor_next = candidates.length > 0 ? (cursorStart + summary.checked_count) % candidates.length : 0;
+    summary.duration_ms = Date.now() - startTime;
+    summary.completed_at = new Date().toISOString();
+    return summary;
   }
 }
 

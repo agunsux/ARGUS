@@ -771,11 +771,14 @@
     }
 
     function renderPosterMedia(e, categoryLabel, statusText, radarBadge, isPriority = false) {
-      const img = e.image_url && e.is_fallback_image !== true && e.image_status !== 'FALLBACK' ? e.image_url : '';
+      const img = e.image_url && e.is_fallback_image !== true && e.image_status !== 'FALLBACK' && e.image_status !== 'BROKEN' ? e.image_url : '';
       const visual = getCategoryVisual(e.category || categoryLabel);
       const title = escapeHtml(e.title || e.canonical_name || 'Event');
-      const venue = escapeHtml(e.venue_name || e.venue || e.city || '');
+      const venue = escapeHtml(e.venue_name || e.venue || '');
+      const city = escapeHtml(e.city || e.venue_city || '');
+      const altText = `${title} — ${[venue, city].filter(Boolean).join(', ')}`;
       const priorityAttr = isPriority ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
+      const imgStatus = escapeHtml(e.image_status || (img ? 'VERIFIED_AUTHORIZED_SELLER' : 'SOURCE_LINK_ONLY'));
 
       const placeholderInner = `
         <div class="poster-fallback-art" style="background: ${visual.gradient};">
@@ -785,15 +788,15 @@
           <div class="poster-fallback-title">${title}</div>
           <div class="poster-fallback-meta">${escapeHtml(categoryLabel)}${venue ? ' · ' + venue : ''}</div>
           <div class="poster-fallback-verified">
-            <i class="fa-solid fa-shield-check" style="color: #34D399; font-size: 10px;"></i> Katalog Resmi TIKUM
+            <i class="fa-solid fa-shield-check" style="color: #34D399; font-size: 10px;"></i> Poster Resmi Belum Tersedia · Sumber Terverifikasi
           </div>
         </div>
       `;
 
       if (img) {
         return `
-          <div class="poster-media">
-            <img src="${img}" alt="Poster resmi ${title}" width="250" height="312" ${priorityAttr} decoding="async" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+          <div class="poster-media" data-image-status="${imgStatus}">
+            <img src="${img}" alt="${altText}" width="250" height="312" ${priorityAttr} decoding="async" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
             <div class="poster-fallback-wrap" style="display: none;">
               ${placeholderInner}
             </div>
@@ -805,7 +808,7 @@
         `;
       } else {
         return `
-          <div class="poster-media">
+          <div class="poster-media" data-image-status="${imgStatus}">
             <div class="poster-fallback-wrap" style="display: flex;">
               ${placeholderInner}
             </div>

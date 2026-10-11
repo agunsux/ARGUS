@@ -77,6 +77,14 @@ const IMAGE_SCOPES = {
 
 const IMAGE_STATUS = {
   VERIFIED: 'VERIFIED',
+  VERIFIED_OFFICIAL: 'VERIFIED_OFFICIAL',
+  VERIFIED_AUTHORIZED_SELLER: 'VERIFIED_AUTHORIZED_SELLER',
+  SOURCE_LINK_ONLY: 'SOURCE_LINK_ONLY',
+  MISSING: 'MISSING',
+  BROKEN: 'BROKEN',
+  BLOCKED_BY_SOURCE: 'BLOCKED_BY_SOURCE',
+  NEEDS_REVIEW: 'NEEDS_REVIEW',
+  TRANSIENT_FAILURE: 'TRANSIENT_FAILURE',
   UNVERIFIED: 'UNVERIFIED',
   STALE: 'STALE',
   INVALID: 'INVALID',
@@ -120,7 +128,8 @@ const KNOWN_ARTIST_SIGNATURES = [
   { key: 'sheila on 7', names: ['sheila on 7', 'sheilaon7', 'so7'], patterns: [/\/sheilaon7\//, /sheilaon7[-_]/, /[-_]sheilaon7\./, /so7[-_]/] },
   { key: 'tulus', names: ['tulus'], patterns: [/\/tulus\//, /tulus[-_]/, /[-_]tulus\./] },
   { key: 'hindia', names: ['hindia'], patterns: [/\/hindia\//, /hindia[-_]/, /[-_]hindia\./] },
-  { key: 'bruno mars', names: ['bruno mars', 'brunomars'], patterns: [/\/brunomars\//, /brunomars[-_]/, /[-_]brunomars\./] }
+  { key: 'bruno mars', names: ['bruno mars', 'brunomars'], patterns: [/\/brunomars\//, /brunomars[-_]/, /[-_]brunomars\./] },
+  { key: 'king nassar', names: ['king nassar', 'nassar'], patterns: [/\/nassar\//, /king-nassar/, /nassar[-_]/] }
 ];
 
 const KNOWN_FESTIVAL_SIGNATURES = [
@@ -140,6 +149,7 @@ class EventVisualProvenanceService {
   /**
    * SSRF Protection & URL Validation
    * Rejects localhost, 127.0.0.1, private ranges, metadata IPs, non-http(s) schemes.
+   * Permits verified first-party official poster paths under /assets/posters/.
    */
   static validateImageUrl(url) {
     if (!url || typeof url !== 'string') {
@@ -147,6 +157,16 @@ class EventVisualProvenanceService {
     }
 
     const trimmed = url.trim();
+    if (/^\/assets\/posters\/[a-z0-9._-]+\.(jpg|jpeg|png|webp|avif|svg)$/i.test(trimmed)) {
+      return {
+        valid: true,
+        normalized_url: trimmed,
+        hostname: 'tikum.app',
+        has_image_ext: true,
+        is_local_official_asset: true
+      };
+    }
+
     if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
       return { valid: false, reason: 'URL must start with http:// or https://' };
     }
@@ -885,6 +905,510 @@ class EventVisualProvenanceService {
       problems_found: ['IMAGE_CONFIDENCE_INSUFFICIENT'],
       recommended_action: 'VERIFY_OR_FALLBACK: Cross-check image with official promoter before promoting to public.'
     };
+  }
+
+  /**
+   * Loads the committed verified event image provenance registry.
+   */
+  static getVerifiedProvenanceRegistry() {
+    if (!this._verifiedProvenanceCache) {
+      try {
+        this._verifiedProvenanceCache = require('./fixtures/verified_event_image_provenance.json');
+      } catch (_) {
+        this._verifiedProvenanceCache = {
+          verified_by_event_id: {},
+          verified_by_source_event_id: {},
+          verified_by_source_url: {},
+          known_broken_urls: {}
+        };
+      }
+    }
+    return this._verifiedProvenanceCache;
+  }
+
+  /**
+   * Numeric priority rank for image source provenance (Section 5).
+   * Higher rank wins:
+   *  4 = Official event website / official organizer / official venue poster (VERIFIED_OFFICIAL)
+   *  3 = Authorized ticket seller event banner (VERIFIED_AUTHORIZED_SELLER)
+   *  2 = Generic verified / official social announcement image
+   *  1 = Needs review
+   *  0 = Missing / Broken / Blocked / Source-link-only / Fallback placeholder
+   */
+  static getImageSourcePriorityRank(eventOrMeta = {}) {
+    const imgUrl = eventOrMeta.image_url || eventOrMeta.poster_url || eventOrMeta.banner_url || null;
+    const status = (eventOrMeta.image_status || '').toUpperCase();
+    const srcType = (eventOrMeta.image_source_type || '').toUpperCase();
+
+    if (!imgUrl || ['BROKEN', 'BLOCKED_BY_SOURCE', 'SOURCE_LINK_ONLY', 'MISSING', 'FALLBACK', 'NONE', 'INVALID'].includes(status)) {
+      return 0;
+    }
+    const urlCheck = this.validateImageUrl(imgUrl);
+    if (!urlCheck.valid) return 0;
+
+    const reg = this.getVerifiedProvenanceRegistry();
+    if (reg.known_broken_urls && reg.known_broken_urls[imgUrl]) {
+      return 0;
+    }
+
+    if (status === 'VERIFIED_OFFICIAL' ||
+        ['OFFICIAL_ORGANIZER', 'OFFICIAL_EVENT_WEB', 'OFFICIAL_PROMOTER_WEB', 'OFFICIAL_ORGANIZER_WEB', 'OFFICIAL_VENUE', 'OFFICIAL_VENUE_WEB', 'OFFICIAL_ARTIST_WEB'].includes(srcType)) {
+      return 4;
+    }
+    if (status === 'VERIFIED_AUTHORIZED_SELLER' ||
+        ['AUTHORIZED_TICKET_SELLER', 'OFFICIAL_TICKETING'].includes(srcType)) {
+      return 3;
+    }
+    if (status === 'VERIFIED' || srcType.includes('SOCIAL') || srcType.includes('IG')) {
+      return 2;
+    }
+    if (status === 'NEEDS_REVIEW') {
+      return 1;
+    }
+    return 2;
+  }
+
+  /**
+   * Selects the preferred image provenance between an existing event and an incoming candidate.
+   * Enforces:
+   * - Official organizer/venue > Authorized ticket seller > Official social > Fallback
+   * - Never overwrites a working verified image with null, BROKEN, or lower-priority image
+   * - Never copies a city-specific tour stop poster across different cities
+   */
+  static selectPreferredImage(existingEvent = {}, candidateEvent = {}) {
+    const existingRank = this.getImageSourcePriorityRank(existingEvent);
+    const candidateRank = this.getImageSourcePriorityRank(candidateEvent);
+
+    // Multi-city tour stop guard: if existing and candidate are in different cities,
+    // do not adopt candidate's image onto existing event
+    const cityA = (existingEvent.city || existingEvent.venue_city || '').toLowerCase().trim();
+    const cityB = (candidateEvent.city || candidateEvent.venue_city || '').toLowerCase().trim();
+    const normCityA = cityA.replace(/\s+(pusat|selatan|barat|timur|utara)$/i, '');
+    const normCityB = cityB.replace(/\s+(pusat|selatan|barat|timur|utara)$/i, '');
+    const isDifferentCity = normCityA && normCityB && normCityA !== normCityB &&
+      !(normCityA === 'jakarta' && normCityB === 'tangerang') &&
+      !(normCityA === 'tangerang' && normCityB === 'jakarta');
+
+    if (isDifferentCity && existingRank > 0) {
+      return this.extractImageFields(existingEvent);
+    }
+    if (isDifferentCity && existingRank === 0) {
+      // Do not copy another city's tour stop poster
+      return this.extractImageFields(existingEvent);
+    }
+
+    if (candidateRank > existingRank) {
+      return this.extractImageFields(candidateEvent);
+    }
+    return this.extractImageFields(existingEvent);
+  }
+
+  static extractImageFields(obj = {}) {
+    const imgUrl = obj.image_url || obj.poster_url || obj.banner_url || null;
+    const hasLink = Boolean(obj.official_event_url || obj.official_ticket_url || obj.source_url || obj.image_source_url);
+    const defaultStatus = imgUrl ? 'VERIFIED_AUTHORIZED_SELLER' : (hasLink ? 'SOURCE_LINK_ONLY' : 'MISSING');
+    const status = obj.image_status && obj.image_status !== 'NONE' ? obj.image_status : defaultStatus;
+    return {
+      image_url: imgUrl,
+      thumbnail_url: obj.thumbnail_url || imgUrl || null,
+      image_source_url: obj.image_source_url || (imgUrl ? (obj.official_event_url || obj.official_ticket_url || obj.source_url || null) : null),
+      image_source_type: imgUrl ? (obj.image_source_type || 'OFFICIAL_TICKETING') : 'NONE',
+      image_verified_at: imgUrl ? (obj.image_verified_at || obj.verified_at || new Date().toISOString()) : null,
+      image_status: status,
+      image_credit: obj.image_credit || obj.image_attribution || (imgUrl ? 'Official Source' : null),
+      image_attribution: obj.image_attribution || obj.image_credit || (imgUrl ? 'Official Source' : null),
+      broken_image_url: obj.broken_image_url || null,
+      is_fallback_image: !imgUrl
+    };
+  }
+
+  /**
+   * Resolves and classifies catalog event image provenance across all 7 required states:
+   * VERIFIED_OFFICIAL, VERIFIED_AUTHORIZED_SELLER, SOURCE_LINK_ONLY,
+   * MISSING, BROKEN, BLOCKED_BY_SOURCE, NEEDS_REVIEW.
+   */
+  static resolveCatalogEventImageProvenance(event = {}, meta = {}) {
+    const reg = this.getVerifiedProvenanceRegistry();
+    const eventId = event.id || event.event_id || null;
+    const sourceEventId = event.source_event_id || meta.source_event_id || (Array.isArray(event.sources) && event.sources[0]?.source_event_id) || null;
+    const rawImgUrl = event.image_url || event.poster_url || event.banner_url || meta.image_url || meta.poster_url || null;
+    const candidateUrls = [
+      event.official_ticket_url,
+      event.official_event_url,
+      event.source_url,
+      meta.official_ticket_url,
+      meta.official_event_url,
+      meta.source_url,
+      ...(Array.isArray(event.sources) ? event.sources.flatMap(s => [s.source_url, s.official_ticket_url]) : [])
+    ].filter(Boolean);
+    const hasOfficialLink = candidateUrls.length > 0;
+
+    // 1. Check verified provenance registry by canonical event ID, source_event_id, or official/ticket URL
+    let verifiedEntry = (eventId && reg.verified_by_event_id && reg.verified_by_event_id[eventId]) ||
+      (sourceEventId && reg.verified_by_source_event_id && reg.verified_by_source_event_id[sourceEventId]) ||
+      null;
+
+    if (!verifiedEntry && reg.verified_by_source_url) {
+      for (const u of candidateUrls) {
+        const cleanU = String(u).trim();
+        const noWww = cleanU.replace(/^https?:\/\/www\./i, m => m.replace('www.', ''));
+        const withWww = cleanU.replace(/^https?:\/\/(?!www\.)/i, m => `${m}www.`);
+        if (reg.verified_by_source_url[cleanU]) {
+          verifiedEntry = reg.verified_by_source_url[cleanU];
+          break;
+        }
+        if (reg.verified_by_source_url[noWww]) {
+          verifiedEntry = reg.verified_by_source_url[noWww];
+          break;
+        }
+        if (reg.verified_by_source_url[withWww]) {
+          verifiedEntry = reg.verified_by_source_url[withWww];
+          break;
+        }
+      }
+    }
+
+    if (verifiedEntry && verifiedEntry.image_url) {
+      return {
+        image_url: verifiedEntry.image_url,
+        thumbnail_url: verifiedEntry.thumbnail_url || verifiedEntry.image_url,
+        image_source_url: verifiedEntry.image_source_url || event.official_event_url || event.official_ticket_url || event.source_url || null,
+        image_source_type: verifiedEntry.image_source_type || 'OFFICIAL_TICKETING',
+        image_verified: true,
+        image_verified_at: verifiedEntry.image_verified_at || event.verified_at || new Date().toISOString(),
+        image_status: verifiedEntry.image_status || 'VERIFIED_AUTHORIZED_SELLER',
+        image_credit: verifiedEntry.image_credit || 'Official Source',
+        image_attribution: verifiedEntry.image_credit || 'Official Source',
+        broken_image_url: (rawImgUrl && rawImgUrl !== verifiedEntry.image_url && reg.known_broken_urls?.[rawImgUrl]) ? rawImgUrl : null,
+        is_fallback_image: false
+      };
+    }
+
+    // 2. Check if stored rawImgUrl is a known broken URL (HTTP 404 or text/html)
+    if (rawImgUrl && reg.known_broken_urls && reg.known_broken_urls[rawImgUrl]) {
+      const brokenMeta = reg.known_broken_urls[rawImgUrl];
+      return {
+        image_url: null,
+        thumbnail_url: null,
+        image_source_url: event.image_source_url || meta.image_source_url || event.official_event_url || event.official_ticket_url || event.source_url || null,
+        image_source_type: event.image_source_type || meta.image_source_type || 'NONE',
+        image_verified: false,
+        image_verified_at: null,
+        image_status: IMAGE_STATUS.BROKEN,
+        image_credit: event.image_credit || meta.image_credit || null,
+        image_attribution: event.image_credit || meta.image_credit || null,
+        broken_image_url: rawImgUrl,
+        broken_reason: brokenMeta.reason,
+        is_fallback_image: true
+      };
+    }
+
+    // 3. If event already has an explicit non-verified status (BROKEN, BLOCKED_BY_SOURCE, NEEDS_REVIEW)
+    const explicitStatus = event.image_status || meta.image_status || null;
+    if (explicitStatus === IMAGE_STATUS.BROKEN || explicitStatus === IMAGE_STATUS.BLOCKED_BY_SOURCE || explicitStatus === IMAGE_STATUS.NEEDS_REVIEW) {
+      return {
+        image_url: explicitStatus === IMAGE_STATUS.NEEDS_REVIEW ? rawImgUrl : null,
+        thumbnail_url: explicitStatus === IMAGE_STATUS.NEEDS_REVIEW ? rawImgUrl : null,
+        image_source_url: event.image_source_url || meta.image_source_url || event.source_url || null,
+        image_source_type: event.image_source_type || meta.image_source_type || 'NONE',
+        image_verified: false,
+        image_verified_at: null,
+        image_status: explicitStatus,
+        image_credit: event.image_credit || meta.image_credit || null,
+        image_attribution: event.image_credit || meta.image_credit || null,
+        broken_image_url: event.broken_image_url || meta.broken_image_url || rawImgUrl || null,
+        is_fallback_image: explicitStatus !== IMAGE_STATUS.NEEDS_REVIEW
+      };
+    }
+
+    // 4. If rawImgUrl is present, validate URL security & wrong-image check
+    if (rawImgUrl) {
+      const urlCheck = this.validateImageUrl(rawImgUrl);
+      if (!urlCheck.valid) {
+        return {
+          image_url: null,
+          thumbnail_url: null,
+          image_source_url: event.image_source_url || meta.image_source_url || null,
+          image_source_type: 'NONE',
+          image_verified: false,
+          image_verified_at: null,
+          image_status: IMAGE_STATUS.BROKEN,
+          image_credit: null,
+          image_attribution: null,
+          broken_image_url: rawImgUrl,
+          broken_reason: urlCheck.reason,
+          is_fallback_image: true
+        };
+      }
+      const srcType = event.image_source_type || meta.image_source_type || (rawImgUrl.includes('loket.com') ? 'OFFICIAL_TICKETING' : 'OFFICIAL_EVENT_WEB');
+      const isOfficialOrganizerOrVenue = ['OFFICIAL_ORGANIZER', 'OFFICIAL_EVENT_WEB', 'OFFICIAL_PROMOTER_WEB', 'OFFICIAL_VENUE', 'OFFICIAL_VENUE_WEB', 'OFFICIAL_ARTIST_WEB'].includes(srcType) &&
+        !rawImgUrl.includes('loket.com');
+      const resolvedStatus = event.is_verified === false
+        ? IMAGE_STATUS.NEEDS_REVIEW
+        : (isOfficialOrganizerOrVenue ? IMAGE_STATUS.VERIFIED_OFFICIAL : IMAGE_STATUS.VERIFIED_AUTHORIZED_SELLER);
+
+      return {
+        image_url: urlCheck.normalized_url,
+        thumbnail_url: event.thumbnail_url || meta.thumbnail_url || urlCheck.normalized_url,
+        image_source_url: event.image_source_url || meta.image_source_url || event.official_event_url || event.official_ticket_url || event.source_url || null,
+        image_source_type: srcType,
+        image_verified: event.is_verified !== false,
+        image_verified_at: event.image_verified_at || meta.image_verified_at || event.verified_at || new Date().toISOString(),
+        image_status: resolvedStatus,
+        image_credit: event.image_credit || meta.image_credit || event.image_attribution || 'Official Source',
+        image_attribution: event.image_attribution || meta.image_attribution || event.image_credit || meta.image_credit || 'Official Source',
+        broken_image_url: null,
+        is_fallback_image: false
+      };
+    }
+
+    // 5. No image_url present -> classify as SOURCE_LINK_ONLY (if official/authorized link exists) or MISSING
+    return {
+      image_url: null,
+      thumbnail_url: null,
+      image_source_url: hasOfficialLink ? candidateUrls[0] : null,
+      image_source_type: 'NONE',
+      image_verified: false,
+      image_verified_at: null,
+      image_status: hasOfficialLink ? IMAGE_STATUS.SOURCE_LINK_ONLY : IMAGE_STATUS.MISSING,
+      image_credit: null,
+      image_attribution: null,
+      broken_image_url: null,
+      is_fallback_image: true
+    };
+  }
+
+  /**
+   * Automated Image Health Check (Section 7):
+   * - Validates URL format and SSRF safety
+   * - Checks HTTP status (200/206 vs 404/410 vs 403 vs 429/5xx)
+   * - Verifies Content-Type starts with image/* (never marks 200 + text/html as verified!)
+   * - Bounded retries for transient failures
+   */
+  static async checkImageHealth(imageUrl, options = {}) {
+    const checkedAt = new Date().toISOString();
+    if (!imageUrl) {
+      return {
+        ok: false,
+        healthy: false,
+        image_status: options.hasOfficialLink ? IMAGE_STATUS.SOURCE_LINK_ONLY : IMAGE_STATUS.MISSING,
+        http_status: null,
+        content_type: null,
+        checked_at: checkedAt,
+        reason: 'NO_IMAGE_URL'
+      };
+    }
+
+    const urlCheck = this.validateImageUrl(imageUrl);
+    if (!urlCheck.valid) {
+      return {
+        ok: false,
+        healthy: false,
+        image_status: IMAGE_STATUS.BROKEN,
+        http_status: null,
+        content_type: null,
+        checked_at: checkedAt,
+        reason: urlCheck.reason
+      };
+    }
+
+    if (urlCheck.is_local_official_asset) {
+      const fs = require('fs');
+      const path = require('path');
+      const localPath = path.join(__dirname, '../../public', urlCheck.normalized_url);
+      if (fs.existsSync(localPath) && fs.statSync(localPath).size > 0) {
+        const ext = path.extname(localPath).toLowerCase();
+        const mimeMap = {
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.png': 'image/png',
+          '.webp': 'image/webp',
+          '.avif': 'image/avif',
+          '.svg': 'image/svg+xml'
+        };
+        return {
+          ok: true,
+          healthy: true,
+          image_status: IMAGE_STATUS.VERIFIED_OFFICIAL,
+          http_status: 200,
+          content_type: mimeMap[ext] || 'image/jpeg',
+          verified_at: checkedAt,
+          checked_at: checkedAt,
+          reason: null
+        };
+      }
+      return {
+        ok: false,
+        healthy: false,
+        image_status: IMAGE_STATUS.BROKEN,
+        http_status: 404,
+        content_type: null,
+        checked_at: checkedAt,
+        reason: 'HTTP_404_LOCAL_ASSET_MISSING'
+      };
+    }
+
+    const fetchFn = options.fetchFn || options.fetchImpl || global.fetch;
+    const maxRetries = options.maxRetries !== undefined ? options.maxRetries : 1;
+    const timeoutMs = options.timeoutMs || 5000;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        let res = await fetchFn(urlCheck.normalized_url, {
+          method: 'HEAD',
+          headers: {
+            'User-Agent': 'TikumEventBot/1.0 (+https://tikum.app/bot-info; ops@tikum.app)',
+            'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+          },
+          redirect: 'follow',
+          signal: controller.signal
+        });
+
+        if (res.status === 405 || (res.ok && !(res.headers && ((typeof res.headers.get === 'function' && res.headers.get('content-type')) || res.headers['content-type'])))) {
+          res = await fetchFn(urlCheck.normalized_url, {
+            method: 'GET',
+            headers: {
+              'User-Agent': 'TikumEventBot/1.0 (+https://tikum.app/bot-info; ops@tikum.app)',
+              'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+              'Range': 'bytes=0-1023'
+            },
+            redirect: 'follow',
+            signal: controller.signal
+          });
+        }
+        clearTimeout(timer);
+
+        const status = res.status;
+        const contentType = (res.headers && typeof res.headers.get === 'function' ? res.headers.get('content-type') : (res.headers && res.headers['content-type'])) || '';
+        const normCt = contentType.toLowerCase().trim();
+
+        if (status === 404 || status === 410) {
+          return {
+            ok: false,
+            healthy: false,
+            image_status: IMAGE_STATUS.BROKEN,
+            http_status: status,
+            content_type: contentType || null,
+            checked_at: checkedAt,
+            reason: `HTTP_${status}`
+          };
+        }
+
+        if (status === 403) {
+          return {
+            ok: false,
+            healthy: false,
+            image_status: IMAGE_STATUS.BLOCKED_BY_SOURCE,
+            http_status: 403,
+            content_type: contentType || null,
+            checked_at: checkedAt,
+            reason: 'HTTP_403_BLOCKED_BY_SOURCE'
+          };
+        }
+
+        if (status === 429 || status >= 500) {
+          if (attempt < maxRetries) continue;
+          return {
+            ok: false,
+            healthy: false,
+            image_status: IMAGE_STATUS.TRANSIENT_FAILURE,
+            retryable: true,
+            http_status: status,
+            content_type: contentType || null,
+            checked_at: checkedAt,
+            reason: `HTTP_${status}_TRANSIENT`
+          };
+        }
+
+        if (status >= 200 && status < 300) {
+          if (!normCt.startsWith('image/')) {
+            return {
+              ok: false,
+              healthy: false,
+              image_status: IMAGE_STATUS.BROKEN,
+              http_status: status,
+              content_type: contentType || null,
+              checked_at: checkedAt,
+              reason: `INVALID_CONTENT_TYPE:${contentType || 'missing'}`
+            };
+          }
+          const srcType = (options.sourceType || '').toUpperCase();
+          const isAuthorizedSeller = srcType.includes('TICKET') || urlCheck.normalized_url.includes('loket.com');
+          return {
+            ok: true,
+            healthy: true,
+            image_status: isAuthorizedSeller ? IMAGE_STATUS.VERIFIED_AUTHORIZED_SELLER : IMAGE_STATUS.VERIFIED_OFFICIAL,
+            http_status: status,
+            content_type: contentType,
+            verified_at: checkedAt,
+            checked_at: checkedAt,
+            reason: null
+          };
+        }
+
+        return {
+          ok: false,
+          healthy: false,
+          image_status: IMAGE_STATUS.BROKEN,
+          http_status: status,
+          content_type: contentType || null,
+          checked_at: checkedAt,
+          reason: `HTTP_${status}`
+        };
+      } catch (err) {
+        clearTimeout(timer);
+        if (attempt < maxRetries) continue;
+        return {
+          ok: false,
+          healthy: false,
+          image_status: IMAGE_STATUS.TRANSIENT_FAILURE,
+          retryable: true,
+          http_status: null,
+          content_type: null,
+          checked_at: checkedAt,
+          reason: err.name === 'AbortError' ? 'TIMEOUT' : (err.code || err.message || 'NETWORK_ERROR')
+        };
+      }
+    }
+  }
+
+  /**
+   * Applies an image health check result to an event record.
+   * CRITICAL DECOUPLING INVARIANT:
+   * Image failure NEVER marks an event CANCELLED, ARCHIVED, or UNVERIFIED!
+   */
+  static applyImageHealthResult(event, healthResult) {
+    if (!event || !healthResult) return event;
+    event.image_last_checked_at = healthResult.checked_at || new Date().toISOString();
+
+    if (healthResult.healthy || healthResult.ok) {
+      event.image_status = healthResult.image_status;
+      event.image_verified = true;
+      event.image_verified_at = healthResult.verified_at || event.image_last_checked_at;
+      event.is_fallback_image = false;
+      event.image_health_reason = null;
+      return event;
+    }
+
+    if (healthResult.image_status === IMAGE_STATUS.BROKEN || healthResult.image_status === IMAGE_STATUS.BLOCKED_BY_SOURCE) {
+      if (event.image_url) {
+        event.broken_image_url = event.image_url;
+      }
+      event.image_status = healthResult.image_status;
+      event.image_verified = false;
+      event.image_verified_at = null;
+      event.image_url = null;
+      event.thumbnail_url = null;
+      event.is_fallback_image = true;
+      event.image_health_reason = healthResult.reason;
+    } else if (healthResult.image_status === IMAGE_STATUS.TRANSIENT_FAILURE) {
+      // Preserve existing image_url during transient network failure; record diagnostic reason only
+      event.image_health_reason = healthResult.reason;
+      event.image_health_warning = 'TRANSIENT_FAILURE';
+    }
+    return event;
   }
 }
 

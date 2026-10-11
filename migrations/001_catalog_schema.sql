@@ -93,3 +93,17 @@ CREATE TABLE IF NOT EXISTS reconciliation_runs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_reconciliation_runs_started ON reconciliation_runs(started_at DESC);
+
+-- 5. Discovery Scheduler State (DB-Backed Lease Lock & Resumable Source/Page Cursor)
+CREATE TABLE IF NOT EXISTS discovery_scheduler_state (
+  job_name VARCHAR(64) PRIMARY KEY,
+  source_cursor INT NOT NULL DEFAULT 0,
+  page_cursor INT NOT NULL DEFAULT 1,
+  last_source_id VARCHAR(64),
+  lease_owner VARCHAR(128),
+  lease_acquired_at TIMESTAMPTZ,
+  lease_expires_at TIMESTAMPTZ,
+  last_run_id VARCHAR(64),
+  last_status VARCHAR(32),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

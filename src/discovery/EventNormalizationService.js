@@ -804,6 +804,8 @@ class EventNormalizationService {
     title = title.replace(/^(Pegadaian\s+Liga\s+2\s*[:\-\—]\s*)/i, '');
     title = title.replace(/^(Djarum\s+Superliga\s*[:\-\—]\s*)/i, '');
     title = title.replace(/^(Kapal\s+Api\s*[:\-\—]\s*)/i, '');
+    title = title.replace(/^(?:[A-Za-z0-9\s&.\-]{2,35}\s+Presents\s*[:\-\—]\s*)/i, '');
+    title = title.replace(/^(?:Presented\s+by\s+[A-Za-z0-9\s&.\-]{2,35}\s*[:\-\—]\s*)/i, '');
     title = title.replace(/\s*\(Matchday\s*\d+\)/i, '');
     title = title.replace(/\s*-\s*Live\s*In\s*Jakarta/i, '');
     title = title.replace(/\s*-\s*Official\s*Ticket/i, '');
@@ -821,6 +823,36 @@ class EventNormalizationService {
     }
 
     return title;
+  }
+
+  /**
+   * Normalizes a title specifically for cross-source entity deduplication comparison:
+   * - Expands/canonicalizes festival acronyms (DWP <-> Djakarta Warehouse Project, Synchronize Fest <-> Synchronize Festival, JJF <-> Java Jazz Festival)
+   * - Strips tour/city suffix noise ("Live in Jakarta", "in Jakarta", "Special Tour") while preserving year & residency numbers
+   */
+  static normalizeCanonicalComparisonTitle(rawTitle) {
+    if (!rawTitle) return '';
+    let t = this.normalizeTitle(rawTitle)
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+    // Canonicalize Indonesian festival acronyms
+    if (/\bdjakarta\s+warehouse\s+project\b|\bdwp\b/i.test(t)) {
+      t = t.replace(/\bdjakarta\s+warehouse\s+project\b/gi, 'djakarta warehouse project dwp')
+           .replace(/\(\s*dwp\s*\)/gi, 'dwp');
+    }
+    t = t.replace(/\bsynchronize\s+fest(?:ival)?\b/gi, 'synchronize festival');
+    t = t.replace(/\bjoyland\s+fest(?:ival)?\b/gi, 'joyland festival');
+    t = t.replace(/\blalala\s+fest(?:ival)?\b/gi, 'lalala festival');
+    t = t.replace(/\bjava\s+jazz\s+fest(?:ival)?\b|\bjjf\b/gi, 'java jazz festival');
+    t = t.replace(/\bpestapora(?:\s+fest(?:ival)?)?\b/gi, 'pestapora festival');
+
+    // Remove city / tour marketing filler tokens for comparison
+    t = t.replace(/\b(?:live\s+in|in)\s+(?:jakarta|bandung|surabaya|yogyakarta|jogja|bali|medan|makassar|semarang|tangerang|indonesia)\b/gi, ' ');
+    t = t.replace(/\b(?:jakarta|bandung|surabaya|yogyakarta|jogja|bali|medan|makassar|semarang|tangerang)\b/gi, ' ');
+    t = t.replace(/\b(?:special\s+tour|world\s+tour|asia\s+tour|tour|concert|konser|official\s+tickets?)\b/gi, ' ');
+    t = t.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    return t;
   }
 
   /**
@@ -1273,7 +1305,16 @@ class EventNormalizationService {
       'ye': ['kanye west', 'kanye', 'ye'],
       'maroon 5': ['maroon 5', 'maroon5'],
       'lany': ['lany'],
-      'dewa 19': ['dewa 19', 'dewa', 'dewa19']
+      'dewa 19': ['dewa 19', 'dewa', 'dewa19'],
+      'dwp': ['dwp', 'djakarta warehouse project', 'dwp 2026 lineup'],
+      'djakarta warehouse project': ['dwp', 'djakarta warehouse project', 'dwp 2026 lineup'],
+      'synchronize': ['synchronize', 'synchronize fest', 'synchronize festival', 'synchronize fest lineup'],
+      'joyland': ['joyland', 'joyland fest', 'joyland festival', 'joyland 2026 lineup'],
+      'lalala': ['lalala', 'lalala fest', 'lalala festival', 'olivia dean'],
+      'abdur arsyad': ['abdur arsyad', 'kontras'],
+      'pandji pragiwaksono': ['pandji pragiwaksono', 'pandji', 'mens rea'],
+      'atsuko okatsuka': ['atsuko okatsuka', 'atsuko'],
+      'morgan jay': ['morgan jay']
     };
 
     for (const [key, aliases] of Object.entries(aliasMap)) {

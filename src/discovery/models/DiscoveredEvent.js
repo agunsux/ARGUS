@@ -122,17 +122,29 @@ class DiscoveredEvent {
     this.is_verified = data.is_verified === true;
 
     // Provenance Graph
+    this.source_origin = data.source_origin || data.provenance?.source_origin || 'LIVE_OR_ADAPTER_DISCOVERED';
+    this.discovery_method = data.discovery_method || data.provenance?.discovery_method || 'ADAPTER_DISCOVERY';
     this.provenance = {
       official_source: data.provenance?.official_source || this.official_event_url,
       ticket_source: data.provenance?.ticket_source || this.official_ticket_url,
       promoter_source: data.provenance?.promoter_source || (this.organizer_name ? `promoter:${this.organizer_name}` : null),
       venue_source: data.provenance?.venue_source || (this.venue_name ? `venue:${this.venue_name}` : null),
       discovery_source: data.provenance?.discovery_source || this.source_id,
+      source_origin: this.source_origin,
+      discovery_method: this.discovery_method,
       notes: data.provenance?.notes || []
     };
 
-    // Images / Banners
+    // Images / Banners & Visual Provenance
     this.image_url = data.image_url || data.banner_url || data.poster_url || null;
+    this.thumbnail_url = data.thumbnail_url || this.image_url || null;
+    const hasOfficialLink = Boolean(this.official_event_url || this.official_ticket_url);
+    const isTicketingSource = this.source_id === 'src-loket' || (this.official_ticketing_provider && !this.official_event_url);
+    this.image_source_url = data.image_source_url || (this.image_url ? (this.official_event_url || this.official_ticket_url || null) : null);
+    this.image_source_type = data.image_source_type || (this.image_url ? (isTicketingSource ? 'OFFICIAL_TICKETING' : 'OFFICIAL_EVENT_WEB') : 'NONE');
+    this.image_status = data.image_status || (this.image_url ? (isTicketingSource ? 'VERIFIED_AUTHORIZED_SELLER' : 'VERIFIED_OFFICIAL') : (hasOfficialLink ? 'SOURCE_LINK_ONLY' : 'MISSING'));
+    this.image_credit = data.image_credit || data.image_attribution || (this.image_url ? (this.organizer_name || this.official_ticketing_provider || 'Official Source') : null);
+    this.image_attribution = data.image_attribution || this.image_credit || null;
     this.evidence_hash = data.evidence_hash || this.computeEvidenceHash();
 
     // Scoring & Priority
@@ -142,6 +154,7 @@ class DiscoveredEvent {
 
     this.discovered_at = data.discovered_at || new Date().toISOString();
     this.verified_at = data.verified_at || null;
+    this.image_verified_at = data.image_verified_at || (this.image_url ? (this.verified_at || this.discovered_at) : null);
   }
 
   normalizeCategory(rawCategory, title = '', organizer = '') {
@@ -190,8 +203,14 @@ class DiscoveredEvent {
     }
 
     // "Mulai Dari" Starting Price Partial:
-    // Only triggered when upper bound is unknown (open-ended starting price) or explicitly flagged as partial
-    if (this.is_partial_price || this.starting_from || (this.price_min !== null && (this.price_max === null || this.has_more_tiers))) {
+    // Triggered when upper bound is unknown (open-ended starting price), explicitly flagged as partial,
+    // or a single starting price >= 200k is reported without multi-tier breakdown for high-tier categories.
+    const isSingleStartingPriceTrap = this.price_min !== null &&
+      this.price_min >= 200000 &&
+      (this.price_max === null || this.price_max === this.price_min) &&
+      (!Array.isArray(this.price_tiers) || this.price_tiers.length <= 1);
+
+    if (this.is_partial_price || this.starting_from || this.has_more_tiers || (this.price_min !== null && this.price_max === null) || isSingleStartingPriceTrap) {
       if (['CONCERT', 'FESTIVAL', 'COMEDY', 'SPORTS', 'THEATER', 'FANMEET'].includes(this.category)) {
         return PRICE_STATUS.PRICE_PARTIAL;
       }
@@ -352,7 +371,15 @@ class DiscoveredEvent {
       lifecycle_status: 'UPCOMING',
       archive_status: 'ACTIVE',
       public_visibility: true,
-      homepage_visibility: this.quality_grade === QUALITY_GRADES.A || this.priority === EVENT_PRIORITY.P0,
+      homepage_visibility: Boolean(this.is_verified && (this.quality_grade === QUALITY_GRADES.A || this.quality_grade === QUALITY_GRADES.B || this.priority === EVENT_PRIORITY.P0)),
+      image_url: this.image_url,
+      thumbnail_url: this.thumbnail_url,
+      image_source_url: this.image_source_url,
+      image_source_type: this.image_source_type,
+      image_verified_at: this.image_verified_at,
+      image_status: this.image_status,
+      image_credit: this.image_credit,
+      image_attribution: this.image_attribution,
       metadata: {
         price_min: this.price_min,
         price_max: this.price_max,
@@ -369,7 +396,15 @@ class DiscoveredEvent {
         provenance: this.provenance,
         evidence_hash: this.evidence_hash,
         discovered_at: this.discovered_at,
-        verified_at: this.verified_at
+        verified_at: this.verified_at,
+        image_url: this.image_url,
+        thumbnail_url: this.thumbnail_url,
+        image_source_url: this.image_source_url,
+        image_source_type: this.image_source_type,
+        image_verified_at: this.image_verified_at,
+        image_status: this.image_status,
+        image_credit: this.image_credit,
+        image_attribution: this.image_attribution
       }
     };
   }

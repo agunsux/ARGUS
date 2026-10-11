@@ -19,6 +19,7 @@ const { canonicalRegistry } = require('../CanonicalEventRegistry');
 const { EventDeduplicationService } = require('../EventDeduplicationService');
 const { EventTemporalLifecycleEngine } = require('../EventTemporalLifecycleEngine');
 const { DiscoveredEvent, DISCOVERY_CATEGORIES, PRICE_STATUS, QUALITY_GRADES, EVENT_PRIORITY } = require('../models/DiscoveredEvent');
+const { EventVisualProvenanceService } = require('../EventVisualProvenanceService');
 const { LoketDiscoverySource } = require('./LoketDiscoverySource');
 const { OfficialEventDiscoverySource } = require('./OfficialEventDiscoverySource');
 
@@ -172,10 +173,21 @@ class MarketSupplyExpansionService {
 
       if (match.isMatch && match.canonicalEvent) {
         stats.existing_duplicates++;
-        // Check if incoming source provides richer corroborated data
+        // Check if incoming source provides richer corroborated data (including verified event image)
+        const canUpgradeImage = Boolean(
+          candidate.image_url &&
+          (
+            !match.canonicalEvent.image_url ||
+            match.canonicalEvent.image_status === 'BROKEN' ||
+            match.canonicalEvent.image_status === 'MISSING' ||
+            match.canonicalEvent.image_status === 'SOURCE_LINK_ONLY' ||
+            EventVisualProvenanceService.getImageSourcePriorityRank(candidate) > EventVisualProvenanceService.getImageSourcePriorityRank(match.canonicalEvent)
+          )
+        );
         const canUpdate = (
           (!match.canonicalEvent.official_ticket_url && candidate.official_ticket_url) ||
-          (!match.canonicalEvent.min_price && candidate.price_min)
+          (!match.canonicalEvent.min_price && candidate.price_min) ||
+          canUpgradeImage
         );
 
         if (canUpdate) {
@@ -253,7 +265,9 @@ class MarketSupplyExpansionService {
         priority: c.priority,
         grade: c.quality_grade,
         official_url: c.official_event_url,
-        ticket_url: c.official_ticket_url
+        ticket_url: c.official_ticket_url,
+        image_url: c.image_url || null,
+        image_status: c.image_status || null
       })),
       would_update: classified.would_update.map(u => ({
         title: u.candidate.canonical_name,
@@ -339,13 +353,19 @@ class MarketSupplyExpansionService {
         try {
           const existing = updateItem.existing_event;
           const candidate = updateItem.candidate;
+          const preferredImg = EventVisualProvenanceService.selectPreferredImage(existing, candidate);
 
           const patch = {
             ...existing,
             official_ticket_url: existing.official_ticket_url || candidate.official_ticket_url,
             official_ticketing_provider: existing.official_ticketing_provider || candidate.official_ticketing_provider,
             min_price: existing.min_price || candidate.price_min,
-            max_price: existing.max_price || candidate.price_max
+            max_price: existing.max_price || candidate.price_max,
+            ...preferredImg,
+            metadata: {
+              ...(existing.metadata || {}),
+              ...preferredImg
+            }
           };
 
           const updated = await repo.upsertCanonicalEvent(patch);

@@ -10,7 +10,7 @@ const { LoketAdapter } = require('../adapters/LoketAdapter');
 
 class LoketDiscoverySource extends EventDiscoverySource {
   constructor(options = {}) {
-    super('src-loket', 'Loket.com', 2);
+    super('src-loket', 'Loket.com', 1);
     this.adapter = new LoketAdapter('src-loket', options);
     this.pageSize = options.pageSize || 100;
     this.maxPages = options.maxPages || 5;
@@ -82,9 +82,15 @@ class LoketDiscoverySource extends EventDiscoverySource {
       price_max: maxPrice,
       price_source: this.sourceId,
       event_status: parsed.status || 'UPCOMING',
-      verification_status: 'PARTIALLY_VERIFIED', // Corroborated commercial ticketing
+      verification_status: 'VERIFIED', // Tier-1 Authoritative Primary Ticketing
       is_verified: true,
       image_url: parsed.image_url,
+      thumbnail_url: parsed.thumbnail_url || parsed.image_url || null,
+      image_source_url: parsed.image_source_url || parsed.official_ticket_url || parsed.source_url || null,
+      image_source_type: parsed.image_source_type || (parsed.image_url ? 'OFFICIAL_TICKETING' : 'NONE'),
+      image_status: parsed.image_status || (parsed.image_url ? 'VERIFIED_AUTHORIZED_SELLER' : 'SOURCE_LINK_ONLY'),
+      image_credit: parsed.image_credit || (parsed.organizer_name ? `${parsed.organizer_name} via LOKET` : 'LOKET'),
+      image_verified_at: parsed.image_url ? (parsed.sourceFetchedAt || new Date().toISOString()) : null,
       provenance: {
         official_source: parsed.official_event_url,
         ticket_source: parsed.official_ticket_url,

@@ -17,6 +17,7 @@ const { sourceRegistry } = require('./SourceRegistry');
 const { demandCapture } = require('./DemandCaptureService');
 const { AdminEventControlService } = require('./AdminEventControlService');
 const { EventNormalizationService } = require('./EventNormalizationService');
+const { EventDeduplicationService } = require('./EventDeduplicationService');
 const { EventSEOService } = require('./EventSEOService');
 const { ListingService } = require('../services/listingService');
 const { apmiPromoterRegistry } = require('./ApmiPromoterRegistry');
@@ -126,7 +127,9 @@ function getActiveResaleListings(eventId) {
 // Ensure in-memory canonical registry is hydrated from repository (Postgres or fallback)
 let hydrationPromise = null;
 async function ensureRegistryHydrated(req, res, next) {
-  if (canonicalRegistry.getAllEvents().length === 0) {
+  const needsHydration = canonicalRegistry.getAllEvents().length === 0 ||
+    (!canonicalRegistry._hydratedFromRepo && Boolean(process.env.DATABASE_URL) && process.env.NODE_ENV !== 'test');
+  if (needsHydration) {
     if (!hydrationPromise) {
       hydrationPromise = canonicalRegistry.hydrateFromRepository().finally(() => {
         hydrationPromise = null;
@@ -183,8 +186,8 @@ router.get('/events/:slug', (req, res, next) => {
     const isPast = !EventTemporalLifecycleEngine.isEventUpcoming(event, now);
     const isFinished = ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
                        ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus);
-    const isVerified = event.is_verified === true &&
-      (event.verification_status === 'VERIFIED' || event.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+    const isVerified = event.is_verified === true && event.public_visibility !== false &&
+      ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status);
     const hasProvenance = Boolean(event.source_url && event.evidence_hash && event.verified_at);
 
     if (isCancelled || isPast || isFinished || !isVerified || !hasProvenance) {
@@ -198,13 +201,22 @@ router.get('/events/:slug', (req, res, next) => {
     }
   }
 
+  // Corroborate with any duplicate canonical record in registry (e.g. snapshot vs LOKET live) so detail page gets full verified image provenance
+  const allCandidates = canonicalRegistry.getAllEvents().filter(e => e.event_id !== event.event_id);
+  const dupMatch = EventDeduplicationService.findDuplicateCandidate(event, allCandidates);
+  if (dupMatch && dupMatch.isMatch && dupMatch.canonicalEvent) {
+    event = EventDeduplicationService.mergeCanonicalPair(event, dupMatch.canonicalEvent);
+  }
+  const resolvedDetailImg = EventVisualProvenanceService.resolveCatalogEventImageProvenance(event, event.metadata || {});
+  event = { ...event, ...resolvedDetailImg };
+
   // Active resale listings attached to this canonical event
   const listings = getActiveResaleListings(event.event_id);
   const related = canonicalRegistry.getAllEvents().filter(e => {
     if (e.city !== event.city || e.event_id === event.event_id) return false;
     if (!showAllOrPast) {
       if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
-      if (e.is_verified !== true || (e.verification_status !== 'VERIFIED' && e.verification_status !== 'PRIMARY_SOURCE_VERIFIED')) return false;
+      if (e.is_verified !== true || e.public_visibility === false || !['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(e.verification_status)) return false;
       if (!Boolean(e.source_url && e.evidence_hash && e.verified_at)) return false;
     }
     return true;
@@ -213,6 +225,31 @@ router.get('/events/:slug', (req, res, next) => {
   const html = EventSEOService.renderEventPageHtml(event, listings, related);
   res.type('html').send(html);
 });
+
+/**
+ * Helper to deduplicate public upcoming events and resolve verified image provenance consistently
+ * across GET /events, GET /api/discovery/events, and GET /api/events/home-feed.
+ */
+function deduplicateAndEnrichPublicEvents(events) {
+  const dedupedPublicEvents = [];
+  for (const rawCandidate of events) {
+    const resolvedImg = EventVisualProvenanceService.resolveCatalogEventImageProvenance(rawCandidate, rawCandidate.metadata || {});
+    const candidate = { ...rawCandidate, ...resolvedImg };
+    const dupMatch = EventDeduplicationService.findDuplicateCandidate(candidate, dedupedPublicEvents);
+    if (dupMatch && dupMatch.isMatch && dupMatch.canonicalEvent) {
+      const existing = dupMatch.canonicalEvent;
+      const idx = dedupedPublicEvents.indexOf(existing);
+      if (idx !== -1) {
+        const merged = EventDeduplicationService.mergeCanonicalPair(existing, candidate);
+        merged.corroborated_event_ids = [existing.event_id, candidate.event_id];
+        dedupedPublicEvents[idx] = merged;
+      }
+    } else {
+      dedupedPublicEvents.push(candidate);
+    }
+  }
+  return dedupedPublicEvents;
+}
 
 /**
  * GET /events
@@ -257,8 +294,8 @@ router.get('/events', (req, res) => {
       if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
       if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
           ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
-      const isVerified = e.is_verified === true &&
-        (e.verification_status === 'VERIFIED' || e.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+      const isVerified = e.is_verified === true && e.public_visibility !== false &&
+        ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(e.verification_status);
       const hasProvenance = Boolean(e.source_url && e.evidence_hash && e.verified_at);
       if (!isVerified || !hasProvenance) return false;
       if (status && status.trim()) {
@@ -267,11 +304,16 @@ router.get('/events', (req, res) => {
       }
       return true;
     });
+    allEvents = deduplicateAndEnrichPublicEvents(allEvents);
   } else {
     if (status && status.trim()) {
       const qStatus = status.toUpperCase();
       allEvents = allEvents.filter(e => (e.status || '').toUpperCase() === qStatus || (e.lifecycle_status || '').toUpperCase() === qStatus);
     }
+    allEvents = allEvents.map(e => ({
+      ...e,
+      ...EventVisualProvenanceService.resolveCatalogEventImageProvenance(e, e.metadata || {})
+    }));
   }
 
   // Sort upcoming first
@@ -286,10 +328,23 @@ router.get('/events', (req, res) => {
   const itemsHtml = allEvents.map(e => {
     const activeListings = getActiveResaleListings(e.event_id);
     const minPrice = activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null;
+    const hasVerifiedImg = Boolean(e.image_url && e.is_fallback_image !== true && e.image_status !== 'FALLBACK' && e.image_status !== 'BROKEN');
+    const altText = `${e.canonical_name} — ${e.venue_name}, ${e.city}`.replace(/"/g, '&quot;');
+    const officialUrl = e.official_ticket_url || e.official_event_url || e.source_url || null;
 
     return `
-      <div class="event-card-item" style="background:#131d31; border:1px solid #1e293b; border-radius:10px; padding:20px; display:flex; flex-direction:column; justify-content:space-between;">
+      <div class="event-card-item" data-event-id="${e.event_id}" data-image-status="${e.image_status || (hasVerifiedImg ? 'VERIFIED_AUTHORIZED_SELLER' : 'SOURCE_LINK_ONLY')}" style="background:#131d31; border:1px solid #1e293b; border-radius:10px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
         <div>
+          <div class="catalog-card-media" style="position:relative; height:168px; margin:-20px -20px 14px -20px; border-bottom:1px solid #1e293b; overflow:hidden; background:#0b1120;">
+            ${hasVerifiedImg ? `
+              <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+            ` : ''}
+            <div class="catalog-card-fallback" style="display:${hasVerifiedImg ? 'none' : 'flex'}; width:100%; height:100%; align-items:center; justify-content:center; flex-direction:column; gap:6px; background:linear-gradient(145deg,#131d31,#0b1120); color:#94a3b8; font-size:12px; padding:12px; text-align:center;">
+              <i class="fa-solid fa-ticket" style="font-size:20px; color:#38bdf8;"></i>
+              <span style="font-weight:600; color:#cbd5e1;">Poster Resmi Belum Tersedia</span>
+              <span style="font-size:11px; color:#64748b;">Terverifikasi via Sumber Resmi</span>
+            </div>
+          </div>
           <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
             <span class="badge badge-sm">${e.event_type || e.category}</span>
             <span style="font-size:12px; color:#38bdf8;"><i class="fa-solid fa-location-dot"></i> ${e.city}</span>
@@ -300,13 +355,16 @@ router.get('/events', (req, res) => {
             <div><i class="fa-solid fa-building"></i> ${e.venue_name}</div>
           </div>
         </div>
-        <div style="border-top:1px solid #1e293b; padding-top:14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="border-top:1px solid #1e293b; padding-top:14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
           <div>
             ${activeListings.length > 0 ? 
               `<span style="color:#10b981; font-weight:700; font-size:13px;"><i class="fa-solid fa-ticket"></i> ${activeListings.length} Tiket Resale (Rp ${minPrice.toLocaleString('id-ID')})</span>` : 
-              `<span style="color:#64748b; font-size:12px;">Tiket Resmi Tersedia</span>`}
+              `<span style="color:#64748b; font-size:12px;">Tiket Resmi Tersedia${e.min_price ? ` · Mulai Rp ${Number(e.min_price).toLocaleString('id-ID')}` : ''}</span>`}
           </div>
-          <a href="/events/${e.slug}" class="btn btn-sm btn-primary">Lihat Event</a>
+          <div style="display:flex; gap:6px; align-items:center;">
+            ${officialUrl ? `<a href="${officialUrl}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-sm btn-secondary" style="font-size:11px; padding:5px 8px;">Sumber Resmi</a>` : ''}
+            <a href="/events/${e.slug}" class="btn btn-sm btn-primary">Lihat Event</a>
+          </div>
         </div>
       </div>
     `;
@@ -749,8 +807,8 @@ function handleGetEvents(req, res) {
       if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
       if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
           ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
-      const isVerified = e.is_verified === true &&
-        (e.verification_status === 'VERIFIED' || e.verification_status === 'PRIMARY_SOURCE_VERIFIED');
+      const isVerified = e.is_verified === true && e.public_visibility !== false &&
+        ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(e.verification_status);
       const hasProvenance = Boolean(e.source_url && e.evidence_hash && e.verified_at);
       if (!isVerified || !hasProvenance) return false;
       if (status && status.trim()) {
@@ -759,11 +817,20 @@ function handleGetEvents(req, res) {
       }
       return true;
     });
+
+    // W3 Cross-Source Public Feed Deduplication & Image Provenance Resolution:
+    // Ensure pre-existing cross-source duplicate rows (e.g. snapshot vs live LOKET with differing title formatting)
+    // collapse into a single public card with combined multi-source provenance and highest-priority verified image.
+    allEvents = deduplicateAndEnrichPublicEvents(allEvents);
   } else {
     if (status && status.trim()) {
       const qStatus = status.toUpperCase();
       allEvents = allEvents.filter(e => (e.verification_status || '').toUpperCase() === qStatus || (e.status || '').toUpperCase() === qStatus || (e.lifecycle_status || '').toUpperCase() === qStatus);
     }
+    allEvents = allEvents.map(e => ({
+      ...e,
+      ...EventVisualProvenanceService.resolveCatalogEventImageProvenance(e, e.metadata || {})
+    }));
   }
 
   // Resolve user coordinates for spatial distance calculation
@@ -943,18 +1010,8 @@ router.get('/api/events/home-feed', (req, res) => {
     return EventTemporalLifecycleEngine.isEventHomepageEligible(e, now);
   });
 
-  // Guarantee 1 concert = 1 canonical homepage card (Zero Duplicate Guarantee)
-  const seenKeys = new Set();
-  allEvents = allEvents.filter(e => {
-    const normName = (e.canonical_name || e.title || e.name || '').toLowerCase().trim();
-    const date = e.start_date || (e.start_datetime ? e.start_datetime.substring(0, 10) : e.date) || '';
-    const venue = (e.venue_name || e.venue || '').toLowerCase().trim();
-    const city = (e.city || e.venue_city || '').toLowerCase().trim();
-    const key = `${normName}::${venue}::${city}::${date}`;
-    if (seenKeys.has(key)) return false;
-    seenKeys.add(key);
-    return true;
-  });
+  // Guarantee 1 concert = 1 canonical homepage card (Zero Duplicate Guarantee + Image Priority Preservation)
+  allEvents = deduplicateAndEnrichPublicEvents(allEvents);
 
   // Country filter if supplied
   if (country && country.trim()) {
@@ -988,17 +1045,18 @@ router.get('/api/events/home-feed', (req, res) => {
   function formatSection13(e) {
     const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(e);
     const activeListings = getActiveResaleListings(e.event_id || e.id);
+    const resolvedImg = EventVisualProvenanceService.resolveCatalogEventImageProvenance(e, e.metadata || {});
 
     // Image Verification Gate check for homepage display
-    const rawImg = e.image_url || e.event_image || null;
+    const rawImg = resolvedImg.image_url || null;
     let safeImg = rawImg;
-    let isFallbackImg = e.is_fallback_image || e.is_fallback || false;
-    let imgType = e.image_type || 'OFFICIAL_EVENT_POSTER';
-    let imgConf = e.image_confidence || 'HIGH';
+    let isFallbackImg = resolvedImg.is_fallback_image || e.is_fallback || !rawImg;
+    let imgType = e.image_type || (rawImg ? 'OFFICIAL_EVENT_POSTER' : 'GENERIC_FALLBACK');
+    let imgConf = e.image_confidence || (rawImg ? 'HIGH' : 'UNKNOWN');
 
     if (rawImg) {
       const wrongCheck = EventVisualProvenanceService.detectWrongImage(rawImg, e);
-      if (wrongCheck.is_wrong || e.image_verified === false) {
+      if (wrongCheck.is_wrong || resolvedImg.image_verified === false) {
         safeImg = null;
         isFallbackImg = true;
         imgType = 'GENERIC_FALLBACK';
@@ -1012,6 +1070,7 @@ router.get('/api/events/home-feed', (req, res) => {
 
     return {
       ...e,
+      ...resolvedImg,
       event_id: e.event_id || e.id,
       title: e.canonical_name || e.title || e.name,
       start_at: temporal.event_start_at,
@@ -1024,6 +1083,7 @@ router.get('/api/events/home-feed', (req, res) => {
       official_event_url: e.event_official_url || e.official_event_url || (e.sources && e.sources[0]?.source_url) || 'https://tikum.id',
       official_ticketing_url: e.ticketing_official_url || e.official_ticket_url || 'https://tikum.id',
       image_url: safeImg,
+      thumbnail_url: safeImg ? (resolvedImg.thumbnail_url || safeImg) : null,
       is_fallback_image: isFallbackImg,
       image_type: imgType,
       image_confidence: imgConf,
@@ -1185,7 +1245,7 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
   const showAllOrPast = include_past === 'true' || scope === 'all' || scope === 'admin';
   const now = new Date();
 
-  const event = canonicalRegistry.getEventBySlug(param) || canonicalRegistry.getEventById(param);
+  let event = canonicalRegistry.getEventBySlug(param) || canonicalRegistry.getEventById(param);
 
   if (!event) {
     return res.status(404).json({ error: 'Event not found in Canonical Registry', code: 'EVENT_NOT_FOUND' });
@@ -1198,14 +1258,22 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
     const isPast = !EventTemporalLifecycleEngine.isEventUpcoming(event, now);
     const isFinished = ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
                        ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus);
-    const isVerified = event.is_verified === true &&
-      (event.verification_status === 'VERIFIED' || event.verification_status === 'PRIMARY_SOURCE_VERIFIED');
-    const hasProvenance = Boolean(event.source_url && event.evidence_hash && event.verified_at);
+    const isVerified = event.is_verified === true && event.public_visibility !== false &&
+      ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status);
+    const hasProvenance = Boolean(event.source_url && e_hasProvenance(event));
 
     if (isCancelled || isPast || isFinished || !isVerified || !hasProvenance) {
       return res.status(404).json({ error: 'Event is unverified, expired, or unavailable for public discovery', code: 'EVENT_NOT_AVAILABLE' });
     }
   }
+
+  // Corroborate with any duplicate canonical record in registry and resolve image provenance
+  const allCandidates = canonicalRegistry.getAllEvents().filter(e => e.event_id !== event.event_id);
+  const dupMatch = EventDeduplicationService.findDuplicateCandidate(event, allCandidates);
+  if (dupMatch && dupMatch.isMatch && dupMatch.canonicalEvent) {
+    event = EventDeduplicationService.mergeCanonicalPair(event, dupMatch.canonicalEvent);
+  }
+  event = { ...event, ...EventVisualProvenanceService.resolveCatalogEventImageProvenance(event, event.metadata || {}) };
 
   const activeListings = getActiveResaleListings(event.event_id);
   const demands = demandCapture.getDemandForEvent(event.event_id);
@@ -1222,6 +1290,10 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
     }
   });
 });
+
+function e_hasProvenance(event) {
+  return Boolean(event && event.source_url && event.evidence_hash && event.verified_at);
+}
 
 /**
  * POST /api/discovery/demand
@@ -1960,6 +2032,34 @@ router.get('/api/discovery/admin/inventory-report', (req, res) => {
 });
 
 /**
+ * GET /api/discovery/reconciliation/status
+ * Returns reconciliation status, canonical inventory counts, and durable scheduler state.
+ */
+router.get('/api/discovery/reconciliation/status', async (req, res) => {
+  try {
+    const now = (req.query.now || req.headers['x-simulate-clock'])
+      ? new Date(req.query.now || req.headers['x-simulate-clock'])
+      : new Date();
+    const report = inventoryReconciliationService.getInventoryReport(now);
+    const catalogRepo = getCatalogRepository();
+    const schedulerState = typeof catalogRepo.getJobSchedulerState === 'function'
+      ? await catalogRepo.getJobSchedulerState('CHUNKED_DISCOVERY_SYNC').catch(() => null)
+      : null;
+
+    res.json({
+      success: true,
+      status: 'READY',
+      counts: report.counts,
+      source_breakdown: report.source_breakdown,
+      scheduler_state: schedulerState,
+      timestamp: now.toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * GET/POST /api/discovery/lifecycle/cron
  * Also mapped to /api/cron/lifecycle
  * Phase 14: Vercel Cron Endpoint: Automatic Event Lifecycle Reconciler (H+3 Archive Engine)
@@ -2380,8 +2480,8 @@ router.get('/api/discovery/hero-concerts', async (req, res) => {
         organizer: 'Boss Creator',
         officialUrl: 'https://bosscreator.id/',
         ticketUrl: 'https://www.tiket.com/to-do/king-nassar-lost-in-the-jungle',
-        posterUrl: '/assets/placeholder-nassar.svg',
-        imageCredit: 'King Nassar Concert: Lost In The Jungle / Boss Creator',
+        posterUrl: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
+        imageCredit: 'King Nassar Concert: Lost In The Jungle / Boss Creator & VINDES',
         primaryTicketStatus: 'SOLD_OUT'
       }));
     }

@@ -1861,7 +1861,7 @@ function bootstrapAdminUser() {
  * BBO observations) into verified canonical events through the real ingestion
  * pipeline. Strictly gated so deterministic test baselines are unaffected.
  */
-async function seedOfficialEventSupply() {
+async function seedOfficialEventSupply(options = {}) {
   try {
     const { RealSourceSeedService } = require('./discovery/RealSourceSeedService');
     if (!RealSourceSeedService.isEnabled()) {
@@ -1875,6 +1875,13 @@ async function seedOfficialEventSupply() {
     const hydration = await canonicalRegistry.hydrateFromRepository(repo);
     if (hydration.hydrated && hydration.count > 0) {
       canonicalRegistry.syncToState(state.events);
+      if (!options.forceSeed) {
+        return {
+          hydrated: true,
+          count: hydration.count,
+          skipped_seed_on_cold_start: true
+        };
+      }
     }
 
     const service = new RealSourceSeedService();

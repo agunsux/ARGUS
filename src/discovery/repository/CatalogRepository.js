@@ -68,6 +68,18 @@ class CatalogRepository {
     throw new Error('releaseAdvisoryLock() must be implemented');
   }
 
+  async acquireJobLease(jobName, leaseOwner, ttlMs = 55000) {
+    throw new Error('acquireJobLease() must be implemented');
+  }
+
+  async updateJobCursorAndReleaseLease(jobName, leaseOwner, statePatch = {}) {
+    throw new Error('updateJobCursorAndReleaseLease() must be implemented');
+  }
+
+  async getJobSchedulerState(jobName) {
+    throw new Error('getJobSchedulerState() must be implemented');
+  }
+
   isDegraded() {
     return false;
   }

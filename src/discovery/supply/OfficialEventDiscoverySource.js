@@ -71,6 +71,10 @@ class OfficialEventDiscoverySource extends EventDiscoverySource {
         verification_status: 'PRIMARY_SOURCE_VERIFIED',
         is_verified: true,
         image_url: 'https://lalalafest.com/images/og-image.webp',
+        image_source_url: 'https://lalalafest.com/jakarta',
+        image_source_type: 'OFFICIAL_EVENT_WEB',
+        image_status: 'VERIFIED_OFFICIAL',
+        image_credit: 'THE GROUP / LaLaLa Festival',
         provenance: {
           official_source: 'https://lalalafest.com/jakarta',
           ticket_source: 'https://www.loket.com',
@@ -117,7 +121,11 @@ class OfficialEventDiscoverySource extends EventDiscoverySource {
         event_status: 'UPCOMING',
         verification_status: 'PRIMARY_SOURCE_VERIFIED',
         is_verified: true,
-        image_url: 'https://themandalikagp.com/assets/banner-motogp.jpg',
+        image_url: 'https://cdn.themandalikagp.com/storage/content/2025/05/22/1747884527_82a621adba2b63c248f3.webp',
+        image_source_url: 'https://www.themandalikagp.com',
+        image_source_type: 'OFFICIAL_EVENT_WEB',
+        image_status: 'VERIFIED_OFFICIAL',
+        image_credit: 'MGPA & Dorna Sports',
         provenance: {
           official_source: 'https://themandalikagp.com',
           ticket_source: 'https://gpticket.themandalikagp.com',
@@ -368,7 +376,11 @@ class OfficialEventDiscoverySource extends EventDiscoverySource {
         event_status: 'UPCOMING',
         verification_status: 'PRIMARY_SOURCE_VERIFIED',
         is_verified: true,
-        image_url: 'https://dwpfest.com/og-dwp.jpg',
+        image_url: 'https://dwpfest.com/icons/richlink.jpg',
+        image_source_url: 'https://dwpfest.com',
+        image_source_type: 'OFFICIAL_EVENT_WEB',
+        image_status: 'VERIFIED_OFFICIAL',
+        image_credit: 'Djakarta Warehouse Project / Ismaya Live',
         provenance: {
           official_source: 'https://dwpfest.com',
           ticket_source: 'https://www.loket.com',
@@ -455,7 +467,11 @@ class OfficialEventDiscoverySource extends EventDiscoverySource {
         event_status: 'UPCOMING',
         verification_status: 'PRIMARY_SOURCE_VERIFIED',
         is_verified: true,
-        image_url: null,
+        image_url: 'https://synchronizefestival.com/assets/images/main.png',
+        image_source_url: 'https://synchronizefestival.com',
+        image_source_type: 'OFFICIAL_EVENT_WEB',
+        image_status: 'VERIFIED_OFFICIAL',
+        image_credit: 'Synchronize Festival / Demajors',
         provenance: {
           official_source: 'https://synchronizefestival.com',
           ticket_source: 'https://www.loket.com',
@@ -464,14 +480,79 @@ class OfficialEventDiscoverySource extends EventDiscoverySource {
           discovery_source: 'src-official-synchronize',
           notes: ['Verified via demajors / Dyandra official announcement']
         }
+      },
+
+      // 11. King Nassar Concert: Lost In The Jungle (Boss Creator & VINDES)
+      {
+        source_id: 'src-promoter-boss-creator',
+        source_event_id: 'event-nassar-lost-in-the-jungle-2026',
+        title: 'King Nassar: Lost In The Jungle',
+        canonical_name: 'King Nassar: Lost In The Jungle',
+        category: DISCOVERY_CATEGORIES.CONCERT,
+        artists: ['King Nassar', 'Erwin Gutawa Orchestra'],
+        artist: 'King Nassar',
+        start_date: '2026-11-07',
+        end_date: '2026-11-07',
+        start_datetime: '2026-11-07T19:00:00+07:00',
+        end_datetime: '2026-11-07T22:30:00+07:00',
+        timezone: 'Asia/Jakarta',
+        venue_name: 'Istora Senayan Jakarta',
+        city: 'Jakarta',
+        province: 'DKI Jakarta',
+        country: 'Indonesia',
+        organizer_name: 'Boss Creator & VINDES',
+        official_event_url: 'https://bosscreator.id/',
+        official_ticket_url: 'https://www.tiket.com/to-do/king-nassar-lost-in-the-jungle',
+        official_ticketing_provider: 'Tiket.com',
+        price_currency: 'IDR',
+        price_min: 350000,
+        price_max: 1500000,
+        price_tiers: [
+          { name: 'Tribun Regular', price: 350000, status: 'SOLD_OUT' },
+          { name: 'Festival Standing', price: 650000, status: 'SOLD_OUT' },
+          { name: 'VIP Seated', price: 1500000, status: 'SOLD_OUT' }
+        ],
+        event_status: 'UPCOMING',
+        verification_status: 'PRIMARY_SOURCE_VERIFIED',
+        is_verified: true,
+        image_url: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
+        thumbnail_url: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
+        image_source_url: 'https://bosscreator.id/',
+        image_source_type: 'OFFICIAL_PROMOTER_WEB',
+        image_status: 'VERIFIED_OFFICIAL',
+        image_credit: 'King Nassar Concert: Lost In The Jungle / Boss Creator & VINDES',
+        provenance: {
+          official_source: 'https://bosscreator.id/',
+          ticket_source: 'https://www.tiket.com/to-do/king-nassar-lost-in-the-jungle',
+          promoter_source: 'Boss Creator & VINDES',
+          venue_source: 'Istora Senayan Jakarta',
+          discovery_source: 'src-promoter-boss-creator',
+          notes: ['Verified via Boss Creator & VINDES official concert announcement (Music by Erwin Gutawa Orchestra, 7 Nov 2026 at Istora Senayan)']
+        }
       }
     ];
 
-    return verifiedOfficialEvents.map(e => new DiscoveredEvent(e));
+    return verifiedOfficialEvents.map(e => {
+      const enriched = {
+        ...e,
+        source_origin: 'STATIC_CURATED_OFFICIAL_SEED',
+        discovery_method: 'CURATED_STATIC_REGISTRY',
+        provenance: {
+          ...(e.provenance || {}),
+          source_origin: 'STATIC_CURATED_OFFICIAL_SEED',
+          discovery_method: 'CURATED_STATIC_REGISTRY'
+        }
+      };
+      return new DiscoveredEvent(enriched);
+    });
   }
 
   normalizeToDiscoveredEvent(rawItem) {
-    return new DiscoveredEvent(rawItem);
+    return new DiscoveredEvent({
+      ...rawItem,
+      source_origin: rawItem.source_origin || 'STATIC_CURATED_OFFICIAL_SEED',
+      discovery_method: rawItem.discovery_method || 'CURATED_STATIC_REGISTRY'
+    });
   }
 }
 

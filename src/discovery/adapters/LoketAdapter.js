@@ -221,7 +221,7 @@ class LoketAdapter extends EventSourceAdapter {
     const promoter = s.organizer || s.organizer_name || (raw?.organization?.name || raw?.organization_name || null);
     const minPrice = s.min_price !== undefined && s.min_price !== null ? Number(s.min_price) : (raw?.pricing?.price !== undefined ? Number(raw.pricing.price) : (raw?.price !== undefined ? Number(raw.price) : null));
     const maxPrice = s.max_price !== undefined && s.max_price !== null ? Number(s.max_price) : (raw?.pricing?.initial_price !== undefined && raw.pricing.initial_price > 0 ? Number(raw.pricing.initial_price) : minPrice);
-    const banner = s.image_url || (raw?.banners?.desktop || raw?.banners?.banner || null);
+    const banner = s.image_url || (raw?.banners?.desktop || raw?.banners?.banner || raw?.banners?.mobile || raw?.banners?.banner_mobile || null);
 
     return {
       source_id: this.sourceId,
@@ -255,9 +255,11 @@ class LoketAdapter extends EventSourceAdapter {
       currency: s.currency || raw?.pricing?.currency_code || 'IDR',
       image_url: banner,
       imageUrl: banner,
-      image_source_type: s.image_source_type || 'OFFICIAL_TICKETING',
-      image_source_url: banner,
-      image_credit: s.image_credit || 'LOKET',
+      thumbnail_url: banner,
+      image_source_type: banner ? (s.image_source_type || 'OFFICIAL_TICKETING') : 'NONE',
+      image_source_url: s.image_source_url || sourceUrl || banner || null,
+      image_status: banner ? (s.image_status || 'VERIFIED_AUTHORIZED_SELLER') : (sourceUrl ? 'SOURCE_LINK_ONLY' : 'MISSING'),
+      image_credit: s.image_credit || (promoter ? `${promoter} via LOKET` : 'LOKET'),
       source_url: sourceUrl,
       eventUrl: sourceUrl,
       source: this.sourceId,

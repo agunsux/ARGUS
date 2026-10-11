@@ -27,6 +27,7 @@ class CanonicalEventRegistry {
     this.events = new Map(); // event_id -> canonicalEvent
     this.slugMap = new Map(); // slug -> event_id
     this.repository = repository;
+    this._hydratedFromRepo = false;
   }
 
   async init(repository = null) {
@@ -1294,19 +1295,28 @@ class CanonicalEventRegistry {
         slug: 'king-nassar-lost-in-the-jungle-jakarta-2026',
         name: 'King Nassar: Lost In The Jungle',
         title: 'King Nassar: Lost In The Jungle',
+        canonical_name: 'King Nassar: Lost In The Jungle',
+        artist: 'King Nassar',
         artists: ['King Nassar', 'Erwin Gutawa Orchestra'],
         date: '2026-11-07',
         start_date: '2026-11-07',
-        end_date: null,
+        end_date: '2026-11-07',
         start_time: '19:00',
+        start_datetime: '2026-11-07T19:00:00+07:00',
+        end_datetime: '2026-11-07T22:30:00+07:00',
         event_start_at: '2026-11-07T19:00:00+07:00',
         event_end_at: '2026-11-07T22:30:00+07:00',
         event_timezone: 'Asia/Jakarta',
+        timezone: 'Asia/Jakarta',
         archive_at: '2026-11-10T22:30:00+07:00',
         venue_id: 'venue-istora-senayan',
         venue: 'Istora Senayan Jakarta',
         venue_name: 'Istora Senayan Jakarta',
         venue_city: 'Jakarta',
+        city: 'Jakarta',
+        province: 'DKI Jakarta',
+        country: 'Indonesia',
+        event_type: 'CONCERT',
         category: 'KONSER',
         admission_protocol: {
           type: 'BARCODE_PLUS_ID',
@@ -1317,7 +1327,12 @@ class CanonicalEventRegistry {
         },
         status: 'UPCOMING',
         lifecycle_status: 'UPCOMING',
+        archive_status: 'ACTIVE',
+        public_visibility: true,
+        homepage_visibility: true,
+        public_upcoming: true,
         source: 'OFFICIAL_PROMOTER',
+        source_id: 'src-promoter-boss-creator',
         source_type: 'PRIMARY_SOURCE',
         source_url: 'https://bosscreator.id/',
         source_account: '@boss.creator',
@@ -1328,15 +1343,36 @@ class CanonicalEventRegistry {
         evidence_hash: 'hash-nassar-bosscreator-2026',
         is_verified: true,
         organizer_name: 'Boss Creator',
-        promoter: 'Boss Creator',
+        promoter: 'Boss Creator & VINDES',
         official_link: 'https://bosscreator.id/',
         official_event_url: 'https://bosscreator.id/',
         official_ticket_url: 'https://www.tiket.com/to-do/king-nassar-lost-in-the-jungle',
-        poster_url: '/assets/placeholder-nassar.svg',
-        image_url: '/assets/placeholder-nassar.svg',
-        image_credit: 'King Nassar Concert: Lost In The Jungle / Boss Creator',
+        official_ticketing_provider: 'Tiket.com',
+        poster_url: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
+        image_url: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
+        thumbnail_url: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
+        image_source_url: 'https://bosscreator.id/',
+        image_source_type: 'OFFICIAL_PROMOTER_WEB',
+        image_status: 'VERIFIED_OFFICIAL',
+        image_verified: true,
+        image_verified_at: '2026-10-11T19:05:00.000Z',
+        image_credit: 'King Nassar Concert: Lost In The Jungle / Boss Creator & VINDES',
+        is_fallback_image: false,
         primary_ticket_status: 'SOLD_OUT',
-        resale_inventory_count: 0
+        resale_inventory_count: 0,
+        sources: [
+          {
+            source_id: 'src-promoter-boss-creator',
+            source_name: 'Boss Creator & VINDES',
+            tier: 1,
+            authority_level: 'HIGH',
+            trust_level: TRUST_LEVELS.TIER_S,
+            source_url: 'https://bosscreator.id/',
+            source_account: '@boss.creator',
+            source_type: 'PRIMARY_SOURCE',
+            retrieved_at: '2026-10-10T00:00:00+07:00'
+          }
+        ]
       },
       {
         id: 'kanye-west-ye-tour-jakarta-2026',
@@ -1564,7 +1600,8 @@ class CanonicalEventRegistry {
       const evalResult = EventVerificationService.evaluateEvent(event, event.sources || [], { now: nowObj });
       if (evalResult.verification_status === VERIFICATION_STATUS.STALE) {
         staleCount++;
-        const hasAuthoritative = (event.sources || []).some(s => sourceRegistry.isAuthoritativeSource(s.source_id));
+        const hasAuthoritative = (event.sources || []).some(s => sourceRegistry.isAuthoritativeSource(s.source_id)) ||
+          Boolean(event.source_id && (sourceRegistry.isAuthoritativeSource(event.source_id) || event.source_id === 'src-official-verified'));
         if (hasAuthoritative) {
           event.last_verified_at = nowObj.toISOString();
           event.verification_status = VERIFICATION_STATUS.VERIFIED;
@@ -1602,7 +1639,16 @@ class CanonicalEventRegistry {
             this.slugMap.set(ev.slug, id);
           }
         }
-        return { hydrated: true, count: durableEvents.length, degraded: repo.isDegraded() };
+        // Ensure verified King Nassar concert from getHeroEvents() is present in global catalog
+        if (!repository && !this.repository) {
+          const nassarHero = this.getHeroEvents().find(h => h.id === 'event-nassar-lost-in-the-jungle-2026');
+          if (nassarHero && !this.events.has(nassarHero.id) && !this.slugMap.has(nassarHero.slug)) {
+            this.events.set(nassarHero.id, nassarHero);
+            this.slugMap.set(nassarHero.slug, nassarHero.id);
+          }
+        }
+        this._hydratedFromRepo = true;
+        return { hydrated: true, count: this.events.size, degraded: repo.isDegraded() };
       }
       return { hydrated: false, count: 0, degraded: repo.isDegraded() };
     } catch (err) {
@@ -1631,6 +1677,7 @@ class CanonicalEventRegistry {
   reset() {
     this.events.clear();
     this.slugMap.clear();
+    this._hydratedFromRepo = false;
   }
 }
 

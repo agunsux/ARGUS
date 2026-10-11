@@ -30,10 +30,14 @@ const OFFICIAL_IMAGE_HOSTS = [
   'assets.loket.com',
   'pestapora.com',
   'dwpfest.com',
+  'synchronizefestival.com',
+  'lalalafest.com',
+  'cdn.themandalikagp.com',
   'cdn.ruangevent.id',
   'dynamicmedia.livenationinternational.com',
   's1.ticketm.net',
-  'storage.googleapis.com'
+  'storage.googleapis.com',
+  'tikum.app'
 ];
 
 let server;
@@ -182,25 +186,37 @@ async function run() {
 
   const eventsWithImages = publicRes.body.events.filter(e => e.image_url);
 
-  await test('Every public event ships an official poster (no placeholder in public)', async () => {
+  await test('Public events ship verified official posters or honest fallback metadata (never fabricated images)', async () => {
     assert.ok(eventsWithImages.length >= 1, 'Expected at least one public event with official poster art');
     for (const ev of publicRes.body.events) {
-      assert.ok(ev.image_url, `Event ${ev.event_id} is public without an official image`);
-      assert.notStrictEqual(ev.is_fallback_image, true, `Event ${ev.event_id} exposes a placeholder image publicly`);
-      assert.notStrictEqual(ev.image_status, 'FALLBACK');
+      if (ev.image_url) {
+        assert.strictEqual(ev.is_fallback_image, false, `Event ${ev.event_id} with verified image_url must not be flagged as fallback`);
+        assert.ok(['VERIFIED_OFFICIAL', 'VERIFIED_AUTHORIZED_SELLER'].includes(ev.image_status), `Unexpected verified image_status ${ev.image_status}`);
+      } else {
+        assert.strictEqual(ev.is_fallback_image, true, `Event ${ev.event_id} without image_url must declare fallback`);
+        assert.ok(['BROKEN', 'SOURCE_LINK_ONLY', 'MISSING'].includes(ev.image_status), `Unexpected fallback image_status ${ev.image_status}`);
+      }
     }
   });
 
   await test('Poster art is credited and hosted only on audited official domains', async () => {
     for (const ev of eventsWithImages) {
       assert.ok(ev.image_credit, `Event ${ev.event_id} missing image credit`);
-      const host = new URL(ev.image_url).hostname.toLowerCase();
+      const host = new URL(ev.image_url, 'https://tikum.app').hostname.toLowerCase();
       assert.ok(
         OFFICIAL_IMAGE_HOSTS.some(h => host === h || host.endsWith(`.${h}`)),
         `Unexpected image host ${host} for event ${ev.event_id}`
       );
       assert.ok(
-        ['OFFICIAL_EVENT_WEB', 'OFFICIAL_PROMOTER_WEB', 'OFFICIAL_TICKETING', 'OFFICIAL_ARTIST_WEB'].includes(ev.image_source_type),
+        [
+          'OFFICIAL_ORGANIZER',
+          'OFFICIAL_VENUE',
+          'AUTHORIZED_TICKET_SELLER',
+          'OFFICIAL_EVENT_WEB',
+          'OFFICIAL_PROMOTER_WEB',
+          'OFFICIAL_TICKETING',
+          'OFFICIAL_ARTIST_WEB'
+        ].includes(ev.image_source_type),
         `Unexpected image provenance type ${ev.image_source_type}`
       );
     }
@@ -255,7 +271,11 @@ async function run() {
     }
   });
 
-  const firstSlug = (feedRes.body.feed.find(f => Array.isArray(f.social_discovery_signals) && f.social_discovery_signals.length > 0) || feedRes.body.feed[0]).slug;
+  const firstSlug = (
+    feedRes.body.feed.find(f => f.image_url && Array.isArray(f.social_discovery_signals) && f.social_discovery_signals.length > 0) ||
+    feedRes.body.feed.find(f => f.image_url) ||
+    feedRes.body.feed[0]
+  ).slug;
   const detailRes = await request(`/events/${firstSlug}`);
   await test('Verified event detail page renders publicly (HTTP 200)', async () => {
     assert.strictEqual(detailRes.status, 200, `Detail page for ${firstSlug} did not render`);

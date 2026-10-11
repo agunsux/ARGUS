@@ -186,10 +186,36 @@ class EventDeduplicationService {
         continue;
       }
 
+      const compTitleIn = EventNormalizationService.normalizeCanonicalComparisonTitle(incomingRecord.name || incomingRecord.title || incomingRecord.canonical_name);
+      const compTitleCan = EventNormalizationService.normalizeCanonicalComparisonTitle(canonical.canonical_name || canonical.name || canonical.title);
+      const isExactCompTitle = Boolean(compTitleIn && compTitleCan && compTitleIn === compTitleCan);
+
       const isSameDate = incomingDate && canonicalDate && incomingDate === canonicalDate;
+      const vNormIn = EventNormalizationService.normalizeVenue(incomingVenue, incomingCity);
+      const vNormCan = EventNormalizationService.normalizeVenue(canonicalVenue, canonicalCity);
       const isSameVenue = (incomingRecord.venue_id && canonical.venue_id && incomingRecord.venue_id === canonical.venue_id) ||
+                          (vNormIn.venue_id && vNormCan.venue_id && vNormIn.venue_id === vNormCan.venue_id) ||
                           (incomingVenue && canonicalVenue && (incomingVenue.includes(canonicalVenue) || canonicalVenue.includes(incomingVenue)));
-      const titleSim = this.calculateTokenSimilarity(incomingNormTitle, canonicalNormTitle);
+      const rawTitleSim = this.calculateTokenSimilarity(incomingNormTitle, canonicalNormTitle);
+      const compTitleSim = this.calculateTokenSimilarity(compTitleIn, compTitleCan);
+      const titleSim = Math.max(rawTitleSim, compTitleSim);
+
+      const inArtistTokens = [
+        ...incomingArtists.flatMap(a => EventNormalizationService.extractArtistTokens(a)),
+        ...EventNormalizationService.extractArtistTokens(compTitleIn)
+      ];
+      const canArtistTokens = [
+        ...canonicalArtists.flatMap(a => EventNormalizationService.extractArtistTokens(a)),
+        ...EventNormalizationService.extractArtistTokens(compTitleCan)
+      ];
+      const hasSharedArtistAlias = incomingArtists.length > 0 && canonicalArtists.length > 0 &&
+        incomingArtists.some(ia => {
+          const tA = EventNormalizationService.extractArtistTokens(ia);
+          return canonicalArtists.some(ca => {
+            const tB = EventNormalizationService.extractArtistTokens(ca);
+            return tA.some(x => tB.includes(x));
+          });
+        });
 
       // ==========================================
       // 4. DATE DISCREPANCY & STRICT MULTI-NIGHT SEPARATION
@@ -198,6 +224,12 @@ class EventDeduplicationService {
       // ==========================================
       if (incomingDate && canonicalDate && incomingDate !== canonicalDate) {
         if (!isExplicitReschedule) {
+          // Anti-overmerge: Never merge an upcoming future event into an already ARCHIVED or COMPLETED past event!
+          const isCanonicalTerminal = canonical.archive_status === 'ARCHIVED' || canonical.lifecycle_status === 'ARCHIVED' || canonical.lifecycle_status === 'COMPLETED';
+          if (isCanonicalTerminal && incomingDate > canonicalDate) {
+            continue;
+          }
+
           const incomingHasResidency = hasResidencyIndicator(incomingNormTitle);
           const canonicalHasResidency = hasResidencyIndicator(canonicalNormTitle);
           const incomingDayNum = extractDayOrNight(incomingNormTitle);
@@ -240,8 +272,8 @@ class EventDeduplicationService {
       // Same Venue + Same Date, but distinct non-overlapping acts in different halls
       // ==========================================
       if (isSameDate && isSameVenue && titleSim < 0.25) {
-        const hasArtistOverlap = incomingArtists.length > 0 && canonicalArtists.length > 0 &&
-          incomingArtists.some(ia => canonicalArtists.includes(ia));
+        const hasArtistOverlap = (incomingArtists.length > 0 && canonicalArtists.length > 0 &&
+          incomingArtists.some(ia => canonicalArtists.includes(ia))) || hasSharedArtistAlias;
         if (!hasArtistOverlap) {
           continue; // Two distinct events in different halls of the same venue on the same night!
         }
@@ -251,8 +283,8 @@ class EventDeduplicationService {
       // 6. DETERMINISTIC & PROBABILISTIC MATCHING (SAME DATE)
       // ==========================================
       if (isSameDate) {
-        // Exact match
-        if (isSameVenue && incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase()) {
+        // Exact match (including canonical comparison title after stripping sponsor/city/acronym noise)
+        if (isSameVenue && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || isExactCompTitle)) {
           return {
             isMatch: true,
             confidence: 98,
@@ -272,23 +304,23 @@ class EventDeduplicationService {
         }
 
         // Artist overlap on same venue
-        if (incomingArtists.length > 0 && canonicalArtists.length > 0) {
+        if ((incomingArtists.length > 0 && canonicalArtists.length > 0) || hasSharedArtistAlias) {
           const commonArtists = incomingArtists.filter(a => canonicalArtists.includes(a));
-          if (commonArtists.length > 0 && isSameVenue) {
+          if ((commonArtists.length > 0 || hasSharedArtistAlias) && isSameVenue) {
             return {
               isMatch: true,
               confidence: 90,
-              matchReason: `ARTIST_OVERLAP_SAME_VENUE (${commonArtists.join(', ')})`,
+              matchReason: `ARTIST_OVERLAP_SAME_VENUE (${commonArtists.length > 0 ? commonArtists.join(', ') : 'alias match'})`,
               canonicalEvent: canonical
             };
           }
         }
 
         // Venue move or discrepancy in same city on same date
-        const hasCommonArtist = incomingArtists.length > 0 && canonicalArtists.length > 0 &&
-          incomingArtists.some(a => canonicalArtists.includes(a));
+        const hasCommonArtist = (incomingArtists.length > 0 && canonicalArtists.length > 0 &&
+          incomingArtists.some(a => canonicalArtists.includes(a))) || hasSharedArtistAlias;
 
-        if (isSameCityOrMetro(incomingCity, canonicalCity) && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || titleSim >= 0.6 || hasCommonArtist)) {
+        if (isSameCityOrMetro(incomingCity, canonicalCity) && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || isExactCompTitle || titleSim >= 0.6 || hasCommonArtist)) {
           return {
             isMatch: true,
             confidence: hasCommonArtist ? 88 : 92,
@@ -299,14 +331,15 @@ class EventDeduplicationService {
       }
 
       // ==========================================
-      // 7. CONFLICT DETECTION: Same Title & Venue with Different Dates
+      // 7. CONFLICT DETECTION: Same Title / Artist & Venue with Different Dates (> 3 days apart)
       // ==========================================
-      if (isSameVenue && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || titleSim >= 0.75)) {
+      if (isSameVenue && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || isExactCompTitle || titleSim >= 0.65 || (hasSharedArtistAlias && titleSim >= 0.45))) {
         if (incomingDate && canonicalDate && incomingDate !== canonicalDate) {
           const dateDiffDays = Math.abs(new Date(incomingDate).getTime() - new Date(canonicalDate).getTime()) / (1000 * 60 * 60 * 24);
           if (dateDiffDays <= 120 || isExplicitReschedule) {
             return {
               isMatch: true,
+              isDateConflict: true,
               confidence: 85,
               matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT',
               canonicalEvent: canonical
@@ -318,8 +351,8 @@ class EventDeduplicationService {
       // ==========================================
       // 8. RESCHEDULE & SAME-CITY EVENT UPDATES (ACROSS DATES)
       // ==========================================
-      const isExactTitle = incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase();
-      const isHighTitleSim = titleSim >= 0.80;
+      const isExactTitle = incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || isExactCompTitle;
+      const isHighTitleSim = titleSim >= 0.75 || (hasSharedArtistAlias && titleSim >= 0.50);
 
       if (isSameCityOrMetro(incomingCity, canonicalCity) && (isExactTitle || isHighTitleSim)) {
         if (incomingDate && canonicalDate && incomingDate !== canonicalDate) {
@@ -339,9 +372,10 @@ class EventDeduplicationService {
               };
             }
 
-            if (isExactTitle) {
+            if (isExactTitle || (hasSharedArtistAlias && isSameVenue)) {
               return {
                 isMatch: true,
+                isDateConflict: true,
                 confidence: 88,
                 matchReason: 'SOURCE_DATE_CONFLICT_SAME_EVENT_IN_CITY',
                 canonicalEvent: canonical
@@ -354,7 +388,7 @@ class EventDeduplicationService {
       // ==========================================
       // 8b. EXPLICIT RESCHEDULE ONLY ACROSS DATES
       // ==========================================
-      if (isExplicitReschedule && (isSameVenue || isSameCityOrMetro(incomingCity, canonicalCity)) && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || titleSim >= 0.75)) {
+      if (isExplicitReschedule && (isSameVenue || isSameCityOrMetro(incomingCity, canonicalCity)) && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || isExactCompTitle || titleSim >= 0.75)) {
         return {
           isMatch: true,
           confidence: 95,
@@ -366,7 +400,7 @@ class EventDeduplicationService {
       // 7b. Unverified Seed Date Resolution
       // Upgrades legacy unverified/untrusted placeholder claims with authoritative proof for same tour/venue
       const isCanonicalUnverified = canonical.is_verified !== true || (canonical.sources && canonical.sources.every(s => s.source_id === 'src-legacy-seed' || s.tier >= 4));
-      if (isCanonicalUnverified && isSameVenue && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || titleSim >= 0.75)) {
+      if (isCanonicalUnverified && (isSameVenue || isSameCityOrMetro(incomingCity, canonicalCity)) && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || isExactCompTitle || titleSim >= 0.65 || hasSharedArtistAlias)) {
         return {
           isMatch: true,
           confidence: 90,
@@ -407,6 +441,56 @@ class EventDeduplicationService {
       confidence: 0,
       matchReason: 'NO_MATCH_FOUND',
       canonicalEvent: null
+    };
+  }
+
+  /**
+   * Merges two canonical or candidate event records that represent the same real-world event,
+   * preserving the highest-priority verified image provenance, combined source links, and pricing.
+   */
+  static mergeCanonicalPair(existing, incoming) {
+    if (!existing) return incoming;
+    if (!incoming) return existing;
+
+    const { EventVisualProvenanceService } = require('./EventVisualProvenanceService');
+    const existingResolved = EventVisualProvenanceService.resolveCatalogEventImageProvenance(existing, existing.metadata || {});
+    const incomingResolved = EventVisualProvenanceService.resolveCatalogEventImageProvenance(incoming, incoming.metadata || {});
+    const preferredImg = EventVisualProvenanceService.selectPreferredImage(
+      { ...existing, ...existingResolved },
+      { ...incoming, ...incomingResolved }
+    );
+
+    const existingSources = Array.isArray(existing.sources) ? existing.sources : [];
+    const incomingSources = Array.isArray(incoming.sources) ? incoming.sources : [];
+    const mergedSources = [...existingSources];
+    for (const s of incomingSources) {
+      if (!mergedSources.some(es => es.source_id === s.source_id && es.source_url === s.source_url)) {
+        mergedSources.push(s);
+      }
+    }
+
+    // Prefer incoming canonical record as base if it has live ticketing provenance and existing is a snapshot
+    const incomingHasLoket = incoming.source_id === 'src-loket' || (incoming.official_ticket_url && String(incoming.official_ticket_url).includes('loket.com'));
+    const existingHasLoket = existing.source_id === 'src-loket' || (existing.official_ticket_url && String(existing.official_ticket_url).includes('loket.com'));
+    const base = (incomingHasLoket && !existingHasLoket) ? { ...existing, ...incoming } : { ...incoming, ...existing };
+
+    return {
+      ...base,
+      official_event_url: existing.official_event_url || incoming.official_event_url || null,
+      official_ticket_url: (incomingHasLoket ? incoming.official_ticket_url : existing.official_ticket_url) || existing.official_ticket_url || incoming.official_ticket_url || null,
+      official_ticketing_provider: existing.official_ticketing_provider || incoming.official_ticketing_provider || null,
+      min_price: existing.min_price || incoming.min_price || null,
+      max_price: Math.max(Number(existing.max_price || 0), Number(incoming.max_price || 0)) || existing.min_price || incoming.min_price || null,
+      sources: mergedSources,
+      ...preferredImg,
+      poster_url: preferredImg.image_url,
+      event_image: preferredImg.image_url,
+      metadata: {
+        ...(existing.metadata || {}),
+        ...(incoming.metadata || {}),
+        ...preferredImg,
+        sources: mergedSources
+      }
     };
   }
 }

@@ -417,12 +417,29 @@ class EventVerificationService {
       confidence = Math.min(95, Math.max(85, confidence));
     }
 
+    // W2 & W6 Invariant: Dead URLs / HTTP errors become SOURCE_URL_UNAVAILABLE / STALE, NEVER CANCELLED without explicit official cancellation evidence
+    const hasDeadUrlSignal = canonicalEvent.source_fetch_status === 'SOURCE_URL_UNAVAILABLE' ||
+      (typeof canonicalEvent.http_status === 'number' && canonicalEvent.http_status >= 400) ||
+      sourceRecords.some(s => s.fetch_status === 'SOURCE_URL_UNAVAILABLE' || (typeof s.http_status === 'number' && s.http_status >= 400));
+    const isDeadUrlOnlyCancellation = canonicalEvent.status === 'CANCELLED' &&
+      (hasDeadUrlSignal || /dead[_\s-]*url|404|http[_\s-]*error|timeout|unreachable/i.test(String(canonicalEvent.cancellation_reason || ''))) &&
+      !canonicalEvent.official_cancellation_evidence;
+
+    if (hasDeadUrlSignal) {
+      flags.push('SOURCE_URL_UNAVAILABLE');
+    }
+    if (isDeadUrlOnlyCancellation) {
+      flags.push('DEAD_URL_CANNOT_INFER_CANCELLATION');
+    }
+
     // Determine verification status
     let status = VERIFICATION_STATUS.UNVERIFIED;
     if (isConflicted) {
       status = VERIFICATION_STATUS.CONFLICTED;
-    } else if (canonicalEvent.status === 'CANCELLED') {
+    } else if (canonicalEvent.status === 'CANCELLED' && !isDeadUrlOnlyCancellation) {
       status = VERIFICATION_STATUS.CANCELLED;
+    } else if (isDeadUrlOnlyCancellation) {
+      status = VERIFICATION_STATUS.STALE;
     } else if (canonicalEvent.status === 'POSTPONED') {
       status = VERIFICATION_STATUS.POSTPONED;
     } else if (hasAuthoritative && !failClosedReason && confidence >= 65) {
@@ -432,6 +449,9 @@ class EventVerificationService {
         : VERIFICATION_STATUS.VERIFIED;
       if (hasAuthoritativeSocial) {
         flags.push('PRIMARY_SOURCE_SOCIAL_CONFIRMED');
+      }
+      if (hasDeadUrlSignal) {
+        status = VERIFICATION_STATUS.STALE;
       }
     } else {
       status = VERIFICATION_STATUS.UNVERIFIED;

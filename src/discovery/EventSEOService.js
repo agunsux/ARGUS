@@ -391,16 +391,37 @@ class EventSEOService {
     </nav>
 
     <article class="event-hero">
-      ${event.image_url && event.is_fallback_image !== true ? `
-        <figure class="event-poster">
-          <img src="${event.image_url}" alt="Poster resmi ${event.canonical_name}" loading="lazy"
-               onerror="this.parentElement.style.display='none'">
-          <figcaption>
-            Poster resmi${event.image_credit ? ` — ${event.image_credit}` : ''}
-            ${event.image_source_url ? ` · <a href="${event.image_source_url}" target="_blank" rel="noopener noreferrer nofollow">sumber resmi</a>` : ''}
-          </figcaption>
-        </figure>
-      ` : ''}
+      ${(() => {
+        const posterAlt = `${event.canonical_name} — ${venue}, ${city}`.replace(/"/g, '&quot;');
+        const officialSrcUrl = event.image_source_url || event.official_event_url || event.official_ticket_url || event.source_url || null;
+        const posterAttrText = event.image_attribution || (event.image_credit ? `Sumber: ${event.image_credit}` : (event.official_ticketing_provider ? `Sumber: ${event.official_ticketing_provider}` : 'Sumber resmi penyelenggara'));
+        const hasVerifiedPoster = Boolean(event.image_url && event.is_fallback_image !== true && event.image_status !== 'FALLBACK' && event.image_status !== 'BROKEN');
+        const fallbackBannerHtml = `
+          <div class="event-poster-fallback" style="display:${hasVerifiedPoster ? 'none' : 'flex'}; flex-direction:column; align-items:center; justify-content:center; min-height:180px; padding:24px; background:linear-gradient(145deg,#131d31,#0b1120); text-align:center; gap:8px;">
+            <div style="width:42px; height:42px; border-radius:50%; background:rgba(56,189,248,0.12); display:flex; align-items:center; justify-content:center; color:#38bdf8; font-size:18px;">
+              <i class="fa-solid fa-ticket"></i>
+            </div>
+            <div style="font-size:14px; font-weight:700; color:#e2e8f0;">Poster Resmi Belum Tersedia dari Sumber</div>
+            <div style="font-size:12px; color:#94a3b8; max-width:520px;">
+              Event ini telah terverifikasi di katalog TIKUM (${event.image_status || 'SOURCE_LINK_ONLY'}). Silakan kunjungi halaman resmi penyelenggara atau mitra tiket untuk informasi visual terbaru.
+            </div>
+            ${officialSrcUrl ? `<a href="${officialSrcUrl}" target="_blank" rel="noopener noreferrer nofollow" style="margin-top:4px; font-size:12px; color:#38bdf8; font-weight:600; text-decoration:underline;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat di Sumber Resmi</a>` : ''}
+          </div>
+        `;
+        return `
+          <figure class="event-poster" data-image-status="${event.image_status || (hasVerifiedPoster ? 'VERIFIED_AUTHORIZED_SELLER' : 'SOURCE_LINK_ONLY')}">
+            ${hasVerifiedPoster ? `
+              <img src="${event.image_url}" alt="${posterAlt}" loading="lazy" decoding="async"
+                   onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+            ` : ''}
+            ${fallbackBannerHtml}
+            <figcaption>
+              ${hasVerifiedPoster ? `Poster resmi · ${posterAttrText}` : `Status visual: ${event.image_status || 'SOURCE_LINK_ONLY'} · ${posterAttrText}`}
+              ${officialSrcUrl ? ` · <a href="${officialSrcUrl}" target="_blank" rel="noopener noreferrer nofollow">sumber resmi</a>` : ''}
+            </figcaption>
+          </figure>
+        `;
+      })()}
       <div class="badge-row">
         <span class="badge badge-primary">${category}</span>
         ${isVerified ? `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Terverifikasi Tikum (${confidence}%)</span>` : `<span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Dalam Verifikasi (${confidence}%)</span>`}
