@@ -558,6 +558,55 @@ async function main() {
     }
   });
 
+  // ---------------------------------------------------------------------------
+  // TEST 15: Root homepage (GET /) renders Verified Concert Hero (King Nassar + YE Live in Jakarta),
+  //          canonical https://tikum.app/, poster assets, fallback attributes, and /hero compatibility
+  // ---------------------------------------------------------------------------
+  await runTest(15, 'Root homepage (GET /) renders Verified Concert Hero cards (King Nassar + YE Live in Jakarta), posters, fallbacks, canonical URL, and /hero route compatibility', async () => {
+    const [rootRes, heroRes, posterRes, heroApiRes] = await Promise.all([
+      request('/'),
+      request('/hero'),
+      request('/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg'),
+      request('/api/discovery/hero-concerts')
+    ]);
+
+    assert.strictEqual(rootRes.status, 200, 'GET / must return HTTP 200');
+    assert.ok(rootRes.raw.includes('<link rel="canonical" href="https://tikum.app/">'), 'GET / must have canonical URL https://tikum.app/');
+    assert.ok(rootRes.raw.includes('id="verifiedConcertHero"'), 'GET / must include #verifiedConcertHero spotlight section');
+    assert.ok(rootRes.raw.includes('id="card-nassar"'), 'GET / must include #card-nassar card');
+    assert.ok(rootRes.raw.includes('King Nassar: Lost In The Jungle'), 'GET / must display King Nassar: Lost In The Jungle');
+    assert.ok(rootRes.raw.includes('Boss Creator &amp; VINDES Present'), 'GET / must display Boss Creator & VINDES organizer context');
+    assert.ok(rootRes.raw.includes('Sabtu, 7 November 2026'), 'GET / must display Sabtu, 7 November 2026');
+    assert.ok(rootRes.raw.includes('Istora Senayan Jakarta'), 'GET / must display Istora Senayan Jakarta');
+    assert.ok(rootRes.raw.includes('/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg'), 'GET / must reference King Nassar official poster');
+    assert.ok(rootRes.raw.includes('/assets/placeholder-nassar.svg'), 'GET / must include King Nassar fallback SVG attribute');
+    assert.ok(rootRes.raw.includes("this.src='/assets/placeholder-event.svg'"), 'GET / must include onerror image fallback handler');
+    assert.ok(rootRes.raw.includes('id="card-ye"'), 'GET / must include #card-ye card');
+    assert.ok(rootRes.raw.includes('YE Live in Jakarta'), 'GET / must display YE Live in Jakarta');
+    assert.ok(rootRes.raw.includes('Sabtu, 24 Oktober 2026'), 'GET / must display Sabtu, 24 Oktober 2026');
+    assert.ok(rootRes.raw.includes('Gelora Bung Karno'), 'GET / must display Gelora Bung Karno');
+    assert.ok(rootRes.raw.includes('0 Tiket (Belum Ada)'), 'GET / must state 0 Tiket (Belum Ada) resale inventory truthfully');
+
+    assert.strictEqual(heroRes.status, 200, 'GET /hero must continue returning HTTP 200');
+    assert.ok(heroRes.raw.includes('King Nassar: Lost In The Jungle'), 'GET /hero must still include King Nassar');
+    assert.ok(heroRes.raw.includes('YE Live in Jakarta'), 'GET /hero must still include YE Live in Jakarta');
+
+    assert.strictEqual(posterRes.status, 200, 'GET /assets/posters/king-nassar-lost-in-the-jungle-2026.jpg must return HTTP 200');
+    assert.ok(
+      String(posterRes.headers['content-type'] || '').includes('image/jpeg'),
+      `Expected image/jpeg content-type for King Nassar poster, got ${posterRes.headers['content-type']}`
+    );
+
+    assert.strictEqual(heroApiRes.status, 200, 'GET /api/discovery/hero-concerts must return HTTP 200');
+    assert.strictEqual(heroApiRes.body.success, true, 'hero-concerts API must return success: true');
+    assert.strictEqual(Array.isArray(heroApiRes.body.concerts), true);
+    assert.strictEqual(heroApiRes.body.concerts.length, 2, 'hero-concerts API must return both hero concerts');
+    for (const hc of heroApiRes.body.concerts) {
+      assert.strictEqual(hc.resale_inventory_count, 0, `Hero concert ${hc.slug} must report 0 fabricated resale tickets`);
+      assert.strictEqual(hc.resale_available, false, `Hero concert ${hc.slug} must report resale_available: false`);
+    }
+  });
+
   server.close();
 
   console.log('\n========================================================================');

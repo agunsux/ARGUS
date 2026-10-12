@@ -2033,3 +2033,253 @@ body.dark-mode .btn-waitlist:hover {
   }
 }
 
+/* ==========================================================================
+   VERIFIED CONCERT HERO SPOTLIGHT (Root Homepage + /hero Shared Visual System)
+   ========================================================================== */
+.hero-spotlight-section {
+  background: #0b0f17;
+  color: #f9fafb;
+  border-bottom: 1px solid #1f2937;
+  padding-bottom: 1rem;
+}
+
+.hero-spotlight-section .hero-banner {
+  padding: 3rem 1.5rem 1.75rem;
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.hero-spotlight-section .hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-weight: 700;
+  margin-bottom: 1.15rem;
+}
+
+.hero-spotlight-section .hero-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 0.85rem;
+  letter-spacing: -0.03em;
+  color: #f9fafb;
+}
+
+.hero-spotlight-section .hero-subtitle {
+  font-size: 1.05rem;
+  color: #9ca3af;
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.hero-spotlight-section .main-grid {
+  max-width: 1200px;
+  margin: 1.5rem auto 0;
+  padding: 0 1.5rem 2.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 2rem;
+}
+
+.hero-spotlight-section .concert-card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, border-color 0.2s;
+  color: #f9fafb;
+}
+
+.hero-spotlight-section .concert-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.hero-spotlight-section .poster-wrap {
+  position: relative;
+  height: 280px;
+  background: #0f172a;
+  overflow: hidden;
+}
+
+.hero-spotlight-section .poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  display: block;
+}
+
+.hero-spotlight-section .poster-overlay {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.hero-spotlight-section .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+}
+
+.hero-spotlight-section .badge-verified {
+  background: #065f46;
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+}
+
+.hero-spotlight-section .badge-soldout {
+  background: #7f1d1d;
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+}
+
+.hero-spotlight-section .badge-onsale {
+  background: #1e3a8a;
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.4);
+}
+
+.hero-spotlight-section .card-body {
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.hero-spotlight-section .promoter-tag {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #60a5fa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.hero-spotlight-section .concert-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.3;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+  color: #f9fafb;
+}
+
+.hero-spotlight-section .meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+.hero-spotlight-section .meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.hero-spotlight-section .meta-item strong {
+  color: #f9fafb;
+}
+
+.hero-spotlight-section .notice-box {
+  background: rgba(31, 41, 55, 0.6);
+  border-left: 3px solid #3b82f6;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #d1d5db;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.hero-spotlight-section .resale-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(17, 24, 39, 0.8);
+  border: 1px solid rgba(75, 85, 99, 0.4);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  color: #f9fafb;
+}
+
+.hero-spotlight-section .resale-zero {
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.hero-spotlight-section .btn-group {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.hero-spotlight-section .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #3b82f6;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 0.85rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: background 0.15s;
+}
+
+.hero-spotlight-section .btn-primary:hover {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.hero-spotlight-section .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: #9ca3af;
+  border: 1px solid #1f2937;
+  text-decoration: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.hero-spotlight-section .btn-secondary:hover {
+  color: #f9fafb;
+  border-color: rgba(255, 255, 255, 0.3);
+}

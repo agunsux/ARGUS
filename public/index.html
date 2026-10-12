@@ -39,7 +39,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
+<body class="dark-mode">
 
   <!-- Site Header -->
   <header class="site-header">
@@ -51,14 +51,14 @@
       </div>
     </a>
     <nav class="ln-nav-links">
-      <a class="ln-nav-link" href="/hero" style="color:#059669; font-weight:700;"><i class="fa-solid fa-star"></i> <span data-i18n="nav.featuredEvents">Konser Pilihan</span></a>
+      <a class="ln-nav-link" href="#verifiedConcertHero" style="color:#34d399; font-weight:700;"><i class="fa-solid fa-star"></i> <span data-i18n="nav.featuredEvents">Konser Pilihan</span></a>
+      <a class="ln-nav-link" href="/events" data-i18n="nav.events">Jelajah Konser</a>
       <a class="ln-nav-link" href="#upcoming" data-i18n="nav.allEvents">Semua Event</a>
       <a class="ln-nav-link" href="#" onclick="applyNavCategory('MUSIC'); return false;" data-i18n="nav.concerts">Konser</a>
       <a class="ln-nav-link" href="#" onclick="applyNavCategory('SPORT'); return false;" data-i18n="nav.sports">Olahraga</a>
       <a class="ln-nav-link" href="#" onclick="applyNavCategory('COMEDY'); return false;" data-i18n="nav.comedy">Stand Up Comedy</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('EXHIBITION'); return false;" data-i18n="nav.exhibitions">Pameran</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('HIBURAN'); return false;" data-i18n="nav.entertainment">Hiburan Lainnya</a>
-      <a class="ln-nav-link" href="/faq" data-i18n="nav.help">Bantuan</a>
+      <a class="ln-nav-link" href="/panduan-pembeli" data-i18n="footer.buyerProt">Buyer Protection</a>
+      <a class="ln-nav-link" href="/contact" data-i18n="nav.support">Bantuan</a>
     </nav>
     <div class="header-actions">
       <span class="ln-nav-link header-location-badge" style="cursor:default; display:inline-flex; align-items:center; gap:6px;">
@@ -68,11 +68,146 @@
         <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up" data-i18n="auth.signInSignUp">Masuk / Daftar</button>
       </div>
       <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Toggle Theme" style="padding:6px 10px;">
-        <i class="fa-solid fa-moon"></i>
+        <i class="fa-solid fa-sun"></i>
       </button>
       <button class="select-filter" onclick="toggleLang()" id="langToggle" title="Language" style="padding:6px 10px;">ID</button>
     </div>
   </header>
+
+  <!-- Primary Above-the-Fold Verified Concert Hero Spotlight -->
+  <section class="hero-spotlight-section" id="verifiedConcertHero">
+    <div class="hero-banner">
+      <div class="hero-eyebrow">
+        <span>●</span> Official Concert Radar • Verified Pipeline
+      </div>
+      <h1 class="hero-title">Sorotan Konser Terverifikasi</h1>
+      <p class="hero-subtitle">
+        Data konser resmi dengan validasi tanggal, promotor otoritatif, dan visual provenance terkonfirmasi. TIKUM menerapkan <em>Zero Fake Inventory</em> — tidak ada stok palsu atau kuota buatan.
+      </p>
+    </div>
+
+    <div class="main-grid" id="heroConcertGrid">
+      <!-- 1. King Nassar: Lost In The Jungle -->
+      <article class="concert-card" id="card-nassar">
+        <div class="poster-wrap">
+          <img
+            src="/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg"
+            data-fallback-svg="/assets/placeholder-nassar.svg"
+            alt="Poster resmi King Nassar Concert: Lost In The Jungle - Boss Creator & VINDES"
+            class="poster-img"
+            width="540"
+            height="280"
+            loading="eager"
+            fetchpriority="high"
+            onerror="this.onerror=null; this.src='/assets/placeholder-event.svg';"
+          >
+          <div class="poster-overlay">
+            <span class="badge badge-verified">✓ PROMOTER VERIFIED</span>
+            <span class="badge badge-soldout">PRIMARY: SOLD OUT</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="promoter-tag">Boss Creator &amp; VINDES Present</div>
+          <h2 class="concert-title">King Nassar: Lost In The Jungle</h2>
+          <div class="meta-list">
+            <div class="meta-item">
+              <span>📅</span>
+              <div><strong>Sabtu, 7 November 2026</strong> • 19:00 WIB</div>
+            </div>
+            <div class="meta-item">
+              <span>📍</span>
+              <div><strong>Istora Senayan Jakarta</strong> • Jakarta Pusat</div>
+            </div>
+            <div class="meta-item">
+              <span>👥</span>
+              <div>Artis: <strong>King Nassar &amp; Erwin Gutawa Orchestra</strong></div>
+            </div>
+          </div>
+
+          <div class="notice-box">
+            Tiket primary resmi melalui Tiket.com / myBCA telah berstatus <strong>Sold Out</strong>.
+            Pemberitahuan resmi dapat dicek di website promotor Boss Creator.
+          </div>
+
+          <div class="resale-status">
+            <span>Stok Resale Sekunder TIKUM:</span>
+            <span class="resale-zero">0 Tiket (Belum Ada)</span>
+          </div>
+
+          <div class="btn-group">
+            <a href="https://bosscreator.id/" target="_blank" rel="noopener noreferrer" class="btn-primary">
+              Lihat Pengumuman Resmi Boss Creator ↗
+            </a>
+            <a href="/events/king-nassar-lost-in-the-jungle-jakarta-2026" class="btn-secondary">
+              Lihat Halaman Event di TIKUM →
+            </a>
+            <a href="/panduan-pembeli" class="btn-secondary">
+              Pelajari Proteksi Pembeli TIKUM
+            </a>
+          </div>
+        </div>
+      </article>
+
+      <!-- 2. YE Live in Jakarta -->
+      <article class="concert-card" id="card-ye">
+        <div class="poster-wrap">
+          <img
+            src="https://assets.loket.com/lp/sdk/prod/assets/banner/banner_1788163846_6a953706d288e.jpg"
+            alt="Poster resmi YE Live in Jakarta di Gelora Bung Karno"
+            class="poster-img"
+            width="540"
+            height="280"
+            loading="eager"
+            fetchpriority="high"
+            onerror="this.onerror=null; this.src='/assets/placeholder-event.svg';"
+          >
+          <div class="poster-overlay">
+            <span class="badge badge-verified">✓ OFFICIAL CHANNEL</span>
+            <span class="badge badge-onsale">PRIMARY: ON SALE</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="promoter-tag">Raw Vision Collective &amp; Yeezy</div>
+          <h2 class="concert-title">YE Live in Jakarta</h2>
+          <div class="meta-list">
+            <div class="meta-item">
+              <span>📅</span>
+              <div><strong>Sabtu, 24 Oktober 2026</strong> • 20:00 WIB</div>
+            </div>
+            <div class="meta-item">
+              <span>📍</span>
+              <div><strong>Gelora Bung Karno (Main Stadium)</strong> • Jakarta</div>
+            </div>
+            <div class="meta-item">
+              <span>👥</span>
+              <div>Artis: <strong>Ye / Kanye West</strong></div>
+            </div>
+          </div>
+
+          <div class="notice-box">
+            Tiket resmi primary dialokasikan melalui website resmi <strong>yejakarta.com</strong> via widget Loket resmi.
+          </div>
+
+          <div class="resale-status">
+            <span>Stok Resale Sekunder TIKUM:</span>
+            <span class="resale-zero">0 Tiket (Belum Ada)</span>
+          </div>
+
+          <div class="btn-group">
+            <a href="https://yejakarta.com/" target="_blank" rel="noopener noreferrer" class="btn-primary">
+              Kunjungi Website Resmi yejakarta.com ↗
+            </a>
+            <a href="/events/ye-live-in-jakarta-2026" class="btn-secondary">
+              Lihat Halaman Event di TIKUM →
+            </a>
+            <a href="/panduan-pembeli" class="btn-secondary">
+              Pelajari Proteksi Pembeli TIKUM
+            </a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
 
   <!-- Featured Event Hero -->
   <section id="heroFeature" class="ln-hero-feature"></section>
@@ -525,12 +660,18 @@
     let currentCategory = '';
     let searchTimeout = null;
 
-    // Theme initialization (Light mode default; user preference stored in localStorage)
+    // Theme initialization (Dark mode default to match Verified Concert Hero; user preference stored in localStorage)
     document.addEventListener('DOMContentLoaded', () => {
       const savedTheme = localStorage.getItem('tikum_theme');
-      if (savedTheme === 'dark') {
+      const icon = document.querySelector('#themeToggle i');
+      if (savedTheme === 'light') {
+        document.body.classList.remove('dark-mode');
+        if (icon) {
+          icon.classList.remove('fa-sun');
+          icon.classList.add('fa-moon');
+        }
+      } else {
         document.body.classList.add('dark-mode');
-        const icon = document.querySelector('#themeToggle i');
         if (icon) {
           icon.classList.remove('fa-moon');
           icon.classList.add('fa-sun');
