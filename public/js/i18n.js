@@ -326,7 +326,7 @@
       "desc": "Koordinator lapangan (PIC) TIKUM hadir langsung di sekitar venue untuk mendampingi pembeli saat penukaran wristband gelang dan turnstile entry gate. Anda tidak ditinggalkan sendirian menghadapi bot saat hari konser tiba.",
       "badgeCoord": "On-Site Coordinator",
       "badgeTurnstile": "Turnstile Assistance",
-      "badgeDispute": "Fast Gate Dispute Resolution"
+      "badgeDispute": "Pendampingan Kendala di Gate"
     },
     "trustArchitectureSection": {
       "kicker": "Fondasi Perlindungan",
@@ -337,7 +337,7 @@
       "card2Title": "Escrow Terkunci Hingga Gate",
       "card2Desc": "Dana pembeli tersimpan aman di rekening penampungan internal dan baru dilepas ke penjual saat pembeli lolos gerbang masuk.",
       "card3Title": "Pencegahan Tiket Ganda",
-      "card3Desc": "Sistem buku besar dan audit trail mencegah tiket yang sama didaftarkan atau ditransaksikan dua kali di platform."
+      "card3Desc": "Pencatatan riwayat transaksi dan pengecekan barcode unik mencegah tiket yang sama ditransaksikan dua kali di platform."
     },
     "howItWorksSection": {
       "kicker": "Alur Transaksi Aman",
@@ -356,11 +356,11 @@
       "sellerStep1": "Pasang Listing Tanpa Biaya Awal",
       "sellerStep1Desc": "Masukkan detail tiket, bukti kepemilikan, dan harga jual yang wajar.",
       "sellerStep2": "Verifikasi Tiket Otomatis & Manual",
-      "sellerStep2Desc": "Sistem memeriksa validitas tiket dan mencegah duplikasi sebelum listing aktif.",
+      "sellerStep2Desc": "Pemeriksaan bukti kepemilikan oleh tim operasional dan pengecekan barcode unik sebelum listing aktif.",
       "sellerStep3": "Pemberitahuan Saat Tiket Terjual",
       "sellerStep3Desc": "Dapatkan notifikasi instan saat pembeli melakukan pembayaran ke rekening escrow.",
       "sellerStep4": "Pencairan Dana Otomatis Pasca-Acara",
-      "sellerStep4Desc": "Setelah pembeli terkonfirmasi sukses masuk gate, dana langsung dicairkan ke rekening bank Anda."
+      "sellerStep4Desc": "Setelah pembeli terkonfirmasi sukses masuk gate atau batas verifikasi pasca-event selesai, dana dicairkan ke rekening bank Anda."
     },
     "sellerExperienceSection": {
       "kicker": "Pengalaman Penjual",
@@ -385,7 +385,7 @@
     "finalCtaSection": {
       "kicker": "Mulai Bertransaksi",
       "title": "Siap Menghadiri Acara Favoritmu?",
-      "lead": "Temukan ribuan penikmat musik, olahraga, dan festival di ekosistem tiket sekunder yang terlindungi.",
+      "lead": "Jual dan temukan tiket konser, olahraga, dan festival di ekosistem tiket sekunder yang terlindungi.",
       "ctaFind": "Cari Tiket Sekarang",
       "ctaSell": "Jual Tiket Anda"
     },
@@ -1271,7 +1271,7 @@
       "desc": "TIKUM on-site coordinators (PIC) are present around venue areas to assist buyers during wristband exchange and turnstile entry gates. You won't be left alone facing bots on concert day.",
       "badgeCoord": "On-Site Coordinator",
       "badgeTurnstile": "Turnstile Assistance",
-      "badgeDispute": "Fast Gate Dispute Resolution"
+      "badgeDispute": "On-Site Gate Issue Assistance"
     },
     "trustArchitectureSection": {
       "kicker": "Protection Foundation",
@@ -1282,7 +1282,7 @@
       "card2Title": "Escrow Locked Until Gate",
       "card2Desc": "Buyer funds remain secured in internal escrow and are released to seller only after verified turnstile admission.",
       "card3Title": "Duplicate Ticket Prevention",
-      "card3Desc": "Ledger controls and immutable audit trails prevent the same barcode from being listed or transacted twice."
+      "card3Desc": "Transaction ledger and unique barcode checks prevent the same ticket from being transacted twice on the platform."
     },
     "howItWorksSection": {
       "kicker": "Safe Transaction Flow",
@@ -1301,11 +1301,11 @@
       "sellerStep1": "List Tickets with Zero Upfront Fees",
       "sellerStep1Desc": "Enter ticket information, proof of purchase, and fair secondary market asking price.",
       "sellerStep2": "Automated & Manual Verification",
-      "sellerStep2Desc": "Platform verifies ticket validity and prevents duplicate barcodes before listing goes live.",
+      "sellerStep2Desc": "Manual ownership verification by the operations team and duplicate barcode prevention before listings go live.",
       "sellerStep3": "Instant Notification on Purchase",
       "sellerStep3Desc": "Receive instant updates when a buyer successfully reserves and funds enter escrow.",
       "sellerStep4": "Automated Post-Event Payout",
-      "sellerStep4Desc": "Funds disburse straight to your designated bank account once turnstile entry is confirmed."
+      "sellerStep4Desc": "After buyer turnstile entry is confirmed or post-event verification window concludes, funds are disbursed to your bank account."
     },
     "sellerExperienceSection": {
       "kicker": "Seller Experience",
@@ -1330,7 +1330,7 @@
     "finalCtaSection": {
       "kicker": "Start Transacting",
       "title": "Ready to Attend Your Next Event?",
-      "lead": "Join thousands of music, sports, and festival fans in a protected secondary ticket ecosystem.",
+      "lead": "Buy and sell concert, sports, and festival tickets in a secondary ticket ecosystem protected by escrow and on-site PIC assistance.",
       "ctaFind": "Find Tickets Now",
       "ctaSell": "Sell Your Tickets"
     },

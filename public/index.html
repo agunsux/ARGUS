@@ -54,9 +54,9 @@
       <a class="ln-nav-link" href="#verifiedConcertHero" style="color:#34d399; font-weight:700;"><i class="fa-solid fa-star"></i> <span data-i18n="nav.featuredEvents">Konser Pilihan</span></a>
       <a class="ln-nav-link" href="/events" data-i18n="nav.events">Jelajah Konser</a>
       <a class="ln-nav-link" href="#upcoming" data-i18n="nav.allEvents">Semua Event</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('MUSIC'); return false;" data-i18n="nav.concerts">Konser</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('SPORT'); return false;" data-i18n="nav.sports">Olahraga</a>
-      <a class="ln-nav-link" href="#" onclick="applyNavCategory('COMEDY'); return false;" data-i18n="nav.comedy">Stand Up Comedy</a>
+      <a class="ln-nav-link" href="/events?category=MUSIC" onclick="applyNavCategory('MUSIC'); return false;" data-i18n="nav.concerts">Konser</a>
+      <a class="ln-nav-link" href="/events?category=SPORT" onclick="applyNavCategory('SPORT'); return false;" data-i18n="nav.sports">Olahraga</a>
+      <a class="ln-nav-link" href="/events?category=COMEDY" onclick="applyNavCategory('COMEDY'); return false;" data-i18n="nav.comedy">Stand Up Comedy</a>
       <a class="ln-nav-link" href="/panduan-pembeli" data-i18n="footer.buyerProt">Buyer Protection</a>
       <a class="ln-nav-link" href="/contact" data-i18n="nav.support">Bantuan</a>
     </nav>
@@ -218,7 +218,7 @@
     <div class="trust-item"><i class="fa-solid fa-user-check" style="color:var(--terra-600);"></i> <span data-i18n="trust.venuePic">Petugas Tikum di venue</span></div>
     <div class="trust-item"><i class="fa-solid fa-wallet" style="color:var(--amber-500);"></i> <span data-i18n="trust.paymentMethods">Bayar QRIS / e-wallet / VA</span></div>
     <div class="trust-item"><i class="fa-solid fa-receipt" style="color:var(--ok-600);"></i> <span data-i18n="trust.transparentPrice">Harga transparan all-in</span></div>
-    <div class="trust-item" id="feedFreshnessItem" style="display:none;"><i class="fa-solid fa-bolt" style="color:var(--ok-600);"></i> <span id="feedFreshnessText">Live Auto-Refresh Active</span></div>
+    <div class="trust-item" id="feedFreshnessItem" style="display:none;"><i class="fa-solid fa-bolt" style="color:var(--ok-600);"></i> <span id="feedFreshnessText">Katalog Terverifikasi</span></div>
   </div>
 
   <!-- Search & Discovery Controls -->
@@ -308,7 +308,7 @@
         <div class="venue-pic-badges">
           <span class="venue-pic-badge"><i class="fa-solid fa-map-pin" style="color: #FCD34D;"></i> On-Site Coordinator</span>
           <span class="venue-pic-badge"><i class="fa-solid fa-door-open" style="color: #34D399;"></i> Turnstile Gate Assistance</span>
-          <span class="venue-pic-badge"><i class="fa-solid fa-handshake" style="color: #60A5FA;"></i> Fast Gate Dispute Resolution</span>
+          <span class="venue-pic-badge"><i class="fa-solid fa-handshake" style="color: #60A5FA;"></i> Pendampingan Kendala di Gate</span>
         </div>
       </div>
     </div>
@@ -342,7 +342,7 @@
             <td><strong>Validitas Tiket &amp; Barcode</strong></td>
             <td>Rawan barcode ganda &amp; screenshot palsu</td>
             <td>Pemeriksaan bukti manual tanpa jaminan</td>
-            <td class="col-tikum"><strong>Audit trail anti-duplikasi &amp; verifikasi data resmi</strong></td>
+            <td class="col-tikum"><strong>Pencatatan riwayat transaksi &amp; verifikasi data resmi</strong></td>
           </tr>
           <tr>
             <td><strong>Pendampingan Hari-H di Acara</strong></td>
@@ -422,7 +422,7 @@
           <div class="how-step-num" style="background: rgba(4, 120, 87, 0.12); color: #047857;">2</div>
           <div class="how-step-content">
             <div class="how-step-title">Verifikasi Tiket Anti-Duplikasi</div>
-            <div class="how-step-desc">Sistem memeriksa validitas tiket dan mencegah duplikasi sebelum listing tayang.</div>
+            <div class="how-step-desc">Pemeriksaan bukti kepemilikan oleh tim operasional dan pencegahan duplikasi barcode sebelum listing tayang.</div>
           </div>
         </div>
         <div class="how-step">
@@ -436,7 +436,7 @@
           <div class="how-step-num" style="background: rgba(4, 120, 87, 0.12); color: #047857;">4</div>
           <div class="how-step-content">
             <div class="how-step-title">Pencairan Dana Pasca-Acara</div>
-            <div class="how-step-desc">Setelah pembeli terkonfirmasi sukses masuk gate, dana langsung dicairkan ke rekening Anda.</div>
+            <div class="how-step-desc">Setelah pembeli terkonfirmasi sukses masuk gate atau batas verifikasi pasca-event selesai, dana dicairkan ke rekening bank Anda.</div>
           </div>
         </div>
       </div>
@@ -499,7 +499,7 @@
         Siap Menghadiri Acara Favoritmu?
       </h2>
       <p style="font-size: 14.5px; color: #E2E8F0; max-width: 580px; margin: 0 auto 24px; line-height: 1.6;">
-        Temukan ribuan penikmat konser, olahraga, dan festival di ekosistem tiket sekunder yang terlindungi escrow dan opsi pendampingan PIC di venue.
+        Jual dan temukan tiket konser, olahraga, dan festival di ekosistem tiket sekunder yang terlindungi escrow dan opsi pendampingan PIC di venue.
       </p>
       <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
         <a href="#upcoming" class="ln-btn ln-btn-primary" style="padding: 13px 28px; font-size: 14px;">
@@ -796,7 +796,7 @@
         el.style.display = 'flex';
         const d = new Date(data.generated_at);
         const timeStr = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        textEl.textContent = `Live Feed Active • Diperbarui ${timeStr} WIB`;
+        textEl.textContent = `Katalog Aktif • Dimuat ${timeStr} WIB`;
       }
     }
 

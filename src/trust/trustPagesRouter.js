@@ -249,9 +249,9 @@ router.get('/how-it-works', (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 2. /buyer-protection
+// 2. /buyer-protection & /panduan-pembeli
 // -------------------------------------------------------------
-router.get('/buyer-protection', (req, res) => {
+router.get(['/buyer-protection', '/panduan-pembeli'], (req, res) => {
   const isEn = (req.query.lang || '').toLowerCase() === 'en';
   const lang = isEn ? 'en' : 'id';
 
