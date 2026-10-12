@@ -280,6 +280,37 @@
       });
     }
 
+    const ERROR_MESSAGES = {
+      TOKEN_EXPIRED: 'Tautan magic link sudah kedaluwarsa (berlaku 15 menit). Silakan minta magic link baru.',
+      TOKEN_ALREADY_USED: 'Tautan magic link ini sudah pernah digunakan. Silakan minta magic link baru untuk masuk.',
+      MALFORMED_TOKEN: 'Format tautan verifikasi tidak valid. Silakan minta magic link baru.',
+      INVALID_TOKEN: 'Tautan verifikasi tidak valid atau tidak ditemukan. Silakan minta magic link baru.',
+      USER_SUSPENDED: 'Akun Anda sedang ditangguhkan. Hubungi tim dukungan Tikum untuk informasi lebih lanjut.',
+      ACCOUNT_SUSPENDED: 'Akun Anda sedang ditangguhkan. Hubungi tim dukungan Tikum untuk informasi lebih lanjut.',
+      RATE_LIMIT_EXCEEDED: 'Terlalu banyak permintaan login. Silakan tunggu beberapa menit sebelum mencoba lagi.',
+      VERIFICATION_FAILED: 'Verifikasi login gagal. Silakan minta magic link baru.'
+    };
+
+    function getSafeRedirect() {
+      const params = new URLSearchParams(window.location.search);
+      const raw = params.get('redirect') || params.get('next') || '/account';
+      if (typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/\\') && !raw.startsWith('/login') && !raw.startsWith('/api/auth/verify')) {
+        return raw;
+      }
+      return '/account';
+    }
+
+    (function renderInitialErrorFromQuery() {
+      const params = new URLSearchParams(window.location.search);
+      const errCode = params.get('error');
+      const statusBox = document.getElementById('statusBox');
+      if (errCode && statusBox) {
+        statusBox.textContent = ERROR_MESSAGES[errCode] || ERROR_MESSAGES.INVALID_TOKEN;
+        statusBox.className = 'auth-status-box error';
+        statusBox.style.display = 'block';
+      }
+    })();
+
     async function handleMagicLink(e) {
       e.preventDefault();
       const emailInput = document.getElementById('magicEmail');
@@ -296,8 +327,9 @@
       try {
         const res = await fetch('/api/auth/magic-link', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ email, redirectUrl: getSafeRedirect() })
         });
 
         const data = await res.json();
@@ -307,7 +339,7 @@
           document.getElementById('loginFormView').style.display = 'none';
           document.getElementById('confirmationView').style.display = 'block';
         } else {
-          statusBox.textContent = data.message || 'Gagal mengirim magic link. Silakan coba lagi.';
+          statusBox.textContent = data.error || data.message || 'Gagal mengirim magic link. Silakan coba lagi.';
           statusBox.className = 'auth-status-box error';
           statusBox.style.display = 'block';
         }
@@ -327,14 +359,14 @@
       document.getElementById('statusBox').style.display = 'none';
     }
 
-    // Auto-check existing session: if already logged in, redirect to /account
+    // Auto-check existing session: if already logged in, redirect to safe target (/account by default)
     (async function checkExistingSession() {
       try {
-        const res = await fetch('/api/auth/session');
+        const res = await fetch('/api/auth/session', { credentials: 'same-origin' });
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated) {
-            window.location.href = '/account';
+            window.location.href = getSafeRedirect();
           }
         }
       } catch (_) {}

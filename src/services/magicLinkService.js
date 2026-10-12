@@ -17,6 +17,7 @@
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { state, recordAuditLog } = require('../database');
+const { getUserRepository } = require('../storage');
 const { SessionStore } = require('./sessionStore');
 const { emailService } = require('./emailService');
 
@@ -52,6 +53,22 @@ class MagicLinkService {
   static resetRateLimits() {
     ipRequestHistory.clear();
     emailRequestHistory.clear();
+  }
+
+  /**
+   * Resolves canonical base URL for magic link callbacks across Production, Preview, and Local environments.
+   */
+  static resolveBaseUrl() {
+    if (process.env.APP_BASE_URL && typeof process.env.APP_BASE_URL === 'string') {
+      const cleaned = process.env.APP_BASE_URL.trim().replace(/\/+$/, '');
+      if (cleaned.startsWith('https://') || cleaned.startsWith('http://')) {
+        return cleaned;
+      }
+    }
+    if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL.trim().replace(/\/+$/, '')}`;
+    }
+    return 'https://tikum.app';
   }
 
   /**
@@ -105,7 +122,7 @@ class MagicLinkService {
   }
 
   /**
-   * Validates redirect URL to prevent open redirect vulnerabilities
+   * Validates redirect URL to prevent open redirect vulnerabilities and self-redirect loops
    */
   static validateRedirectUrl(url) {
     if (!url || typeof url !== 'string') return '/';
@@ -113,10 +130,19 @@ class MagicLinkService {
 
     // Reject javascript:, data:, and other dangerous protocols
     if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) {
-      // If absolute URL, only permit canonical tikum.app domain
+      // If absolute URL, only permit canonical tikum.app domain (or active preview host)
       try {
         const parsed = new URL(trimmed);
-        if (parsed.protocol === 'https:' && (parsed.hostname === 'tikum.app' || parsed.hostname === 'www.tikum.app')) {
+        const previewHost = (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL)
+          ? process.env.VERCEL_URL.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '')
+          : null;
+        const allowedHost = parsed.hostname === 'tikum.app' ||
+          parsed.hostname === 'www.tikum.app' ||
+          (previewHost && parsed.hostname === previewHost);
+        if (parsed.protocol === 'https:' && allowedHost) {
+          if (parsed.pathname.startsWith('/api/auth/verify')) {
+            return '/';
+          }
           return trimmed;
         }
       } catch (e) {
@@ -127,6 +153,9 @@ class MagicLinkService {
 
     // Must start with single / and not protocol-relative //
     if (trimmed.startsWith('/') && !trimmed.startsWith('//') && !trimmed.startsWith('/\\')) {
+      if (trimmed.startsWith('/api/auth/verify')) {
+        return '/';
+      }
       return trimmed;
     }
 
@@ -141,8 +170,114 @@ class MagicLinkService {
   }
 
   /**
+   * Resolves or provisions a canonical user across both authoritative UserRepository (PostgreSQL)
+   * and legacy in-memory state.users without creating duplicate accounts or mismatched IDs.
+   */
+  static async ensureUserRecord(email, nowIso = new Date().toISOString()) {
+    const normEmail = String(email || '').toLowerCase().trim();
+    const userRepo = getUserRepository();
+    if (!state.users) state.users = [];
+
+    let repoUser = null;
+    if (userRepo && typeof userRepo.getUserByEmail === 'function') {
+      try {
+        repoUser = await userRepo.getUserByEmail(normEmail);
+      } catch (_) {}
+    }
+
+    let stateUser = state.users.find(u => u.email && u.email.toLowerCase() === normEmail);
+
+    if (repoUser) {
+      if (!stateUser) {
+        stateUser = {
+          ...repoUser,
+          email: normEmail,
+          role: (repoUser.role || 'buyer').toLowerCase(),
+          status: repoUser.status || 'ACTIVE',
+          password: repoUser.password ?? null,
+          password_hash: repoUser.password_hash ?? null,
+          auth_provider: repoUser.auth_provider || repoUser.metadata?.auth_provider || 'MAGIC_LINK',
+          created_at: repoUser.created_at || nowIso,
+          updated_at: repoUser.updated_at || nowIso
+        };
+        state.users.push(stateUser);
+      } else {
+        // Keep IDs synchronized with authoritative repository
+        stateUser.id = repoUser.id;
+        if (stateUser.status && stateUser.status.toUpperCase() === 'SUSPENDED') {
+          repoUser.status = 'SUSPENDED';
+        } else if (repoUser.status && repoUser.status.toUpperCase() === 'SUSPENDED') {
+          stateUser.status = 'SUSPENDED';
+        }
+      }
+      return stateUser;
+    }
+
+    if (stateUser) {
+      // User was seeded in state.users (e.g. unit test); ensure authoritative repository also has this exact user ID
+      if (userRepo && typeof userRepo.createUser === 'function') {
+        try {
+          const existingById = await userRepo.getUserById(stateUser.id);
+          if (!existingById) {
+            await userRepo.createUser({
+              id: stateUser.id,
+              email: normEmail,
+              name: stateUser.name || normEmail.split('@')[0],
+              role: (stateUser.role || 'BUYER').toUpperCase(),
+              status: (stateUser.status || 'ACTIVE').toUpperCase(),
+              password_hash: stateUser.password_hash || stateUser.password || null,
+              metadata: { auth_provider: stateUser.auth_provider || 'MAGIC_LINK' }
+            });
+          }
+        } catch (_) {}
+      }
+      return stateUser;
+    }
+
+    // Brand new user: create in authoritative UserRepository first, then sync to state.users
+    const generatedId = `usr-${uuidv4().substring(0, 8)}`;
+    const defaultName = normEmail.split('@')[0];
+
+    if (userRepo && typeof userRepo.createUser === 'function') {
+      try {
+        repoUser = await userRepo.createUser({
+          id: generatedId,
+          email: normEmail,
+          name: defaultName,
+          role: 'BUYER', // Default safe role: buyer/user, never admin
+          status: 'ACTIVE',
+          password_hash: null,
+          metadata: { auth_provider: 'MAGIC_LINK' }
+        });
+      } catch (err) {
+        if (err.code === 'IDENTITY_CONFLICT') {
+          repoUser = await userRepo.getUserByEmail(normEmail).catch(() => null);
+        } else if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw err;
+        }
+      }
+    }
+
+    const newUser = {
+      id: repoUser ? repoUser.id : generatedId,
+      name: repoUser ? repoUser.name : defaultName,
+      email: normEmail,
+      phone: repoUser ? repoUser.phone : null,
+      role: 'buyer', // Default safe role: buyer/user, never admin
+      status: repoUser ? (repoUser.status || 'ACTIVE') : 'ACTIVE',
+      password: null, // Passwordless account
+      password_hash: null,
+      auth_provider: 'MAGIC_LINK',
+      created_at: (repoUser && repoUser.created_at) ? repoUser.created_at : nowIso,
+      updated_at: (repoUser && repoUser.updated_at) ? repoUser.updated_at : nowIso
+    };
+    state.users.push(newUser);
+    return newUser;
+  }
+
+  /**
    * Request Magic Link
-   * Generates secure token, stores token hash, dispatches email.
+   * Generates secure token, stores token hash in durable UserRepository & local state, dispatches email.
    * Prevents user enumeration by always returning uniform generic response.
    */
   static async requestMagicLink({ email, ip = '127.0.0.1', userAgent = null, redirectUrl = '/' }) {
@@ -169,13 +304,18 @@ class MagicLinkService {
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = this.hashToken(rawToken);
     const now = Date.now();
+    const nowIso = new Date(now).toISOString();
     const expiresAt = new Date(now + TOKEN_EXPIRY_MS).toISOString();
+
+    // Resolve or provision user in authoritative UserRepository & state.users
+    const userRecord = await this.ensureUserRecord(normEmail, nowIso);
 
     const tokenRecord = {
       id: `mlt-${uuidv4()}`,
+      user_id: userRecord ? userRecord.id : null,
       email: normEmail,
       token_hash: tokenHash,
-      created_at: new Date(now).toISOString(),
+      created_at: nowIso,
       expires_at: expiresAt,
       used: false,
       used_at: null,
@@ -189,6 +329,12 @@ class MagicLinkService {
     }
     state.magic_link_tokens.push(tokenRecord);
 
+    // Persist token hash durably in UserRepository (PostgreSQL in production)
+    const userRepo = getUserRepository();
+    if (userRepo && typeof userRepo.saveMagicLinkToken === 'function') {
+      await userRepo.saveMagicLinkToken(tokenRecord);
+    }
+
     // Audit log: MAGIC_LINK_REQUESTED (NEVER logs raw token)
     const emailHash = crypto.createHash('sha256').update(normEmail).digest('hex');
     await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_REQUESTED', 'SYSTEM', {
@@ -198,7 +344,8 @@ class MagicLinkService {
     }).catch(() => {});
 
     const safeRedirect = encodeURIComponent(tokenRecord.redirect_url);
-    const magicLinkUrl = `https://tikum.app/api/auth/verify?token=${rawToken}&redirect=${safeRedirect}`;
+    const baseUrl = this.resolveBaseUrl();
+    const magicLinkUrl = `${baseUrl}/api/auth/verify?token=${rawToken}&redirect=${safeRedirect}`;
 
     // Delivery abstraction:
     // 1. If test sink is set, send to sink
@@ -208,26 +355,6 @@ class MagicLinkService {
         rawToken, // provided strictly to test harness sink
         magicLinkUrl
       });
-    }
-
-    // Pre-create account for new users or keep existing (Single passwordless identity flow)
-    if (!state.users) state.users = [];
-    let existingUser = state.users.find(u => u.email && u.email.toLowerCase() === normEmail);
-    if (!existingUser) {
-      const newUser = {
-        id: `usr-${uuidv4().substring(0, 8)}`,
-        name: normEmail.split('@')[0],
-        email: normEmail,
-        phone: null,
-        role: 'buyer', // Default safe role: buyer/user, never admin
-        status: 'ACTIVE',
-        password: null, // Passwordless account
-        password_hash: null,
-        auth_provider: 'MAGIC_LINK',
-        created_at: new Date(now).toISOString(),
-        updated_at: new Date(now).toISOString()
-      };
-      state.users.push(newUser);
     }
 
     // 2. Outbound transactional email dispatch via EmailService
@@ -280,9 +407,9 @@ class MagicLinkService {
 
   /**
    * Verify Magic Link Token
-   * Single-use validation, expiry check, replay protection, session creation.
+   * Single-use validation, expiry check, replay protection, durable session creation.
    */
-  static async verifyMagicLink({ token, ip = '127.0.0.1', userAgent = null }) {
+  static async verifyMagicLink({ token, ip = '127.0.0.1', userAgent = null, redirectUrl = null }) {
     if (!token || typeof token !== 'string' || token.trim().length === 0) {
       await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_INVALID', 'SYSTEM', {
         reason: 'MISSING_TOKEN',
@@ -308,10 +435,23 @@ class MagicLinkService {
     }
 
     const candidateHash = this.hashToken(cleanToken);
+    const userRepo = getUserRepository();
     const tokens = state.magic_link_tokens || [];
 
-    // Find token by secure hash
-    const record = tokens.find(t => t.token_hash === candidateHash);
+    // Find token by secure hash in both durable UserRepository and in-memory state
+    let repoRecord = null;
+    if (userRepo && typeof userRepo.getMagicLinkTokenByHash === 'function') {
+      try {
+        repoRecord = await userRepo.getMagicLinkTokenByHash(candidateHash);
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw err;
+        }
+      }
+    }
+    const stateRecord = tokens.find(t => t.token_hash === candidateHash);
+    const record = repoRecord || stateRecord;
+
     if (!record) {
       await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_INVALID', 'SYSTEM', {
         reason: 'TOKEN_NOT_FOUND',
@@ -323,8 +463,9 @@ class MagicLinkService {
       throw err;
     }
 
-    // Replay protection: check if already used
-    if (record.used) {
+    // Replay protection: check if already used in either store
+    const alreadyUsed = Boolean(record.used) || Boolean(stateRecord && stateRecord.used) || Boolean(repoRecord && repoRecord.used);
+    if (alreadyUsed) {
       await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_INVALID', 'SYSTEM', {
         token_id: record.id,
         reason: 'TOKEN_ALREADY_USED',
@@ -336,9 +477,17 @@ class MagicLinkService {
       throw err;
     }
 
-    // Expiration check
+    // Expiration check (trusted DB clock + server clock across both stores)
     const now = new Date();
-    if (new Date(record.expires_at) <= now) {
+    const nowIso = now.toISOString();
+    const isExpired =
+      Boolean(repoRecord && repoRecord.db_expired) ||
+      !record.expires_at ||
+      new Date(record.expires_at) <= now ||
+      Boolean(stateRecord && (!stateRecord.expires_at || new Date(stateRecord.expires_at) <= now)) ||
+      Boolean(repoRecord && (!repoRecord.expires_at || new Date(repoRecord.expires_at) <= now));
+
+    if (isExpired) {
       await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_EXPIRED', 'SYSTEM', {
         token_id: record.id,
         ip
@@ -349,34 +498,57 @@ class MagicLinkService {
       throw err;
     }
 
-    // Invalidate immediately (single-use)
+    // Invalidate immediately (atomic single-use enforcement)
+    if (stateRecord) {
+      stateRecord.used = true;
+      stateRecord.used_at = nowIso;
+    }
     record.used = true;
-    record.used_at = now.toISOString();
+    record.used_at = nowIso;
 
-    // Look up existing user or provision new user
-    let user = (state.users || []).find(u => u.email.toLowerCase() === record.email.toLowerCase());
-
-    if (!user) {
-      // Self-signup fallback: create new user with default 'buyer' role (NEVER admin)
-      user = {
-        id: `usr-${uuidv4().substring(0, 8)}`,
-        name: record.email.split('@')[0],
-        email: record.email,
-        phone: null,
-        role: 'buyer', // Default safe role
-        status: 'ACTIVE',
-        password: null, // Passwordless account
-        password_hash: null,
-        auth_provider: 'MAGIC_LINK',
-        created_at: now.toISOString(),
-        updated_at: now.toISOString()
-      };
-      if (!state.users) state.users = [];
-      state.users.push(user);
+    const requireRepoConsume = Boolean(repoRecord) || process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+    if (requireRepoConsume && userRepo && typeof userRepo.consumeMagicLinkToken === 'function') {
+      const consumed = await userRepo.consumeMagicLinkToken(candidateHash, nowIso);
+      if (!consumed) {
+        await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_INVALID', 'SYSTEM', {
+          token_id: record.id,
+          reason: 'TOKEN_ALREADY_USED',
+          ip
+        }).catch(() => {});
+        const err = new Error('Token verifikasi ini sudah pernah digunakan (replay protection)');
+        err.code = 'TOKEN_ALREADY_USED';
+        err.status = 401;
+        throw err;
+      }
     }
 
-    // Create session in canonical SessionStore
-    const session = SessionStore.createSession({
+    // Resolve existing user or provision new user in both UserRepository and state.users
+    const user = await this.ensureUserRecord(record.email, nowIso);
+
+    // Check account suspension before creating a session
+    if (user.status && user.status.toUpperCase() === 'SUSPENDED') {
+      await recordAuditLog('AUTH', user.id, 'MAGIC_LINK_SUSPENDED', 'SYSTEM', {
+        user_id: user.id,
+        ip
+      }).catch(() => {});
+      if (userRepo && typeof userRepo.recordAuthAudit === 'function') {
+        userRepo.recordAuthAudit({
+          userId: user.id,
+          eventType: 'MAGIC_LINK_LOGIN_SUSPENDED',
+          success: false,
+          ipAddress: ip,
+          userAgent,
+          metadata: { tokenId: record.id }
+        }).catch(() => {});
+      }
+      const err = new Error('Akun Anda sedang ditangguhkan. Akses ditolak.');
+      err.code = 'USER_SUSPENDED';
+      err.status = 403;
+      throw err;
+    }
+
+    // Create session in canonical SessionStore and await durable DB persistence
+    const session = await SessionStore.createSession({
       userId: user.id,
       role: user.role,
       userAgent,
@@ -389,7 +561,25 @@ class MagicLinkService {
       state.sessions.push(session);
     }
 
-    // Audit logs: MAGIC_LINK_VERIFIED and SESSION_CREATED
+    // Update last_login_at in authoritative UserRepository
+    if (userRepo && typeof userRepo.updateUser === 'function') {
+      await userRepo.updateUser(user.id, { last_login_at: nowIso }).catch(() => {});
+    }
+    user.last_login_at = nowIso;
+
+    // Record durable auth audit event
+    if (userRepo && typeof userRepo.recordAuthAudit === 'function') {
+      userRepo.recordAuthAudit({
+        userId: user.id,
+        eventType: 'MAGIC_LINK_VERIFIED',
+        success: true,
+        ipAddress: ip,
+        userAgent,
+        metadata: { tokenId: record.id }
+      }).catch(() => {});
+    }
+
+    // Audit logs: MAGIC_LINK_VERIFIED and SESSION_CREATED (never logs raw session_token)
     await recordAuditLog('AUTH', user.id, 'MAGIC_LINK_VERIFIED', 'MAGIC_LINK', {
       user_id: user.id,
       role: user.role,
@@ -398,9 +588,11 @@ class MagicLinkService {
 
     await recordAuditLog('AUTH', user.id, 'SESSION_CREATED', 'MAGIC_LINK', {
       user_id: user.id,
-      session_token: session.session_token,
+      session_token_hash: session.session_token_hash,
       ip
     }).catch(() => {});
+
+    const validatedRedirect = this.validateRedirectUrl(record.redirect_url || redirectUrl || '/');
 
     return {
       user: {
@@ -412,7 +604,7 @@ class MagicLinkService {
         created_at: user.created_at
       },
       session,
-      redirectUrl: record.redirect_url || '/'
+      redirectUrl: validatedRedirect
     };
   }
 }

@@ -641,6 +641,110 @@ class PostgresUserRepository extends UserRepository {
     return res.rows.length > 0;
   }
 
+  // --- MAGIC LINK TOKEN DURABILITY ---
+
+  async saveMagicLinkToken(tokenRecord) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.saveMagicLinkToken(tokenRecord);
+    }
+    if (!tokenRecord || !tokenRecord.token_hash) return null;
+
+    const id = tokenRecord.id || `mlt-${crypto.randomUUID()}`;
+    const safeMetadata = {
+      id,
+      email: String(tokenRecord.email || '').toLowerCase().trim(),
+      token_hash: tokenRecord.token_hash,
+      created_at: tokenRecord.created_at || new Date().toISOString(),
+      expires_at: tokenRecord.expires_at,
+      used: Boolean(tokenRecord.used),
+      used_at: tokenRecord.used_at || null,
+      redirect_url: tokenRecord.redirect_url || '/'
+    };
+
+    const eventType = safeMetadata.used ? 'MAGIC_LINK_TOKEN_CONSUMED' : 'MAGIC_LINK_TOKEN_ISSUED';
+    const sql = `
+      INSERT INTO auth_audit_events (id, user_id, event_type, success, ip_address, user_agent, metadata)
+      VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+      ON CONFLICT (id) DO UPDATE SET
+        event_type = EXCLUDED.event_type,
+        metadata = EXCLUDED.metadata
+      RETURNING *;
+    `;
+
+    await this.query(sql, [
+      id,
+      tokenRecord.user_id || null,
+      eventType,
+      true,
+      tokenRecord.ip_address || null,
+      tokenRecord.user_agent || null,
+      JSON.stringify(safeMetadata)
+    ]);
+
+    return safeMetadata;
+  }
+
+  async getMagicLinkTokenByHash(tokenHash) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.getMagicLinkTokenByHash(tokenHash);
+    }
+    if (!tokenHash) return null;
+
+    const sql = `
+      SELECT id, user_id, event_type, ip_address, user_agent, metadata, created_at,
+             ((metadata->>'expires_at')::timestamptz <= NOW()) AS db_expired
+      FROM auth_audit_events
+      WHERE event_type IN ('MAGIC_LINK_TOKEN_ISSUED', 'MAGIC_LINK_TOKEN_CONSUMED')
+        AND metadata->>'token_hash' = $1
+      ORDER BY created_at DESC
+      LIMIT 1;
+    `;
+    const res = await this.query(sql, [tokenHash]);
+    const row = res && res.rows ? res.rows[0] : null;
+    if (!row) return null;
+
+    const meta = row.metadata || {};
+    const isUsed = row.event_type === 'MAGIC_LINK_TOKEN_CONSUMED' || Boolean(meta.used);
+    return {
+      id: meta.id || row.id,
+      user_id: row.user_id || meta.user_id || null,
+      email: meta.email,
+      token_hash: meta.token_hash,
+      created_at: meta.created_at || (row.created_at ? new Date(row.created_at).toISOString() : null),
+      expires_at: meta.expires_at,
+      db_expired: Boolean(row.db_expired),
+      used: isUsed,
+      used_at: meta.used_at || null,
+      ip_address: row.ip_address || null,
+      user_agent: row.user_agent || null,
+      redirect_url: meta.redirect_url || '/'
+    };
+  }
+
+  async consumeMagicLinkToken(tokenHash, usedAtIso = new Date().toISOString()) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.consumeMagicLinkToken(tokenHash, usedAtIso);
+    }
+    if (!tokenHash) return false;
+
+    const sql = `
+      UPDATE auth_audit_events
+      SET event_type = 'MAGIC_LINK_TOKEN_CONSUMED',
+          metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('used', true, 'used_at', COALESCE($2::text, NOW()::text))
+      WHERE event_type = 'MAGIC_LINK_TOKEN_ISSUED'
+        AND metadata->>'token_hash' = $1
+        AND COALESCE((metadata->>'used')::boolean, false) = false
+        AND (metadata->>'expires_at') IS NOT NULL
+        AND (metadata->>'expires_at')::timestamptz > NOW()
+      RETURNING id;
+    `;
+    const res = await this.query(sql, [tokenHash, usedAtIso]);
+    return Boolean(res && res.rows && res.rows.length > 0);
+  }
+
   // --- AUDIT TRAIL ---
 
   async recordAuthAudit({ userId = null, eventType, success = true, ipAddress = null, userAgent = null, metadata = {} }) {

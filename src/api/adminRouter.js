@@ -159,6 +159,7 @@ function buildSourceClaimIndex() {
 }
 
 function setAdminSessionCookie(res, token) {
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL;
   const opts = [
     `session_token=${token}`,
     'HttpOnly',
@@ -166,12 +167,21 @@ function setAdminSessionCookie(res, token) {
     'SameSite=Lax',
     `Max-Age=${24 * 60 * 60}`
   ];
-  if (process.env.NODE_ENV === 'production') opts.push('Secure');
+  if (isProd) opts.push('Secure');
   res.setHeader('Set-Cookie', opts.join('; '));
 }
 
 function clearAdminSessionCookie(res) {
-  res.setHeader('Set-Cookie', 'session_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax');
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+  const opts = [
+    'session_token=',
+    'HttpOnly',
+    'Path=/',
+    'Max-Age=0',
+    'SameSite=Lax'
+  ];
+  if (isProd) opts.push('Secure');
+  res.setHeader('Set-Cookie', opts.join('; '));
 }
 
 /**
@@ -192,26 +202,60 @@ router.post('/login', async (req, res) => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const user = (state.users || []).find(u => u.email && u.email.toLowerCase() === normalizedEmail);
-  const isValid = user && verifyPassword(password, user.password_hash || user.password);
+  const { getUserRepository } = require('../storage');
+  const userRepo = getUserRepository();
+
+  let repoUser = null;
+  if (userRepo && typeof userRepo.getUserByEmail === 'function') {
+    repoUser = await userRepo.getUserByEmail(normalizedEmail, true).catch(() => null);
+  }
+  const stateUser = (state.users || []).find(u => u.email && u.email.toLowerCase() === normalizedEmail);
+  const user = stateUser || repoUser;
+
+  const storedHash = user?.password_hash || user?.password || repoUser?.password_hash;
+  const isValid = user && storedHash && verifyPassword(password, storedHash);
 
   if (!isValid) {
     return res.status(401).json({ error: 'Invalid email or password', code: 'INVALID_CREDENTIALS' });
   }
 
-  if (user.status && user.status.toUpperCase() === 'SUSPENDED') {
+  const isSuspended = (user.status && user.status.toUpperCase() === 'SUSPENDED') ||
+                      (repoUser?.status && repoUser.status.toUpperCase() === 'SUSPENDED');
+  if (isSuspended) {
     return res.status(403).json({ error: 'Account is suspended. Access denied.', code: 'ACCOUNT_SUSPENDED' });
   }
 
-  if (!isAdminRole(user.role)) {
+  const isAdmin = isAdminRole(user.role) &&
+                  (!stateUser || isAdminRole(stateUser.role)) &&
+                  (!repoUser || isAdminRole(repoUser.role));
+  if (!isAdmin) {
     return res.status(403).json({
       error: 'This account is not authorized for the operations control center.',
       code: 'ADMIN_ACCESS_REQUIRED'
     });
   }
 
-  const session = SessionStore.createSession({
-    userId: user.id,
+  // Ensure admin exists in authoritative UserRepository before creating session
+  if (!repoUser && userRepo && typeof userRepo.createUser === 'function') {
+    try {
+      repoUser = await userRepo.createUser({
+        id: user.id,
+        email: normalizedEmail,
+        name: user.name || 'Admin',
+        role: (user.role || 'ADMIN').toUpperCase(),
+        status: 'ACTIVE',
+        password_hash: storedHash
+      });
+    } catch (_) {}
+  }
+
+  const canonicalAdminId = repoUser?.id || user.id;
+  if (stateUser && repoUser?.id) {
+    stateUser.id = repoUser.id;
+  }
+
+  const session = await SessionStore.createSession({
+    userId: canonicalAdminId,
     role: user.role,
     ip: req.ip || req.connection?.remoteAddress || null,
     userAgent: req.headers['user-agent'] || null
@@ -220,6 +264,9 @@ router.post('/login', async (req, res) => {
   const now = new Date().toISOString();
   user.last_login_at = now;
   user.updated_at = now;
+  if (userRepo && typeof userRepo.updateUser === 'function') {
+    await userRepo.updateUser(user.id, { last_login_at: now }).catch(() => {});
+  }
 
   setAdminSessionCookie(res, session.session_token);
 
@@ -247,12 +294,15 @@ router.post('/login', async (req, res) => {
  */
 router.post('/logout', async (req, res) => {
   const user = resolveUser(req);
+  const { parseCookies } = require('../middleware/auth');
+  const cookieToken = req.headers?.cookie ? parseCookies(req.headers.cookie).session_token : null;
   const token = req.session?.session_token ||
     (req.header ? (req.header('authorization')?.replace('Bearer ', '') || req.header('x-session-token')) : null) ||
+    cookieToken ||
     req.body?.session_token;
 
   if (token) {
-    SessionStore.revokeSession(token, 'ADMIN_LOGOUT');
+    await SessionStore.revokeSessionAsync(token.trim(), 'ADMIN_LOGOUT');
   }
 
   clearAdminSessionCookie(res);

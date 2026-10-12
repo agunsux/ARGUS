@@ -260,7 +260,7 @@ function mapRouterError(err, defaultStatus = 400) {
  * POST /api/mvp/auth/login
  */
 router.post('/auth/login', (req, res) => {
-  const { usernameOrId, password } = req.body;
+  const { usernameOrId, password } = req.body || {};
   if (!usernameOrId) {
     return res.status(400).json({ error: 'usernameOrId is required', code: 'VALIDATION_ERROR' });
   }
@@ -270,7 +270,18 @@ router.post('/auth/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid user credentials', code: 'AUTH_FAILED' });
   }
 
-  if (user.password && password && !verifyPassword(password, user.password)) {
+  if (user.status && user.status.toUpperCase() === 'SUSPENDED') {
+    return res.status(403).json({ error: 'Account is suspended', code: 'ACCOUNT_SUSPENDED' });
+  }
+
+  const isProd = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+  const storedSecret = user.password || user.password_hash;
+
+  if (isProd) {
+    if (!password || !storedSecret || !verifyPassword(password, storedSecret)) {
+      return res.status(401).json({ error: 'Invalid password', code: 'AUTH_FAILED' });
+    }
+  } else if (storedSecret && password && !verifyPassword(password, storedSecret)) {
     return res.status(401).json({ error: 'Invalid password', code: 'AUTH_FAILED' });
   }
 

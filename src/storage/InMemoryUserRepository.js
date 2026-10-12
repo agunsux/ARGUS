@@ -13,6 +13,7 @@ class InMemoryUserRepository extends UserRepository {
     this.users = new Map();
     this.userRoles = new Map(); // userId -> Set of roles
     this.sessions = new Map();  // tokenHash -> session
+    this.magicLinkTokens = new Map(); // tokenHash -> tokenRecord
     this.auditEvents = [];
     this.initialized = false;
   }
@@ -327,6 +328,48 @@ class InMemoryUserRepository extends UserRepository {
     return false;
   }
 
+  async saveMagicLinkToken(tokenRecord) {
+    await this.ensureInitialized();
+    if (!tokenRecord || !tokenRecord.token_hash) return null;
+    const copy = {
+      id: tokenRecord.id,
+      user_id: tokenRecord.user_id || null,
+      email: String(tokenRecord.email || '').toLowerCase().trim(),
+      token_hash: tokenRecord.token_hash,
+      created_at: tokenRecord.created_at || new Date().toISOString(),
+      expires_at: tokenRecord.expires_at,
+      used: Boolean(tokenRecord.used),
+      used_at: tokenRecord.used_at || null,
+      ip_address: tokenRecord.ip_address || null,
+      user_agent: tokenRecord.user_agent || null,
+      redirect_url: tokenRecord.redirect_url || '/'
+    };
+    this.magicLinkTokens.set(copy.token_hash, copy);
+    return { ...copy };
+  }
+
+  async getMagicLinkTokenByHash(tokenHash) {
+    await this.ensureInitialized();
+    if (!tokenHash) return null;
+    const rec = this.magicLinkTokens.get(tokenHash);
+    if (!rec) return null;
+    return {
+      ...rec,
+      db_expired: Boolean(!rec.expires_at || new Date(rec.expires_at) <= new Date())
+    };
+  }
+
+  async consumeMagicLinkToken(tokenHash, usedAtIso = new Date().toISOString()) {
+    await this.ensureInitialized();
+    if (!tokenHash) return false;
+    const rec = this.magicLinkTokens.get(tokenHash);
+    if (!rec || rec.used) return false;
+    if (!rec.expires_at || new Date(rec.expires_at) <= new Date()) return false;
+    rec.used = true;
+    rec.used_at = usedAtIso;
+    return true;
+  }
+
   async recordAuthAudit(auditData) {
     await this.ensureInitialized();
     const record = {
@@ -347,6 +390,7 @@ class InMemoryUserRepository extends UserRepository {
     this.users.clear();
     this.userRoles.clear();
     this.sessions.clear();
+    this.magicLinkTokens.clear();
     this.auditEvents = [];
     this.seedBaseline();
   }

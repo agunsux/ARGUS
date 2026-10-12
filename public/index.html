@@ -1255,7 +1255,7 @@
 
     async function checkAuthSession() {
       try {
-        const res = await fetch('/api/auth/session');
+        const res = await fetch('/api/auth/session', { credentials: 'same-origin' });
         if (res.ok) {
           const data = await res.json();
           if (data && data.authenticated && data.user) {
@@ -1315,7 +1315,7 @@
 
     async function handleHeaderLogout() {
       try {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
       } catch (e) {}
       currentUser = null;
       renderAuthHeader(null);
@@ -1363,8 +1363,12 @@
       try {
         const res = await fetch('/api/auth/magic-link', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({
+            email,
+            redirectUrl: window.location.pathname || '/'
+          })
         });
         const data = await res.json();
 
@@ -1375,7 +1379,7 @@
         } else {
           if (errBox) {
             errBox.style.display = 'block';
-            errBox.textContent = data.error || 'Gagal mengirim magic link.';
+            errBox.textContent = data.error || data.message || 'Gagal mengirim magic link.';
           }
           if (btn) {
             btn.disabled = false;

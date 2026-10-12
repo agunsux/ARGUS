@@ -36,9 +36,19 @@ function checkNegotiationRateLimit(req, res, next) {
 }
 
 /**
- * Authentication resolver supporting sessions and test mode headers
+ * Authentication resolver supporting durable sessions, cookies, headers, and test mode headers
  */
 function resolveUser(req) {
+  if (req.user && req.user.id) {
+    if (req.user.status && req.user.status.toUpperCase() === 'SUSPENDED') {
+      req.user = null;
+      req.role = null;
+      return null;
+    }
+    req.role = req.user.role;
+    return req.user;
+  }
+
   const authHeader = req.header ? (req.header('authorization') || req.header('x-session-token')) : null;
   let sessionToken = null;
   if (authHeader) {
@@ -49,11 +59,19 @@ function resolveUser(req) {
     }
   }
 
+  if (!sessionToken && req.headers && req.headers.cookie) {
+    const { parseCookies } = require('../middleware/auth');
+    const cookies = parseCookies(req.headers.cookie);
+    if (cookies.session_token) {
+      sessionToken = cookies.session_token.trim();
+    }
+  }
+
   if (sessionToken) {
     const session = SessionStore.findSession(sessionToken) || state.sessions.find(s => s.session_token === sessionToken && new Date(s.expires_at) > new Date() && !s.revoked);
     if (session) {
       const user = state.users.find(u => u.id === session.user_id);
-      if (user) {
+      if (user && (!user.status || user.status.toUpperCase() !== 'SUSPENDED')) {
         req.user = user;
         req.role = user.role;
         return user;
@@ -66,7 +84,7 @@ function resolveUser(req) {
     const headerId = req.header ? req.header('x-user-id') : null;
     if (headerId) {
       const user = state.users.find(u => u.id === headerId);
-      if (user) {
+      if (user && (!user.status || user.status.toUpperCase() !== 'SUSPENDED')) {
         req.user = user;
         req.role = user.role;
         return user;

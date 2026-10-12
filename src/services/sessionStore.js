@@ -117,13 +117,29 @@ class SessionStore {
           throw err;
         }
       }
-      return localSession;
+      return true;
     })();
 
     // Make localSession Thenable so `await SessionStore.createSession(...)` waits for DB write
-    localSession.then = function(onFulfilled, onRejected) {
-      return repoPromise.then(() => onFulfilled(localSession), onRejected);
-    };
+    // without triggering recursive Promise/Thenable assimilation
+    Object.defineProperty(localSession, 'then', {
+      configurable: true,
+      enumerable: false,
+      writable: true,
+      value: function(onFulfilled, onRejected) {
+        return repoPromise.then(
+          () => {
+            delete localSession.then;
+            return typeof onFulfilled === 'function' ? onFulfilled(localSession) : localSession;
+          },
+          (err) => {
+            delete localSession.then;
+            if (typeof onRejected === 'function') return onRejected(err);
+            throw err;
+          }
+        );
+      }
+    });
 
     return localSession;
   }

@@ -22,10 +22,25 @@ const { SessionStore } = require('../services/sessionStore');
 const { state } = require('../database');
 
 function resolveAdminActor(req) {
+  if (req.user && req.user.id) {
+    if (req.user.status && req.user.status.toUpperCase() === 'SUSPENDED') {
+      return null;
+    }
+    return req.user;
+  }
+
   const authHeader = req.header ? (req.header('authorization') || req.header('x-session-token')) : null;
   let token = null;
   if (authHeader) {
     token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader.trim();
+  }
+
+  if (!token && req.headers && req.headers.cookie) {
+    const { parseCookies } = require('../middleware/auth');
+    const cookies = parseCookies(req.headers.cookie);
+    if (cookies.session_token) {
+      token = cookies.session_token.trim();
+    }
   }
 
   if (token) {
@@ -33,7 +48,7 @@ function resolveAdminActor(req) {
       (state.sessions || []).find(s => s.session_token === token && new Date(s.expires_at) > new Date() && !s.revoked);
     if (session) {
       const user = (state.users || []).find(u => u.id === session.user_id);
-      if (user) return user;
+      if (user && (!user.status || user.status.toUpperCase() !== 'SUSPENDED')) return user;
     }
   }
 
@@ -41,7 +56,7 @@ function resolveAdminActor(req) {
     const candidateId = (req.header ? req.header('x-user-id') : null) || req.body?.admin_id;
     if (candidateId) {
       const user = (state.users || []).find(u => u.id === candidateId);
-      if (user) return user;
+      if (user && (!user.status || user.status.toUpperCase() !== 'SUSPENDED')) return user;
     }
   }
 

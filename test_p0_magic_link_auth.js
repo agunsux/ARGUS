@@ -20,11 +20,14 @@
  * 16. UI Header contains Login/Sign Up adjacent to Dark Mode; /account serves valid page
  */
 
+process.env.NODE_ENV = 'test';
+
 const assert = require('assert');
 const http = require('http');
 const crypto = require('crypto');
 const app = require('./src/server');
 const { state } = require('./src/database');
+const { getUserRepository } = require('./src/storage');
 const { MagicLinkService, MAGIC_LINK_EXPIRY_MINUTES } = require('./src/services/magicLinkService');
 const { SessionStore } = require('./src/services/sessionStore');
 
@@ -456,6 +459,210 @@ async function runTests() {
       assert.ok(loginRes.body.includes('Masuk ke Tikum'));
       assert.ok(loginRes.body.includes('Kirim Magic Link'));
       assert.ok(!loginRes.body.includes('ARGUS Identity'));
+    });
+
+    // 17. Serverless Cold-Start Cross-Instance Magic Link Verification & Session Durability
+    await test('Invariant 17: Magic link verification succeeds across serverless cold start (state wiped) and persists session in UserRepository', async () => {
+      MagicLinkService.resetRateLimits();
+      capturedMail = null;
+      const coldStartEmail = 'coldstart.serverless.user@tikum.app';
+
+      // Step 1: Request magic link on "Instance A"
+      const reqRes = await makeRequest('/api/auth/magic-link', {
+        method: 'POST',
+        body: { email: coldStartEmail, redirectUrl: '/account' }
+      });
+      assert.strictEqual(reqRes.statusCode, 200);
+      assert.ok(capturedMail && capturedMail.rawToken);
+      const rawToken = capturedMail.rawToken;
+
+      // Step 2: Simulate serverless cold start on "Instance B" by wiping all process-local RAM & local file cache
+      state.magic_link_tokens = [];
+      state.users = [];
+      state.sessions = [];
+      SessionStore.reset();
+
+      // Step 3: Click magic link (browser HTML redirect flow) on "Instance B"
+      const verifyRes = await makeRequest(`/api/auth/verify?token=${rawToken}&redirect=%2Faccount`, {
+        headers: { 'Accept': 'text/html,application/xhtml+xml' }
+      });
+      assert.strictEqual(verifyRes.statusCode, 302, 'Browser verify must return 302 Redirect');
+      assert.strictEqual(verifyRes.headers.location, '/account', 'Must redirect to validated redirectUrl');
+
+      const setCookie = verifyRes.headers['set-cookie'];
+      assert.ok(setCookie && setCookie[0], 'Must set session_token cookie on 302 redirect');
+      const cookiePair = setCookie[0].split(';')[0];
+      assert.ok(cookiePair.startsWith('session_token=ses-'));
+
+      // Step 4: Simulate another cold start on "Instance C" when browser loads /account and calls /api/auth/session & /api/auth/me
+      state.sessions = [];
+      SessionStore.reset();
+
+      const sessionCheck = await makeRequest('/api/auth/session', {
+        headers: { 'Cookie': cookiePair }
+      });
+      assert.strictEqual(sessionCheck.statusCode, 200, 'Session must hydrate from authoritative UserRepository');
+      assert.strictEqual(sessionCheck.json.authenticated, true);
+      assert.strictEqual(sessionCheck.json.user.email, coldStartEmail);
+
+      const meCheck = await makeRequest('/api/auth/me', {
+        headers: { 'Cookie': cookiePair }
+      });
+      assert.strictEqual(meCheck.statusCode, 200, '/api/auth/me must succeed with Cookie');
+      assert.strictEqual(meCheck.json.user.email, coldStartEmail);
+
+      // Step 5: Replaying the consumed token on a cold-started instance must still be rejected (401 / redirect to /login?error=TOKEN_ALREADY_USED)
+      state.magic_link_tokens = [];
+      const replayBrowserRes = await makeRequest(`/api/auth/verify?token=${rawToken}`, {
+        headers: { 'Accept': 'text/html' }
+      });
+      assert.strictEqual(replayBrowserRes.statusCode, 302);
+      assert.strictEqual(replayBrowserRes.headers.location, '/login?error=TOKEN_ALREADY_USED');
+    });
+
+    // 18. Existing / Legacy User Profile Preservation (Zero Duplicate Accounts)
+    await test('Invariant 18: Existing user in UserRepository keeps canonical ID and role without duplicate creation', async () => {
+      MagicLinkService.resetRateLimits();
+      capturedMail = null;
+      const userRepo = getUserRepository();
+      const existingEmail = 'legacy.existing.seller@tikum.app';
+
+      const createdLegacy = await userRepo.createUser({
+        id: 'usr-legacy-seller-99',
+        email: existingEmail,
+        name: 'Legacy Seller',
+        role: 'SELLER',
+        status: 'ACTIVE'
+      });
+
+      // Wipe state.users to simulate serverless instance that hasn't cached this user in RAM
+      state.users = [];
+
+      await makeRequest('/api/auth/magic-link', {
+        method: 'POST',
+        body: { email: existingEmail }
+      });
+      assert.ok(capturedMail && capturedMail.rawToken);
+
+      const verifyRes = await makeRequest(`/api/auth/verify?token=${capturedMail.rawToken}&format=json`);
+      assert.strictEqual(verifyRes.statusCode, 200);
+      assert.strictEqual(verifyRes.json.user.id, createdLegacy.id, 'Must preserve canonical user ID');
+      assert.strictEqual(verifyRes.json.user.role, 'seller', 'Must preserve existing seller role');
+
+      const matchingInState = state.users.filter(u => u.email && u.email.toLowerCase() === existingEmail);
+      assert.strictEqual(matchingInState.length, 1, 'Must not create duplicate user records');
+    });
+
+    // 19. Email Scanner HEAD Preflight Protection
+    await test('Invariant 19: HEAD /api/auth/verify does NOT consume single-use magic link token', async () => {
+      MagicLinkService.resetRateLimits();
+      capturedMail = null;
+      const scannerEmail = 'scanner.preflight@tikum.app';
+
+      await makeRequest('/api/auth/magic-link', {
+        method: 'POST',
+        body: { email: scannerEmail }
+      });
+      const rawToken = capturedMail.rawToken;
+
+      // Email security scanner sends HEAD request before user clicks
+      const headRes = await makeRequest(`/api/auth/verify?token=${rawToken}`, {
+        method: 'HEAD'
+      });
+      assert.strictEqual(headRes.statusCode, 200);
+
+      // User subsequently clicks the link (GET) -> must still succeed!
+      const getRes = await makeRequest(`/api/auth/verify?token=${rawToken}&format=json`);
+      assert.strictEqual(getRes.statusCode, 200);
+      assert.strictEqual(getRes.json.success, true);
+      assert.strictEqual(getRes.json.user.email, scannerEmail);
+    });
+
+    // 20. Suspended User Magic Link Rejection
+    await test('Invariant 20: Suspended user clicking magic link is rejected with 403 USER_SUSPENDED and no session is created', async () => {
+      MagicLinkService.resetRateLimits();
+      capturedMail = null;
+      const suspendedEmail = 'suspended.magic.user@tikum.app';
+      const userRepo = getUserRepository();
+
+      await makeRequest('/api/auth/magic-link', {
+        method: 'POST',
+        body: { email: suspendedEmail }
+      });
+      const rawToken = capturedMail.rawToken;
+
+      const dbUser = await userRepo.getUserByEmail(suspendedEmail);
+      assert.ok(dbUser);
+      await userRepo.updateUserStatus(dbUser.id, 'SUSPENDED');
+      const stateUser = state.users.find(u => u.id === dbUser.id);
+      if (stateUser) stateUser.status = 'SUSPENDED';
+
+      const verifyRes = await makeRequest(`/api/auth/verify?token=${rawToken}&format=json`);
+      assert.strictEqual(verifyRes.statusCode, 403);
+      assert.strictEqual(verifyRes.json.code, 'USER_SUSPENDED');
+      assert.strictEqual(verifyRes.headers['set-cookie'], undefined, 'Must not set session cookie for suspended user');
+    });
+
+    // 21. Concurrent GET /api/auth/verify Atomic Single-Use Enforcement (Warm & Cold-Start + Postgres SQL Contract)
+    await test('Invariant 21: Concurrent GET /api/auth/verify requests establish exactly ONE session and reject all parallel replays', async () => {
+      MagicLinkService.resetRateLimits();
+      capturedMail = null;
+
+      // Part A: 5 simultaneous GET requests on cold-started instances (state.magic_link_tokens wiped, relying purely on UserRepository)
+      const raceColdEmail = 'concurrent.cold.race@tikum.app';
+      await makeRequest('/api/auth/magic-link', {
+        method: 'POST',
+        body: { email: raceColdEmail }
+      });
+      const coldRawToken = capturedMail.rawToken;
+      state.magic_link_tokens = [];
+
+      const coldResults = await Promise.all([
+        makeRequest(`/api/auth/verify?token=${coldRawToken}&format=json`),
+        makeRequest(`/api/auth/verify?token=${coldRawToken}&format=json`),
+        makeRequest(`/api/auth/verify?token=${coldRawToken}&format=json`),
+        makeRequest(`/api/auth/verify?token=${coldRawToken}&format=json`),
+        makeRequest(`/api/auth/verify?token=${coldRawToken}&format=json`)
+      ]);
+
+      const coldSuccesses = coldResults.filter(r => r.statusCode === 200);
+      const coldReplays = coldResults.filter(r => r.statusCode === 401 && r.json && r.json.code === 'TOKEN_ALREADY_USED');
+      assert.strictEqual(coldSuccesses.length, 1, `Expected exactly 1 success in cold concurrent race, got ${coldSuccesses.length}`);
+      assert.strictEqual(coldReplays.length, 4, `Expected 4 TOKEN_ALREADY_USED rejections in cold concurrent race, got ${coldReplays.length}`);
+      for (const replay of coldReplays) {
+        assert.strictEqual(replay.headers['set-cookie'], undefined, 'Rejected concurrent replay must not set session cookie');
+      }
+
+      // Part B: 5 simultaneous GET requests on warm instance (both state.magic_link_tokens and UserRepository populated)
+      MagicLinkService.resetRateLimits();
+      capturedMail = null;
+      const raceWarmEmail = 'concurrent.warm.race@tikum.app';
+      await makeRequest('/api/auth/magic-link', {
+        method: 'POST',
+        body: { email: raceWarmEmail }
+      });
+      const warmRawToken = capturedMail.rawToken;
+
+      const warmResults = await Promise.all([
+        makeRequest(`/api/auth/verify?token=${warmRawToken}&format=json`),
+        makeRequest(`/api/auth/verify?token=${warmRawToken}&format=json`),
+        makeRequest(`/api/auth/verify?token=${warmRawToken}&format=json`),
+        makeRequest(`/api/auth/verify?token=${warmRawToken}&format=json`),
+        makeRequest(`/api/auth/verify?token=${warmRawToken}&format=json`)
+      ]);
+
+      const warmSuccesses = warmResults.filter(r => r.statusCode === 200);
+      const warmReplays = warmResults.filter(r => r.statusCode === 401 && r.json && r.json.code === 'TOKEN_ALREADY_USED');
+      assert.strictEqual(warmSuccesses.length, 1, `Expected exactly 1 success in warm concurrent race, got ${warmSuccesses.length}`);
+      assert.strictEqual(warmReplays.length, 4, `Expected 4 TOKEN_ALREADY_USED rejections in warm concurrent race, got ${warmReplays.length}`);
+
+      // Part C: Verify PostgresUserRepository SQL contract enforces atomic UPDATE and DB NOW() expiry
+      const { PostgresUserRepository } = require('./src/storage/PostgresUserRepository');
+      const pgSource = PostgresUserRepository.prototype.consumeMagicLinkToken.toString();
+      assert.ok(pgSource.includes("WHERE event_type = 'MAGIC_LINK_TOKEN_ISSUED'"), 'Postgres consume SQL must lock on MAGIC_LINK_TOKEN_ISSUED');
+      assert.ok(pgSource.includes("COALESCE((metadata->>'used')::boolean, false) = false"), 'Postgres consume SQL must require used = false');
+      assert.ok(pgSource.includes("(metadata->>'expires_at')::timestamptz > NOW()"), 'Postgres consume SQL must enforce trusted DB NOW() expiry');
+      assert.ok(pgSource.includes('RETURNING id'), 'Postgres consume SQL must return consumed row id');
     });
 
     console.log('\n════════════════════════════════════════════════════════════════');

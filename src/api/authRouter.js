@@ -459,11 +459,26 @@ router.post('/magic-link', async (req, res) => {
 });
 
 /**
+ * HEAD /api/auth/verify
+ * Email client / security scanner preflight guard: never consume single-use token on HEAD requests.
+ */
+router.head('/verify', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  return res.status(200).end();
+});
+
+/**
  * GET /api/auth/verify
  * Verifies single-use magic link token and establishes session.
  */
 router.get('/verify', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  if (req.method === 'HEAD') {
+    return res.status(200).end();
+  }
+
   const token = req.query.token;
+  const redirectParam = req.query.redirect;
   const ip = req.ip || req.connection?.remoteAddress || '127.0.0.1';
   const userAgent = req.headers['user-agent'] || null;
   const acceptsJson = (req.accepts('json') && !req.accepts('html')) || req.query.format === 'json';
@@ -472,7 +487,8 @@ router.get('/verify', async (req, res) => {
     const verification = await MagicLinkService.verifyMagicLink({
       token,
       ip,
-      userAgent
+      userAgent,
+      redirectUrl: redirectParam
     });
 
     const sessionToken = verification.session.session_token;
@@ -523,6 +539,7 @@ router.get('/verify', async (req, res) => {
  * Returns trusted identity & active session metadata.
  */
 router.get('/session', authenticate, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.status(200).json({
     authenticated: true,
     user: {
@@ -546,6 +563,7 @@ router.get('/session', authenticate, (req, res) => {
  * Terminates active session in durable database & local store, clears cookie.
  */
 router.post('/logout', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   const user = req.user || resolveUser(req);
   let token = req.session?.session_token;
 
@@ -574,10 +592,22 @@ router.post('/logout', async (req, res) => {
     }
   }
 
-  // Clear cookie
-  res.setHeader('Set-Cookie', 'session_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax');
+  // Clear cookie (matching Secure attribute in production)
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+  const clearCookieOpts = [
+    'session_token=',
+    'HttpOnly',
+    'Path=/',
+    'Max-Age=0',
+    'SameSite=Lax'
+  ];
+  if (isProd) {
+    clearCookieOpts.push('Secure');
+  }
+  res.setHeader('Set-Cookie', clearCookieOpts.join('; '));
 
   const actorId = user ? user.id : 'ANONYMOUS';
+  const tokenHash = token ? crypto.createHash('sha256').update(token).digest('hex') : null;
   userRepo.recordAuthAudit({
     userId: user ? user.id : null,
     eventType: 'USER_LOGOUT',
@@ -588,7 +618,7 @@ router.post('/logout', async (req, res) => {
   }).catch(() => {});
 
   recordAuditLog('AUTH', actorId, 'SESSION_REVOKED', 'SYSTEM', {
-    session_token: token || null,
+    session_token_hash: tokenHash,
     user_id: user ? user.id : null
   }).catch(() => {});
 

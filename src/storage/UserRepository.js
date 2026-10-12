@@ -72,6 +72,19 @@ class UserRepository {
     throw new Error('UserRepository.revokeUserRole() not implemented');
   }
 
+  // Magic Link Tokens
+  async saveMagicLinkToken(tokenRecord) {
+    throw new Error('UserRepository.saveMagicLinkToken() not implemented');
+  }
+
+  async getMagicLinkTokenByHash(tokenHash) {
+    throw new Error('UserRepository.getMagicLinkTokenByHash() not implemented');
+  }
+
+  async consumeMagicLinkToken(tokenHash, usedAtIso) {
+    throw new Error('UserRepository.consumeMagicLinkToken() not implemented');
+  }
+
   // Audit Events
   async recordAuthAudit(auditData) {
     throw new Error('UserRepository.recordAuthAudit() not implemented');
