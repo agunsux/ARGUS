@@ -1640,7 +1640,7 @@ class CanonicalEventRegistry {
           }
         }
         // Ensure verified King Nassar concert from getHeroEvents() is present in global catalog
-        if (!repository && !this.repository) {
+        if (this === canonicalRegistryInstance && !this.repository) {
           const nassarHero = this.getHeroEvents().find(h => h.id === 'event-nassar-lost-in-the-jungle-2026');
           if (nassarHero && !this.events.has(nassarHero.id) && !this.slugMap.has(nassarHero.slug)) {
             this.events.set(nassarHero.id, nassarHero);
