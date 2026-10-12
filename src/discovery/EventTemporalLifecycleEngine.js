@@ -598,6 +598,25 @@ class EventTemporalLifecycleEngine {
 
     event.last_lifecycle_evaluated_at = (now instanceof Date ? now : new Date(now)).toISOString();
 
+    // Sync projection to state.events if present
+    try {
+      const state = getState();
+      if (state && Array.isArray(state.events)) {
+        const stateEv = state.events.find(e => e.id === eventId || e.event_id === eventId);
+        if (stateEv) {
+          stateEv.archive_status = event.archive_status;
+          stateEv.lifecycle_status = event.lifecycle_status;
+          stateEv.status = event.status;
+          stateEv.homepage_visibility = event.homepage_visibility;
+          stateEv.public_upcoming = event.public_upcoming;
+          stateEv.public_visibility = event.public_visibility;
+          stateEv.archived_at = event.archived_at;
+          stateEv.expired_at = event.expired_at;
+          stateEv.last_lifecycle_evaluated_at = event.last_lifecycle_evaluated_at;
+        }
+      }
+    } catch (_) {}
+
     // If in a concluded state, expire any active listings for this event
     if (newStatus === LIFECYCLE_STATUS.COMPLETED ||
         newStatus === LIFECYCLE_STATUS.ARCHIVED ||

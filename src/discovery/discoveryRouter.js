@@ -1297,34 +1297,69 @@ function e_hasProvenance(event) {
 
 /**
  * POST /api/discovery/demand
- * Register demand notification waitlist for zero-resale events
+ * Register demand notification waitlist for zero-resale events (Kabari Saya / Saya Cari Tiket)
  */
 router.post('/api/discovery/demand', (req, res) => {
   try {
-    const { eventId, contactInfo, targetCategory, maxBudget } = req.body;
-    if (!eventId || !contactInfo) {
-      return res.status(400).json({ error: 'eventId and contactInfo are required', code: 'VALIDATION_ERROR' });
+    const { eventId, contact, contactInfo, qty, maxPrice, maxBudget, consent, targetCategory } = req.body;
+    const targetEventId = eventId;
+    if (!targetEventId) {
+      return res.status(400).json({ error: 'eventId is required', code: 'EVENT_ID_REQUIRED' });
     }
 
-    const event = canonicalRegistry.getEventById(eventId);
+    const event = canonicalRegistry.getEventById(targetEventId) || canonicalRegistry.getEventBySlug(targetEventId) ||
+      (state.events || []).find(e => e.id === targetEventId || e.slug === targetEventId);
     if (!event) {
       return res.status(404).json({ error: 'Event not found', code: 'EVENT_NOT_FOUND' });
     }
 
-    const record = demandCapture.registerInterest({
-      eventId,
-      contactInfo,
-      targetCategory,
-      maxBudget
+    const clientIp = req.headers['x-forwarded-for'] ? String(req.headers['x-forwarded-for']).split(',')[0].trim() : req.socket?.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    const result = demandCapture.registerInterest({
+      eventId: event.event_id || event.id,
+      contact: contact || contactInfo,
+      qty: qty !== undefined ? qty : 1,
+      maxPrice: maxPrice !== undefined ? maxPrice : maxBudget,
+      consent: consent !== undefined ? consent : true,
+      clientIp,
+      userAgent,
+      metadata: { target_category: targetCategory || 'ANY' }
     });
 
     res.status(201).json({
       success: true,
-      message: 'Waitlist notification registered successfully',
-      demand: record
+      message: 'Permintaan dicatat! Kami akan menghubungi Anda segera setelah tiket terverifikasi tersedia.',
+      demand: result.record,
+      notification: result.notification
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    const status = err.code === 'RATE_LIMIT_EXCEEDED' ? 429 :
+                   (err.code === 'EVENT_NOT_FOUND' ? 404 :
+                   (['INVALID_CONTACT', 'CONTACT_REQUIRED', 'INVALID_QTY', 'INVALID_MAX_PRICE', 'CONSENT_REQUIRED', 'EVENT_ID_REQUIRED'].includes(err.code) ? 400 : 500));
+    res.status(status).json({
+      error: err.message,
+      code: err.code || 'INTERNAL_ERROR',
+      retryAfterSeconds: err.retryAfterSeconds
+    });
+  }
+});
+
+/**
+ * GET /api/discovery/demand/stats/:eventId
+ * Public verified demand counter (Truthfulness Invariant: only exposed when >= 5)
+ */
+router.get('/api/discovery/demand/stats/:eventId', (req, res) => {
+  try {
+    const eventId = req.params.eventId;
+    const stats = demandCapture.getPublicDemandStats(eventId);
+    res.json({
+      success: true,
+      eventId,
+      ...stats
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: 'INTERNAL_ERROR' });
   }
 });
 

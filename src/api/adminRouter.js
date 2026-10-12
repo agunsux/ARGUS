@@ -1990,4 +1990,91 @@ router.get('/events/lifecycle-audit', requireAdmin, (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/demand-alerts
+ * Lists registered ticket demand alerts with filtering by event_id, status, notified.
+ */
+router.get('/demand-alerts', requireAdmin, (req, res) => {
+  try {
+    const { event_id, status, notified, limit, offset } = req.query;
+    const parsedLimit = limit ? parseInt(limit, 10) : 50;
+    const parsedOffset = offset ? parseInt(offset, 10) : 0;
+
+    const { demandCapture } = require('../discovery/DemandCaptureService');
+    const result = demandCapture.getAdminAlerts({
+      eventId: event_id,
+      status,
+      notified,
+      limit: parsedLimit,
+      offset: parsedOffset
+    });
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: 'INTERNAL_ERROR' });
+  }
+});
+
+/**
+ * GET /api/admin/demand-alerts/export
+ * Exports ticket demand alerts to CSV for manual seller recruitment & buyer notification.
+ */
+router.get('/demand-alerts/export', requireAdmin, (req, res) => {
+  try {
+    const { event_id, status, notified } = req.query;
+    const { demandCapture } = require('../discovery/DemandCaptureService');
+
+    const csvData = demandCapture.exportCsv({
+      eventId: event_id,
+      status,
+      notified
+    }, (id) => canonicalRegistry.getEventById(id) || (state.events || []).find(e => e.id === id));
+
+    const filename = `tikum-demand-alerts-${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvData);
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: 'INTERNAL_ERROR' });
+  }
+});
+
+/**
+ * POST /api/admin/demand-alerts/:id/notify
+ * Stubs notifying a buyer on waitlist and updates alert status to NOTIFIED.
+ */
+router.post('/demand-alerts/:id/notify', requireAdmin, (req, res) => {
+  try {
+    const alertId = req.params.id;
+    const user = resolveUser(req);
+    const officerId = user ? user.id : 'admin-1';
+
+    const { demandCapture } = require('../discovery/DemandCaptureService');
+    const updated = demandCapture.markNotified(alertId, officerId);
+
+    recordAuditLog({
+      action: 'DEMAND_ALERT_NOTIFIED',
+      actor_id: officerId,
+      target_id: alertId,
+      details: {
+        event_id: updated.event_id,
+        contact: updated.contact,
+        contact_type: updated.contact_type
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Demand alert marked as notified',
+      alert: updated
+    });
+  } catch (err) {
+    const status = err.code === 'ALERT_NOT_FOUND' ? 404 : 500;
+    res.status(status).json({ error: err.message, code: err.code || 'INTERNAL_ERROR' });
+  }
+});
+
 module.exports = router;

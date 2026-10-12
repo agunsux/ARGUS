@@ -222,18 +222,54 @@ class EventSEOService {
         </div>
       `;
     } else {
+      const { demandCapture } = require('./DemandCaptureService');
+      const demandStats = demandCapture.getPublicDemandStats(event.event_id || event.id);
+      const demandBadgeHtml = demandStats.show_count
+        ? `<div style="display:inline-flex; align-items:center; gap:6px; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:6px 14px; border-radius:9999px; font-size:12.5px; font-weight:700; margin-bottom:12px;"><i class="fa-solid fa-users"></i> ${demandStats.badge_text}</div>`
+        : `<div style="display:inline-flex; align-items:center; gap:6px; background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; padding:6px 14px; border-radius:9999px; font-size:12px; font-weight:600; margin-bottom:12px;"><i class="fa-solid fa-bell"></i> ${demandStats.badge_text}</div>`;
+
       resaleHtml = `
-        <div class="resale-card zero-inventory">
-          <div class="zero-state-icon"><i class="fa-solid fa-ticket-simple"></i></div>
-          <h3>Saat Ini Belum Ada Tiket Resale Terverifikasi</h3>
-          <p>Belum ada pengguna yang mendaftarkan penjualan tiket untuk event ini, atau seluruh tiket secondary sudah terjual.</p>
-          <div class="demand-capture-box">
-            <p><strong>Ingin notifikasi saat tiket terverifikasi tersedia?</strong></p>
-            <form id="demandForm" onsubmit="handleDemandSubmit(event, '${event.event_id}')" class="demand-form">
-              <input type="text" id="demandContact" class="form-input" placeholder="Masukkan WhatsApp atau Email Anda" required />
-              <button type="submit" class="btn btn-cyan"><i class="fa-solid fa-bell"></i> Ingatkan Saya</button>
+        <div class="resale-card zero-inventory" style="padding:24px; border-radius:14px; background:var(--color-surface, #FFFFFF); border:1px solid var(--color-border, #E5E7EB); text-align:center;">
+          <div class="zero-state-icon" style="font-size:32px; color:var(--color-brand-primary, #B8472F); margin-bottom:12px;"><i class="fa-solid fa-ticket-simple"></i></div>
+          <h3 style="font-size:18px; font-weight:800; color:var(--color-text-primary, #111827); margin-bottom:6px;">Saat Ini Belum Ada Tiket Resale Terverifikasi</h3>
+          <p style="font-size:13.5px; color:var(--color-text-muted, #6B7280); max-width:540px; margin:0 auto 16px;">Belum ada pengguna yang mendaftarkan penjualan tiket untuk event ini, atau seluruh tiket secondary sudah terjual.</p>
+
+          <div class="demand-capture-box" style="background:var(--color-surface-muted, #F8F9FA); border:1px solid var(--color-border-subtle, #E5E7EB); border-radius:12px; padding:20px; max-width:520px; margin:0 auto; text-align:left;">
+            <div style="text-align:center;">${demandBadgeHtml}</div>
+            <p style="font-size:14px; font-weight:700; color:var(--color-text-primary, #111827); margin-bottom:12px; text-align:center;">Ingin dikabari segera saat tiket tersedia?</p>
+
+            <form id="demandForm" onsubmit="handleDemandSubmit(event, '${event.event_id || event.id}')" class="demand-form" style="display:flex; flex-direction:column; gap:12px;">
+              <div>
+                <label for="demandContact" style="font-size:12px; font-weight:600; color:var(--color-text-secondary, #4B5563); display:block; margin-bottom:4px;">Kontak WhatsApp atau Email *</label>
+                <input type="text" id="demandContact" class="form-input" placeholder="08123456789 atau nama@email.com" required style="width:100%; padding:10px 14px; border-radius:8px; border:1px solid var(--color-border, #D1D5DB); font-size:13.5px;" />
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div>
+                  <label for="demandQty" style="font-size:12px; font-weight:600; color:var(--color-text-secondary, #4B5563); display:block; margin-bottom:4px;">Jumlah Tiket *</label>
+                  <select id="demandQty" class="form-input" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--color-border, #D1D5DB); font-size:13px;">
+                    <option value="1">1 Tiket</option>
+                    <option value="2" selected>2 Tiket</option>
+                    <option value="3">3 Tiket</option>
+                    <option value="4">4 Tiket</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="demandMaxPrice" style="font-size:12px; font-weight:600; color:var(--color-text-secondary, #4B5563); display:block; margin-bottom:4px;">Budget Maksimal / Tiket</label>
+                  <input type="text" id="demandMaxPrice" class="form-input" placeholder="Contoh: Rp 750.000 (opsional)" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--color-border, #D1D5DB); font-size:13px;" />
+                </div>
+              </div>
+
+              <label style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--color-text-muted, #6B7280); cursor:pointer; margin-top:2px;">
+                <input type="checkbox" id="demandConsent" required checked style="margin-top:3px;" />
+                <span>Saya setuju dihubungi Tikum via WhatsApp atau Email jika ada tiket tersedia (sesuai UU Perlindungan Data Pribadi).</span>
+              </label>
+
+              <button type="submit" class="btn btn-primary" style="padding:11px 18px; font-weight:700; border-radius:8px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; font-size:14px; margin-top:4px;">
+                <i class="fa-solid fa-bell"></i> Kabari Saya / Ingatkan Saya Saat Tiket Tersedia
+              </button>
             </form>
-            <div id="demandFeedback" class="demand-feedback" style="display:none;"></div>
+            <div id="demandFeedback" class="demand-feedback" style="display:none; padding:12px; border-radius:8px; margin-top:12px; font-size:13px; font-weight:600;"></div>
           </div>
         </div>
       `;
@@ -499,30 +535,54 @@ class EventSEOService {
   <script>
     async function handleDemandSubmit(e, eventId) {
       e.preventDefault();
-      const contact = document.getElementById('demandContact').value;
+      const contactInput = document.getElementById('demandContact');
+      const qtyInput = document.getElementById('demandQty');
+      const maxPriceInput = document.getElementById('demandMaxPrice');
+      const consentInput = document.getElementById('demandConsent');
       const feedback = document.getElementById('demandFeedback');
-      
+
+      const contact = contactInput ? contactInput.value.trim() : '';
+      const qty = qtyInput ? qtyInput.value : 1;
+      const maxPrice = maxPriceInput ? maxPriceInput.value.trim() : null;
+      const consent = consentInput ? consentInput.checked : false;
+
+      if (!consent) {
+        feedback.style.display = 'block';
+        feedback.style.background = '#fef2f2';
+        feedback.style.border = '1px solid #fecaca';
+        feedback.style.color = '#dc2626';
+        feedback.innerText = 'Persetujuan dihubungi wajib dicentang sesuai UU Pelindungan Data Pribadi.';
+        return;
+      }
+
       try {
         const res = await fetch('/api/discovery/demand', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ eventId, contactInfo: contact })
+          body: JSON.stringify({ eventId, contact, qty, maxPrice, consent })
         });
         const data = await res.json();
         if (res.ok && data.success) {
           feedback.style.display = 'block';
-          feedback.style.color = '#10b981';
-          feedback.innerHTML = '<i class="fa-solid fa-check-circle"></i> Permintaan dicatat! Kami akan menghubungi Anda segera setelah tiket resale terverifikasi tersedia.';
-          document.getElementById('demandContact').value = '';
+          feedback.style.background = '#ecfdf5';
+          feedback.style.border = '1px solid #a7f3d0';
+          feedback.style.color = '#059669';
+          feedback.innerHTML = '<i class="fa-solid fa-check-circle"></i> ' + (data.message || 'Permintaan dicatat! Kami akan menghubungi Anda segera setelah tiket terverifikasi tersedia.');
+          contactInput.value = '';
+          if (maxPriceInput) maxPriceInput.value = '';
         } else {
           feedback.style.display = 'block';
-          feedback.style.color = '#ef4444';
+          feedback.style.background = '#fef2f2';
+          feedback.style.border = '1px solid #fecaca';
+          feedback.style.color = '#dc2626';
           feedback.innerText = data.error || 'Gagal mendaftar waitlist.';
         }
       } catch (err) {
         feedback.style.display = 'block';
-        feedback.style.color = '#ef4444';
-        feedback.innerText = 'Terjadi gangguan koneksi.';
+        feedback.style.background = '#fef2f2';
+        feedback.style.border = '1px solid #fecaca';
+        feedback.style.color = '#dc2626';
+        feedback.innerText = 'Terjadi gangguan koneksi. Silakan coba kembali.';
       }
     }
   </script>

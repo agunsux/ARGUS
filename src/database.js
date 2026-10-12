@@ -59,7 +59,8 @@ const state = {
   partners: [],
   partner_inventory: [],
   consignment_agreements: [],
-  pic_duty_authorizations: []
+  pic_duty_authorizations: [],
+  demand_alerts: []
 };
 
 try {
@@ -117,6 +118,7 @@ function resetDatabase() {
   state.idempotency_records = [];
   state.inbox_messages = [];
   state.contact_inquiries = [];
+  state.demand_alerts = [];
   state.processed_webhooks = new Set();
 
   try {
