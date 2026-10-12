@@ -173,7 +173,7 @@ async function runAll() {
       sellerId: 'seller-1',
       eventId: 'event-joyland-2026',
       seatInfo: 'CAT 2 - Row 5',
-      faceValue: 1000000,
+      faceValue: 1200000,
       price: 1500000,
       rawBarcode: 'BC-CANONICAL-TEST-003'
     });

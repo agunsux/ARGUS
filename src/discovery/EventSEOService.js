@@ -199,7 +199,7 @@ class EventSEOService {
                     <strong style="font-size:13.5px; color:var(--color-text-primary, #111827);">Rp ${basePrice.toLocaleString('id-ID')}</strong>
                   </div>
                   <div>
-                    <span style="color:var(--color-text-muted, #6B7280); display:block; margin-bottom:2px;">Biaya TIKUM (6% Policy V1)</span>
+                    <span style="color:var(--color-text-muted, #6B7280); display:block; margin-bottom:2px;">Biaya TIKUM (6% (minimum Rp35.000 per tiket))</span>
                     <strong style="font-size:13.5px; color:var(--color-text-secondary, #4B5563);">Rp ${fee.toLocaleString('id-ID')}</strong>
                   </div>
                   <div>

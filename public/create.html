@@ -23,6 +23,7 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/pricing.js"></script>
 </head>
 <body>
 
@@ -219,11 +220,11 @@
                 id="sellingPrice" 
                 class="form-control mono" 
                 placeholder="Contoh: 1500000" 
-                min="10000" 
+                min="500000" 
                 required
                 oninput="calculateFeePreview()"
               >
-              <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.sellingPriceSub">Nominal bersih yang Anda terima jika tiket valid</span>
+              <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.sellingPriceSub">Nominal bersih yang Anda terima jika tiket valid (minimal Rp 500.000)</span>
             </div>
           </div>
 
@@ -233,19 +234,14 @@
               <i class="fa-solid fa-calculator"></i> <span data-i18n="create.calcTitle">Kalkulasi Transparan Sistem (Sesuai Backend)</span>
             </div>
             <div class="price-row">
-              <span>Nominal Bersih Penjual:</span>
               <span data-i18n="create.calcSellerTitle">Harga Jual Anda:</span>
               <span id="calcSellerAmount" class="mono">Rp 0</span>
             </div>
             <div class="price-row">
-              <span>Biaya Layanan &amp; Verifikasi PIC Lapangan (10%):</span>
-              <span id="calcFeeAmount" class="mono">Rp 0</span>
-              <span data-i18n="create.calcFeeTitle">Tikum Seller Fee (6%, min Rp 10.000, maks Rp 300.000):</span>
+              <span data-i18n="create.calcFeeTitle">Tikum Seller Fee (6% (minimum Rp35.000 per tiket), maks Rp 300.000):</span>
               <span id="calcFeeAmount" class="mono" style="color: var(--warning);">-Rp 0</span>
             </div>
             <div class="price-row total">
-              <span>Total yang Dibayar Pembeli di Halaman Checkout:</span>
-              <span id="calcTotalAmount" class="mono">Rp 0</span>
               <span data-i18n="create.calcPayoutTitle">Estimasi Payout Bersih yang Anda Terima:</span>
               <span id="calcTotalAmount" class="mono" style="color: var(--success);">Rp 0</span>
             </div>
@@ -564,26 +560,39 @@
     }
 
     function calculateFeePreview() {
-      const price = parseFloat(document.getElementById('sellingPrice').value) || 0;
-      const fee = Math.round(price * 0.10);
-      const total = price + fee;
       const price = parseInt(document.getElementById('sellingPrice').value, 10) || 0;
+      const faceValue = parseInt(document.getElementById('faceValue').value, 10) || 0;
+      const errEl = document.getElementById('formError');
+
       if (price <= 0) {
         document.getElementById('calcSellerAmount').innerText = 'Rp 0';
         document.getElementById('calcFeeAmount').innerText = '-Rp 0';
         document.getElementById('calcTotalAmount').innerText = 'Rp 0';
         return;
       }
-      const rawFee = Math.floor((price * 6) / 100);
-      let fee = Math.max(10000, Math.min(rawFee, 300000));
-      if (fee > price) fee = price;
-      const payout = price - fee;
 
-      document.getElementById('calcSellerAmount').innerText = 'Rp ' + price.toLocaleString('id-ID');
-      document.getElementById('calcFeeAmount').innerText = 'Rp ' + fee.toLocaleString('id-ID');
-      document.getElementById('calcTotalAmount').innerText = 'Rp ' + total.toLocaleString('id-ID');
-      document.getElementById('calcFeeAmount').innerText = '-Rp ' + fee.toLocaleString('id-ID');
-      document.getElementById('calcTotalAmount').innerText = 'Rp ' + payout.toLocaleString('id-ID');
+      if (window.TikumPricing) {
+        const pricing = window.TikumPricing.calculatePricing(price, 1, 0);
+        document.getElementById('calcSellerAmount').innerText = 'Rp ' + pricing.price.toLocaleString('id-ID');
+        document.getElementById('calcFeeAmount').innerText = '-Rp ' + pricing.fee.toLocaleString('id-ID');
+        document.getElementById('calcTotalAmount').innerText = 'Rp ' + pricing.sellerPayout.toLocaleString('id-ID');
+
+        const val = window.TikumPricing.validateListingPrice(price, faceValue);
+        if (!val.valid) {
+          errEl.innerText = val.error;
+          errEl.style.display = 'block';
+        } else {
+          errEl.style.display = 'none';
+        }
+      } else {
+        const rawFee = Math.round((price * 6) / 100);
+        let fee = Math.max(35000, Math.min(rawFee, 300000));
+        if (fee > price) fee = price;
+        const payout = price - fee;
+        document.getElementById('calcSellerAmount').innerText = 'Rp ' + price.toLocaleString('id-ID');
+        document.getElementById('calcFeeAmount').innerText = '-Rp ' + fee.toLocaleString('id-ID');
+        document.getElementById('calcTotalAmount').innerText = 'Rp ' + payout.toLocaleString('id-ID');
+      }
     }
 
     async function handleCreateNewEvent(e) {
@@ -655,6 +664,17 @@
         return;
       }
 
+      const sellingPrice = parseInt(document.getElementById('sellingPrice').value, 10);
+      const faceValue = parseInt(document.getElementById('faceValue').value, 10);
+      if (window.TikumPricing) {
+        const val = window.TikumPricing.validateListingPrice(sellingPrice, faceValue);
+        if (!val.valid) {
+          errEl.innerText = val.error;
+          errEl.style.display = 'block';
+          return;
+        }
+      }
+
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghubungi Server Tikum...';
 
@@ -662,8 +682,10 @@
       const formData = new FormData();
       formData.append('eventId', eventId);
       formData.append('seatInfo', document.getElementById('seatInfo').value.trim());
-      formData.append('faceValue', document.getElementById('faceValue').value);
-      formData.append('sellingPrice', document.getElementById('sellingPrice').value);
+      formData.append('faceValue', faceValue);
+      formData.append('price', sellingPrice);
+      formData.append('sellingPrice', sellingPrice);
+      formData.append('rawBarcode', document.getElementById('barcode').value.trim());
       formData.append('barcode', document.getElementById('barcode').value.trim());
       formData.append('admissionProtocol', document.getElementById('admissionProtocol').value);
 
@@ -695,7 +717,7 @@
         
         const selEvent = eventsList.find(ev => ev.id === listing.event_id);
         document.getElementById('resListingEvent').innerText = selEvent ? selEvent.name : listing.event_id;
-        document.getElementById('resListingPrice').innerText = 'Rp ' + Number(listing.selling_price).toLocaleString('id-ID');
+        document.getElementById('resListingPrice').innerText = 'Rp ' + Number(listing.price || listing.selling_price || 0).toLocaleString('id-ID');
 
         if (listing.user_created_event) {
           document.getElementById('resUserEventWarning').style.display = 'flex';

@@ -170,8 +170,8 @@ async function runSuite() {
       sellerId: 'seller-1',
       eventId: userCreatedEventId,
       seatInfo: 'Festival Area Section A',
-      faceValue: 350000,
-      price: 400000,
+      faceValue: 500000,
+      price: 550000,
       rawBarcode: 'BANDUNG-INDIE-FEST-2026-TICKET-001',
       evidenceBundleId: null
     });
@@ -259,7 +259,7 @@ async function runSuite() {
     assert.strictEqual(resListing.data.transaction.id, userEventListingId);
     assert.strictEqual(resListing.data.transaction.type, 'LISTING');
     assert.ok(resListing.data.transaction.event.title);
-    assert.strictEqual(resListing.data.transaction.price, 400000);
+    assert.strictEqual(resListing.data.transaction.price, 550000);
     // Invariant: zero PII leak (no phone, no NIK, no raw barcode)
     assert.strictEqual(resListing.data.transaction.barcode_hash, undefined);
     assert.strictEqual(resListing.data.transaction.nik_hash, undefined);

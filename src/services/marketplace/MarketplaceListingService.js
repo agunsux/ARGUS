@@ -75,7 +75,8 @@ class MarketplaceListingService {
     price,
     currency = 'IDR',
     expiresAt = null,
-    pricingPolicyVersion = null
+    pricingPolicyVersion = null,
+    bypassPilotBounds = false
   }) {
     // 1. Verify seller exists and is not suspended
     const seller = state.users.find(u => u.id === sellerId);
@@ -169,6 +170,20 @@ class MarketplaceListingService {
       throw err;
     }
 
+    const { validateListingPrice } = require('../../config/pricingConfig');
+    let needsManualReview = false;
+    if (!bypassPilotBounds) {
+      const priceValidation = validateListingPrice({ price: numericPrice, faceValue: ticket.face_value, event });
+      if (!priceValidation.valid) {
+        const err = new Error(priceValidation.error);
+        err.code = priceValidation.code;
+        throw err;
+      }
+      if (priceValidation.needsManualReview) {
+        needsManualReview = true;
+      }
+    }
+
     // 8. Calculate transparent Fee Decomposition
     const pricing = EscrowService.calculatePricing(numericPrice, null, {
       policyVersion: pricingPolicyVersion
@@ -195,6 +210,8 @@ class MarketplaceListingService {
       price: numericPrice,
       currency: currency || 'IDR',
       status: initialStatus,
+      review_status: needsManualReview ? 'NEEDS_MANUAL_REVIEW' : 'NORMAL',
+      needs_manual_review: needsManualReview,
       seat_info: ticket.seat_info || `${ticket.section || ''} ${ticket.row ? 'Row ' + ticket.row : ''} ${ticket.seat ? 'Seat ' + ticket.seat : ''}`.trim(),
       face_value: ticket.face_value,
       pricing: {

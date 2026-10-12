@@ -18,18 +18,20 @@
 const { state, recordAuditLog } = require('../database');
 const { CanonicalFeeEngine, TIKUM_FEE_POLICY_V1 } = require('./CanonicalFeeEngine');
 
+const { PRICING_CONFIG } = require('../config/pricingConfig');
+
 const DEFAULT_POLICIES = {
   'TIKUM_FEE_POLICY_V1': {
     version: 'TIKUM_FEE_POLICY_V1',
     country_code: 'ID',
     currency: 'IDR',
-    description: 'Standard Tikum Canonical Fee Policy V1 (6% Buyer + 6% Seller, Min Rp10k, Max Rp300k)',
-    buyer_rate: 0.06,
-    buyer_min_fee: 10000,
-    buyer_max_fee: 300000,
-    seller_rate: 0.06,
-    seller_min_fee: 10000,
-    seller_max_fee: 300000,
+    description: 'Standard Tikum Canonical Fee Policy V1 (6% Buyer + 6% Seller, Min Rp35k, Max Rp300k)',
+    buyer_rate: PRICING_CONFIG.PLATFORM_FEE_PCT / 100,
+    buyer_min_fee: PRICING_CONFIG.PLATFORM_MIN_FEE_IDR,
+    buyer_max_fee: PRICING_CONFIG.PLATFORM_MAX_FEE_IDR,
+    seller_rate: PRICING_CONFIG.PLATFORM_FEE_PCT / 100,
+    seller_min_fee: PRICING_CONFIG.PLATFORM_MIN_FEE_IDR,
+    seller_max_fee: PRICING_CONFIG.PLATFORM_MAX_FEE_IDR,
     is_active: true,
     effective_from: '2026-01-01T00:00:00Z'
   },

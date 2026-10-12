@@ -423,8 +423,8 @@ async function runAuditSuite() {
         sellerId: 'seller-1',
         eventId: 'event-joyland-2026',
         seatInfo: 'VIP Row 1',
-        faceValue: 400000,
-        price: 400000,
+        faceValue: 500000,
+        price: 500000,
         rawBarcode: `BC-AUDIT-${Date.now()}`,
         evidenceBundleId: 'bdl-audit-1'
       });

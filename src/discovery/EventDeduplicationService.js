@@ -271,10 +271,14 @@ class EventDeduplicationService {
       // 5. MULTI-HALL SPATIAL COLLISION DISAMBIGUATION
       // Same Venue + Same Date, but distinct non-overlapping acts in different halls
       // ==========================================
-      if (isSameDate && isSameVenue && titleSim < 0.25) {
+      if (isSameDate && isSameVenue) {
         const hasArtistOverlap = (incomingArtists.length > 0 && canonicalArtists.length > 0 &&
           incomingArtists.some(ia => canonicalArtists.includes(ia))) || hasSharedArtistAlias;
-        if (!hasArtistOverlap) {
+        const bothHaveArtists = incomingArtists.length > 0 && canonicalArtists.length > 0;
+        if (bothHaveArtists && !hasArtistOverlap && titleSim < 0.6) {
+          continue; // Distinct acts with no overlap in different halls/stages of the same venue!
+        }
+        if (titleSim < 0.25 && !hasArtistOverlap) {
           continue; // Two distinct events in different halls of the same venue on the same night!
         }
       }
@@ -400,7 +404,9 @@ class EventDeduplicationService {
       // 7b. Unverified Seed Date Resolution
       // Upgrades legacy unverified/untrusted placeholder claims with authoritative proof for same tour/venue
       const isCanonicalUnverified = canonical.is_verified !== true || (canonical.sources && canonical.sources.every(s => s.source_id === 'src-legacy-seed' || s.tier >= 4));
-      if (isCanonicalUnverified && (isSameVenue || isSameCityOrMetro(incomingCity, canonicalCity)) && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || isExactCompTitle || titleSim >= 0.65 || hasSharedArtistAlias)) {
+      const isSeedTitleOrVenueMatch = (isSameVenue && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || isExactCompTitle || titleSim >= 0.65 || hasSharedArtistAlias)) ||
+        (isSameCityOrMetro(incomingCity, canonicalCity) && (incomingNormTitle.toLowerCase() === canonicalNormTitle.toLowerCase() || isExactCompTitle || titleSim >= 0.65));
+      if (isCanonicalUnverified && isSeedTitleOrVenueMatch) {
         return {
           isMatch: true,
           confidence: 90,

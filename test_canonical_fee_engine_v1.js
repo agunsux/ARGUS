@@ -113,35 +113,36 @@ async function runFeeTestSuite() {
     // -------------------------------------------------------------
     console.log('── Part 1: Mandatory Price Points & Boundary Conditions ──');
 
-    syncTest('1. Price Rp 150,000 triggers Rp 10,000 floor (6% = Rp 9,000 < Rp 10,000)', () => {
+    syncTest('1. Price Rp 150,000 triggers Rp 35,000 floor (6% = Rp 9,000 < Rp 35,000)', () => {
       const res = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 150000 });
       assert.strictEqual(res.gross_ticket_value, 150000);
       assert.strictEqual(res.raw_buyer_fee, 9000);
       assert.strictEqual(res.raw_seller_fee, 9000);
-      assert.strictEqual(res.buyer_fee, 10000);
-      assert.strictEqual(res.seller_fee, 10000);
-      assert.strictEqual(res.seller_payout, 140000);
-      assert.strictEqual(res.buyer_subtotal, 160000);
-      assert.strictEqual(res.buyer_total, 160000);
-      assert.strictEqual(res.total_tikum_fee, 20000);
+      assert.strictEqual(res.buyer_fee, 35000);
+      assert.strictEqual(res.seller_fee, 35000);
+      assert.strictEqual(res.seller_payout, 115000);
+      assert.strictEqual(res.buyer_subtotal, 185000);
+      assert.strictEqual(res.buyer_total, 185000);
+      assert.strictEqual(res.total_tikum_fee, 70000);
     });
 
-    syncTest('2. Price Rp 166,666 triggers Rp 10,000 floor (floor(166,666 * 6%) = Rp 9,999)', () => {
+    syncTest('2. Price Rp 166,666 triggers Rp 35,000 floor (floor(166,666 * 6%) = Rp 9,999 < Rp 35,000)', () => {
       const res = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 166666 });
       assert.strictEqual(res.raw_buyer_fee, 9999);
-      assert.strictEqual(res.buyer_fee, 10000);
-      assert.strictEqual(res.seller_fee, 10000);
-      assert.strictEqual(res.seller_payout, 156666);
-      assert.strictEqual(res.buyer_total, 176666);
+      assert.strictEqual(res.buyer_fee, 35000);
+      assert.strictEqual(res.seller_fee, 35000);
+      assert.strictEqual(res.seller_payout, 131666);
+      assert.strictEqual(res.buyer_total, 201666);
     });
 
-    syncTest('3. Price Rp 500,000 applies proportional 6% (Rp 30,000)', () => {
+    syncTest('3. Price Rp 500,000 triggers Rp 35,000 floor (6% = Rp 30,000 < Rp 35,000)', () => {
       const res = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 500000 });
-      assert.strictEqual(res.buyer_fee, 30000);
-      assert.strictEqual(res.seller_fee, 30000);
-      assert.strictEqual(res.seller_payout, 470000);
-      assert.strictEqual(res.buyer_total, 530000);
-      assert.strictEqual(res.total_tikum_fee, 60000);
+      assert.strictEqual(res.raw_buyer_fee, 30000);
+      assert.strictEqual(res.buyer_fee, 35000);
+      assert.strictEqual(res.seller_fee, 35000);
+      assert.strictEqual(res.seller_payout, 465000);
+      assert.strictEqual(res.buyer_total, 535000);
+      assert.strictEqual(res.total_tikum_fee, 70000);
     });
 
     syncTest('4. Price Rp 1,000,000 applies proportional 6% (Rp 60,000)', () => {
@@ -183,17 +184,17 @@ async function runFeeTestSuite() {
     });
 
     syncTest('8. Minimum fee boundary testing across floor transition', () => {
-      // At Rp 166,666 -> floor triggered (9,999 -> 10,000)
-      const below = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 166666 });
-      assert.strictEqual(below.buyer_fee, 10000);
+      // At Rp 583,333 -> floor triggered (floor(583333 * 6 / 100) = 34,999 -> 35,000)
+      const below = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 583333 });
+      assert.strictEqual(below.buyer_fee, 35000);
 
-      // At Rp 166,667 -> floor(166,667 * 6 / 100) = 10,000 exactly
-      const exact = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 166667 });
-      assert.strictEqual(exact.buyer_fee, 10000);
+      // At Rp 583,334 -> floor(583,334 * 6 / 100) = 35,000 exactly
+      const exact = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 583334 });
+      assert.strictEqual(exact.buyer_fee, 35000);
 
-      // At Rp 166,684 -> floor(166,684 * 6 / 100) = 10,001 (exceeds floor)
-      const above = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 166684 });
-      assert.strictEqual(above.buyer_fee, 10001);
+      // At Rp 583,350 -> floor(583,350 * 6 / 100) = 35,001 (exceeds floor)
+      const above = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 583350 });
+      assert.strictEqual(above.buyer_fee, 35001);
     });
 
     syncTest('9. Maximum fee boundary testing across cap transition', () => {
@@ -250,10 +251,10 @@ async function runFeeTestSuite() {
     });
 
     syncTest('14. Integer minor-unit IDR floor rounding edge cases (no floating point decimals)', () => {
-      // Rp 123,456: floor(123456 * 6 / 100) = 7,407 -> clamped to 10,000 floor
+      // Rp 123,456: floor(123456 * 6 / 100) = 7,407 -> clamped to 35,000 floor
       const res1 = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 123456 });
       assert.strictEqual(Number.isInteger(res1.buyer_fee), true);
-      assert.strictEqual(res1.buyer_fee, 10000);
+      assert.strictEqual(res1.buyer_fee, 35000);
 
       // Rp 1,234,567: floor(1234567 * 6 / 100) = 74,074
       const res2 = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 1234567 });
@@ -313,8 +314,8 @@ async function runFeeTestSuite() {
         listingId: listingRes.listing.id
       });
       const order = orderRes.order;
-      assert.strictEqual(order.buyer_subtotal, 530000); // 500k + 30k (6%)
-      assert.strictEqual(order.buyer_total, 530000 + (order.buyer_tax || 0));
+      assert.strictEqual(order.buyer_subtotal, 535000); // 500k + 35k (min floor fee)
+      assert.strictEqual(order.buyer_total, 535000 + (order.buyer_tax || 0));
 
       // Buyer attempts to pay Rp 10,000 less than canonical order total
       const tamperedAmount = order.buyer_total - 10000;

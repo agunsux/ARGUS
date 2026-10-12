@@ -59,9 +59,8 @@ class ListingService {
    *
    * @PERSISTENCE_BOUNDARY — state.tickets + state.listings mutations
    */
-  static async createListing({ sellerId, eventId, seatInfo, faceValue, price, rawBarcode, evidenceBundleId }) {
+  static async createListing({ sellerId, eventId, seatInfo, faceValue, price, rawBarcode, evidenceBundleId, bypassPilotBounds = false }) {
     // 1. Verify seller eligibility
-    // 1. Verify seller eligibility (preserves existing behavior)
     const eligibility = this.validateSellerEligibility(sellerId);
     if (!eligibility.eligible) {
       const err = new Error(eligibility.reason);
@@ -70,12 +69,26 @@ class ListingService {
     }
 
     // 2. Validate Event
-    // 2. Validate Event (preserves existing behavior)
     const event = state.events.find(e => e.id === eventId);
     if (!event) {
       const err = new Error(`Event ${eventId} not found`);
       err.code = 'EVENT_NOT_FOUND';
       throw err;
+    }
+
+    // 2b. Validate Pilot Price Bounds & Markup Cap
+    const { validateListingPrice } = require('../config/pricingConfig');
+    let needsManualReview = false;
+    if (!bypassPilotBounds) {
+      const priceVal = validateListingPrice({ price, faceValue, event });
+      if (!priceVal.valid) {
+        const err = new Error(priceVal.error);
+        err.code = priceVal.code;
+        throw err;
+      }
+      if (priceVal.needsManualReview) {
+        needsManualReview = true;
+      }
     }
 
     const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('../discovery/EventTemporalLifecycleEngine');
@@ -203,6 +216,8 @@ class ListingService {
         currency: feeBreakdown.currency
       },
       status: LISTING_STATUS.PENDING_VERIFICATION,
+      review_status: needsManualReview ? 'NEEDS_MANUAL_REVIEW' : 'NORMAL',
+      needs_manual_review: needsManualReview,
       rejection_reason: null,
       evidence_bundle_id: evidenceBundleId || null,
       user_created_event: isUserCreatedEvent,

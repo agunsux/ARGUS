@@ -154,8 +154,8 @@ async function runMatrix() {
         sellerId: 'seller-1',
         eventId: 'event-joyland-2026',
         seatInfo: 'VIP Section A-1',
-        faceValue: 300000,
-        price: 300000,
+        faceValue: 500000,
+        price: 500000,
         rawBarcode: `BC-QRIS-${Date.now()}`,
         evidenceBundleId: 'bdl-qris-1'
       });
@@ -249,8 +249,8 @@ async function runMatrix() {
         sellerId: 'seller-1',
         eventId: 'event-joyland-2026',
         seatInfo: 'Regular Cat 1',
-        faceValue: 200000,
-        price: 200000,
+        faceValue: 500000,
+        price: 500000,
         rawBarcode: `BC-VA-${Date.now()}`,
         evidenceBundleId: 'bdl-va-1'
       });
@@ -304,8 +304,8 @@ async function runMatrix() {
         sellerId: 'seller-1',
         eventId: 'event-joyland-2026',
         seatInfo: 'Festival Standing',
-        faceValue: 150000,
-        price: 150000,
+        faceValue: 500000,
+        price: 500000,
         rawBarcode: `BC-EW-${Date.now()}`,
         evidenceBundleId: 'bdl-ew-1'
       });

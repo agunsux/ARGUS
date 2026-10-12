@@ -1082,7 +1082,15 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       ticket: result.ticket
     });
   } catch (err) {
-    res.status(err.code === 'DUPLICATE_TICKET_BARCODE' || err.code === 'SELLER_NOT_ELIGIBLE' ? 400 : 500)
+    const isClientError = [
+      'DUPLICATE_TICKET_BARCODE',
+      'SELLER_NOT_ELIGIBLE',
+      'PRICE_BELOW_MINIMUM',
+      'PRICE_EXCEEDS_MARKUP_CAP',
+      'INVALID_PRICE',
+      'VALIDATION_ERROR'
+    ].includes(err.code);
+    res.status(isClientError ? 400 : 500)
       .json({ error: err.message, code: err.code });
   }
 });

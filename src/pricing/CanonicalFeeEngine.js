@@ -24,20 +24,22 @@
  * - Non-Negative Payout Guard: seller_fee cannot exceed gross_ticket_value (seller_payout >= 0).
  */
 
+const { PRICING_CONFIG } = require('../config/pricingConfig');
+
 const TIKUM_FEE_POLICY_V1 = Object.freeze({
   version: 'TIKUM_FEE_POLICY_V1',
   country_code: 'ID',
   currency: 'IDR',
-  description: 'Standard Tikum Canonical Fee Policy V1 (6% Buyer + 6% Seller, Min Rp10k, Max Rp300k)',
-  seller_rate_numerator: 6,
+  description: 'Standard Tikum Canonical Fee Policy V1 (6% Buyer + 6% Seller, Min Rp35k, Max Rp300k)',
+  seller_rate_numerator: PRICING_CONFIG.PLATFORM_FEE_PCT,
   seller_rate_denominator: 100,
-  buyer_rate_numerator: 6,
+  buyer_rate_numerator: PRICING_CONFIG.PLATFORM_FEE_PCT,
   buyer_rate_denominator: 100,
-  seller_rate: 0.06,
-  buyer_rate: 0.06,
+  seller_rate: PRICING_CONFIG.PLATFORM_FEE_PCT / 100,
+  buyer_rate: PRICING_CONFIG.PLATFORM_FEE_PCT / 100,
   listing_fee: 0,
-  minimum_fee: 10000,
-  maximum_fee: 300000,
+  minimum_fee: PRICING_CONFIG.PLATFORM_MIN_FEE_IDR,
+  maximum_fee: PRICING_CONFIG.PLATFORM_MAX_FEE_IDR,
   is_active: true,
   effective_from: '2026-01-01T00:00:00Z'
 });
