@@ -1994,14 +1994,14 @@ router.get('/events/lifecycle-audit', requireAdmin, (req, res) => {
  * GET /api/admin/demand-alerts
  * Lists registered ticket demand alerts with filtering by event_id, status, notified.
  */
-router.get('/demand-alerts', requireAdmin, (req, res) => {
+router.get('/demand-alerts', requireAdmin, async (req, res) => {
   try {
     const { event_id, status, notified, limit, offset } = req.query;
     const parsedLimit = limit ? parseInt(limit, 10) : 50;
     const parsedOffset = offset ? parseInt(offset, 10) : 0;
 
     const { demandCapture } = require('../discovery/DemandCaptureService');
-    const result = demandCapture.getAdminAlerts({
+    const result = await demandCapture.getAdminAlertsAsync({
       eventId: event_id,
       status,
       notified,
@@ -2014,7 +2014,12 @@ router.get('/demand-alerts', requireAdmin, (req, res) => {
       ...result
     });
   } catch (err) {
-    res.status(500).json({ error: err.message, code: 'INTERNAL_ERROR' });
+    const status = err.code === 'DEMAND_STORAGE_UNAVAILABLE' ? 503 : 500;
+    res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'INTERNAL_ERROR'
+    });
   }
 });
 
@@ -2022,12 +2027,12 @@ router.get('/demand-alerts', requireAdmin, (req, res) => {
  * GET /api/admin/demand-alerts/export
  * Exports ticket demand alerts to CSV for manual seller recruitment & buyer notification.
  */
-router.get('/demand-alerts/export', requireAdmin, (req, res) => {
+router.get('/demand-alerts/export', requireAdmin, async (req, res) => {
   try {
     const { event_id, status, notified } = req.query;
     const { demandCapture } = require('../discovery/DemandCaptureService');
 
-    const csvData = demandCapture.exportCsv({
+    const csvData = await demandCapture.exportCsvAsync({
       eventId: event_id,
       status,
       notified
@@ -2038,7 +2043,12 @@ router.get('/demand-alerts/export', requireAdmin, (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(csvData);
   } catch (err) {
-    res.status(500).json({ error: err.message, code: 'INTERNAL_ERROR' });
+    const status = err.code === 'DEMAND_STORAGE_UNAVAILABLE' ? 503 : 500;
+    res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'INTERNAL_ERROR'
+    });
   }
 });
 
@@ -2046,14 +2056,14 @@ router.get('/demand-alerts/export', requireAdmin, (req, res) => {
  * POST /api/admin/demand-alerts/:id/notify
  * Stubs notifying a buyer on waitlist and updates alert status to NOTIFIED.
  */
-router.post('/demand-alerts/:id/notify', requireAdmin, (req, res) => {
+router.post('/demand-alerts/:id/notify', requireAdmin, async (req, res) => {
   try {
     const alertId = req.params.id;
     const user = resolveUser(req);
     const officerId = user ? user.id : 'admin-1';
 
     const { demandCapture } = require('../discovery/DemandCaptureService');
-    const updated = demandCapture.markNotified(alertId, officerId);
+    const updated = await demandCapture.markNotifiedAsync(alertId, officerId);
 
     recordAuditLog({
       action: 'DEMAND_ALERT_NOTIFIED',
@@ -2072,8 +2082,12 @@ router.post('/demand-alerts/:id/notify', requireAdmin, (req, res) => {
       alert: updated
     });
   } catch (err) {
-    const status = err.code === 'ALERT_NOT_FOUND' ? 404 : 500;
-    res.status(status).json({ error: err.message, code: err.code || 'INTERNAL_ERROR' });
+    const status = err.code === 'ALERT_NOT_FOUND' ? 404 : (err.code === 'DEMAND_STORAGE_UNAVAILABLE' ? 503 : 500);
+    res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'INTERNAL_ERROR'
+    });
   }
 });
 

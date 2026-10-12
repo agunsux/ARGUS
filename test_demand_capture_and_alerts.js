@@ -356,6 +356,175 @@ async function runTests() {
       assert.ok(html.includes('Daftar untuk dikabari pertama saat ada tiket tersedia'));
     });
 
+    // -------------------------------------------------------------------------
+    // SECTION 7: PRE-MIGRATION SAFETY & POSTGRES PERSISTENCE INVARIANTS
+    // -------------------------------------------------------------------------
+    console.log('\n── Section 7: Pre-Migration Safety (42P01 Missing Table) & Postgres Persistence ──');
+
+    await check('7.1 When demand_alerts table does not exist (42P01), POST /api/discovery/demand fails safely (503) without false success', async () => {
+      demandCapture.reset();
+      demandCapture.requirePersistentStorage = true;
+      demandCapture.pool = {
+        query: async () => {
+          const err = new Error('relation "demand_alerts" does not exist');
+          err.code = '42P01';
+          throw err;
+        }
+      };
+
+      try {
+        const res = await apiRequest('/api/discovery/demand', {
+          method: 'POST',
+          body: JSON.stringify({
+            eventId: testEventId,
+            contact: '081277776666',
+            qty: 1,
+            consent: true
+          })
+        });
+
+        assert.strictEqual(res.status, 503);
+        assert.strictEqual(res.data.success, false);
+        assert.strictEqual(res.data.persisted, false);
+        assert.strictEqual(res.data.code, 'DEMAND_STORAGE_UNAVAILABLE');
+        assert.strictEqual(demandCapture.getAllDemands().length, 0);
+      } finally {
+        demandCapture.requirePersistentStorage = null;
+        demandCapture.pool = null;
+      }
+    });
+
+    await check('7.2 When demand_alerts table does not exist (42P01), GET /api/discovery/demand/stats/:eventId degrades safely without breaking browsing', async () => {
+      demandCapture.requirePersistentStorage = true;
+      demandCapture.pool = {
+        query: async () => {
+          const err = new Error('relation "demand_alerts" does not exist');
+          err.code = '42P01';
+          throw err;
+        }
+      };
+
+      try {
+        const res = await apiRequest(`/api/discovery/demand/stats/${testEventId}`);
+        assert.strictEqual(res.status, 200);
+        assert.strictEqual(res.data.success, true);
+        assert.strictEqual(res.data.show_count, false);
+        assert.strictEqual(res.data.verified_count, 0);
+      } finally {
+        demandCapture.requirePersistentStorage = null;
+        demandCapture.pool = null;
+      }
+    });
+
+    await check('7.3 When demand_alerts table does not exist (42P01), Admin alert endpoints fail closed (503) and disclose no private data', async () => {
+      demandCapture.requirePersistentStorage = true;
+      demandCapture.pool = {
+        query: async () => {
+          const err = new Error('relation "demand_alerts" does not exist');
+          err.code = '42P01';
+          throw err;
+        }
+      };
+
+      try {
+        const listRes = await apiRequest('/api/admin/demand-alerts', { headers: authHeader });
+        assert.strictEqual(listRes.status, 503);
+        assert.strictEqual(listRes.data.code, 'DEMAND_STORAGE_UNAVAILABLE');
+        assert.strictEqual(listRes.data.alerts, undefined);
+
+        const csvRes = await apiRequest('/api/admin/demand-alerts/export', { headers: authHeader });
+        assert.strictEqual(csvRes.status, 503);
+        assert.strictEqual(csvRes.data.code, 'DEMAND_STORAGE_UNAVAILABLE');
+
+        const notifyRes = await apiRequest('/api/admin/demand-alerts/dem-123/notify', {
+          method: 'POST',
+          headers: authHeader
+        });
+        assert.strictEqual(notifyRes.status, 503);
+        assert.strictEqual(notifyRes.data.code, 'DEMAND_STORAGE_UNAVAILABLE');
+      } finally {
+        demandCapture.requirePersistentStorage = null;
+        demandCapture.pool = null;
+      }
+    });
+
+    await check('7.4 Persistent Postgres mode stores, deduplicates per contact+event, and serves stats & admin queries from DB', async () => {
+      demandCapture.reset();
+      const fakeDbRows = [];
+      demandCapture.requirePersistentStorage = true;
+      demandCapture.pool = {
+        query: async (sql, params = []) => {
+          const normSql = sql.replace(/\s+/g, ' ').trim();
+          if (normSql.startsWith('SELECT id FROM demand_alerts WHERE event_id = $1 AND contact = $2')) {
+            const found = fakeDbRows.find(r => r.event_id === params[0] && r.contact === params[1] && r.status === 'WAITING');
+            return { rows: found ? [{ id: found.id }] : [] };
+          }
+          if (normSql.startsWith('INSERT INTO demand_alerts')) {
+            const row = {
+              id: params[0],
+              event_id: params[1],
+              contact: params[2],
+              qty: params[3],
+              max_price: params[4],
+              status: params[5],
+              notified_at: params[6],
+              consent_at: params[7],
+              created_at: params[8],
+              metadata: JSON.parse(params[9] || '{}')
+            };
+            fakeDbRows.push(row);
+            return { rows: [row] };
+          }
+          if (normSql.startsWith('UPDATE demand_alerts SET qty = $1')) {
+            const found = fakeDbRows.find(r => r.id === params[4]);
+            found.qty = params[0];
+            found.max_price = params[1];
+            found.consent_at = params[2];
+            found.metadata = JSON.parse(params[3] || '{}');
+            return { rows: [found] };
+          }
+          if (normSql.startsWith('SELECT COUNT(DISTINCT contact)::int AS cnt FROM demand_alerts')) {
+            const unique = new Set(fakeDbRows.filter(r => r.event_id === params[0] && r.status === 'WAITING').map(r => r.contact));
+            return { rows: [{ cnt: unique.size }] };
+          }
+          if (normSql.startsWith('SELECT COUNT(*)::int AS total FROM demand_alerts')) {
+            return { rows: [{ total: fakeDbRows.length }] };
+          }
+          if (normSql.startsWith('SELECT * FROM demand_alerts')) {
+            return { rows: [...fakeDbRows] };
+          }
+          return { rows: [] };
+        }
+      };
+
+      try {
+        const post1 = await apiRequest('/api/discovery/demand', {
+          method: 'POST',
+          body: JSON.stringify({ eventId: testEventId, contact: '081255554444', qty: 1, consent: true })
+        });
+        assert.strictEqual(post1.status, 201);
+        assert.strictEqual(post1.data.persisted, true);
+        assert.strictEqual(fakeDbRows.length, 1);
+
+        // Duplicate contact on same event updates existing WAITING row instead of duplicating
+        const post2 = await apiRequest('/api/discovery/demand', {
+          method: 'POST',
+          body: JSON.stringify({ eventId: testEventId, contact: '081255554444', qty: 3, maxPrice: 900000, consent: true })
+        });
+        assert.strictEqual(post2.status, 201);
+        assert.strictEqual(fakeDbRows.length, 1);
+        assert.strictEqual(fakeDbRows[0].qty, 3);
+
+        const adminRes = await apiRequest('/api/admin/demand-alerts', { headers: authHeader });
+        assert.strictEqual(adminRes.status, 200);
+        assert.strictEqual(adminRes.data.total, 1);
+        assert.strictEqual(adminRes.data.alerts[0].qty, 3);
+      } finally {
+        demandCapture.requirePersistentStorage = null;
+        demandCapture.pool = null;
+      }
+    });
+
   } finally {
     server.close();
   }

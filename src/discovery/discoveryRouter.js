@@ -1299,9 +1299,9 @@ function e_hasProvenance(event) {
  * POST /api/discovery/demand
  * Register demand notification waitlist for zero-resale events (Kabari Saya / Saya Cari Tiket)
  */
-router.post('/api/discovery/demand', (req, res) => {
+router.post('/api/discovery/demand', async (req, res) => {
   try {
-    const { eventId, contact, contactInfo, qty, maxPrice, maxBudget, consent, targetCategory } = req.body;
+    const { eventId, contact, contactInfo, qty, maxPrice, maxBudget, consent, targetCategory } = req.body || {};
     const targetEventId = eventId;
     if (!targetEventId) {
       return res.status(400).json({ error: 'eventId is required', code: 'EVENT_ID_REQUIRED' });
@@ -1316,7 +1316,7 @@ router.post('/api/discovery/demand', (req, res) => {
     const clientIp = req.headers['x-forwarded-for'] ? String(req.headers['x-forwarded-for']).split(',')[0].trim() : req.socket?.remoteAddress;
     const userAgent = req.headers['user-agent'];
 
-    const result = demandCapture.registerInterest({
+    const result = await demandCapture.registerInterestAsync({
       eventId: event.event_id || event.id,
       contact: contact || contactInfo,
       qty: qty !== undefined ? qty : 1,
@@ -1329,6 +1329,7 @@ router.post('/api/discovery/demand', (req, res) => {
 
     res.status(201).json({
       success: true,
+      persisted: Boolean(result.persisted),
       message: 'Permintaan dicatat! Kami akan menghubungi Anda segera setelah tiket terverifikasi tersedia.',
       demand: result.record,
       notification: result.notification
@@ -1336,8 +1337,11 @@ router.post('/api/discovery/demand', (req, res) => {
   } catch (err) {
     const status = err.code === 'RATE_LIMIT_EXCEEDED' ? 429 :
                    (err.code === 'EVENT_NOT_FOUND' ? 404 :
-                   (['INVALID_CONTACT', 'CONTACT_REQUIRED', 'INVALID_QTY', 'INVALID_MAX_PRICE', 'CONSENT_REQUIRED', 'EVENT_ID_REQUIRED'].includes(err.code) ? 400 : 500));
+                   (err.code === 'DEMAND_STORAGE_UNAVAILABLE' ? 503 :
+                   (['INVALID_CONTACT', 'CONTACT_REQUIRED', 'INVALID_QTY', 'INVALID_MAX_PRICE', 'CONSENT_REQUIRED', 'EVENT_ID_REQUIRED'].includes(err.code) ? 400 : 500)));
     res.status(status).json({
+      success: false,
+      persisted: false,
       error: err.message,
       code: err.code || 'INTERNAL_ERROR',
       retryAfterSeconds: err.retryAfterSeconds
@@ -1349,17 +1353,24 @@ router.post('/api/discovery/demand', (req, res) => {
  * GET /api/discovery/demand/stats/:eventId
  * Public verified demand counter (Truthfulness Invariant: only exposed when >= 5)
  */
-router.get('/api/discovery/demand/stats/:eventId', (req, res) => {
+router.get('/api/discovery/demand/stats/:eventId', async (req, res) => {
   try {
     const eventId = req.params.eventId;
-    const stats = demandCapture.getPublicDemandStats(eventId);
+    const stats = await demandCapture.getPublicDemandStatsAsync(eventId);
     res.json({
       success: true,
       eventId,
       ...stats
     });
   } catch (err) {
-    res.status(500).json({ error: err.message, code: 'INTERNAL_ERROR' });
+    res.json({
+      success: true,
+      eventId: req.params.eventId,
+      verified_count: 0,
+      show_count: false,
+      badge_text: 'Daftar untuk dikabari pertama saat ada tiket tersedia',
+      headline: 'Daftar untuk dikabari pertama saat tiket tersedia'
+    });
   }
 });
 

@@ -304,6 +304,11 @@ class ListingService {
         ticket_id: listing.ticket_id
       });
 
+      try {
+        const { demandCapture } = require('../discovery/DemandCaptureService');
+        demandCapture.enqueueListingActivatedAlert(listing);
+      } catch (_) {}
+
       return { success: true, status: LISTING_STATUS.ACTIVE, listing };
     } else {
       if (!reason) {
