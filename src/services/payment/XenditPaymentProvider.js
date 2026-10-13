@@ -68,9 +68,14 @@ class XenditPaymentProvider extends PaymentProvider {
       environment: this.mode,
       hasSecretKey: hasKeys,
       message: isReady
-        ? 'Xendit payment rail active'
+        ? 'Xendit payment rail active (xenPlatform enabled; escrow unavailable; secondary ticketing requires partner underwriting approval; ID domestic disbursements only)'
         : 'PAYMENT PROVIDER XENDIT: Awaiting XENDIT_SECRET_KEY configuration',
-      tier: 'TIER_2B'
+      tier: 'TIER_2B',
+      underwritingRequirements: {
+        category: 'HIGH_RISK_SECONDARY_TICKETING',
+        approvalRequired: true,
+        crossBorderDisbursements: 'RESTRICTED_LOCAL_ENTITY_SAME_CURRENCY_ONLY'
+      }
     };
   }
 
@@ -91,7 +96,9 @@ class XenditPaymentProvider extends PaymentProvider {
       chargebackHandling: true,
       notes: {
         escrow_capability: 'ESCROW_UNAVAILABLE',
-        marketplace_model: 'XENPLATFORM_SPLIT_AND_TRANSFER'
+        marketplace_model: 'XENPLATFORM_SPLIT_AND_TRANSFER',
+        underwriting_status: 'REQUIRES_PARTNER_RISK_APPROVAL',
+        cross_border_status: 'RESTRICTED_ID_DOMESTIC_ONLY'
       }
     });
   }
@@ -455,11 +462,232 @@ class XenditPaymentProvider extends PaymentProvider {
     };
   }
 
+  /**
+   * XenPlatform: Creates a merchant or seller sub-account under the platform account
+   * @param {object} params
+   * @param {string} params.email
+   * @param {string} params.businessName
+   * @param {string} [params.type='OWNED'] 'OWNED' or 'MANAGED'
+   * @param {string} [params.country='ID']
+   * @returns {Promise<object>}
+   */
+  async createSubAccount({ email, businessName, type = 'OWNED', country = 'ID' } = {}) {
+    if (!email || !businessName) {
+      throw new Error('Xendit subaccount creation requires email and businessName.');
+    }
+
+    if (this.secretKey && !this.allowSimulation) {
+      if ((this.mode === 'production' || process.env.NODE_ENV === 'production') && process.env.ENABLE_XENDIT_PRODUCTION !== 'true') {
+        throw new Error('Live Xendit production API client awaiting merchant production activation.');
+      }
+
+      const basicAuth = Buffer.from(`${this.secretKey}:`).toString('base64');
+      const res = await this._httpRequest({
+        url: `${this.apiBaseUrl}/v2/accounts`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Basic ${basicAuth}`
+        },
+        body: JSON.stringify({
+          email,
+          type,
+          public_profile: {
+            business_name: businessName
+          },
+          country
+        })
+      });
+
+      if (res.statusCode >= 200 && res.statusCode < 300 && res.json) {
+        return {
+          accountId: res.json.id,
+          email: res.json.email || email,
+          businessName: res.json.public_profile?.business_name || businessName,
+          type: res.json.type || type,
+          country: res.json.country || country,
+          status: res.json.status || 'ACTIVE',
+          simulated: false,
+          createdAt: res.json.created || new Date().toISOString()
+        };
+      }
+      const errMsg = res.json?.message || `HTTP ${res.statusCode}`;
+      throw new Error(`Xendit createSubAccount failed: ${errMsg}`);
+    }
+
+    // Simulation / Sandbox
+    const accountId = `xen-acc-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    return {
+      accountId,
+      email,
+      businessName,
+      type,
+      country,
+      status: 'ACTIVE',
+      simulated: true,
+      createdAt: new Date().toISOString()
+    };
+  }
+
+  /**
+   * XenPlatform: Creates a split payment rule for routing marketplace fees and payouts
+   * @param {object} params
+   * @param {string} params.name
+   * @param {string} params.description
+   * @param {Array<object>} params.routes
+   * @returns {Promise<object>}
+   */
+  async createSplitRule({ name, description = '', routes = [] } = {}) {
+    if (!name || !Array.isArray(routes) || routes.length === 0) {
+      throw new Error('Xendit createSplitRule requires a name and non-empty routes array.');
+    }
+
+    if (this.secretKey && !this.allowSimulation) {
+      if ((this.mode === 'production' || process.env.NODE_ENV === 'production') && process.env.ENABLE_XENDIT_PRODUCTION !== 'true') {
+        throw new Error('Live Xendit production API client awaiting merchant production activation.');
+      }
+
+      const basicAuth = Buffer.from(`${this.secretKey}:`).toString('base64');
+      const res = await this._httpRequest({
+        url: `${this.apiBaseUrl}/split_rules`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Basic ${basicAuth}`
+        },
+        body: JSON.stringify({
+          name,
+          description,
+          routes
+        })
+      });
+
+      if (res.statusCode >= 200 && res.statusCode < 300 && res.json) {
+        return {
+          splitRuleId: res.json.id,
+          name: res.json.name || name,
+          description: res.json.description || description,
+          routes: res.json.routes || routes,
+          status: 'ACTIVE',
+          simulated: false,
+          createdAt: res.json.created || new Date().toISOString()
+        };
+      }
+      const errMsg = res.json?.message || `HTTP ${res.statusCode}`;
+      throw new Error(`Xendit createSplitRule failed: ${errMsg}`);
+    }
+
+    // Simulation / Sandbox
+    const splitRuleId = `split-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    return {
+      splitRuleId,
+      name,
+      description,
+      routes,
+      status: 'ACTIVE',
+      simulated: true,
+      createdAt: new Date().toISOString()
+    };
+  }
+
+  /**
+   * XenPlatform: Transfers funds immediately between platform and sub-account (or between sub-accounts).
+   * Note: This executes immediately; it does NOT hold funds in milestone escrow.
+   * @param {object} params
+   * @param {string} params.sourceAccountId
+   * @param {string} params.destinationAccountId
+   * @param {number|string} params.amount
+   * @param {string} [params.currency='IDR']
+   * @param {string} [params.reference]
+   * @param {string} [params.idempotencyKey]
+   * @returns {Promise<object>}
+   */
+  async transferBetweenAccounts({
+    sourceAccountId = null,
+    destinationAccountId,
+    amount,
+    currency = 'IDR',
+    reference = null,
+    idempotencyKey = null
+  } = {}) {
+    const parsedAmount = parseInt(amount, 10);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      throw new Error('Xendit transfer requires a positive integer amount.');
+    }
+    if (!destinationAccountId) {
+      throw new Error('Xendit transfer requires destinationAccountId.');
+    }
+
+    if (this.secretKey && !this.allowSimulation) {
+      if ((this.mode === 'production' || process.env.NODE_ENV === 'production') && process.env.ENABLE_XENDIT_PRODUCTION !== 'true') {
+        throw new Error('Live Xendit production API client awaiting merchant production activation.');
+      }
+
+      const basicAuth = Buffer.from(`${this.secretKey}:`).toString('base64');
+      const reqHeaders = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Basic ${basicAuth}`
+      };
+      if (idempotencyKey) {
+        reqHeaders['X-Idempotency-Key'] = idempotencyKey;
+      }
+      if (sourceAccountId) {
+        reqHeaders['for-user-id'] = sourceAccountId;
+      }
+
+      const res = await this._httpRequest({
+        url: `${this.apiBaseUrl}/transfers`,
+        method: 'POST',
+        headers: reqHeaders,
+        body: JSON.stringify({
+          source_user_id: sourceAccountId || undefined,
+          destination_user_id: destinationAccountId,
+          amount: parsedAmount,
+          currency,
+          reference: reference || `trf-${Date.now()}`
+        })
+      });
+
+      if (res.statusCode >= 200 && res.statusCode < 300 && res.json) {
+        return {
+          transferId: res.json.id || res.json.transfer_id,
+          sourceAccountId,
+          destinationAccountId,
+          amount: parsedAmount,
+          currency,
+          reference: reference || res.json.reference,
+          status: 'SUCCESSFUL',
+          simulated: false,
+          executedAt: res.json.created || new Date().toISOString()
+        };
+      }
+      const errMsg = res.json?.message || `HTTP ${res.statusCode}`;
+      throw new Error(`Xendit transferBetweenAccounts failed: ${errMsg}`);
+    }
+
+    // Simulation / Sandbox
+    const transferId = `xen-trf-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    return {
+      transferId,
+      sourceAccountId,
+      destinationAccountId,
+      amount: parsedAmount,
+      currency,
+      reference: reference || `trf-${Date.now()}`,
+      status: 'SUCCESSFUL',
+      simulated: true,
+      executedAt: new Date().toISOString()
+    };
+  }
+
   async createHold({ orderId, providerRef, amount }) {
     throw new CapabilityUnsupportedError(
       this.getName(),
       'hold',
-      'ESCROW_UNAVAILABLE: Xendit subaccount transfers do not support milestone escrow holds'
+      'ESCROW_UNAVAILABLE: Xendit xenPlatform transfers execute immediately and do not provide third-party buyer-protection milestone escrow holding until event admission.'
     );
   }
 
@@ -467,7 +695,7 @@ class XenditPaymentProvider extends PaymentProvider {
     throw new CapabilityUnsupportedError(
       this.getName(),
       'release',
-      'ESCROW_UNAVAILABLE: Xendit subaccount transfers do not support milestone escrow release'
+      'ESCROW_UNAVAILABLE: Xendit xenPlatform transfers do not support milestone escrow release.'
     );
   }
 

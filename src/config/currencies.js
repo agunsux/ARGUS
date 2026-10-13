@@ -64,6 +64,15 @@ const CURRENCIES = {
     isZeroDecimal: false,
     countryCode: 'PH'
   },
+  HKD: {
+    code: 'HKD',
+    name: 'Hong Kong Dollar',
+    symbol: 'HK$',
+    minorUnit: 100, // Cents
+    decimals: 2,
+    isZeroDecimal: false,
+    countryCode: 'HK'
+  },
   USD: {
     code: 'USD',
     name: 'US Dollar',
