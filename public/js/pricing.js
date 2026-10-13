@@ -50,12 +50,19 @@
     const sellerPayout = grossTicketValue - fee;
     const buyerSubtotal = grossTicketValue + fee;
     const buyerTotal = buyerSubtotal + pgFee;
+    const unitFee = Math.round(fee / qty);
+    const unitSellerPayout = Math.round(sellerPayout / qty);
 
     return {
       price: numericPrice,
+      unitPrice: numericPrice,
+      unitFee: unitFee,
+      unitSellerPayout: unitSellerPayout,
       quantity: qty,
       grossTicketValue: grossTicketValue,
+      grossTicketPrice: grossTicketValue,
       fee: fee,
+      sellerFee: fee,
       sellerPayout: sellerPayout,
       buyerSubtotal: buyerSubtotal,
       buyerTotal: buyerTotal,
@@ -96,6 +103,7 @@
     CONFIG: PRICING_CONFIG,
     calculatePlatformFee: calculatePlatformFee,
     calculatePricing: calculatePricing,
+    calculateFeeBreakdown: calculatePricing,
     formatIDR: formatIDR,
     validateListingPrice: validateListingPrice
   };

@@ -134,7 +134,20 @@ class ListingService {
    *
    * @PERSISTENCE_BOUNDARY — state.tickets + state.listings mutations
    */
-  static async createListing({ sellerId, eventId, seatInfo, faceValue, price, rawBarcode, evidenceBundleId, bypassPilotBounds = false }) {
+  static async createListing({
+    sellerId,
+    eventId,
+    seatInfo,
+    faceValue,
+    price,
+    rawBarcode,
+    evidenceBundleId,
+    bypassPilotBounds = false,
+    quantity = 1,
+    fulfillmentType = 'SELLER_MANAGED',
+    picAssistanceStatus = null,
+    seatType = null
+  }) {
     // 1. Verify seller eligibility durably
     const eligibility = await this.validateSellerEligibilityAsync(sellerId);
     if (!eligibility.eligible) {
@@ -208,13 +221,26 @@ class ListingService {
     const seatMatch = seatInfo ? seatInfo.match(/Seat\s+(\w+)/i) : null;
     const sectionPart = seatInfo ? seatInfo.split(/[,\-–]/)[0].trim() : 'General';
 
+    const qty = Math.min(4, Math.max(1, parseInt(quantity, 10) || 1));
+    const normalizedFulfillment = (fulfillmentType && fulfillmentType.toUpperCase() === 'TIKUM_VENUE_PIC') ? 'TIKUM_VENUE_PIC' : 'SELLER_MANAGED';
+    let resolvedPicStatus = picAssistanceStatus;
+    if (!resolvedPicStatus) {
+      if (normalizedFulfillment === 'TIKUM_VENUE_PIC') {
+        const hasPic = (state.event_pics || []).some(ep => ep.event_id === eventId && ep.status === 'ACTIVE');
+        resolvedPicStatus = hasPic ? 'CONFIRMED' : 'REQUESTED_PENDING_ASSIGNMENT';
+      } else {
+        resolvedPicStatus = 'NONE';
+      }
+    }
+    const normalizedSeatType = seatType || (seatInfo && /row|seat|kursi|baris/i.test(seatInfo) ? 'ASSIGNED' : 'GENERAL_ADMISSION');
+
     let ticket;
     try {
       const { TicketInventoryService } = require('./marketplace/TicketInventoryService');
       ticket = await TicketInventoryService.createTicket({
         sellerId,
         canonicalEventId: eventId,
-        ticketType: 'GENERAL_ADMISSION',
+        ticketType: normalizedSeatType,
         section: sectionPart,
         row: rowMatch ? rowMatch[1] : null,
         seat: seatMatch ? seatMatch[1] : null,
@@ -235,6 +261,7 @@ class ListingService {
       ticket.seat_info = seatInfo;
       ticket.price = parseInt(price, 10);
       ticket.face_value = parseInt(faceValue, 10);
+      ticket.quantity = qty;
     } catch (delegationErr) {
       // If TicketInventoryService throws DUPLICATE_TICKET_BARCODE, propagate as-is.
       if (delegationErr.code === 'DUPLICATE_TICKET_BARCODE') {
@@ -253,7 +280,8 @@ class ListingService {
         seat_info: seatInfo,
         face_value: parseInt(faceValue),
         price: parseInt(price),
-        barcode_hash: barcodeHash
+        barcode_hash: barcodeHash,
+        quantity: qty
       };
       state.tickets.push(ticket);
     }
@@ -269,21 +297,31 @@ class ListingService {
     const { CanonicalFeeEngine } = require('../pricing/CanonicalFeeEngine');
     const feeBreakdown = CanonicalFeeEngine.calculateTicketFees({
       ticketPrice: parseInt(price, 10),
-      quantity: 1
+      quantity: qty
     });
 
     const listing = {
       id: listingId,
+      listing_id: listingId,
       ticket_id: ticketId,
       seller_id: sellerId,
       event_id: eventId,
       face_value: parseInt(faceValue),
       price: parseInt(price),
       seat_info: seatInfo,
+      seat_type: normalizedSeatType,
+      quantity: qty,
+      total_quantity: qty,
+      available_quantity: qty,
+      sold_quantity: 0,
+      reserved_quantity: 0,
+      fulfillment_type: normalizedFulfillment,
+      pic_assistance_status: resolvedPicStatus,
       pricing: {
         fee_policy_version: feeBreakdown.fee_policy_version,
         ticket_price: feeBreakdown.ticket_price,
         gross_ticket_value: feeBreakdown.gross_ticket_value,
+        quantity: qty,
         buyer_fee: feeBreakdown.buyer_fee,
         seller_fee: feeBreakdown.seller_fee,
         seller_payout: feeBreakdown.seller_payout,
@@ -316,10 +354,26 @@ class ListingService {
         seat_info: seatInfo,
         face_value: parseInt(faceValue, 10),
         pricing: listing.pricing,
+        quantity: qty,
+        total_quantity: qty,
+        available_quantity: qty,
+        sold_quantity: 0,
+        reserved_quantity: 0,
+        fulfillment_type: normalizedFulfillment,
+        pic_assistance_status: resolvedPicStatus,
+        seat_type: normalizedSeatType,
         expires_at: null,
         metadata: {
           evidence_bundle_id: evidenceBundleId || null,
-          user_created_event: isUserCreatedEvent
+          user_created_event: isUserCreatedEvent,
+          quantity: qty,
+          total_quantity: qty,
+          available_quantity: qty,
+          sold_quantity: 0,
+          reserved_quantity: 0,
+          fulfillment_type: normalizedFulfillment,
+          pic_assistance_status: resolvedPicStatus,
+          seat_type: normalizedSeatType
         }
       });
     } catch (repoErr) {
@@ -333,6 +387,8 @@ class ListingService {
       ticket_id: ticketId,
       event_id: eventId,
       price: parseInt(price),
+      quantity: qty,
+      fulfillment_type: normalizedFulfillment,
       barcode_hash: barcodeHash,
       canonical_delegation: true
     });
@@ -480,13 +536,29 @@ class ListingService {
         const picAssign = state.event_pics?.find(ep => ep.event_id === listing.event_id && ep.status === 'ACTIVE');
         const category = listing.category || (listing.seat_info ? listing.seat_info.split(/[-–,]/)[0].trim() : 'GENERAL');
 
+        const meta = (typeof listing.metadata === 'object' && listing.metadata) ? listing.metadata : {};
+        const totalQty = parseInt(listing.total_quantity || meta.total_quantity || listing.quantity || 1, 10);
+        const availQty = parseInt(listing.available_quantity !== undefined ? listing.available_quantity : (meta.available_quantity !== undefined ? meta.available_quantity : totalQty), 10);
+        const soldQty = parseInt(listing.sold_quantity !== undefined ? listing.sold_quantity : (meta.sold_quantity || 0), 10);
+        const fType = listing.fulfillment_type || meta.fulfillment_type || 'SELLER_MANAGED';
+        const pStatus = listing.pic_assistance_status || meta.pic_assistance_status || (picAssign ? 'CONFIRMED' : (fType === 'TIKUM_VENUE_PIC' ? 'REQUESTED_PENDING_ASSIGNMENT' : 'NONE'));
+        const sType = listing.seat_type || meta.seat_type || 'GENERAL_ADMISSION';
+
         return {
           id: listing.id,
+          listing_id: listing.id,
           ticket_id: listing.ticket_id,
           seat_info: listing.seat_info,
+          seat_type: sType,
           ticket_category: category,
           face_value: listing.face_value,
           price: listing.price,
+          quantity: totalQty,
+          total_quantity: totalQty,
+          available_quantity: availQty,
+          sold_quantity: soldQty,
+          fulfillment_type: fType,
+          pic_assistance_status: pStatus,
           seller_asking_price: listing.price,
           verification_status: listing.status === 'ACTIVE' ? 'VERIFIED' : listing.status,
           pic_available: !!picAssign,

@@ -246,6 +246,9 @@ router.get(['/buyer', '/buyer/summary'], requireAuth, async (req, res) => {
         ticket_id: o.ticket_id,
         event_id: o.canonical_event_id || o.event_id,
         status: o.status,
+        quantity: parseInt(o.quantity || o.order_quantity || 1, 10),
+        fulfillment_type: o.fulfillment_type || null,
+        pic_assistance_status: o.pic_assistance_status || null,
         ticket_price: parseInt(o.gross_amount || o.ticket_price || o.total_amount || 0, 10),
         buyer_fee: parseInt(o.buyer_fee || o.service_fee || 0, 10),
         buyer_tax: parseInt(o.buyer_tax || 0, 10),
@@ -268,6 +271,9 @@ router.get(['/buyer', '/buyer/summary'], requireAuth, async (req, res) => {
             ticket_id: so.ticket_id,
             event_id: so.event_id || so.canonical_event_id,
             status: so.status,
+            quantity: parseInt(so.quantity || so.order_quantity || 1, 10),
+            fulfillment_type: so.fulfillment_type || null,
+            pic_assistance_status: so.pic_assistance_status || null,
             ticket_price: parseInt(so.ticket_price || so.price || so.total_amount || 0, 10),
             buyer_fee: parseInt(so.buyer_fee || so.platform_fee || 0, 10),
             buyer_tax: parseInt(so.buyer_tax || 0, 10),
@@ -278,10 +284,21 @@ router.get(['/buyer', '/buyer/summary'], requireAuth, async (req, res) => {
             updated_at: so.updated_at || so.created_at
           });
         } else if (so.buyer_id === userId && orderMap.has(so.id)) {
-          // Keep latest status if state was updated in-process (e.g. ENTRY_CONFIRMED)
+          // Keep latest status and inventory/fulfillment metadata if state was updated in-process
           const existing = orderMap.get(so.id);
           if (so.status && so.status !== existing.status) {
             existing.status = so.status;
+          }
+          if (so.quantity) {
+            existing.quantity = parseInt(so.quantity, 10);
+          } else if (so.order_quantity) {
+            existing.quantity = parseInt(so.order_quantity, 10);
+          }
+          if (so.fulfillment_type) {
+            existing.fulfillment_type = so.fulfillment_type;
+          }
+          if (so.pic_assistance_status) {
+            existing.pic_assistance_status = so.pic_assistance_status;
           }
         }
       }
@@ -340,6 +357,9 @@ router.get(['/buyer', '/buyer/summary'], requireAuth, async (req, res) => {
         venue_city: ev.venue_city,
         venue_gate_info: ev.venue_gate_info,
         seat_info: seatInfo,
+        quantity: ord.quantity || parseInt(listing.quantity || 1, 10),
+        fulfillment_type: ord.fulfillment_type || listing.fulfillment_type || 'SELLER_MANAGED',
+        pic_assistance_status: ord.pic_assistance_status || listing.pic_assistance_status || (picAssign ? 'CONFIRMED' : 'NONE'),
         ticket_price: ord.ticket_price,
         buyer_fee: ord.buyer_fee,
         buyer_tax: ord.buyer_tax,
@@ -686,6 +706,15 @@ router.get(['/seller', '/seller/summary'], requireAuth, async (req, res) => {
       const verifStatus = ticket.verification_status || ticket.status || (statusUpper === 'ACTIVE' ? 'VERIFIED' : statusUpper);
       const canWithdraw = ['ACTIVE', 'PENDING_VERIFICATION', 'SUBMITTED'].includes(statusUpper) && !linkedOrder;
 
+      const meta = (typeof l.metadata === 'object' && l.metadata) ? l.metadata : {};
+      const totalQty = parseInt(l.total_quantity || meta.total_quantity || l.quantity || 1, 10);
+      const availQty = parseInt(l.available_quantity !== undefined ? l.available_quantity : (meta.available_quantity !== undefined ? meta.available_quantity : totalQty), 10);
+      const soldQty = parseInt(l.sold_quantity !== undefined ? l.sold_quantity : (meta.sold_quantity || 0), 10);
+      const resQty = parseInt(l.reserved_quantity !== undefined ? l.reserved_quantity : (meta.reserved_quantity || 0), 10);
+      const fType = l.fulfillment_type || meta.fulfillment_type || 'SELLER_MANAGED';
+      const pStatus = l.pic_assistance_status || meta.pic_assistance_status || (fType === 'TIKUM_VENUE_PIC' ? 'REQUESTED_PENDING_ASSIGNMENT' : 'NONE');
+      const sType = l.seat_type || meta.seat_type || 'GENERAL_ADMISSION';
+
       return {
         id: l.id,
         listing_id: l.id,
@@ -696,6 +725,14 @@ router.get(['/seller', '/seller/summary'], requireAuth, async (req, res) => {
         venue_name: ev.venue_name,
         venue_city: ev.venue_city,
         seat_info: seatInfo,
+        seat_type: sType,
+        quantity: totalQty,
+        total_quantity: totalQty,
+        available_quantity: availQty,
+        sold_quantity: soldQty,
+        reserved_quantity: resQty,
+        fulfillment_type: fType,
+        pic_assistance_status: pStatus,
         face_value: faceValueInt,
         price: priceInt,
         seller_net_payout: netPayout,
@@ -738,6 +775,9 @@ router.get(['/seller', '/seller/summary'], requireAuth, async (req, res) => {
       const entryConfirmed = ['ENTRY_CONFIRMED', 'SETTLED'].includes(statusUpper);
       const netPayoutVal = parseInt(o.seller_payout || o.seller_net_payout || (escrow ? escrow.amount : 0) || o.ticket_price || o.total_amount || 0, 10);
       const requiresAction = ['PAID_ESCROWED', 'PAID', 'ESCROWED', 'DISPUTED'].includes(statusUpper) || Boolean(dispute && dispute.status === 'OPEN');
+      const orderQty = parseInt(o.quantity || o.order_quantity || 1, 10);
+      const fType = o.fulfillment_type || listing.fulfillment_type || 'SELLER_MANAGED';
+      const pStatus = o.pic_assistance_status || listing.pic_assistance_status || (picAssign ? 'CONFIRMED' : 'NONE');
 
       return {
         id: o.id,
@@ -750,6 +790,9 @@ router.get(['/seller', '/seller/summary'], requireAuth, async (req, res) => {
         venue_name: ev.venue_name,
         venue_gate_info: ev.venue_gate_info,
         seat_info: seatInfo,
+        quantity: orderQty,
+        fulfillment_type: fType,
+        pic_assistance_status: pStatus,
         buyer_masked_name: maskBuyerName(buyerUser ? buyerUser.name : 'Pembeli'),
         ticket_price: parseInt(o.gross_amount || o.ticket_price || o.total_amount || 0, 10),
         seller_fee: parseInt(o.seller_fee || o.service_fee || 0, 10),

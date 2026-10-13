@@ -57,6 +57,9 @@ function calculatePricing(price, quantity = 1, paymentProcessingFee = 0) {
   if (isNaN(numericPrice) || numericPrice <= 0) {
     return {
       price: 0,
+      unitPrice: 0,
+      unitFee: 0,
+      unitSellerPayout: 0,
       quantity: qty,
       grossTicketValue: 0,
       fee: 0,
@@ -73,18 +76,32 @@ function calculatePricing(price, quantity = 1, paymentProcessingFee = 0) {
   const sellerPayout = grossTicketValue - fee;
   const buyerSubtotal = grossTicketValue + fee;
   const buyerTotal = buyerSubtotal + pgFee;
+  const unitFee = Math.round(fee / qty);
+  const unitSellerPayout = Math.round(sellerPayout / qty);
 
   return {
     price: numericPrice,
+    unitPrice: numericPrice,
+    unitFee,
+    unitSellerPayout,
     quantity: qty,
     grossTicketValue,
+    grossTicketPrice: grossTicketValue,
     fee,
+    sellerFee: fee,
     sellerPayout,
     buyerSubtotal,
     buyerTotal,
     paymentProcessingFee: pgFee,
     currency: PRICING_CONFIG.CURRENCY
   };
+}
+
+/**
+ * Fee breakdown helper alias
+ */
+function calculateFeeBreakdown(ticketPrice, quantity = 1, paymentProcessingFee = 0) {
+  return calculatePricing(ticketPrice, quantity, paymentProcessingFee);
 }
 
 /**
@@ -175,5 +192,6 @@ module.exports = {
   PRICING_CONFIG,
   calculatePlatformFee,
   calculatePricing,
+  calculateFeeBreakdown,
   validateListingPrice
 };

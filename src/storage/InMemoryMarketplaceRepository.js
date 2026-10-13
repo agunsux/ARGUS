@@ -102,6 +102,20 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     return listing;
   }
 
+  async updateListingInventory(listingId, updates = {}) {
+    const listing = this.listings.get(listingId);
+    if (!listing) return null;
+    if (updates.available_quantity !== undefined) listing.available_quantity = updates.available_quantity;
+    if (updates.reserved_quantity !== undefined) listing.reserved_quantity = updates.reserved_quantity;
+    if (updates.sold_quantity !== undefined) listing.sold_quantity = updates.sold_quantity;
+    if (updates.total_quantity !== undefined) listing.total_quantity = updates.total_quantity;
+    if (updates.status) listing.status = updates.status;
+    if (updates.fulfillment_type) listing.fulfillment_type = updates.fulfillment_type;
+    if (updates.pic_assistance_status) listing.pic_assistance_status = updates.pic_assistance_status;
+    listing.updated_at = new Date().toISOString();
+    return listing;
+  }
+
   async listActiveListings(canonicalEventId = null) {
     return Array.from(this.listings.values()).filter(l => {
       const matchEvent = canonicalEventId ? (l.canonical_event_id === canonicalEventId || l.event_id === canonicalEventId) : true;

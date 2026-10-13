@@ -120,7 +120,9 @@ class EscrowService {
     paymentDeadlineHours = 2,
     quoteId = null,
     policyVersion = null,
-    taxPolicyVersion = null
+    taxPolicyVersion = null,
+    quantity = null,
+    orderQuantity = null
   }) {
     const { TransactionQuoteService } = require('../pricing/TransactionQuoteService');
 
@@ -206,6 +208,17 @@ class EscrowService {
       throw err;
     }
 
+    const meta = (typeof listing.metadata === 'object' && listing.metadata) ? listing.metadata : {};
+    const totalQty = parseInt(listing.total_quantity || meta.total_quantity || listing.quantity || 1, 10);
+    const availQty = parseInt(listing.available_quantity !== undefined ? listing.available_quantity : (meta.available_quantity !== undefined ? meta.available_quantity : totalQty), 10);
+    const requestedQty = Math.max(1, parseInt(orderQuantity || quantity || 1, 10));
+
+    if (availQty < requestedQty && !isListingReservedByThisReservation) {
+      const err = new Error(`Hanya tersisa ${availQty} tiket untuk listing ini (diminta: ${requestedQty})`);
+      err.code = 'INSUFFICIENT_INVENTORY';
+      throw err;
+    }
+
     const effectivePrice = (customAmount !== null && customAmount !== undefined) ? parseInt(customAmount, 10) : listing.price;
     const orderId = `ord-${uuidv4()}`;
 
@@ -225,6 +238,7 @@ class EscrowService {
       quote = await TransactionQuoteService.generateQuote({
         listingId,
         ticketPrice: effectivePrice,
+        quantity: requestedQty,
         buyerId,
         sellerId: listing.seller_id,
         pricingPolicyVersion: effectivePricingPolicy,
@@ -236,8 +250,8 @@ class EscrowService {
 
     const pricing = {
       ticketPrice: quote.ticket_price,
-      quantity: quote.quantity || 1,
-      gross_ticket_value: quote.gross_ticket_value || quote.ticket_price,
+      quantity: quote.quantity || requestedQty,
+      gross_ticket_value: quote.gross_ticket_value || (quote.ticket_price * (quote.quantity || requestedQty)),
       platformFee: quote.buyer_platform_fee,
       feePercentage: quote.pricing_breakdown?.buyer_rate || 0.06,
       totalAmount: quote.buyer_total,
@@ -257,8 +271,34 @@ class EscrowService {
       quote_id: quote.id
     };
 
-    // Reserve listing immediately
-    listing.status = LISTING_STATUS.RESERVED;
+    // Update listing inventory atomically
+    const newAvailQty = Math.max(0, availQty - requestedQty);
+    const newResQty = (parseInt(listing.reserved_quantity !== undefined ? listing.reserved_quantity : (meta.reserved_quantity || 0), 10)) + requestedQty;
+
+    listing.total_quantity = totalQty;
+    listing.quantity = totalQty;
+    listing.available_quantity = newAvailQty;
+    listing.reserved_quantity = newResQty;
+
+    if (newAvailQty === 0) {
+      listing.status = LISTING_STATUS.RESERVED;
+    }
+
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      if (typeof marketplaceRepo.updateListingInventory === 'function') {
+        await marketplaceRepo.updateListingInventory(listingId, {
+          available_quantity: newAvailQty,
+          reserved_quantity: newResQty,
+          total_quantity: totalQty,
+          status: listing.status
+        });
+      }
+    } catch (_) {}
+
+    const fulfillmentType = listing.fulfillment_type || meta.fulfillment_type || 'SELLER_MANAGED';
+    const picStatus = listing.pic_assistance_status || meta.pic_assistance_status || (fulfillmentType === 'TIKUM_VENUE_PIC' ? 'REQUESTED_PENDING_ASSIGNMENT' : 'NONE');
 
     const paymentDeadline = new Date(Date.now() + paymentDeadlineHours * 60 * 60 * 1000).toISOString();
 
@@ -269,12 +309,15 @@ class EscrowService {
       seller_id: listing.seller_id,
       ticket_id: listing.ticket_id,
       event_id: listing.event_id,
+      fulfillment_type: fulfillmentType,
+      pic_assistance_status: picStatus,
       // Canonical Immutable Fee Snapshot (Requirement 6)
       fee_policy_version: quote.fee_policy_version || quote.pricing_breakdown?.policy_version || 'TIKUM_FEE_POLICY_V1',
       ticket_price: quote.ticket_price,
       price: quote.ticket_price,
-      quantity: quote.quantity || 1,
-      gross_ticket_value: quote.gross_ticket_value || quote.ticket_price,
+      quantity: quote.quantity || requestedQty,
+      order_quantity: quote.quantity || requestedQty,
+      gross_ticket_value: quote.gross_ticket_value || (quote.ticket_price * (quote.quantity || requestedQty)),
       buyer_fee: quote.buyer_fee !== undefined ? quote.buyer_fee : quote.buyer_platform_fee,
       seller_fee: quote.seller_fee !== undefined ? quote.seller_fee : quote.seller_platform_fee,
       platform_fee: quote.buyer_platform_fee,
@@ -360,6 +403,10 @@ class EscrowService {
         listing_id: listingId,
         ticket_id: listing.ticket_id,
         canonical_event_id: listing.event_id || listing.canonical_event_id,
+        quantity: quote.quantity || requestedQty,
+        order_quantity: quote.quantity || requestedQty,
+        fulfillment_type: fulfillmentType,
+        pic_assistance_status: picStatus,
         gross_amount: quote.ticket_price,
         buyer_fee: quote.buyer_platform_fee,
         seller_fee: quote.seller_platform_fee,
@@ -802,7 +849,14 @@ class EscrowService {
       order.status = ORDER_STATUS.SETTLED;
 
       const listing = state.listings.find(l => l.id === order.listing_id);
-      if (listing) listing.status = LISTING_STATUS.SETTLED;
+      if (listing) {
+        const ordQty = order.quantity || 1;
+        listing.reserved_quantity = Math.max(0, (listing.reserved_quantity || 0) - ordQty);
+        listing.sold_quantity = (listing.sold_quantity || 0) + ordQty;
+        if ((listing.available_quantity || 0) === 0 && (listing.reserved_quantity || 0) === 0) {
+          listing.status = LISTING_STATUS.SETTLED;
+        }
+      }
 
       const ticket = state.tickets.find(t => t.id === order.ticket_id);
       if (ticket) ticket.status = 'SETTLED';
@@ -981,7 +1035,7 @@ class EscrowService {
         const marketplaceRepo = getMarketplaceRepository();
         await moneyRepo.refundEscrow(orderId, actorId, reason);
         if (order.listing_id) {
-          await marketplaceRepo.updateListingStatus(order.listing_id, LISTING_STATUS.CANCELLED);
+          await EscrowService.releaseInventoryForOrder(orderId, reason);
         }
       } catch (repoErr) {
         if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
@@ -1102,6 +1156,37 @@ class EscrowService {
     });
 
     return { success: true, escrow };
+  }
+
+  /**
+   * Release reserved inventory back to listing (e.g. order cancelled, expired, or refunded)
+   */
+  static async releaseInventoryForOrder(orderId, reason = 'ORDER_CANCELLED') {
+    const order = (state.orders || []).find(o => o.id === orderId);
+    if (!order || !order.listing_id) return null;
+    const listing = (state.listings || []).find(l => l.id === order.listing_id);
+    if (!listing) return null;
+
+    const ordQty = Math.max(1, parseInt(order.quantity || 1, 10));
+    listing.reserved_quantity = Math.max(0, (listing.reserved_quantity || 0) - ordQty);
+    listing.available_quantity = (listing.available_quantity || 0) + ordQty;
+    if (listing.available_quantity > 0 && listing.status === LISTING_STATUS.RESERVED) {
+      listing.status = LISTING_STATUS.ACTIVE;
+    }
+
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      if (typeof marketplaceRepo.updateListingInventory === 'function') {
+        await marketplaceRepo.updateListingInventory(listing.id, {
+          available_quantity: listing.available_quantity,
+          reserved_quantity: listing.reserved_quantity,
+          status: listing.status
+        });
+      }
+    } catch (_) {}
+
+    return { listing, order, releasedQuantity: ordQty };
   }
 }
 

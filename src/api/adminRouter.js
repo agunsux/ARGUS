@@ -618,13 +618,34 @@ router.get('/overview', requireAdmin, async (req, res) => {
     const openDisputesCount = disputes.filter(d => d.status === 'OPEN' || d.status === 'INVESTIGATING' || d.status === 'DECISION_PENDING').length;
     const activeIncidentsCount = incidents.filter(i => i.status !== 'RESOLVED').length;
 
+    let totalInventoryTickets = 0;
+    let availableInventoryTickets = 0;
+    let soldInventoryTickets = 0;
+    for (const l of listings) {
+      const meta = (typeof l.metadata === 'object' && l.metadata) ? l.metadata : {};
+      const tot = parseInt(l.total_quantity || meta.total_quantity || l.quantity || 1, 10);
+      const av = parseInt(l.available_quantity !== undefined ? l.available_quantity : (meta.available_quantity !== undefined ? meta.available_quantity : (l.status === 'ACTIVE' ? tot : 0)), 10);
+      const sold = parseInt(l.sold_quantity !== undefined ? l.sold_quantity : (meta.sold_quantity || (l.status === 'SETTLED' || l.status === 'SOLD' ? tot : 0)), 10);
+      totalInventoryTickets += tot;
+      availableInventoryTickets += av;
+      soldInventoryTickets += sold;
+    }
+
+    const totalPicAssignments = eventPics.length;
+    const activePicAssignments = eventPics.filter(ep => ep.status === 'ACTIVE').length;
+
     const metrics = {
       active_events: activeEventsCount,
       tickets_listed: ticketsListedCount,
       total_orders: totalOrdersCount,
       pending_payments: pendingOrders,
       open_disputes: openDisputesCount,
-      active_incidents: activeIncidentsCount
+      active_incidents: activeIncidentsCount,
+      total_inventory_tickets: totalInventoryTickets,
+      available_inventory_tickets: availableInventoryTickets,
+      sold_inventory_tickets: soldInventoryTickets,
+      total_pic_assignments: totalPicAssignments,
+      active_pic_assignments: activePicAssignments
     };
 
     // --- 3. Operational Alerts ("Action Required") ---
@@ -970,6 +991,15 @@ router.get('/overview', requireAdmin, async (req, res) => {
       source_health: sourceHealthSummary,
       // V1 Operational Control Center data contract:
       metrics,
+      inventory: {
+        total_inventory_tickets: metrics.total_inventory_tickets,
+        available_inventory_tickets: metrics.available_inventory_tickets,
+        sold_inventory_tickets: metrics.sold_inventory_tickets
+      },
+      operations: {
+        total_pic_assignments: metrics.total_pic_assignments,
+        active_pic_assignments: metrics.active_pic_assignments
+      },
       alerts,
       event_operations: eventOperations,
       venue_pic_status: venuePicStatus,
@@ -1669,6 +1699,155 @@ router.get('/venue-pic', requireAdmin, (req, res) => {
 });
 
 /**
+ * GET /api/admin/pic-users
+ * Returns all active users eligible for field PIC assignment (role: 'pic' or 'venue_pic').
+ */
+router.get('/pic-users', requireAdmin, async (req, res) => {
+  try {
+    const hydrated = await hydrateAdminDatasets();
+    const picUsers = (hydrated.users || [])
+      .filter(u => {
+        const r = (u.role || '').toLowerCase();
+        return (r === 'pic' || r === 'venue_pic') && (u.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+      })
+      .map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone || 'N/A',
+        role: u.role,
+        status: u.status || 'ACTIVE'
+      }));
+    res.json({ success: true, count: picUsers.length, users: picUsers });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code || 'DATA_ERROR' });
+  }
+});
+
+/**
+ * GET /api/admin/pic-assignments
+ * Lists all active and historical PIC event assignments with event, venue, and PIC details.
+ */
+router.get('/pic-assignments', requireAdmin, async (req, res) => {
+  try {
+    const hydrated = await hydrateAdminDatasets();
+    const eventPics = state.event_pics || [];
+    const events = state.events || [];
+    const venues = state.venues || [];
+    const users = hydrated.users || [];
+
+    const assignments = eventPics.map(a => {
+      const ev = events.find(e => e.id === a.event_id) || {};
+      const vn = venues.find(v => v.id === a.venue_id || v.id === ev.venue_id) || {};
+      const pic = users.find(u => u.id === a.pic_user_id) || {};
+
+      return {
+        id: a.id,
+        event_id: a.event_id,
+        event_title: ev.name || ev.title || a.event_id,
+        event_date: a.event_date || ev.date,
+        venue_id: a.venue_id || vn.id,
+        venue_name: vn.name || 'Venue TBA',
+        venue_city: vn.city || ev.venue_city || 'Jakarta',
+        gate_info: vn.gate_info || 'N/A',
+        pic_user_id: a.pic_user_id,
+        pic_name: pic.name || 'Petugas PIC',
+        pic_phone: a.contact_phone || pic.phone || 'N/A',
+        status: a.status || 'ACTIVE',
+        notes: a.notes || null,
+        created_at: a.created_at || a.assigned_at || null
+      };
+    });
+
+    res.json({ success: true, count: assignments.length, assignments });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code || 'DATA_ERROR' });
+  }
+});
+
+/**
+ * POST /api/admin/pic-assignments
+ * Assigns an authorized PIC officer to an event and venue window.
+ */
+router.post('/pic-assignments', requireAdmin, async (req, res) => {
+  try {
+    const { event_id, venue_id, pic_user_id, contact_phone, notes } = req.body || {};
+    if (!event_id || !pic_user_id) {
+      return res.status(400).json({ error: 'event_id and pic_user_id are required', code: 'VALIDATION_ERROR' });
+    }
+
+    const event = (state.events || []).find(e => e.id === event_id);
+    if (!event) {
+      return res.status(404).json({ error: `Event '${event_id}' not found`, code: 'EVENT_NOT_FOUND' });
+    }
+
+    const hydrated = await hydrateAdminDatasets();
+    const picUser = (hydrated.users || []).find(u => u.id === pic_user_id);
+    if (!picUser) {
+      return res.status(404).json({ error: `PIC user '${pic_user_id}' not found`, code: 'USER_NOT_FOUND' });
+    }
+
+    const r = (picUser.role || '').toLowerCase();
+    if (r !== 'pic' && r !== 'venue_pic') {
+      return res.status(400).json({ error: `User must have role 'pic' or 'venue_pic' (got '${picUser.role}')`, code: 'INVALID_PIC_ROLE' });
+    }
+
+    const venueId = venue_id || event.venue_id || (state.venues?.[0]?.id || 'venue-gbk');
+
+    const { EventPicService } = require('../services/eventPicService');
+    const assignment = EventPicService.assignPic({
+      eventId: event_id,
+      venueId: venueId,
+      picUserId: pic_user_id,
+      contactPhone: contact_phone || picUser.phone
+    });
+    if (notes) assignment.notes = notes;
+    assignment.created_at = new Date().toISOString();
+
+    await recordAuditLog('PIC_ASSIGNMENT', assignment.id, 'ASSIGNED', req.user.id, {
+      event_id,
+      venue_id: venueId,
+      pic_user_id,
+      notes
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'PIC assignment created successfully',
+      assignment
+    });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, code: err.code || 'ASSIGNMENT_ERROR' });
+  }
+});
+
+/**
+ * DELETE /api/admin/pic-assignments/:id
+ * Deactivates or removes a PIC event assignment.
+ */
+router.delete('/pic-assignments/:id', requireAdmin, async (req, res) => {
+  try {
+    const assignmentId = req.params.id;
+    const assignment = (state.event_pics || []).find(ep => ep.id === assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ error: 'PIC assignment not found', code: 'NOT_FOUND' });
+    }
+
+    assignment.status = 'INACTIVE';
+    assignment.deactivated_at = new Date().toISOString();
+
+    await recordAuditLog('PIC_ASSIGNMENT', assignmentId, 'DEACTIVATED', req.user.id, {
+      event_id: assignment.event_id,
+      pic_user_id: assignment.pic_user_id
+    });
+
+    res.json({ success: true, message: 'PIC assignment deactivated', assignment_id: assignmentId });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code || 'DEACTIVATION_ERROR' });
+  }
+});
+
+/**
  * GET /api/admin/users
  * Real list of registered users hydrated from PostgreSQL. Password hashes are strictly redacted.
  * Supports optional ?search=, ?role=, ?status= filters.
@@ -2184,6 +2363,15 @@ router.get('/listings', requireAdmin, async (req, res) => {
       else if (['SOLD', 'COMPLETED'].includes(status)) bucket = 'SOLD';
       else if (['SUSPENDED', 'FROZEN'].includes(status)) bucket = 'SUSPENDED';
 
+      const meta = (typeof l.metadata === 'object' && l.metadata) ? l.metadata : {};
+      const totalQty = parseInt(l.total_quantity || meta.total_quantity || l.quantity || 1, 10);
+      const availQty = parseInt(l.available_quantity !== undefined ? l.available_quantity : (meta.available_quantity !== undefined ? meta.available_quantity : totalQty), 10);
+      const soldQty = parseInt(l.sold_quantity !== undefined ? l.sold_quantity : (meta.sold_quantity || 0), 10);
+      const resQty = parseInt(l.reserved_quantity !== undefined ? l.reserved_quantity : (meta.reserved_quantity || 0), 10);
+      const fType = l.fulfillment_type || meta.fulfillment_type || 'SELLER_MANAGED';
+      const pStatus = l.pic_assistance_status || meta.pic_assistance_status || (fType === 'TIKUM_VENUE_PIC' ? 'REQUESTED_PENDING_ASSIGNMENT' : 'NONE');
+      const sType = l.seat_type || meta.seat_type || 'GENERAL_ADMISSION';
+
       return {
         listing_id: l.id,
         ticket_id: l.ticket_id,
@@ -2191,10 +2379,18 @@ router.get('/listings', requireAdmin, async (req, res) => {
         event_name: event.name || event.title || l.event_id,
         seller_id: l.seller_id,
         seller_name: seller.name || l.seller_id,
-        seat_info: ticket.seat_info || 'N/A',
+        seat_info: ticket.seat_info || l.seat_info || 'N/A',
+        seat_type: sType,
         ticket_verification_status: ticket.verification_status || 'UNVERIFIED',
         face_value: l.face_value || ticket.face_value || 0,
         price: l.price || 0,
+        quantity: totalQty,
+        total_quantity: totalQty,
+        available_quantity: availQty,
+        sold_quantity: soldQty,
+        reserved_quantity: resQty,
+        fulfillment_type: fType,
+        pic_assistance_status: pStatus,
         status: l.status,
         bucket,
         created_at: l.created_at || null
@@ -2219,6 +2415,128 @@ router.get('/listings', requireAdmin, async (req, res) => {
       dataState: 'UNAVAILABLE',
       message: err.message
     });
+  }
+});
+
+/**
+ * POST /api/admin/listings/:id/moderate
+ * Moderates listing lifecycle: APPROVE, REJECT, SUSPEND, ADJUST_INVENTORY.
+ */
+router.post('/listings/:id/moderate', requireAdmin, async (req, res) => {
+  const listingId = req.params.id;
+  const { action, reason, total_quantity, quantity } = req.body || {};
+  const officerId = req.adminUser?.id || req.adminUser?.email || 'admin@tikum.app';
+
+  if (!action || !['APPROVE', 'REJECT', 'SUSPEND', 'ADJUST_INVENTORY'].includes(action.toUpperCase())) {
+    return res.status(400).json({
+      error: 'Invalid action. Allowed: APPROVE, REJECT, SUSPEND, ADJUST_INVENTORY',
+      code: 'INVALID_ACTION'
+    });
+  }
+
+  const normalizedAction = action.toUpperCase();
+
+  try {
+    const { getMarketplaceRepository } = require('../storage');
+    const mktRepo = getMarketplaceRepository();
+    let listing = (state.listings || []).find(l => l.id === listingId);
+    let dbListing = null;
+    if (mktRepo && typeof mktRepo.getListingById === 'function') {
+      dbListing = await mktRepo.getListingById(listingId).catch(() => null);
+    }
+    if (!listing && !dbListing) {
+      return res.status(404).json({ error: 'Listing not found', code: 'LISTING_NOT_FOUND' });
+    }
+    const currentListing = listing || dbListing;
+
+    if (normalizedAction === 'APPROVE') {
+      const { ListingService } = require('../services/listingService');
+      const result = await ListingService.verifyListing(listingId, officerId, { approved: true, reason });
+      return res.json({ success: true, action: 'APPROVE', listing: result.listing });
+    }
+
+    if (normalizedAction === 'REJECT') {
+      if (!reason) {
+        return res.status(400).json({ error: 'Reason is required for rejection', code: 'REASON_REQUIRED' });
+      }
+      const { ListingService } = require('../services/listingService');
+      const result = await ListingService.verifyListing(listingId, officerId, { approved: false, reason });
+      return res.json({ success: true, action: 'REJECT', listing: result.listing });
+    }
+
+    if (normalizedAction === 'SUSPEND') {
+      if (!reason) {
+        return res.status(400).json({ error: 'Reason is required for suspension', code: 'REASON_REQUIRED' });
+      }
+      if (listing) {
+        listing.status = 'SUSPENDED';
+        listing.suspension_reason = reason;
+      }
+      const ticket = (state.tickets || []).find(t => t.id === currentListing.ticket_id);
+      if (ticket) ticket.status = 'SUSPENDED';
+
+      if (mktRepo) {
+        await mktRepo.updateListingStatus(listingId, 'SUSPENDED').catch(() => null);
+        if (ticket) await mktRepo.updateTicketStatus(ticket.id, 'SUSPENDED').catch(() => null);
+      }
+      await recordAuditLog('LISTING', listingId, 'SUSPENDED_BY_ADMIN', officerId, { reason });
+      return res.json({ success: true, action: 'SUSPEND', listing: currentListing });
+    }
+
+    if (normalizedAction === 'ADJUST_INVENTORY') {
+      const newTotal = parseInt(total_quantity !== undefined ? total_quantity : quantity, 10);
+      if (isNaN(newTotal) || newTotal < 1 || newTotal > 100) {
+        return res.status(400).json({ error: 'total_quantity must be between 1 and 100', code: 'INVALID_QUANTITY' });
+      }
+
+      const meta = (typeof currentListing.metadata === 'object' && currentListing.metadata) ? currentListing.metadata : {};
+      const soldQty = parseInt(currentListing.sold_quantity !== undefined ? currentListing.sold_quantity : (meta.sold_quantity || 0), 10);
+      const resQty = parseInt(currentListing.reserved_quantity !== undefined ? currentListing.reserved_quantity : (meta.reserved_quantity || 0), 10);
+
+      if (newTotal < soldQty) {
+        return res.status(400).json({
+          error: `total_quantity (${newTotal}) cannot be less than already sold quantity (${soldQty})`,
+          code: 'QUANTITY_BELOW_SOLD'
+        });
+      }
+
+      const newAvail = Math.max(0, newTotal - soldQty - resQty);
+
+      if (listing) {
+        listing.quantity = newTotal;
+        listing.total_quantity = newTotal;
+        listing.available_quantity = newAvail;
+        if (!listing.metadata) listing.metadata = {};
+        listing.metadata.total_quantity = newTotal;
+        listing.metadata.available_quantity = newAvail;
+      }
+
+      if (mktRepo && typeof mktRepo.updateListingInventory === 'function') {
+        await mktRepo.updateListingInventory(listingId, {
+          total_quantity: newTotal,
+          available_quantity: newAvail
+        });
+      }
+
+      await recordAuditLog('LISTING', listingId, 'INVENTORY_ADJUSTED_BY_ADMIN', officerId, {
+        previous_total: currentListing.total_quantity || meta.total_quantity || 1,
+        new_total: newTotal,
+        available_quantity: newAvail,
+        reason: reason || 'Admin inventory adjustment'
+      });
+
+      return res.json({
+        success: true,
+        action: 'ADJUST_INVENTORY',
+        listing: {
+          ...currentListing,
+          total_quantity: newTotal,
+          available_quantity: newAvail
+        }
+      });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: err.code || 'MODERATION_FAILED' });
   }
 });
 

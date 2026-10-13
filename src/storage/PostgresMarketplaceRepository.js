@@ -317,6 +317,38 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     return res.rows[0] || null;
   }
 
+  async updateListingInventory(listingId, updates = {}) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.updateListingInventory(listingId, updates);
+    }
+    const current = await this.getListingById(listingId);
+    if (!current) return null;
+    let meta = current.metadata || {};
+    if (typeof meta === 'string') {
+      try { meta = JSON.parse(meta); } catch (_) { meta = {}; }
+    }
+    if (updates.available_quantity !== undefined) meta.available_quantity = updates.available_quantity;
+    if (updates.reserved_quantity !== undefined) meta.reserved_quantity = updates.reserved_quantity;
+    if (updates.sold_quantity !== undefined) meta.sold_quantity = updates.sold_quantity;
+    if (updates.total_quantity !== undefined) meta.total_quantity = updates.total_quantity;
+    if (updates.fulfillment_type) meta.fulfillment_type = updates.fulfillment_type;
+    if (updates.pic_assistance_status) meta.pic_assistance_status = updates.pic_assistance_status;
+
+    const newStatus = updates.status || current.status;
+    const sql = `
+      UPDATE marketplace_listings
+      SET status = $2, metadata = $3, updated_at = NOW()
+      WHERE id = $1
+      RETURNING *;
+    `;
+    const res = await this.query(sql, [listingId, newStatus, JSON.stringify(meta)]);
+    return res.rows[0] || null;
+  }
+
   async listActiveListings(canonicalEventId = null) {
     await this.ensureInitialized();
     if (this.degraded) {

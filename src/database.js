@@ -133,6 +133,7 @@ function resetDatabase() {
   const now = new Date().toISOString();
   state.users = [
     { id: 'admin-1', name: 'Trust Officer ARGUS', email: 'ops@argus.id', phone: '081234567890', role: 'admin', status: 'ACTIVE', password: process.env.ARGUS_ADMIN_PASSWORD ? hashPassword(process.env.ARGUS_ADMIN_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_ADMIN_PASSWORD ? hashPassword(process.env.ARGUS_ADMIN_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null },
+    { id: 'admin-tikum-primary', name: 'System Administrator', email: 'admin@tikum.app', phone: '08111222333', role: 'admin', status: 'ACTIVE', password: process.env.ADMIN_PASSWORD ? hashPassword(process.env.ADMIN_PASSWORD) : defaultPassHash, password_hash: process.env.ADMIN_PASSWORD ? hashPassword(process.env.ADMIN_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null },
     { id: 'seller-1', name: 'Budi Santoso', email: 'budi.seller@example.com', phone: '082223334445', role: 'seller', status: 'ACTIVE', password: process.env.ARGUS_SELLER_PASSWORD ? hashPassword(process.env.ARGUS_SELLER_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_SELLER_PASSWORD ? hashPassword(process.env.ARGUS_SELLER_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null },
     { id: 'buyer-1', name: 'Dewi Lestari', email: 'dewi.buyer@example.com', phone: '085556667778', role: 'buyer', status: 'ACTIVE', password: process.env.ARGUS_BUYER_PASSWORD ? hashPassword(process.env.ARGUS_BUYER_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_BUYER_PASSWORD ? hashPassword(process.env.ARGUS_BUYER_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null },
     { id: 'buyer-2', name: 'Rina Wijaya', email: 'rina.buyer@example.com', phone: '085556667779', role: 'buyer', status: 'ACTIVE', password: process.env.ARGUS_BUYER2_PASSWORD ? hashPassword(process.env.ARGUS_BUYER2_PASSWORD) : defaultPassHash, password_hash: process.env.ARGUS_BUYER2_PASSWORD ? hashPassword(process.env.ARGUS_BUYER2_PASSWORD) : defaultPassHash, created_at: now, updated_at: now, last_login_at: null }
@@ -1819,31 +1820,11 @@ function bootstrapAdminUser() {
   if (!state.users) {
     state.users = [];
   }
-  const defaultAdminEmail = (process.env.NODE_ENV === 'test' && !process.env.ADMIN_EMAIL && !process.env.ARGUS_ADMIN_EMAIL)
-    ? 'ops@argus.id'
-    : 'admin@tikum.app';
+  const defaultAdminEmail = 'admin@tikum.app';
   const adminEmail = (process.env.ADMIN_EMAIL || process.env.ARGUS_ADMIN_EMAIL || defaultAdminEmail).toLowerCase().trim();
 
-  // Check if an admin already exists (matching email or default admin role)
-  const existingAdmin = state.users.find(
-    u => (u.email && u.email.toLowerCase() === adminEmail) ||
-         (!process.env.ADMIN_EMAIL && !process.env.ARGUS_ADMIN_EMAIL && u.role && u.role.toUpperCase() === 'ADMIN')
-  );
-
-  if (existingAdmin) {
-    // Idempotent: do not overwrite
-    if (!existingAdmin.password_hash && existingAdmin.password) {
-      existingAdmin.password_hash = existingAdmin.password;
-    }
-    if (!existingAdmin.status) {
-      existingAdmin.status = 'ACTIVE';
-    }
-    return { created: false, user: existingAdmin };
-  }
-
   // Admin credentials MUST come from the environment. There is deliberately
-  // no well-known fallback password: without configuration the bootstrapped
-  // admin is locked (no usable password) until ADMIN_PASSWORD is set.
+  // no well-known fallback password in production.
   const rawPassword = process.env.ADMIN_PASSWORD || process.env.ARGUS_ADMIN_PASSWORD;
   const hashedPassword = rawPassword
     ? hashPassword(rawPassword)
@@ -1855,21 +1836,61 @@ function bootstrapAdminUser() {
 
   const now = new Date().toISOString();
 
-  const newAdmin = {
-    id: `admin-${Date.now()}`,
-    name: 'System Administrator',
-    email: adminEmail,
-    role: 'ADMIN',
-    status: 'ACTIVE',
-    password: hashedPassword,
-    password_hash: hashedPassword,
-    created_at: now,
-    updated_at: now,
-    last_login_at: null
-  };
+  // 1. Ensure primary admin (admin@tikum.app or configured ADMIN_EMAIL)
+  let created = false;
+  let primaryAdmin = state.users.find(u => u.email && u.email.toLowerCase() === adminEmail);
+  if (!primaryAdmin) {
+    created = true;
+    primaryAdmin = {
+      id: adminEmail === 'admin@tikum.app' ? 'admin-tikum-primary' : `admin-${Date.now()}`,
+      name: 'System Administrator',
+      email: adminEmail,
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      password: hashedPassword,
+      password_hash: hashedPassword,
+      created_at: now,
+      updated_at: now,
+      last_login_at: null
+    };
+    state.users.push(primaryAdmin);
+  } else {
+    if (!primaryAdmin.password_hash && (primaryAdmin.password || hashedPassword)) {
+      primaryAdmin.password_hash = primaryAdmin.password_hash || primaryAdmin.password || hashedPassword;
+    }
+    if (!primaryAdmin.status) {
+      primaryAdmin.status = 'ACTIVE';
+    }
+    primaryAdmin.role = 'ADMIN';
+  }
 
-  state.users.push(newAdmin);
-  return { created: true, user: newAdmin };
+  // 2. Also ensure ops@argus.id exists if in test mode or if different from primary
+  if (adminEmail !== 'ops@argus.id') {
+    let opsAdmin = state.users.find(u => u.email && u.email.toLowerCase() === 'ops@argus.id');
+    if (!opsAdmin && process.env.NODE_ENV === 'test') {
+      opsAdmin = {
+        id: 'admin-1',
+        name: 'Trust Officer ARGUS',
+        email: 'ops@argus.id',
+        role: 'ADMIN',
+        status: 'ACTIVE',
+        password: PILOT123_HASH,
+        password_hash: PILOT123_HASH,
+        created_at: now,
+        updated_at: now,
+        last_login_at: null
+      };
+      state.users.push(opsAdmin);
+    }
+  }
+
+  // 3. Safety Guard: support@tikum.app must NEVER be given ADMIN role
+  const supportUser = state.users.find(u => u.email && u.email.toLowerCase() === 'support@tikum.app');
+  if (supportUser && (supportUser.role || '').toUpperCase() === 'ADMIN') {
+    supportUser.role = 'USER';
+  }
+
+  return { created, user: primaryAdmin };
 }
 
 /**

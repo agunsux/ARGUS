@@ -1058,7 +1058,18 @@ router.get('/orders/:id', async (req, res) => {
  */
 router.post('/seller/listing', upload.any(), async (req, res) => {
   try {
-    const { sellerId: bodySellerId, eventId, seatInfo, faceValue, price, rawBarcode } = req.body || {};
+    const {
+      sellerId: bodySellerId,
+      eventId,
+      seatInfo,
+      faceValue,
+      price,
+      rawBarcode,
+      quantity,
+      totalQuantity,
+      fulfillmentType,
+      seatType
+    } = req.body || {};
 
     // 1. Resolve authenticated user from session (never from req.body.sellerId)
     let authenticatedUserId = resolveAuth(req);
@@ -1116,6 +1127,18 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       });
     }
 
+    const parsedQty = parseInt(quantity !== undefined ? quantity : (totalQuantity !== undefined ? totalQuantity : 1), 10);
+    if (isNaN(parsedQty) || parsedQty < 1 || parsedQty > 4) {
+      return res.status(400).json({
+        error: 'Ticket quantity must be between 1 and 4 tickets per listing',
+        code: 'INVALID_QUANTITY'
+      });
+    }
+
+    const normalizedFulfillment = (fulfillmentType === 'TIKUM_VENUE_PIC' || fulfillmentType === 'VENUE_PIC')
+      ? 'TIKUM_VENUE_PIC'
+      : 'SELLER_MANAGED';
+
     let sellerUser = findUser(sellerId);
     if (!sellerUser) {
       try {
@@ -1141,7 +1164,10 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       faceValue,
       price,
       rawBarcode,
-      evidenceBundleId
+      evidenceBundleId,
+      quantity: parsedQty,
+      fulfillmentType: normalizedFulfillment,
+      seatType: seatType || null
     });
 
     res.status(201).json({
@@ -1346,11 +1372,18 @@ router.post('/buyer/order', async (req, res) => {
     }
 
     const effectiveQuoteId = quoteId || quote_id || null;
+    const requestedQty = parseInt(req.body.quantity !== undefined ? req.body.quantity : (req.body.orderQuantity !== undefined ? req.body.orderQuantity : 1), 10);
+    if (isNaN(requestedQty) || requestedQty < 1 || requestedQty > 4) {
+      return res.status(400).json({ error: 'Order quantity must be between 1 and 4 tickets', code: 'INVALID_QUANTITY' });
+    }
+
     const result = await EscrowService.createOrder({
       buyerId,
       listingId,
       quoteId: effectiveQuoteId,
-      policyVersion: policyVersion || null
+      policyVersion: policyVersion || null,
+      quantity: requestedQty,
+      orderQuantity: requestedQty
     });
 
     res.status(201).json({
@@ -1572,6 +1605,63 @@ router.post('/buyer/confirm-entry', (req, res) => {
 // =============================================================================
 
 /**
+ * PIC retrieves all events currently assigned to them
+ * GET /api/mvp/pic/my-events
+ */
+router.get('/pic/my-events', (req, res) => {
+  try {
+    const picUserId = getCallerId(req, req.query.picUserId);
+    if (!picUserId) {
+      return res.status(401).json({
+        error: 'picUserId required (x-user-id, ?picUserId, or session). No anonymous PIC access.',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
+    const user = findUser(picUserId);
+    const roleLower = (user?.role || req.user?.role || '').toLowerCase();
+    if (user && !['pic', 'venue_pic', 'admin'].includes(roleLower)) {
+      return res.status(403).json({
+        error: 'User is not authorized as a venue PIC officer',
+        code: 'PIC_UNAUTHORIZED'
+      });
+    }
+
+    const assignments = (state.event_pics || [])
+      .filter(ep => ep.pic_user_id === picUserId && ep.status === 'ACTIVE')
+      .map(ep => {
+        const event = (state.events || []).find(e => e.id === ep.event_id) || {};
+        const venue = (state.venues || []).find(v => v.id === (ep.venue_id || event.venue_id)) || {};
+        const eventOrders = (state.orders || []).filter(o => o.event_id === ep.event_id);
+        return {
+          id: ep.id,
+          assignment_id: ep.id,
+          event_id: ep.event_id,
+          event_title: event.title || event.name || ep.event_id,
+          event_date: ep.event_date || event.date || event.start_date,
+          venue_id: ep.venue_id || event.venue_id,
+          venue_name: venue.name || event.venue_name || 'N/A',
+          venue_city: venue.city || event.venue_city || 'Jakarta',
+          gate_info: venue.gate_info || 'Main Gate / Entrance Area',
+          contact_phone: ep.contact_phone || user?.phone,
+          status: ep.status,
+          total_orders: eventOrders.length,
+          pending_verifications: eventOrders.filter(o => o.status === 'PAID_LOCKED_ESCROW').length
+        };
+      });
+
+    res.json({
+      success: true,
+      pic_user_id: picUserId,
+      total_events: assignments.length,
+      events: assignments
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: 'PIC_EVENTS_FETCH_FAILED' });
+  }
+});
+
+/**
  * PIC retrieves operational cell dashboard for their assigned event
  * GET /api/mvp/pic/events/:eventId/dashboard
  */
@@ -1584,7 +1674,8 @@ router.get('/pic/events/:eventId/dashboard', (req, res) => {
     const dashboard = EventPicService.getPicEventDashboard(picUserId, req.params.eventId);
     res.json(dashboard);
   } catch (err) {
-    res.status(mapRouterError(err, err.code === 'PIC_NOT_ACTIVE' ? 403 : 400)).json({ error: err.message, code: err.code });
+    const isAuthErr = err.code === 'PIC_NOT_ACTIVE' || err.code === 'PIC_UNAUTHORIZED';
+    res.status(mapRouterError(err, isAuthErr ? 403 : 400)).json({ error: err.message, code: err.code });
   }
 });
 

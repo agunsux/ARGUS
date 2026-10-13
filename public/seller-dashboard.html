@@ -868,7 +868,12 @@
           listingsEl.innerHTML = listings.map(l => `
             <div class="item-row">
               <div class="item-main">
-                <h4>${escapeHtml(l.event_title)} <span class="badge ${statusBadgeClass(l.status)}">${escapeHtml(l.status)}</span></h4>
+                <h4>
+                  ${escapeHtml(l.event_title)}
+                  <span class="badge ${statusBadgeClass(l.status)}">${escapeHtml(l.status)}</span>
+                  <span class="badge badge-info" style="background:rgba(56,189,248,0.15); color:var(--cyan); border:1px solid rgba(56,189,248,0.3);"><i class="fa-solid fa-ticket"></i> ${l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1)} / ${l.total_quantity || l.quantity || 1} Tiket</span>
+                  <span class="badge" style="background:${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)'}; color:${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? '#4ade80' : 'var(--text-muted)'}; border:1px solid ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.3)' : 'var(--border)'};"><i class="fa-solid ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'fa-person-military-pointing' : 'fa-handshake'}"></i> ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'PIC Venue' : 'Transfer Mandiri'}</span>
+                </h4>
                 <div class="item-meta">
                   <span>Listing: <code>${escapeHtml(l.listing_id)}</code></span>
                   <span>Kursi/Kat: ${escapeHtml(l.seat_info)}</span>
@@ -900,7 +905,13 @@
           ordersEl.innerHTML = orders.map(o => `
             <div class="item-row">
               <div class="item-main">
-                <h4>${escapeHtml(o.event_title)} <span class="badge ${statusBadgeClass(o.status)}">${escapeHtml(o.status)}</span> ${o.requires_seller_action ? '<span class="badge badge-danger">PERLU TINDAKAN</span>' : ''}</h4>
+                <h4>
+                  ${escapeHtml(o.event_title)}
+                  <span class="badge ${statusBadgeClass(o.status)}">${escapeHtml(o.status)}</span>
+                  <span class="badge badge-info" style="background:rgba(56,189,248,0.15); color:var(--cyan); border:1px solid rgba(56,189,248,0.3);"><i class="fa-solid fa-ticket"></i> ${o.quantity || 1} Tiket</span>
+                  <span class="badge" style="background:${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)'}; color:${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? '#4ade80' : 'var(--text-muted)'}; border:1px solid ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.3)' : 'var(--border)'};"><i class="fa-solid ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'fa-person-military-pointing' : 'fa-handshake'}"></i> ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'PIC Venue' : 'Transfer Mandiri'}</span>
+                  ${o.requires_seller_action ? '<span class="badge badge-danger">PERLU TINDAKAN</span>' : ''}
+                </h4>
                 <div class="item-meta">
                   <span>Order: <code>${escapeHtml(o.order_id)}</code></span>
                   <span>Pembeli: <strong>${escapeHtml(o.buyer_masked_name)}</strong></span>

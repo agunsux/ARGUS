@@ -21,6 +21,7 @@ class MarketplaceRepository {
   async createListing(listingData) { throw new Error('Not implemented'); }
   async getListingById(listingId) { throw new Error('Not implemented'); }
   async updateListingStatus(listingId, status) { throw new Error('Not implemented'); }
+  async updateListingInventory(listingId, updates) { throw new Error('Not implemented'); }
   async listActiveListings(canonicalEventId = null) { throw new Error('Not implemented'); }
   async listListingsBySeller(sellerId) { throw new Error('Not implemented'); }
   async listAllListings(limit = 200) { throw new Error('Not implemented'); }

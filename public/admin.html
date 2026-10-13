@@ -2028,19 +2028,32 @@
           `).join('');
         }
       } else if (name === 'listings') {
-        th.innerHTML = `<tr><th>Listing ID</th><th>Event</th><th>Penjual</th><th>Seat</th><th>Harga</th><th>Status</th><th>Verifikasi Tiket</th></tr>`;
+        th.innerHTML = `<tr><th>Listing ID</th><th>Event</th><th>Penjual</th><th>Seat / Tipe</th><th>Jumlah Tiket</th><th>Fulfillment</th><th>Harga</th><th>Status</th><th>Aksi Moderasi</th></tr>`;
         if ((data.listings || []).length === 0) {
-          tb.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #64748b;">Belum ada listing pada filter ini.</td></tr>`;
+          tb.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #64748b;">Belum ada listing pada filter ini.</td></tr>`;
         } else {
           tb.innerHTML = (data.listings || []).map(l => `
             <tr>
               <td class="mono" style="font-size: 11px;">${l.listing_id}</td>
               <td>${l.event_name}</td>
               <td>${l.seller_name}</td>
-              <td class="mono" style="font-size: 11px;">${l.seat_info}</td>
+              <td class="mono" style="font-size: 11px;">${l.seat_info} (${l.seat_type || 'GA'})</td>
+              <td><span class="tag tag-neutral">${l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1)} / ${l.total_quantity || l.quantity || 1}</span></td>
+              <td><span class="tag ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'tag-success' : 'tag-neutral'}">${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'PIC Venue' : 'Mandiri'}</span></td>
               <td class="mono">${formatRupiah(l.price)}</td>
               <td>${renderTag(l.status)}</td>
-              <td>${renderTag(l.ticket_verification_status)}</td>
+              <td>
+                <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                  ${['PENDING_VERIFICATION', 'SUBMITTED', 'PENDING'].includes(l.status) ? `
+                    <button class="btn btn-secondary btn-sm" onclick="moderateListing('${l.listing_id}', 'APPROVE')"><i class="fa-solid fa-check"></i> Setujui</button>
+                    <button class="btn btn-secondary btn-sm" style="color:#f87171;" onclick="moderateListing('${l.listing_id}', 'REJECT')"><i class="fa-solid fa-xmark"></i> Tolak</button>
+                  ` : ''}
+                  ${l.status === 'ACTIVE' ? `
+                    <button class="btn btn-secondary btn-sm" style="color:#f87171;" onclick="moderateListing('${l.listing_id}', 'SUSPEND')"><i class="fa-solid fa-ban"></i> Suspend</button>
+                    <button class="btn btn-secondary btn-sm" onclick="adjustListingInventoryPrompt('${l.listing_id}', ${l.total_quantity || 1})"><i class="fa-solid fa-sliders"></i> Ubah Kuota</button>
+                  ` : ''}
+                </div>
+              </td>
             </tr>
           `).join('');
         }
@@ -2135,7 +2148,7 @@
           </tr>
         `).join('');
       } else if (name === 'venue-pic') {
-        th.innerHTML = `<tr><th>Event</th><th>Venue</th><th>Gate Info</th><th>PIC Petugas</th><th>Phone</th><th>Status PIC</th><th>Verifikasi Masuk</th></tr>`;
+        th.innerHTML = `<tr><th>Event</th><th>Venue</th><th>Gate Info</th><th>PIC Petugas</th><th>Phone</th><th>Status PIC</th><th>Verifikasi Masuk</th><th>Aksi PIC</th></tr>`;
         tb.innerHTML = (data.coverage || []).map(c => `
           <tr>
             <td style="font-weight: 600; color: #fff;">${c.event_name}</td>
@@ -2145,6 +2158,15 @@
             <td class="mono">${c.pic_phone}</td>
             <td>${renderTag(c.pic_status)}</td>
             <td class="mono">${c.confirmed_entries} Sukses / ${c.failed_entries} Gagal</td>
+            <td>
+              <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                ${c.assignment_id || c.id ? `
+                  <button class="btn btn-secondary btn-sm" style="color:#f87171;" onclick="deactivatePicAssignment('${c.assignment_id || c.id}')"><i class="fa-solid fa-user-xmark"></i> Cabut PIC</button>
+                ` : `
+                  <button class="btn btn-secondary btn-sm" onclick="assignPicPrompt('${c.event_id}', '${c.venue_id}')"><i class="fa-solid fa-user-plus"></i> Tugaskan PIC</button>
+                `}
+              </div>
+            </td>
           </tr>
         `).join('');
       }
@@ -2358,6 +2380,91 @@
         loadEntityTable('sellers');
       } catch (err) {
         showToast('Gagal memperbarui KYC seller: ' + err.message, 'danger');
+      }
+    }
+
+    async function moderateListing(listingId, action) {
+      let reason = null;
+      if (action === 'REJECT' || action === 'SUSPEND') {
+        reason = prompt(`Masukkan alasan ${action} untuk listing ${listingId}:`, action === 'REJECT' ? 'Dokumen tiket tidak valid atau barcode tidak jelas' : 'Pelanggaran ketentuan penjualan tiket');
+        if (reason === null) return;
+      } else {
+        if (!confirm(`Konfirmasi tindakan ${action} untuk listing ${listingId}?`)) return;
+      }
+
+      try {
+        const res = await adminFetch(`/api/admin/listings/${encodeURIComponent(listingId)}/moderate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, reason })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        showToast(`Listing ${listingId} berhasil di-${action.toLowerCase()}.`, 'success');
+        loadGenericEntityView('listings');
+      } catch (err) {
+        showToast('Gagal moderasi listing: ' + err.message, 'danger');
+      }
+    }
+
+    async function adjustListingInventoryPrompt(listingId, currentTotal) {
+      const input = prompt(`Atur jumlah total kuota tiket untuk listing ${listingId} (1 - 100):`, String(currentTotal || 1));
+      if (input === null) return;
+      const newTotal = parseInt(input, 10);
+      if (isNaN(newTotal) || newTotal < 1 || newTotal > 100) {
+        alert('Jumlah tiket harus berupa angka antara 1 dan 100');
+        return;
+      }
+
+      try {
+        const res = await adminFetch(`/api/admin/listings/${encodeURIComponent(listingId)}/moderate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'ADJUST_INVENTORY', total_quantity: newTotal })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        showToast(`Inventaris listing ${listingId} berhasil diubah menjadi ${newTotal} tiket.`, 'success');
+        loadGenericEntityView('listings');
+      } catch (err) {
+        showToast('Gagal mengubah kuota listing: ' + err.message, 'danger');
+      }
+    }
+
+    async function deactivatePicAssignment(assignmentId) {
+      if (!confirm(`Cabut penugasan PIC ini (${assignmentId})?`)) return;
+      try {
+        const res = await adminFetch(`/api/admin/pic-assignments/${encodeURIComponent(assignmentId)}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        showToast('Penugasan PIC berhasil dicabut.', 'success');
+        loadGenericEntityView('venue-pic');
+      } catch (err) {
+        showToast('Gagal mencabut penugasan PIC: ' + err.message, 'danger');
+      }
+    }
+
+    async function assignPicPrompt(eventId, venueId) {
+      const picUserId = prompt('Masukkan User ID petugas PIC (role PIC/VENUE_PIC):');
+      if (!picUserId) return;
+      try {
+        const res = await adminFetch('/api/admin/pic-assignments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_id: eventId,
+            venue_id: venueId,
+            pic_user_id: picUserId.trim()
+          })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        showToast('Petugas PIC berhasil ditugaskan ke event.', 'success');
+        loadGenericEntityView('venue-pic');
+      } catch (err) {
+        showToast('Gagal menugaskan PIC: ' + err.message, 'danger');
       }
     }
 
