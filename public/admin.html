@@ -2071,7 +2071,7 @@
           </tr>
         `).join('');
       } else if (name === 'sellers') {
-        th.innerHTML = `<tr><th>ID</th><th>Nama</th><th>Email</th><th>Phone</th><th>KYC Status</th><th>Total Penjualan</th><th>Status Akun</th></tr>`;
+        th.innerHTML = `<tr><th>ID</th><th>Nama</th><th>Email</th><th>Phone</th><th>KYC Status</th><th>Total Penjualan</th><th>Status Akun</th><th>Tindakan KYC</th></tr>`;
         tb.innerHTML = (data.sellers || []).map(s => `
           <tr>
             <td class="mono">${s.id}</td>
@@ -2081,6 +2081,10 @@
             <td>${renderTag(s.kyc_status)}</td>
             <td class="mono">${s.completed_sales} / ${s.total_sales}</td>
             <td>${renderTag(s.status)}</td>
+            <td>
+              ${s.kyc_status !== 'VERIFIED' ? `<button class="btn btn-primary btn-sm" onclick="adminReviewSellerKyc('${s.id}', 'VERIFIED')"><i class="fa-solid fa-check"></i> Verify</button>` : ''}
+              ${s.kyc_status !== 'REJECTED' ? `<button class="btn btn-secondary btn-sm" onclick="adminReviewSellerKyc('${s.id}', 'REJECTED')" style="margin-left:4px;"><i class="fa-solid fa-xmark"></i> Reject</button>` : ''}
+            </td>
           </tr>
         `).join('');
       } else if (name === 'buyers') {
@@ -2336,6 +2340,24 @@
         openEventDetail(eventId);
       } catch (err) {
         showToast('Gagal menolak event: ' + err.message, 'danger');
+      }
+    }
+
+    async function adminReviewSellerKyc(sellerId, decision) {
+      const notes = prompt(`Catatan review KYC (${decision}) untuk seller ${sellerId}:`, decision === 'VERIFIED' ? 'KYC identity verified by Trust & Safety' : 'Dokumen identitas belum memenuhi syarat');
+      if (notes === null) return;
+      try {
+        const res = await adminFetch(`/api/admin/sellers/${encodeURIComponent(sellerId)}/kyc`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kyc_status: decision, notes })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        showToast(`Status KYC seller ${sellerId} diperbarui menjadi ${decision}.`, 'success');
+        loadEntityTable('sellers');
+      } catch (err) {
+        showToast('Gagal memperbarui KYC seller: ' + err.message, 'danger');
       }
     }
 

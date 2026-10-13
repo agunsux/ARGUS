@@ -23,10 +23,85 @@ const { PaymentService } = require('../services/payment/PaymentService');
 const { sourceRegistry } = require('../discovery/SourceRegistry');
 const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
 const { cityRegistry } = require('../discovery/CityRegistry');
-const { getUserRepository } = require('../storage');
+const { getUserRepository, getMarketplaceRepository, getMoneyRepository, isProductionRuntime } = require('../storage');
 const { sourceGapDiagnosticService } = require('../discovery/SourceGapDiagnosticService');
 const { AdminEventControlService } = require('../discovery/AdminEventControlService');
 const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
+
+const DEMO_SEED_LISTING_IDS = new Set(['list-demo-1', 'list-demo-pestapora']);
+const DEMO_SEED_TICKET_IDS = new Set(['ticket-demo-1', 'ticket-demo-pestapora']);
+const DEMO_SEED_USER_IDS = new Set(['seller-1', 'buyer-1', 'buyer-2', 'pic-1', 'user-seller-1', 'user-buyer-1', 'seller-demo']);
+
+function mergeUniqueById(primary = [], secondary = []) {
+  const map = new Map();
+  for (const item of primary) {
+    if (item && item.id) map.set(item.id, item);
+  }
+  for (const item of secondary) {
+    if (item && item.id && !map.has(item.id)) map.set(item.id, item);
+  }
+  return Array.from(map.values());
+}
+
+/**
+ * Hydrates admin datasets from authoritative PostgreSQL repositories merged with runtime state.
+ * In production, excludes in-memory demo seed fixtures unless persisted in PostgreSQL,
+ * and fails closed (throws DATA_UNAVAILABLE) if the repository layer is unreachable.
+ */
+async function hydrateAdminDatasets() {
+  const isProd = isProductionRuntime();
+  const userRepo = getUserRepository();
+  const marketplaceRepo = getMarketplaceRepository();
+  const moneyRepo = getMoneyRepository();
+
+  try {
+    const [
+      repoUsers,
+      repoListings,
+      repoTickets,
+      repoOffers,
+      repoOrders,
+      repoEscrows,
+      repoSettlements,
+      repoDisputes
+    ] = await Promise.all([
+      userRepo && typeof userRepo.listAllUsers === 'function' ? userRepo.listAllUsers() : [],
+      marketplaceRepo && typeof marketplaceRepo.listAllListings === 'function' ? marketplaceRepo.listAllListings(500) : [],
+      marketplaceRepo && typeof marketplaceRepo.listAllTickets === 'function' ? marketplaceRepo.listAllTickets(500) : [],
+      marketplaceRepo && typeof marketplaceRepo.listAllOffers === 'function' ? marketplaceRepo.listAllOffers(500) : [],
+      moneyRepo && typeof moneyRepo.listAllOrders === 'function' ? moneyRepo.listAllOrders(500) : [],
+      moneyRepo && typeof moneyRepo.listAllEscrows === 'function' ? moneyRepo.listAllEscrows(500) : [],
+      moneyRepo && typeof moneyRepo.listAllSettlements === 'function' ? moneyRepo.listAllSettlements(500) : [],
+      moneyRepo && typeof moneyRepo.listAllDisputes === 'function' ? moneyRepo.listAllDisputes(500) : []
+    ]);
+
+    const stateUsers = isProd
+      ? (state.users || []).filter(u => !DEMO_SEED_USER_IDS.has(u.id))
+      : (state.users || []);
+    const stateListings = isProd
+      ? (state.listings || []).filter(l => !DEMO_SEED_LISTING_IDS.has(l.id))
+      : (state.listings || []);
+    const stateTickets = isProd
+      ? (state.tickets || []).filter(t => !DEMO_SEED_TICKET_IDS.has(t.id))
+      : (state.tickets || []);
+
+    return {
+      users: mergeUniqueById(repoUsers, stateUsers),
+      listings: mergeUniqueById(repoListings, stateListings),
+      tickets: mergeUniqueById(repoTickets, stateTickets),
+      offers: mergeUniqueById(repoOffers, state.offers || []),
+      orders: mergeUniqueById(repoOrders, state.orders || []),
+      escrows: mergeUniqueById(repoEscrows, state.escrows || []),
+      settlements: mergeUniqueById(repoSettlements, state.settlement_records || state.settlements || []),
+      disputes: mergeUniqueById(repoDisputes, state.disputes || [])
+    };
+  } catch (err) {
+    const unavailableErr = new Error(`Authoritative storage unavailable: ${err.message}`);
+    unavailableErr.code = 'DATA_UNAVAILABLE';
+    unavailableErr.status = 503;
+    throw unavailableErr;
+  }
+}
 
 const VERIFIED_STATUSES = ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED'];
 
@@ -501,15 +576,16 @@ router.get('/session', (req, res) => {
  * Real system counters across users, orders, tickets, events, venue operations, and ledger accounts.
  * Backward compatible with existing tests while delivering the V1 Operational Control Center data contract.
  */
-router.get('/overview', requireAdmin, (req, res) => {
+router.get('/overview', requireAdmin, async (req, res) => {
   try {
-    const users = state.users || [];
-    const orders = state.orders || [];
-    const escrows = state.escrows || [];
+    const hydrated = await hydrateAdminDatasets();
+    const users = hydrated.users;
+    const orders = hydrated.orders;
+    const escrows = hydrated.escrows;
     const events = state.events || [];
-    const listings = state.listings || [];
-    const tickets = state.tickets || [];
-    const disputes = state.disputes || [];
+    const listings = hydrated.listings;
+    const tickets = hydrated.tickets;
+    const disputes = hydrated.disputes;
     const incidents = state.incidents || [];
     const eventPics = state.event_pics || [];
     const venueShifts = state.venue_shifts || [];
@@ -778,6 +854,7 @@ router.get('/overview', requireAdmin, (req, res) => {
     }
 
     const paymentFinanceSnapshot = {
+      automation_status: 'UNAVAILABLE_PILOT_MODE',
       gateway_clearing_idr: ledgerBalances.PAYMENT_GATEWAY_CLEARING || 0,
       seller_payable_pending_idr: Math.abs(ledgerBalances.SELLER_PAYABLE_PENDING || 0),
       platform_fee_revenue_idr: Math.abs(ledgerBalances.PLATFORM_FEE_REVENUE || 0),
@@ -842,6 +919,7 @@ router.get('/overview', requireAdmin, (req, res) => {
       else if (suspendedListingStatuses.includes(s)) listingBuckets.SUSPENDED++;
     }
 
+    const offersList = hydrated.offers || state.offers || [];
     const marketplaceMetrics = {
       total_listings: listings.length,
       active_listings: listingBuckets.ACTIVE,
@@ -850,7 +928,10 @@ router.get('/overview', requireAdmin, (req, res) => {
       suspended_listings: listingBuckets.SUSPENDED,
       total_orders: totalOrdersCount,
       pending_orders: pendingOrders,
-      open_disputes: openDisputesCount
+      open_disputes: openDisputesCount,
+      total_offers: offersList.length,
+      pending_offers: offersList.filter(o => o.status === 'PENDING').length,
+      accepted_offers: offersList.filter(o => o.status === 'ACCEPTED').length
     };
 
     // --- 11. Source Health Summary (Source Registry truth) ---
@@ -863,6 +944,12 @@ router.get('/overview', requireAdmin, (req, res) => {
       never_fetched: allSources.filter(s => !s.last_successful_fetch && !(s.telemetry && s.telemetry.last_success)).length
     };
 
+    const userRepo = getUserRepository();
+    const recentAuthEvents = (userRepo && typeof userRepo.listRecentAuthAuditEvents === 'function')
+      ? await userRepo.listRecentAuthAuditEvents(25)
+      : [];
+
+    const nowIso = new Date().toISOString();
     res.status(200).json({
       // Backward compatibility block for test_epic51_auth_admin.js:
       users: {
@@ -889,13 +976,21 @@ router.get('/overview', requireAdmin, (req, res) => {
       trust_fraud_snapshot: trustFraudSnapshot,
       payment_finance_snapshot: paymentFinanceSnapshot,
       recent_activity: recentActivity,
-      timestamp: new Date().toISOString()
+      auth_audit_events: recentAuthEvents,
+      meta: {
+        generatedAt: nowIso,
+        dataState: 'OK',
+        persistence: (isProductionRuntime() || Boolean(process.env.DATABASE_URL)) ? 'POSTGRES' : 'IN_MEMORY'
+      },
+      timestamp: nowIso
     });
   } catch (err) {
     console.error('Admin overview aggregation error:', err);
-    res.status(500).json({
+    const statusCode = err.status || (err.code === 'DATA_UNAVAILABLE' ? 503 : 500);
+    res.status(statusCode).json({
       error: 'Data unavailable',
       code: 'DATA_UNAVAILABLE',
+      dataState: 'UNAVAILABLE',
       message: err.message
     });
   }
@@ -1260,33 +1355,135 @@ router.get('/tickets', requireAdmin, (req, res) => {
 
 /**
  * GET /api/admin/sellers
- * Real list of registered sellers with KYC and performance profiles.
+ * Real list of registered sellers and onboarding applicants with durable KYC profiles.
  */
-router.get('/sellers', requireAdmin, (req, res) => {
-  const users = (state.users || []).filter(u => (u.role || '').toLowerCase() === 'seller');
-  const sellerProfiles = state.seller_profiles || [];
-  const orders = state.orders || [];
+router.get('/sellers', requireAdmin, async (req, res) => {
+  try {
+    const hydrated = await hydrateAdminDatasets();
+    const { getUserRepository } = require('../storage');
+    const userRepo = getUserRepository();
+    const dbProfiles = await userRepo.listSellerProfiles();
 
-  const data = users.map(u => {
-    const profile = sellerProfiles.find(p => p.user_id === u.id) || {};
-    const sellerOrders = orders.filter(o => o.seller_id === u.id);
-    const completedOrders = sellerOrders.filter(o => o.status === 'SETTLED' || o.status === 'ENTRY_CONFIRMED');
+    const profileMap = new Map();
+    for (const sp of (state.seller_profiles || [])) {
+      profileMap.set(sp.user_id, sp);
+    }
+    for (const dp of (dbProfiles || [])) {
+      profileMap.set(dp.user_id, dp);
+    }
 
-    return {
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      phone: u.phone || 'N/A',
-      status: u.status || 'ACTIVE',
-      kyc_status: profile.kyc_status || 'UNVERIFIED',
-      active_listing_limit: profile.active_listing_limit || 5,
-      total_sales: sellerOrders.length,
-      completed_sales: completedOrders.length,
-      created_at: u.created_at || null
-    };
-  });
+    const users = (hydrated.users || []).filter(u =>
+      (u.role || '').toLowerCase() === 'seller' || profileMap.has(u.id)
+    );
+    const orders = hydrated.orders || [];
 
-  res.json({ total: data.length, sellers: data });
+    const data = users.map(u => {
+      const profile = profileMap.get(u.id) || {};
+      const sellerOrders = orders.filter(o => o.seller_id === u.id);
+      const completedOrders = sellerOrders.filter(o => o.status === 'SETTLED' || o.status === 'ENTRY_CONFIRMED');
+
+      return {
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone || 'N/A',
+        role: u.role,
+        status: u.status || 'ACTIVE',
+        kyc_status: profile.kyc_status || 'UNVERIFIED',
+        active_listing_limit: profile.active_listing_limit || 5,
+        onboarding_submitted_at: profile.onboarding_submitted_at || null,
+        verified_at: profile.verified_at || null,
+        total_sales: sellerOrders.length,
+        completed_sales: completedOrders.length,
+        created_at: u.created_at || null
+      };
+    });
+
+    res.json({ total: data.length, sellers: data });
+  } catch (err) {
+    res.status(err.status || 503).json({
+      error: 'Data unavailable',
+      code: 'DATA_UNAVAILABLE',
+      dataState: 'UNAVAILABLE',
+      message: err.message
+    });
+  }
+});
+
+/**
+ * PATCH /api/admin/sellers/:id/kyc (and POST /api/admin/sellers/:id/kyc)
+ * Admin reviews and updates a seller's KYC status and listing limit durably in PostgreSQL.
+ */
+router.patch('/sellers/:id/kyc', requireAdmin, async (req, res) => {
+  try {
+    const sellerId = req.params.id;
+    const adminUser = resolveUser(req);
+    const adminId = adminUser ? adminUser.id : 'admin-1';
+    const body = req.body || {};
+    const kycStatus = body.kyc_status || body.kycStatus || body.status;
+    const activeListingLimit = body.active_listing_limit !== undefined ? body.active_listing_limit : body.activeListingLimit;
+    const reason = body.reason || body.notes || 'Admin KYC verification review';
+
+    const { SellerTrustService } = require('../trust/SellerTrustService');
+    const result = await SellerTrustService.reviewSellerKyc({
+      sellerId,
+      adminId,
+      kycStatus,
+      activeListingLimit,
+      reason
+    });
+
+    return res.status(200).json({
+      success: true,
+      seller_id: sellerId,
+      profile: result.profile,
+      seller_profile: result.profile,
+      message: `Seller KYC status updated to ${result.profile.kyc_status}`
+    });
+  } catch (err) {
+    const status = err.status || (err.code === 'INVALID_KYC_STATUS' ? 400 : 500);
+    return res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'KYC_UPDATE_FAILED'
+    });
+  }
+});
+
+router.post('/sellers/:id/kyc', requireAdmin, async (req, res) => {
+  try {
+    const sellerId = req.params.id;
+    const adminUser = resolveUser(req);
+    const adminId = adminUser ? adminUser.id : 'admin-1';
+    const body = req.body || {};
+    const kycStatus = body.kyc_status || body.kycStatus || body.status;
+    const activeListingLimit = body.active_listing_limit !== undefined ? body.active_listing_limit : body.activeListingLimit;
+    const reason = body.reason || body.notes || 'Admin KYC verification review';
+
+    const { SellerTrustService } = require('../trust/SellerTrustService');
+    const result = await SellerTrustService.reviewSellerKyc({
+      sellerId,
+      adminId,
+      kycStatus,
+      activeListingLimit,
+      reason
+    });
+
+    return res.status(200).json({
+      success: true,
+      seller_id: sellerId,
+      profile: result.profile,
+      seller_profile: result.profile,
+      message: `Seller KYC status updated to ${result.profile.kyc_status}`
+    });
+  } catch (err) {
+    const status = err.status || (err.code === 'INVALID_KYC_STATUS' ? 400 : 500);
+    return res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'KYC_UPDATE_FAILED'
+    });
+  }
 });
 
 /**
@@ -1320,62 +1517,85 @@ router.get('/buyers', requireAdmin, (req, res) => {
  * GET /api/admin/payments
  * Real financial ledger movements and gateway transaction records.
  */
-router.get('/payments', requireAdmin, (req, res) => {
-  const ledger = state.financial_ledger || [];
-  const payments = state.payments || [];
-  const balances = FinancialLedger.getAccountBalances();
+router.get('/payments', requireAdmin, async (req, res) => {
+  try {
+    const hydrated = await hydrateAdminDatasets();
+    const ledger = state.financial_ledger || [];
+    const payments = state.payments || [];
+    const balances = FinancialLedger.getAccountBalances();
 
-  const canonicalPayments = state.canonical_payments || [];
-  const webhooks = state.provider_webhooks || [];
-  const reconciliations = state.payment_reconciliation_logs || [];
-  const settlements = state.settlement_records || state.settlements || [];
+    const canonicalPayments = state.canonical_payments || [];
+    const webhooks = state.provider_webhooks || [];
+    const reconciliations = state.payment_reconciliation_logs || [];
+    const settlements = hydrated.settlements;
 
-  res.json({
-    balances,
-    total_ledger_transactions: ledger.length,
-    ledger_transactions: ledger.slice(-50).reverse(),
-    total_gateway_payments: payments.length,
-    gateway_payments: payments.slice(-50).reverse(),
-    total_canonical_payments: canonicalPayments.length,
-    canonical_payments: canonicalPayments.slice(-50).reverse(),
-    total_provider_webhooks: webhooks.length,
-    provider_webhooks: webhooks.slice(-50).reverse(),
-    total_reconciliation_logs: reconciliations.length,
-    reconciliation_logs: reconciliations.slice(-50).reverse(),
-    total_settlements: settlements.length,
-    subsystem_status: PaymentService ? PaymentService.getSubsystemStatus() : null
-  });
+    res.json({
+      automation_status: 'UNAVAILABLE_PILOT_MODE',
+      automation_notice: 'Automated payment gateway capture and seller disbursement rails are inactive in pilot mode. All financial records are read-only.',
+      balances,
+      total_ledger_transactions: ledger.length,
+      ledger_transactions: ledger.slice(-50).reverse(),
+      total_gateway_payments: payments.length,
+      gateway_payments: payments.slice(-50).reverse(),
+      total_canonical_payments: canonicalPayments.length,
+      canonical_payments: canonicalPayments.slice(-50).reverse(),
+      total_provider_webhooks: webhooks.length,
+      provider_webhooks: webhooks.slice(-50).reverse(),
+      total_reconciliation_logs: reconciliations.length,
+      reconciliation_logs: reconciliations.slice(-50).reverse(),
+      total_settlements: settlements.length,
+      settlements: settlements.slice(0, 50),
+      subsystem_status: PaymentService ? PaymentService.getSubsystemStatus() : null
+    });
+  } catch (err) {
+    res.status(err.status || 503).json({
+      error: 'Data unavailable',
+      code: 'DATA_UNAVAILABLE',
+      dataState: 'UNAVAILABLE',
+      message: err.message
+    });
+  }
 });
 
 /**
  * GET /api/admin/disputes
  * Real list of opened and resolved dispute records.
  */
-router.get('/disputes', requireAdmin, (req, res) => {
-  const disputes = state.disputes || [];
-  const orders = state.orders || [];
-  const events = state.events || [];
+router.get('/disputes', requireAdmin, async (req, res) => {
+  try {
+    const hydrated = await hydrateAdminDatasets();
+    const disputes = hydrated.disputes;
+    const orders = hydrated.orders;
+    const events = state.events || [];
 
-  const data = disputes.map(d => {
-    const order = orders.find(o => o.id === d.order_id) || {};
-    const event = events.find(e => e.id === d.event_id) || {};
+    const data = disputes.map(d => {
+      const order = orders.find(o => o.id === d.order_id) || {};
+      const event = events.find(e => e.id === d.event_id) || {};
 
-    return {
-      id: d.id,
-      order_id: d.order_id,
-      buyer_id: d.buyer_id,
-      seller_id: d.seller_id,
-      event_name: event.name || event.title || d.event_id,
-      amount: order.total_amount || 0,
-      reason: d.reason,
-      status: d.status,
-      outcome: d.outcome,
-      created_at: d.created_at || (d.timeline?.[0]?.timestamp) || null,
-      timeline: d.timeline || []
-    };
-  });
+      return {
+        id: d.id,
+        order_id: d.order_id,
+        buyer_id: d.buyer_id,
+        seller_id: d.seller_id,
+        event_name: event.name || event.title || d.event_id,
+        amount: order.total_amount || 0,
+        reason: d.reason,
+        status: d.status,
+        outcome: d.outcome,
+        created_at: d.created_at || (d.timeline?.[0]?.timestamp) || null,
+        timeline: d.timeline || []
+      };
+    });
 
-  res.json({ total: data.length, disputes: data });
+    res.json({ total: data.length, disputes: data });
+  } catch (err) {
+    res.status(err.status || 503).json({
+      error: 'Data unavailable',
+      code: 'DATA_UNAVAILABLE',
+      dataState: 'UNAVAILABLE',
+      message: err.message
+    });
+  }
 });
 
 /**
@@ -1450,26 +1670,59 @@ router.get('/venue-pic', requireAdmin, (req, res) => {
 
 /**
  * GET /api/admin/users
- * Real list of registered users. Password hashes are strictly redacted.
+ * Real list of registered users hydrated from PostgreSQL. Password hashes are strictly redacted.
+ * Supports optional ?search=, ?role=, ?status= filters.
  */
-router.get('/users', requireAdmin, (req, res) => {
-  const users = state.users || [];
+router.get('/users', requireAdmin, async (req, res) => {
+  try {
+    const hydrated = await hydrateAdminDatasets();
+    let users = hydrated.users;
 
-  const sanitizedUsers = users.map(u => ({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    role: u.role,
-    status: u.status || 'ACTIVE',
-    created_at: u.created_at || null,
-    updated_at: u.updated_at || null,
-    last_login_at: u.last_login_at || null
-  }));
+    const search = (req.query.search || req.query.q || '').toString().trim().toLowerCase();
+    const roleFilter = (req.query.role || '').toString().trim().toLowerCase();
+    const statusFilter = (req.query.status || '').toString().trim().toUpperCase();
 
-  res.status(200).json({
-    total: sanitizedUsers.length,
-    users: sanitizedUsers
-  });
+    if (search) {
+      users = users.filter(u =>
+        (u.email && u.email.toLowerCase().includes(search)) ||
+        (u.name && u.name.toLowerCase().includes(search)) ||
+        (u.id && u.id.toLowerCase().includes(search))
+      );
+    }
+    if (roleFilter && roleFilter !== 'all') {
+      users = users.filter(u => (u.role || '').toLowerCase() === roleFilter);
+    }
+    if (statusFilter && statusFilter !== 'ALL') {
+      users = users.filter(u => (u.status || 'ACTIVE').toUpperCase() === statusFilter);
+    }
+
+    const sanitizedUsers = users.map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      status: u.status || 'ACTIVE',
+      created_at: u.created_at || null,
+      updated_at: u.updated_at || null,
+      last_login_at: u.last_login_at || null
+    }));
+
+    res.status(200).json({
+      total: sanitizedUsers.length,
+      users: sanitizedUsers,
+      meta: {
+        generatedAt: new Date().toISOString(),
+        dataState: 'OK'
+      }
+    });
+  } catch (err) {
+    res.status(err.status || 503).json({
+      error: 'Data unavailable',
+      code: 'DATA_UNAVAILABLE',
+      dataState: 'UNAVAILABLE',
+      message: err.message
+    });
+  }
 });
 
 /**
@@ -1478,6 +1731,7 @@ router.get('/users', requireAdmin, (req, res) => {
  * Guards:
  * - Admin cannot suspend self.
  * - Cannot change user role through this endpoint.
+ * - Revokes all active sessions when suspending a user.
  */
 router.patch('/users/:id/status', requireAdmin, async (req, res) => {
   const { id } = req.params;
@@ -1490,14 +1744,6 @@ router.patch('/users/:id/status', requireAdmin, async (req, res) => {
     });
   }
 
-  const user = (state.users || []).find(u => u.id === id);
-  if (!user) {
-    return res.status(404).json({
-      error: `User '${id}' not found`,
-      code: 'USER_NOT_FOUND'
-    });
-  }
-
   // Self-lockout prevention
   if (req.user && req.user.id === id && status === 'SUSPENDED') {
     return res.status(400).json({
@@ -1506,18 +1752,69 @@ router.patch('/users/:id/status', requireAdmin, async (req, res) => {
     });
   }
 
-  const prevStatus = user.status || 'ACTIVE';
-  user.status = status;
-  user.updated_at = new Date().toISOString();
-
   const userRepo = getUserRepository();
-  await userRepo.updateUserStatus(user.id, status).catch(() => {});
+  let stateUser = (state.users || []).find(u => u.id === id);
+  let repoUser = null;
+  if (userRepo && typeof userRepo.getUserById === 'function') {
+    repoUser = await userRepo.getUserById(id).catch(() => null);
+  }
+  const user = stateUser || repoUser;
+
+  if (!user) {
+    return res.status(404).json({
+      error: `User '${id}' not found`,
+      code: 'USER_NOT_FOUND'
+    });
+  }
+
+  const prevStatus = user.status || 'ACTIVE';
+  const nowIso = new Date().toISOString();
+  user.status = status;
+  user.updated_at = nowIso;
+
+  if (stateUser) {
+    stateUser.status = status;
+    stateUser.updated_at = nowIso;
+  }
+
+  if (userRepo && typeof userRepo.updateUserStatus === 'function') {
+    await userRepo.updateUserStatus(user.id, status).catch(() => {});
+  }
+
+  if (status === 'SUSPENDED') {
+    if (userRepo && typeof userRepo.revokeAllUserSessions === 'function') {
+      await userRepo.revokeAllUserSessions(user.id, null, 'ADMIN_SUSPENDED').catch(() => {});
+    }
+    if (Array.isArray(state.sessions)) {
+      for (const s of state.sessions) {
+        if ((s.user_id === user.id || s.userId === user.id) && !s.revoked) {
+          SessionStore.revokeSession(s.session_token, 'ADMIN_SUSPENDED');
+        }
+      }
+    }
+  }
 
   await recordAuditLog('USER_MANAGEMENT', user.id, `STATUS_${status}`, req.user.id, {
     previous_status: prevStatus,
     new_status: status,
     target_user_id: user.id
   }).catch(() => {});
+
+  if (userRepo && typeof userRepo.recordAuthAuditEvent === 'function') {
+    await userRepo.recordAuthAuditEvent({
+      user_id: user.id,
+      email: user.email || null,
+      event_type: status === 'SUSPENDED' ? 'USER_SUSPENDED_BY_ADMIN' : 'USER_REACTIVATED_BY_ADMIN',
+      outcome: 'SUCCESS',
+      ip_address: req.ip || null,
+      user_agent: req.headers['user-agent'] || null,
+      metadata: {
+        actor_id: req.user.id,
+        previous_status: prevStatus,
+        new_status: status
+      }
+    }).catch(() => {});
+  }
 
   res.status(200).json({
     success: true,
@@ -1538,29 +1835,44 @@ router.patch('/users/:id/status', requireAdmin, async (req, res) => {
  * Real list of orders and associated escrow states.
  * Read-only. Zero arbitrary release actions.
  */
-router.get('/orders', requireAdmin, (req, res) => {
-  const orders = state.orders || [];
-  const escrows = state.escrows || [];
+router.get('/orders', requireAdmin, async (req, res) => {
+  try {
+    const hydrated = await hydrateAdminDatasets();
+    const orders = hydrated.orders;
+    const escrows = hydrated.escrows;
+    const statusFilter = (req.query.status || '').toString().trim().toUpperCase();
 
-  const ordersData = orders.map(o => {
-    const escrow = escrows.find(e => e.order_id === o.id);
-    return {
-      id: o.id,
-      buyer_id: o.buyer_id,
-      seller_id: o.seller_id,
-      ticket_id: o.ticket_id,
-      event_id: o.event_id,
-      amount: o.total_amount || o.ticket_price || 0,
-      status: o.status,
-      escrow_status: escrow ? escrow.status : 'NONE',
-      created_at: o.created_at || null
-    };
-  });
+    let ordersData = orders.map(o => {
+      const escrow = escrows.find(e => e.order_id === o.id);
+      return {
+        id: o.id,
+        buyer_id: o.buyer_id,
+        seller_id: o.seller_id,
+        ticket_id: o.ticket_id,
+        event_id: o.event_id,
+        amount: o.total_amount || o.ticket_price || 0,
+        status: o.status,
+        escrow_status: escrow ? escrow.status : 'NONE',
+        created_at: o.created_at || null
+      };
+    });
 
-  res.status(200).json({
-    total: ordersData.length,
-    orders: ordersData
-  });
+    if (statusFilter && statusFilter !== 'ALL') {
+      ordersData = ordersData.filter(o => (o.status || '').toUpperCase() === statusFilter);
+    }
+
+    res.status(200).json({
+      total: ordersData.length,
+      orders: ordersData
+    });
+  } catch (err) {
+    res.status(err.status || 503).json({
+      error: 'Data unavailable',
+      code: 'DATA_UNAVAILABLE',
+      dataState: 'UNAVAILABLE',
+      message: err.message
+    });
+  }
 });
 
 /**
@@ -1852,52 +2164,147 @@ router.get('/sources', requireAdmin, (req, res) => {
  * GET /api/admin/listings
  * Real listing lifecycle records: active, pending review, sold, suspended.
  */
-router.get('/listings', requireAdmin, (req, res) => {
-  const filter = (req.query.status || 'all').toString().toLowerCase();
-  const events = state.events || [];
-  const tickets = state.tickets || [];
-  const users = state.users || [];
+router.get('/listings', requireAdmin, async (req, res) => {
+  try {
+    const hydrated = await hydrateAdminDatasets();
+    const filter = (req.query.status || 'all').toString().toLowerCase();
+    const events = state.events || [];
+    const tickets = hydrated.tickets;
+    const users = hydrated.users;
 
-  const rows = (state.listings || []).map(l => {
-    const event = events.find(e => e.id === l.event_id) || {};
-    const ticket = tickets.find(t => t.id === l.ticket_id) || {};
-    const seller = users.find(u => u.id === l.seller_id) || {};
-    const status = (l.status || '').toUpperCase();
+    const rows = hydrated.listings.map(l => {
+      const event = events.find(e => e.id === l.event_id) || {};
+      const ticket = tickets.find(t => t.id === l.ticket_id) || {};
+      const seller = users.find(u => u.id === l.seller_id) || {};
+      const status = (l.status || '').toUpperCase();
 
-    let bucket = 'OTHER';
-    if (status === 'ACTIVE') bucket = 'ACTIVE';
-    else if (['SUBMITTED', 'UNDER_REVIEW', 'PENDING_REVIEW', 'PENDING'].includes(status)) bucket = 'PENDING';
-    else if (['SOLD', 'COMPLETED'].includes(status)) bucket = 'SOLD';
-    else if (['SUSPENDED', 'FROZEN'].includes(status)) bucket = 'SUSPENDED';
+      let bucket = 'OTHER';
+      if (status === 'ACTIVE') bucket = 'ACTIVE';
+      else if (['SUBMITTED', 'UNDER_REVIEW', 'PENDING_REVIEW', 'PENDING'].includes(status)) bucket = 'PENDING';
+      else if (['SOLD', 'COMPLETED'].includes(status)) bucket = 'SOLD';
+      else if (['SUSPENDED', 'FROZEN'].includes(status)) bucket = 'SUSPENDED';
 
-    return {
-      listing_id: l.id,
-      ticket_id: l.ticket_id,
-      event_id: l.event_id,
-      event_name: event.name || event.title || l.event_id,
-      seller_id: l.seller_id,
-      seller_name: seller.name || l.seller_id,
-      seat_info: ticket.seat_info || 'N/A',
-      ticket_verification_status: ticket.verification_status || 'UNVERIFIED',
-      face_value: l.face_value || ticket.face_value || 0,
-      price: l.price || 0,
-      status: l.status,
-      bucket,
-      created_at: l.created_at || null
+      return {
+        listing_id: l.id,
+        ticket_id: l.ticket_id,
+        event_id: l.event_id,
+        event_name: event.name || event.title || l.event_id,
+        seller_id: l.seller_id,
+        seller_name: seller.name || l.seller_id,
+        seat_info: ticket.seat_info || 'N/A',
+        ticket_verification_status: ticket.verification_status || 'UNVERIFIED',
+        face_value: l.face_value || ticket.face_value || 0,
+        price: l.price || 0,
+        status: l.status,
+        bucket,
+        created_at: l.created_at || null
+      };
+    });
+
+    const summary = {
+      total: rows.length,
+      active: rows.filter(r => r.bucket === 'ACTIVE').length,
+      pending: rows.filter(r => r.bucket === 'PENDING').length,
+      sold: rows.filter(r => r.bucket === 'SOLD').length,
+      suspended: rows.filter(r => r.bucket === 'SUSPENDED').length,
+      other: rows.filter(r => r.bucket === 'OTHER').length
     };
-  });
 
-  const summary = {
+    const filtered = filter === 'all' ? rows : rows.filter(r => r.bucket === filter.toUpperCase());
+    res.json({ summary, total: filtered.length, listings: filtered });
+  } catch (err) {
+    res.status(err.status || 503).json({
+      error: 'Data unavailable',
+      code: 'DATA_UNAVAILABLE',
+      dataState: 'UNAVAILABLE',
+      message: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/admin/offers
+ * Structured marketplace offers overview.
+ */
+router.get('/offers', requireAdmin, (req, res) => {
+  const offers = state.offers || [];
+  const events = state.events || [];
+  const rows = [...offers]
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .map(o => {
+      const event = events.find(e => e.id === o.event_id) || {};
+      return {
+        id: o.id,
+        listing_id: o.listing_id,
+        ticket_id: o.ticket_id,
+        event_id: o.event_id,
+        event_name: event.name || event.title || o.event_id,
+        buyer_id: o.buyer_id,
+        seller_id: o.seller_id,
+        offered_price: o.offered_price,
+        listed_price: o.listed_price,
+        status: o.status,
+        expires_at: o.expires_at || null,
+        created_at: o.created_at || null,
+        order_id: o.order_id || null
+      };
+    });
+
+  res.json({
+    summary: {
+      total: rows.length,
+      pending: rows.filter(r => r.status === 'PENDING').length,
+      accepted: rows.filter(r => r.status === 'ACCEPTED').length,
+      rejected: rows.filter(r => r.status === 'REJECTED').length,
+      expired: rows.filter(r => r.status === 'EXPIRED').length,
+      withdrawn: rows.filter(r => r.status === 'WITHDRAWN' || r.status === 'CANCELLED').length
+    },
     total: rows.length,
-    active: rows.filter(r => r.bucket === 'ACTIVE').length,
-    pending: rows.filter(r => r.bucket === 'PENDING').length,
-    sold: rows.filter(r => r.bucket === 'SOLD').length,
-    suspended: rows.filter(r => r.bucket === 'SUSPENDED').length,
-    other: rows.filter(r => r.bucket === 'OTHER').length
-  };
+    offers: rows
+  });
+});
 
-  const filtered = filter === 'all' ? rows : rows.filter(r => r.bucket === filter.toUpperCase());
-  res.json({ summary, total: filtered.length, listings: filtered });
+/**
+ * GET /api/admin/audit-logs
+ * Recent authentication audit events and administrative audit trail with token hashes redacted.
+ */
+router.get('/audit-logs', requireAdmin, async (req, res) => {
+  try {
+    const userRepo = getUserRepository();
+    const authAuditEvents = (userRepo && typeof userRepo.listRecentAuthAuditEvents === 'function')
+      ? await userRepo.listRecentAuthAuditEvents(100)
+      : [];
+
+    const adminAuditLogs = [...(state.audit_logs || [])]
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, 100)
+      .map(log => ({
+        id: log.id,
+        entity_type: log.entity_type || 'SYSTEM',
+        entity_id: log.entity_id || log.target_id || null,
+        action: log.action,
+        performed_by: log.performed_by || 'SYSTEM',
+        created_at: log.created_at || null
+      }));
+
+    res.json({
+      total_auth_events: authAuditEvents.length,
+      auth_audit_events: authAuditEvents,
+      total_admin_logs: adminAuditLogs.length,
+      admin_audit_logs: adminAuditLogs,
+      meta: {
+        generatedAt: new Date().toISOString(),
+        dataState: 'OK'
+      }
+    });
+  } catch (err) {
+    res.status(503).json({
+      error: 'Data unavailable',
+      code: 'DATA_UNAVAILABLE',
+      dataState: 'UNAVAILABLE',
+      message: err.message
+    });
+  }
 });
 
 /**

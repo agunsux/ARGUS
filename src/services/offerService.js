@@ -67,6 +67,102 @@ function maskName(name) {
 }
 
 class OfferService {
+  static async _resolveUser(userId) {
+    if (!userId) return null;
+    let user = (state.users || []).find(u => u.id === userId);
+    if (!user) {
+      try {
+        const { getUserRepository } = require('../storage');
+        const userRepo = getUserRepository();
+        const dbUser = await userRepo.getUserById(userId);
+        if (dbUser) {
+          if (!state.users) state.users = [];
+          state.users.push(dbUser);
+          user = dbUser;
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
+      }
+    }
+    return user || null;
+  }
+
+  static async _resolveListing(listingId) {
+    if (!listingId) return null;
+    let listing = (state.listings || []).find(l => l.id === listingId);
+    if (!listing) {
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        const mktRepo = getMarketplaceRepository();
+        const dbListing = await mktRepo.getListingById(listingId);
+        if (dbListing) {
+          if (!state.listings) state.listings = [];
+          state.listings.push({
+            ...dbListing,
+            event_id: dbListing.event_id || dbListing.canonical_event_id
+          });
+          listing = state.listings[state.listings.length - 1];
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
+      }
+    }
+    return listing || null;
+  }
+
+  static async getOfferById(offerId) {
+    if (!offerId) return null;
+    if (!state.offers) state.offers = [];
+    let offer = state.offers.find(o => o.id === offerId);
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const mktRepo = getMarketplaceRepository();
+      const dbOffer = await mktRepo.getOfferById(offerId);
+      if (dbOffer) {
+        if (!offer) {
+          state.offers.push(dbOffer);
+          offer = dbOffer;
+        } else if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          Object.assign(offer, dbOffer);
+        }
+      }
+    } catch (err) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
+    }
+    return offer || null;
+  }
+
+  static async _hydrateOffersForContext({ buyerId = null, sellerId = null, listingId = null }) {
+    if (!state.offers) state.offers = [];
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const mktRepo = getMarketplaceRepository();
+      const fetched = [];
+      if (listingId) {
+        const byListing = await mktRepo.listOffersByListing(listingId);
+        if (Array.isArray(byListing)) fetched.push(...byListing);
+      }
+      if (buyerId) {
+        const byBuyer = await mktRepo.listOffersByUser(buyerId, 'BUYER');
+        if (Array.isArray(byBuyer)) fetched.push(...byBuyer);
+      }
+      if (sellerId) {
+        const bySeller = await mktRepo.listOffersByUser(sellerId, 'SELLER');
+        if (Array.isArray(bySeller)) fetched.push(...bySeller);
+      }
+      for (const dbOffer of fetched) {
+        const existingIdx = state.offers.findIndex(o => o.id === dbOffer.id);
+        if (existingIdx === -1) {
+          state.offers.push(dbOffer);
+        } else if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          Object.assign(state.offers[existingIdx], dbOffer);
+        }
+      }
+    } catch (err) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
+    }
+  }
+
   /**
    * Helper to resolve or create a negotiation session
    */
@@ -97,6 +193,33 @@ class OfferService {
     return neg;
   }
 
+  static async getOrCreateNegotiationAsync({ listingId, buyerId, sellerId, listingPrice, eventId, ticketId }) {
+    if (!state.negotiations) state.negotiations = [];
+    let neg = state.negotiations.find(n => n.listing_id === listingId && n.buyer_id === buyerId && n.status !== NEGOTIATION_STATUS.ACCEPTED);
+    if (!neg) {
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        const mktRepo = getMarketplaceRepository();
+        const dbNeg = await mktRepo.getNegotiationByBuyerAndListing(buyerId, listingId);
+        if (dbNeg) {
+          const existingIdx = state.negotiations.findIndex(n => n.id === dbNeg.id);
+          if (existingIdx === -1) {
+            state.negotiations.push(dbNeg);
+            neg = dbNeg;
+          } else {
+            neg = state.negotiations[existingIdx];
+          }
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
+      }
+    }
+    if (!neg) {
+      neg = this.getOrCreateNegotiation({ listingId, buyerId, sellerId, listingPrice, eventId, ticketId });
+    }
+    return neg;
+  }
+
   /**
    * Submit a structured offer on an active listing
    */
@@ -111,7 +234,7 @@ class OfferService {
     }
 
     // 2. Validate buyer
-    const buyer = state.users.find(u => u.id === buyerId);
+    const buyer = await this._resolveUser(buyerId);
     if (!buyer) {
       const err = new Error('Buyer not found');
       err.code = 'BUYER_NOT_FOUND';
@@ -120,7 +243,7 @@ class OfferService {
     }
 
     // 3. Validate listing
-    const listing = state.listings.find(l => l.id === listingId);
+    const listing = await this._resolveListing(listingId);
     if (!listing) {
       const err = new Error('Listing not found');
       err.code = 'LISTING_NOT_FOUND';
@@ -172,13 +295,15 @@ class OfferService {
     try {
       const now = Date.now();
 
+      await this._hydrateOffersForContext({ buyerId, listingId });
+
       // Negotiation engine check
-      const negotiation = OfferService.getOrCreateNegotiation({
+      const negotiation = await OfferService.getOrCreateNegotiationAsync({
         listingId,
         buyerId,
         sellerId: listing.seller_id,
         listingPrice: listing.price,
-        eventId: listing.event_id,
+        eventId: listing.event_id || listing.canonical_event_id,
         ticketId: listing.ticket_id
       });
 
@@ -269,12 +394,13 @@ class OfferService {
       negotiation.active_offer_id = offerId;
       const ttlHours = parseInt(process.env.ARGUS_OFFER_TTL_HOURS || '24', 10);
       const expiresAt = new Date(now + ttlHours * 60 * 60 * 1000).toISOString();
+      const eventId = listing.event_id || listing.canonical_event_id;
 
       const offer = {
         id: offerId,
         listing_id: listingId,
         ticket_id: listing.ticket_id,
-        event_id: listing.event_id,
+        event_id: eventId,
         buyer_id: buyerId,
         seller_id: listing.seller_id,
         original_price: listing.price,
@@ -297,8 +423,6 @@ class OfferService {
           : null
       };
 
-      state.offers.push(offer);
-
       negotiation.proposals.push({
         proposal_id: offerId,
         sequence_number: seq,
@@ -310,8 +434,7 @@ class OfferService {
         created_at: new Date(now).toISOString()
       });
 
-      // 11. Immutable Audit Log
-      await recordOfferAuditLog({
+      const auditPayload = {
         offerId,
         actorId: buyerId,
         actorRole: 'BUYER',
@@ -328,10 +451,28 @@ class OfferService {
           negotiation_id: negotiation.id,
           negotiation_status: negotiation.status
         }
-      });
+      };
+
+      // Durable Persistence via MarketplaceRepository
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        const mktRepo = getMarketplaceRepository();
+        await mktRepo.createOfferWithNegotiation(offer, negotiation, auditPayload);
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL || repoErr.code === 'ACTIVE_OFFER_EXISTS' || repoErr.code === 'NEGOTIATION_ALREADY_ACCEPTED') {
+          throw repoErr;
+        }
+      }
+
+      if (!state.offers.find(o => o.id === offer.id)) {
+        state.offers.push(offer);
+      }
+
+      // 11. Immutable Audit Log
+      await recordOfferAuditLog(auditPayload);
 
       // 12. Notify Seller
-      const event = state.events.find(e => e.id === listing.event_id);
+      const event = state.events.find(e => e.id === eventId);
       const ticket = state.tickets.find(t => t.id === listing.ticket_id);
       const eventTitle = event ? event.title : 'Event';
       const seatInfo = ticket ? ticket.seat_info : '';
@@ -348,7 +489,7 @@ class OfferService {
       });
 
       // Non-blocking secondary effect: Offer received email
-      const seller = state.users.find(u => u.id === listing.seller_id);
+      const seller = await this._resolveUser(listing.seller_id);
       emailService.sendOfferReceivedEmail({ offer, seller, listing, event }).catch(err => {
         console.warn('[OfferService:OfferReceivedEmail] Secondary effect error:', err.message);
       });
@@ -364,7 +505,7 @@ class OfferService {
    * Enforces atomic mutex lock to prevent race conditions and double-sells
    */
   static async acceptOffer({ offerId, sellerId, ipAddress = '127.0.0.1' }) {
-    const offer = state.offers.find(o => o.id === offerId);
+    const offer = await this.getOfferById(offerId);
     if (!offer) {
       const err = new Error('Offer not found');
       err.code = 'OFFER_NOT_FOUND';
@@ -382,7 +523,8 @@ class OfferService {
     // Acquire lock on listing
     const releaseLock = await listingMutex.acquire(offer.listing_id);
     try {
-      const listing = state.listings.find(l => l.id === offer.listing_id);
+      await this._hydrateOffersForContext({ listingId: offer.listing_id });
+      const listing = await this._resolveListing(offer.listing_id);
       if (!listing) {
         const err = new Error('Listing not found');
         err.code = 'LISTING_NOT_FOUND';
@@ -414,6 +556,24 @@ class OfferService {
       // Check if offer expired
       if (new Date(offer.expires_at).getTime() <= Date.now()) {
         offer.status = OFFER_STATUS.EXPIRED;
+        try {
+          const { getMarketplaceRepository } = require('../storage');
+          await getMarketplaceRepository().transitionOfferStatus(
+            offer.id,
+            [OFFER_STATUS.PENDING],
+            { status: OFFER_STATUS.EXPIRED },
+            null,
+            {
+              offerId: offer.id,
+              actorId: 'SYSTEM',
+              actorRole: 'SYSTEM',
+              fromStatus: OFFER_STATUS.PENDING,
+              toStatus: OFFER_STATUS.EXPIRED,
+              ipAddress,
+              metadata: { reason: 'TTL expired during accept attempt' }
+            }
+          );
+        } catch (_) {}
         await recordOfferAuditLog({
           offerId: offer.id,
           actorId: 'SYSTEM',
@@ -429,22 +589,20 @@ class OfferService {
         throw err;
       }
 
-      // 1. Mark offer ACCEPTED
-      offer.status = OFFER_STATUS.ACCEPTED;
-      offer.decided_at = new Date().toISOString();
+      const decidedAt = new Date().toISOString();
 
       // 1b. Update negotiation status to ACCEPTED
-      const negotiation = OfferService.getOrCreateNegotiation({
+      const negotiation = await OfferService.getOrCreateNegotiationAsync({
         listingId: offer.listing_id,
         buyerId: offer.buyer_id,
         sellerId: offer.seller_id,
         listingPrice: listing.price,
-        eventId: listing.event_id,
+        eventId: listing.event_id || listing.canonical_event_id,
         ticketId: listing.ticket_id
       });
       negotiation.status = NEGOTIATION_STATUS.ACCEPTED;
       negotiation.current_turn = null;
-      negotiation.updated_at = new Date().toISOString();
+      negotiation.updated_at = decidedAt;
 
       // 2. Create order with custom negotiated amount (2-hour payment deadline)
       const { order, escrow, pricing } = await EscrowService.createOrder({
@@ -454,26 +612,77 @@ class OfferService {
         paymentDeadlineHours: 2
       });
 
-      // 3. Auto-supersede all other pending offers on this listing
+      const acceptAuditPayload = {
+        offerId: offer.id,
+        actorId: sellerId,
+        actorRole: 'SELLER',
+        fromStatus: OFFER_STATUS.PENDING,
+        toStatus: OFFER_STATUS.ACCEPTED,
+        ipAddress,
+        metadata: {
+          order_id: order.id,
+          offer_amount: offer.offer_amount,
+          platform_fee: pricing.platformFee,
+          total_amount: pricing.totalAmount,
+          negotiation_status: negotiation.status
+        }
+      };
+
+      // Durable transition via MarketplaceRepository (also supersedes competing offers in DB)
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        const mktRepo = getMarketplaceRepository();
+        const txRes = await mktRepo.transitionOfferStatus(
+          offer.id,
+          [OFFER_STATUS.PENDING],
+          {
+            status: OFFER_STATUS.ACCEPTED,
+            decided_at: decidedAt,
+            accepted_order_id: order.id,
+            negotiation_status: negotiation.status,
+            supersedeOtherOffersForListing: true
+          },
+          negotiation,
+          acceptAuditPayload
+        );
+        if (!txRes.updated && (process.env.NODE_ENV === 'production' || process.env.VERCEL)) {
+          const err = new Error('Concurrent offer state conflict');
+          err.code = 'OFFER_SUPERSEDED';
+          err.statusCode = 409;
+          throw err;
+        }
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw repoErr;
+      }
+
+      // 1. Mark offer ACCEPTED in memory
+      offer.status = OFFER_STATUS.ACCEPTED;
+      offer.decided_at = decidedAt;
+      offer.accepted_order_id = order.id;
+
+      // 3. Auto-supersede all other pending offers on this listing in memory
       const otherOffers = state.offers.filter(o => 
         o.listing_id === offer.listing_id && 
         o.id !== offer.id && 
-        o.status === OFFER_STATUS.PENDING
+        (o.status === OFFER_STATUS.PENDING || o.status === OFFER_STATUS.SUPERSEDED)
       );
 
       for (const other of otherOffers) {
+        const wasAlreadySuperseded = other.status === OFFER_STATUS.SUPERSEDED;
         other.status = OFFER_STATUS.SUPERSEDED;
-        other.superseded_at = new Date().toISOString();
+        other.superseded_at = other.superseded_at || decidedAt;
 
-        await recordOfferAuditLog({
-          offerId: other.id,
-          actorId: 'SYSTEM',
-          actorRole: 'SYSTEM',
-          fromStatus: OFFER_STATUS.PENDING,
-          toStatus: OFFER_STATUS.SUPERSEDED,
-          ipAddress,
-          metadata: { winning_offer_id: offer.id }
-        });
+        if (!wasAlreadySuperseded || !state.offer_audit_logs.some(l => l.offer_id === other.id && l.to_status === OFFER_STATUS.SUPERSEDED)) {
+          await recordOfferAuditLog({
+            offerId: other.id,
+            actorId: 'SYSTEM',
+            actorRole: 'SYSTEM',
+            fromStatus: OFFER_STATUS.PENDING,
+            toStatus: OFFER_STATUS.SUPERSEDED,
+            ipAddress,
+            metadata: { winning_offer_id: offer.id }
+          });
+        }
 
         // Notify other buyer
         state.notifications.push({
@@ -489,21 +698,7 @@ class OfferService {
       }
 
       // 4. Record Audit Log for Accepted Offer
-      await recordOfferAuditLog({
-        offerId: offer.id,
-        actorId: sellerId,
-        actorRole: 'SELLER',
-        fromStatus: OFFER_STATUS.PENDING,
-        toStatus: OFFER_STATUS.ACCEPTED,
-        ipAddress,
-        metadata: {
-          order_id: order.id,
-          offer_amount: offer.offer_amount,
-          platform_fee: pricing.platformFee,
-          total_amount: pricing.totalAmount,
-          negotiation_status: negotiation.status
-        }
-      });
+      await recordOfferAuditLog(acceptAuditPayload);
 
       // 5. Notify Winning Buyer
       state.notifications.push({
@@ -518,8 +713,8 @@ class OfferService {
       });
 
       // Non-blocking secondary effect: Offer accepted email
-      const winningBuyer = state.users.find(u => u.id === offer.buyer_id);
-      const event = state.events.find(e => e.id === listing.event_id);
+      const winningBuyer = await this._resolveUser(offer.buyer_id);
+      const event = state.events.find(e => e.id === (listing.event_id || listing.canonical_event_id));
       emailService.sendOfferAcceptedEmail({
         offer: { ...offer, price: offer.offer_amount, order_id: order.id },
         buyer: winningBuyer,
@@ -543,7 +738,7 @@ class OfferService {
    * Seller declines a structured offer with enum reason
    */
   static async declineOffer({ offerId, sellerId, declineReason, ipAddress = '127.0.0.1' }) {
-    const offer = state.offers.find(o => o.id === offerId);
+    const offer = await this.getOfferById(offerId);
     if (!offer) {
       const err = new Error('Offer not found');
       err.code = 'OFFER_NOT_FOUND';
@@ -574,10 +769,12 @@ class OfferService {
       throw err;
     }
 
+    const decidedAt = new Date().toISOString();
     offer.status = OFFER_STATUS.DECLINED;
     offer.decline_reason = declineReason;
-    offer.decided_at = new Date().toISOString();
+    offer.decided_at = decidedAt;
 
+    await this._hydrateOffersForContext({ listingId: offer.listing_id, buyerId: offer.buyer_id });
     const negotiation = state.negotiations ? state.negotiations.find(n => n.listing_id === offer.listing_id && n.buyer_id === offer.buyer_id && n.status !== NEGOTIATION_STATUS.ACCEPTED) : null;
     if (negotiation) {
       if (negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS) {
@@ -586,7 +783,7 @@ class OfferService {
         negotiation.status = NEGOTIATION_STATUS.REJECTED;
       }
       negotiation.current_turn = null;
-      negotiation.updated_at = new Date().toISOString();
+      negotiation.updated_at = decidedAt;
       negotiation.proposals.push({
         proposal_id: `prop-${uuidv4()}`,
         sequence_number: negotiation.proposal_count,
@@ -596,12 +793,11 @@ class OfferService {
         amount: offer.offer_amount,
         status: OFFER_STATUS.DECLINED,
         decline_reason: declineReason,
-        created_at: new Date().toISOString()
+        created_at: decidedAt
       });
     }
 
-    // Audit Log
-    await recordOfferAuditLog({
+    const auditPayload = {
       offerId: offer.id,
       actorId: sellerId,
       actorRole: 'SELLER',
@@ -613,7 +809,28 @@ class OfferService {
         negotiation_status: negotiation ? negotiation.status : null,
         proposal_count: negotiation ? negotiation.proposal_count : null
       }
-    });
+    };
+
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      await getMarketplaceRepository().transitionOfferStatus(
+        offer.id,
+        [OFFER_STATUS.PENDING],
+        {
+          status: OFFER_STATUS.DECLINED,
+          decline_reason: declineReason,
+          decided_at: decidedAt,
+          negotiation_status: negotiation ? negotiation.status : offer.negotiation_status
+        },
+        negotiation,
+        auditPayload
+      );
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw repoErr;
+    }
+
+    // Audit Log
+    await recordOfferAuditLog(auditPayload);
 
     // Notify Buyer
     const reasonLabel = DECLINE_REASONS[declineReason].label;
@@ -629,9 +846,9 @@ class OfferService {
     });
 
     // Non-blocking secondary effect: Offer declined email
-    const declinedBuyer = state.users.find(u => u.id === offer.buyer_id);
-    const declinedListing = state.listings.find(l => l.id === offer.listing_id);
-    const declinedEvent = declinedListing ? state.events.find(e => e.id === declinedListing.event_id) : null;
+    const declinedBuyer = await this._resolveUser(offer.buyer_id);
+    const declinedListing = await this._resolveListing(offer.listing_id);
+    const declinedEvent = declinedListing ? state.events.find(e => e.id === (declinedListing.event_id || declinedListing.canonical_event_id)) : null;
     emailService.sendOfferRejectedEmail({
       offer: { ...offer, price: offer.offer_amount },
       buyer: declinedBuyer,
@@ -656,7 +873,7 @@ class OfferService {
       throw err;
     }
 
-    const offer = state.offers.find(o => o.id === offerId);
+    const offer = await this.getOfferById(offerId);
     if (!offer) {
       const err = new Error('Offer not found');
       err.code = 'OFFER_NOT_FOUND';
@@ -673,7 +890,7 @@ class OfferService {
 
     const releaseLock = await listingMutex.acquire(offer.listing_id);
     try {
-      const listing = state.listings.find(l => l.id === offer.listing_id);
+      const listing = await this._resolveListing(offer.listing_id);
       if (!listing || listing.status !== LISTING_STATUS.ACTIVE) {
         const err = new Error('Listing is no longer active');
         err.code = 'LISTING_NOT_ACTIVE';
@@ -681,12 +898,12 @@ class OfferService {
         throw err;
       }
 
-      const negotiation = OfferService.getOrCreateNegotiation({
+      const negotiation = await OfferService.getOrCreateNegotiationAsync({
         listingId: offer.listing_id,
         buyerId: offer.buyer_id,
         sellerId: offer.seller_id,
         listingPrice: listing.price,
-        eventId: listing.event_id,
+        eventId: listing.event_id || listing.canonical_event_id,
         ticketId: listing.ticket_id
       });
 
@@ -733,6 +950,7 @@ class OfferService {
         throw err;
       }
 
+      const counteredAt = new Date().toISOString();
       negotiation.proposal_count += 1;
       const seq = negotiation.proposal_count;
       if (negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS) {
@@ -740,11 +958,11 @@ class OfferService {
       }
       negotiation.current_amount = parsedAmount;
       negotiation.current_turn = 'BUYER';
-      negotiation.updated_at = new Date().toISOString();
+      negotiation.updated_at = counteredAt;
 
       offer.status = OFFER_STATUS.COUNTERED;
       offer.counter_amount = parsedAmount;
-      offer.countered_at = new Date().toISOString();
+      offer.countered_at = counteredAt;
       offer.sequence_number = seq;
       offer.proposal_count = negotiation.proposal_count;
       offer.max_proposals = NEGOTIATION_MAX_PROPOSALS;
@@ -763,11 +981,10 @@ class OfferService {
         type: 'COUNTER_OFFER',
         amount: parsedAmount,
         status: OFFER_STATUS.COUNTERED,
-        created_at: new Date().toISOString()
+        created_at: counteredAt
       });
 
-      // Audit Log
-      await recordOfferAuditLog({
+      const auditPayload = {
         offerId: offer.id,
         actorId: sellerId,
         actorRole: 'SELLER',
@@ -782,7 +999,31 @@ class OfferService {
           negotiation_id: negotiation.id,
           negotiation_status: negotiation.status
         }
-      });
+      };
+
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        await getMarketplaceRepository().transitionOfferStatus(
+          offer.id,
+          [OFFER_STATUS.PENDING],
+          {
+            status: OFFER_STATUS.COUNTERED,
+            counter_amount: parsedAmount,
+            countered_at: counteredAt,
+            sequence_number: seq,
+            proposal_count: negotiation.proposal_count,
+            negotiation_id: negotiation.id,
+            negotiation_status: negotiation.status
+          },
+          negotiation,
+          auditPayload
+        );
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw repoErr;
+      }
+
+      // Audit Log
+      await recordOfferAuditLog(auditPayload);
 
       // Notify Buyer
       state.notifications.push({
@@ -797,9 +1038,9 @@ class OfferService {
       });
 
       // Non-blocking secondary effect: Counter offer email
-      const counterBuyer = state.users.find(u => u.id === offer.buyer_id);
-      const counterListing = state.listings.find(l => l.id === offer.listing_id);
-      const counterEvent = counterListing ? state.events.find(e => e.id === counterListing.event_id) : null;
+      const counterBuyer = await this._resolveUser(offer.buyer_id);
+      const counterListing = listing;
+      const counterEvent = counterListing ? state.events.find(e => e.id === (counterListing.event_id || counterListing.canonical_event_id)) : null;
       emailService.sendCounterOfferEmail({
         offer,
         buyer: counterBuyer,
@@ -828,7 +1069,7 @@ class OfferService {
       throw err;
     }
 
-    const offer = state.offers.find(o => o.id === offerId);
+    const offer = await this.getOfferById(offerId);
     if (!offer) {
       const err = new Error('Offer not found');
       err.code = 'OFFER_NOT_FOUND';
@@ -845,7 +1086,7 @@ class OfferService {
 
     const releaseLock = await listingMutex.acquire(offer.listing_id);
     try {
-      const listing = state.listings.find(l => l.id === offer.listing_id);
+      const listing = await this._resolveListing(offer.listing_id);
       if (!listing || listing.status !== LISTING_STATUS.ACTIVE) {
         const err = new Error('Listing is no longer active');
         err.code = 'LISTING_NOT_ACTIVE';
@@ -853,12 +1094,12 @@ class OfferService {
         throw err;
       }
 
-      const negotiation = OfferService.getOrCreateNegotiation({
+      const negotiation = await OfferService.getOrCreateNegotiationAsync({
         listingId: offer.listing_id,
         buyerId: offer.buyer_id,
         sellerId: offer.seller_id,
         listingPrice: listing.price,
-        eventId: listing.event_id,
+        eventId: listing.event_id || listing.canonical_event_id,
         ticketId: listing.ticket_id
       });
 
@@ -906,6 +1147,7 @@ class OfferService {
         throw err;
       }
 
+      const nowIso = new Date().toISOString();
       negotiation.proposal_count += 1;
       const seq = negotiation.proposal_count;
       if (negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS) {
@@ -913,7 +1155,7 @@ class OfferService {
       }
       negotiation.current_amount = parsedAmount;
       negotiation.current_turn = 'SELLER';
-      negotiation.updated_at = new Date().toISOString();
+      negotiation.updated_at = nowIso;
 
       offer.status = OFFER_STATUS.PENDING;
       offer.offer_amount = parsedAmount;
@@ -936,10 +1178,10 @@ class OfferService {
         type: 'COUNTER_OFFER',
         amount: parsedAmount,
         status: OFFER_STATUS.PENDING,
-        created_at: new Date().toISOString()
+        created_at: nowIso
       });
 
-      await recordOfferAuditLog({
+      const auditPayload = {
         offerId: offer.id,
         actorId: buyerId,
         actorRole: 'BUYER',
@@ -954,7 +1196,30 @@ class OfferService {
           negotiation_id: negotiation.id,
           negotiation_status: negotiation.status
         }
-      });
+      };
+
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        await getMarketplaceRepository().transitionOfferStatus(
+          offer.id,
+          [OFFER_STATUS.COUNTERED],
+          {
+            status: OFFER_STATUS.PENDING,
+            offer_amount: parsedAmount,
+            counter_amount: null,
+            sequence_number: seq,
+            proposal_count: negotiation.proposal_count,
+            negotiation_id: negotiation.id,
+            negotiation_status: negotiation.status
+          },
+          negotiation,
+          auditPayload
+        );
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw repoErr;
+      }
+
+      await recordOfferAuditLog(auditPayload);
 
       state.notifications.push({
         id: `notif-${uuidv4()}`,
@@ -977,7 +1242,7 @@ class OfferService {
    * Buyer accepts seller's counter-offer
    */
   static async acceptCounterOffer({ offerId, buyerId, ipAddress = '127.0.0.1' }) {
-    const offer = state.offers.find(o => o.id === offerId);
+    const offer = await this.getOfferById(offerId);
     if (!offer) {
       const err = new Error('Offer not found');
       err.code = 'OFFER_NOT_FOUND';
@@ -1001,7 +1266,8 @@ class OfferService {
 
     const releaseLock = await listingMutex.acquire(offer.listing_id);
     try {
-      const listing = state.listings.find(l => l.id === offer.listing_id);
+      await this._hydrateOffersForContext({ listingId: offer.listing_id });
+      const listing = await this._resolveListing(offer.listing_id);
       if (!listing || listing.status !== LISTING_STATUS.ACTIVE) {
         const err = new Error('Listing is no longer active');
         err.code = 'LISTING_NOT_ACTIVE';
@@ -1009,20 +1275,19 @@ class OfferService {
         throw err;
       }
 
-      offer.status = OFFER_STATUS.ACCEPTED;
-      offer.decided_at = new Date().toISOString();
+      const decidedAt = new Date().toISOString();
 
-      const negotiation = OfferService.getOrCreateNegotiation({
+      const negotiation = await OfferService.getOrCreateNegotiationAsync({
         listingId: offer.listing_id,
         buyerId: offer.buyer_id,
         sellerId: offer.seller_id,
         listingPrice: listing.price,
-        eventId: listing.event_id,
+        eventId: listing.event_id || listing.canonical_event_id,
         ticketId: listing.ticket_id
       });
       negotiation.status = NEGOTIATION_STATUS.ACCEPTED;
       negotiation.current_turn = null;
-      negotiation.updated_at = new Date().toISOString();
+      negotiation.updated_at = decidedAt;
 
       const agreedAmount = offer.counter_amount || offer.offer_amount;
       const { order, escrow, pricing } = await EscrowService.createOrder({
@@ -1032,19 +1297,7 @@ class OfferService {
         paymentDeadlineHours: 2
       });
 
-      // Supersede other pending/countered offers
-      const otherOffers = state.offers.filter(o =>
-        o.listing_id === offer.listing_id &&
-        o.id !== offer.id &&
-        (o.status === OFFER_STATUS.PENDING || o.status === OFFER_STATUS.COUNTERED)
-      );
-
-      for (const other of otherOffers) {
-        other.status = OFFER_STATUS.SUPERSEDED;
-        other.superseded_at = new Date().toISOString();
-      }
-
-      await recordOfferAuditLog({
+      const auditPayload = {
         offerId: offer.id,
         actorId: buyerId,
         actorRole: 'BUYER',
@@ -1057,7 +1310,44 @@ class OfferService {
           total_amount: pricing.totalAmount,
           negotiation_status: negotiation.status
         }
-      });
+      };
+
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        await getMarketplaceRepository().transitionOfferStatus(
+          offer.id,
+          [OFFER_STATUS.COUNTERED],
+          {
+            status: OFFER_STATUS.ACCEPTED,
+            decided_at: decidedAt,
+            accepted_order_id: order.id,
+            negotiation_status: negotiation.status,
+            supersedeOtherOffersForListing: true
+          },
+          negotiation,
+          auditPayload
+        );
+      } catch (repoErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw repoErr;
+      }
+
+      offer.status = OFFER_STATUS.ACCEPTED;
+      offer.decided_at = decidedAt;
+      offer.accepted_order_id = order.id;
+
+      // Supersede other pending/countered offers
+      const otherOffers = state.offers.filter(o =>
+        o.listing_id === offer.listing_id &&
+        o.id !== offer.id &&
+        (o.status === OFFER_STATUS.PENDING || o.status === OFFER_STATUS.COUNTERED)
+      );
+
+      for (const other of otherOffers) {
+        other.status = OFFER_STATUS.SUPERSEDED;
+        other.superseded_at = decidedAt;
+      }
+
+      await recordOfferAuditLog(auditPayload);
 
       state.notifications.push({
         id: `notif-${uuidv4()}`,
@@ -1080,7 +1370,7 @@ class OfferService {
    * Buyer withdraws their own pending offer
    */
   static async withdrawOffer({ offerId, buyerId, ipAddress = '127.0.0.1' }) {
-    const offer = state.offers.find(o => o.id === offerId);
+    const offer = await this.getOfferById(offerId);
     if (!offer) {
       const err = new Error('Offer not found');
       err.code = 'OFFER_NOT_FOUND';
@@ -1102,9 +1392,11 @@ class OfferService {
       throw err;
     }
 
+    const withdrawnAt = new Date().toISOString();
     offer.status = OFFER_STATUS.WITHDRAWN;
-    offer.withdrawn_at = new Date().toISOString();
+    offer.withdrawn_at = withdrawnAt;
 
+    await this._hydrateOffersForContext({ listingId: offer.listing_id, buyerId: offer.buyer_id });
     const negotiation = state.negotiations ? state.negotiations.find(n => n.listing_id === offer.listing_id && n.buyer_id === offer.buyer_id && n.status !== NEGOTIATION_STATUS.ACCEPTED) : null;
     if (negotiation) {
       if (negotiation.proposal_count >= NEGOTIATION_MAX_PROPOSALS) {
@@ -1113,7 +1405,7 @@ class OfferService {
         negotiation.status = NEGOTIATION_STATUS.CANCELLED_BY_BUYER;
       }
       negotiation.current_turn = null;
-      negotiation.updated_at = new Date().toISOString();
+      negotiation.updated_at = withdrawnAt;
       negotiation.proposals.push({
         proposal_id: `prop-${uuidv4()}`,
         sequence_number: negotiation.proposal_count,
@@ -1122,12 +1414,11 @@ class OfferService {
         type: 'WITHDRAWAL',
         amount: offer.offer_amount,
         status: OFFER_STATUS.WITHDRAWN,
-        created_at: new Date().toISOString()
+        created_at: withdrawnAt
       });
     }
 
-    // Audit Log
-    await recordOfferAuditLog({
+    const auditPayload = {
       offerId: offer.id,
       actorId: buyerId,
       actorRole: 'BUYER',
@@ -1138,7 +1429,27 @@ class OfferService {
         negotiation_status: negotiation ? negotiation.status : null,
         proposal_count: negotiation ? negotiation.proposal_count : null
       }
-    });
+    };
+
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      await getMarketplaceRepository().transitionOfferStatus(
+        offer.id,
+        [OFFER_STATUS.PENDING],
+        {
+          status: OFFER_STATUS.WITHDRAWN,
+          withdrawn_at: withdrawnAt,
+          negotiation_status: negotiation ? negotiation.status : offer.negotiation_status
+        },
+        negotiation,
+        auditPayload
+      );
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw repoErr;
+    }
+
+    // Audit Log
+    await recordOfferAuditLog(auditPayload);
 
     return offer;
   }
@@ -1148,7 +1459,23 @@ class OfferService {
    */
   static async expirePendingOffers() {
     const now = new Date();
-    const expiredList = [];
+    const expiredMap = new Map();
+
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const repoExpired = await getMarketplaceRepository().expirePendingOffers(now.toISOString());
+      for (const ro of repoExpired) {
+        expiredMap.set(ro.id, ro);
+        const existingIdx = state.offers.findIndex(o => o.id === ro.id);
+        if (existingIdx >= 0) {
+          state.offers[existingIdx].status = OFFER_STATUS.EXPIRED;
+        } else {
+          state.offers.push(ro);
+        }
+      }
+    } catch (repoErr) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw repoErr;
+    }
 
     const pendingOffers = state.offers.filter(o => 
       o.status === OFFER_STATUS.PENDING && 
@@ -1157,17 +1484,22 @@ class OfferService {
 
     for (const offer of pendingOffers) {
       offer.status = OFFER_STATUS.EXPIRED;
-      expiredList.push(offer);
+      expiredMap.set(offer.id, offer);
+    }
 
-      await recordOfferAuditLog({
-        offerId: offer.id,
-        actorId: 'SYSTEM',
-        actorRole: 'SYSTEM',
-        fromStatus: OFFER_STATUS.PENDING,
-        toStatus: OFFER_STATUS.EXPIRED,
-        ipAddress: '127.0.0.1',
-        metadata: { reason: 'Offer TTL expired' }
-      });
+    const expiredList = Array.from(expiredMap.values());
+    for (const offer of expiredList) {
+      if (!state.offer_audit_logs.some(l => l.offer_id === offer.id && l.to_status === OFFER_STATUS.EXPIRED)) {
+        await recordOfferAuditLog({
+          offerId: offer.id,
+          actorId: 'SYSTEM',
+          actorRole: 'SYSTEM',
+          fromStatus: OFFER_STATUS.PENDING,
+          toStatus: OFFER_STATUS.EXPIRED,
+          ipAddress: '127.0.0.1',
+          metadata: { reason: 'Offer TTL expired' }
+        });
+      }
 
       state.notifications.push({
         id: `notif-${uuidv4()}`,
@@ -1215,6 +1547,12 @@ class OfferService {
     };
   }
 
+  static async getNegotiationStatusAsync({ listingId, buyerId, sellerId }) {
+    await this._hydrateOffersForContext({ listingId, buyerId, sellerId });
+    await this._resolveListing(listingId);
+    return this.getNegotiationStatus({ listingId, buyerId, sellerId });
+  }
+
   /**
    * Helper to retrieve negotiation by offerId
    */
@@ -1228,34 +1566,47 @@ class OfferService {
     });
   }
 
+  static async getNegotiationByOfferIdAsync(offerId) {
+    const offer = await this.getOfferById(offerId);
+    if (!offer) return null;
+    return this.getNegotiationStatusAsync({
+      listingId: offer.listing_id,
+      buyerId: offer.buyer_id,
+      sellerId: offer.seller_id
+    });
+  }
+
   /**
    * Retrieve offers for a specific user (either role='buyer' or role='seller')
    * Strips all PII (phone, email, NIK) when viewed by seller or other parties
    */
   static async getUserOffers({ userId, role = 'buyer' }) {
     if (role === 'seller') {
+      await this._hydrateOffersForContext({ sellerId: userId });
       // Find all listings belonging to seller
       const sellerListingIds = state.listings.filter(l => l.seller_id === userId).map(l => l.id);
       const rawOffers = state.offers.filter(o => sellerListingIds.includes(o.listing_id) || o.seller_id === userId);
 
-      return rawOffers.map(o => {
-        const buyer = state.users.find(u => u.id === o.buyer_id);
-        const listing = state.listings.find(l => l.id === o.listing_id);
-        const event = state.events.find(e => e.id === o.event_id);
+      const results = [];
+      for (const o of rawOffers) {
+        const buyer = await this._resolveUser(o.buyer_id);
+        const listing = await this._resolveListing(o.listing_id);
+        const event = state.events.find(e => e.id === (o.event_id || (listing && (listing.event_id || listing.canonical_event_id))));
         const ticket = state.tickets.find(t => t.id === o.ticket_id);
+        await this._hydrateOffersForContext({ listingId: o.listing_id, buyerId: o.buyer_id });
         const neg = state.negotiations ? state.negotiations.find(n => n.listing_id === o.listing_id && n.buyer_id === o.buyer_id) : null;
         const seq = o.sequence_number || (neg ? neg.proposal_count : 1);
         const count = neg ? neg.proposal_count : (o.proposal_count || seq);
         const limitReached = count >= NEGOTIATION_MAX_PROPOSALS || (neg && neg.status === NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED);
 
-        return {
+        results.push({
           id: o.id,
           listing_id: o.listing_id,
           ticket_id: o.ticket_id,
           event_id: o.event_id,
           event_title: event ? event.title : 'Event',
           event_date: event ? event.date : '',
-          seat_info: ticket ? ticket.seat_info : '',
+          seat_info: ticket ? ticket.seat_info : (listing ? (listing.seat_info || listing.category || '') : ''),
           original_price: o.original_price,
           offer_amount: o.offer_amount,
           counter_amount: o.counter_amount,
@@ -1267,6 +1618,7 @@ class OfferService {
           decided_at: o.decided_at,
           withdrawn_at: o.withdrawn_at,
           superseded_at: o.superseded_at,
+          accepted_order_id: o.accepted_order_id || null,
           sequence_number: seq,
           proposal_count: count,
           max_proposals: NEGOTIATION_MAX_PROPOSALS,
@@ -1280,30 +1632,34 @@ class OfferService {
             id: o.buyer_id,
             masked_name: buyer ? maskName(buyer.name) : 'Pembeli'
           }
-        };
-      });
+        });
+      }
+      return results;
     }
 
     // role === 'buyer'
+    await this._hydrateOffersForContext({ buyerId: userId });
     const buyerOffers = state.offers.filter(o => o.buyer_id === userId);
-    return buyerOffers.map(o => {
-      const listing = state.listings.find(l => l.id === o.listing_id);
-      const event = state.events.find(e => e.id === o.event_id);
+    const results = [];
+    for (const o of buyerOffers) {
+      const listing = await this._resolveListing(o.listing_id);
+      const event = state.events.find(e => e.id === (o.event_id || (listing && (listing.event_id || listing.canonical_event_id))));
       const ticket = state.tickets.find(t => t.id === o.ticket_id);
-      const order = state.orders.find(ord => ord.listing_id === o.listing_id && ord.buyer_id === userId);
+      const order = state.orders.find(ord => (o.accepted_order_id && ord.id === o.accepted_order_id) || (ord.listing_id === o.listing_id && ord.buyer_id === userId));
+      await this._hydrateOffersForContext({ listingId: o.listing_id, buyerId: o.buyer_id });
       const neg = state.negotiations ? state.negotiations.find(n => n.listing_id === o.listing_id && n.buyer_id === o.buyer_id) : null;
       const seq = o.sequence_number || (neg ? neg.proposal_count : 1);
       const count = neg ? neg.proposal_count : (o.proposal_count || seq);
       const limitReached = count >= NEGOTIATION_MAX_PROPOSALS || (neg && neg.status === NEGOTIATION_STATUS.NEGOTIATION_LIMIT_REACHED);
 
-      return {
+      results.push({
         id: o.id,
         listing_id: o.listing_id,
         ticket_id: o.ticket_id,
         event_id: o.event_id,
         event_title: event ? event.title : 'Event',
         event_date: event ? event.date : '',
-        seat_info: ticket ? ticket.seat_info : '',
+        seat_info: ticket ? ticket.seat_info : (listing ? (listing.seat_info || listing.category || '') : ''),
         original_price: o.original_price,
         offer_amount: o.offer_amount,
         counter_amount: o.counter_amount,
@@ -1315,6 +1671,7 @@ class OfferService {
         decided_at: o.decided_at,
         withdrawn_at: o.withdrawn_at,
         superseded_at: o.superseded_at,
+        accepted_order_id: o.accepted_order_id || (order ? order.id : null),
         sequence_number: seq,
         proposal_count: count,
         max_proposals: NEGOTIATION_MAX_PROPOSALS,
@@ -1332,8 +1689,9 @@ class OfferService {
           status: order.status,
           payment_deadline: order.payment_deadline
         } : null
-      };
-    });
+      });
+    }
+    return results;
   }
 
   /**
@@ -1356,6 +1714,19 @@ class OfferService {
           metadata: meta
         };
       });
+  }
+
+  static async getOfferAuditLogsAsync(offerId) {
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const repoLogs = await getMarketplaceRepository().listOfferAuditLogs(offerId);
+      for (const rl of repoLogs) {
+        if (!state.offer_audit_logs.some(l => l.id === rl.id)) {
+          state.offer_audit_logs.push(rl);
+        }
+      }
+    } catch (_) {}
+    return this.getOfferAuditLogs(offerId);
   }
 }
 

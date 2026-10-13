@@ -38,7 +38,7 @@ function checkNegotiationRateLimit(req, res, next) {
 /**
  * Authentication resolver supporting durable sessions, cookies, headers, and test mode headers
  */
-function resolveUser(req) {
+async function resolveUser(req) {
   if (req.user && req.user.id) {
     if (req.user.status && req.user.status.toUpperCase() === 'SUSPENDED') {
       req.user = null;
@@ -68,9 +68,18 @@ function resolveUser(req) {
   }
 
   if (sessionToken) {
-    const session = SessionStore.findSession(sessionToken) || state.sessions.find(s => s.session_token === sessionToken && new Date(s.expires_at) > new Date() && !s.revoked);
+    const session = (await SessionStore.findSessionAsync(sessionToken)) || state.sessions.find(s => s.session_token === sessionToken && new Date(s.expires_at) > new Date() && !s.revoked);
     if (session) {
-      const user = state.users.find(u => u.id === session.user_id);
+      let user = state.users.find(u => u.id === session.user_id);
+      if (!user) {
+        try {
+          const { getUserRepository } = require('../storage');
+          user = await getUserRepository().getUserById(session.user_id);
+          if (user && !state.users.some(u => u.id === user.id)) {
+            state.users.push(user);
+          }
+        } catch (_) {}
+      }
       if (user && (!user.status || user.status.toUpperCase() !== 'SUSPENDED')) {
         req.user = user;
         req.role = user.role;
@@ -83,7 +92,16 @@ function resolveUser(req) {
   if (process.env.NODE_ENV === 'test') {
     const headerId = req.header ? req.header('x-user-id') : null;
     if (headerId) {
-      const user = state.users.find(u => u.id === headerId);
+      let user = state.users.find(u => u.id === headerId);
+      if (!user) {
+        try {
+          const { getUserRepository } = require('../storage');
+          user = await getUserRepository().getUserById(headerId);
+          if (user && !state.users.some(u => u.id === user.id)) {
+            state.users.push(user);
+          }
+        } catch (_) {}
+      }
       if (user && (!user.status || user.status.toUpperCase() !== 'SUSPENDED')) {
         req.user = user;
         req.role = user.role;
@@ -100,32 +118,39 @@ function resolveUser(req) {
 /**
  * Middleware requiring authentication
  */
-function requireAuth(req, res, next) {
-  const user = resolveUser(req);
-  if (!user) {
+async function requireAuth(req, res, next) {
+  try {
+    const user = await resolveUser(req);
+    if (!user) {
+      return res.status(401).json({
+        error: 'Authentication required. Please log in.',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+    next();
+  } catch (err) {
     return res.status(401).json({
       error: 'Authentication required. Please log in.',
       code: 'AUTH_REQUIRED'
     });
   }
-  next();
 }
 
 /**
  * GET /listings/:listingId/negotiation
  * Retrieve current negotiation state for a listing
  */
-router.get(['/listings/:listingId/negotiation', '/listings/:id/negotiation'], requireAuth, (req, res) => {
+router.get(['/listings/:listingId/negotiation', '/listings/:id/negotiation'], requireAuth, async (req, res) => {
   const listingId = req.params.listingId || req.params.id;
   const currentUserId = req.user.id;
-  const negotiation = OfferService.getNegotiationStatus({
+  const negotiation = await OfferService.getNegotiationStatusAsync({
     listingId,
     buyerId: currentUserId,
     sellerId: currentUserId
   });
 
   if (!negotiation) {
-    const listing = state.listings.find(l => l.id === listingId);
+    const listing = await OfferService._resolveListing(listingId);
     return res.status(200).json({
       negotiation_id: null,
       listing_id: listingId,
@@ -150,9 +175,9 @@ router.get(['/listings/:listingId/negotiation', '/listings/:id/negotiation'], re
  * GET /offers/:offerId/negotiation
  * Retrieve negotiation state for an offer
  */
-router.get('/offers/:offerId/negotiation', requireAuth, (req, res) => {
+router.get('/offers/:offerId/negotiation', requireAuth, async (req, res) => {
   const offerId = req.params.offerId;
-  const negotiation = OfferService.getNegotiationByOfferId(offerId);
+  const negotiation = await OfferService.getNegotiationByOfferIdAsync(offerId);
   if (!negotiation) {
     return res.status(404).json({
       error: 'Negosiasi tidak ditemukan untuk offer ini',
@@ -295,7 +320,7 @@ router.post('/offers/:offerId/counter', requireAuth, checkNegotiationRateLimit, 
   const amount = counter_amount !== undefined ? counter_amount : counterAmount;
 
   try {
-    const offer = state.offers.find(o => o.id === offerId);
+    const offer = await OfferService.getOfferById(offerId);
     if (!offer) {
       return res.status(404).json({ error: 'Offer not found', code: 'OFFER_NOT_FOUND' });
     }
@@ -438,9 +463,9 @@ router.post('/offers/:offerId/withdraw', requireAuth, async (req, res) => {
  * GET /offers/:offerId/audit
  * Immutable audit logs for an offer
  */
-router.get('/offers/:offerId/audit', requireAuth, (req, res) => {
+router.get('/offers/:offerId/audit', requireAuth, async (req, res) => {
   const offerId = req.params.offerId;
-  const logs = OfferService.getOfferAuditLogs(offerId);
+  const logs = await OfferService.getOfferAuditLogsAsync(offerId);
   res.status(200).json({
     offer_id: offerId,
     audit_logs: logs

@@ -40,15 +40,29 @@ class InMemoryUserRepository extends UserRepository {
       { id: 'buyer-xp-1', email: 'buyer-xp-1@test.tikum.app', name: 'Buyer Cross-Process', role: 'BUYER', password_hash: defaultHash }
     ];
 
+    const nowIso = new Date().toISOString();
     for (const u of baseline) {
       if (!this.users.has(u.id)) {
+        const initialMetadata = (u.id === 'seller-1' || u.id === 'seller-xp-1')
+          ? {
+              seller_profile: {
+                user_id: u.id,
+                kyc_status: 'VERIFIED',
+                nik_hash: 'hash-ktp-budi-327101',
+                active_listing_limit: 10,
+                verified_at: nowIso,
+                verified_by: 'SYSTEM',
+                updated_at: nowIso
+              }
+            }
+          : {};
         this.users.set(u.id, {
           ...u,
           display_name: u.name,
           status: 'ACTIVE',
-          metadata: {},
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          metadata: initialMetadata,
+          created_at: nowIso,
+          updated_at: nowIso,
           last_login_at: null
         });
         const roles = new Set([u.role]);
@@ -91,7 +105,7 @@ class InMemoryUserRepository extends UserRepository {
       role,
       status: (userData.status || 'ACTIVE').toUpperCase(),
       password_hash: userData.password_hash || userData.passwordHash || null,
-      metadata: userData.metadata || {},
+      metadata: userData.metadata ? { ...userData.metadata } : {},
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       last_login_at: null
@@ -143,7 +157,14 @@ class InMemoryUserRepository extends UserRepository {
     await this.ensureInitialized();
     const user = this.users.get(id);
     if (!user) return null;
-    Object.assign(user, updates, { updated_at: new Date().toISOString() });
+    const mergedUpdates = { ...updates };
+    if (updates && updates.metadata && typeof updates.metadata === 'object') {
+      mergedUpdates.metadata = {
+        ...(user.metadata || {}),
+        ...updates.metadata
+      };
+    }
+    Object.assign(user, mergedUpdates, { updated_at: new Date().toISOString() });
     return this.getUserById(id);
   }
 
@@ -302,6 +323,27 @@ class InMemoryUserRepository extends UserRepository {
     return count;
   }
 
+  async listActiveSessionsForUser(userId) {
+    await this.ensureInitialized();
+    const now = new Date();
+    const list = [];
+    for (const s of this.sessions.values()) {
+      if (s.user_id === userId && !s.revoked && new Date(s.expires_at) > now) {
+        list.push({
+          id: s.id,
+          user_id: s.user_id,
+          role: s.role,
+          ip_address: s.ip_address || null,
+          user_agent: s.user_agent || null,
+          created_at: s.created_at,
+          last_seen_at: s.last_seen_at,
+          expires_at: s.expires_at
+        });
+      }
+    }
+    return list.sort((a, b) => new Date(b.last_seen_at || 0) - new Date(a.last_seen_at || 0));
+  }
+
   async getUserRoles(userId) {
     await this.ensureInitialized();
     const roles = this.userRoles.get(userId);
@@ -384,6 +426,106 @@ class InMemoryUserRepository extends UserRepository {
     };
     this.auditEvents.push(record);
     return record;
+  }
+
+  async listRecentAuthAuditEvents(limit = 100, userId = null) {
+    await this.ensureInitialized();
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 200);
+    let filtered = this.auditEvents;
+    if (userId) {
+      filtered = filtered.filter(e => e.user_id === userId);
+    }
+    return filtered
+      .slice(-safeLimit)
+      .reverse()
+      .map(e => ({
+        id: e.id,
+        user_id: e.user_id,
+        event_type: e.event_type,
+        success: e.success,
+        ip_address: e.ip_address,
+        user_agent: e.user_agent,
+        created_at: e.created_at
+      }));
+  }
+
+  async getSellerProfile(userId) {
+    await this.ensureInitialized();
+    if (!userId) return null;
+    const user = this.users.get(userId);
+    if (!user) return null;
+    const sp = user.metadata && user.metadata.seller_profile ? user.metadata.seller_profile : null;
+    if (!sp) return null;
+    return {
+      user_id: user.id,
+      kyc_status: sp.kyc_status || 'UNVERIFIED',
+      active_listing_limit: typeof sp.active_listing_limit === 'number' ? sp.active_listing_limit : 10,
+      nik_hash: sp.nik_hash || null,
+      display_name: sp.display_name || user.display_name || user.name || null,
+      payout_bank: sp.payout_bank || null,
+      payout_account_masked: sp.payout_account_masked || null,
+      requested_at: sp.requested_at || null,
+      verified_at: sp.verified_at || null,
+      verified_by: sp.verified_by || null,
+      rejection_reason: sp.rejection_reason || null,
+      suspension_reason: sp.suspension_reason || null,
+      updated_at: sp.updated_at || user.updated_at || null
+    };
+  }
+
+  async upsertSellerProfile(userId, profileUpdates = {}) {
+    await this.ensureInitialized();
+    if (!userId) return null;
+    const user = this.users.get(userId);
+    if (!user) return null;
+
+    const existingMeta = user.metadata && typeof user.metadata === 'object' ? user.metadata : {};
+    const existingSp = existingMeta.seller_profile && typeof existingMeta.seller_profile === 'object'
+      ? existingMeta.seller_profile
+      : {};
+
+    const nowIso = new Date().toISOString();
+    const nextSp = {
+      ...existingSp,
+      user_id: userId,
+      kyc_status: profileUpdates.kyc_status || existingSp.kyc_status || 'UNVERIFIED',
+      active_listing_limit: typeof profileUpdates.active_listing_limit === 'number'
+        ? profileUpdates.active_listing_limit
+        : (typeof existingSp.active_listing_limit === 'number' ? existingSp.active_listing_limit : 10),
+      ...profileUpdates,
+      updated_at: nowIso
+    };
+
+    user.metadata = {
+      ...existingMeta,
+      seller_profile: nextSp
+    };
+    user.updated_at = nowIso;
+
+    return this.getSellerProfile(userId);
+  }
+
+  async listSellerProfiles(filter = {}) {
+    await this.ensureInitialized();
+    const results = [];
+    for (const user of this.users.values()) {
+      const sp = await this.getSellerProfile(user.id);
+      const isSellerRole = (user.role || '').toUpperCase() === 'SELLER';
+      if (sp || isSellerRole) {
+        if (filter.kyc_status && (!sp || sp.kyc_status !== filter.kyc_status)) continue;
+        results.push({
+          user_id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          user_status: user.status,
+          kyc_status: sp ? sp.kyc_status : 'UNVERIFIED',
+          active_listing_limit: sp ? sp.active_listing_limit : 10,
+          seller_profile: sp
+        });
+      }
+    }
+    return results;
   }
 
   reset() {

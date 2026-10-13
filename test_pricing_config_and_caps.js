@@ -11,6 +11,7 @@
  * 7. End-to-end HTTP API validation on POST /api/mvp/seller/listing
  */
 
+process.env.NODE_ENV = 'test';
 const assert = require('assert');
 const http = require('http');
 const app = require('./src/server');
@@ -265,7 +266,7 @@ async function runTestSuite() {
         faceValue: 500000,
         price: 450000, // Below floor
         rawBarcode: `BC-TEST-${Date.now()}`
-      });
+      }, { 'x-user-id': 'seller-1' });
 
       assert.strictEqual(res.status, 400);
       assert.strictEqual(res.data.code, 'PRICE_BELOW_MINIMUM');
@@ -280,7 +281,7 @@ async function runTestSuite() {
         faceValue: 1000000,
         price: 1500000, // 50% markup > 30% cap
         rawBarcode: `BC-TEST-CAP-${Date.now()}`
-      });
+      }, { 'x-user-id': 'seller-1' });
 
       assert.strictEqual(res.status, 400);
       assert.strictEqual(res.data.code, 'PRICE_EXCEEDS_MARKUP_CAP');
@@ -295,7 +296,7 @@ async function runTestSuite() {
         faceValue: 1000000,
         price: 1200000, // 20% markup <= 30% cap
         rawBarcode: `BC-TEST-VALID-${Date.now()}`
-      });
+      }, { 'x-user-id': 'seller-1' });
 
       assert.strictEqual(res.status, 201);
       assert.strictEqual(res.data.success, true);

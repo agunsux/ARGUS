@@ -236,6 +236,19 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     return res.rows;
   }
 
+  async listAllTickets(limit = 200) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listAllTickets(limit);
+    }
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 200, 1), 1000);
+    const res = await this.query('SELECT * FROM marketplace_tickets ORDER BY created_at DESC LIMIT $1', [safeLimit]);
+    return res.rows;
+  }
+
   // Listings
   async createListing(listingData) {
     await this.ensureInitialized();
@@ -320,6 +333,34 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       return res.rows;
     }
     const res = await this.query("SELECT * FROM marketplace_listings WHERE status = 'ACTIVE' ORDER BY created_at DESC");
+    return res.rows;
+  }
+
+  async listListingsBySeller(sellerId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listListingsBySeller(sellerId);
+    }
+    const res = await this.query(
+      'SELECT * FROM marketplace_listings WHERE seller_id = $1 ORDER BY created_at DESC',
+      [sellerId]
+    );
+    return res.rows;
+  }
+
+  async listAllListings(limit = 200) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listAllListings(limit);
+    }
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 200, 1), 1000);
+    const res = await this.query('SELECT * FROM marketplace_listings ORDER BY created_at DESC LIMIT $1', [safeLimit]);
     return res.rows;
   }
 
@@ -671,6 +712,640 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       metadata.notes || metadata.failure_reason || null
     ]);
     return res.rows[0] || null;
+  }
+
+  // --- OFFERS & NEGOTIATIONS (DURABLE POSTGRESQL PERSISTENCE) ---
+
+  _normalizeOfferRow(row) {
+    if (!row) return null;
+    const seq = Number(row.sequence_number || row.proposal_count || 1);
+    const count = Number(row.proposal_count || seq);
+    const maxProposals = Number(row.max_proposals || 5);
+    const limitReached = count >= maxProposals || row.negotiation_status === 'NEGOTIATION_LIMIT_REACHED';
+    return {
+      id: row.id,
+      listing_id: row.listing_id,
+      ticket_id: row.ticket_id,
+      event_id: row.event_id,
+      buyer_id: row.buyer_id,
+      seller_id: row.seller_id,
+      original_price: Number(row.original_price),
+      offer_amount: Number(row.offer_amount),
+      counter_amount: row.counter_amount !== null && row.counter_amount !== undefined ? Number(row.counter_amount) : null,
+      countered_at: row.countered_at ? new Date(row.countered_at).toISOString() : null,
+      status: row.status,
+      decline_reason: row.decline_reason || null,
+      accepted_order_id: row.accepted_order_id || null,
+      sequence_number: seq,
+      proposal_count: count,
+      max_proposals: maxProposals,
+      negotiation_id: row.negotiation_id || null,
+      negotiation_status: row.negotiation_status || 'ACTIVE',
+      ui_counter_text: `Tawaran ${seq}/${maxProposals}`,
+      ui_limit_text: limitReached
+        ? `Batas tawar-menawar tercapai (${maxProposals}/${maxProposals}). Negosiasi untuk listing ini sudah berakhir.`
+        : null,
+      created_at: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
+      expires_at: row.expires_at ? new Date(row.expires_at).toISOString() : null,
+      decided_at: row.decided_at ? new Date(row.decided_at).toISOString() : null,
+      withdrawn_at: row.withdrawn_at ? new Date(row.withdrawn_at).toISOString() : null,
+      superseded_at: row.superseded_at ? new Date(row.superseded_at).toISOString() : null,
+      updated_at: row.updated_at ? new Date(row.updated_at).toISOString() : null,
+      metadata: row.metadata || {}
+    };
+  }
+
+  _normalizeNegotiationRow(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      listing_id: row.listing_id,
+      ticket_id: row.ticket_id,
+      event_id: row.event_id,
+      buyer_id: row.buyer_id,
+      seller_id: row.seller_id,
+      listing_price: Number(row.listing_price),
+      proposal_count: Number(row.proposal_count || 0),
+      max_proposals: Number(row.max_proposals || 5),
+      status: row.status,
+      current_amount: row.current_amount !== null && row.current_amount !== undefined ? Number(row.current_amount) : null,
+      current_turn: row.current_turn || null,
+      active_offer_id: row.active_offer_id || null,
+      proposals: Array.isArray(row.proposals) ? row.proposals : [],
+      created_at: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
+      updated_at: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()
+    };
+  }
+
+  async createOfferWithNegotiation(offerRecord, negotiationRecord, auditEntry = null) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createOfferWithNegotiation(offerRecord, negotiationRecord, auditEntry);
+    }
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Lock the listing row if present in DB to serialize concurrent offers on same listing
+      await client.query(
+        'SELECT id, status FROM marketplace_listings WHERE id = $1 FOR UPDATE',
+        [offerRecord.listing_id]
+      );
+
+      // 2. Check if an ACCEPTED offer already exists on this listing
+      const acceptedRes = await client.query(
+        "SELECT id FROM marketplace_offers WHERE listing_id = $1 AND status = 'ACCEPTED' LIMIT 1",
+        [offerRecord.listing_id]
+      );
+      if (acceptedRes.rows.length > 0) {
+        const err = new Error('Negosiasi telah disepakati (ACCEPTED).');
+        err.code = 'NEGOTIATION_ALREADY_ACCEPTED';
+        err.statusCode = 409;
+        throw err;
+      }
+
+      // 3. Check if an active PENDING offer already exists for (listing_id, buyer_id)
+      const dupRes = await client.query(
+        "SELECT id FROM marketplace_offers WHERE listing_id = $1 AND buyer_id = $2 AND status = 'PENDING' LIMIT 1",
+        [offerRecord.listing_id, offerRecord.buyer_id]
+      );
+      if (dupRes.rows.length > 0) {
+        const err = new Error('You already have an active pending offer on this listing');
+        err.code = 'ACTIVE_OFFER_EXISTS';
+        err.statusCode = 409;
+        throw err;
+      }
+
+      // 4. Upsert negotiation record
+      let storedNeg = null;
+      if (negotiationRecord && negotiationRecord.id) {
+        const negSql = `
+          INSERT INTO marketplace_negotiations (
+            id, listing_id, ticket_id, event_id, buyer_id, seller_id,
+            listing_price, proposal_count, max_proposals, status,
+            current_amount, current_turn, active_offer_id, proposals,
+            created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15, NOW())
+          ON CONFLICT (id) DO UPDATE SET
+            proposal_count = EXCLUDED.proposal_count,
+            status = EXCLUDED.status,
+            current_amount = EXCLUDED.current_amount,
+            current_turn = EXCLUDED.current_turn,
+            active_offer_id = EXCLUDED.active_offer_id,
+            proposals = EXCLUDED.proposals,
+            updated_at = NOW()
+          RETURNING *;
+        `;
+        const negRes = await client.query(negSql, [
+          negotiationRecord.id,
+          negotiationRecord.listing_id || offerRecord.listing_id,
+          negotiationRecord.ticket_id || offerRecord.ticket_id,
+          negotiationRecord.event_id || offerRecord.event_id,
+          negotiationRecord.buyer_id || offerRecord.buyer_id,
+          negotiationRecord.seller_id || offerRecord.seller_id,
+          negotiationRecord.listing_price || offerRecord.original_price,
+          negotiationRecord.proposal_count || 1,
+          negotiationRecord.max_proposals || 5,
+          negotiationRecord.status || 'ACTIVE',
+          negotiationRecord.current_amount || offerRecord.offer_amount,
+          negotiationRecord.current_turn || 'SELLER',
+          negotiationRecord.active_offer_id || offerRecord.id,
+          JSON.stringify(negotiationRecord.proposals || []),
+          negotiationRecord.created_at || new Date().toISOString()
+        ]);
+        storedNeg = this._normalizeNegotiationRow(negRes.rows[0]);
+      }
+
+      // 5. Insert offer record
+      const offerSql = `
+        INSERT INTO marketplace_offers (
+          id, listing_id, ticket_id, event_id, buyer_id, seller_id,
+          original_price, offer_amount, counter_amount, status,
+          decline_reason, sequence_number, proposal_count, max_proposals,
+          negotiation_id, negotiation_status, expires_at, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW())
+        RETURNING *;
+      `;
+      const offerRes = await client.query(offerSql, [
+        offerRecord.id,
+        offerRecord.listing_id,
+        offerRecord.ticket_id,
+        offerRecord.event_id,
+        offerRecord.buyer_id,
+        offerRecord.seller_id,
+        offerRecord.original_price,
+        offerRecord.offer_amount,
+        offerRecord.counter_amount || null,
+        offerRecord.status || 'PENDING',
+        offerRecord.decline_reason || null,
+        offerRecord.sequence_number || 1,
+        offerRecord.proposal_count || 1,
+        offerRecord.max_proposals || 5,
+        offerRecord.negotiation_id || (storedNeg ? storedNeg.id : null),
+        offerRecord.negotiation_status || (storedNeg ? storedNeg.status : 'ACTIVE'),
+        offerRecord.expires_at,
+        offerRecord.created_at || new Date().toISOString()
+      ]);
+      const storedOffer = this._normalizeOfferRow(offerRes.rows[0]);
+
+      // 6. Insert audit log if provided
+      if (auditEntry) {
+        const auditId = auditEntry.id || `oal-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        await client.query(
+          `INSERT INTO marketplace_offer_audit_logs (
+            id, offer_id, actor_id, actor_role, from_status, to_status, ip_address, metadata, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, NOW())`,
+          [
+            auditId,
+            storedOffer.id,
+            auditEntry.actorId || auditEntry.actor_id,
+            auditEntry.actorRole || auditEntry.actor_role,
+            auditEntry.fromStatus !== undefined ? auditEntry.fromStatus : (auditEntry.from_status || null),
+            auditEntry.toStatus || auditEntry.to_status,
+            auditEntry.ipAddress || auditEntry.ip_address || '127.0.0.1',
+            JSON.stringify(auditEntry.metadata || {})
+          ]
+        );
+      }
+
+      await client.query('COMMIT');
+      return { offer: storedOffer, negotiation: storedNeg };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      if (err.code === '23505') {
+        const conflictErr = new Error('You already have an active pending offer on this listing');
+        conflictErr.code = 'ACTIVE_OFFER_EXISTS';
+        conflictErr.statusCode = 409;
+        throw conflictErr;
+      }
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getOfferById(offerId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getOfferById(offerId);
+    }
+    const res = await this.query('SELECT * FROM marketplace_offers WHERE id = $1', [offerId]);
+    return res && res.rows[0] ? this._normalizeOfferRow(res.rows[0]) : null;
+  }
+
+  async listOffersByUser(userId, role = null) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listOffersByUser(userId, role);
+    }
+    const normRole = role ? String(role).toUpperCase() : null;
+    let sql = 'SELECT * FROM marketplace_offers WHERE buyer_id = $1 OR seller_id = $1 ORDER BY created_at DESC';
+    if (normRole === 'SELLER') {
+      sql = 'SELECT * FROM marketplace_offers WHERE seller_id = $1 ORDER BY created_at DESC';
+    } else if (normRole === 'BUYER') {
+      sql = 'SELECT * FROM marketplace_offers WHERE buyer_id = $1 ORDER BY created_at DESC';
+    }
+    const res = await this.query(sql, [userId]);
+    return (res ? res.rows : []).map(r => this._normalizeOfferRow(r));
+  }
+
+  async listOffersByListing(listingId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listOffersByListing(listingId);
+    }
+    const res = await this.query(
+      'SELECT * FROM marketplace_offers WHERE listing_id = $1 ORDER BY created_at DESC',
+      [listingId]
+    );
+    return (res ? res.rows : []).map(r => this._normalizeOfferRow(r));
+  }
+
+  async listAllOffers(limit = 200) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listAllOffers(limit);
+    }
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 200, 1), 1000);
+    const res = await this.query(
+      'SELECT * FROM marketplace_offers ORDER BY created_at DESC LIMIT $1',
+      [safeLimit]
+    );
+    return (res ? res.rows : []).map(r => this._normalizeOfferRow(r));
+  }
+
+  async transitionOfferStatus(offerId, expectedStatuses, updates = {}, negotiationUpdates = null, auditEntry = null) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.transitionOfferStatus(offerId, expectedStatuses, updates, negotiationUpdates, auditEntry);
+    }
+
+    const allowed = Array.isArray(expectedStatuses) ? expectedStatuses : [expectedStatuses];
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const curRes = await client.query(
+        'SELECT * FROM marketplace_offers WHERE id = $1 FOR UPDATE',
+        [offerId]
+      );
+      const current = curRes.rows[0];
+      if (!current) {
+        await client.query('ROLLBACK');
+        return { updated: false, currentOffer: null, supersededOffers: [] };
+      }
+      if (!allowed.includes(current.status)) {
+        await client.query('ROLLBACK');
+        return { updated: false, currentOffer: this._normalizeOfferRow(current), supersededOffers: [] };
+      }
+
+      const { supersedeOtherOffersForListing, ...fieldUpdates } = updates;
+      const setClauses = ['updated_at = NOW()'];
+      const values = [offerId, allowed];
+      let idx = 3;
+
+      const allowedColumns = [
+        'status', 'offer_amount', 'counter_amount', 'countered_at',
+        'decline_reason', 'accepted_order_id', 'sequence_number',
+        'proposal_count', 'negotiation_id', 'negotiation_status',
+        'decided_at', 'withdrawn_at', 'superseded_at'
+      ];
+      for (const col of allowedColumns) {
+        if (fieldUpdates[col] !== undefined) {
+          setClauses.push(`${col} = $${idx++}`);
+          values.push(fieldUpdates[col]);
+        }
+      }
+
+      const updSql = `
+        UPDATE marketplace_offers
+        SET ${setClauses.join(', ')}
+        WHERE id = $1 AND status = ANY($2::varchar[])
+        RETURNING *;
+      `;
+      const updRes = await client.query(updSql, values);
+      if (updRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return { updated: false, currentOffer: this._normalizeOfferRow(current), supersededOffers: [] };
+      }
+      const updatedOffer = this._normalizeOfferRow(updRes.rows[0]);
+
+      const supersededOffers = [];
+      if (supersedeOtherOffersForListing) {
+        const supRes = await client.query(
+          `UPDATE marketplace_offers
+           SET status = 'SUPERSEDED', superseded_at = NOW(), updated_at = NOW()
+           WHERE listing_id = $1 AND id <> $2 AND status IN ('PENDING', 'COUNTERED')
+           RETURNING *;`,
+          [current.listing_id, offerId]
+        );
+        for (const supRow of supRes.rows) {
+          const normSup = this._normalizeOfferRow(supRow);
+          supersededOffers.push(normSup);
+          const supAuditId = `oal-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+          await client.query(
+            `INSERT INTO marketplace_offer_audit_logs (
+              id, offer_id, actor_id, actor_role, from_status, to_status, ip_address, metadata, created_at
+            ) VALUES ($1, $2, 'SYSTEM', 'SYSTEM', 'PENDING', 'SUPERSEDED', $3, $4::jsonb, NOW())`,
+            [
+              supAuditId,
+              supRow.id,
+              (auditEntry && auditEntry.ipAddress) || '127.0.0.1',
+              JSON.stringify({ winning_offer_id: offerId })
+            ]
+          );
+        }
+      }
+
+      if (negotiationUpdates && negotiationUpdates.id) {
+        await client.query(
+          `INSERT INTO marketplace_negotiations (
+            id, listing_id, ticket_id, event_id, buyer_id, seller_id,
+            listing_price, proposal_count, max_proposals, status,
+            current_amount, current_turn, active_offer_id, proposals,
+            created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, NOW(), NOW())
+          ON CONFLICT (id) DO UPDATE SET
+            proposal_count = EXCLUDED.proposal_count,
+            status = EXCLUDED.status,
+            current_amount = EXCLUDED.current_amount,
+            current_turn = EXCLUDED.current_turn,
+            active_offer_id = EXCLUDED.active_offer_id,
+            proposals = EXCLUDED.proposals,
+            updated_at = NOW();`,
+          [
+            negotiationUpdates.id,
+            negotiationUpdates.listing_id || current.listing_id,
+            negotiationUpdates.ticket_id || current.ticket_id,
+            negotiationUpdates.event_id || current.event_id,
+            negotiationUpdates.buyer_id || current.buyer_id,
+            negotiationUpdates.seller_id || current.seller_id,
+            negotiationUpdates.listing_price || current.original_price,
+            negotiationUpdates.proposal_count || updatedOffer.proposal_count,
+            negotiationUpdates.max_proposals || 5,
+            negotiationUpdates.status || updatedOffer.negotiation_status,
+            negotiationUpdates.current_amount !== undefined ? negotiationUpdates.current_amount : updatedOffer.offer_amount,
+            negotiationUpdates.current_turn !== undefined ? negotiationUpdates.current_turn : null,
+            negotiationUpdates.active_offer_id || offerId,
+            JSON.stringify(negotiationUpdates.proposals || [])
+          ]
+        );
+      }
+
+      if (auditEntry) {
+        const auditId = auditEntry.id || `oal-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        await client.query(
+          `INSERT INTO marketplace_offer_audit_logs (
+            id, offer_id, actor_id, actor_role, from_status, to_status, ip_address, metadata, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, NOW())`,
+          [
+            auditId,
+            offerId,
+            auditEntry.actorId || auditEntry.actor_id,
+            auditEntry.actorRole || auditEntry.actor_role,
+            auditEntry.fromStatus !== undefined ? auditEntry.fromStatus : (auditEntry.from_status || null),
+            auditEntry.toStatus || auditEntry.to_status,
+            auditEntry.ipAddress || auditEntry.ip_address || '127.0.0.1',
+            JSON.stringify(auditEntry.metadata || {})
+          ]
+        );
+      }
+
+      await client.query('COMMIT');
+      return { updated: true, offer: updatedOffer, supersededOffers };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async supersedeOffersForListing(listingId, excludeOfferId = null, reason = 'DIRECT_BUY_SUPERSEDED', actorId = 'SYSTEM') {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.supersedeOffersForListing(listingId, excludeOfferId, reason, actorId);
+    }
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const sql = excludeOfferId
+        ? `UPDATE marketplace_offers
+           SET status = 'SUPERSEDED', superseded_at = NOW(), updated_at = NOW()
+           WHERE listing_id = $1 AND id <> $2 AND status IN ('PENDING', 'COUNTERED')
+           RETURNING *;`
+        : `UPDATE marketplace_offers
+           SET status = 'SUPERSEDED', superseded_at = NOW(), updated_at = NOW()
+           WHERE listing_id = $1 AND status IN ('PENDING', 'COUNTERED')
+           RETURNING *;`;
+      const params = excludeOfferId ? [listingId, excludeOfferId] : [listingId];
+      const res = await client.query(sql, params);
+      const superseded = [];
+      for (const row of res.rows) {
+        superseded.push(this._normalizeOfferRow(row));
+        const auditId = `oal-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        await client.query(
+          `INSERT INTO marketplace_offer_audit_logs (
+            id, offer_id, actor_id, actor_role, from_status, to_status, ip_address, metadata, created_at
+          ) VALUES ($1, $2, $3, 'SYSTEM', 'PENDING', 'SUPERSEDED', '127.0.0.1', $4::jsonb, NOW())`,
+          [auditId, row.id, actorId, JSON.stringify({ reason, listing_id: listingId })]
+        );
+      }
+      await client.query('COMMIT');
+      return superseded;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async expirePendingOffers(nowIso = null) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.expirePendingOffers(nowIso);
+    }
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const cutoff = nowIso || new Date().toISOString();
+      const res = await client.query(
+        `UPDATE marketplace_offers
+         SET status = 'EXPIRED', updated_at = NOW()
+         WHERE status = 'PENDING' AND expires_at <= $1
+         RETURNING *;`,
+        [cutoff]
+      );
+      const expired = [];
+      for (const row of res.rows) {
+        expired.push(this._normalizeOfferRow(row));
+        const auditId = `oal-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        await client.query(
+          `INSERT INTO marketplace_offer_audit_logs (
+            id, offer_id, actor_id, actor_role, from_status, to_status, ip_address, metadata, created_at
+          ) VALUES ($1, $2, 'SYSTEM', 'SYSTEM', 'PENDING', 'EXPIRED', '127.0.0.1', $3::jsonb, NOW())`,
+          [auditId, row.id, JSON.stringify({ reason: 'Offer TTL expired' })]
+        );
+      }
+      await client.query('COMMIT');
+      return expired;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getNegotiationById(negotiationId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getNegotiationById(negotiationId);
+    }
+    const res = await this.query('SELECT * FROM marketplace_negotiations WHERE id = $1', [negotiationId]);
+    return res && res.rows[0] ? this._normalizeNegotiationRow(res.rows[0]) : null;
+  }
+
+  async getNegotiationByBuyerAndListing(buyerId, listingId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getNegotiationByBuyerAndListing(buyerId, listingId);
+    }
+    const sql = buyerId
+      ? 'SELECT * FROM marketplace_negotiations WHERE listing_id = $1 AND buyer_id = $2 ORDER BY updated_at DESC LIMIT 1'
+      : 'SELECT * FROM marketplace_negotiations WHERE listing_id = $1 ORDER BY updated_at DESC LIMIT 1';
+    const params = buyerId ? [listingId, buyerId] : [listingId];
+    const res = await this.query(sql, params);
+    return res && res.rows[0] ? this._normalizeNegotiationRow(res.rows[0]) : null;
+  }
+
+  async upsertNegotiation(negotiationData) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.upsertNegotiation(negotiationData);
+    }
+    const sql = `
+      INSERT INTO marketplace_negotiations (
+        id, listing_id, ticket_id, event_id, buyer_id, seller_id,
+        listing_price, proposal_count, max_proposals, status,
+        current_amount, current_turn, active_offer_id, proposals,
+        created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, NOW(), NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        proposal_count = EXCLUDED.proposal_count,
+        status = EXCLUDED.status,
+        current_amount = EXCLUDED.current_amount,
+        current_turn = EXCLUDED.current_turn,
+        active_offer_id = EXCLUDED.active_offer_id,
+        proposals = EXCLUDED.proposals,
+        updated_at = NOW()
+      RETURNING *;
+    `;
+    const res = await this.query(sql, [
+      negotiationData.id,
+      negotiationData.listing_id,
+      negotiationData.ticket_id,
+      negotiationData.event_id,
+      negotiationData.buyer_id,
+      negotiationData.seller_id,
+      negotiationData.listing_price || 0,
+      negotiationData.proposal_count || 0,
+      negotiationData.max_proposals || 5,
+      negotiationData.status || 'ACTIVE',
+      negotiationData.current_amount || null,
+      negotiationData.current_turn || null,
+      negotiationData.active_offer_id || null,
+      JSON.stringify(negotiationData.proposals || [])
+    ]);
+    return res && res.rows[0] ? this._normalizeNegotiationRow(res.rows[0]) : null;
+  }
+
+  async recordOfferAuditLog(auditData) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.recordOfferAuditLog(auditData);
+    }
+    const id = auditData.id || `oal-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const sql = `
+      INSERT INTO marketplace_offer_audit_logs (
+        id, offer_id, actor_id, actor_role, from_status, to_status, ip_address, metadata, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, NOW())
+      RETURNING *;
+    `;
+    const res = await this.query(sql, [
+      id,
+      auditData.offerId || auditData.offer_id,
+      auditData.actorId || auditData.actor_id,
+      auditData.actorRole || auditData.actor_role,
+      auditData.fromStatus !== undefined ? auditData.fromStatus : (auditData.from_status || null),
+      auditData.toStatus || auditData.to_status,
+      auditData.ipAddress || auditData.ip_address || '127.0.0.1',
+      JSON.stringify(auditData.metadata || {})
+    ]);
+    return res && res.rows[0] ? res.rows[0] : null;
+  }
+
+  async listOfferAuditLogs(offerId = null, limit = 200) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listOfferAuditLogs(offerId, limit);
+    }
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 200, 1), 1000);
+    if (offerId) {
+      const res = await this.query(
+        'SELECT * FROM marketplace_offer_audit_logs WHERE offer_id = $1 ORDER BY created_at ASC LIMIT $2',
+        [offerId, safeLimit]
+      );
+      return res ? res.rows : [];
+    }
+    const res = await this.query(
+      'SELECT * FROM marketplace_offer_audit_logs ORDER BY created_at DESC LIMIT $1',
+      [safeLimit]
+    );
+    return res ? res.rows : [];
   }
 }
 

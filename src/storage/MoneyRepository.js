@@ -16,6 +16,9 @@ class MoneyRepository {
   // Orders
   async createOrder(orderData) { throw new Error('Not implemented'); }
   async getOrderById(orderId) { throw new Error('Not implemented'); }
+  async listOrdersByBuyerId(buyerId) { throw new Error('Not implemented'); }
+  async listOrdersBySellerId(sellerId) { throw new Error('Not implemented'); }
+  async listAllOrders(limit = 200) { throw new Error('Not implemented'); }
   async updateOrderStatus(orderId, status, metadata = {}) { throw new Error('Not implemented'); }
 
   // Canonical Payments & Attempts
@@ -33,6 +36,9 @@ class MoneyRepository {
   // Escrows (Atomic Release & Hold)
   async createEscrow(escrowData) { throw new Error('Not implemented'); }
   async getEscrowByOrderId(orderId) { throw new Error('Not implemented'); }
+  async listEscrowsByBuyerId(buyerId) { throw new Error('Not implemented'); }
+  async listEscrowsBySellerId(sellerId) { throw new Error('Not implemented'); }
+  async listAllEscrows(limit = 200) { throw new Error('Not implemented'); }
   async updateEscrowStatus(orderId, status, metadata = {}) { throw new Error('Not implemented'); }
   async releaseEscrow(orderId, actorId) { throw new Error('Not implemented'); }
   async refundEscrow(orderId, actorId, reason) { throw new Error('Not implemented'); }
@@ -41,10 +47,15 @@ class MoneyRepository {
   // Settlements
   async createSettlement(settlementData) { throw new Error('Not implemented'); }
   async getSettlementByOrderId(orderId) { throw new Error('Not implemented'); }
+  async listSettlementsBySellerId(sellerId) { throw new Error('Not implemented'); }
+  async listAllSettlements(limit = 200) { throw new Error('Not implemented'); }
 
   // Disputes
   async createDispute(disputeData) { throw new Error('Not implemented'); }
   async getDisputeByOrderId(orderId) { throw new Error('Not implemented'); }
+  async listDisputesByBuyerId(buyerId) { throw new Error('Not implemented'); }
+  async listDisputesBySellerId(sellerId) { throw new Error('Not implemented'); }
+  async listAllDisputes(limit = 200) { throw new Error('Not implemented'); }
   async resolveDispute(disputeId, outcome, notes) { throw new Error('Not implemented'); }
 
   // Chargebacks

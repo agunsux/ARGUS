@@ -124,7 +124,21 @@ class EscrowService {
   }) {
     const { TransactionQuoteService } = require('../pricing/TransactionQuoteService');
 
-    const buyer = state.users.find(u => u.id === buyerId);
+    let buyer = state.users.find(u => u.id === buyerId);
+    if (!buyer) {
+      try {
+        const { getUserRepository } = require('../storage');
+        const userRepo = getUserRepository();
+        const dbBuyer = await userRepo.getUserById(buyerId);
+        if (dbBuyer) {
+          if (!state.users) state.users = [];
+          state.users.push(dbBuyer);
+          buyer = dbBuyer;
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
+      }
+    }
     if (!buyer) {
       const err = new Error('Buyer not found');
       err.code = 'BUYER_NOT_FOUND';
@@ -390,8 +404,17 @@ class EscrowService {
     });
 
     // If listing bought at full price (not negotiated offer), auto-supersede any pending offers
+    if (!customAmount) {
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        await marketplaceRepo.supersedeOffersForListing(listingId, null, 'Listing purchased at full price', 'SYSTEM');
+      } catch (supErr) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw supErr;
+      }
+    }
     if (!customAmount && state.offers && state.offers.length > 0) {
-      const competingOffers = state.offers.filter(o => o.listing_id === listingId && o.status === 'PENDING');
+      const competingOffers = state.offers.filter(o => o.listing_id === listingId && (o.status === 'PENDING' || o.status === 'COUNTERED'));
       for (const comp of competingOffers) {
         comp.status = 'SUPERSEDED';
         comp.superseded_at = new Date().toISOString();

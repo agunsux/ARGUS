@@ -265,6 +265,31 @@ class PostgresMoneyRepository extends MoneyRepository {
     return res.rows;
   }
 
+  async listOrdersBySellerId(sellerId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listOrdersBySellerId(sellerId);
+    }
+    const res = await this.query('SELECT * FROM financial_orders WHERE seller_id = $1 ORDER BY created_at DESC', [sellerId]);
+    return res.rows;
+  }
+
+  async listAllOrders(limit = 200) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listAllOrders(limit);
+    }
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 200, 1), 1000);
+    const res = await this.query('SELECT * FROM financial_orders ORDER BY created_at DESC LIMIT $1', [safeLimit]);
+    return res.rows;
+  }
+
   async updateOrderStatus(orderId, status, metadata = {}) {
     await this.ensureInitialized();
     if (this.degraded) {
@@ -541,6 +566,43 @@ class PostgresMoneyRepository extends MoneyRepository {
     return res.rows[0] || null;
   }
 
+  async listEscrowsByBuyerId(buyerId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listEscrowsByBuyerId(buyerId);
+    }
+    const res = await this.query('SELECT * FROM financial_escrows WHERE buyer_id = $1 ORDER BY created_at DESC', [buyerId]);
+    return res.rows;
+  }
+
+  async listEscrowsBySellerId(sellerId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listEscrowsBySellerId(sellerId);
+    }
+    const res = await this.query('SELECT * FROM financial_escrows WHERE seller_id = $1 ORDER BY created_at DESC', [sellerId]);
+    return res.rows;
+  }
+
+  async listAllEscrows(limit = 200) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listAllEscrows(limit);
+    }
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 200, 1), 1000);
+    const res = await this.query('SELECT * FROM financial_escrows ORDER BY created_at DESC LIMIT $1', [safeLimit]);
+    return res.rows;
+  }
+
   async updateEscrowStatus(orderId, status, metadata = {}) {
     await this.ensureInitialized();
     if (this.degraded) {
@@ -732,6 +794,31 @@ class PostgresMoneyRepository extends MoneyRepository {
     return res.rows[0] || null;
   }
 
+  async listSettlementsBySellerId(sellerId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listSettlementsBySellerId(sellerId);
+    }
+    const res = await this.query('SELECT * FROM financial_settlements WHERE seller_id = $1 ORDER BY created_at DESC', [sellerId]);
+    return res.rows;
+  }
+
+  async listAllSettlements(limit = 200) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listAllSettlements(limit);
+    }
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 200, 1), 1000);
+    const res = await this.query('SELECT * FROM financial_settlements ORDER BY created_at DESC LIMIT $1', [safeLimit]);
+    return res.rows;
+  }
+
   // Disputes
   async createDispute(disputeData) {
     await this.ensureInitialized();
@@ -781,6 +868,43 @@ class PostgresMoneyRepository extends MoneyRepository {
     }
     const res = await this.query('SELECT * FROM financial_disputes WHERE order_id = $1', [orderId]);
     return res.rows[0] || null;
+  }
+
+  async listDisputesByBuyerId(buyerId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listDisputesByBuyerId(buyerId);
+    }
+    const res = await this.query('SELECT * FROM financial_disputes WHERE buyer_id = $1 ORDER BY created_at DESC', [buyerId]);
+    return res.rows;
+  }
+
+  async listDisputesBySellerId(sellerId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listDisputesBySellerId(sellerId);
+    }
+    const res = await this.query('SELECT * FROM financial_disputes WHERE seller_id = $1 ORDER BY created_at DESC', [sellerId]);
+    return res.rows;
+  }
+
+  async listAllDisputes(limit = 200) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listAllDisputes(limit);
+    }
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 200, 1), 1000);
+    const res = await this.query('SELECT * FROM financial_disputes ORDER BY created_at DESC LIMIT $1', [safeLimit]);
+    return res.rows;
   }
 
   async resolveDispute(disputeId, outcome, notes) {

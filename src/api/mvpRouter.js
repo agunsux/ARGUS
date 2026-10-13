@@ -1058,16 +1058,74 @@ router.get('/orders/:id', async (req, res) => {
  */
 router.post('/seller/listing', upload.any(), async (req, res) => {
   try {
-    const { sellerId, eventId, seatInfo, faceValue, price, rawBarcode } = req.body;
+    const { sellerId: bodySellerId, eventId, seatInfo, faceValue, price, rawBarcode } = req.body || {};
 
-    if (!sellerId || !eventId || !seatInfo || !faceValue || !price || !rawBarcode) {
-      return res.status(400).json({ error: 'Missing required listing fields (sellerId, eventId, seatInfo, faceValue, price, rawBarcode)', code: 'VALIDATION_ERROR' });
+    // 1. Resolve authenticated user from session (never from req.body.sellerId)
+    let authenticatedUserId = resolveAuth(req);
+    if (!authenticatedUserId) {
+      // Async session lookup fallback for cold starts
+      const authHeader = req.header ? (req.header('authorization') || req.header('x-session-token')) : null;
+      let sessionToken = null;
+      if (authHeader) {
+        sessionToken = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader.trim();
+      } else if (req.headers && req.headers.cookie) {
+        const { parseCookies } = require('../middleware/auth');
+        const cookies = parseCookies(req.headers.cookie);
+        if (cookies.session_token) sessionToken = cookies.session_token.trim();
+      }
+      if (sessionToken) {
+        const session = await SessionStore.findSessionAsync(sessionToken);
+        if (session) {
+          let user = findUser(session.user_id);
+          if (!user) {
+            try {
+              const { getUserRepository } = require('../storage');
+              user = await getUserRepository().getUserById(session.user_id);
+              if (user && !state.users.some(u => u.id === user.id)) state.users.push(user);
+            } catch (_) {}
+          }
+          if (user) {
+            req.user = user;
+            req.role = user.role;
+            authenticatedUserId = user.id;
+          }
+        }
+      }
     }
-    if (req.user && sellerId !== req.user.id && !isAdminRole(req.user.role)) {
-      return res.status(403).json({ error: 'Cannot create listing for another seller', code: 'FORBIDDEN' });
+
+    if (!authenticatedUserId || !req.user) {
+      return res.status(401).json({
+        error: 'Authentication required to create a seller listing',
+        code: 'AUTHENTICATION_REQUIRED'
+      });
     }
-    if (!findUser(sellerId)) {
-      return res.status(401).json({ error: 'Unknown seller', code: 'AUTH_REQUIRED' });
+
+    if (bodySellerId && bodySellerId !== authenticatedUserId && !isAdminRole(req.user.role)) {
+      return res.status(403).json({
+        error: 'Cannot create listing for another seller',
+        code: 'FORBIDDEN'
+      });
+    }
+
+    const sellerId = (isAdminRole(req.user.role) && bodySellerId) ? bodySellerId : authenticatedUserId;
+
+    if (!eventId || !seatInfo || !faceValue || !price || !rawBarcode) {
+      return res.status(400).json({
+        error: 'Missing required listing fields (eventId, seatInfo, faceValue, price, rawBarcode)',
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    let sellerUser = findUser(sellerId);
+    if (!sellerUser) {
+      try {
+        const { getUserRepository } = require('../storage');
+        sellerUser = await getUserRepository().getUserById(sellerId);
+        if (sellerUser && !state.users.some(u => u.id === sellerUser.id)) state.users.push(sellerUser);
+      } catch (_) {}
+    }
+    if (!sellerUser) {
+      return res.status(401).json({ error: 'Unknown seller', code: 'AUTHENTICATION_REQUIRED' });
     }
 
     let evidenceBundleId = null;
@@ -1093,16 +1151,31 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       ticket: result.ticket
     });
   } catch (err) {
+    if (err.code === 'SELLER_NOT_ELIGIBLE' && [
+      'SELLER_ONBOARDING_REQUIRED',
+      'SELLER_KYC_PENDING_REVIEW',
+      'SELLER_KYC_NOT_VERIFIED',
+      'SELLER_SUSPENDED'
+    ].includes(err.eligibilityCode)) {
+      return res.status(403).json({
+        error: err.message,
+        code: err.eligibilityCode,
+        eligibility_code: err.eligibilityCode,
+        legacy_code: 'SELLER_NOT_ELIGIBLE'
+      });
+    }
+
     const isClientError = [
       'DUPLICATE_TICKET_BARCODE',
       'SELLER_NOT_ELIGIBLE',
       'PRICE_BELOW_MINIMUM',
       'PRICE_EXCEEDS_MARKUP_CAP',
       'INVALID_PRICE',
-      'VALIDATION_ERROR'
+      'VALIDATION_ERROR',
+      'EVENT_NOT_FOUND'
     ].includes(err.code);
     res.status(isClientError ? 400 : 500)
-      .json({ error: err.message, code: err.code });
+      .json({ error: err.message, code: err.code, eligibility_code: err.eligibilityCode || null });
   }
 });
 
@@ -1110,22 +1183,104 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
  * Get listings for a seller (ownership enforced)
  * GET /api/mvp/seller/:id/listings
  */
-router.get('/seller/:id/listings', (req, res) => {
+router.get('/seller/:id/listings', async (req, res) => {
   const callerId = getCallerId(req, req.query.requesterId);
   if (!callerId) {
     return res.status(401).json({ error: 'requester identity required (x-user-id or ?requesterId)', code: 'AUTH_REQUIRED' });
   }
-  const caller = findUser(callerId);
+  const caller = findUser(callerId) || (req.user && req.user.id === callerId ? req.user : null);
   if (!caller) {
     return res.status(401).json({ error: 'Unknown requester', code: 'AUTH_REQUIRED' });
   }
   if (caller.id !== req.params.id && !isAdminRole(caller.role)) {
     return res.status(403).json({ error: 'Forbidden: cannot access another seller orders', code: 'FORBIDDEN' });
   }
+
+  try {
+    const { getMarketplaceRepository, getMoneyRepository } = require('../storage');
+    const marketRepo = getMarketplaceRepository();
+    const moneyRepo = getMoneyRepository();
+    const [dbListings, dbTickets, dbOrders] = await Promise.all([
+      marketRepo.listListingsBySeller(req.params.id),
+      marketRepo.listTicketsBySeller(req.params.id),
+      moneyRepo.listOrdersBySellerId(req.params.id)
+    ]);
+
+    if (dbTickets && dbTickets.length > 0) {
+      if (!state.tickets) state.tickets = [];
+      for (const dbt of dbTickets) {
+        if (!state.tickets.some(t => t.id === dbt.id)) {
+          const seatParts = [dbt.section, dbt.row_id ? `Row ${dbt.row_id}` : null, dbt.seat ? `Seat ${dbt.seat}` : null].filter(Boolean);
+          state.tickets.push({
+            id: dbt.id,
+            seller_id: dbt.seller_id,
+            event_id: dbt.canonical_event_id || dbt.event_id,
+            seat_info: dbt.seat_info || (seatParts.length > 0 ? seatParts.join(' - ') : dbt.ticket_type || 'General Admission'),
+            face_value: parseInt(dbt.face_value || 0, 10),
+            verification_status: dbt.status || 'VERIFIED',
+            created_at: dbt.created_at
+          });
+        }
+      }
+    }
+
+    if (dbListings && dbListings.length > 0) {
+      if (!state.listings) state.listings = [];
+      for (const dbl of dbListings) {
+        if (!state.listings.some(l => l.id === dbl.id)) {
+          const ticket = (state.tickets || []).find(t => t.id === dbl.ticket_id) || {};
+          state.listings.push({
+            id: dbl.id,
+            ticket_id: dbl.ticket_id,
+            seller_id: dbl.seller_id,
+            event_id: dbl.canonical_event_id || dbl.event_id,
+            seat_info: ticket.seat_info || 'General Admission',
+            face_value: ticket.face_value || parseInt(dbl.price || 0, 10),
+            price: parseInt(dbl.price || 0, 10),
+            status: dbl.status,
+            created_at: dbl.created_at
+          });
+        }
+      }
+    }
+
+    if (dbOrders && dbOrders.length > 0) {
+      if (!state.orders) state.orders = [];
+      for (const dbo of dbOrders) {
+        if (!state.orders.some(o => o.id === dbo.id)) {
+          state.orders.push({
+            id: dbo.id,
+            buyer_id: dbo.buyer_id,
+            seller_id: dbo.seller_id,
+            listing_id: dbo.listing_id,
+            ticket_id: dbo.ticket_id,
+            event_id: dbo.canonical_event_id,
+            status: dbo.status,
+            total_amount: parseInt(dbo.total_amount || 0, 10),
+            buyer_total: parseInt(dbo.buyer_total || 0, 10),
+            seller_payout: parseInt(dbo.seller_payout || 0, 10),
+            service_fee: parseInt(dbo.service_fee || 0, 10),
+            created_at: dbo.created_at
+          });
+        }
+      }
+    }
+  } catch (err) {
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      return res.status(503).json({ error: 'Database unavailable', code: 'DATABASE_ERROR', dataState: 'UNAVAILABLE' });
+    }
+  }
+
   const sellerListings = state.listings.filter(l => l.seller_id === req.params.id).map(l => {
     const order = state.orders.find(o => o.listing_id === l.id);
+    const event = state.events.find(e => e.id === l.event_id) || {};
+    const ticket = state.tickets.find(t => t.id === l.ticket_id) || {};
     return {
       ...l,
+      event_title: event.title || event.name || l.event_id,
+      seat_info: l.seat_info || ticket.seat_info || 'General Admission',
+      face_value: l.face_value || ticket.face_value || 0,
+      verification_status: ticket.verification_status || l.status,
       order_id: order ? order.id : null,
       order_status: order ? order.status : null
     };

@@ -77,7 +77,21 @@ class InMemoryMoneyRepository extends MoneyRepository {
     for (const o of this.orders.values()) {
       if (o.buyer_id === buyerId) list.push(o);
     }
-    return list;
+    return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
+
+  async listOrdersBySellerId(sellerId) {
+    const list = [];
+    for (const o of this.orders.values()) {
+      if (o.seller_id === sellerId) list.push(o);
+    }
+    return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
+
+  async listAllOrders(limit = 200) {
+    return Array.from(this.orders.values())
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, limit);
   }
 
   async updateOrderStatus(orderId, status, metadata = {}) {
@@ -187,6 +201,24 @@ class InMemoryMoneyRepository extends MoneyRepository {
     return this.escrows.get(orderId) || null;
   }
 
+  async listEscrowsByBuyerId(buyerId) {
+    return Array.from(this.escrows.values())
+      .filter(e => e.buyer_id === buyerId)
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
+
+  async listEscrowsBySellerId(sellerId) {
+    return Array.from(this.escrows.values())
+      .filter(e => e.seller_id === sellerId)
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
+
+  async listAllEscrows(limit = 200) {
+    return Array.from(this.escrows.values())
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, limit);
+  }
+
   async updateEscrowStatus(orderId, status, metadata = {}) {
     const escrow = this.escrows.get(orderId);
     if (!escrow) return null;
@@ -270,6 +302,18 @@ class InMemoryMoneyRepository extends MoneyRepository {
     return this.settlements.get(orderId) || null;
   }
 
+  async listSettlementsBySellerId(sellerId) {
+    return Array.from(this.settlements.values())
+      .filter(s => s.seller_id === sellerId)
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
+
+  async listAllSettlements(limit = 200) {
+    return Array.from(this.settlements.values())
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, limit);
+  }
+
   // Disputes
   async createDispute(disputeData) {
     const id = disputeData.id || disputeData.dispute_id || `dsp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
@@ -286,6 +330,24 @@ class InMemoryMoneyRepository extends MoneyRepository {
 
   async getDisputeByOrderId(orderId) {
     return this.disputes.get(orderId) || null;
+  }
+
+  async listDisputesByBuyerId(buyerId) {
+    return Array.from(this.disputes.values())
+      .filter(d => d.buyer_id === buyerId)
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
+
+  async listDisputesBySellerId(sellerId) {
+    return Array.from(this.disputes.values())
+      .filter(d => d.seller_id === sellerId)
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
+
+  async listAllDisputes(limit = 200) {
+    return Array.from(this.disputes.values())
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, limit);
   }
 
   async resolveDispute(disputeId, outcome, notes) {

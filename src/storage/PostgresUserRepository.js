@@ -233,14 +233,27 @@ class PostgresUserRepository extends UserRepository {
       await client.query('BEGIN');
       for (const u of baseline) {
         const normEmail = u.email ? u.email.toLowerCase().trim() : null;
+        const defaultMeta = (u.id === 'seller-1' || u.id === 'seller-xp-1')
+          ? JSON.stringify({
+              seller_profile: {
+                user_id: u.id,
+                kyc_status: 'VERIFIED',
+                nik_hash: 'hash-ktp-budi-327101',
+                active_listing_limit: 10,
+                verified_at: new Date().toISOString(),
+                verified_by: 'SYSTEM'
+              }
+            })
+          : JSON.stringify({});
         await client.query(`
-          INSERT INTO users (id, email, normalized_email, name, display_name, role, status, password_hash)
-          VALUES ($1, $2, $3, $4, $4, $5, 'ACTIVE', $6)
+          INSERT INTO users (id, email, normalized_email, name, display_name, role, status, password_hash, metadata)
+          VALUES ($1, $2, $3, $4, $4, $5, 'ACTIVE', $6, $7::jsonb)
           ON CONFLICT (id) DO UPDATE SET
             role = EXCLUDED.role,
             status = 'ACTIVE',
+            metadata = COALESCE(users.metadata, '{}'::jsonb) || EXCLUDED.metadata,
             updated_at = NOW()
-        `, [u.id, u.email, normEmail, u.name, u.role, u.password_hash]);
+        `, [u.id, u.email, normEmail, u.name, u.role, u.password_hash, defaultMeta]);
 
         await client.query(`
           INSERT INTO user_roles (id, user_id, role, assigned_by)
@@ -604,6 +617,18 @@ class PostgresUserRepository extends UserRepository {
     return res.rowCount || 0;
   }
 
+  async listActiveSessionsForUser(userId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.listActiveSessionsForUser(userId);
+    }
+    const res = await this.query(
+      'SELECT id, user_id, role, ip_address, user_agent, created_at, last_seen_at, expires_at FROM sessions WHERE user_id = $1 AND revoked = FALSE AND expires_at > NOW() ORDER BY last_seen_at DESC',
+      [userId]
+    );
+    return res ? (res.rows || []) : [];
+  }
+
   // --- ROLE OPERATIONS ---
 
   async getUserRoles(userId) {
@@ -767,6 +792,139 @@ class PostgresUserRepository extends UserRepository {
       console.error('[AuthAudit] Failed to persist audit event:', err.message);
       return null;
     }
+  }
+
+  async listRecentAuthAuditEvents(limit = 100, userId = null) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.listRecentAuthAuditEvents(limit, userId);
+    }
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 200);
+    if (userId) {
+      const res = await this.query(
+        'SELECT id, user_id, event_type, success, ip_address, user_agent, created_at FROM auth_audit_events WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
+        [userId, safeLimit]
+      );
+      return res ? (res.rows || []) : [];
+    }
+    const res = await this.query(
+      'SELECT id, user_id, event_type, success, ip_address, user_agent, created_at FROM auth_audit_events ORDER BY created_at DESC LIMIT $1',
+      [safeLimit]
+    );
+    return res ? (res.rows || []) : [];
+  }
+
+  // --- SELLER ONBOARDING & KYC PROFILE (DURABLE IN users.metadata.seller_profile) ---
+
+  async getSellerProfile(userId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.getSellerProfile(userId);
+    }
+    if (!userId) return null;
+    const user = await this.getUserById(userId);
+    if (!user) return null;
+    const meta = user.metadata && typeof user.metadata === 'object' ? user.metadata : {};
+    const sp = meta.seller_profile && typeof meta.seller_profile === 'object' ? meta.seller_profile : null;
+    if (!sp) return null;
+
+    return {
+      user_id: user.id,
+      kyc_status: sp.kyc_status || 'UNVERIFIED',
+      active_listing_limit: typeof sp.active_listing_limit === 'number' ? sp.active_listing_limit : 10,
+      nik_hash: sp.nik_hash || null,
+      display_name: sp.display_name || user.display_name || user.name || null,
+      payout_bank: sp.payout_bank || null,
+      payout_account_masked: sp.payout_account_masked || null,
+      requested_at: sp.requested_at || null,
+      verified_at: sp.verified_at || null,
+      verified_by: sp.verified_by || null,
+      rejection_reason: sp.rejection_reason || null,
+      suspension_reason: sp.suspension_reason || null,
+      updated_at: sp.updated_at || (user.updated_at ? new Date(user.updated_at).toISOString() : null)
+    };
+  }
+
+  async upsertSellerProfile(userId, profileUpdates = {}) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.upsertSellerProfile(userId, profileUpdates);
+    }
+    if (!userId) return null;
+
+    const nowIso = new Date().toISOString();
+    const payload = {
+      user_id: userId,
+      ...profileUpdates,
+      updated_at: nowIso
+    };
+
+    const sql = `
+      UPDATE users
+      SET metadata = jsonb_set(
+        COALESCE(metadata, '{}'::jsonb),
+        '{seller_profile}',
+        jsonb_build_object(
+          'user_id', $1::text,
+          'kyc_status', 'UNVERIFIED',
+          'active_listing_limit', 10
+        ) || COALESCE(metadata->'seller_profile', '{}'::jsonb) || $2::jsonb,
+        true
+      ),
+      updated_at = NOW()
+      WHERE id = $1
+      RETURNING id;
+    `;
+    const res = await this.query(sql, [userId, JSON.stringify(payload)]);
+    if (!res || !res.rows || res.rows.length === 0) return null;
+    return this.getSellerProfile(userId);
+  }
+
+  async listSellerProfiles(filter = {}) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.listSellerProfiles(filter);
+    }
+    let sql = `
+      SELECT id, email, name, display_name, role, status, metadata, updated_at
+      FROM users
+      WHERE (role = 'SELLER' OR (metadata IS NOT NULL AND metadata ? 'seller_profile'))
+    `;
+    const params = [];
+    if (filter.kyc_status) {
+      sql += ` AND COALESCE(metadata->'seller_profile'->>'kyc_status', 'UNVERIFIED') = $1`;
+      params.push(filter.kyc_status);
+    }
+    sql += ' ORDER BY updated_at DESC LIMIT 200;';
+    const res = await this.query(sql, params);
+    const rows = res && res.rows ? res.rows : [];
+    return rows.map(u => {
+      const sp = u.metadata && u.metadata.seller_profile ? u.metadata.seller_profile : null;
+      return {
+        user_id: u.id,
+        email: u.email,
+        name: u.name,
+        role: u.role,
+        user_status: u.status,
+        kyc_status: sp && sp.kyc_status ? sp.kyc_status : 'UNVERIFIED',
+        active_listing_limit: sp && typeof sp.active_listing_limit === 'number' ? sp.active_listing_limit : 10,
+        seller_profile: sp ? {
+          user_id: u.id,
+          kyc_status: sp.kyc_status || 'UNVERIFIED',
+          active_listing_limit: typeof sp.active_listing_limit === 'number' ? sp.active_listing_limit : 10,
+          nik_hash: sp.nik_hash || null,
+          display_name: sp.display_name || u.display_name || u.name || null,
+          payout_bank: sp.payout_bank || null,
+          payout_account_masked: sp.payout_account_masked || null,
+          requested_at: sp.requested_at || null,
+          verified_at: sp.verified_at || null,
+          verified_by: sp.verified_by || null,
+          rejection_reason: sp.rejection_reason || null,
+          suspension_reason: sp.suspension_reason || null,
+          updated_at: sp.updated_at || (u.updated_at ? new Date(u.updated_at).toISOString() : null)
+        } : null
+      };
+    });
   }
 }
 

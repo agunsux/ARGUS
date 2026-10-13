@@ -312,17 +312,43 @@
           </div>
         </div>
 
-        <!-- Section 4: Operational Seller Credentials -->
+        <!-- Section 4: Session-Bound Seller Identity & Verification Status -->
         <div style="margin-bottom: 24px;">
           <div class="form-group">
-            <label for="sellerId" data-i18n="create.sellerIdLabel">Identitas Akun Penjual Terverifikasi (Pilot Mode)</label>
-            <select id="sellerId" class="form-control mono">
-              <option value="usr-seller-01">usr-seller-01 (Budi Santoso — KYC NIK Terverifikasi)</option>
-              <option value="usr-seller-02">usr-seller-02 (Dewi Lestari — KYC NIK Terverifikasi)</option>
-              <option value="usr-seller-unverified">usr-seller-unverified (Akun Belum Verifikasi NIK - Uji Tolak)</option>
-            </select>
-            <span style="font-size: 11px; color: var(--text-dim);">
-              <span data-i18n="create.sellerIdSub">Sistem Tikum mewajibkan status seller verified sebelum listing dapat dibuat.</span>
+            <label data-i18n="create.sellerIdLabel">Identitas Akun Penjual &amp; Status Verifikasi KYC</label>
+            <div id="sellerSessionCard" style="background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; padding: 14px 16px;">
+              <div id="sellerSessionStatusText" style="font-size: 13px; color: var(--text-muted);">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Memeriksa sesi login &amp; status kelayakan penjual...
+              </div>
+              <div id="sellerOnboardingInlineForm" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08);">
+                <div style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 8px;">Ajukan Onboarding Penjual (Verifikasi Identitas)</div>
+                <div class="grid-2" style="margin-bottom: 10px;">
+                  <div>
+                    <label for="onboardFullName" style="font-size: 11px;">Nama Lengkap Sesuai Identitas *</label>
+                    <input type="text" id="onboardFullName" class="form-control" placeholder="Nama lengkap sesuai KTP">
+                  </div>
+                  <div>
+                    <label for="onboardPhone" style="font-size: 11px;">Nomor WhatsApp Aktif *</label>
+                    <input type="text" id="onboardPhone" class="form-control" placeholder="0812xxxxxxxx">
+                  </div>
+                </div>
+                <div style="margin-bottom: 10px;">
+                  <label for="onboardNikLast4" style="font-size: 11px;">4 Digit Terakhir NIK KTP *</label>
+                  <input type="text" id="onboardNikLast4" class="form-control mono" maxlength="4" pattern="[0-9]{4}" placeholder="Contoh: 4821">
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <button type="button" id="btnSubmitInlineOnboarding" class="btn btn-secondary btn-sm" onclick="handleInlineOnboarding()">
+                    <i class="fa-solid fa-id-card"></i> Kirim Pengajuan Verifikasi Penjual
+                  </button>
+                  <a href="/app/seller" class="btn btn-secondary btn-sm" style="text-decoration: none;">
+                    <i class="fa-solid fa-store"></i> Buka Dashboard Penjual
+                  </a>
+                </div>
+                <div id="onboardInlineFeedback" style="font-size: 12px; margin-top: 8px; display: none;"></div>
+              </div>
+            </div>
+            <span style="font-size: 11px; color: var(--text-dim); display: block; margin-top: 6px;">
+              <span data-i18n="create.sellerIdSub">Identitas penjual diambil langsung dari sesi login terautentikasi. Sistem Tikum mewajibkan status KYC penjual <code>VERIFIED</code> sebelum listing dapat dibuat.</span>
             </span>
           </div>
         </div>
@@ -330,7 +356,7 @@
         <!-- Submit Button & Real Server Feedback -->
         <div id="formError" class="notice-box notice-warning" style="display: none;"></div>
 
-        <button type="submit" id="btnSubmitListing" class="btn btn-primary" style="background-color:var(--terra-600); color:#fff; border:none;" style="width: 100%; padding: 14px; font-size: 15px;">
+        <button type="submit" id="btnSubmitListing" class="btn btn-primary" style="background-color:var(--terra-600); color:#fff; border:none; width: 100%; padding: 14px; font-size: 15px;">
           <i class="fa-solid fa-shield-check"></i> <span data-i18n="create.submitBtn">Daftarkan Tiket ke Tikum</span>
         </button>
       </form>
@@ -595,6 +621,153 @@
       }
     }
 
+    let currentSellerSession = null;
+
+    async function initSellerSession() {
+      const statusTextEl = document.getElementById('sellerSessionStatusText');
+      const inlineFormEl = document.getElementById('sellerOnboardingInlineForm');
+      const submitBtn = document.getElementById('btnSubmitListing');
+
+      try {
+        const res = await fetch('/api/dashboard/seller', {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        });
+
+        if (res.status === 401) {
+          currentSellerSession = null;
+          inlineFormEl.style.display = 'none';
+          statusTextEl.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div>
+                <strong style="color: #fbbf24;"><i class="fa-solid fa-lock"></i> Sesi Login Diperlukan</strong>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Anda harus masuk ke akun Tikum sebelum dapat mendaftarkan listing tiket atau mengajukan onboarding penjual.</div>
+              </div>
+              <a href="/login?returnTo=%2Fcreate" class="btn btn-primary btn-sm" style="text-decoration:none; background-color:var(--terra-600); color:#fff; border:none;">
+                <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Akun
+              </a>
+            </div>
+          `;
+          submitBtn.disabled = true;
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.user) {
+          statusTextEl.innerHTML = `<span style="color:#f87171;"><i class="fa-solid fa-triangle-exclamation"></i> ${escapeHtml(data.error || 'Gagal memuat status sesi penjual.')}</span>`;
+          submitBtn.disabled = true;
+          return;
+        }
+
+        currentSellerSession = data.user;
+        const kycStatus = (data.user.kyc_status || 'UNVERIFIED').toUpperCase();
+        const emailOrId = escapeHtml(data.user.email || data.user.id);
+        const fullName = escapeHtml(data.user.full_name || '');
+
+        if (document.getElementById('onboardFullName') && !document.getElementById('onboardFullName').value && data.user.full_name) {
+          document.getElementById('onboardFullName').value = data.user.full_name;
+        }
+        if (document.getElementById('onboardPhone') && !document.getElementById('onboardPhone').value && data.user.phone) {
+          document.getElementById('onboardPhone').value = data.user.phone;
+        }
+
+        if (kycStatus === 'VERIFIED') {
+          inlineFormEl.style.display = 'none';
+          statusTextEl.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <div style="font-weight:700; color:#fff;">${fullName ? fullName + ' (' + emailOrId + ')' : emailOrId}</div>
+                <div class="mono" style="font-size:11px; color:var(--text-dim);">ID Sesi: ${escapeHtml(data.user.id)} &bull; Kuota Listing Aktif: ${(data.overview && data.overview.active_listings_count) || 0} / ${(data.overview && data.overview.max_active_listings) || 2}</div>
+              </div>
+              <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> KYC VERIFIED</span>
+            </div>
+          `;
+          submitBtn.disabled = false;
+        } else if (kycStatus === 'PENDING_REVIEW') {
+          inlineFormEl.style.display = 'none';
+          statusTextEl.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <div style="font-weight:700; color:#fff;">${fullName ? fullName + ' (' + emailOrId + ')' : emailOrId}</div>
+                <div style="font-size:12px; color:#fbbf24; margin-top:4px;">Pengajuan onboarding penjual Anda sedang ditinjau oleh tim Trust &amp; Safety Tikum (<code>PENDING_REVIEW</code>). Pembuatan listing akan terbuka otomatis setelah verifikasi KYC disetujui.</div>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> PENDING REVIEW</span>
+                <a href="/app/seller" class="btn btn-secondary btn-sm" style="text-decoration:none;">Dashboard Penjual</a>
+              </div>
+            </div>
+          `;
+          submitBtn.disabled = true;
+        } else if (kycStatus === 'SUSPENDED') {
+          inlineFormEl.style.display = 'none';
+          statusTextEl.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <div style="font-weight:700; color:#fff;">${emailOrId}</div>
+                <div style="font-size:12px; color:#f87171; margin-top:4px;">Akun penjual Anda sedang ditangguhkan (<code>SUSPENDED</code>) dan tidak dapat membuat listing baru.</div>
+              </div>
+              <span class="badge badge-warning" style="color:#f87171;">SUSPENDED</span>
+            </div>
+          `;
+          submitBtn.disabled = true;
+        } else {
+          // UNVERIFIED or REJECTED
+          inlineFormEl.style.display = 'block';
+          statusTextEl.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <div style="font-weight:700; color:#fff;">${fullName ? fullName + ' (' + emailOrId + ')' : emailOrId}</div>
+                <div style="font-size:12px; color:#fbbf24; margin-top:4px;">Akun Anda belum terverifikasi sebagai penjual (Status: <code>${escapeHtml(kycStatus)}</code>). Lengkapi pengajuan onboarding di bawah ini atau melalui <a href="/app/seller" style="color:var(--cyan);">Dashboard Penjual</a>.</div>
+              </div>
+              <span class="badge badge-warning"><i class="fa-solid fa-id-card"></i> ${escapeHtml(kycStatus)}</span>
+            </div>
+          `;
+          submitBtn.disabled = true;
+        }
+      } catch (err) {
+        statusTextEl.innerHTML = `<span style="color:#f87171;">Gagal memeriksa sesi penjual: ${escapeHtml(err.message)}</span>`;
+      }
+    }
+
+    async function handleInlineOnboarding() {
+      const fullName = (document.getElementById('onboardFullName').value || '').trim();
+      const phone = (document.getElementById('onboardPhone').value || '').trim();
+      const nikLast4 = (document.getElementById('onboardNikLast4').value || '').trim();
+      const fb = document.getElementById('onboardInlineFeedback');
+      const btn = document.getElementById('btnSubmitInlineOnboarding');
+
+      fb.style.display = 'block';
+      btn.disabled = true;
+      fb.style.color = 'var(--text-muted)';
+      fb.innerText = 'Mengirim pengajuan onboarding penjual...';
+
+      try {
+        const res = await fetch('/api/dashboard/seller/onboarding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            full_name: fullName,
+            phone: phone,
+            identity_number_last4: nikLast4,
+            consent_accepted: true
+          })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.message || data.error || 'Gagal mengajukan onboarding penjual.');
+        }
+        fb.style.color = '#34d399';
+        fb.innerText = data.message || 'Pengajuan onboarding diterima (PENDING_REVIEW).';
+        await initSellerSession();
+      } catch (err) {
+        fb.style.color = '#f87171';
+        fb.innerText = err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
     async function handleCreateNewEvent(e) {
       e.preventDefault();
       const errEl = document.getElementById('newEventError');
@@ -617,9 +790,9 @@
         const res = await fetch('/api/mvp/events', {
           method: 'POST',
           headers: { 
-            'Content-Type': 'application/json',
-            'x-user-id': document.getElementById('sellerId').value
+            'Content-Type': 'application/json'
           },
+          credentials: 'same-origin',
           body: JSON.stringify(payload)
         });
 
@@ -678,7 +851,6 @@
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghubungi Server Tikum...';
 
-      const sellerId = document.getElementById('sellerId').value;
       const formData = new FormData();
       formData.append('eventId', eventId);
       formData.append('seatInfo', document.getElementById('seatInfo').value.trim());
@@ -697,14 +869,16 @@
       try {
         const res = await fetch('/api/mvp/seller/listing', {
           method: 'POST',
-          headers: {
-            'x-user-id': sellerId
-          },
+          credentials: 'same-origin',
           body: formData
         });
 
         const data = await res.json();
         if (!res.ok) {
+          if (res.status === 401) {
+            window.location.href = '/login?returnTo=%2Fcreate';
+            return;
+          }
           throw new Error(data.message || data.error || 'Gagal membuat listing di server');
         }
 
@@ -747,6 +921,7 @@
       document.getElementById('successCard').style.display = 'none';
       document.getElementById('eventPreviewBox').style.display = 'none';
       calculateFeePreview();
+      initSellerSession();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -759,6 +934,7 @@
 
     // Initialize
     initEvents();
+    initSellerSession();
   </script>
   <script src="/js/i18n.js"></script>
 </body>

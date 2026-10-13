@@ -59,6 +59,10 @@ class UserRepository {
     throw new Error('UserRepository.revokeAllUserSessions() not implemented');
   }
 
+  async listActiveSessionsForUser(userId) {
+    throw new Error('UserRepository.listActiveSessionsForUser() not implemented');
+  }
+
   // Roles
   async getUserRoles(userId) {
     throw new Error('UserRepository.getUserRoles() not implemented');
@@ -88,6 +92,23 @@ class UserRepository {
   // Audit Events
   async recordAuthAudit(auditData) {
     throw new Error('UserRepository.recordAuthAudit() not implemented');
+  }
+
+  async listRecentAuthAuditEvents(limit = 100, userId = null) {
+    throw new Error('UserRepository.listRecentAuthAuditEvents() not implemented');
+  }
+
+  // Seller Onboarding & KYC Profile (Durable in users.metadata.seller_profile)
+  async getSellerProfile(userId) {
+    throw new Error('UserRepository.getSellerProfile() not implemented');
+  }
+
+  async upsertSellerProfile(userId, profileUpdates) {
+    throw new Error('UserRepository.upsertSellerProfile() not implemented');
+  }
+
+  async listSellerProfiles(filter = {}) {
+    throw new Error('UserRepository.listSellerProfiles() not implemented');
   }
 }
 

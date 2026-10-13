@@ -107,6 +107,92 @@ function wantsHtml(req) {
   return accept.includes('text/html') || accept.includes('application/xhtml+xml');
 }
 
+function wantsJson(req) {
+  const accept = req.headers.accept || '';
+  return accept.includes('application/json');
+}
+
+// Role-aware authenticated entry point: /app
+app.get('/app', (req, res) => {
+  const user = resolveUser(req);
+  if (!user) {
+    if (wantsJson(req)) {
+      return res.status(401).json({
+        error: 'Authentication required. Invalid or missing session.',
+        code: 'AUTH_REQUIRED',
+        redirect_url: '/login?redirect=%2Fapp'
+      });
+    }
+    return res.redirect(302, '/login?redirect=%2Fapp');
+  }
+
+  if ((user.status || '').toUpperCase() === 'SUSPENDED') {
+    if (wantsHtml(req)) return res.redirect(302, '/login?error=ACCOUNT_SUSPENDED');
+    return res.status(403).json({
+      error: 'Account is suspended. Access denied.',
+      code: 'USER_SUSPENDED'
+    });
+  }
+
+  if (isAdminRole(user.role)) {
+    return res.redirect(302, '/admin');
+  }
+  if ((user.role || '').toUpperCase() === 'SELLER') {
+    return res.redirect(302, '/app/seller');
+  }
+  return res.redirect(302, '/app/buyer');
+});
+
+// Buyer Dashboard surface (protected)
+app.get(['/app/buyer', '/buyer-dashboard.html'], (req, res) => {
+  const user = resolveUser(req);
+  if (!user) {
+    if (wantsJson(req)) {
+      return res.status(401).json({
+        error: 'Authentication required. Invalid or missing session.',
+        code: 'AUTH_REQUIRED',
+        redirect_url: '/login?redirect=%2Fapp%2Fbuyer'
+      });
+    }
+    return res.redirect(302, '/login?redirect=%2Fapp%2Fbuyer');
+  }
+
+  if ((user.status || '').toUpperCase() === 'SUSPENDED') {
+    if (wantsHtml(req)) return res.redirect(302, '/login?error=ACCOUNT_SUSPENDED');
+    return res.status(403).json({
+      error: 'Account is suspended. Access denied.',
+      code: 'USER_SUSPENDED'
+    });
+  }
+
+  return res.sendFile(path.join(publicDir, 'buyer-dashboard.html'), sendFileOpts);
+});
+
+// Seller Dashboard surface (protected)
+app.get(['/app/seller', '/seller-dashboard.html'], (req, res) => {
+  const user = resolveUser(req);
+  if (!user) {
+    if (wantsJson(req)) {
+      return res.status(401).json({
+        error: 'Authentication required. Invalid or missing session.',
+        code: 'AUTH_REQUIRED',
+        redirect_url: '/login?redirect=%2Fapp%2Fseller'
+      });
+    }
+    return res.redirect(302, '/login?redirect=%2Fapp%2Fseller');
+  }
+
+  if ((user.status || '').toUpperCase() === 'SUSPENDED') {
+    if (wantsHtml(req)) return res.redirect(302, '/login?error=ACCOUNT_SUSPENDED');
+    return res.status(403).json({
+      error: 'Account is suspended. Access denied.',
+      code: 'USER_SUSPENDED'
+    });
+  }
+
+  return res.sendFile(path.join(publicDir, 'seller-dashboard.html'), sendFileOpts);
+});
+
 // Dedicated admin login surface (public)
 app.get('/admin/login', (req, res) => {
   const user = resolveUser(req);
@@ -195,6 +281,10 @@ app.use('/api/admin/trust', adminTrustRouter);
 // Mount Admin Control Plane APIs (Epic 5.1)
 const adminRouter = require('./api/adminRouter');
 app.use('/api/admin', adminRouter);
+
+// Mount Role-Based Marketplace Dashboard APIs (Buyer & Seller)
+const dashboardRouter = require('./api/dashboardRouter');
+app.use('/api/dashboard', dashboardRouter);
 
 // Mount Canonical Authentication APIs (Magic Link, Sessions)
 const authRouter = require('./api/authRouter');

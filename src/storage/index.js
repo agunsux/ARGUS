@@ -11,8 +11,15 @@
 const fs = require('fs');
 const { assertTestDatabaseIsolation } = require('./testIsolation');
 
+function isTestRuntime() {
+  if (process.env.NODE_ENV === 'test') return true;
+  if (process.env.npm_lifecycle_event === 'test') return true;
+  const entryScript = String((process.argv && process.argv[1]) || '');
+  return /[\\/]test_[^\\/]+\.js$/i.test(entryScript) || /^test_[^\\/]+\.js$/i.test(entryScript);
+}
+
 // Only load DATABASE_URL from .env.local if NOT running in test mode
-if (process.env.NODE_ENV !== 'test' && !process.env.DATABASE_URL && fs.existsSync('.env.local')) {
+if (!isTestRuntime() && !process.env.DATABASE_URL && fs.existsSync('.env.local')) {
   try {
     const envContent = fs.readFileSync('.env.local', 'utf8');
     for (const line of envContent.split('\n')) {
@@ -47,7 +54,7 @@ let activeMoneyRepo = null;
 let activeUserRepo = null;
 
 function resolveDatabaseTarget() {
-  if (process.env.NODE_ENV === 'test') {
+  if (isTestRuntime()) {
     // In test mode: strictly default to InMemory UNLESS TEST_DATABASE_URL or TEST_DATABASE_SCHEMA is set!
     if (process.env.TEST_DATABASE_URL) {
       return { connectionString: process.env.TEST_DATABASE_URL, schema: process.env.TEST_DATABASE_SCHEMA || null };
@@ -60,13 +67,17 @@ function resolveDatabaseTarget() {
   return process.env.DATABASE_URL ? { connectionString: process.env.DATABASE_URL, schema: null } : null;
 }
 
+function isProductionRuntime() {
+  return process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+}
+
 function getMarketplaceRepository(forceNew = false) {
   if (activeMarketplaceRepo && !forceNew) {
     return activeMarketplaceRepo;
   }
   const dbTarget = resolveDatabaseTarget();
-  if (dbTarget) {
-    activeMarketplaceRepo = new PostgresMarketplaceRepository(dbTarget);
+  if (dbTarget || isProductionRuntime()) {
+    activeMarketplaceRepo = new PostgresMarketplaceRepository(dbTarget || {});
   } else {
     activeMarketplaceRepo = new InMemoryMarketplaceRepository();
   }
@@ -82,8 +93,8 @@ function getMoneyRepository(forceNew = false) {
     return activeMoneyRepo;
   }
   const dbTarget = resolveDatabaseTarget();
-  if (dbTarget) {
-    activeMoneyRepo = new PostgresMoneyRepository(dbTarget);
+  if (dbTarget || isProductionRuntime()) {
+    activeMoneyRepo = new PostgresMoneyRepository(dbTarget || {});
   } else {
     activeMoneyRepo = new InMemoryMoneyRepository();
   }
@@ -99,8 +110,8 @@ function getUserRepository(forceNew = false) {
     return activeUserRepo;
   }
   const dbTarget = resolveDatabaseTarget();
-  if (dbTarget) {
-    activeUserRepo = new PostgresUserRepository(dbTarget);
+  if (dbTarget || isProductionRuntime()) {
+    activeUserRepo = new PostgresUserRepository(dbTarget || {});
   } else {
     activeUserRepo = new InMemoryUserRepository();
   }
@@ -130,5 +141,6 @@ module.exports = {
   getUserRepository,
   setUserRepository,
 
+  isProductionRuntime,
   assertTestDatabaseIsolation
 };

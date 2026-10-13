@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Pembeli — TIKUM</title>
+  <meta name="description" content="Kelola tiket, pesanan escrow, tawaran harga, sengketa, dan keamanan akun pembeli Anda di TIKUM.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    :root {
+      --bg-page: #F7F6F2;
+      --card-bg: #FFFFFF;
+      --text-main: #18181B;
+      --text-muted: #52525B;
+      --border-color: #E4E4E7;
+      --primary: #059669;
+      --primary-hover: #047857;
+      --primary-soft: #ECFDF5;
+      --warning: #D97706;
+      --warning-soft: #FFFBEB;
+      --danger: #DC2626;
+      --danger-soft: #FEF2F2;
+      --info: #2563EB;
+      --info-soft: #EFF6FF;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dash-header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .dash-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 800;
+      font-size: 19px;
+    }
+
+    .role-switcher {
+      display: inline-flex;
+      background: #F4F4F5;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      gap: 4px;
+    }
+
+    .role-switch-btn {
+      padding: 7px 14px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .role-switch-btn.active {
+      background: var(--card-bg);
+      color: var(--primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .user-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: #F4F4F5;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .badge-success { background: var(--primary-soft); color: var(--primary); border: 1px solid #A7F3D0; }
+    .badge-warning { background: var(--warning-soft); color: var(--warning); border: 1px solid #FDE68A; }
+    .badge-danger { background: var(--danger-soft); color: var(--danger); border: 1px solid #FECACA; }
+    .badge-info { background: var(--info-soft); color: var(--info); border: 1px solid #BFDBFE; }
+    .badge-neutral { background: #F4F4F5; color: #52525B; border: 1px solid #E4E4E7; }
+
+    .dash-container {
+      max-width: 1200px;
+      width: 100%;
+      margin: 24px auto 64px;
+      padding: 0 20px;
+      box-sizing: border-box;
+      flex: 1;
+    }
+
+    .dash-hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .dash-title {
+      font-size: 24px;
+      font-weight: 800;
+      margin: 0 0 4px;
+      letter-spacing: -0.4px;
+    }
+
+    .dash-subtitle {
+      margin: 0;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 24px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 18px 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .kpi-foot {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 800;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .item-row {
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      background: #FAFAFA;
+    }
+
+    .item-main h4 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .item-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: #fff; color: var(--text-main); border-color: var(--border-color); }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger-outline { background: #fff; color: var(--danger); border-color: #FECACA; }
+    .btn-danger-outline:hover { background: var(--danger-soft); }
+
+    .empty-box {
+      text-align: center;
+      padding: 36px 20px;
+      border: 1px dashed var(--border-color);
+      border-radius: 12px;
+      color: var(--text-muted);
+    }
+
+    .empty-box i {
+      font-size: 32px;
+      color: #A1A1AA;
+      margin-bottom: 10px;
+    }
+
+    .alert-banner {
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .alert-unavailable {
+      background: var(--danger-soft);
+      border: 1px solid #FECACA;
+      color: #991B1B;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .form-input:disabled {
+      background: #F4F4F5;
+      color: var(--text-muted);
+    }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    @media (max-width: 768px) {
+      .dash-header { padding: 12px 16px; }
+      .dash-container { padding: 0 14px; }
+      .item-row { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="dash-header">
+    <div class="dash-header-inner">
+      <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+        <a href="/" class="brand-link">
+          <img src="/assets/tikum-mark-2color.svg" width="28" height="28" alt="TIKUM">
+          <span>TIKUM</span>
+        </a>
+        <div class="role-switcher" aria-label="Pengalih Mode Dashboard">
+          <a href="/app/buyer" class="role-switch-btn active">
+            <i class="fa-solid fa-bag-shopping"></i> Mode Pembeli
+          </a>
+          <a href="/app/seller" class="role-switch-btn">
+            <i class="fa-solid fa-store"></i> Mode Penjual
+          </a>
+          <a href="/admin" id="adminConsoleLink" class="role-switch-btn" style="display:none;">
+            <i class="fa-solid fa-shield-halved"></i> Admin Console
+          </a>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <a href="/" class="btn btn-outline"><i class="fa-solid fa-compass"></i> Jelajahi Event</a>
+        <a href="/create" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Jual Tiket</a>
+        <div class="user-pill">
+          <i class="fa-regular fa-user"></i>
+          <span id="headerUserEmail">Memuat...</span>
+          <span id="headerRoleBadge" class="badge badge-neutral">BUYER</span>
+        </div>
+        <button id="btnLogout" class="btn btn-danger-outline" title="Keluar dari Sesi">
+          <i class="fa-solid fa-right-from-bracket"></i> Keluar
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="dash-container">
+    <div class="dash-hero">
+      <div>
+        <h1 class="dash-title">Dashboard Pembeli</h1>
+        <p class="dash-subtitle">Pantau pesanan tiket berproteksi escrow, negosiasi tawaran harga, sengketa, dan keamanan akun Anda secara real-time.</p>
+      </div>
+      <div style="text-align:right; font-size:12px; color:var(--text-muted);">
+        <div>Status Data: <strong id="dataStateBadge">MEMUAT...</strong></div>
+        <div>Diperbarui: <span id="dataTimestamp">-</span></div>
+      </div>
+    </div>
+
+    <!-- Error / Unavailable Banner -->
+    <div id="unavailableBanner" class="alert-banner alert-unavailable" style="display:none;">
+      <div>
+        <strong><i class="fa-solid fa-triangle-exclamation"></i> Data Tidak Tersedia (503)</strong>
+        <div id="unavailableMessage" style="font-size:13px; margin-top:4px;">Basis data utama sedang tidak dapat dijangkau. Sistem menolak menampilkan metrik palsu.</div>
+      </div>
+      <button class="btn btn-outline" onclick="loadBuyerDashboard()"><i class="fa-solid fa-rotate"></i> Coba Lagi</button>
+    </div>
+
+    <!-- Loading View -->
+    <div id="loadingView" class="section-card" style="text-align:center; padding:48px 20px;">
+      <i class="fa-solid fa-circle-notch fa-spin" style="font-size:28px; color:var(--primary); margin-bottom:12px;"></i>
+      <div style="font-weight:700;">Memuat data transaksi asli dari server...</div>
+    </div>
+
+    <!-- Main Dashboard Content -->
+    <div id="dashboardContent" style="display:none;">
+      <!-- KPI Overview Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label"><span>Pesanan Aktif</span> <i class="fa-solid fa-ticket" style="color:var(--primary);"></i></div>
+          <div class="kpi-value" id="kpiActiveOrders">0</div>
+          <div class="kpi-foot">Dilindungi Escrow TIKUM</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label"><span>Menunggu Pembayaran</span> <i class="fa-solid fa-clock" style="color:var(--warning);"></i></div>
+          <div class="kpi-value" id="kpiPendingPayments">0</div>
+          <div class="kpi-foot">Reservasi aktif</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label"><span>Tawaran Aktif</span> <i class="fa-solid fa-handshake" style="color:var(--info);"></i></div>
+          <div class="kpi-value" id="kpiActiveOffers">0</div>
+          <div class="kpi-foot">Menunggu respons penjual</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label"><span>Pembelian Selesai</span> <i class="fa-solid fa-circle-check" style="color:var(--primary);"></i></div>
+          <div class="kpi-value" id="kpiCompletedPurchases">0</div>
+          <div class="kpi-foot">Tiket terkonfirmasi</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label"><span>Sengketa Terbuka</span> <i class="fa-solid fa-scale-balanced" style="color:var(--danger);"></i></div>
+          <div class="kpi-value" id="kpiOpenDisputes">0</div>
+          <div class="kpi-foot">Investigasi klaim</div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="nav-tabs" role="tablist">
+        <button class="nav-tab active" data-tab="orders" onclick="switchTab('orders')">
+          <i class="fa-solid fa-ticket"></i> Tiket & Pesanan Saya (<span id="tabCountOrders">0</span>)
+        </button>
+        <button class="nav-tab" data-tab="offers" onclick="switchTab('offers')">
+          <i class="fa-solid fa-handshake"></i> Tawaran Harga (<span id="tabCountOffers">0</span>)
+        </button>
+        <button class="nav-tab" data-tab="disputes" onclick="switchTab('disputes')">
+          <i class="fa-solid fa-shield-halved"></i> Sengketa & Bantuan (<span id="tabCountDisputes">0</span>)
+        </button>
+        <button class="nav-tab" data-tab="profile" onclick="switchTab('profile')">
+          <i class="fa-solid fa-user-shield"></i> Profil & Keamanan Sesi
+        </button>
+      </div>
+
+      <!-- TAB 1: ORDERS -->
+      <section id="pane-orders" class="tab-pane active">
+        <div class="section-card">
+          <div class="section-header">
+            <h2 class="section-title"><i class="fa-solid fa-ticket" style="color:var(--primary);"></i> Tiket & Pesanan Saya</h2>
+            <a href="/" class="btn btn-outline"><i class="fa-solid fa-magnifying-glass"></i> Cari Tiket Event</a>
+          </div>
+          <div id="ordersListContainer" class="item-list"></div>
+        </div>
+      </section>
+
+      <!-- TAB 2: OFFERS -->
+      <section id="pane-offers" class="tab-pane">
+        <div class="section-card">
+          <div class="section-header">
+            <h2 class="section-title"><i class="fa-solid fa-handshake" style="color:var(--info);"></i> Riwayat Tawaran Harga (Offers)</h2>
+            <a href="/offers" class="btn btn-outline">Halaman Negosiasi Lengkap</a>
+          </div>
+          <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
+            <i class="fa-solid fa-circle-info"></i> Catatan: Seluruh tawaran harga dan riwayat negosiasi tersimpan secara persisten di database utama (<code>POSTGRESQL</code>).
+          </div>
+          <div id="offersListContainer" class="item-list"></div>
+        </div>
+      </section>
+
+      <!-- TAB 3: DISPUTES & SUPPORT -->
+      <section id="pane-disputes" class="tab-pane">
+        <div class="section-card">
+          <div class="section-header">
+            <h2 class="section-title"><i class="fa-solid fa-scale-balanced" style="color:var(--danger);"></i> Sengketa Escrow & Dukungan</h2>
+            <div style="display:flex; gap:8px;">
+              <a href="/disputes" class="btn btn-outline">Kebijakan Sengketa</a>
+              <a href="/contact" class="btn btn-outline">Hubungi Tim Trust</a>
+            </div>
+          </div>
+          <div id="disputesListContainer" class="item-list"></div>
+        </div>
+      </section>
+
+      <!-- TAB 4: PROFILE & SECURITY -->
+      <section id="pane-profile" class="tab-pane">
+        <div class="section-card">
+          <div class="section-header">
+            <h2 class="section-title"><i class="fa-solid fa-id-card" style="color:var(--primary);"></i> Profil Akun</h2>
+            <span id="profileStatusBadge" class="badge badge-success">ACTIVE</span>
+          </div>
+          <form id="profileForm" onsubmit="saveProfile(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Email Terdaftar (Tidak Dapat Diubah)</label>
+                <input type="email" id="profEmail" class="form-input" disabled>
+              </div>
+              <div class="form-group">
+                <label>Peran Akun</label>
+                <input type="text" id="profRole" class="form-input" disabled>
+              </div>
+              <div class="form-group">
+                <label for="profName">Nama Lengkap</label>
+                <input type="text" id="profName" class="form-input" required maxlength="120">
+              </div>
+              <div class="form-group">
+                <label for="profPhone">Nomor WhatsApp / Telepon</label>
+                <input type="text" id="profPhone" class="form-input" maxlength="30" placeholder="0812xxxx">
+              </div>
+            </div>
+            <div style="margin-top:16px; display:flex; align-items:center; gap:12px;">
+              <button type="submit" class="btn btn-primary" id="btnSaveProfile">
+                <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan Profil
+              </button>
+              <span id="profileSaveFeedback" style="font-size:13px; font-weight:600;"></span>
+            </div>
+          </form>
+        </div>
+
+        <div class="section-card">
+          <div class="section-header">
+            <h2 class="section-title"><i class="fa-solid fa-laptop-medical" style="color:var(--info);"></i> Sesi Login Aktif</h2>
+          </div>
+          <div id="sessionsListContainer" class="item-list"></div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-header">
+            <h2 class="section-title"><i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i> Log Audit Keamanan Terbaru</h2>
+          </div>
+          <div id="auditEventsContainer" class="item-list"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    function formatIdr(amount) {
+      const num = Number(amount) || 0;
+      return 'Rp ' + num.toLocaleString('id-ID');
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '-';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    function escapeHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function statusBadgeClass(status) {
+      const s = (status || '').toUpperCase();
+      if (['COMPLETED', 'SETTLED', 'RELEASED', 'CONFIRMED', 'ACCEPTED', 'ACTIVE', 'VERIFIED'].includes(s)) return 'badge-success';
+      if (['PENDING', 'PENDING_PAYMENT', 'RESERVED', 'ESCROWED', 'DELIVERED', 'INVESTIGATING'].includes(s)) return 'badge-warning';
+      if (['DISPUTED', 'REJECTED', 'CANCELLED', 'SUSPENDED', 'FROZEN', 'OPEN'].includes(s)) return 'badge-danger';
+      return 'badge-neutral';
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+      });
+      document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.toggle('active', pane.id === 'pane-' + tabName);
+      });
+    }
+
+    async function withdrawOffer(offerId) {
+      if (!confirm('Apakah Anda yakin ingin menarik tawaran harga ini?')) return;
+      try {
+        const res = await fetch('/api/offers/' + encodeURIComponent(offerId) + '/withdraw', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Gagal menarik tawaran.');
+          return;
+        }
+        await loadBuyerDashboard();
+      } catch (err) {
+        alert('Kesalahan jaringan saat menarik tawaran.');
+      }
+    }
+
+    async function acceptSellerCounter(offerId) {
+      if (!confirm('Terima harga counter-offer dari penjual dan buat pesanan resmi?')) return;
+      try {
+        const res = await fetch('/api/offers/' + encodeURIComponent(offerId) + '/accept-counter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Gagal menerima counter-offer.');
+          return;
+        }
+        await loadBuyerDashboard();
+      } catch (err) {
+        alert('Kesalahan jaringan saat menerima counter-offer.');
+      }
+    }
+
+    async function buyerCounterOffer(offerId, currentOfferPrice, counterAmount) {
+      const input = prompt(
+        `Masukkan nominal counter-offer baru Anda (IDR).\nTawaran awal Anda: ${formatIdr(currentOfferPrice)}\nCounter penjual saat ini: ${formatIdr(counterAmount)}`,
+        String(Math.round((Number(currentOfferPrice) + Number(counterAmount)) / 2))
+      );
+      if (input === null) return;
+      const newOfferAmount = parseInt(String(input).replace(/[^0-9]/g, ''), 10);
+      if (!Number.isFinite(newOfferAmount) || newOfferAmount <= 0) {
+        alert('Nominal counter-offer tidak valid.');
+        return;
+      }
+      try {
+        const res = await fetch('/api/offers/' + encodeURIComponent(offerId) + '/counter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            counterAmount: newOfferAmount
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Gagal mengirim counter-offer.');
+          return;
+        }
+        await loadBuyerDashboard();
+      } catch (err) {
+        alert('Kesalahan jaringan saat mengirim counter-offer.');
+      }
+    }
+
+    async function saveProfile(e) {
+      e.preventDefault();
+      const feedback = document.getElementById('profileSaveFeedback');
+      feedback.textContent = 'Menyimpan...';
+      feedback.style.color = 'var(--text-muted)';
+      try {
+        const name = document.getElementById('profName').value.trim();
+        const phone = document.getElementById('profPhone').value.trim();
+        const res = await fetch('/api/dashboard/profile', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ name, phone })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          feedback.textContent = data.error || 'Gagal memperbarui profil.';
+          feedback.style.color = 'var(--danger)';
+          return;
+        }
+        feedback.textContent = 'Profil berhasil diperbarui.';
+        feedback.style.color = 'var(--primary)';
+        await loadBuyerDashboard();
+      } catch (err) {
+        feedback.textContent = 'Kesalahan jaringan.';
+        feedback.style.color = 'var(--danger)';
+      }
+    }
+
+    async function loadBuyerDashboard() {
+      const loadingView = document.getElementById('loadingView');
+      const dashboardContent = document.getElementById('dashboardContent');
+      const unavailableBanner = document.getElementById('unavailableBanner');
+
+      unavailableBanner.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/dashboard/buyer', {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        });
+
+        if (res.status === 401) {
+          window.location.href = '/login?redirect=%2Fapp%2Fbuyer';
+          return;
+        }
+
+        const payload = await res.json().catch(() => ({}));
+
+        if (res.status === 503 || payload.dataState === 'UNAVAILABLE') {
+          loadingView.style.display = 'none';
+          dashboardContent.style.display = 'none';
+          unavailableBanner.style.display = 'flex';
+          document.getElementById('unavailableMessage').textContent =
+            payload.error || 'Layanan penyimpanan utama sedang tidak tersedia.';
+          document.getElementById('dataStateBadge').textContent = 'UNAVAILABLE (503)';
+          document.getElementById('dataStateBadge').style.color = 'var(--danger)';
+          return;
+        }
+
+        if (!res.ok) {
+          loadingView.style.display = 'none';
+          unavailableBanner.style.display = 'flex';
+          document.getElementById('unavailableMessage').textContent =
+            payload.error || 'Gagal memuat dashboard pembeli.';
+          return;
+        }
+
+        const user = payload.user || {};
+        const ov = payload.overview || {};
+        const orders = (payload.orders && payload.orders.items) || [];
+        const offers = (payload.offers && payload.offers.items) || [];
+        const disputes = (payload.disputes && payload.disputes.items) || [];
+        const security = payload.security || {};
+
+        document.getElementById('headerUserEmail').textContent = user.email || user.id;
+        document.getElementById('headerRoleBadge').textContent = user.role || 'BUYER';
+        if (user.role === 'ADMIN') {
+          document.getElementById('adminConsoleLink').style.display = 'inline-flex';
+        }
+
+        document.getElementById('dataStateBadge').textContent = (payload.meta && payload.meta.dataState) || 'OK';
+        document.getElementById('dataStateBadge').style.color = 'var(--primary)';
+        document.getElementById('dataTimestamp').textContent = formatDate(payload.meta && payload.meta.generatedAt);
+
+        // KPIs
+        document.getElementById('kpiActiveOrders').textContent = ov.active_orders_count ?? 0;
+        document.getElementById('kpiPendingPayments').textContent = ov.pending_payments_count ?? 0;
+        document.getElementById('kpiActiveOffers').textContent = ov.active_offers_count ?? 0;
+        document.getElementById('kpiCompletedPurchases').textContent = ov.completed_purchases_count ?? 0;
+        document.getElementById('kpiOpenDisputes').textContent = ov.open_disputes_count ?? 0;
+
+        document.getElementById('tabCountOrders').textContent = payload.orders?.total ?? orders.length;
+        document.getElementById('tabCountOffers').textContent = payload.offers?.total ?? offers.length;
+        document.getElementById('tabCountDisputes').textContent = payload.disputes?.total ?? disputes.length;
+
+        // Render Orders
+        const ordersEl = document.getElementById('ordersListContainer');
+        if (orders.length === 0) {
+          ordersEl.innerHTML = `
+            <div class="empty-box">
+              <i class="fa-solid fa-ticket"></i>
+              <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">Belum Ada Pesanan Tiket (0)</h3>
+              <p style="margin:0 0 16px; font-size:13px;">Anda belum memiliki transaksi pembelian tiket. Semua pembelian di TIKUM dilindungi rekening bersama (Escrow).</p>
+              <a href="/" class="btn btn-primary"><i class="fa-solid fa-compass"></i> Jelajahi Event Terverifikasi</a>
+            </div>
+          `;
+        } else {
+          ordersEl.innerHTML = orders.map(o => `
+            <div class="item-row">
+              <div class="item-main">
+                <h4>${escapeHtml(o.event_title)} <span class="badge ${statusBadgeClass(o.status)}">${escapeHtml(o.status)}</span></h4>
+                <div class="item-meta">
+                  <span><i class="fa-solid fa-hashtag"></i> Order: <code>${escapeHtml(o.order_id)}</code></span>
+                  <span><i class="fa-solid fa-chair"></i> Kursi/Kat: ${escapeHtml(o.seat_info)}</span>
+                  <span><i class="fa-solid fa-location-dot"></i> ${escapeHtml(o.event_venue)}</span>
+                  <span><i class="fa-solid fa-vault"></i> Escrow: <strong>${escapeHtml(o.escrow_status)}</strong></span>
+                  <span><i class="fa-solid fa-door-open"></i> Gate: <strong>${escapeHtml(o.entry_verification_status)}</strong></span>
+                  <span><i class="fa-regular fa-clock"></i> ${escapeHtml(formatDate(o.created_at))}</span>
+                </div>
+              </div>
+              <div class="item-actions">
+                <div style="text-align:right; margin-right:8px;">
+                  <div style="font-weight:800; font-size:15px;">${escapeHtml(formatIdr(o.total_amount))}</div>
+                  <div style="font-size:11px; color:var(--text-muted);">Tiket ${escapeHtml(formatIdr(o.ticket_price))}</div>
+                </div>
+                ${(o.status === 'PENDING_PAYMENT' || o.status === 'RESERVED' || o.status === 'CREATED')
+                  ? `<a href="${escapeHtml(o.pay_url)}" class="btn btn-primary"><i class="fa-solid fa-credit-card"></i> Bayar</a>`
+                  : ''}
+                <a href="${escapeHtml(o.track_url)}" class="btn btn-outline"><i class="fa-solid fa-route"></i> Lacak Tiket</a>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // Render Offers
+        const offersEl = document.getElementById('offersListContainer');
+        if (offers.length === 0) {
+          offersEl.innerHTML = `
+            <div class="empty-box">
+              <i class="fa-solid fa-handshake"></i>
+              <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">Belum Ada Tawaran Harga (0)</h3>
+              <p style="margin:0 0 16px; font-size:13px;">Anda dapat mengajukan tawaran harga pada listing tiket aktif di halaman event.</p>
+              <a href="/" class="btn btn-outline">Cari Listing Tiket</a>
+            </div>
+          `;
+        } else {
+          offersEl.innerHTML = offers.map(of => `
+            <div class="item-row">
+              <div class="item-main">
+                <h4>${escapeHtml(of.event_title)} <span class="badge ${statusBadgeClass(of.status)}">${escapeHtml(of.status)}</span></h4>
+                <div class="item-meta">
+                  <span>Tawaran Anda: <strong>${escapeHtml(formatIdr(of.offered_price))}</strong> (Harga Listing: ${escapeHtml(formatIdr(of.listed_price))})</span>
+                  ${of.counter_amount ? `<span>Counter Penjual: <strong>${escapeHtml(formatIdr(of.counter_amount))}</strong></span>` : ''}
+                  <span>Kursi: ${escapeHtml(of.seat_info)}</span>
+                  <span>Kedaluwarsa: ${escapeHtml(formatDate(of.expires_at))}</span>
+                </div>
+              </div>
+              <div class="item-actions">
+                ${of.status === 'COUNTERED' && of.counter_amount ? `
+                  <button class="btn btn-primary" onclick="acceptSellerCounter('${escapeHtml(of.offer_id)}')"><i class="fa-solid fa-check"></i> Terima Counter</button>
+                  <button class="btn btn-outline" onclick="buyerCounterOffer('${escapeHtml(of.offer_id)}', ${Number(of.offered_price) || 0}, ${Number(of.counter_amount) || 0})"><i class="fa-solid fa-arrows-left-right"></i> Balas Counter</button>
+                ` : ''}
+                ${of.can_withdraw ? `<button class="btn btn-danger-outline" onclick="withdrawOffer('${escapeHtml(of.offer_id)}')"><i class="fa-solid fa-xmark"></i> Tarik Tawaran</button>` : ''}
+                ${of.checkout_url ? `<a href="${escapeHtml(of.checkout_url)}" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Lanjut Checkout</a>` : ''}
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // Render Disputes
+        const disputesEl = document.getElementById('disputesListContainer');
+        if (disputes.length === 0) {
+          disputesEl.innerHTML = `
+            <div class="empty-box">
+              <i class="fa-solid fa-shield-check"></i>
+              <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">Tidak Ada Sengketa Aktif (0)</h3>
+              <p style="margin:0; font-size:13px;">Seluruh transaksi Anda berjalan normal tanpa klaim sengketa terbuka.</p>
+            </div>
+          `;
+        } else {
+          disputesEl.innerHTML = disputes.map(d => `
+            <div class="item-row">
+              <div class="item-main">
+                <h4>Sengketa #${escapeHtml(d.dispute_id)} — ${escapeHtml(d.event_title)} <span class="badge ${statusBadgeClass(d.status)}">${escapeHtml(d.status)}</span></h4>
+                <div class="item-meta">
+                  <span>Order: <code>${escapeHtml(d.order_id)}</code></span>
+                  <span>Alasan: ${escapeHtml(d.reason || '-')}</span>
+                  <span>Keputusan: <strong>${escapeHtml(d.outcome || 'MENUNGGU INVESTIGASI')}</strong></span>
+                  <span>Dibuka: ${escapeHtml(formatDate(d.created_at))}</span>
+                </div>
+              </div>
+              <div class="item-actions">
+                <a href="/track/${encodeURIComponent(d.order_id)}" class="btn btn-outline">Detail Order</a>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // Render Profile & Security
+        document.getElementById('profEmail').value = user.email || '';
+        document.getElementById('profRole').value = user.role || 'BUYER';
+        document.getElementById('profName').value = user.name || '';
+        document.getElementById('profPhone').value = user.phone || '';
+        document.getElementById('profileStatusBadge').textContent = user.status || 'ACTIVE';
+
+        const sessions = security.active_sessions || [];
+        const sessionsEl = document.getElementById('sessionsListContainer');
+        if (sessions.length === 0) {
+          sessionsEl.innerHTML = `<div class="empty-box">Tidak ada catatan sesi tambahan.</div>`;
+        } else {
+          sessionsEl.innerHTML = sessions.map(s => `
+            <div class="item-row">
+              <div class="item-main">
+                <h4>Sesi ${escapeHtml(s.id)} ${s.is_current ? '<span class="badge badge-success">SESI SAAT INI</span>' : ''}</h4>
+                <div class="item-meta">
+                  <span>IP: ${escapeHtml(s.ip_address || '-')}</span>
+                  <span>Perangkat: ${escapeHtml((s.user_agent || 'Browser').slice(0, 60))}</span>
+                  <span>Dibuat: ${escapeHtml(formatDate(s.created_at))}</span>
+                  <span>Berakhir: ${escapeHtml(formatDate(s.expires_at))}</span>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        const auditEvents = security.recent_auth_events || [];
+        const auditEl = document.getElementById('auditEventsContainer');
+        if (auditEvents.length === 0) {
+          auditEl.innerHTML = `<div class="empty-box">Belum ada riwayat event autentikasi.</div>`;
+        } else {
+          auditEl.innerHTML = auditEvents.map(ev => `
+            <div class="item-row">
+              <div class="item-main">
+                <h4>${escapeHtml(ev.event_type)} <span class="badge ${ev.outcome === 'SUCCESS' ? 'badge-success' : 'badge-warning'}">${escapeHtml(ev.outcome)}</span></h4>
+                <div class="item-meta">
+                  <span>Waktu: ${escapeHtml(formatDate(ev.created_at))}</span>
+                  <span>IP: ${escapeHtml(ev.ip_address || '-')}</span>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        loadingView.style.display = 'none';
+        dashboardContent.style.display = 'block';
+      } catch (err) {
+        loadingView.style.display = 'none';
+        unavailableBanner.style.display = 'flex';
+        document.getElementById('unavailableMessage').textContent = 'Gagal menghubungi server: ' + err.message;
+      }
+    }
+
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+      } catch (_) {}
+      window.location.href = '/login';
+    });
+
+    loadBuyerDashboard();
+  </script>
+</body>
+</html>

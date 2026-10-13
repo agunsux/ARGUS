@@ -1428,6 +1428,22 @@ function resetDatabase() {
     // In case discovery module is loaded during initial require bootstrap
   }
 
+  try {
+    const { getMarketplaceRepository, getUserRepository } = require('./storage');
+    const mktRepo = getMarketplaceRepository();
+    if (mktRepo && typeof mktRepo.reset === 'function') {
+      mktRepo.reset();
+    } else if (mktRepo && mktRepo.fallbackRepo && typeof mktRepo.fallbackRepo.reset === 'function') {
+      mktRepo.fallbackRepo.reset();
+    }
+    const usrRepo = getUserRepository();
+    if (usrRepo && typeof usrRepo.reset === 'function') {
+      usrRepo.reset();
+    } else if (usrRepo && usrRepo.fallbackRepo && typeof usrRepo.fallbackRepo.reset === 'function') {
+      usrRepo.fallbackRepo.reset();
+    }
+  } catch (_) {}
+
   seqId = 3;
   logId = 2;
   offerAuditLogId = 1;

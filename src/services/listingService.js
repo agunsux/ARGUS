@@ -22,23 +22,98 @@ class ListingService {
   }
 
   /**
-   * Check seller KYC and listing limits
+   * Check seller KYC and listing limits (synchronous helper)
    */
   static validateSellerEligibility(sellerId) {
-    const profile = state.seller_profiles.find(p => p.user_id === sellerId);
+    const profile = (state.seller_profiles || []).find(p => p.user_id === sellerId);
     if (!profile) {
-      return { eligible: false, reason: 'Seller profile not found or KYC not submitted' };
+      return { eligible: false, reason: 'Seller profile not found or KYC not submitted', code: 'SELLER_ONBOARDING_REQUIRED' };
+    }
+    if (profile.suspended || profile.status === 'SUSPENDED' || profile.kyc_status === 'SUSPENDED') {
+      return { eligible: false, reason: 'Seller account is suspended', code: 'SELLER_SUSPENDED' };
     }
     if (profile.kyc_status !== 'VERIFIED') {
-      return { eligible: false, reason: 'Seller KYC is not VERIFIED' };
+      return {
+        eligible: false,
+        reason: `Seller KYC is not VERIFIED (current status: ${profile.kyc_status || 'UNVERIFIED'})`,
+        code: profile.kyc_status === 'PENDING_REVIEW' ? 'SELLER_KYC_PENDING_REVIEW' : 'SELLER_KYC_NOT_VERIFIED'
+      };
     }
 
-    const activeListings = state.listings.filter(
+    const activeListings = (state.listings || []).filter(
       l => l.seller_id === sellerId && ['PENDING_VERIFICATION', 'VERIFIED', 'ACTIVE', 'RESERVED'].includes(l.status)
     ).length;
 
     if (profile.active_listing_limit && activeListings >= profile.active_listing_limit) {
-      return { eligible: false, reason: `Seller active listing limit of ${profile.active_listing_limit} reached` };
+      return { eligible: false, reason: `Seller active listing limit of ${profile.active_listing_limit} reached`, code: 'SELLER_LISTING_LIMIT_REACHED' };
+    }
+
+    return { eligible: true, profile };
+  }
+
+  /**
+   * Check seller KYC and listing limits durably via UserRepository + MarketplaceRepository
+   */
+  static async validateSellerEligibilityAsync(sellerId) {
+    let profile = (state.seller_profiles || []).find(p => p.user_id === sellerId) || null;
+    try {
+      const { getUserRepository } = require('../storage');
+      const userRepo = getUserRepository();
+      const dbProfile = await userRepo.getSellerProfile(sellerId);
+      if (dbProfile) {
+        if (!profile) {
+          if (!state.seller_profiles) state.seller_profiles = [];
+          state.seller_profiles.push(dbProfile);
+          profile = dbProfile;
+        }
+      }
+    } catch (err) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw err;
+      }
+    }
+
+    if (!profile) {
+      return { eligible: false, reason: 'Seller profile not found or KYC not submitted', code: 'SELLER_ONBOARDING_REQUIRED' };
+    }
+    if (profile.suspended || profile.status === 'SUSPENDED' || profile.kyc_status === 'SUSPENDED') {
+      return { eligible: false, reason: 'Seller account is suspended', code: 'SELLER_SUSPENDED' };
+    }
+    if (profile.kyc_status !== 'VERIFIED') {
+      return {
+        eligible: false,
+        reason: `Seller KYC is not VERIFIED (current status: ${profile.kyc_status || 'UNVERIFIED'})`,
+        code: profile.kyc_status === 'PENDING_REVIEW' ? 'SELLER_KYC_PENDING_REVIEW' : 'SELLER_KYC_NOT_VERIFIED'
+      };
+    }
+
+    const activeIds = new Set();
+    for (const l of (state.listings || [])) {
+      if (l.seller_id === sellerId && ['PENDING_VERIFICATION', 'VERIFIED', 'ACTIVE', 'RESERVED'].includes(l.status)) {
+        activeIds.add(l.id);
+      }
+    }
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const mktRepo = getMarketplaceRepository();
+      const dbListings = await mktRepo.listListingsBySeller(sellerId);
+      for (const l of (dbListings || [])) {
+        if (['PENDING_VERIFICATION', 'VERIFIED', 'ACTIVE', 'RESERVED'].includes(l.status)) {
+          activeIds.add(l.id);
+        }
+      }
+    } catch (err) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw err;
+      }
+    }
+
+    if (profile.active_listing_limit && activeIds.size >= profile.active_listing_limit) {
+      return {
+        eligible: false,
+        reason: `Seller active listing limit of ${profile.active_listing_limit} reached`,
+        code: 'SELLER_LISTING_LIMIT_REACHED'
+      };
     }
 
     return { eligible: true, profile };
@@ -60,11 +135,12 @@ class ListingService {
    * @PERSISTENCE_BOUNDARY — state.tickets + state.listings mutations
    */
   static async createListing({ sellerId, eventId, seatInfo, faceValue, price, rawBarcode, evidenceBundleId, bypassPilotBounds = false }) {
-    // 1. Verify seller eligibility
-    const eligibility = this.validateSellerEligibility(sellerId);
+    // 1. Verify seller eligibility durably
+    const eligibility = await this.validateSellerEligibilityAsync(sellerId);
     if (!eligibility.eligible) {
       const err = new Error(eligibility.reason);
       err.code = 'SELLER_NOT_ELIGIBLE';
+      err.eligibilityCode = eligibility.code || 'SELLER_NOT_ELIGIBLE';
       throw err;
     }
 
