@@ -11,6 +11,7 @@
 const { renderFooterHtml } = require('../config/businessProfile');
 const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
 const { CanonicalFeeEngine } = require('../pricing/CanonicalFeeEngine');
+const { PartnerService } = require('../services/partner/PartnerService');
 
 class EventSEOService {
   /**
@@ -275,48 +276,135 @@ class EventSEOService {
       `;
     }
 
-    // Official ticket section
+    // Official ticket section (Strictly separated from resale marketplace)
     let officialTicketHtml = '';
+    const eventOffers = PartnerService.getOffersForEvent(event.event_id || event.id);
+
     if (isPastOrConcluded) {
       officialTicketHtml = `
-        <div class="official-ticket-box" style="opacity:0.8;">
-          <div class="official-header">
-            <i class="fa-solid fa-clock-rotate-left"></i>
+        <div class="official-ticket-box" style="opacity:0.8; margin-bottom:14px; border:1px solid #334155; background:#131d31; border-radius:12px; padding:18px;">
+          <div class="official-header" style="display:flex; gap:12px; align-items:center;">
+            <i class="fa-solid fa-clock-rotate-left" style="font-size:24px; color:#94a3b8;"></i>
             <div>
-              <strong>Dokumentasi Acara Terlaksana</strong>
-              <div class="text-muted">${event.organizer_name || 'Official Organizer'}</div>
+              <strong style="font-size:16px; color:#f8fafc;">Dokumentasi Acara Terlaksana</strong>
+              <div class="text-muted" style="font-size:12.5px; color:#94a3b8;">${event.organizer_name || 'Official Organizer'}</div>
             </div>
           </div>
-          <div class="official-action">
-            <span class="badge badge-slate">Acara Selesai</span>
+          <div class="official-action" style="margin-top:12px;">
+            <span class="badge badge-slate" style="background:#475569; color:#fff; font-size:12px; padding:4px 10px; border-radius:6px;">Acara Selesai</span>
           </div>
         </div>
       `;
-    } else if (event.official_ticket_url) {
-      officialTicketHtml = `
-        <div class="official-ticket-box">
-          <div class="official-header">
-            <i class="fa-solid fa-building-circle-check"></i>
-            <div>
-              <strong>Sumber Tiket Resmi (Primary Provider)</strong>
-              <div class="text-muted">${event.official_ticketing_provider || 'Penyelenggara / Mitra Resmi'}</div>
+    } else if (eventOffers && eventOffers.length > 0) {
+      officialTicketHtml = eventOffers.map(offer => {
+        const partnerName = offer.partner_name || event.official_ticketing_provider || 'Mitra Resmi';
+        const outboundUrl = `/go/${offer.partner_slug}/${offer.id}`;
+        const isSoldOut = offer.availability_status === 'SOLD_OUT';
+        const isAvailable = offer.availability_status === 'AVAILABLE';
+
+        let availBadge = `<span class="badge badge-slate" style="font-size:11px; background:#475569; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-question"></i> Cek Ketersediaan di Mitra</span>`;
+        if (isSoldOut) {
+          availBadge = `<span class="badge badge-danger" style="font-size:11px; background:#ef4444; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-xmark"></i> Tiket Resmi Habis (Sold Out)</span>`;
+        } else if (isAvailable) {
+          availBadge = `<span class="badge badge-success" style="font-size:11px; background:#10b981; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-check"></i> Tersedia di Situs Resmi</span>`;
+        }
+
+        const affiliateBadge = offer.is_affiliate
+          ? `<span class="badge badge-info" style="font-size:11px; background:#0284c7; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-handshake"></i> Mitra Afiliasi Resmi</span>`
+          : `<span class="badge badge-slate" style="font-size:11px; background:#334155; color:#94a3b8; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-building-circle-check"></i> Kanal Resmi Terverifikasi</span>`;
+
+        let priceHtml = '';
+        if (offer.price_min) {
+          priceHtml = `
+            <div style="font-size:13.5px; color:#38bdf8; font-weight:700; margin-top:4px;">
+              Mulai dari Rp ${offer.price_min.toLocaleString('id-ID')}
+              ${offer.price_max && offer.price_max > offer.price_min ? ` - Rp ${offer.price_max.toLocaleString('id-ID')}` : ''}
+            </div>
+          `;
+        }
+
+        const affiliateDisclosure = offer.is_affiliate
+          ? `<div class="affiliate-disclosure" style="font-size:11px; color:#94a3b8; margin-top:6px; line-height:1.4;"><i class="fa-solid fa-handshake"></i> Transparansi: Tikum dapat menerima komisi afiliasi untuk transaksi yang memenuhi syarat di platform mitra resmi tanpa biaya tambahan bagi pembeli.</div>`
+          : '';
+
+        return `
+          <div class="official-ticket-box" style="margin-bottom:14px; border:1px solid #2563eb; background:#131d31; border-radius:12px; padding:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+              <div class="official-header" style="display:flex; gap:12px; align-items:flex-start;">
+                <i class="fa-solid fa-building-circle-check" style="font-size:24px; color:#38bdf8; margin-top:2px;"></i>
+                <div>
+                  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:4px;">
+                    <strong style="font-size:16px; color:#f8fafc;">${partnerName}</strong>
+                    ${affiliateBadge}
+                    ${availBadge}
+                  </div>
+                  <div class="text-muted" style="font-size:12.5px; color:#94a3b8;">${offer.ticket_category || 'Tiket Resmi Primary'} · Terverifikasi oleh Tikum Trust Engine</div>
+                  ${priceHtml}
+                </div>
+              </div>
+              <div class="official-action" style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+                <a href="${outboundUrl}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-outline" style="padding:10px 18px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; border-radius:8px;">
+                  Beli Tiket Resmi di ${partnerName} <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+              </div>
+            </div>
+            <div style="font-size:11.5px; color:#94a3b8; margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; gap:4px;">
+              <div><i class="fa-solid fa-circle-info"></i> Transaksi pembelian berlangsung di platform mitra resmi (${partnerName}). Tikum tidak memproses pembayaran tiket resmi.</div>
+              ${affiliateDisclosure}
             </div>
           </div>
-          <div class="official-action">
-            <a href="${event.official_ticket_url}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-outline">
-              Buka Halaman Tiket Resmi <i class="fa-solid fa-arrow-up-right-from-square"></i>
-            </a>
+        `;
+      }).join('');
+    } else if (event.official_ticket_url) {
+      const providerName = event.official_ticketing_provider || 'Penyelenggara / Mitra Resmi';
+      const isSoldOut = event.official_ticket_availability === 'SOLD_OUT' || event.availability_status === 'SOLD_OUT';
+      const availBadge = isSoldOut
+        ? `<span class="badge badge-danger" style="font-size:11px; background:#ef4444; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-xmark"></i> Tiket Resmi Habis (Sold Out)</span>`
+        : `<span class="badge badge-slate" style="font-size:11px; background:#475569; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-question"></i> Cek Ketersediaan di Situs Resmi</span>`;
+
+      let priceHtml = '';
+      if (event.min_price) {
+        priceHtml = `
+          <div style="font-size:13.5px; color:#38bdf8; font-weight:700; margin-top:4px;">
+            Mulai dari Rp ${event.min_price.toLocaleString('id-ID')}
+            ${event.max_price && event.max_price > event.min_price ? ` - Rp ${event.max_price.toLocaleString('id-ID')}` : ''}
+          </div>
+        `;
+      }
+
+      officialTicketHtml = `
+        <div class="official-ticket-box" style="margin-bottom:14px; border:1px solid #2563eb; background:#131d31; border-radius:12px; padding:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+            <div class="official-header" style="display:flex; gap:12px; align-items:flex-start;">
+              <i class="fa-solid fa-building-circle-check" style="font-size:24px; color:#38bdf8; margin-top:2px;"></i>
+              <div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:4px;">
+                  <strong style="font-size:16px; color:#f8fafc;">Sumber Tiket Resmi (Primary Provider)</strong>
+                  ${availBadge}
+                </div>
+                <div class="text-muted" style="font-size:12.5px; color:#94a3b8;">${providerName}</div>
+                ${priceHtml}
+              </div>
+            </div>
+            <div class="official-action">
+              <a href="${event.official_ticket_url}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-outline" style="padding:10px 18px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; border-radius:8px;">
+                Buka Halaman Tiket Resmi <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </a>
+            </div>
+          </div>
+          <div style="font-size:11.5px; color:#94a3b8; margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
+            <i class="fa-solid fa-circle-info"></i> Transaksi pembelian berlangsung di platform resmi ${providerName}. Tikum tidak menerbitkan tiket atau memproses pembayaran tiket resmi ini.
           </div>
         </div>
       `;
     } else {
       officialTicketHtml = `
-        <div class="official-ticket-box unverified">
-          <div class="official-header">
-            <i class="fa-solid fa-circle-info"></i>
+        <div class="official-ticket-box unverified" style="margin-bottom:14px; border:1px dashed #334155; background:#0b1120; border-radius:12px; padding:18px;">
+          <div class="official-header" style="display:flex; gap:12px; align-items:center;">
+            <i class="fa-solid fa-circle-info" style="font-size:24px; color:#94a3b8;"></i>
             <div>
-              <strong>Kanal Tiket Resmi Belum Terdaftar</strong>
-              <div class="text-muted">Tikum sedang memverifikasi kanal penjualan tiket resmi dengan promotor terkait.</div>
+              <strong style="font-size:15px; color:#e2e8f0;">Kanal Tiket Resmi Belum Terdaftar</strong>
+              <div class="text-muted" style="font-size:12.5px; color:#94a3b8;">Tikum sedang memverifikasi kanal penjualan tiket resmi dengan promotor terkait. Silakan periksa kembali berkala atau pantau tiket resale di bawah.</div>
             </div>
           </div>
         </div>
@@ -476,7 +564,7 @@ class EventSEOService {
 
     <!-- Section 1: Official Ticket Destination (Strictly Separated) -->
     <section>
-      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-ticket"></i> <span data-i18n="events.officialTickets">Kanal Tiket Resmi</span></h2>
+      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-ticket"></i> <span data-i18n="events.officialTickets">Tiket Resmi (Kanal Pembelian Utama)</span></h2>
       ${officialTicketHtml}
     </section>
 
@@ -493,7 +581,8 @@ class EventSEOService {
 
     <!-- Section 2: Tikum Secondary Resale Market -->
     <section style="margin-top: 30px;">
-      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-shield-halved"></i> <span data-i18n="events.resaleInventory">Tiket Resale Terverifikasi di Tikum</span></h2>
+      <h2 style="font-size: 18px; margin-bottom: 12px;"><i class="fa-solid fa-shield-halved"></i> <span data-i18n="events.resaleInventory">Tiket Resale Terverifikasi (Pasar Sekunder Tikum)</span></h2>
+      <div class="section-subtitle" style="font-size:12.5px; color:#94a3b8; margin-top:-6px; margin-bottom:12px;">Tiket Resale Terverifikasi di Tikum dengan proteksi Rekening Escrow & PIC Venue.</div>
       ${resaleHtml}
     </section>
 

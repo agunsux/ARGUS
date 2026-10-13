@@ -458,6 +458,10 @@
         <span class="nav-item-left"><i class="fa-solid fa-inbox"></i> <span data-i18n="admin.tabInbox">Inbox (@tikum.app)</span></span>
         <span id="sidebarInboxCount" class="nav-badge" style="display: none; background: #0284c7; color: #fff;">0</span>
       </button>
+      <button class="nav-item" onclick="switchView('partners', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-handshake"></i> <span>Mitra &amp; Tiket Resmi</span></span>
+        <span id="sidebarPartnersCount" class="nav-badge">-</span>
+      </button>
 
       <div class="sidebar-heading" style="margin-top: 16px;" data-i18n="admin.sidebarPlatform">Platform Control</div>
       <a href="/" class="nav-item" target="_blank">
@@ -1509,6 +1513,342 @@
         </div>
       </div>
 
+      <!-- DEDICATED VIEW: PARTNER & OFFICIAL TICKETING CONTROL CENTER -->
+      <div id="viewPartners" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="font-size: 20px; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-handshake" style="color: #38bdf8;"></i> Mitra Tiketing &amp; Kanal Resmi (Partner Control Center)
+            </h2>
+            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+              Manajemen Kanal Tiket Resmi, Program Afiliasi, Resolusi Tautan Aman, dan Rekonsiliasi Konversi
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-sm" onclick="openPartnerModal()">
+              <i class="fa-solid fa-plus"></i> Daftarkan Mitra Baru
+            </button>
+            <button class="btn btn-cyan btn-sm" onclick="openOfferModal()">
+              <i class="fa-solid fa-ticket"></i> Tambah Penawaran Event
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="handleRunUrlAudit()">
+              <i class="fa-solid fa-shield-halved"></i> Audit URL Katalog
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="loadPartnersView()" title="Muat ulang data mitra">
+              <i class="fa-solid fa-rotate"></i> Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Partners KPI Overview -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
+          <div class="kpi-card" style="padding: 14px 16px;">
+            <div class="kpi-title">Total Mitra Terdaftar</div>
+            <div id="kpiPartnersTotal" class="kpi-value" style="color: #38bdf8;">-</div>
+            <div class="kpi-sub">Platform &amp; Promotor Otoritatif</div>
+          </div>
+          <div class="kpi-card" style="padding: 14px 16px;">
+            <div class="kpi-title">Mitra Aktif</div>
+            <div id="kpiPartnersActive" class="kpi-value" style="color: #34d399;">-</div>
+            <div class="kpi-sub">Tautan resmi dialirkan</div>
+          </div>
+          <div class="kpi-card" style="padding: 14px 16px;">
+            <div class="kpi-title">Tawaran Tiket Resmi</div>
+            <div id="kpiOffersTotal" class="kpi-value" style="color: #fff;">-</div>
+            <div id="kpiOffersAffiliateSub" class="kpi-sub">0 mitra afiliasi aktif</div>
+          </div>
+          <div class="kpi-card" style="padding: 14px 16px;">
+            <div class="kpi-title">Total Klik Outbound</div>
+            <div id="kpiClicksTotal" class="kpi-value" style="color: #f59e0b;">-</div>
+            <div id="kpiClicksUniqueSub" class="kpi-sub">0 klik unik terukur</div>
+          </div>
+          <div class="kpi-card" style="padding: 14px 16px;">
+            <div class="kpi-title">Konversi Partner</div>
+            <div id="kpiConversionsTotal" class="kpi-value" style="color: #38bdf8;">-</div>
+            <div class="kpi-sub">Bukti transaksi tervalidasi</div>
+          </div>
+          <div class="kpi-card" style="padding: 14px 16px;">
+            <div class="kpi-title">Komisi Disetujui (IDR)</div>
+            <div id="kpiCommissionApproved" class="kpi-value" style="color: #34d399;">Rp 0</div>
+            <div id="kpiCommissionPendingSub" class="kpi-sub">Tertunda: Rp 0</div>
+          </div>
+        </div>
+
+        <!-- Section: Daftar Mitra Tiketing -->
+        <div class="card" style="padding: 18px; margin-bottom: 20px; background: #0b1120;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-weight: 700; color: #fff; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-building-circle-check" style="color: #38bdf8;"></i> Daftar Mitra Tiketing &amp; Promotor
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <select id="partnerStatusFilter" class="form-select" onchange="loadPartnersView()" style="font-size: 12px; padding: 4px 10px;">
+                <option value="">Semua Status</option>
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="PENDING">PENDING</option>
+                <option value="SUSPENDED">SUSPENDED</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table" style="width: 100%; font-size: 12px;">
+              <thead>
+                <tr>
+                  <th>Nama Mitra</th>
+                  <th>Slug</th>
+                  <th>Tipe Mitra</th>
+                  <th>Domain Resmi (Allowlist)</th>
+                  <th>Tipe Integrasi</th>
+                  <th>Status</th>
+                  <th>Klik</th>
+                  <th>Konversi</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="partnerTableBody">
+                <tr><td colspan="9" style="text-align: center; color: #94a3b8; padding: 20px;">Memuat data mitra...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section: Penawaran Tiket Resmi Event -->
+        <div class="card" style="padding: 18px; margin-bottom: 20px; background: #0b1120;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-weight: 700; color: #fff; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-ticket" style="color: #38bdf8;"></i> Pemetaan Penawaran Tiket Resmi ke Event
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table" style="width: 100%; font-size: 12px;">
+              <thead>
+                <tr>
+                  <th>Offer ID</th>
+                  <th>Event ID</th>
+                  <th>Mitra</th>
+                  <th>Destinasi Resmi</th>
+                  <th>Tipe Link</th>
+                  <th>Kategori</th>
+                  <th>Harga Min</th>
+                  <th>Ketersediaan</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="partnerOffersTableBody">
+                <tr><td colspan="10" style="text-align: center; color: #94a3b8; padding: 20px;">Memuat penawaran tiket...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section: Hasil Audit URL Katalog & Konversi -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px;">
+          <!-- Audit Summary Card -->
+          <div class="card" style="padding: 18px; background: #0b1120;">
+            <div style="font-weight: 700; color: #fff; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-clipboard-check" style="color: #34d399;"></i> Integritas URL Resmi Katalog
+            </div>
+            <div id="urlAuditResults" style="font-size: 12px; color: #cbd5e1; line-height: 1.8;">
+              Klik tombol &ldquo;Audit URL Katalog&rdquo; untuk memeriksa status tautan resmi di seluruh event kanonikal.
+            </div>
+          </div>
+
+          <!-- Conversions & Payout Card -->
+          <div class="card" style="padding: 18px; background: #0b1120;">
+            <div style="font-weight: 700; color: #fff; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+              <span style="display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-chart-line" style="color: #f59e0b;"></i> Pelaporan Konversi Afiliasi
+              </span>
+              <button class="btn btn-secondary btn-sm" onclick="openManualReconcileModal()" style="font-size: 11px;">
+                <i class="fa-solid fa-plus"></i> Rekonsiliasi Manual
+              </button>
+            </div>
+            <div id="conversionsListContainer">
+              <div style="padding: 24px; text-align: center; color: #94a3b8; font-size: 13px;">
+                <i class="fa-solid fa-info-circle" style="font-size: 24px; margin-bottom: 8px; display: block; color: #64748b;"></i>
+                Belum ada data konversi partner
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Register / Edit Partner -->
+      <div id="partnerModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+        <div class="card" style="max-width: 580px; width: 100%; border-color: #38bdf8; background: #0f172a; max-height: 85vh; overflow-y: auto;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+            <div style="font-weight: 700; color: #fff; font-size: 16px;">
+              <i class="fa-solid fa-handshake" style="color: #38bdf8;"></i> <span id="partnerModalTitle">Daftarkan Mitra Baru</span>
+            </div>
+            <button onclick="closePartnerModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <form id="partnerForm" onsubmit="handleSavePartner(event)" style="display: flex; flex-direction: column; gap: 12px;">
+            <input type="hidden" id="editPartnerId">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Nama Mitra *</label>
+                <input type="text" id="partnerFormName" class="form-input" style="width: 100%; box-sizing: border-box;" required placeholder="Contoh: LOKET">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Slug Identitas *</label>
+                <input type="text" id="partnerFormSlug" class="form-input" style="width: 100%; box-sizing: border-box;" required placeholder="loket">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Tipe Mitra *</label>
+                <select id="partnerFormType" class="form-select" style="width: 100%; box-sizing: border-box;">
+                  <option value="TICKETING_PLATFORM">TICKETING_PLATFORM</option>
+                  <option value="PROMOTER">PROMOTER</option>
+                  <option value="AUTHORIZED_DISTRIBUTOR">AUTHORIZED_DISTRIBUTOR</option>
+                  <option value="AFFILIATE_NETWORK">AFFILIATE_NETWORK</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Tipe Integrasi *</label>
+                <select id="partnerFormIntegration" class="form-select" style="width: 100%; box-sizing: border-box;">
+                  <option value="DIRECT_OFFICIAL_LINK">DIRECT_OFFICIAL_LINK (Non-Afiliasi)</option>
+                  <option value="APPROVED_AFFILIATE_LINK">APPROVED_AFFILIATE_LINK (Afiliasi Disetujui)</option>
+                  <option value="AUTHORIZED_API">AUTHORIZED_API</option>
+                  <option value="AUTHORIZED_FEED">AUTHORIZED_FEED</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Domain Resmi Allowlist * (pisahkan dengan koma)</label>
+              <input type="text" id="partnerFormDomains" class="form-input" style="width: 100%; box-sizing: border-box;" required placeholder="loket.com, www.loket.com">
+              <span style="font-size: 10px; color: #64748b;">Penting: Tautan outbound hanya diizinkan ke domain dalam allowlist ini.</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Status *</label>
+                <select id="partnerFormStatus" class="form-select" style="width: 100%; box-sizing: border-box;">
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="PENDING">PENDING</option>
+                  <option value="SUSPENDED">SUSPENDED</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">URL Program / Kontak</label>
+                <input type="url" id="partnerFormProgramUrl" class="form-input" style="width: 100%; box-sizing: border-box;" placeholder="https://loket.com">
+              </div>
+            </div>
+            <div>
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Catatan Integrasi / Bukti Perjanjian</label>
+              <textarea id="partnerFormNotes" class="form-input" rows="2" style="width: 100%; box-sizing: border-box;" placeholder="Catatan persetujuan afiliasi atau kanal resmi..."></textarea>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="closePartnerModal()">Batal</button>
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk"></i> Simpan Mitra</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal Create / Edit Offer -->
+      <div id="offerModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+        <div class="card" style="max-width: 580px; width: 100%; border-color: #38bdf8; background: #0f172a; max-height: 85vh; overflow-y: auto;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+            <div style="font-weight: 700; color: #fff; font-size: 16px;">
+              <i class="fa-solid fa-ticket" style="color: #38bdf8;"></i> <span id="offerModalTitle">Tambah Penawaran Tiket Resmi Event</span>
+            </div>
+            <button onclick="closeOfferModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <form id="offerForm" onsubmit="handleSaveOffer(event)" style="display: flex; flex-direction: column; gap: 12px;">
+            <input type="hidden" id="editOfferId">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Canonical Event ID *</label>
+                <input type="text" id="offerEventIdInput" class="form-input" style="width: 100%; box-sizing: border-box;" required placeholder="ev-can-2f5e5765 atau pestapora-2026">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Pilih Mitra *</label>
+                <select id="offerPartnerSelect" class="form-select" style="width: 100%; box-sizing: border-box;" required>
+                  <option value="">Pilih Mitra...</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">URL Destinasi Tiket Resmi *</label>
+              <input type="url" id="offerDestUrlInput" class="form-input" style="width: 100%; box-sizing: border-box;" required placeholder="https://www.loket.com/event/...">
+              <span style="font-size: 10px; color: #64748b;">Domain wajib terdaftar dalam allowlist mitra yang dipilih.</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Kategori / Tipe Tiket</label>
+                <input type="text" id="offerCategoryInput" class="form-input" style="width: 100%; box-sizing: border-box;" placeholder="General Admission / Festival">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Status Ketersediaan *</label>
+                <select id="offerAvailSelect" class="form-select" style="width: 100%; box-sizing: border-box;">
+                  <option value="AVAILABLE">AVAILABLE (Tersedia)</option>
+                  <option value="SOLD_OUT">SOLD_OUT (Habis)</option>
+                  <option value="UNVERIFIED">UNVERIFIED (Perlu Cek Manual)</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Harga Mulai (IDR)</label>
+                <input type="number" id="offerPriceMinInput" class="form-input" style="width: 100%; box-sizing: border-box;" placeholder="Contoh: 500000">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Harga Maks (IDR, opsional)</label>
+                <input type="number" id="offerPriceMaxInput" class="form-input" style="width: 100%; box-sizing: border-box;" placeholder="Contoh: 1500000">
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="closeOfferModal()">Batal</button>
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk"></i> Simpan Penawaran</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal Manual Reconcile Conversion -->
+      <div id="manualReconcileModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+        <div class="card" style="max-width: 500px; width: 100%; border-color: #f59e0b; background: #0f172a;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+            <div style="font-weight: 700; color: #fff; font-size: 15px;">
+              <i class="fa-solid fa-scale-balanced" style="color: #f59e0b;"></i> Rekonsiliasi Konversi Afiliasi Manual
+            </div>
+            <button onclick="closeManualReconcileModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <form id="reconcileForm" onsubmit="handleSaveReconciliation(event)" style="display: flex; flex-direction: column; gap: 12px;">
+            <div>
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Pilih Mitra *</label>
+              <select id="reconcilePartnerSelect" class="form-select" style="width: 100%; box-sizing: border-box;" required></select>
+            </div>
+            <div>
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Order / Transaction Reference Partner *</label>
+              <input type="text" id="reconcileOrderRefInput" class="form-input" style="width: 100%; box-sizing: border-box;" required placeholder="LKT-TRX-998822">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Total Nilai Transaksi (IDR)</label>
+                <input type="number" id="reconcileAmountInput" class="form-input" style="width: 100%; box-sizing: border-box;" required placeholder="750000">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Komisi Disetujui (IDR)</label>
+                <input type="number" id="reconcileCommissionInput" class="form-input" style="width: 100%; box-sizing: border-box;" required placeholder="37500">
+              </div>
+            </div>
+            <div>
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Status Konversi *</label>
+              <select id="reconcileStatusSelect" class="form-select" style="width: 100%; box-sizing: border-box;">
+                <option value="APPROVED">APPROVED (Terkonfirmasi)</option>
+                <option value="PENDING">PENDING (Menunggu Settlement Mitra)</option>
+                <option value="REVERSED">REVERSED (Dibatalkan/Refund Mitra)</option>
+              </select>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="closeManualReconcileModal()">Batal</button>
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk"></i> Simpan Rekonsiliasi</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <!-- Modal Create / Edit Article -->
       <div id="articleModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
         <div class="card" style="max-width: 720px; width: 100%; border-color: #0284c7; background: #0f172a; max-height: 85vh; overflow-y: auto;">
@@ -1909,7 +2249,7 @@
     }
 
     // View Switching
-    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust', 'payments', 'editorial', 'inbox'];
+    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust', 'payments', 'editorial', 'inbox', 'partners'];
 
     function switchView(viewName, btn = null) {
       currentView = viewName;
@@ -1924,6 +2264,8 @@
       document.getElementById('viewPayments').style.display = viewName === 'payments' ? 'block' : 'none';
       document.getElementById('viewEditorial').style.display = viewName === 'editorial' ? 'block' : 'none';
       document.getElementById('viewInbox').style.display = viewName === 'inbox' ? 'block' : 'none';
+      const viewPartnersEl = document.getElementById('viewPartners');
+      if (viewPartnersEl) viewPartnersEl.style.display = viewName === 'partners' ? 'block' : 'none';
       document.getElementById('viewGeneric').style.display = DEDICATED_VIEWS.includes(viewName) ? 'none' : 'block';
 
       if (viewName === 'event-supply') {
@@ -1938,6 +2280,8 @@
         loadEditorialView();
       } else if (viewName === 'inbox') {
         loadInboxView();
+      } else if (viewName === 'partners') {
+        loadPartnersView();
       } else if (!DEDICATED_VIEWS.includes(viewName)) {
         loadGenericEntityView(viewName);
       }
@@ -3626,6 +3970,393 @@
         loadInboxView();
       } catch (err) {
         showToast('Gagal update status: ' + err.message, 'danger');
+      }
+    // ==========================================
+    // PARTNER & OFFICIAL TICKETING CONTROL CENTER JS
+    // ==========================================
+    let cachedPartners = [];
+    let cachedOffers = [];
+
+    async function loadPartnersView() {
+      try {
+        const statusFilter = document.getElementById('partnerStatusFilter') ? document.getElementById('partnerStatusFilter').value : '';
+        const statusParam = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : '';
+
+        const [partnersRes, offersRes, analyticsRes] = await Promise.all([
+          adminFetch('/api/admin/partners' + statusParam),
+          adminFetch('/api/admin/partners/offers'),
+          adminFetch('/api/admin/partners/analytics')
+        ]);
+
+        if (partnersRes.ok) {
+          const data = await partnersRes.json();
+          cachedPartners = data.partners || [];
+          renderPartnersTable(cachedPartners);
+          populatePartnerDropdowns(cachedPartners);
+          const badgeEl = document.getElementById('sidebarPartnersCount');
+          if (badgeEl) badgeEl.innerText = cachedPartners.length;
+        }
+
+        if (offersRes.ok) {
+          const data = await offersRes.json();
+          cachedOffers = data.offers || [];
+          renderPartnerOffersTable(cachedOffers);
+        }
+
+        if (analyticsRes.ok) {
+          const data = await analyticsRes.json();
+          renderPartnerAnalytics(data.analytics || {});
+        }
+      } catch (err) {
+        showToast('Gagal memuat data mitra: ' + err.message, 'danger');
+      }
+    }
+
+    function renderPartnersTable(partners) {
+      const tbody = document.getElementById('partnerTableBody');
+      if (!tbody) return;
+      if (!partners || partners.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #94a3b8; padding: 24px;">Tidak ada data mitra terdaftar.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = partners.map(p => {
+        const statusColor = p.status === 'ACTIVE' ? '#10b981' : (p.status === 'PENDING' ? '#f59e0b' : '#ef4444');
+        const domains = (p.official_domains || []).map(d => `<span class="badge badge-sm" style="background:#1e293b; color:#38bdf8; font-size:10px; margin:2px;">${d}</span>`).join(' ');
+        const isAffiliate = p.integration_type === 'APPROVED_AFFILIATE_LINK';
+        const integrationBadge = isAffiliate
+          ? '<span class="badge" style="background:#0284c7; color:#fff; font-size:10px;">APPROVED AFFILIATE</span>'
+          : '<span class="badge" style="background:#334155; color:#94a3b8; font-size:10px;">DIRECT OFFICIAL</span>';
+
+        const nextAction = p.status === 'ACTIVE'
+          ? `<button class="btn btn-secondary btn-sm" onclick="handleTogglePartnerStatus('${p.id}', 'SUSPENDED')" style="padding:2px 8px; font-size:11px; color:#ef4444;">Suspend</button>`
+          : `<button class="btn btn-secondary btn-sm" onclick="handleTogglePartnerStatus('${p.id}', 'ACTIVE')" style="padding:2px 8px; font-size:11px; color:#10b981;">Aktifkan</button>`;
+
+        return `
+          <tr>
+            <td><strong>${p.name}</strong></td>
+            <td><code>${p.slug}</code></td>
+            <td><span style="font-size:11px; color:#94a3b8;">${p.partner_type}</span></td>
+            <td>${domains}</td>
+            <td>${integrationBadge}</td>
+            <td><span class="badge" style="color:${statusColor}; font-weight:700;">${p.status}</span></td>
+            <td id="partnerClicks-${p.id}">-</td>
+            <td id="partnerConvs-${p.id}">-</td>
+            <td>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-secondary btn-sm" onclick='openEditPartnerModal(${JSON.stringify(p)})' style="padding:2px 8px; font-size:11px;">Edit</button>
+                ${nextAction}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderPartnerOffersTable(offers) {
+      const tbody = document.getElementById('partnerOffersTableBody');
+      if (!tbody) return;
+      if (!offers || offers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: #94a3b8; padding: 24px;">Belum ada penawaran tiket mitra resmi yang terdaftar.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = offers.map(o => {
+        const priceText = o.price_min ? `Rp ${Number(o.price_min).toLocaleString('id-ID')}` : '-';
+        const activeColor = o.is_active !== false ? '#10b981' : '#64748b';
+        const activeText = o.is_active !== false ? 'AKTIF' : 'NONAKTIF';
+        const linkBadge = o.is_affiliate
+          ? '<span class="badge" style="background:#0284c7; color:#fff; font-size:10px;">Afiliasi</span>'
+          : '<span class="badge" style="background:#334155; color:#94a3b8; font-size:10px;">Direct</span>';
+
+        return `
+          <tr>
+            <td><code>${o.id}</code></td>
+            <td><code>${o.event_id}</code></td>
+            <td><strong>${o.partner_name || o.partner_slug}</strong></td>
+            <td><a href="${o.destination_url}" target="_blank" rel="noopener noreferrer" style="color:#38bdf8; text-decoration:underline; font-size:11px;">${o.destination_url.substring(0, 32)}...</a></td>
+            <td>${linkBadge}</td>
+            <td><span style="font-size:11px;">${o.ticket_category || '-'}</span></td>
+            <td><strong style="color:#38bdf8;">${priceText}</strong></td>
+            <td><span class="badge">${o.availability_status}</span></td>
+            <td><span class="badge" style="color:${activeColor}; font-weight:700;">${activeText}</span></td>
+            <td>
+              <button class="btn btn-secondary btn-sm" onclick="handleToggleOfferActive('${o.id}', ${o.is_active !== false})" style="padding:2px 8px; font-size:11px;">
+                ${o.is_active !== false ? 'Nonaktifkan' : 'Aktifkan'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderPartnerAnalytics(analytics) {
+      const partnersTotalEl = document.getElementById('kpiPartnersTotal');
+      if (partnersTotalEl) partnersTotalEl.innerText = analytics.total_partners ?? '-';
+
+      const partnersActiveEl = document.getElementById('kpiPartnersActive');
+      if (partnersActiveEl) partnersActiveEl.innerText = analytics.active_partners ?? '-';
+
+      const offersTotalEl = document.getElementById('kpiOffersTotal');
+      if (offersTotalEl) offersTotalEl.innerText = analytics.total_offers ?? '-';
+
+      const offersAffiliateSubEl = document.getElementById('kpiOffersAffiliateSub');
+      if (offersAffiliateSubEl) offersAffiliateSubEl.innerText = `${analytics.affiliate_enabled_offers || 0} penawaran afiliasi`;
+
+      const clicksTotalEl = document.getElementById('kpiClicksTotal');
+      if (clicksTotalEl) clicksTotalEl.innerText = analytics.total_clicks ?? 0;
+
+      const clicksUniqueSubEl = document.getElementById('kpiClicksUniqueSub');
+      if (clicksUniqueSubEl) clicksUniqueSubEl.innerText = `${analytics.unique_clicks || 0} klik unik terukur`;
+
+      const conversionsTotalEl = document.getElementById('kpiConversionsTotal');
+      if (conversionsTotalEl) conversionsTotalEl.innerText = analytics.total_conversions ?? 0;
+
+      const commApprovedEl = document.getElementById('kpiCommissionApproved');
+      if (commApprovedEl) commApprovedEl.innerText = `Rp ${(analytics.approved_commission || 0).toLocaleString('id-ID')}`;
+
+      const commPendingSubEl = document.getElementById('kpiCommissionPendingSub');
+      if (commPendingSubEl) commPendingSubEl.innerText = `Tertunda: Rp ${(analytics.pending_commission || 0).toLocaleString('id-ID')}`;
+
+      // Update per-partner click counts in table
+      if (Array.isArray(analytics.partner_metrics)) {
+        analytics.partner_metrics.forEach(m => {
+          const clickEl = document.getElementById(`partnerClicks-${m.id}`);
+          if (clickEl) clickEl.innerText = m.clicks_count || 0;
+          const convEl = document.getElementById(`partnerConvs-${m.id}`);
+          if (convEl) convEl.innerText = m.conversions_count || 0;
+        });
+      }
+
+      // Render conversions list or honest empty state
+      const convContainer = document.getElementById('conversionsListContainer');
+      if (convContainer) {
+        if (!analytics.has_conversion_data || analytics.total_conversions === 0) {
+          convContainer.innerHTML = `
+            <div style="padding: 24px; text-align: center; color: #94a3b8; font-size: 13px;">
+              <i class="fa-solid fa-circle-info" style="font-size: 24px; margin-bottom: 8px; display: block; color: #64748b;"></i>
+              ${analytics.empty_state_message || 'Belum ada data konversi partner'}
+            </div>
+          `;
+        }
+      }
+    }
+
+    function populatePartnerDropdowns(partners) {
+      const selects = [document.getElementById('offerPartnerSelect'), document.getElementById('reconcilePartnerSelect')];
+      selects.forEach(select => {
+        if (!select) return;
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">Pilih Mitra...</option>' + partners.map(p => `
+          <option value="${p.id}">${p.name} (${p.slug})</option>
+        `).join('');
+        if (currentVal) select.value = currentVal;
+      });
+    }
+
+    function openPartnerModal() {
+      document.getElementById('editPartnerId').value = '';
+      document.getElementById('partnerModalTitle').innerText = 'Daftarkan Mitra Baru';
+      document.getElementById('partnerFormName').value = '';
+      document.getElementById('partnerFormSlug').value = '';
+      document.getElementById('partnerFormDomains').value = '';
+      document.getElementById('partnerFormProgramUrl').value = '';
+      document.getElementById('partnerFormNotes').value = '';
+      document.getElementById('partnerModal').style.display = 'flex';
+    }
+
+    function openEditPartnerModal(partner) {
+      document.getElementById('editPartnerId').value = partner.id;
+      document.getElementById('partnerModalTitle').innerText = `Edit Mitra: ${partner.name}`;
+      document.getElementById('partnerFormName').value = partner.name || '';
+      document.getElementById('partnerFormSlug').value = partner.slug || '';
+      document.getElementById('partnerFormType').value = partner.partner_type || 'TICKETING_PLATFORM';
+      document.getElementById('partnerFormIntegration').value = partner.integration_type || 'DIRECT_OFFICIAL_LINK';
+      document.getElementById('partnerFormDomains').value = (partner.official_domains || []).join(', ');
+      document.getElementById('partnerFormStatus').value = partner.status || 'ACTIVE';
+      document.getElementById('partnerFormProgramUrl').value = partner.affiliate_program_url || '';
+      document.getElementById('partnerFormNotes').value = partner.notes || '';
+      document.getElementById('partnerModal').style.display = 'flex';
+    }
+
+    function closePartnerModal() {
+      document.getElementById('partnerModal').style.display = 'none';
+    }
+
+    async function handleSavePartner(e) {
+      e.preventDefault();
+      const id = document.getElementById('editPartnerId').value;
+      const payload = {
+        name: document.getElementById('partnerFormName').value.trim(),
+        slug: document.getElementById('partnerFormSlug').value.trim(),
+        partner_type: document.getElementById('partnerFormType').value,
+        integration_type: document.getElementById('partnerFormIntegration').value,
+        official_domains: document.getElementById('partnerFormDomains').value.split(',').map(d => d.trim()).filter(Boolean),
+        status: document.getElementById('partnerFormStatus').value,
+        affiliate_program_url: document.getElementById('partnerFormProgramUrl').value.trim() || null,
+        notes: document.getElementById('partnerFormNotes').value.trim() || null
+      };
+
+      try {
+        const url = id ? `/api/admin/partners/${id}` : '/api/admin/partners';
+        const method = id ? 'PATCH' : 'POST';
+        const res = await adminFetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menyimpan data mitra');
+        showToast('Data mitra berhasil disimpan', 'success');
+        closePartnerModal();
+        loadPartnersView();
+      } catch (err) {
+        showToast('Error: ' + err.message, 'danger');
+      }
+    }
+
+    async function handleTogglePartnerStatus(partnerId, newStatus) {
+      if (!confirm(`Ubah status mitra ${partnerId} menjadi ${newStatus}?`)) return;
+      try {
+        const res = await adminFetch(`/api/admin/partners/${partnerId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal memperbarui status');
+        showToast(`Mitra diperbarui ke status ${newStatus}`, 'info');
+        loadPartnersView();
+      } catch (err) {
+        showToast('Error: ' + err.message, 'danger');
+      }
+    }
+
+    function openOfferModal() {
+      document.getElementById('editOfferId').value = '';
+      document.getElementById('offerModalTitle').innerText = 'Tambah Penawaran Tiket Resmi Event';
+      document.getElementById('offerEventIdInput').value = '';
+      document.getElementById('offerDestUrlInput').value = '';
+      document.getElementById('offerCategoryInput').value = 'General Admission';
+      document.getElementById('offerPriceMinInput').value = '';
+      document.getElementById('offerPriceMaxInput').value = '';
+      document.getElementById('offerModal').style.display = 'flex';
+    }
+
+    function closeOfferModal() {
+      document.getElementById('offerModal').style.display = 'none';
+    }
+
+    async function handleSaveOffer(e) {
+      e.preventDefault();
+      const payload = {
+        event_id: document.getElementById('offerEventIdInput').value.trim(),
+        partner_id: document.getElementById('offerPartnerSelect').value,
+        destination_url: document.getElementById('offerDestUrlInput').value.trim(),
+        ticket_category: document.getElementById('offerCategoryInput').value.trim() || 'General Admission',
+        availability_status: document.getElementById('offerAvailSelect').value,
+        price_min: document.getElementById('offerPriceMinInput').value ? Number(document.getElementById('offerPriceMinInput').value) : null,
+        price_max: document.getElementById('offerPriceMaxInput').value ? Number(document.getElementById('offerPriceMaxInput').value) : null
+      };
+
+      try {
+        const res = await adminFetch('/api/admin/partners/offers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menyimpan penawaran tiket');
+        showToast('Penawaran tiket resmi berhasil disimpan', 'success');
+        closeOfferModal();
+        loadPartnersView();
+      } catch (err) {
+        showToast('Error: ' + err.message, 'danger');
+      }
+    }
+
+    async function handleToggleOfferActive(offerId, currentActive) {
+      try {
+        const res = await adminFetch(`/api/admin/partners/offers/${offerId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_active: !currentActive })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal mengubah status offer');
+        showToast(`Penawaran ${offerId} diperbarui`, 'info');
+        loadPartnersView();
+      } catch (err) {
+        showToast('Error: ' + err.message, 'danger');
+      }
+    }
+
+    async function handleRunUrlAudit() {
+      const container = document.getElementById('urlAuditResults');
+      if (container) container.innerHTML = '<span style="color:#38bdf8;"><i class="fa-solid fa-spinner fa-spin"></i> Menjalankan audit URL resmi katalog...</span>';
+      try {
+        const res = await adminFetch('/api/admin/partners/urls/audit');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Audit gagal dijalankan');
+        const a = data.audit || {};
+        if (container) {
+          container.innerHTML = `
+            <div style="background:#0f172a; padding:12px; border-radius:8px; border:1px solid #1e293b;">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+                <div>Total Event: <strong>${a.total_inspected}</strong></div>
+                <div>URL Terverifikasi: <strong style="color:#10b981;">${a.verified_official}</strong></div>
+                <div>URL Belum Terverifikasi: <strong style="color:#f59e0b;">${a.unverified}</strong></div>
+                <div>Belum Ada URL (Missing): <strong style="color:#94a3b8;">${a.missing}</strong></div>
+                <div>URL Kedaluwarsa (Stale): <strong style="color:#ef4444;">${a.stale}</strong></div>
+                <div>Tautan Afiliasi Aktif: <strong style="color:#38bdf8;">${a.affiliate_enabled}</strong></div>
+              </div>
+              <div style="font-size:11px; color:#64748b; border-top:1px solid #1e293b; padding-top:6px;">
+                Audit selesai dijalankan secara read-only terhadap canonical registry tanpa modifikasi database produksi.
+              </div>
+            </div>
+          `;
+        }
+        showToast(`Audit selesai: ${a.verified_official} URL resmi terverifikasi dari ${a.total_inspected} event`, 'success');
+      } catch (err) {
+        if (container) container.innerText = 'Gagal menjalankan audit: ' + err.message;
+        showToast('Audit gagal: ' + err.message, 'danger');
+      }
+    }
+
+    function openManualReconcileModal() {
+      document.getElementById('reconcileOrderRefInput').value = '';
+      document.getElementById('reconcileAmountInput').value = '';
+      document.getElementById('reconcileCommissionInput').value = '';
+      document.getElementById('manualReconcileModal').style.display = 'flex';
+    }
+
+    function closeManualReconcileModal() {
+      document.getElementById('manualReconcileModal').style.display = 'none';
+    }
+
+    async function handleSaveReconciliation(e) {
+      e.preventDefault();
+      const payload = {
+        partner_id: document.getElementById('reconcilePartnerSelect').value,
+        order_ref: document.getElementById('reconcileOrderRefInput').value.trim(),
+        amount: Number(document.getElementById('reconcileAmountInput').value),
+        commission_amount: Number(document.getElementById('reconcileCommissionInput').value),
+        status: document.getElementById('reconcileStatusSelect').value
+      };
+
+      try {
+        const res = await adminFetch('/api/admin/partners/conversions/reconcile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal menyimpan rekonsiliasi');
+        showToast('Rekonsiliasi konversi berhasil disimpan', 'success');
+        closeManualReconcileModal();
+        loadPartnersView();
+      } catch (err) {
+        showToast('Error: ' + err.message, 'danger');
       }
     }
 

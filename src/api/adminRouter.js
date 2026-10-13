@@ -2866,4 +2866,195 @@ router.post('/demand-alerts/:id/notify', requireAdmin, async (req, res) => {
   }
 });
 
+// ==========================================
+// ADMIN PARTNER & OFFICIAL TICKETING CONTROL CENTER
+// ==========================================
+
+const { PartnerService, PARTNER_STATUS, INTEGRATION_TYPES } = require('../services/partner/PartnerService');
+
+/**
+ * GET /api/admin/partners
+ * Lists all registered partners.
+ */
+router.get('/partners', requireAdmin, (req, res) => {
+  try {
+    const { status, integration_type } = req.query;
+    const partners = PartnerService.listPartners({ status, integration_type });
+    return res.json({
+      success: true,
+      total: partners.length,
+      partners
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message, code: 'PARTNERS_FETCH_FAILED' });
+  }
+});
+
+/**
+ * POST /api/admin/partners
+ * Registers a new partner.
+ */
+router.post('/partners', requireAdmin, (req, res) => {
+  try {
+    const adminUser = resolveUser(req) || { id: 'admin-1' };
+    const partner = PartnerService.registerPartner(adminUser, req.body || {});
+    return res.status(201).json({
+      success: true,
+      message: 'Partner registered successfully',
+      partner
+    });
+  } catch (err) {
+    const status = err.status || 400;
+    return res.status(status).json({ success: false, error: err.message, code: err.code || 'PARTNER_CREATE_FAILED' });
+  }
+});
+
+/**
+ * GET /api/admin/partners/analytics
+ * Returns truthful partner and affiliate metrics.
+ */
+router.get('/partners/analytics', requireAdmin, (req, res) => {
+  try {
+    const analytics = PartnerService.getAnalytics();
+    return res.json({
+      success: true,
+      analytics
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message, code: 'ANALYTICS_FAILED' });
+  }
+});
+
+/**
+ * GET /api/admin/partners/urls/audit
+ * Inspects all official ticket URLs across canonical event catalog.
+ */
+router.get('/partners/urls/audit', requireAdmin, (req, res) => {
+  try {
+    const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
+    const auditReport = PartnerService.auditCatalogOfficialUrls(canonicalRegistry);
+    return res.json({
+      success: true,
+      audit: auditReport
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message, code: 'URL_AUDIT_FAILED' });
+  }
+});
+
+/**
+ * GET /api/admin/partners/offers
+ * Lists event-to-partner offers.
+ */
+router.get('/partners/offers', requireAdmin, (req, res) => {
+  try {
+    const { partner_id, event_id, is_affiliate } = req.query;
+    const offers = PartnerService.listOffers({
+      partner_id,
+      event_id,
+      is_affiliate: is_affiliate !== undefined ? is_affiliate === 'true' : null
+    });
+    return res.json({
+      success: true,
+      total: offers.length,
+      offers
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message, code: 'OFFERS_FETCH_FAILED' });
+  }
+});
+
+/**
+ * POST /api/admin/partners/offers
+ * Creates or updates an event-to-partner offer.
+ */
+router.post('/partners/offers', requireAdmin, (req, res) => {
+  try {
+    const adminUser = resolveUser(req) || { id: 'admin-1' };
+    const offer = PartnerService.createOrUpdateOffer(adminUser, req.body || {});
+    return res.status(201).json({
+      success: true,
+      message: 'Event offer saved successfully',
+      offer
+    });
+  } catch (err) {
+    const status = err.status || 400;
+    return res.status(status).json({ success: false, error: err.message, code: err.code || 'OFFER_SAVE_FAILED' });
+  }
+});
+
+/**
+ * PATCH /api/admin/partners/offers/:offerId
+ * Toggles or updates an offer.
+ */
+router.patch('/partners/offers/:offerId', requireAdmin, (req, res) => {
+  try {
+    const adminUser = resolveUser(req) || { id: 'admin-1' };
+    const { is_active } = req.body;
+    const offer = PartnerService.toggleOffer(adminUser, req.params.offerId, is_active);
+    return res.json({
+      success: true,
+      message: 'Offer updated successfully',
+      offer
+    });
+  } catch (err) {
+    const status = err.status || 400;
+    return res.status(status).json({ success: false, error: err.message, code: err.code || 'OFFER_UPDATE_FAILED' });
+  }
+});
+
+/**
+ * POST /api/admin/partners/conversions/reconcile
+ * Manually reconciles partner conversion report with audit logging.
+ */
+router.post('/partners/conversions/reconcile', requireAdmin, (req, res) => {
+  try {
+    const adminUser = resolveUser(req) || { id: 'admin-1' };
+    const conversion = PartnerService.reconcileManualConversion(adminUser, req.body || {});
+    return res.status(200).json({
+      success: true,
+      message: 'Conversion reconciled successfully',
+      conversion
+    });
+  } catch (err) {
+    const status = err.status || 400;
+    return res.status(status).json({ success: false, error: err.message, code: err.code || 'RECONCILIATION_FAILED' });
+  }
+});
+
+/**
+ * GET /api/admin/partners/:id
+ * Retrieves single partner by ID or slug.
+ */
+router.get('/partners/:id', requireAdmin, (req, res) => {
+  try {
+    const partner = PartnerService.getPartner(req.params.id);
+    if (!partner) {
+      return res.status(404).json({ success: false, error: 'Partner not found', code: 'PARTNER_NOT_FOUND' });
+    }
+    return res.json({ success: true, partner });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message, code: 'PARTNER_FETCH_FAILED' });
+  }
+});
+
+/**
+ * PATCH /api/admin/partners/:id
+ * Updates partner status, domains, or settings.
+ */
+router.patch('/partners/:id', requireAdmin, (req, res) => {
+  try {
+    const adminUser = resolveUser(req) || { id: 'admin-1' };
+    const partner = PartnerService.updatePartner(adminUser, req.params.id, req.body || {});
+    return res.json({
+      success: true,
+      message: 'Partner updated successfully',
+      partner
+    });
+  } catch (err) {
+    const status = err.status || 400;
+    return res.status(status).json({ success: false, error: err.message, code: err.code || 'PARTNER_UPDATE_FAILED' });
+  }
+});
+
 module.exports = router;

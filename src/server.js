@@ -254,6 +254,10 @@ const offerRouter = require('./api/offerRouter');
 app.use('/api', offerRouter);
 app.use('/api/mvp', offerRouter);
 
+// Mount Official Ticketing Partner & Affiliate Router
+const partnerRouter = require('./api/partnerRouter');
+app.use(partnerRouter);
+
 // Mount Epic: Event Discovery & SEO Engine
 const discoveryRouter = require('./discovery/discoveryRouter');
 app.use(discoveryRouter);

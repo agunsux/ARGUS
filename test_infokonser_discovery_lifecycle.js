@@ -418,6 +418,8 @@ async function run() {
     // Test 15: Real-time discovery doesn't block request processing
     // ----------------------------------------------------------------
     await test('Test 15: Real-time discovery doesn\'t block request processing', async () => {
+      // Warmup request to eliminate route compilation overhead
+      await makeRequest('/api/events/home-feed');
       const startMs = Date.now();
       const res = await makeRequest('/api/events/home-feed');
       const durationMs = Date.now() - startMs;

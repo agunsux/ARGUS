@@ -59,6 +59,10 @@ const state = {
   partners: [],
   partner_inventory: [],
   consignment_agreements: [],
+  partner_offers: [],
+  affiliate_clicks: [],
+  affiliate_conversions: [],
+  partner_audit_logs: [],
   pic_duty_authorizations: [],
   demand_alerts: []
 };
@@ -1405,6 +1409,10 @@ function resetDatabase() {
   state.partners = [];
   state.partner_inventory = [];
   state.consignment_agreements = [];
+  state.partner_offers = [];
+  state.affiliate_clicks = [];
+  state.affiliate_conversions = [];
+  state.partner_audit_logs = [];
   state.pic_duty_authorizations = [];
 
   try {
