@@ -440,8 +440,8 @@ class EventPicService {
       throw err;
     }
 
-    if (order.status !== 'PAID_ESCROWED') {
-      const err = new Error(`Cannot admit order with status '${order.status}'. Order must be PAID_ESCROWED.`);
+    if (order.status !== 'PAID_ESCROWED' && order.status !== 'PAID_PLATFORM_HELD') {
+      const err = new Error(`Cannot admit order with status '${order.status}'. Order must be PAID_ESCROWED or PAID_PLATFORM_HELD.`);
       err.code = 'ORDER_NOT_IN_ESCROW';
       err.status = 403;
       throw err;
@@ -553,8 +553,8 @@ class EventPicService {
       throw err;
     }
 
-    if (order.status !== 'PAID_ESCROWED') {
-      const err = new Error(`Cannot admit order with status '${order.status}'. Order must be PAID_ESCROWED.`);
+    if (order.status !== 'PAID_ESCROWED' && order.status !== 'PAID_PLATFORM_HELD') {
+      const err = new Error(`Cannot admit order with status '${order.status}'. Order must be PAID_ESCROWED or PAID_PLATFORM_HELD.`);
       err.code = 'ORDER_NOT_IN_ESCROW';
       err.status = 403;
       throw err;

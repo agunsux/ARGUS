@@ -187,7 +187,7 @@ class VenueOperationsService {
       },
       operational_metrics: {
         expected_orders_count: orders.length,
-        paid_escrow_orders_count: orders.filter(o => o.status === 'PAID_ESCROWED').length,
+        paid_escrow_orders_count: orders.filter(o => o.status === 'PAID_ESCROWED' || o.status === 'PAID_PLATFORM_HELD').length,
         active_incidents_count: openIncidents.length
       },
       risk_alerts: openIncidents.map(i => ({

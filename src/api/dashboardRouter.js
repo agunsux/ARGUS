@@ -340,7 +340,7 @@ router.get(['/buyer', '/buyer/summary'], requireAuth, async (req, res) => {
       const verification = (state.entry_verifications || []).find(v => v.order_id === ord.id) || null;
       const picAssign = (state.event_pics || []).find(ep => ep.event_id === ord.event_id && ep.status === 'ACTIVE') || null;
 
-      const isPaidOrActive = ['PAID_ESCROWED', 'PAID', 'ESCROWED', 'TICKET_VERIFIED', 'HANDOFF_READY', 'ENTRY_CONFIRMED', 'SETTLED'].includes((ord.status || '').toUpperCase());
+      const isPaidOrActive = ['PAID_ESCROWED', 'PAID_PLATFORM_HELD', 'PAID', 'ESCROWED', 'TICKET_VERIFIED', 'HANDOFF_READY', 'ENTRY_CONFIRMED', 'SETTLED'].includes((ord.status || '').toUpperCase());
       const seatParts = ticket ? [ticket.section, ticket.row_id ? `Row ${ticket.row_id}` : null, ticket.seat ? `Seat ${ticket.seat}` : null].filter(Boolean) : [];
       const seatInfo = (ticket && ticket.seat_info) || listing.seat_info || (seatParts.length > 0 ? seatParts.join(' - ') : 'General Admission');
 
@@ -437,7 +437,7 @@ router.get(['/buyer', '/buyer/summary'], requireAuth, async (req, res) => {
 
     // Overview metrics (strictly computed from real records)
     const activeOrdersCount = enrichedOrders.filter(o =>
-      ['PENDING_PAYMENT', 'PAID_ESCROWED', 'PAID', 'ESCROWED', 'TICKET_VERIFIED', 'HANDOFF_READY'].includes((o.status || '').toUpperCase())
+      ['PENDING_PAYMENT', 'PAID_ESCROWED', 'PAID_PLATFORM_HELD', 'PAID', 'ESCROWED', 'TICKET_VERIFIED', 'HANDOFF_READY'].includes((o.status || '').toUpperCase())
     ).length;
     const pendingPaymentsCount = enrichedOrders.filter(o =>
       ['PENDING_PAYMENT', 'RESERVED', 'CREATED'].includes((o.status || '').toUpperCase())
@@ -774,7 +774,7 @@ router.get(['/seller', '/seller/summary'], requireAuth, async (req, res) => {
       const handoffReady = ['HANDOFF_READY', 'DELIVERED', 'ENTRY_CONFIRMED', 'SETTLED'].includes(statusUpper);
       const entryConfirmed = ['ENTRY_CONFIRMED', 'SETTLED'].includes(statusUpper);
       const netPayoutVal = parseInt(o.seller_payout || o.seller_net_payout || (escrow ? escrow.amount : 0) || o.ticket_price || o.total_amount || 0, 10);
-      const requiresAction = ['PAID_ESCROWED', 'PAID', 'ESCROWED', 'DISPUTED'].includes(statusUpper) || Boolean(dispute && dispute.status === 'OPEN');
+      const requiresAction = ['PAID_ESCROWED', 'PAID_PLATFORM_HELD', 'PAID', 'ESCROWED', 'DISPUTED'].includes(statusUpper) || Boolean(dispute && dispute.status === 'OPEN');
       const orderQty = parseInt(o.quantity || o.order_quantity || 1, 10);
       const fType = o.fulfillment_type || listing.fulfillment_type || 'SELLER_MANAGED';
       const pStatus = o.pic_assistance_status || listing.pic_assistance_status || (picAssign ? 'CONFIRMED' : 'NONE');
@@ -873,7 +873,7 @@ router.get(['/seller', '/seller/summary'], requireAuth, async (req, res) => {
         pic_assigned: o.pic_assigned,
         pic_name: o.pic_name,
         steps: {
-          payment_escrowed: ['PAID_ESCROWED', 'PAID', 'ESCROWED', 'TICKET_VERIFIED', 'HANDOFF_READY', 'ENTRY_CONFIRMED', 'SETTLED'].includes(o.status),
+          payment_escrowed: ['PAID_ESCROWED', 'PAID_PLATFORM_HELD', 'PAID', 'ESCROWED', 'TICKET_VERIFIED', 'HANDOFF_READY', 'ENTRY_CONFIRMED', 'SETTLED'].includes(o.status),
           ticket_verified: ['TICKET_VERIFIED', 'HANDOFF_READY', 'ENTRY_CONFIRMED', 'SETTLED'].includes(o.status),
           handoff_ready: o.handoff_ready,
           gate_entry_confirmed: o.entry_confirmed
@@ -891,7 +891,7 @@ router.get(['/seller', '/seller/summary'], requireAuth, async (req, res) => {
         disputedAmount += net;
       } else if (o.status === 'SETTLED' || o.escrow_status === 'RELEASED' || o.settlement_status === 'SETTLED') {
         settledAmount += net;
-      } else if (['PAID_ESCROWED', 'PAID', 'ESCROWED', 'TICKET_VERIFIED', 'HANDOFF_READY', 'ENTRY_CONFIRMED'].includes(o.status)) {
+      } else if (['PAID_ESCROWED', 'PAID_PLATFORM_HELD', 'PAID', 'ESCROWED', 'TICKET_VERIFIED', 'HANDOFF_READY', 'ENTRY_CONFIRMED'].includes(o.status)) {
         escrowHeldAmount += net;
       }
     }

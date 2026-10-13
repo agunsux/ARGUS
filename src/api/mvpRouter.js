@@ -1994,7 +1994,7 @@ router.get('/admin/operations', (req, res) => {
   });
 
   // Active orders & Escrow balance
-  const activeOrders = state.orders.filter(o => [ORDER_STATUS.PAID_ESCROWED, ORDER_STATUS.ENTRY_CONFIRMED].includes(o.status));
+  const activeOrders = state.orders.filter(o => [ORDER_STATUS.PAID_ESCROWED, ORDER_STATUS.PAID_PLATFORM_HELD, ORDER_STATUS.ENTRY_CONFIRMED].includes(o.status));
   const escrowHolding = state.escrows
     .filter(e => [ESCROW_STATUS.ESCROWED, ESCROW_STATUS.RELEASE_PENDING, ESCROW_STATUS.DISPUTED].includes(e.status))
     .reduce((sum, e) => sum + e.amount, 0);

@@ -17,6 +17,7 @@ const ESCROW_STATUS = {
 const ORDER_STATUS = {
   PENDING_PAYMENT: 'PENDING_PAYMENT',
   PAID_ESCROWED: 'PAID_ESCROWED',
+  PAID_PLATFORM_HELD: 'PAID_PLATFORM_HELD',
   ENTRY_CONFIRMED: 'ENTRY_CONFIRMED',
   SETTLED: 'SETTLED',
   DISPUTED: 'DISPUTED',
@@ -519,7 +520,7 @@ class EscrowService {
   /**
    * Process payment confirmation (idempotent) and transition to ESCROWED
    */
-  static async recordPayment({ orderId, providerRef, idempotencyKey, amountPaid }) {
+  static async recordPayment({ orderId, providerRef, idempotencyKey, amountPaid, isProviderEscrow }) {
     let order = (state.orders || []).find(o => o.id === orderId);
     if (!order) {
       try {
@@ -605,12 +606,28 @@ class EscrowService {
     if (!state.payments) state.payments = [];
     state.payments.push(payment);
 
-    // Transition Escrow: PENDING_PAYMENT -> PAID -> ESCROWED
-    escrow.status = ESCROW_STATUS.ESCROWED;
-    escrow.provider_escrow_id = `prov-esc-${payment.provider_ref}`;
+    const canonical = (state.canonical_payments || []).find(p => p.order_id === orderId);
+    const effProvider = canonical?.provider || order.provider || 'doku';
+    const isEscrow = isProviderEscrow !== undefined
+      ? Boolean(isProviderEscrow)
+      : (effProvider !== 'xendit');
 
-    // Update order status
-    order.status = ORDER_STATUS.PAID_ESCROWED;
+    // Transition Escrow: PENDING_PAYMENT -> PAID -> ESCROWED / CAPTURED
+    escrow.status = ESCROW_STATUS.ESCROWED;
+    if (isEscrow) {
+      escrow.provider_escrow_id = `prov-esc-${payment.provider_ref}`;
+      escrow.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
+      order.status = ORDER_STATUS.PAID_ESCROWED;
+      order.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
+      order.payment_money_state = 'ESCROW_HELD';
+    } else {
+      escrow.provider_escrow_id = null; // Truthful: No 3rd-party escrow ID on non-escrow rails
+      escrow.escrow_type = 'NONE_PLATFORM_CAPTURED';
+      escrow.internal_simulation = true;
+      order.status = ORDER_STATUS.PAID_PLATFORM_HELD;
+      order.escrow_type = 'NONE_PLATFORM_CAPTURED';
+      order.payment_money_state = 'CAPTURED_PLATFORM_SETTLEMENT';
+    }
 
     // Update listing status to SOLD
     const listing = (state.listings || []).find(l => l.id === order.listing_id);
@@ -628,8 +645,6 @@ class EscrowService {
       const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
       const moneyRepo = getMoneyRepository();
       const marketplaceRepo = getMarketplaceRepository();
-      const canonical = (state.canonical_payments || []).find(p => p.order_id === orderId);
-      const effProvider = canonical?.provider || order.provider || 'doku';
       const effMethod = canonical?.payment_method || 'QRIS';
 
       await moneyRepo.createPayment({
@@ -643,13 +658,13 @@ class EscrowService {
         provider_reference: payment.provider_ref,
         provider_transaction_id: payment.provider_ref,
         status: 'SETTLED',
-        money_state: 'PAID',
+        money_state: isEscrow ? 'PAID' : 'CAPTURED_PLATFORM_SETTLEMENT',
         payment_method: effMethod,
         idempotency_key: idempotencyKey
       });
-      await moneyRepo.updateOrderStatus(orderId, ORDER_STATUS.PAID_ESCROWED);
+      await moneyRepo.updateOrderStatus(orderId, order.status);
       await moneyRepo.updateEscrowStatus(orderId, ESCROW_STATUS.ESCROWED, {
-        provider_escrow_id: providerRef
+        provider_escrow_id: escrow.provider_escrow_id
       });
       if (order.listing_id) {
         await marketplaceRepo.updateListingStatus(order.listing_id, LISTING_STATUS.SOLD);

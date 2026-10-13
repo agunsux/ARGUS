@@ -128,6 +128,7 @@ class TicketDeliveryService {
       // 1. Invariant: Delivery can only be created for PAID orders
       const isPaid = order.marketplace_status === MARKETPLACE_ORDER_STATUS.PAID ||
                      order.status === ORDER_STATUS.PAID_ESCROWED ||
+                     order.status === ORDER_STATUS.PAID_PLATFORM_HELD ||
                      order.marketplace_status === MARKETPLACE_ORDER_STATUS.FULFILLMENT_PENDING;
       if (!isPaid) {
         const err = new Error(`Cannot create delivery: Order '${orderId}' is not PAID (status: ${order.marketplace_status || order.status})`);

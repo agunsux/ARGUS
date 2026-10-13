@@ -434,8 +434,24 @@ class PaymentService {
       if (state.canonical_payments) {
         const canonical = state.canonical_payments.find(p => p.order_id === event.orderId || p.provider_reference === event.providerRef);
         if (canonical) {
-          canonical.money_state = MONEY_STATE.ESCROW_HELD;
-          canonical.status = MONEY_STATE.ESCROW_HELD;
+          const providerCapabilities = typeof provider.getCapabilities === 'function'
+            ? provider.getCapabilities()
+            : (typeof provider.capabilities === 'function' ? provider.capabilities() : {});
+          const provName = (targetProviderName || (provider.getName ? provider.getName() : '')).toLowerCase();
+          const supportsEscrowHold = (provName === 'doku' || providerCapabilities.notes?.escrow_type === 'THIRD_PARTY_ESCROW_ACCOUNT')
+            ? true
+            : (provName === 'xendit' || providerCapabilities.notes?.escrow_capability === 'ESCROW_UNAVAILABLE' ? false : Boolean(providerCapabilities.hold));
+
+          if (supportsEscrowHold) {
+            canonical.money_state = MONEY_STATE.ESCROW_HELD;
+            canonical.status = MONEY_STATE.ESCROW_HELD;
+            canonical.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
+          } else {
+            canonical.money_state = MONEY_STATE.CAPTURED_PLATFORM_SETTLEMENT;
+            canonical.status = MONEY_STATE.PAID;
+            canonical.escrow_type = 'NONE_PLATFORM_CAPTURED';
+          }
+
           canonical.paid_at = event.paidAt || new Date().toISOString();
           canonical.provider_transaction_id = event.providerRef;
           canonical.provider_fee = event.providerFee || 0;
@@ -519,14 +535,28 @@ class PaymentService {
             action: 'FLAGGED_FOR_MANUAL_REVIEW_OR_REFUND'
           });
         } else {
+          const providerCapabilities = typeof provider.getCapabilities === 'function'
+            ? provider.getCapabilities()
+            : (typeof provider.capabilities === 'function' ? provider.capabilities() : {});
+          const provName = (targetProviderName || (provider.getName ? provider.getName() : '')).toLowerCase();
+          const supportsEscrowHold = (provName === 'doku' || providerCapabilities.notes?.escrow_type === 'THIRD_PARTY_ESCROW_ACCOUNT')
+            ? true
+            : (provName === 'xendit' || providerCapabilities.notes?.escrow_capability === 'ESCROW_UNAVAILABLE' ? false : Boolean(providerCapabilities.hold));
+
           await EscrowService.recordPayment({
             orderId: event.orderId,
             providerRef: event.providerRef,
             idempotencyKey: `wh-pay-${event.providerRef}`,
-            amountPaid: event.amount
+            amountPaid: event.amount,
+            isProviderEscrow: supportsEscrowHold
           });
           order.marketplace_status = 'PAID';
-          order.payment_money_state = MONEY_STATE.ESCROW_HELD;
+          order.payment_money_state = supportsEscrowHold
+            ? MONEY_STATE.ESCROW_HELD
+            : MONEY_STATE.CAPTURED_PLATFORM_SETTLEMENT;
+          order.escrow_type = supportsEscrowHold
+            ? 'THIRD_PARTY_PROVIDER_ESCROW'
+            : 'NONE_PLATFORM_CAPTURED';
         }
       }
 

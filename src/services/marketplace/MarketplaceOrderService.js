@@ -360,7 +360,7 @@ class MarketplaceOrderService {
     if (!order) return;
 
     // Do not fail an already paid order
-    if (order.marketplace_status === MARKETPLACE_ORDER_STATUS.PAID || order.status === ORDER_STATUS.PAID_ESCROWED) {
+    if (order.marketplace_status === MARKETPLACE_ORDER_STATUS.PAID || order.status === ORDER_STATUS.PAID_ESCROWED || order.status === ORDER_STATUS.PAID_PLATFORM_HELD) {
       return;
     }
 
