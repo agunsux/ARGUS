@@ -94,9 +94,9 @@
           <li><strong>Pembeli:</strong> Pengguna terdaftar yang melakukan pemesanan dan pembayaran tiket sekunder.</li>
           <li><strong>Penjual:</strong> Pengguna terverifikasi (KYC) yang mendaftarkan tiket sekunder miliknya untuk dipindahtangankan.</li>
           <li><strong>Listing:</strong> Penawaran penjualan tiket terverifikasi yang didaftarkan di katalog pasar Tikum.</li>
-          <li><strong>Rekening Penampungan (Escrow):</strong> Sistem penahanan dana transaksi internal melalui mitra berizin resmi (iPaymu) di mana dana pembeli dikunci hingga pintu masuk venue dilewati secara sah.</li>
-          <li><strong>Event PIC:</strong> Petugas lapangan (Person In Charge) resmi Tikum yang bersiaga di venue acara.</li>
-          <li><strong>Sistem Keamanan Tikum:</strong> Sistem internal verifikasi identitas, tiket, anti-fraud, escrow, dan bukti lapangan yang mengamankan transaksi Tikum.</li>
+          <li><strong>Sistem Penahanan Transaksi Internal (Platform-Held):</strong> Mekanisme pengelolaan transaksi internal Tikum di mana pencairan dana penjualan ke penjual ditahan secara administratif hingga proses serah terima tiket terverifikasi atau acara selesai tanpa sengketa. Tikum bukan penyedia jasa escrow independen atau perbankan.</li>
+          <li><strong>Event PIC:</strong> Koordinator lapangan Tikum yang dapat ditugaskan pada event terpilih selama jam operasional gerbang (gate hours) untuk mendampingi penukaran fisik atau serah terima di lokasi (bersifat opsional per event dan tidak dijamin di seluruh acara).</li>
+          <li><strong>Sistem Keamanan Tikum:</strong> Sistem internal verifikasi identitas, validasi barcode, anti-duplikasi, alur penahanan transaksi, dan penanganan sengketa yang mengamankan transaksi Tikum.</li>
           <li><strong>Sengketa (Dispute):</strong> Klaim yang diajukan oleh pembeli apabila terjadi kegagalan tiket di gerbang venue.</li>
         </ul>
       </div>
@@ -105,7 +105,7 @@
       <div class="terms-section">
         <h2>3. Peran Tikum sebagai Platform Kepercayaan &amp; Marketplace Terverifikasi</h2>
         <p>
-          Tikum bertindak sebagai perantara netral yang menyediakan marketplace tiket terverifikasi. Tikum tidak memiliki kepemilikan atas tiket yang diperjualbelikan, melainkan memverifikasi keunikan barcode tiket, memfasilitasi rekonsiliasi escrow, dan menugaskan petugas lapangan di venue.
+          Tikum bertindak sebagai perantara netral yang menyediakan marketplace tiket terverifikasi. Tikum tidak memiliki kepemilikan atas tiket yang diperjualbelikan, melainkan memverifikasi keunikan barcode tiket, mengelola alur penahanan transaksi internal platform, dan mengoordinasikan pendampingan lapangan pada event terpilih.
         </p>
       </div>
 
@@ -167,6 +167,8 @@
           <li><strong>Listing Fee:</strong> Rp 0 (Gratis pasang listing tiket).</li>
           <li><strong>Tikum Seller Fee:</strong> 6% dari harga tiket (minimum Rp 35.000, maksimum Rp 300.000 per pesanan).</li>
           <li><strong>Tikum Trust &amp; Protection Fee (Buyer):</strong> 6% dari harga tiket (minimum Rp 35.000, maksimum Rp 300.000 per pesanan).</li>
+          <li><strong>Batas Harga Minimum Listing:</strong> Rp 500.000 per tiket.</li>
+          <li><strong>Batas Markup Penjual:</strong> Maksimum +30% di atas harga resmi promotor (Face Value) untuk mencegah spekulasi harga.</li>
         </ul>
         <p style="margin-top: 10px;">
           Rincian biaya ditampilkan secara eksplisit di awal sebelum pembayaran tanpa biaya kejutan saat checkout.
@@ -185,7 +187,10 @@
       <div class="terms-section">
         <h2>12. Pembayaran &amp; Rekening Bersama (Escrow)</h2>
         <p>
-          Seluruh pembayaran transaksi tiket di Tikum wajib disetorkan ke rekening penampungan internal (escrow) melalui payment gateway resmi berizin Bank Indonesia. Pembayaran di luar sistem resmi Tikum tidak dilindungi oleh jaminan keselamatan dan garansi dana platform.
+          Seluruh pembayaran transaksi tiket di Tikum wajib disetorkan melalui kanal payment gateway resmi berizin Bank Indonesia yang terintegrasi pada sistem Tikum. Status transaksi diamankan dalam sistem pencatatan penahanan platform internal (Platform-Held Transaction Control) sebelum penyelesaian transaksi ke penjual.
+        </p>
+        <p>
+          Tikum bukan merupakan lembaga perbankan atau penyelenggara jasa escrow berizin khusus. Istilah penampungan/escrow internal merujuk pada tata kelola transaksi di mana pencairan dana hasil penjualan kepada penjual ditahan secara administratif oleh platform hingga tiket tervalidasi dan masa sanggah selesai. Pembayaran di luar sistem resmi Tikum tidak dilindungi oleh sistem keamanan platform.
         </p>
       </div>
 
@@ -193,7 +198,7 @@
       <div class="terms-section">
         <h2>13. Siklus Pesanan (Order Lifecycle)</h2>
         <p>
-          Pesanan mengikuti mesin status mutlak: <code class="mono">PENDING_PAYMENT</code> &rarr; <code class="mono">PAID</code> (Dana terkunci di Escrow) &rarr; <code class="mono">ENTRY_CONFIRMED</code> (Verifikasi gerbang oleh Event PIC) &rarr; <code class="mono">SETTLED</code> (Pencairan dana ke Penjual).
+          Pesanan mengikuti mesin status terstruktur: <code class="mono">PENDING_PAYMENT</code> &rarr; <code class="mono">PAID</code> (Pembayaran Terkonfirmasi / Tertahan di Sistem Platform) &rarr; <code class="mono">ENTRY_CONFIRMED</code> (Verifikasi Serah Terima / Masuk Venue) &rarr; <code class="mono">SETTLED</code> (Penyelesaian Transaksi &amp; Pencairan ke Penjual).
         </p>
       </div>
 
@@ -278,7 +283,7 @@
           <strong>SHINERVA HQ</strong><br>
           Email: <a href="mailto:support@tikum.app" style="color: var(--cyan); text-decoration: none;">support@tikum.app</a><br>
           Telepon &amp; WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none;">+62 812-9992-7378 (081299927378)</a><br>
-          Jam Layanan: Senin - Minggu 09:00 - 21:00 WIB (Hari H Acara: Siaga 24 Jam di Venue)<br>
+          Jam Layanan Customer Support: Senin - Minggu 09:00 - 21:00 WIB (WhatsApp &amp; Email)<br>
           Alamat: SHINERVA HQ, Jl. Pasirluyu No. 79, Bandung 40254, Indonesia
         </p>
       </div>
@@ -315,7 +320,7 @@
           <img src="/assets/tikum-mark-2color.svg" width="20" height="20" alt="Tikum"> TIKUM — by SHINERVA
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+          Verified Ticket Marketplace by Shinerva. Dilengkapi dengan sistem penahanan transaksi internal platform dan opsi pendampingan lapangan pada event terpilih.
         </p>
         <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;" data-i18n="footer.operationalOffice">Kantor Operasional &amp; Surat:</div>

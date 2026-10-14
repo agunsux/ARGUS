@@ -4,20 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tikum — Pembelian &amp; Perlindungan Transaksi Tiket | by Shinerva</title>
-  <meta name="description" content="Pembelian tiket sekunder terverifikasi di Tikum (SHINERVA HQ). Transaksi aman dengan rekening penampungan internal (escrow) dan perlindungan verifikator fisik di gerbang venue.">
+  <meta name="description" content="Pembelian tiket sekunder terverifikasi di Tikum (SHINERVA HQ). Transaksi aman dengan perlindungan penampungan internal (platform-held) dan verifikasi fisik di gerbang acara mitra.">
   <link rel="canonical" href="https://tikum.app/pay">
 
   <!-- OpenGraph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="Tikum — Pembelian &amp; Perlindungan Transaksi Tiket | by Shinerva">
-  <meta property="og:description" content="Transaksi tiket aman dengan rekening penampungan internal (escrow) dan pendampingan fisik di gerbang venue.">
+  <meta property="og:description" content="Transaksi tiket aman dengan perlindungan penampungan internal (platform-held) dan pendampingan fisik di gerbang acara terkonfirmasi.">
   <meta property="og:url" content="https://tikum.app/pay">
   <meta property="og:site_name" content="TIKUM">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Tikum — Pembelian &amp; Perlindungan Transaksi Tiket | by Shinerva">
-  <meta name="twitter:description" content="Transaksi tiket aman dengan rekening penampungan internal (escrow) dan pendampingan fisik di gerbang venue.">
+  <meta name="twitter:description" content="Transaksi tiket aman dengan perlindungan penampungan internal (platform-held) dan pendampingan fisik di gerbang acara terkonfirmasi.">
 
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
@@ -73,22 +73,33 @@
     <!-- Main Payment & Order Surface -->
     <div id="paySurface" style="display: none;">
       
+      <!-- Demo Listing Notice Banner (Shown when viewing demo item) -->
+      <div id="demoNoticeBanner" class="notice-box notice-warning" style="display: none; background: #FEF3C7; border: 1.5px solid #D97706; padding: 14px 18px; margin-bottom: 20px; border-radius: var(--radius-card); gap: 12px; align-items: flex-start;">
+        <i class="fa-solid fa-triangle-exclamation" style="color: #B45309; font-size: 20px; margin-top: 2px;"></i>
+        <div>
+          <strong style="color: #92400E; font-size: 14px; text-transform: uppercase; letter-spacing: 0.03em; display: block; margin-bottom: 4px;">DEMO — BUKAN TIKET UNTUK DIJUAL</strong>
+          <p style="color: #78350F; font-size: 13px; margin: 0; line-height: 1.5;">
+            Halaman ini menampilkan contoh demonstrasi checkout ilustratif untuk pengujian alur antarmuka dan transparansi biaya Tikum. Tiket, harga, dan data acara ini merupakan data simulasi dan <strong>tidak dapat dibeli atau ditransaksikan secara riil</strong>.
+          </p>
+        </div>
+      </div>
+
       <!-- Persistent Simulation / Demo Notice Banner -->
       <div class="simulation-banner notice-box" style="background: #FFFBEB; border: 1.5px solid #F59E0B; border-radius: var(--radius-card); padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px;">
         <i class="fa-solid fa-flask" style="color: #D97706; font-size: 20px; margin-top: 2px;"></i>
         <div>
           <strong style="color: #92400E; font-size: 13.5px; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px;" data-i18n="pay.simBannerTitle">MODE SIMULASI — BUKAN PEMBAYARAN LIVE</strong>
           <p style="color: #B45309; font-size: 13px; margin: 0; line-height: 1.5;" data-i18n="pay.simBannerDesc">
-            Platform TIKUM saat ini beroperasi dalam tahap pilot uji coba internal. Tidak ada pemotongan atau penagihan dana riil. Kode QRIS, nomor Virtual Account, dan simulasi e-wallet di bawah ini merupakan data demonstrasi untuk memverifikasi alur pencatatan escrow internal.
+            Platform TIKUM saat ini beroperasi dalam tahap pilot uji coba internal. Tidak ada pemotongan atau penagihan dana riil. Kode QRIS, nomor Virtual Account, dan simulasi e-wallet di bawah ini merupakan data demonstrasi untuk memverifikasi alur pencatatan perlindungan transaksi internal.
           </p>
         </div>
       </div>
 
       <div style="margin-bottom: 24px;">
-        <div class="hero-pill"><i class="fa-solid fa-vault"></i> <span data-i18n="pay.pill">REKENING PENAMPUNGAN TERLINDUNGI</span></div>
+        <div class="hero-pill"><i class="fa-solid fa-shield-halved"></i> <span data-i18n="pay.pill">PERLINDUNGAN TRANSAKSI TIKUM</span></div>
         <h1 style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px;" data-i18n="pay.title">Konfirmasi Pesanan &amp; Perlindungan Pembeli</h1>
         <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;" data-i18n="pay.subtitle">
-          Dana Anda ditahan di sistem internal Tikum dan hanya dicairkan ke penjual setelah Anda berhasil melewati pintu masuk venue.
+          Dana Anda terlindungi dalam sistem penampungan internal Tikum (platform-held) dan baru dicairkan ke penjual setelah tiket terbukti valid di gerbang acara mitra.
         </p>
       </div>
 
@@ -96,7 +107,7 @@
       <div id="communityEventWarning" class="notice-box notice-warning" style="display: none;">
         <i class="fa-solid fa-triangle-exclamation"></i>
         <div>
-          <strong data-i18n="pay.communityWarningTitle">Peringatan Event Komunitas:</strong> <span data-i18n="pay.communityWarningDesc">Event ini didaftarkan oleh pengguna dan belum diverifikasi resmi oleh kurator Tikum. Dana pembelian Anda tetap terlindungi oleh rekening penampungan internal Tikum hingga tiket terbukti valid di gerbang acara.</span>
+          <strong data-i18n="pay.communityWarningTitle">Peringatan Event Komunitas:</strong> <span data-i18n="pay.communityWarningDesc">Event ini didaftarkan oleh pengguna dan belum diverifikasi resmi oleh kurator Tikum. Dana pembelian Anda tetap terlindungi oleh sistem perlindungan platform Tikum hingga tiket terbukti valid di gerbang acara.</span>
         </div>
       </div>
 
@@ -165,17 +176,16 @@
         </div>
       </div>
 
-      <!-- Order Creation & Payment Trigger -->
-      <!-- Escrow Explainer Banner -->
+      <!-- Transaction Protection Explainer Banner -->
       <div class="card" style="background:var(--surface); border:1px solid var(--line-300); padding:20px; border-radius:var(--radius-card); margin-bottom:20px; box-shadow:var(--shadow-soft);">
         <div style="display:flex; align-items:flex-start; gap:14px;">
           <div style="width:40px; height:40px; border-radius:50%; background:var(--terra-100); color:var(--terra-600); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">
-            <i class="fa-solid fa-vault"></i>
+            <i class="fa-solid fa-shield-halved"></i>
           </div>
           <div>
-            <h3 style="font-size:16px; font-weight:700; margin:0 0 4px; color:var(--ink-900);" data-i18n="pay.escrowExplainerTitle">Dana kamu ditahan Tikum sampai kamu masuk venue</h3>
+            <h3 style="font-size:16px; font-weight:700; margin:0 0 4px; color:var(--ink-900);" data-i18n="pay.escrowExplainerTitle">Perlindungan Pembayaran Terkelola Platform TIKUM</h3>
             <p style="font-size:13px; color:var(--ink-700); margin:0; line-height:1.5;" data-i18n="pay.escrowExplainerDesc">
-              Penjual baru menerima pencairan setelah tiket terbukti valid dan kamu berhasil melewati turnstile gerbang acara. Jika gagal masuk karena tiket tidak valid, dana dikembalikan sesuai kebijakan refund.
+              Dana pembayaran ditahan sementara oleh platform Tikum (platform-held) dan baru dilepaskan ke penjual setelah tiket terkonfirmasi valid atau pembeli berhasil masuk ke venue acara. Jika tiket bermasalah atau tidak valid di gerbang, pembeli berhak mengajukan komplain/dispute untuk investigasi dan pengembalian dana sesuai Kebijakan Refund.
             </p>
           </div>
         </div>
@@ -323,7 +333,7 @@
             <span id="resOrderStatus" class="badge badge-warning">RESERVED</span>
           </div>
           <div class="price-row">
-            <span data-i18n="pay.escrowStatusLabel">Status Penampungan Dana:</span>
+            <span data-i18n="pay.escrowStatusLabel">Status Perlindungan Dana:</span>
             <span id="resEscrowStatus" class="badge badge-info">HELD</span>
           </div>
         </div>
@@ -440,7 +450,7 @@
           <img src="/assets/tikum-mark-2color.svg" width="20" height="20" alt="Tikum"> TIKUM — by SHINERVA
         </div>
         <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;">
-          Verified Ticket Marketplace by Shinerva. Dilengkapi dengan rekening penampungan internal (escrow) dan perlindungan fisik di gerbang venue.
+          Verified Ticket Marketplace by Shinerva. Dilengkapi dengan perlindungan transaksi internal (platform-held) dan verifikasi fisik di gerbang acara mitra.
         </p>
         <div class="footer-address" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;" data-i18n="footer.operationalOffice">Kantor Operasional &amp; Surat:</div>
@@ -463,7 +473,7 @@
             <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none; margin-left: 6px;"><i class="fa-brands fa-whatsapp"></i> +62 812-9992-7378 (081299927378)</a>
           </div>
           <div style="font-size: 12px; color: #94a3b8; line-height: 1.4;">
-            Jam Layanan: Senin - Minggu 09:00 - 21:00 WIB (Hari H Acara: Siaga 24 Jam di Venue)
+            Jam Layanan Customer Support: Senin - Minggu 09:00 - 21:00 WIB (WhatsApp & Email). Tim Event PIC bertugas pada gate hours acara terkonfirmasi.
           </div>
         </div>
       </div>
@@ -507,20 +517,22 @@
       if (!id) {
         // Pilot Verification Mode: When visiting /pay directly, render the canonical verified pilot listing
         // so that reviewers and users see a complete, itemized checkout page.
+        // Conspicuously labeled as DEMO / NOT FOR SALE.
         currentListing = {
           id: 'list-pilot-preview',
-          seat_info: 'Kategori CAT 1 — Section A, Row 04, Seat 12',
+          is_demo: true,
+          seat_info: 'Kategori CAT 1 — Section A, Row 04, Seat 12 (Data Demonstrasi)',
           price: 1500000,
-          status: 'ACTIVE',
+          status: 'DEMO_NOT_FOR_SALE',
           seller: { kyc_status: 'VERIFIED' },
           event: {
-            name: 'King Nassar: Lost In The Jungle (Pilot Preview Listing)',
-            title: 'King Nassar: Lost In The Jungle (Pilot Preview Listing)',
-            category: 'CONCERT',
-            date: 'Sabtu, 7 November 2026',
-            venue: 'Istora Senayan Jakarta',
+            name: 'Contoh Simulasi Checkout: Tiket Konser King Nassar (Cat 1 — Ilustrasi)',
+            title: 'Contoh Simulasi Checkout: Tiket Konser King Nassar (Cat 1 — Ilustrasi)',
+            category: 'DEMO / SIMULASI',
+            date: 'Sabtu, 7 November 2026 (Ilustrasi)',
+            venue: 'Istora Senayan Jakarta (Simulasi)',
             venue_city: 'Jakarta Pusat',
-            is_verified: true
+            is_verified: false
           },
           pricing: {
             ticketPrice: 1500000,
@@ -563,16 +575,27 @@
     }
 
     function renderListing(listing) {
+      const isDemo = Boolean(listing.is_demo || listing.id === 'list-pilot-preview' || listing.status === 'DEMO_NOT_FOR_SALE');
+      const demoBanner = document.getElementById('demoNoticeBanner');
+      if (demoBanner) {
+        demoBanner.style.display = isDemo ? 'flex' : 'none';
+      }
+
       document.getElementById('listingIdText').innerText = listing.id;
       document.getElementById('seatInfoText').innerText = listing.seat_info || '-';
 
       // Status badge
       const statusBadge = document.getElementById('listingStatusBadge');
-      statusBadge.innerText = listing.status;
-      if (listing.status === 'ACTIVE') {
-        statusBadge.className = 'badge badge-success';
+      if (isDemo) {
+        statusBadge.innerText = 'DEMO — BUKAN UNTUK DIJUAL';
+        statusBadge.className = 'badge badge-slate';
       } else {
-        statusBadge.className = 'badge badge-warning';
+        statusBadge.innerText = listing.status;
+        if (listing.status === 'ACTIVE') {
+          statusBadge.className = 'badge badge-success';
+        } else {
+          statusBadge.className = 'badge badge-warning';
+        }
       }
 
       // Event details
@@ -585,14 +608,16 @@
       // Verification badge
       const isVerified = ev.is_verified === true;
       const verBadge = document.getElementById('eventVerificationBadge');
-      if (isVerified) {
+      if (isDemo) {
+        verBadge.innerHTML = '<span class="badge" style="background: #FEF3C7; color: #92400E; border: 1px solid #D97706;"><i class="fa-solid fa-flask"></i> CONTOH SIMULASI (BUKAN TIKET ASLI)</span>';
+      } else if (isVerified) {
         verBadge.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> TERVERIFIKASI TIKUM</span>';
       } else {
         verBadge.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> EVENT KOMUNITAS</span>';
       }
 
       // Community warning
-      if (listing.user_created_event || !isVerified) {
+      if (!isDemo && (listing.user_created_event || !isVerified)) {
         document.getElementById('communityEventWarning').style.display = 'flex';
       } else {
         document.getElementById('communityEventWarning').style.display = 'none';
@@ -645,9 +670,20 @@
 
       // Check if purchase is possible
       const btn = document.getElementById('btnOrderSubmit');
-      if (listing.status !== 'ACTIVE') {
+      const btnOffer = document.getElementById('btnOpenOfferModal');
+      if (isDemo) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-ban"></i> Pembelian Dinonaktifkan (Item Demonstrasi)';
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        if (btnOffer) btnOffer.style.display = 'none';
+      } else if (listing.status !== 'ACTIVE') {
         btn.disabled = true;
         btn.innerText = `Listing Berstatus ${listing.status} — Tidak Dapat Dipesan`;
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-flask"></i> <span data-i18n="pay.simulateSubmit">Simulasikan Pemesanan &amp; Kunci Dana (Demo)</span>';
+        if (btnOffer) btnOffer.style.display = 'inline-flex';
       }
     }
 
@@ -691,6 +727,15 @@
 
       const btn = document.getElementById('btnOrderSubmit');
       const errEl = document.getElementById('orderErrorMsg');
+
+      if (currentListing.is_demo || currentListing.id === 'list-pilot-preview' || currentListing.status === 'DEMO_NOT_FOR_SALE') {
+        if (errEl) {
+          errEl.innerText = 'Item demonstrasi tidak dapat dibeli. Ini adalah simulasi antarmuka saja.';
+          errEl.style.display = 'block';
+        }
+        return;
+      }
+
       const buyerId = currentBuyer ? currentBuyer.id : (document.getElementById('buyerSelect')?.value || 'usr-buyer-01');
 
       errEl.style.display = 'none';
@@ -718,7 +763,7 @@
 
         const createdOrder = orderData.order;
 
-        // Step 2: Lock escrow payment (pilot simulated bank transfer)
+        // Step 2: Lock transaction protection payment (pilot simulated bank transfer)
         const resPay = await fetch('/api/mvp/buyer/pay', {
           method: 'POST',
           headers: { 
@@ -727,7 +772,7 @@
           },
           body: JSON.stringify({
             orderId: createdOrder.id,
-            providerRef: `BANK-ESCROW-${Date.now()}`,
+            providerRef: `BANK-PROT-${Date.now()}`,
             idempotencyKey: `idemp-${createdOrder.id}`,
             amountPaid: createdOrder.total_amount
           })
@@ -735,7 +780,7 @@
 
         const payData = await resPay.json();
         if (!resPay.ok) {
-          throw new Error(payData.error || payData.message || 'Gagal mengonfirmasi pembayaran escrow');
+          throw new Error(payData.error || payData.message || 'Gagal mengonfirmasi pembayaran perlindungan transaksi');
         }
 
         // Display Success State

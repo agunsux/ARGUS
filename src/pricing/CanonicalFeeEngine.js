@@ -8,14 +8,14 @@
  * - Seller Fee: 6% of ticket/listing sale price
  * - Buyer Fee: 6% of ticket/listing sale price
  * - Listing Fee: Rp 0
- * - Minimum Fee: Rp 10,000 per applicable fee side
+ * - Minimum Fee: Rp 35,000 per applicable fee side
  * - Maximum Fee: Rp 300,000 per applicable fee side / order
  * - Currency: IDR
  * 
  * MONEY / ROUNDING INVARIANTS:
  * - Integer IDR minor-unit / rupiah-safe arithmetic (ZERO floating-point math).
  * - Canonical Rounding Rule: raw_fee = floor((gross_ticket_value * 6) / 100)
- * - Boundary Clamping: applicable_fee = max(10000, min(raw_fee, 300000))
+ * - Boundary Clamping: applicable_fee = max(35000, min(raw_fee, 300000))
  * - Seller Payout: seller_payout = gross_ticket_value - seller_fee
  * - Buyer Total: buyer_total = gross_ticket_value + buyer_fee + payment_processing_fee
  * - Multi-Ticket Order Fee Basis: ONE buyer fee + ONE seller fee per order,

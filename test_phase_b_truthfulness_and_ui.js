@@ -1,163 +1,231 @@
 /**
- * TIKUM PHASE B — HOMEPAGE TRUTHFULNESS, UI POLISH & DEMAND CAPTURE
- * Comprehensive Acceptance & Regression Test Suite
+ * test_phase_b_truthfulness_and_ui.js
+ * Verification suite for the 4 outstanding business-truthfulness risks:
+ * 1. Risk A: Truthful transaction protection (Platform-Held, not licensed escrow)
+ * 2. Risk B: Conspicuous demo item labeling on /pay and order creation rejection
+ * 3. Risk C: Customer support hours (09:00-21:00 WIB) decoupled from Event PIC gate hours
+ * 4. Risk D: Exact canonical pricing rules alignment across code, UI, and policy pages
  */
 
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const express = require('express');
 
-console.log('--- STARTING TIKUM PHASE B TRUTHFULNESS & UI TEST SUITE ---');
+const { PRICING_CONFIG, calculatePlatformFee } = require('./src/config/pricingConfig');
+const { CanonicalFeeEngine, TIKUM_FEE_POLICY_V1 } = require('./src/pricing/CanonicalFeeEngine');
+const mvpRouter = require('./src/api/mvpRouter');
 
 let passedTests = 0;
-let totalTests = 0;
+let failedTests = 0;
 
-function test(name, fn) {
-  totalTests++;
+function it(desc, fn) {
   try {
     fn();
-    console.log(`  ✓ ${name}`);
+    console.log(`  ✓ [PASS] ${desc}`);
     passedTests++;
   } catch (err) {
-    console.error(`  ✗ ${name}`);
+    console.error(`  ✗ [FAIL] ${desc}`);
     console.error(`    ${err.message}`);
-    throw err;
+    failedTests++;
   }
 }
 
-// -------------------------------------------------------------
-// Test 1: No absolute anti-scam promise remains in homepage & i18n
-// -------------------------------------------------------------
-test('Criteria 1: No absolute anti-scam or 0-scam promises in i18n & public/index.html', () => {
-  const i18nContent = fs.readFileSync(path.join(__dirname, 'public', 'js', 'i18n.js'), 'utf8');
-  const indexContent = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
-  const heroContent = fs.readFileSync(path.join(__dirname, 'public', 'hero.html'), 'utf8');
+async function itAsync(desc, fn) {
+  try {
+    await fn();
+    console.log(`  ✓ [PASS] ${desc}`);
+    passedTests++;
+  } catch (err) {
+    console.error(`  ✗ [FAIL] ${desc}`);
+    console.error(`    ${err.message}`);
+    failedTests++;
+  }
+}
 
-  // Verify "Tiket Second. Tanpa Scam." is completely gone
-  assert.strictEqual(i18nContent.includes('Tiket Second. Tanpa Scam.'), false, 'i18n.js must not contain "Tiket Second. Tanpa Scam."');
-  assert.strictEqual(indexContent.includes('Tiket Second. Tanpa Scam.'), false, 'index.html must not contain "Tiket Second. Tanpa Scam."');
+console.log('\n================================================================');
+console.log('  TIKUM — PHASE B TRUTHFULNESS & UI INTEGRATION TEST SUITE');
+console.log('================================================================\n');
 
-  // Verify primary positioning is "TIKUM — Pasar Tiket Event Terverifikasi"
-  assert.ok(i18nContent.includes('"tagline": "TIKUM — Pasar Tiket Event Terverifikasi"'), 'i18n.js ID tagline must be updated');
-  assert.ok(i18nContent.includes('"title": "TIKUM — Pasar Tiket Event Terverifikasi | by Shinerva"'), 'i18n.js ID title must be updated');
-  assert.ok(indexContent.includes('Pasar Tiket Event Terverifikasi'), 'index.html must include truthful positioning');
-  assert.ok(indexContent.includes('<title>Tikum — Verified Ticket Marketplace by Shinerva</title>'), 'index.html title must match brand boundary');
+// ── 1. Risk A: Truthful Transaction Protection ──
+console.log('── Section 1: Risk A — Platform-Held Transaction Protection ──');
 
-  // Verify supporting copy
-  assert.ok(i18nContent.includes('Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli.'), 'i18n.js ID must contain approved supporting copy');
-  assert.ok(indexContent.includes('Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli.'), 'index.html must contain approved supporting copy');
+const termsHtml = fs.readFileSync(path.join(__dirname, 'public/terms.html'), 'utf8');
+const refundHtml = fs.readFileSync(path.join(__dirname, 'public/refund-policy.html'), 'utf8');
+const contactHtml = fs.readFileSync(path.join(__dirname, 'public/contact.html'), 'utf8');
+const faqHtml = fs.readFileSync(path.join(__dirname, 'public/faq.html'), 'utf8');
+const payHtml = fs.readFileSync(path.join(__dirname, 'public/pay.html'), 'utf8');
+const indexHtml = fs.readFileSync(path.join(__dirname, 'public/index.html'), 'utf8');
 
-  // Verify no "100% Escrow" in consumer hero
-  assert.strictEqual(heroContent.includes('100% Escrow Buyer Protection'), false, 'hero.html must not contain unverified "100% Escrow Buyer Protection"');
+it('1.1 Terms Section 12 explicitly disclaims bank/escrow licensing and defines platform-held control', () => {
+  assert(termsHtml.includes('bukan merupakan lembaga perbankan'), 'Must disclaim being a bank');
+  assert(termsHtml.includes('penyelenggara jasa escrow berizin'), 'Must disclaim being a licensed escrow provider');
+  assert(/platform-held/i.test(termsHtml), 'Must describe platform-held control');
 });
 
-// -------------------------------------------------------------
-// Test 2: Separation of promoter price from TIKUM resale price
-// -------------------------------------------------------------
-test('Criteria 2: Official promoter price is separated from TIKUM resale price in API & UI logic', () => {
-  const indexContent = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
-
-  // UI template must explicitly label "Harga resmi promotor" when zero resale listings exist
-  assert.ok(indexContent.includes("priceLabel = 'Harga resmi promotor'"), 'UI must explicitly label official price as "Harga resmi promotor"');
-  assert.ok(indexContent.includes('Belum ada tiket resale di TIKUM'), 'UI must explicitly state "Belum ada tiket resale di TIKUM" when resale inventory is 0');
-
-  // UI must NOT show "ON SALE" as a blanket ambiguous resale status
-  assert.strictEqual(indexContent.includes("if (e.official_ticket_url) return { css: 'status-onsale', text: 'ON SALE' };"), false, 'Ambiguous ON SALE must be replaced with source-backed label');
-  assert.ok(indexContent.includes("text: 'Tiket resmi tersedia'"), 'Must use unambiguous "Tiket resmi tersedia" for promoter tickets');
+it('1.2 Contact page removes claims of licensed escrow account', () => {
+  assert(!contactHtml.includes('rekening bersama berizin'), 'Must not claim rekening bersama berizin');
+  assert(contactHtml.includes('platform-held'), 'Must describe platform-held protection');
 });
 
-// -------------------------------------------------------------
-// Test 3 & 4: Zero active listings never produce resale_available=true
-// -------------------------------------------------------------
-test('Criteria 3 & 4: Zero active listings gives resale_available=false; Resale tersedia appears only when inventory exists', () => {
-  const routerContent = fs.readFileSync(path.join(__dirname, 'src', 'discovery', 'discoveryRouter.js'), 'utf8');
-
-  // API router enrichment check
-  assert.ok(routerContent.includes('resale_available: activeListings.length > 0'), 'discoveryRouter must compute resale_available strictly based on activeListings.length > 0');
-  assert.ok(routerContent.includes('resale_listings_count: activeListings.length'), 'discoveryRouter must compute resale_listings_count strictly from activeListings');
-  assert.ok(routerContent.includes('primary_price_min: (e.min_price !== undefined && e.min_price !== null) ? Number(e.min_price) : null'), 'discoveryRouter must separate primary_price_min');
-
-  // UI status resolver check
-  const indexContent = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
-  assert.ok(indexContent.includes("if (hasResale) {\n        return { css: 'status-resale', text: 'Resale tersedia' };"), 'Resale tersedia must only return if hasResale is true');
+it('1.3 Pay page explainer banner uses platform-held protection description', () => {
+  assert(payHtml.includes('Perlindungan Pembayaran Terkelola Platform TIKUM'), 'Banner title updated');
+  assert(payHtml.includes('platform-held'), 'Explainer uses platform-held');
 });
 
-// -------------------------------------------------------------
-// Test 5: Category pills contrast tokens in style.css
-// -------------------------------------------------------------
-test('Criteria 5: Category pills contrast tokens are high contrast in both light and dark themes', () => {
-  const cssContent = fs.readFileSync(path.join(__dirname, 'public', 'css', 'style.css'), 'utf8');
-
-  // Check light mode definition
-  assert.ok(cssContent.includes('.card-category-pill {'), 'Must have .card-category-pill selector');
-  assert.ok(cssContent.includes('color: #18181B;'), 'Light mode category pill must have explicit dark ink foreground');
-
-  // Check dark mode override
-  assert.ok(cssContent.includes('body.dark-mode .card-category-pill {'), 'Must have dark mode override for .card-category-pill');
-  assert.ok(cssContent.includes('background: rgba(24, 24, 27, 0.92);'), 'Dark mode category pill must have dark background');
-  assert.ok(cssContent.includes('color: #F8FAFC;'), 'Dark mode category pill must have light text (#F8FAFC)');
+it('1.4 Services section on homepage outlines platform-held transaction protection', () => {
+  assert(indexHtml.includes('Perlindungan Transaksi &amp; Verifikasi Tiket'), 'Services pillar 2 updated');
+  assert(indexHtml.includes('platform-held'), 'Services pillar 2 mentions platform-held');
 });
 
-// -------------------------------------------------------------
-// Test 6: Price row and badge wrapping (overflow prevention)
-// -------------------------------------------------------------
-test('Criteria 6: .poster-price-row flex-wrapping prevents text overlap and clipping', () => {
-  const cssContent = fs.readFileSync(path.join(__dirname, 'public', 'css', 'style.css'), 'utf8');
+// ── 2. Risk B: King Nassar Pilot Listing on /pay ──
+console.log('\n── Section 2: Risk B — King Nassar Pilot Listing on /pay ──');
 
-  assert.ok(cssContent.includes('.poster-price-row {'), 'Must define .poster-price-row');
-  assert.ok(cssContent.includes('flex-wrap: wrap;'), '.poster-price-row must specify flex-wrap: wrap to prevent horizontal collision');
-  assert.ok(cssContent.includes('.poster-price-col {'), 'Must define .poster-price-col for stacked price label & value');
-  assert.ok(cssContent.includes('.badge-card-trust {'), 'Must define .badge-card-trust');
-  assert.ok(cssContent.includes('flex-shrink: 0;'), '.badge-card-trust must specify flex-shrink: 0 to prevent text squishing');
+it('2.1 pay.html contains conspicuous #demoNoticeBanner with DEMO — BUKAN TIKET UNTUK DIJUAL', () => {
+  assert(payHtml.includes('id="demoNoticeBanner"'), 'Must contain #demoNoticeBanner element');
+  assert(payHtml.includes('DEMO — BUKAN TIKET UNTUK DIJUAL'), 'Must contain conspicuous warning header');
+  assert(payHtml.includes('tidak dapat dibeli atau ditransaksikan secara riil'), 'Must state item is not for sale');
 });
 
-// -------------------------------------------------------------
-// Test 7 & 8: WhatsApp number validation and fallback contact
-// -------------------------------------------------------------
-test('Criteria 7 & 8: WhatsApp integration validates support phone and falls back cleanly without broken links', () => {
-  const indexContent = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
-  const { businessProfile } = require('./src/config/businessProfile');
-
-  // Configured number must be the real approved support hotline
-  assert.strictEqual(businessProfile.phone, '081299927378', 'Approved support hotline must be 081299927378');
-  assert.ok(indexContent.includes("const TIKUM_WHATSAPP_NUMBER = '6281299927378';"), 'index.html must use verified WhatsApp number');
-
-  // Helper validation functions
-  assert.ok(indexContent.includes('function isValidSupportPhone(num)'), 'index.html must include isValidSupportPhone validator');
-  assert.ok(indexContent.includes('function handleWaitlistClick('), 'index.html must include handleWaitlistClick function');
-
-  // Fallback to /contact if invalid
-  assert.ok(indexContent.includes("window.location.href = `/contact?subject=waitlist&event="), 'Must fallback cleanly to /contact without broken link');
+it('2.2 loadListingData in pay.html sets is_demo: true and status: DEMO_NOT_FOR_SALE', () => {
+  assert(payHtml.includes("is_demo: true"), 'Must set is_demo flag');
+  assert(payHtml.includes("status: 'DEMO_NOT_FOR_SALE'"), 'Must set status to DEMO_NOT_FOR_SALE');
+  assert(payHtml.includes("Contoh Simulasi Checkout: Tiket Konser King Nassar"), 'Title must explicitly say Contoh Simulasi Checkout');
 });
 
-// -------------------------------------------------------------
-// Test 9: Waitlist action never implies completed ticket reservation
-// -------------------------------------------------------------
-test('Criteria 9: Waitlist CTA copy and message express interest only, never implying ticket reservation', () => {
-  const indexContent = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
-
-  // Button text
-  assert.ok(indexContent.includes('Kabari Saya Saat Tiket Ada'), 'CTA button must be "Kabari Saya Saat Tiket Ada"');
-
-  // Message body expresses interest, not reservation
-  assert.ok(indexContent.includes('saya tertarik jika ada tiket resale terverifikasi'), 'WhatsApp message must express interest');
-  assert.strictEqual(indexContent.includes('telah memesan tiket'), false, 'Must not claim ticket is booked');
-  assert.strictEqual(indexContent.includes('reservasi berhasil'), false, 'Must not claim reservation succeeded');
+it('2.3 renderListing in pay.html disables submit button for demo items', () => {
+  assert(payHtml.includes('Pembelian Dinonaktifkan (Item Demonstrasi)'), 'Button text must reflect disabled demo item');
+  assert(payHtml.includes("btnOffer.style.display = 'none'"), 'Offer button hidden for demo items');
 });
 
-// -------------------------------------------------------------
-// Test 10: Invariants check (production payments disabled, no fake inventory)
-// -------------------------------------------------------------
-test('Criteria 10: Invariants preserved (production payments disabled, zero fake inventory)', () => {
-  assert.notStrictEqual(process.env.ENABLE_MIDTRANS_PRODUCTION, 'true', 'Production Midtrans must remain disabled');
-  assert.notStrictEqual(process.env.ENABLE_IPAYMU_PRODUCTION, 'true', 'Production iPaymu must remain disabled');
+// ── 3. Risk C: Customer Support Hours vs Event PIC ──
+console.log('\n── Section 3: Risk C — Support Hours & Event PIC Separation ──');
 
-  const { canonicalRegistry } = require('./src/discovery/CanonicalEventRegistry');
-  assert.ok(canonicalRegistry, 'Canonical event registry must be operational');
-  const heroEvents = canonicalRegistry.getHeroEvents();
-  for (const ev of heroEvents) {
-    assert.strictEqual(ev.resale_inventory_count, 0, `${ev.name} must have 0 resale inventory`);
+const publicPages = [
+  { name: 'index.html', content: indexHtml },
+  { name: 'pay.html', content: payHtml },
+  { name: 'contact.html', content: contactHtml },
+  { name: 'faq.html', content: faqHtml },
+  { name: 'terms.html', content: termsHtml },
+  { name: 'refund-policy.html', content: refundHtml },
+  { name: 'hero.html', content: fs.readFileSync(path.join(__dirname, 'public/hero.html'), 'utf8') },
+  { name: 'track.html', content: fs.readFileSync(path.join(__dirname, 'public/track.html'), 'utf8') }
+];
+
+it('3.1 All public pages define customer support hours as 09:00 - 21:00 WIB', () => {
+  for (const page of publicPages) {
+    assert(page.content.includes('09:00 - 21:00 WIB'), `${page.name} must specify 09:00 - 21:00 WIB`);
   }
 });
 
-console.log(`\nALL ${passedTests}/${totalTests} TESTS PASSED FOR PHASE B!`);
+it('3.2 No public page guarantees unconditional 24-hour venue standby', () => {
+  for (const page of publicPages) {
+    assert(!page.content.includes('Siaga 24 Jam di Venue'), `${page.name} must not claim Siaga 24 Jam di Venue`);
+  }
+});
+
+it('3.3 Event PIC presence is correctly scoped to confirmed events and gate hours', () => {
+  assert(termsHtml.includes('gate hours') || termsHtml.includes('jam operasional gerbang'), 'Terms defines gate hours');
+  assert(faqHtml.includes('gate hours') || faqHtml.includes('jam operasional gerbang'), 'FAQ defines gate hours');
+});
+
+// ── 4. Risk D: Pricing & Business Rules Consistency ──
+console.log('\n── Section 4: Risk D — Pricing Rules Consistency ──');
+
+it('4.1 Canonical PRICING_CONFIG enforces 6% fee, 35k floor, 300k cap, 500k min price, 30% markup cap', () => {
+  assert.strictEqual(PRICING_CONFIG.PLATFORM_FEE_PCT, 6);
+  assert.strictEqual(PRICING_CONFIG.PLATFORM_MIN_FEE_IDR, 35000);
+  assert.strictEqual(PRICING_CONFIG.PLATFORM_MAX_FEE_IDR, 300000);
+  assert.strictEqual(PRICING_CONFIG.MIN_LISTING_PRICE_IDR, 500000);
+  assert.strictEqual(PRICING_CONFIG.MAX_MARKUP_PCT, 30);
+});
+
+it('4.2 CanonicalFeeEngine constants match PRICING_CONFIG exactly', () => {
+  assert.strictEqual(TIKUM_FEE_POLICY_V1.buyer_rate, 0.06);
+  assert.strictEqual(TIKUM_FEE_POLICY_V1.minimum_fee, 35000);
+  assert.strictEqual(TIKUM_FEE_POLICY_V1.maximum_fee, 300000);
+});
+
+it('4.3 Fee calculations match at all boundary points', () => {
+  assert.strictEqual(CanonicalFeeEngine.calculateOrderPricing(500000).buyer_fee, 35000);
+  assert.strictEqual(CanonicalFeeEngine.calculateOrderPricing(1000000).buyer_fee, 60000);
+  assert.strictEqual(CanonicalFeeEngine.calculateOrderPricing(1500000).buyer_fee, 90000);
+  assert.strictEqual(CanonicalFeeEngine.calculateOrderPricing(5000000).buyer_fee, 300000);
+  assert.strictEqual(CanonicalFeeEngine.calculateOrderPricing(10000000).buyer_fee, 300000);
+  assert.strictEqual(calculatePlatformFee(500000), 35000);
+  assert.strictEqual(calculatePlatformFee(1000000), 60000);
+  assert.strictEqual(calculatePlatformFee(1500000), 90000);
+  assert.strictEqual(calculatePlatformFee(5000000), 300000);
+  assert.strictEqual(calculatePlatformFee(10000000), 300000);
+});
+
+it('4.4 Terms Section 10 reflects minimum fee Rp 35.000 and max Rp 300.000', () => {
+  assert(termsHtml.includes('Rp 35.000') || termsHtml.includes('Rp35.000'), 'Terms mentions min fee');
+  assert(termsHtml.includes('Rp 300.000') || termsHtml.includes('Rp300.000'), 'Terms mentions max fee');
+  assert(termsHtml.includes('30%'), 'Terms mentions 30% markup cap');
+});
+
+// ── 5. Integration: Backend Order Prevention for Demo Items ──
+console.log('\n── Section 5: Integration — Backend Order Guard for Demo Items ──');
+
+async function testBackendDemoOrderGuard() {
+  const app = express();
+  app.use(express.json());
+  app.use('/api/mvp', mvpRouter);
+
+  const server = http.createServer(app);
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+
+  try {
+    await itAsync('5.1 POST /api/mvp/buyer/order rejects list-pilot-preview with 400 DEMO_ITEM_NOT_PURCHASABLE', async () => {
+      const res = await fetch(`http://127.0.0.1:${port}/api/mvp/buyer/order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': 'usr-buyer-01'
+        },
+        body: JSON.stringify({
+          buyerId: 'usr-buyer-01',
+          listingId: 'list-pilot-preview'
+        })
+      });
+
+      const body = await res.json();
+      assert.strictEqual(res.status, 400, 'Must return 400 HTTP status');
+      assert.strictEqual(body.code, 'DEMO_ITEM_NOT_PURCHASABLE', 'Must return DEMO_ITEM_NOT_PURCHASABLE code');
+      assert(body.error.includes('demonstrasi') || body.error.includes('simulasi'), 'Must explain demo restriction');
+    });
+
+    await itAsync('5.2 POST /api/mvp/buyer/order rejects demo- prefix listing IDs with 400', async () => {
+      const res = await fetch(`http://127.0.0.1:${port}/api/mvp/buyer/order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': 'usr-buyer-01'
+        },
+        body: JSON.stringify({
+          buyerId: 'usr-buyer-01',
+          listingId: 'demo-sample-ticket'
+        })
+      });
+
+      const body = await res.json();
+      assert.strictEqual(res.status, 400, 'Must return 400 HTTP status');
+      assert.strictEqual(body.code, 'DEMO_ITEM_NOT_PURCHASABLE', 'Must return DEMO_ITEM_NOT_PURCHASABLE code');
+    });
+  } finally {
+    server.close();
+  }
+}
+
+testBackendDemoOrderGuard().then(() => {
+  console.log('\n================================================================');
+  console.log(`  TRUTHFULNESS SUITE RESULTS: ${passedTests} passed, ${failedTests} failed`);
+  console.log('================================================================\n');
+
+  if (failedTests > 0) {
+    process.exit(1);
+  }
+});

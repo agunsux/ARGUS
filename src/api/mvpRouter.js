@@ -1376,6 +1376,14 @@ router.post('/buyer/order', async (req, res) => {
       return res.status(400).json({ error: 'listingId is required', code: 'VALIDATION_ERROR' });
     }
 
+    // Demo Listing Guard: Demonstrative / illustrative listings cannot be ordered or purchased
+    if (listingId === 'list-pilot-preview' || String(listingId).toLowerCase().startsWith('demo-')) {
+      return res.status(400).json({
+        error: 'Item demonstrasi tidak dapat dipesan atau dibeli.',
+        code: 'DEMO_ITEM_NOT_PURCHASABLE'
+      });
+    }
+
     // When authenticated, the session identity is authoritative
     const effectiveBuyerId = (req.user && !isAdminRole(req.user.role)) ? req.user.id : (buyerId || req.user?.id);
     if (!effectiveBuyerId) {

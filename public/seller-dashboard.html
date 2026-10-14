@@ -405,7 +405,7 @@
     <div class="dash-hero">
       <div>
         <h1 class="dash-title">Dashboard Penjual</h1>
-        <p class="dash-subtitle">Kelola inventaris listing tiket, respons tawaran pembeli, pengiriman bukti tiket, kesiapan hari-H, dan status pencairan escrow.</p>
+        <p class="dash-subtitle">Kelola inventaris listing tiket, respons tawaran pembeli, pengiriman bukti tiket, kesiapan hari-H, dan status pelepasan dana penjualan.</p>
       </div>
       <div style="text-align:right; font-size:12px; color:var(--text-muted);">
         <div>Status Data: <strong id="dataStateBadge">MEMUAT...</strong></div>
@@ -432,7 +432,7 @@
         <a href="/create" class="btn btn-primary" id="onboardingCreateBtn"><i class="fa-solid fa-plus"></i> Halaman Registrasi Tiket</a>
       </div>
       <form id="sellerOnboardingForm" onsubmit="submitSellerOnboarding(event)" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid #A7F3D0;">
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:10px;">
+        <div style="grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:10px;" style="display:grid;">
           <div>
             <label for="onboardName" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Nama Lengkap Sesuai KTP *</label>
             <input type="text" id="onboardName" required maxlength="120" placeholder="Nama lengkap sesuai KTP" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; box-sizing:border-box;">
@@ -446,7 +446,7 @@
             <input type="text" id="onboardNik4" required maxlength="4" pattern="[0-9]{4}" placeholder="Contoh: 4821" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; box-sizing:border-box;">
           </div>
           <div>
-            <label for="onboardPayoutBank" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Bank Pencairan Escrow (Opsional)</label>
+            <label for="onboardPayoutBank" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Bank Rekening Penjual (Opsional)</label>
             <input type="text" id="onboardPayoutBank" maxlength="60" placeholder="BCA / Mandiri / BNI / BRI" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; box-sizing:border-box;">
           </div>
         </div>
@@ -570,14 +570,14 @@
           <div>
             <strong><i class="fa-solid fa-circle-info"></i> Status Otomasi Pembayaran & Pencairan: <span id="settlementModeBadge">UNAVAILABLE_PILOT_MODE</span></strong>
             <div id="settlementPilotNotice" style="font-size:13px; margin-top:4px;">
-              Pencairan otomatis ke rekening bank belum diaktifkan pada mode pilot. Seluruh pelepasan dana escrow diverifikasi melalui konfirmasi gate masuk acara dan ditindaklanjuti secara manual oleh tim operasional.
+              Pencairan otomatis ke rekening bank belum diaktifkan pada mode pilot. Seluruh pelepasan dana penampungan diverifikasi melalui konfirmasi gate masuk acara dan ditindaklanjuti secara manual oleh tim operasional.
             </div>
           </div>
         </div>
 
         <div class="kpi-grid">
           <div class="kpi-card">
-            <div class="kpi-label"><span>Dana Tertahan di Escrow</span> <i class="fa-solid fa-lock" style="color:var(--warning);"></i></div>
+            <div class="kpi-label"><span>Dana Tertahan di Sistem Penampungan</span> <i class="fa-solid fa-lock" style="color:var(--warning);"></i></div>
             <div class="kpi-value" id="settlementEscrowedIdr">Rp 0</div>
             <div class="kpi-foot">Dari pesanan aktif yang sudah dibayar</div>
           </div>
