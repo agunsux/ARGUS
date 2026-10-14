@@ -141,7 +141,7 @@
           <ol style="margin-top: 6px; padding-left: 20px;">
             <li><strong>Listing &amp; Hashing:</strong> Penjual mendaftarkan tiket; nomor barcode di-hash SHA-256 dan diverifikasi agar tidak terjadi duplikasi ganda.</li>
             <li><strong>Verifikasi Dokumen:</strong> Petugas Trust Officer memeriksa bukti invoice/e-voucher resmi sebelum tiket dipublikasikan.</li>
-            <li><strong>Pembayaran Escrow:</strong> Pembeli membayar via saluran resmi iPaymu; dana 100% terkunci aman di rekening penampungan.</li>
+            <li><strong>Pembayaran Escrow:</strong> Pembeli membayar via saluran resmi payment gateway berizin Bank Indonesia; dana 100% terkunci aman di rekening penampungan.</li>
             <li><strong>Verifikasi di Gate Acara:</strong> Pada hari H, Event PIC Tikum mendampingi pembeli di gerbang masuk venue untuk memverifikasi tiket dan melewati scanner turnstile.</li>
             <li><strong>Penyelesaian Transaksi:</strong> Dana baru dicairkan ke penjual setelah pembeli terkonfirmasi sukses memasuki area acara (<code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code>).</li>
           </ol>
@@ -170,7 +170,7 @@
       <div class="faq-item">
         <div class="faq-question">Bagaimana cara membeli tiket?</div>
         <div class="faq-answer">
-          Pilih acara yang ingin Anda tonton di katalog event Tikum, temukan kategori tiket yang sesuai, lalu pilih metode transaksi: langsung beli dengan <strong>Buy Now</strong> atau tawar harga melalui <strong>Make Offer</strong>. Lakukan pembayaran melalui transfer bank (Virtual Account) atau e-wallet yang diproses melalui payment gateway resmi berizin (iPaymu).
+          Pilih acara yang ingin Anda tonton di katalog event Tikum, temukan kategori tiket yang sesuai, lalu pilih metode transaksi: langsung beli dengan <strong>Buy Now</strong> atau tawar harga melalui <strong>Make Offer</strong>. Lakukan pembayaran melalui transfer bank (Virtual Account) atau e-wallet yang diproses melalui payment gateway resmi berizin Bank Indonesia.
         </div>
       </div>
 
@@ -304,12 +304,15 @@
     <!-- 7. CONTACT REFERENCE -->
     <div class="card" style="padding: 24px; background: #0f172a; border-color: #1e293b; text-align: center;">
       <h3 style="font-size: 16px; color: #fff; margin-bottom: 8px;">Kontak Layanan Operasional</h3>
-      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
         Hubungi saluran resmi <strong>SHINERVA HQ</strong> melalui email atau WhatsApp. Tim operasional kami siap membantu kebutuhan transaksi Anda.
+      </p>
+      <p style="font-size: 12px; color: #cbd5e1; margin-bottom: 16px;">
+        <strong>Jam Operasional:</strong> Senin - Minggu: 09:00 - 21:00 WIB (Hari H Acara: Siaga 24 Jam di Venue)
       </p>
       <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
         <a href="mailto:support@tikum.app" class="btn btn-secondary btn-sm"><i class="fa-solid fa-envelope"></i> support@tikum.app</a>
-        <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" class="btn btn-cyan btn-sm"><i class="fa-brands fa-whatsapp"></i> 081299927378</a>
+        <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" class="btn btn-cyan btn-sm"><i class="fa-brands fa-whatsapp"></i> +62 812-9992-7378 (081299927378)</a>
         <a href="/contact" class="btn btn-sm"><i class="fa-solid fa-address-book"></i> Halaman Kontak Resmi</a>
       </div>
     </div>

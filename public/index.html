@@ -53,6 +53,9 @@
     <nav class="ln-nav-links">
       <a class="ln-nav-link" href="#verifiedConcertHero" style="color:#34d399; font-weight:700;"><i class="fa-solid fa-star"></i> <span data-i18n="nav.featuredEvents">Konser Pilihan</span></a>
       <a class="ln-nav-link" href="/events" data-i18n="nav.events">Jelajah Konser</a>
+      <a class="ln-nav-link" href="#services">Produk &amp; Layanan</a>
+      <a class="ln-nav-link" href="#pricing">Harga &amp; Biaya</a>
+      <a class="ln-nav-link" href="/pay" style="color:var(--primary); font-weight:700;"><i class="fa-solid fa-cash-register"></i> Simulasi Checkout</a>
       <a class="ln-nav-link" href="#upcoming" data-i18n="nav.allEvents">Semua Event</a>
       <a class="ln-nav-link" href="/events?category=MUSIC" onclick="applyNavCategory('MUSIC'); return false;" data-i18n="nav.concerts">Konser</a>
       <a class="ln-nav-link" href="/events?category=SPORT" onclick="applyNavCategory('SPORT'); return false;" data-i18n="nav.sports">Olahraga</a>
@@ -261,6 +264,168 @@
 
   <!-- Dynamic Sections -->
   <main id="mainContent"></main>
+
+  <!-- Products and Services Section -->
+  <section class="landing-section" id="services">
+    <div class="landing-section-header">
+      <div class="landing-kicker">PRODUK &amp; LAYANAN RESMI</div>
+      <h2 class="landing-title">Layanan Utama Ekosistem Tiket TIKUM</h2>
+      <p class="landing-lead">TIKUM menyediakan infrastruktur pasar sekunder yang aman dan transparan bagi penikmat konser, olahraga, dan festival di Indonesia.</p>
+    </div>
+    <div class="trust-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+      <div class="trust-card">
+        <div class="trust-card-icon" style="color:#047857; background:rgba(4, 120, 87, 0.12);"><i class="fa-solid fa-ticket"></i></div>
+        <h3 class="trust-card-title">1. Pasar Resale Tiket Sekunder</h3>
+        <p class="trust-card-desc">Platform resmi jual-beli tiket sekunder bagi pemilik tiket yang berhalangan hadir. Pembeli mendapatkan tiket valid tanpa risiko transaksi langsung di media sosial.</p>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-icon" style="color:#2563EB; background:rgba(37, 99, 235, 0.12);"><i class="fa-solid fa-vault"></i></div>
+        <h3 class="trust-card-title">2. Proteksi Escrow Rekening Bersama</h3>
+        <p class="trust-card-desc">Dana pembelian ditampung di sistem penampungan internal (escrow). Penjual baru menerima pencairan setelah tiket tervalidasi dan pembeli terkonfirmasi aman saat masuk acara.</p>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-icon" style="color:#D97706; background:rgba(217, 119, 6, 0.12);"><i class="fa-solid fa-user-shield"></i></div>
+        <h3 class="trust-card-title">3. Layanan Pendampingan Lapangan (Event PIC)</h3>
+        <p class="trust-card-desc">Koordinator lapangan TIKUM hadir langsung pada event-event terpilih untuk mendampingi penukaran wristband gelang dan asistensi jika terjadi kendala turnstile gate.</p>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-icon" style="color:#7C3AED; background:rgba(124, 58, 237, 0.12);"><i class="fa-solid fa-fingerprint"></i></div>
+        <h3 class="trust-card-title">4. Verifikasi Tiket &amp; Hashing Anti-Duplikasi</h3>
+        <p class="trust-card-desc">Sistem pencatatan riwayat tiket dan hashing bukti SHA-256 untuk memverifikasi dokumen kepemilikan dan mencegah tiket yang sama didaftarkan ganda.</p>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-icon" style="color:#059669; background:rgba(5, 150, 105, 0.12);"><i class="fa-solid fa-handshake-angle"></i></div>
+        <h3 class="trust-card-title">5. Penawaran Terstruktur &amp; Beli Langsung</h3>
+        <p class="trust-card-desc">Mekanisme negosiasi terstruktur (Make Offer) dengan batas wajar dan fitur Beli Langsung (Buy Now) dengan kalkulasi all-in transparan sejak awal.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing & Fee Structure Section -->
+  <section class="landing-section" id="pricing">
+    <div class="landing-section-header">
+      <div class="landing-kicker">STRUKTUR HARGA &amp; BIAYA TRANSPARAN</div>
+      <h2 class="landing-title">Skema Biaya Resmi &amp; Simulasi Checkout</h2>
+      <p class="landing-lead">Semua rincian biaya terbuka dan dihitung otomatis tanpa biaya tersembunyi. Berlaku aturan batas markup maksimal 30% dari harga resmi promotor demi keadilan harga.</p>
+    </div>
+
+    <!-- Pricing Policy Table -->
+    <div class="comparison-table-wrapper" style="margin-bottom: 28px;">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Komponen Layanan</th>
+            <th>Ketentuan / Tarif</th>
+            <th>Keterangan Operasional</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Biaya Pasang Listing (Seller)</strong></td>
+            <td><strong style="color: #34D399;">Rp 0 (Gratis)</strong></td>
+            <td>Penjual dapat mendaftarkan tiket tanpa biaya awal di muka.</td>
+          </tr>
+          <tr>
+            <td><strong>Biaya Platform Pembeli (Buyer Fee)</strong></td>
+            <td><strong>6%</strong> (Min. Rp35.000, Maks. Rp300.000)</td>
+            <td>Mencakup perlindungan rekening bersama (escrow) dan proteksi transaksi.</td>
+          </tr>
+          <tr>
+            <td><strong>Biaya Layanan Penjual (Seller Fee)</strong></td>
+            <td><strong>6%</strong> (Min. Rp35.000, Maks. Rp300.000)</td>
+            <td>Dipotong dari hasil penjualan saat pencairan dana pasca-acara berhasil.</td>
+          </tr>
+          <tr>
+            <td><strong>Batas Harga Tiket Minimum</strong></td>
+            <td><strong>Rp 500.000</strong> per tiket</td>
+            <td>Batas nominal transaksi minimum untuk memastikan standar kurasi tiket.</td>
+          </tr>
+          <tr>
+            <td><strong>Batas Markup Penjual (Markup Cap)</strong></td>
+            <td><strong>Maksimal +30%</strong> dari Face Value</td>
+            <td>Mencegah praktik calo liar dan menjaga harga tiket tetap wajar.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pricing Simulation Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 28px;">
+      <!-- Card 1: Contoh Tiket Rp 500.000 -->
+      <div class="trust-card" style="border: 1px solid var(--line-300); background: var(--surface); padding: 24px; border-radius: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span class="badge badge-neutral">Simulasi 1 • Floor Fee</span>
+          <span style="font-size: 13px; color: var(--color-text-muted, #6B7280);">Kategori Standar</span>
+        </div>
+        <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 16px;">Tiket Konser Rp 500.000</h3>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; border-top: 1px solid var(--line-100); padding-top: 12px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--color-text-muted, #6B7280);">Harga Tiket Penjual:</span>
+            <strong>Rp 500.000</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--color-text-muted, #6B7280);">Biaya Platform Pembeli (6%, Min Rp35k):</span>
+            <span style="color: var(--primary); font-weight: 600;">+Rp 35.000</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-top: 1px dashed var(--line-300); padding-top: 8px; font-size: 14.5px;">
+            <span><strong>Total Bayar Pembeli:</strong></span>
+            <strong style="color: #34D399;">Rp 535.000</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 12.5px; color: var(--color-text-muted, #6B7280);">
+            <span>Pencairan Bersih Penjual:</span>
+            <span>Rp 465.000 (setelah fee Rp 35.000)</span>
+          </div>
+        </div>
+        <a href="/pay" class="ln-btn ln-btn-ghost" style="width: 100%; text-align: center; justify-content: center; font-size: 13px; padding: 10px;">
+          <i class="fa-solid fa-cash-register"></i> Cek Halaman Pembayaran
+        </a>
+      </div>
+
+      <!-- Card 2: Contoh Tiket Rp 1.500.000 -->
+      <div class="trust-card" style="border: 1.5px solid var(--primary); background: var(--surface); padding: 24px; border-radius: 12px; position: relative;">
+        <div style="position: absolute; top: -11px; right: 20px;">
+          <span class="badge badge-verified" style="font-size: 11px; padding: 3px 8px;">PILOT PREVIEW</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span class="badge badge-trust">Simulasi 2 • Proportional 6%</span>
+          <span style="font-size: 13px; color: var(--color-text-muted, #6B7280);">Kategori VIP / Cat 1</span>
+        </div>
+        <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 16px;">King Nassar Lost In The Jungle (Cat 1)</h3>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; border-top: 1px solid var(--line-100); padding-top: 12px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--color-text-muted, #6B7280);">Harga Tiket Penjual:</span>
+            <strong>Rp 1.500.000</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--color-text-muted, #6B7280);">Biaya Platform Pembeli (6%):</span>
+            <span style="color: var(--primary); font-weight: 600;">+Rp 90.000</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-top: 1px dashed var(--line-300); padding-top: 8px; font-size: 14.5px;">
+            <span><strong>Total Bayar Pembeli:</strong></span>
+            <strong style="color: #34D399;">Rp 1.590.000</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 12.5px; color: var(--color-text-muted, #6B7280);">
+            <span>Pencairan Bersih Penjual:</span>
+            <span>Rp 1.410.000 (setelah fee Rp 90.000)</span>
+          </div>
+        </div>
+        <a href="/pay" class="ln-btn ln-btn-primary" style="width: 100%; text-align: center; justify-content: center; font-size: 13px; padding: 10px;">
+          <i class="fa-solid fa-arrow-right"></i> Buka Simulasi Checkout Pilot →
+        </a>
+      </div>
+    </div>
+
+    <!-- Action Banner -->
+    <div style="background: rgba(4, 120, 87, 0.08); border: 1px solid rgba(4, 120, 87, 0.25); border-radius: 12px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <div style="font-weight: 700; font-size: 14.5px; margin-bottom: 4px; color: var(--text-light);">Ingin Mencoba Alur Pembayaran &amp; Checkout?</div>
+        <div style="font-size: 13px; color: var(--color-text-muted, #6B7280);">Kunjungi halaman pembayaran resmi TIKUM dengan data rincian order, invoice escrow, dan opsi pembayaran berizin Bank Indonesia.</div>
+      </div>
+      <a href="/pay" class="ln-btn ln-btn-primary" style="font-size: 13.5px; padding: 10px 20px; white-space: nowrap;">
+        <i class="fa-solid fa-cash-register"></i> Ke Halaman Checkout (/pay)
+      </a>
+    </div>
+  </section>
 
   <!-- Section 16: Trust Center -->
   <section class="landing-section" id="trustCenter">
@@ -543,8 +708,15 @@
             <a href="mailto:support@tikum.app" style="color: var(--color-text-muted, #6B7280); text-decoration: none; margin-left: 6px;">support@tikum.app</a>
           </div>
           <div>
-            <span style="color: var(--color-text-muted, #6B7280);">WhatsApp:</span>
-            <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #047857; text-decoration: none; margin-left: 6px; font-weight: 600;"><i class="fa-brands fa-whatsapp"></i> 081299927378</a>
+            <span style="color: var(--color-text-muted, #6B7280);">Telepon &amp; WhatsApp:</span>
+            <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #047857; text-decoration: none; margin-left: 6px; font-weight: 600;"><i class="fa-brands fa-whatsapp"></i> +62 812-9992-7378 (081299927378)</a>
+          </div>
+          <div>
+            <span style="color: var(--color-text-muted, #6B7280);">Jam Layanan:</span>
+            <span style="margin-left: 6px; color: var(--text-light);">Senin - Minggu: 09:00 - 21:00 WIB</span>
+          </div>
+          <div style="font-size: 12px; color: var(--color-text-muted, #6B7280);">
+            (Hari H Acara: Siaga 24 Jam di Venue untuk event terpilih)
           </div>
         </div>
       </div>
@@ -552,6 +724,9 @@
       <div class="footer-col footer-links-col">
         <h4 data-i18n="footer.servicesAndLegal">Layanan &amp; Legalitas</h4>
         <div class="footer-links">
+          <a href="/pay"><i class="fa-solid fa-cash-register"></i> Halaman Checkout (/pay)</a>
+          <a href="#services"><i class="fa-solid fa-list-check"></i> Produk &amp; Layanan</a>
+          <a href="#pricing"><i class="fa-solid fa-tags"></i> Struktur Harga &amp; Biaya</a>
           <a href="/blog"><i class="fa-solid fa-newspaper"></i> Blog &amp; Panduan Tiket</a>
           <a href="/faq"><i class="fa-solid fa-circle-question"></i> <span data-i18n="footer.faq">FAQ / Bantuan</span></a>
           <a href="/terms"><i class="fa-solid fa-file-contract"></i> <span data-i18n="footer.terms">Syarat &amp; Ketentuan</span></a>
