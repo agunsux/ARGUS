@@ -1360,14 +1360,32 @@ router.post('/seller/orders/:orderId/handoff-challenge', async (req, res) => {
  */
 router.post('/buyer/order', async (req, res) => {
   try {
+    resolveAuth(req);
+    const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+
+    // In production, unauthenticated guest order creation is forbidden to prevent buyer impersonation
+    if (isProduction && !req.user) {
+      return res.status(401).json({
+        error: 'Authentication required to create a ticket order. Please log in.',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
     const { buyerId, listingId, quoteId, quote_id, policyVersion } = req.body;
-    if (!buyerId || !listingId) {
+    if (!listingId) {
+      return res.status(400).json({ error: 'listingId is required', code: 'VALIDATION_ERROR' });
+    }
+
+    // When authenticated, the session identity is authoritative
+    const effectiveBuyerId = (req.user && !isAdminRole(req.user.role)) ? req.user.id : (buyerId || req.user?.id);
+    if (!effectiveBuyerId) {
       return res.status(400).json({ error: 'buyerId and listingId are required', code: 'VALIDATION_ERROR' });
     }
-    if (req.user && buyerId !== req.user.id && !isAdminRole(req.user.role)) {
+
+    if (req.user && buyerId && buyerId !== req.user.id && !isAdminRole(req.user.role)) {
       return res.status(403).json({ error: 'Cannot create order for another buyer', code: 'FORBIDDEN' });
     }
-    if (!findUser(buyerId)) {
+    if (!findUser(effectiveBuyerId)) {
       return res.status(401).json({ error: 'Unknown buyer', code: 'AUTH_REQUIRED' });
     }
 
@@ -1378,7 +1396,7 @@ router.post('/buyer/order', async (req, res) => {
     }
 
     const result = await EscrowService.createOrder({
-      buyerId,
+      buyerId: effectiveBuyerId,
       listingId,
       quoteId: effectiveQuoteId,
       policyVersion: policyVersion || null,
@@ -1530,17 +1548,33 @@ router.get('/buyer/:id/orders', async (req, res) => {
  */
 router.post('/buyer/dispute', async (req, res) => {
   try {
+    resolveAuth(req);
+    const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+
+    if (isProduction && !req.user) {
+      return res.status(401).json({
+        error: 'Authentication required to file dispute',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
     const { orderId, buyerId, reason } = req.body;
-    if (!orderId || !buyerId) {
+    if (!orderId) {
+      return res.status(400).json({ error: 'orderId is required' });
+    }
+
+    const effectiveBuyerId = (req.user && !isAdminRole(req.user.role)) ? req.user.id : (buyerId || req.user?.id);
+    if (!effectiveBuyerId) {
       return res.status(400).json({ error: 'orderId and buyerId are required' });
     }
-    if (req.user && buyerId !== req.user.id && !isAdminRole(req.user.role)) {
+
+    if (req.user && buyerId && buyerId !== req.user.id && !isAdminRole(req.user.role)) {
       return res.status(403).json({ error: 'Cannot file dispute for another buyer', code: 'FORBIDDEN' });
     }
 
     const result = await DisputeService.openDispute({
       orderId,
-      buyerId,
+      buyerId: effectiveBuyerId,
       reason: reason || 'TICKET_INVALID_AT_GATE'
     });
 

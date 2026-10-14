@@ -252,7 +252,27 @@
       <div id="orderActionCard" class="card">
         <h3 class="card-title"><i class="fa-solid fa-lock"></i> <span data-i18n="pay.orderActionTitle">Selesaikan Pemesanan &amp; Kunci Dana (Simulasi)</span></h3>
 
-        <div class="form-group">
+        <!-- Authenticated Buyer Card (Shown when logged in) -->
+        <div id="authBuyerCard" style="display:none; background:var(--sand-50); border:1px solid var(--line-300); padding:14px 16px; border-radius:var(--radius-card); margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:11px; text-transform:uppercase; color:var(--text-dim); font-weight:700;">Identitas Akun Pembeli Terautentikasi</div>
+              <div id="authBuyerName" style="font-size:14px; font-weight:700; color:var(--ink-900); margin-top:2px;">-</div>
+              <div id="authBuyerMeta" style="font-size:12px; color:var(--ink-700);">-</div>
+            </div>
+            <span class="badge badge-success"><i class="fa-solid fa-user-check"></i> Sesi Aktif</span>
+          </div>
+        </div>
+
+        <!-- Unauthenticated Prompt (Shown when not logged in) -->
+        <div id="unauthBuyerNotice" class="notice-box notice-info" style="display:none; margin-bottom:14px; font-size:12.5px;">
+          <i class="fa-solid fa-user-lock"></i>
+          <div style="flex:1;">
+            <strong>Belum Masuk Akun:</strong> Anda dapat <a id="loginRedirectLink" href="/login" style="color:var(--terra-600); font-weight:700; text-decoration:underline;">Masuk / Daftar</a> agar pesanan tercatat di dasbor akun Anda, atau lanjutkan menggunakan akun pengujian simulasi di bawah.
+          </div>
+        </div>
+
+        <div id="pilotSelectContainer" class="form-group">
           <label for="buyerSelect" style="font-weight:700; font-size:13px; color:var(--ink-900); display:flex; align-items:center; gap:6px;">
             <i class="fa-solid fa-flask-vial" style="color:var(--amber-500);"></i> <span data-i18n="pay.pilotAccountLabel">Akun Pengujian Pilot (Internal / Demo Test Only):</span>
           </label>
@@ -602,12 +622,47 @@
       }
     }
 
+    let currentBuyer = null;
+
+    async function checkBuyerSession() {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.user) {
+            currentBuyer = data.user;
+            const authCard = document.getElementById('authBuyerCard');
+            const authName = document.getElementById('authBuyerName');
+            const authMeta = document.getElementById('authBuyerMeta');
+            const pilotContainer = document.getElementById('pilotSelectContainer');
+            const unauthNotice = document.getElementById('unauthBuyerNotice');
+
+            if (authName) authName.innerText = currentBuyer.name || currentBuyer.email || currentBuyer.id;
+            if (authMeta) authMeta.innerText = `${currentBuyer.email || ''} ${currentBuyer.phone ? '• ' + currentBuyer.phone : ''} (${currentBuyer.id})`;
+            if (authCard) authCard.style.display = 'block';
+            if (unauthNotice) unauthNotice.style.display = 'none';
+            if (pilotContainer) pilotContainer.style.display = 'none';
+            return;
+          }
+        }
+      } catch (_) {}
+
+      // Fallback to unauthenticated state
+      currentBuyer = null;
+      const unauthNotice = document.getElementById('unauthBuyerNotice');
+      const pilotContainer = document.getElementById('pilotSelectContainer');
+      const loginLink = document.getElementById('loginRedirectLink');
+      if (unauthNotice) unauthNotice.style.display = 'flex';
+      if (pilotContainer) pilotContainer.style.display = 'block';
+      if (loginLink) loginLink.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+    }
+
     async function handleCreateOrder() {
       if (!currentListing) return;
 
       const btn = document.getElementById('btnOrderSubmit');
       const errEl = document.getElementById('orderErrorMsg');
-      const buyerId = document.getElementById('buyerSelect').value;
+      const buyerId = currentBuyer ? currentBuyer.id : (document.getElementById('buyerSelect')?.value || 'usr-buyer-01');
 
       errEl.style.display = 'none';
       btn.disabled = true;
@@ -741,7 +796,7 @@
       if (!currentListing) return;
       const errEl = document.getElementById('offerModalError');
       const btn = document.getElementById('btnSubmitOffer');
-      const buyerId = document.getElementById('buyerSelect').value;
+      const buyerId = currentBuyer ? currentBuyer.id : (document.getElementById('buyerSelect')?.value || 'usr-buyer-01');
       const amount = parseInt(document.getElementById('offerAmountInput').value, 10);
 
       errEl.style.display = 'none';
@@ -787,6 +842,7 @@
 
     // Initialize
     loadListingData();
+    checkBuyerSession();
   </script>
   <script src="/js/i18n.js"></script>
 </body>

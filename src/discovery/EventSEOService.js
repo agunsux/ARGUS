@@ -297,12 +297,12 @@ class EventSEOService {
       `;
     } else if (eventOffers && eventOffers.length > 0) {
       officialTicketHtml = eventOffers.map(offer => {
-        const partnerName = offer.partner_name || event.official_ticketing_provider || 'Mitra Resmi';
+        const partnerName = offer.partner_name || event.official_ticketing_provider || 'Kanal Penjualan Resmi';
         const outboundUrl = `/go/${offer.partner_slug}/${offer.id}`;
         const isSoldOut = offer.availability_status === 'SOLD_OUT';
         const isAvailable = offer.availability_status === 'AVAILABLE';
 
-        let availBadge = `<span class="badge badge-slate" style="font-size:11px; background:#475569; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-question"></i> Cek Ketersediaan di Mitra</span>`;
+        let availBadge = `<span class="badge badge-slate" style="font-size:11px; background:#475569; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-question"></i> Cek Ketersediaan di Platform Tiket</span>`;
         if (isSoldOut) {
           availBadge = `<span class="badge badge-danger" style="font-size:11px; background:#ef4444; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-xmark"></i> Tiket Resmi Habis (Sold Out)</span>`;
         } else if (isAvailable) {
@@ -311,7 +311,7 @@ class EventSEOService {
 
         const affiliateBadge = offer.is_affiliate
           ? `<span class="badge badge-info" style="font-size:11px; background:#0284c7; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-handshake"></i> Mitra Afiliasi Resmi</span>`
-          : `<span class="badge badge-slate" style="font-size:11px; background:#334155; color:#94a3b8; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-building-circle-check"></i> Kanal Resmi Terverifikasi</span>`;
+          : `<span class="badge badge-slate" style="font-size:11px; background:#334155; color:#94a3b8; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Kanal Resmi Penyelenggara</span>`;
 
         let priceHtml = '';
         if (offer.price_min) {
@@ -324,7 +324,7 @@ class EventSEOService {
         }
 
         const affiliateDisclosure = offer.is_affiliate
-          ? `<div class="affiliate-disclosure" style="font-size:11px; color:#94a3b8; margin-top:6px; line-height:1.4;"><i class="fa-solid fa-handshake"></i> Transparansi: Tikum dapat menerima komisi afiliasi untuk transaksi yang memenuhi syarat di platform mitra resmi tanpa biaya tambahan bagi pembeli.</div>`
+          ? `<div class="affiliate-disclosure" style="font-size:11px; color:#94a3b8; margin-top:6px; line-height:1.4;"><i class="fa-solid fa-handshake"></i> Transparansi: Tikum dapat menerima komisi afiliasi untuk transaksi yang memenuhi syarat di platform tiket resmi tanpa biaya tambahan bagi pembeli.</div>`
           : '';
 
         return `
@@ -349,14 +349,14 @@ class EventSEOService {
               </div>
             </div>
             <div style="font-size:11.5px; color:#94a3b8; margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; gap:4px;">
-              <div><i class="fa-solid fa-circle-info"></i> Transaksi pembelian berlangsung di platform mitra resmi (${partnerName}). Tikum tidak memproses pembayaran tiket resmi.</div>
+              <div><i class="fa-solid fa-circle-info"></i> Transaksi pembelian berlangsung di platform penjualan tiket resmi (${partnerName}). Tikum tidak memproses pembayaran tiket resmi dan tidak berafiliasi komersial kecuali dinyatakan sebaliknya.</div>
               ${affiliateDisclosure}
             </div>
           </div>
         `;
       }).join('');
     } else if (event.official_ticket_url) {
-      const providerName = event.official_ticketing_provider || 'Penyelenggara / Mitra Resmi';
+      const providerName = event.official_ticketing_provider || 'Penyelenggara / Kanal Resmi';
       const isSoldOut = event.official_ticket_availability === 'SOLD_OUT' || event.availability_status === 'SOLD_OUT';
       const availBadge = isSoldOut
         ? `<span class="badge badge-danger" style="font-size:11px; background:#ef4444; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-xmark"></i> Tiket Resmi Habis (Sold Out)</span>`
@@ -527,7 +527,7 @@ class EventSEOService {
             </div>
             <div style="font-size:14px; font-weight:700; color:#e2e8f0;">Poster Resmi Belum Tersedia dari Sumber</div>
             <div style="font-size:12px; color:#94a3b8; max-width:520px;">
-              Event ini telah terverifikasi di katalog TIKUM (${event.image_status || 'SOURCE_LINK_ONLY'}). Silakan kunjungi halaman resmi penyelenggara atau mitra tiket untuk informasi visual terbaru.
+              Event ini telah terverifikasi di katalog TIKUM (${event.image_status || 'SOURCE_LINK_ONLY'}). Silakan kunjungi halaman resmi penyelenggara atau platform tiket terkait untuk informasi visual terbaru.
             </div>
             ${officialSrcUrl ? `<a href="${officialSrcUrl}" target="_blank" rel="noopener noreferrer nofollow" style="margin-top:4px; font-size:12px; color:#38bdf8; font-weight:600; text-decoration:underline;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat di Sumber Resmi</a>` : ''}
           </div>
@@ -572,7 +572,7 @@ class EventSEOService {
     <section style="margin-top: 16px;">
       <p style="font-size: 11px; line-height: 1.8; color: #94a3b8; background: #0b1120; border: 1px solid #1e293b; border-radius: 8px; padding: 12px 14px;">
         <strong style="color:#cbd5e1;">Atribusi sumber resmi.</strong>
-        Data faktual event ini dihimpun dari kanal publik resmi penyelenggara dan mitra ticketing
+        Data faktual event ini dihimpun dari kanal publik resmi penyelenggara dan platform ticketing primer terkait
         ${event.source_url ? `(<a href="${event.source_url}" target="_blank" rel="noopener noreferrer nofollow" style="color:#38bdf8;">sumber</a>)` : ''}
         ${event.verification_status ? `dan diverifikasi melalui kanal otoritatif resmi (status: ${event.verification_status}${event.verification_confidence ? `, keyakinan ${event.verification_confidence}%` : ''}).` : '.'}
         Tikum tidak menyalin materi promosi; hanya menyimpan nama event, jadwal, venue, kota, harga, tautan resmi, serta poster resmi dengan kredit penyelenggara.

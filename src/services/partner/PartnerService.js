@@ -91,7 +91,8 @@ class PartnerService {
           country_code: 'ID',
           supported_currency: 'IDR',
           affiliate_program_url: 'https://www.loket.com',
-          commission_config: { type: 'UNCONFIGURED', rate_pct: null, fixed_amount: null, note: 'Direct official link active. Affiliate onboarding pending.' },
+          commission_config: { type: 'UNCONFIGURED', rate_pct: null, fixed_amount: null, commercial_relationship: false, partnership_tier: 'EXTERNAL_PRIMARY_SOURCE' },
+          notes: 'Kanal tiket primer eksternal publik (GoTo Group / Loket). Bukan mitra komersial TIKUM; domain terdaftar untuk allowlist pengalihan aman.',
           webhook_secret: null,
           created_at: now,
           updated_at: now
@@ -107,7 +108,8 @@ class PartnerService {
           country_code: 'ID',
           supported_currency: 'IDR',
           affiliate_program_url: 'https://www.livenation.asia',
-          commission_config: { type: 'UNCONFIGURED', rate_pct: null, fixed_amount: null, note: 'Direct promoter portal link.' },
+          commission_config: { type: 'UNCONFIGURED', rate_pct: null, fixed_amount: null, commercial_relationship: false, partnership_tier: 'EXTERNAL_PRIMARY_SOURCE' },
+          notes: 'Portal promotor konser internasional. Bukan mitra komersial TIKUM; domain terdaftar untuk allowlist pengalihan aman.',
           webhook_secret: null,
           created_at: now,
           updated_at: now
@@ -123,7 +125,8 @@ class PartnerService {
           country_code: 'ID',
           supported_currency: 'IDR',
           affiliate_program_url: 'https://www.tiket.com/to-do',
-          commission_config: { type: 'UNCONFIGURED', rate_pct: null, fixed_amount: null, note: 'Direct ticketing link.' },
+          commission_config: { type: 'UNCONFIGURED', rate_pct: null, fixed_amount: null, commercial_relationship: false, partnership_tier: 'EXTERNAL_PRIMARY_SOURCE' },
+          notes: 'Kanal tiket primer OTA publik. Bukan mitra komersial TIKUM; domain terdaftar untuk allowlist pengalihan aman.',
           webhook_secret: null,
           created_at: now,
           updated_at: now
@@ -139,7 +142,8 @@ class PartnerService {
           country_code: 'ID',
           supported_currency: 'IDR',
           affiliate_program_url: 'https://bbo.co.id',
-          commission_config: { type: 'UNCONFIGURED', rate_pct: null, fixed_amount: null },
+          commission_config: { type: 'UNCONFIGURED', rate_pct: null, fixed_amount: null, commercial_relationship: false, partnership_tier: 'EXTERNAL_PRIMARY_SOURCE' },
+          notes: 'Platform tiket nasional olahraga & pameran. Bukan mitra komersial TIKUM; domain terdaftar untuk allowlist pengalihan aman.',
           webhook_secret: null,
           created_at: now,
           updated_at: now
@@ -155,7 +159,8 @@ class PartnerService {
           country_code: 'ID',
           supported_currency: 'IDR',
           affiliate_program_url: 'https://megatix.co.id',
-          commission_config: { type: 'UNCONFIGURED', rate_pct: null, fixed_amount: null },
+          commission_config: { type: 'UNCONFIGURED', rate_pct: null, fixed_amount: null, commercial_relationship: false, partnership_tier: 'EXTERNAL_PRIMARY_SOURCE' },
+          notes: 'Platform tiket independen festival/konser. Bukan mitra komersial TIKUM; domain terdaftar untuk allowlist pengalihan aman.',
           webhook_secret: null,
           created_at: now,
           updated_at: now
@@ -171,7 +176,8 @@ class PartnerService {
           country_code: 'ID',
           supported_currency: 'IDR',
           affiliate_program_url: 'https://tiptip.id',
-          commission_config: { type: 'UNCONFIGURED', rate_pct: null, fixed_amount: null },
+          commission_config: { type: 'UNCONFIGURED', rate_pct: null, fixed_amount: null, commercial_relationship: false, partnership_tier: 'EXTERNAL_PRIMARY_SOURCE' },
+          notes: 'Platform tiket kreator & komunitas. Bukan mitra komersial TIKUM; domain terdaftar untuk allowlist pengalihan aman.',
           webhook_secret: null,
           created_at: now,
           updated_at: now
