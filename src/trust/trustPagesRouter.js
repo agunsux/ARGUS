@@ -138,9 +138,9 @@ router.get('/how-it-works', (req, res) => {
         <div style="display:flex; gap:14px; align-items:flex-start;">
           <div style="width:36px; height:36px; border-radius:50%; background:#0284c7; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">2</div>
           <div>
-            <h3 style="font-size:18px; font-weight:700; color:#f8fafc; margin:0 0 6px;">Buyers Pay via Escrow Account</h3>
+            <h3 style="font-size:18px; font-weight:700; color:#f8fafc; margin:0 0 6px;">Buyers Pay via Platform-Held Protection</h3>
             <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-              Buyer funds are held safely in Tikum internal escrow holding. Money is <strong>not released directly</strong> to the seller until the buyer successfully enters the event venue.
+              Buyer transactions are safeguarded by platform-held control. Funds are <strong>not disbursed to the seller</strong> until the ticket verification and handover requirements are satisfied.
             </p>
           </div>
         </div>
@@ -150,9 +150,9 @@ router.get('/how-it-works', (req, res) => {
         <div style="display:flex; gap:14px; align-items:flex-start;">
           <div style="width:36px; height:36px; border-radius:50%; background:#0284c7; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">3</div>
           <div>
-            <h3 style="font-size:18px; font-weight:700; color:#f8fafc; margin:0 0 6px;">Ticket Handover &amp; Venue Gate Verification (Event PIC)</h3>
+            <h3 style="font-size:18px; font-weight:700; color:#f8fafc; margin:0 0 6px;">Ticket Handover &amp; Gate Verification</h3>
             <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-              Buyers receive e-voucher documents or exchange physical wristbands. Tikum Event PIC officers are present at designated venues to guide gate entry when issues arise.
+              Buyers receive digital e-voucher documents or official wristband exchange instructions. For select events with active assignments, on-site Event PIC coordinators assist with documentation.
             </p>
           </div>
         </div>
@@ -164,7 +164,7 @@ router.get('/how-it-works', (req, res) => {
           <div>
             <h3 style="font-size:18px; font-weight:700; color:#f8fafc; margin:0 0 6px;">Transaction Settlement &amp; Seller Payout</h3>
             <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-              Following confirmed turnstile entry or expiration of the verification window with no dispute, escrow funds are automatically disbursed to the seller.
+              Following successful ticket validation or expiration of the review window without dispute, proceeds are disbursed to the seller.
             </p>
           </div>
         </div>
@@ -188,9 +188,9 @@ router.get('/how-it-works', (req, res) => {
         <div style="display:flex; gap:14px; align-items:flex-start;">
           <div style="width:36px; height:36px; border-radius:50%; background:#0284c7; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">2</div>
           <div>
-            <h3 style="font-size:18px; font-weight:700; color:#f8fafc; margin:0 0 6px;">Pembeli Membayar Melalui Rekening Escrow</h3>
+            <h3 style="font-size:18px; font-weight:700; color:#f8fafc; margin:0 0 6px;">Pembeli Membayar Melalui Perlindungan Platform-Held</h3>
             <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-              Dana pembeli ditahan secara aman di rekening penampungan internal (escrow) Tikum. Uang <strong>tidak langsung dikirim</strong> kepada penjual sampai pembeli berhasil masuk ke venue acara.
+              Dana pembayaran dikelola dengan sistem penahanan transaksi administratif platform (platform-held). Uang <strong>tidak langsung dikirim</strong> kepada penjual sampai serah terima dan validasi tiket terpenuhi.
             </p>
           </div>
         </div>
@@ -200,9 +200,9 @@ router.get('/how-it-works', (req, res) => {
         <div style="display:flex; gap:14px; align-items:flex-start;">
           <div style="width:36px; height:36px; border-radius:50%; background:#0284c7; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">3</div>
           <div>
-            <h3 style="font-size:18px; font-weight:700; color:#f8fafc; margin:0 0 6px;">Penyerahan Tiket &amp; Verifikasi Gerbang Venue (Event PIC)</h3>
+            <h3 style="font-size:18px; font-weight:700; color:#f8fafc; margin:0 0 6px;">Penyerahan Tiket &amp; Verifikasi Akses Gerbang</h3>
             <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-              Pembeli menerima dokumen e-voucher atau melakukan penukaran wristband fisik. Petugas Event PIC Tikum hadir di area venue untuk memandu verifikasi gerbang jika terjadi kendala akses.
+              Pembeli menerima dokumen e-voucher atau panduan penukaran wristband fisik. Untuk event tertentu dengan penugasan operasional resmi, koordinator lapangan (Event PIC) disiagakan untuk mendokumentasikan kendala tiket.
             </p>
           </div>
         </div>
@@ -212,9 +212,9 @@ router.get('/how-it-works', (req, res) => {
         <div style="display:flex; gap:14px; align-items:flex-start;">
           <div style="width:36px; height:36px; border-radius:50%; background:#10b981; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">4</div>
           <div>
-            <h3 style="font-size:18px; font-weight:700; color:#f8fafc; margin:0 0 6px;">Penyelesaian Transaksi &amp; Pencairan Dana Penjual</h3>
+            <h3 style="font-size:18px; font-weight:700; color:#f8fafc; margin:0 0 6px;">Penyelesaian Transaksi &amp; Pencairan Penjual</h3>
             <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-              Setelah konfirmasi masuk gerbang atau berakhirnya batas waktu verifikasi tanpa ada sengketa (dispute), dana escrow dicairkan secara otomatis ke rekening penjual.
+              Setelah validasi tiket selesai atau berakhirnya batas waktu verifikasi tanpa ada sengketa (dispute), dana diteruskan ke rekening penjual.
             </p>
           </div>
         </div>
@@ -258,9 +258,9 @@ router.get(['/buyer-protection', '/panduan-pembeli'], (req, res) => {
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:20px;">
       <div style="background:#131d31; border:1px solid #10b981; border-radius:12px; padding:24px;">
-        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> Escrow Refund Guarantee</h3>
+        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> Platform-Held Payment Protection</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Your payment is held in Tikum neutral escrow holding and never released to the seller before successful venue admission. If a ticket is proven invalid or rejected at the gate, your payment is refunded in full under escrow policy.
+          Your payment is managed under platform-held controls and is not disbursed to the seller before ticket delivery and validation terms are met. If a ticket is proven invalid or rejected at the turnstile gate, buyers may initiate an evidence-based dispute.
         </p>
       </div>
 
@@ -272,18 +272,18 @@ router.get(['/buyer-protection', '/panduan-pembeli'], (req, res) => {
       </div>
 
       <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:24px;">
-        <h3 style="color:#f59e0b; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-user-shield"></i> On-Site Event PIC Support</h3>
+        <h3 style="color:#f59e0b; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-user-shield"></i> On-Site Coordination (Select Verified Events)</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Tikum deploys Event Persons-in-Charge (PIC) at supported major venue gates to assist with physical ticket checks and real-time evidence gathering during disputes.
+          For select events with active assignments, Tikum coordinates with on-site Event PIC representatives to verify physical access evidence and assist with dispute intake.
         </p>
       </div>
     </div>
   ` : `
     <div style="display:flex; flex-direction:column; gap:20px;">
       <div style="background:#131d31; border:1px solid #10b981; border-radius:12px; padding:24px;">
-        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> Jaminan Pengembalian Dana Escrow (Escrow Guarantee)</h3>
+        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> Perlindungan Transaksi Platform (Platform-Held)</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Uang Anda ditahan di rekening penampungan internal Tikum dan tidak diberikan ke penjual sebelum Anda dipastikan dapat masuk ke area konser. Jika tiket palsu atau ditolak di pintu gerbang, dana Anda dikembalikan penuh sesuai ketentuan escrow.
+          Dana transaksi dikelola dengan mekanisme penahanan administratif platform (platform-held) dan tidak dicairkan ke penjual sebelum serah terima dan validasi tiket terpenuhi. Jika tiket terbukti tidak valid di turnstile gerbang resmi, pembeli dapat mengajukan proses sengketa berbasis bukti.
         </p>
       </div>
 
@@ -295,29 +295,29 @@ router.get(['/buyer-protection', '/panduan-pembeli'], (req, res) => {
       </div>
 
       <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:24px;">
-        <h3 style="color:#f59e0b; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-user-shield"></i> Dukungan Event PIC di Lokasi Venue</h3>
+        <h3 style="color:#f59e0b; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-user-shield"></i> Koordinasi Lapangan (Event Terpilih)</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Tikum menempatkan Event Person-in-Charge (PIC) di area venue acara-acara besar untuk membantu pengecekan fisik tiket dan memberikan bukti verifikasi langsung jika terjadi sengketa.
+          Untuk event tertentu yang memiliki penugasan operasional resmi, koordinator lapangan (Event PIC) disiagakan untuk membantu dokumentasi bukti fisik saat terjadi penolakan turnstile.
         </p>
       </div>
     </div>
   `;
 
   const faqPairs = isEn ? [
-    { q: 'What if my ticket is rejected at the gate?', a: 'You can open a dispute immediately from the order tracking page and connect with our on-site Event PIC. If the ticket is verified invalid, funds are refunded under escrow policy.' },
-    { q: 'Are there hidden fees for escrow protection?', a: 'Protection fees are itemized transparently in the checkout breakdown with no hidden charges.' }
+    { q: 'What if my ticket is rejected at the gate?', a: 'You can open a dispute from the order tracking page and provide scanner rejection evidence. If verified invalid, the dispute is resolved in accordance with platform policies.' },
+    { q: 'Are there hidden fees for buyer protection?', a: 'All applicable platform fees are itemized transparently in the checkout breakdown.' }
   ] : [
-    { q: 'Bagaimana jika tiket saya ditolak di pintu masuk venue?', a: 'Anda dapat langsung mengajukan dispute melalui halaman pelacakan status dan menghubungi Event PIC Tikum di lokasi. Jika tiket terbukti tidak valid, dana direfund penuh sesuai ketentuan escrow.' },
-    { q: 'Apakah pembeli dikenakan biaya tambahan untuk perlindungan escrow?', a: 'Biaya proteksi sudah tertera transparan pada rincian pesanan saat Anda melakukan pembayaran, tanpa biaya tersembunyi.' }
+    { q: 'Bagaimana jika tiket saya ditolak di pintu masuk venue?', a: 'Anda dapat langsung mengajukan dispute melalui halaman pelacakan status dengan melampirkan bukti penolakan turnstile untuk diproses sesuai kebijakan resolusi platform.' },
+    { q: 'Apakah pembeli dikenakan biaya tambahan untuk perlindungan transaksi?', a: 'Biaya layanan tertera transparan pada rincian pesanan saat Anda melakukan pembayaran, tanpa biaya tersembunyi.' }
   ];
 
   const html = renderTrustLayout({
     lang,
-    title: isEn ? 'Buyer Protection — Genuine Ticket Guarantee & Escrow Refund | Tikum' : 'Perlindungan Pembeli — Garansi Tiket Asli & Pengembalian Dana Escrow | Tikum',
-    description: isEn ? 'Discover Tikum buyer protection: secure escrow holding, duplicate barcode prevention, and guaranteed escrow refund if a ticket is invalid.' : 'Pelajari sistem garansi perlindungan pembeli Tikum: rekening escrow aman, pencegahan tiket ganda, dan jaminan uang kembali jika tiket tidak valid.',
+    title: isEn ? 'Buyer Protection — Genuine Ticket Verification & Platform Safeguards | Tikum' : 'Perlindungan Pembeli — Verifikasi Tiket & Perlindungan Transaksi | Tikum',
+    description: isEn ? 'Discover Tikum buyer protection: platform-held transaction safeguards, duplicate barcode prevention, and evidence-based dispute resolution.' : 'Pelajari sistem perlindungan pembeli Tikum: tata kelola penahanan transaksi platform, pencegahan tiket ganda, dan resolusi sengketa berbasis bukti.',
     canonicalPath: '/buyer-protection',
     h1: isEn ? 'Comprehensive Protection for Ticket Buyers' : 'Perlindungan Menyeluruh untuk Pembeli Tiket',
-    subtitle: isEn ? 'Purchase live event tickets with confidence backed by neutral escrow and turnstile entry verification.' : 'Beli tiket konser favorit tanpa rasa cemas tertipu calo atau barcode palsu.',
+    subtitle: isEn ? 'Purchase live event tickets with confidence backed by platform safeguards and ticket entry verification.' : 'Beli tiket konser favorit tanpa rasa cemas tertipu calo atau barcode palsu.',
     breadcrumbs: [
       { name: isEn ? 'Home' : 'Beranda', url: '/' },
       { name: isEn ? 'Buyer Protection' : 'Perlindungan Pembeli', url: '/buyer-protection' }
@@ -485,50 +485,52 @@ router.get('/escrow', (req, res) => {
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:20px;">
       <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:24px;">
-        <h3 style="color:#38bdf8; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-vault"></i> Neutral Escrow Holding Principles</h3>
+        <h3 style="color:#38bdf8; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-vault"></i> Platform-Held Transaction Governance</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Escrow is a neutral custody mechanism. When a buyer pays, funds are secured in Tikum dedicated escrow accounts rather than private seller wallets. Payout occurs only after successful event entry.
+          Tikum enforces a platform-held transaction structure. When a buyer pays, disbursement to the seller is held administratively until ticket verification conditions are met. Tikum is not a banking institution or independent licensed escrow agent; terms like platform-held refer strictly to internal transaction safeguards.
         </p>
       </div>
 
       <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:24px;">
-        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-lock"></i> Structural Fraud Elimination</h3>
+        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-lock"></i> Fraud Deterrence by Design</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          This model removes secondary ticketing fraud incentives: bad actors cannot flee with buyer funds because money remains locked until turnstile validation passes.
+          This mechanism removes malicious resale incentives: sellers cannot receive payouts on invalid or duplicate tickets, protecting buyers through structured dispute evidence protocols.
         </p>
       </div>
     </div>
   ` : `
     <div style="display:flex; flex-direction:column; gap:20px;">
       <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:24px;">
-        <h3 style="color:#38bdf8; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-vault"></i> Prinsip Rekening Penampungan Internal (Escrow)</h3>
+        <h3 style="color:#38bdf8; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-vault"></i> Tata Kelola Transaksi Platform (Platform-Held)</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Escrow adalah sistem penahanan dana netral. Ketika pembeli membayar tiket, uang disimpan di rekening penampungan resmi Tikum (bukan di dompet pribadi penjual). Dana baru dilepaskan setelah acara berlangsung dan pembeli terkonfirmasi masuk.
+          Tikum menerapkan mekanisme perlindungan transaksi platform-held. Ketika pembeli menyelesaikan pembayaran, dana hasil penjualan ditahan secara administratif oleh platform dan tidak langsung diteruskan ke rekening penjual hingga verifikasi tiket terpenuhi. Tikum bukan merupakan lembaga perbankan atau penyedia jasa escrow berizin tersendiri.
         </p>
       </div>
 
       <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:24px;">
-        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-lock"></i> Kunci Keamanan Anti Penipuan</h3>
+        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-lock"></i> Pencegahan Penipuan Terstruktur</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Model ini memotong motif penipuan calo online: penjual nakal tidak bisa membawa kabur uang pembeli karena uang masih terkunci sampai turnstile venue berhasil dilewati.
+          Mekanisme ini menghilangkan celah penipuan tiket sekunder: dana tidak dapat ditarik oleh penjual tiket fiktif karena transaksi diproteksi oleh tahapan verifikasi bukti dan prosedur resolusi sengketa.
         </p>
       </div>
     </div>
   `;
 
   const faqPairs = isEn ? [
-    { q: 'Can sellers request advance deposits outside the platform?', a: 'No. All transactions must run through complete escrow custody with zero off-platform deposits permitted.' }
+    { q: 'Is Tikum a licensed banking or escrow company?', a: 'No. Tikum is a technology marketplace platform. Protection mechanisms operate under administrative platform-held transaction governance.' },
+    { q: 'Can sellers demand direct off-platform transfers?', a: 'No. All purchases must proceed through authorized platform checkouts to maintain dispute protection.' }
   ] : [
-    { q: 'Apakah penjual bisa meminta uang muka sebelum acara dimulai?', a: 'Tidak bisa. Seluruh transaksi di Tikum wajib melalui sistem escrow penuh tanpa uang muka di luar platform.' }
+    { q: 'Apakah Tikum merupakan lembaga perbankan atau escrow berizin?', a: 'Bukan. Tikum adalah platform marketplace teknologi. Mekanisme perlindungan transaksi beroperasi di bawah tata kelola administratif platform (platform-held).' },
+    { q: 'Apakah penjual bisa meminta transfer langsung di luar platform?', a: 'Tidak. Seluruh transaksi wajib dilakukan melalui alur resmi platform agar hak perlindungan sengketa tetap berlaku.' }
   ];
 
   const html = renderTrustLayout({
     lang,
     title: isEn ? 'Tikum Escrow Infrastructure — Neutral & Transparent Fund Holding | Tikum' : 'Sistem Rekening Escrow Tikum — Penahanan Dana Transparan & Netral | Tikum',
-    description: isEn ? 'Understand Tikum neutral escrow holding: buyer funds remain safe until event admission is confirmed, then disbursed securely to legitimate sellers.' : 'Pahami cara kerja rekening penampungan escrow Tikum: dana pembeli aman terlindungi sampai selesai verifikasi gerbang konser dan dicairkan ke penjual sah.',
+    description: isEn ? 'Understand Tikum platform-held safeguards: transactions remain protected until ticket admission terms are verified.' : 'Pelajari tata kelola penahanan transaksi platform Tikum: perlindungan dana transaksi dan verifikasi tiket.',
     canonicalPath: '/escrow',
     h1: isEn ? 'Escrow Infrastructure: Secure Holding' : 'Infrastruktur Escrow: Penahanan Dana Aman',
-    subtitle: isEn ? 'A neutral holding system ensuring your funds stay protected until ticket admission succeeds.' : 'Sistem rekening netral yang menjamin uang Anda aman sampai tiket berhasil dipakai.',
+    subtitle: isEn ? 'A platform-held protection model ensuring your transactions stay protected through ticket delivery.' : 'Model tata kelola transaksi terlindungi untuk menjamin keamanan serah terima tiket.',
     breadcrumbs: [
       { name: isEn ? 'Home' : 'Beranda', url: '/' },
       { name: isEn ? 'Escrow Account' : 'Rekening Escrow', url: '/escrow' }

@@ -18,7 +18,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { articleRepository } = require('./ArticleRepository');
+const { articleRepository, ArticleRepository } = require('./ArticleRepository');
 const { CONTENT_STATUS, CATEGORY_MAP, CATEGORY_METADATA } = require('./ContentModel');
 const { TechnicalSEOService } = require('../seo/TechnicalSEOService');
 const { StructuredDataFactory } = require('../seo/StructuredDataFactory');
@@ -513,12 +513,11 @@ router.get(['/blog', '/guides'], (req, res) => {
 router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
   const article = articleRepository.getArticleBySlug(req.params.slug);
 
-  // If not found or not published (preview requires query param `preview=1` for testing)
+  // Check if article is due for publication (preview requires query param `preview=1` for testing)
   const isPreview = req.query.preview === '1' && process.env.NODE_ENV === 'test';
-  const nowIso = new Date().toISOString();
-  const isPublishedNow = article && article.status === CONTENT_STATUS.PUBLISHED && (!article.published_at || article.published_at <= nowIso);
+  const isDue = ArticleRepository.isArticleDue(article, new Date());
 
-  if (!article || (!isPublishedNow && !isPreview)) {
+  if (!article || (!isDue && !isPreview)) {
     return res.status(404).send(`<!DOCTYPE html>
       <html lang="id"><head><title>Artikel Tidak Ditemukan — Tikum</title><meta name="robots" content="noindex, nofollow"></head>
       <body style="font-family:sans-serif; background:#0f172a; color:#fff; text-align:center; padding:50px;">
@@ -527,6 +526,13 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
         <a href="/blog" style="color:#38bdf8;">Kembali ke Halaman Blog</a>
       </body></html>`);
   }
+
+  // Ensure effective published_at is set for display, structured data and metadata
+  const effectivePublishedAt = article.published_at || article.scheduled_at || new Date().toISOString();
+  const viewArticle = {
+    ...article,
+    published_at: effectivePublishedAt
+  };
 
   const catSlug = resolveCategorySlug(article.category);
   const catLabel = CATEGORY_METADATA[catSlug]?.title || article.category.replace(/_/g, ' ');
@@ -538,7 +544,7 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
     { name: article.title, url: `/blog/${article.slug}` }
   ];
 
-  const articleJsonLd = StructuredDataFactory.createArticleSchema(article);
+  const articleJsonLd = StructuredDataFactory.createArticleSchema(viewArticle);
   const breadcrumbsJsonLd = StructuredDataFactory.createBreadcrumbSchema(breadcrumbs);
 
   // Build JSON-LD array — add FAQ schema only when FAQ content actually exists
@@ -566,8 +572,8 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
 
   // Dynamic reading time
   const readingTime = calculateReadingTime(article.content);
-  const publishDateFormatted = formatDateId(article.published_at);
-  const publishDateIso = article.published_at ? article.published_at.substring(0, 10) : '';
+  const publishDateFormatted = formatDateId(viewArticle.published_at);
+  const publishDateIso = viewArticle.published_at ? viewArticle.published_at.substring(0, 10) : '';
 
   // Related articles & FAQ sections
   const relatedHtml = renderRelatedArticles(article.slug, article.category);

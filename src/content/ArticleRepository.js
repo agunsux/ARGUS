@@ -193,16 +193,41 @@ class ArticleRepository {
     return list;
   }
 
-  getPublishedArticles() {
-    const nowIso = new Date().toISOString();
-    return this.getAllArticles({ status: CONTENT_STATUS.PUBLISHED }).filter(a => {
-      // Must be published and published_at must not be in the future
-      if (a.published_at) {
-        return a.published_at <= nowIso;
-      }
-      return true;
-    });
+  /**
+   * Evaluates if an article is due for public consumption at a given point in time.
+   * - Published articles: due if published_at is not set or published_at <= now
+   * - Scheduled articles: due if scheduled_at <= now (request-time auto publication)
+   * - Other statuses (draft, review, archived): never due
+   */
+  static isArticleDue(article, now = new Date()) {
+    if (!article) return false;
+    const nowIso = (now instanceof Date ? now : new Date(now)).toISOString();
+    if (article.status === CONTENT_STATUS.PUBLISHED) {
+      return !article.published_at || article.published_at <= nowIso;
+    }
+    if (article.status === CONTENT_STATUS.SCHEDULED) {
+      return Boolean(article.scheduled_at && article.scheduled_at <= nowIso);
+    }
+    return false;
   }
+
+  isArticleDue(article, now = new Date()) {
+    return ArticleRepository.isArticleDue(article, now);
+  }
+
+  getPublishedArticles(now = new Date()) {
+    const all = Array.from(this.articles.values());
+    const due = all.filter(a => ArticleRepository.isArticleDue(a, now));
+    const normalized = due.map(a => {
+      if (!a.published_at && a.scheduled_at) {
+        return { ...a, published_at: a.scheduled_at };
+      }
+      return a;
+    });
+    normalized.sort((a, b) => (b.published_at || b.updated_at || '').localeCompare(a.published_at || a.updated_at || ''));
+    return normalized;
+  }
+
 
   // --- State Transitions ---
 

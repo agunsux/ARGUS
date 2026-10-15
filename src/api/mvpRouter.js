@@ -469,8 +469,27 @@ router.get('/events', (req, res) => {
     const minPrice = activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null;
     const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
 
+    // Sanitize heavy internal scraper logs, crawl observations, and provenance from public payload
+    const cleanMetadata = event.metadata ? { ...event.metadata } : {};
+    delete cleanMetadata.observations;
+    delete cleanMetadata.sources;
+    delete cleanMetadata.event_history;
+    delete cleanMetadata.field_provenance;
+    delete cleanMetadata.conflicts;
+
+    const {
+      observations: _obs,
+      event_history: _hist,
+      sources: _srcs,
+      conflicts: _cfl,
+      field_provenance: _prov,
+      evidence_hash: _eh,
+      ...publicEventFields
+    } = event;
+
     return {
-      ...event,
+      ...publicEventFields,
+      metadata: cleanMetadata,
       name: event.name || event.title,
       title: event.title || event.name,
       start_date: event.start_date || event.date,

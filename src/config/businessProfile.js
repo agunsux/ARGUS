@@ -15,16 +15,18 @@ const businessProfile = {
   brandName: 'Tikum',
   brandTagline: 'Verified Ticket Marketplace',
   brandSlogan: 'Tiket terverifikasi. Transaksi terlindungi.',
-  parentCompany: 'Shinerva',
-  parentEntity: 'SHINERVA HQ',
+  legalEntity: 'PT SHINERVA PRAJNA TEJAS',
+  legalName: 'PT SHINERVA PRAJNA TEJAS',
+  parentCompany: 'PT SHINERVA PRAJNA TEJAS',
+  parentEntity: 'PT SHINERVA PRAJNA TEJAS',
   engineName: 'ARGUS Trust Engine',
-  canonicalRelationship: 'Tikum — Verified Ticket Marketplace by Shinerva',
+  canonicalRelationship: 'Tikum — Verified Ticket Marketplace by PT SHINERVA PRAJNA TEJAS',
   primaryDomain: 'tikum.app',
   canonicalDomain: 'https://tikum.app',
   canonicalOrigin: 'https://tikum.app',
 
-  // Official Business Entity for iPaymu compliance
-  name: 'SHINERVA HQ',
+  // Official Business Entity for underwriting and regulatory compliance
+  name: 'PT SHINERVA PRAJNA TEJAS',
   email: 'support@tikum.app',
   phone: '081299927378',
   whatsappNumber: '081299927378',
@@ -37,14 +39,14 @@ const businessProfile = {
   adminEmail: 'admin@tikum.app',
   picEmail: 'pic@tikum.app',
   address: {
-    entity: 'SHINERVA HQ',
+    entity: 'PT SHINERVA PRAJNA TEJAS',
     street: 'Jl. Pasirluyu No. 79',
     city: 'Bandung',
     postalCode: '40254',
     country: 'Indonesia',
-    formattedText: 'SHINERVA HQ\nJl. Pasirluyu No. 79\nBandung 40254\nIndonesia',
-    inlineText: 'SHINERVA HQ, Jl. Pasirluyu No. 79, Bandung 40254, Indonesia',
-    htmlBlock: '<strong>SHINERVA HQ</strong><br>Jl. Pasirluyu No. 79<br>Bandung 40254<br>Indonesia'
+    formattedText: 'PT SHINERVA PRAJNA TEJAS\nJl. Pasirluyu No. 79\nBandung 40254\nIndonesia',
+    inlineText: 'PT SHINERVA PRAJNA TEJAS, Jl. Pasirluyu No. 79, Bandung 40254, Indonesia',
+    htmlBlock: '<strong>PT SHINERVA PRAJNA TEJAS</strong><br>Jl. Pasirluyu No. 79<br>Bandung 40254<br>Indonesia'
   },
   legalLinks: {
     faq: '/faq',
@@ -61,10 +63,10 @@ function renderFooterHtml() {
     <div class="footer-container" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 40px;">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 16px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-shield-halved" style="color: #06b6d4;"></i> TIKUM — by SHINERVA
+          <i class="fa-solid fa-shield-halved" style="color: #06b6d4;"></i> TIKUM — by PT SHINERVA PRAJNA TEJAS
         </div>
         <p style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;" data-i18n="footer.aboutBrand">
-          Marketplace tiket sekunder terverifikasi. Transaksi aman dengan rekening penampungan internal (escrow) dan pendampingan fisik di gerbang venue.
+          Marketplace tiket sekunder terverifikasi. Transaksi aman dengan perlindungan penahanan pembayaran bersyarat dan verifikasi keabsahan tiket.
         </p>
         <div class="footer-address" style="color: #94a3b8; font-size: 13px; line-height: 1.6;">
           <div style="font-weight: 700; color: #cbd5e1;" data-i18n="footer.operationalOffice">Kantor Operasional &amp; Surat:</div>
@@ -105,7 +107,7 @@ function renderFooterHtml() {
       </div>
     </div>
     <div style="max-width: 1200px; margin: 32px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: #64748b;" data-i18n="footer.allRightsReserved">
-      &copy; 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. TIKUM — by SHINERVA.
+      &copy; 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — by PT SHINERVA PRAJNA TEJAS.
     </div>
   </footer>
   `;
