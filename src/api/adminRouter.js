@@ -695,7 +695,8 @@ router.get('/overview', requireAdmin, async (req, res) => {
 
     // Alert: Listings requiring verification review
     for (const l of listings) {
-      if (l.status === 'SUBMITTED' || l.status === 'UNDER_REVIEW') {
+      const s = (l.status || '').toUpperCase();
+      if (['SUBMITTED', 'UNDER_REVIEW', 'PENDING_VERIFICATION', 'PENDING_REVIEW', 'PENDING'].includes(s)) {
         alerts.push({
           id: `alert-list-${l.id}`,
           type: 'TICKET_VERIFICATION_REQUIRED',
@@ -703,12 +704,12 @@ router.get('/overview', requireAdmin, async (req, res) => {
           timestamp: l.created_at || new Date().toISOString(),
           related_entity: 'TICKET_LISTING',
           entity_id: l.id,
-          event_id: l.event_id,
+          event_id: l.event_id || l.canonical_event_id,
           current_status: l.status,
           title: 'Verifikasi Tiket Menunggu Review',
           description: `Listing ${l.id} menunggu peninjauan keaslian dokumen / QR code.`,
           action_label: 'Verifikasi Tiket',
-          action_url: '#tickets'
+          action_url: '#listings'
         });
       }
     }
@@ -929,8 +930,8 @@ router.get('/overview', requireAdmin, async (req, res) => {
 
     // --- 10. Marketplace Listing Lifecycle (real records only) ---
     const listingBuckets = { ACTIVE: 0, PENDING: 0, SOLD: 0, SUSPENDED: 0 };
-    const pendingListingStatuses = ['SUBMITTED', 'UNDER_REVIEW', 'PENDING_REVIEW', 'PENDING'];
-    const soldListingStatuses = ['SOLD', 'COMPLETED'];
+    const pendingListingStatuses = ['SUBMITTED', 'UNDER_REVIEW', 'PENDING_REVIEW', 'PENDING', 'PENDING_VERIFICATION'];
+    const soldListingStatuses = ['SOLD', 'COMPLETED', 'SETTLED'];
     const suspendedListingStatuses = ['SUSPENDED', 'FROZEN'];
     for (const l of listings) {
       const s = (l.status || '').toUpperCase();
@@ -2352,15 +2353,17 @@ router.get('/listings', requireAdmin, async (req, res) => {
     const users = hydrated.users;
 
     const rows = hydrated.listings.map(l => {
-      const event = events.find(e => e.id === l.event_id) || {};
+      const eventId = l.event_id || l.canonical_event_id;
+      const event = (canonicalRegistry && typeof canonicalRegistry.getEventById === 'function' ? canonicalRegistry.getEventById(eventId) : null) ||
+                    events.find(e => e.id === eventId || e.event_id === eventId) || {};
       const ticket = tickets.find(t => t.id === l.ticket_id) || {};
       const seller = users.find(u => u.id === l.seller_id) || {};
       const status = (l.status || '').toUpperCase();
 
       let bucket = 'OTHER';
       if (status === 'ACTIVE') bucket = 'ACTIVE';
-      else if (['SUBMITTED', 'UNDER_REVIEW', 'PENDING_REVIEW', 'PENDING'].includes(status)) bucket = 'PENDING';
-      else if (['SOLD', 'COMPLETED'].includes(status)) bucket = 'SOLD';
+      else if (['SUBMITTED', 'UNDER_REVIEW', 'PENDING_REVIEW', 'PENDING', 'PENDING_VERIFICATION'].includes(status)) bucket = 'PENDING';
+      else if (['SOLD', 'COMPLETED', 'SETTLED'].includes(status)) bucket = 'SOLD';
       else if (['SUSPENDED', 'FROZEN'].includes(status)) bucket = 'SUSPENDED';
 
       const meta = (typeof l.metadata === 'object' && l.metadata) ? l.metadata : {};
@@ -2371,17 +2374,20 @@ router.get('/listings', requireAdmin, async (req, res) => {
       const fType = l.fulfillment_type || meta.fulfillment_type || 'SELLER_MANAGED';
       const pStatus = l.pic_assistance_status || meta.pic_assistance_status || (fType === 'TIKUM_VENUE_PIC' ? 'REQUESTED_PENDING_ASSIGNMENT' : 'NONE');
       const sType = l.seat_type || meta.seat_type || 'GENERAL_ADMISSION';
+      const seatInfo = l.seat_info || meta.seat_info || ticket.seat_info || [ticket.section, ticket.row_id, ticket.seat].filter(Boolean).join(' ') || 'General Admission';
+      const eventName = event.canonical_name || event.name || event.title || eventId || 'Event TBA';
+      const sellerName = seller.name || seller.display_name || seller.email || l.seller_id;
 
       return {
         listing_id: l.id,
         ticket_id: l.ticket_id,
-        event_id: l.event_id,
-        event_name: event.name || event.title || l.event_id,
+        event_id: eventId,
+        event_name: eventName,
         seller_id: l.seller_id,
-        seller_name: seller.name || l.seller_id,
-        seat_info: ticket.seat_info || l.seat_info || 'N/A',
+        seller_name: sellerName,
+        seat_info: seatInfo,
         seat_type: sType,
-        ticket_verification_status: ticket.verification_status || 'UNVERIFIED',
+        ticket_verification_status: ticket.verification_status || (bucket === 'PENDING' ? 'PENDING' : 'VERIFIED'),
         face_value: l.face_value || ticket.face_value || 0,
         price: l.price || 0,
         quantity: totalQty,
@@ -2406,7 +2412,11 @@ router.get('/listings', requireAdmin, async (req, res) => {
       other: rows.filter(r => r.bucket === 'OTHER').length
     };
 
-    const filtered = filter === 'all' ? rows : rows.filter(r => r.bucket === filter.toUpperCase());
+    const filtered = filter === 'all'
+      ? rows
+      : (filter === 'pending'
+          ? rows.filter(r => r.bucket === 'PENDING')
+          : rows.filter(r => r.bucket === filter.toUpperCase()));
     res.json({ summary, total: filtered.length, listings: filtered });
   } catch (err) {
     res.status(err.status || 503).json({
@@ -2424,8 +2434,8 @@ router.get('/listings', requireAdmin, async (req, res) => {
  */
 router.post('/listings/:id/moderate', requireAdmin, async (req, res) => {
   const listingId = req.params.id;
-  const { action, reason, total_quantity, quantity } = req.body || {};
-  const officerId = req.adminUser?.id || req.adminUser?.email || 'admin@tikum.app';
+  const { action, reason, total_quantity, quantity, officer_id, officerId: bodyOfficerId } = req.body || {};
+  const officerId = officer_id || bodyOfficerId || req.user?.id || req.adminUser?.id || req.user?.email || req.adminUser?.email || 'admin@tikum.app';
 
   if (!action || !['APPROVE', 'REJECT', 'SUSPEND', 'ADJUST_INVENTORY'].includes(action.toUpperCase())) {
     return res.status(400).json({
@@ -2448,6 +2458,14 @@ router.post('/listings/:id/moderate', requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Listing not found', code: 'LISTING_NOT_FOUND' });
     }
     const currentListing = listing || dbListing;
+
+    // Security Gate: Sellers cannot approve or moderate their own listings
+    if (officerId && officerId === currentListing.seller_id) {
+      return res.status(403).json({
+        error: 'Sellers cannot approve their own listings',
+        code: 'CANNOT_APPROVE_OWN_LISTING'
+      });
+    }
 
     if (normalizedAction === 'APPROVE') {
       const { ListingService } = require('../services/listingService');
@@ -2669,10 +2687,15 @@ router.get('/venues', requireAdmin, (req, res) => {
  * GET /api/admin/verification
  * Pending seller/ticket verification, risk flags, incidents, evidence status.
  */
-router.get('/verification', requireAdmin, (req, res) => {
-  const sellers = (state.users || []).filter(u => (u.role || '').toLowerCase() === 'seller');
+router.get('/verification', requireAdmin, async (req, res) => {
+  let hydrated = { users: state.users || [], tickets: state.tickets || [] };
+  try {
+    hydrated = await hydrateAdminDatasets();
+  } catch (_) {}
+
+  const sellers = (hydrated.users || []).filter(u => (u.role || '').toLowerCase() === 'seller');
   const sellerProfiles = state.seller_profiles || [];
-  const tickets = state.tickets || [];
+  const tickets = hydrated.tickets || [];
   const authRecords = state.authorization_records || [];
   const incidents = state.incidents || [];
   const evidenceBundles = state.evidence_bundles || [];
@@ -2691,9 +2714,9 @@ router.get('/verification', requireAdmin, (req, res) => {
 
   const ticketVerificationRows = tickets.map(t => ({
     ticket_id: t.id || t.ticket_id,
-    event_id: t.event_id,
+    event_id: t.event_id || t.canonical_event_id,
     seller_id: t.seller_id,
-    verification_status: t.verification_status || 'UNVERIFIED',
+    verification_status: t.verification_status || (t.status === 'PENDING_VERIFICATION' ? 'UNDER_REVIEW' : (t.status === 'ACTIVE' ? 'VERIFIED' : 'UNVERIFIED')),
     risk_status: t.risk_status || 'LOW'
   }));
 
@@ -2701,14 +2724,14 @@ router.get('/verification', requireAdmin, (req, res) => {
     seller_verification: {
       total: sellerVerificationRows.length,
       verified: sellerVerificationRows.filter(s => s.kyc_status === 'VERIFIED').length,
-      pending: sellerVerificationRows.filter(s => s.kyc_status === 'PENDING').length,
+      pending: sellerVerificationRows.filter(s => s.kyc_status === 'PENDING' || s.kyc_status === 'PENDING_REVIEW').length,
       unverified: sellerVerificationRows.filter(s => s.kyc_status === 'UNVERIFIED').length,
       sellers: sellerVerificationRows
     },
     ticket_verification: {
       total: ticketVerificationRows.length,
       verified: ticketVerificationRows.filter(t => t.verification_status === 'VERIFIED').length,
-      under_review: ticketVerificationRows.filter(t => t.verification_status === 'UNDER_REVIEW').length,
+      under_review: ticketVerificationRows.filter(t => t.verification_status === 'UNDER_REVIEW' || t.verification_status === 'PENDING_VERIFICATION' || t.verification_status === 'PENDING').length,
       evidence_required: ticketVerificationRows.filter(t => t.verification_status === 'EVIDENCE_REQUIRED').length,
       rejected: ticketVerificationRows.filter(t => t.verification_status === 'REJECTED').length,
       tickets: ticketVerificationRows

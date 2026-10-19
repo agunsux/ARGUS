@@ -400,31 +400,90 @@ class ListingService {
    * Admin/System verifies listing
    */
   static async verifyListing(listingId, officerId, { approved, reason }) {
-    const listing = state.listings.find(l => l.id === listingId);
+    let listing = (state.listings || []).find(l => l.id === listingId);
+    let marketplaceRepo = null;
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      marketplaceRepo = getMarketplaceRepository();
+    } catch (_) {}
+
+    if (!listing && marketplaceRepo && typeof marketplaceRepo.getListingById === 'function') {
+      const dbListing = await marketplaceRepo.getListingById(listingId).catch(() => null);
+      if (dbListing) {
+        let meta = dbListing.metadata || {};
+        if (typeof meta === 'string') {
+          try { meta = JSON.parse(meta); } catch (_) { meta = {}; }
+        }
+        listing = {
+          id: dbListing.id,
+          listing_id: dbListing.id,
+          ticket_id: dbListing.ticket_id,
+          seller_id: dbListing.seller_id,
+          event_id: dbListing.canonical_event_id || dbListing.event_id,
+          face_value: dbListing.face_value || 0,
+          price: dbListing.price || 0,
+          seat_info: dbListing.seat_info || meta.seat_info || 'N/A',
+          quantity: dbListing.quantity || meta.quantity || 1,
+          total_quantity: dbListing.total_quantity || meta.total_quantity || 1,
+          available_quantity: dbListing.available_quantity !== undefined ? dbListing.available_quantity : (meta.available_quantity !== undefined ? meta.available_quantity : 1),
+          status: dbListing.status,
+          created_at: dbListing.created_at,
+          metadata: meta
+        };
+        state.listings.push(listing);
+      }
+    }
+
     if (!listing) {
       const err = new Error('Listing not found');
       err.code = 'NOT_FOUND';
       throw err;
     }
 
-    if (listing.status !== LISTING_STATUS.PENDING_VERIFICATION) {
+    // Security Gate: Sellers cannot approve their own listings
+    if (officerId && officerId === listing.seller_id) {
+      const err = new Error('Sellers cannot approve their own listings');
+      err.code = 'CANNOT_APPROVE_OWN_LISTING';
+      err.status = 403;
+      throw err;
+    }
+
+    const allowedStatuses = [LISTING_STATUS.PENDING_VERIFICATION, 'SUBMITTED', 'PENDING_REVIEW', 'PENDING'];
+    if (!allowedStatuses.includes(listing.status)) {
+      if (approved && listing.status === LISTING_STATUS.ACTIVE) {
+        // Idempotent approval
+        return { success: true, status: LISTING_STATUS.ACTIVE, listing };
+      }
       const err = new Error(`Listing cannot be verified from status ${listing.status}`);
       err.code = 'INVALID_STATUS';
       throw err;
     }
 
-    const ticket = state.tickets.find(t => t.id === listing.ticket_id);
+    let ticket = (state.tickets || []).find(t => t.id === listing.ticket_id);
+    if (!ticket && marketplaceRepo && typeof marketplaceRepo.getTicketById === 'function') {
+      const dbTicket = await marketplaceRepo.getTicketById(listing.ticket_id).catch(() => null);
+      if (dbTicket) {
+        ticket = {
+          id: dbTicket.id,
+          ticket_id: dbTicket.id,
+          seller_id: dbTicket.seller_id,
+          event_id: dbTicket.canonical_event_id,
+          status: dbTicket.status
+        };
+        state.tickets.push(ticket);
+      }
+    }
 
     if (approved) {
       listing.status = LISTING_STATUS.ACTIVE;
       if (ticket) ticket.status = 'ACTIVE';
 
       try {
-        const { getMarketplaceRepository } = require('../storage');
-        const marketplaceRepo = getMarketplaceRepository();
-        await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.ACTIVE);
-        if (ticket) {
-          await marketplaceRepo.updateTicketStatus(ticket.id || ticket.ticket_id, 'ACTIVE');
+        if (marketplaceRepo && typeof marketplaceRepo.updateListingStatus === 'function') {
+          await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.ACTIVE);
+          if (ticket) {
+            await marketplaceRepo.updateTicketStatus(ticket.id || ticket.ticket_id, 'ACTIVE');
+          }
         }
       } catch (repoErr) {
         if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
@@ -453,11 +512,11 @@ class ListingService {
       if (ticket) ticket.status = 'REJECTED';
 
       try {
-        const { getMarketplaceRepository } = require('../storage');
-        const marketplaceRepo = getMarketplaceRepository();
-        await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.REJECTED);
-        if (ticket) {
-          await marketplaceRepo.updateTicketStatus(ticket.id || ticket.ticket_id, 'REJECTED');
+        if (marketplaceRepo && typeof marketplaceRepo.updateListingStatus === 'function') {
+          await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.REJECTED);
+          if (ticket) {
+            await marketplaceRepo.updateTicketStatus(ticket.id || ticket.ticket_id, 'REJECTED');
+          }
         }
       } catch (repoErr) {
         if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {

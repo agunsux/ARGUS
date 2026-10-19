@@ -2026,6 +2026,7 @@
       const m = data.metrics || {};
       const tf = data.trust_fraud_snapshot || {};
       const pf = data.payment_finance_snapshot || {};
+      const mk = data.marketplace || {};
 
       // 1. Top Cards
       document.getElementById('kpiActiveEvents').innerText = m.active_events !== undefined ? m.active_events : 'N/A';
@@ -2046,7 +2047,14 @@
       }
 
       document.getElementById('sidebarEventsCount').innerText = m.active_events !== undefined ? m.active_events : '-';
-      document.getElementById('sidebarTicketsCount').innerText = m.tickets_listed !== undefined ? m.tickets_listed : '-';
+      const sidebarTicketsEl = document.getElementById('sidebarTicketsCount');
+      if (sidebarTicketsEl) {
+        if (mk.pending_listings > 0) {
+          sidebarTicketsEl.innerHTML = `${m.tickets_listed !== undefined ? m.tickets_listed : '-'} <span class="tag tag-warning" style="font-size: 10px; padding: 1px 4px; margin-left: 2px;">${mk.pending_listings} pending</span>`;
+        } else {
+          sidebarTicketsEl.innerText = m.tickets_listed !== undefined ? m.tickets_listed : '-';
+        }
+      }
       document.getElementById('sidebarOrdersCount').innerText = m.total_orders !== undefined ? m.total_orders : '-';
 
       const dspBadge = document.getElementById('sidebarDisputesCount');
@@ -2290,6 +2298,7 @@
     // Load Specific Sidebar Entity View
     let eventsFilter = 'all';
     let eventsRegistryMode = 'state';
+    let listingsFilter = 'all';
 
     async function loadGenericEntityView(viewName) {
       const titles = {
@@ -2313,6 +2322,14 @@
             `).join('')}
             <button class="btn btn-secondary btn-sm" onclick="toggleEventsRegistry()" title="Beralih antara proyeksi state.events dan Canonical Event Registry">${eventsRegistryMode === 'canonical' ? 'Registry: CANONICAL' : 'Registry: STATE'}</button>
           </span>`;
+      } else if (viewName === 'listings') {
+        document.getElementById('genericViewTitle').innerHTML = `
+          <i class="fa-solid fa-ticket"></i> ${titles.listings}
+          <span style="margin-left: 12px; display: inline-flex; gap: 4px; flex-wrap: wrap;">
+            ${['all', 'pending', 'active', 'sold', 'suspended'].map(f => `
+              <button class="btn btn-secondary btn-sm" onclick="setListingsFilter('${f}')" style="${listingsFilter === f ? 'border-color: #38bdf8; color: #38bdf8;' : ''}">${f.toUpperCase()}</button>
+            `).join('')}
+          </span>`;
       } else {
         document.getElementById('genericViewTitle').innerHTML = `<i class="fa-solid fa-list"></i> ${titles[viewName] || viewName.toUpperCase()}`;
       }
@@ -2327,6 +2344,8 @@
         let url = `/api/admin/${viewName}`;
         if (viewName === 'events') {
           url += `?source=${eventsRegistryMode}&status=${eventsFilter}`;
+        } else if (viewName === 'listings') {
+          url += `?status=${listingsFilter}`;
         }
         const res = await adminFetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -2340,6 +2359,11 @@
     function setEventsFilter(filter) {
       eventsFilter = filter;
       loadGenericEntityView('events');
+    }
+
+    function setListingsFilter(filter) {
+      listingsFilter = filter;
+      loadGenericEntityView('listings');
     }
 
     function toggleEventsRegistry() {
@@ -2388,7 +2412,7 @@
               <td>${renderTag(l.status)}</td>
               <td>
                 <div style="display:flex; gap:4px; flex-wrap:wrap;">
-                  ${['PENDING_VERIFICATION', 'SUBMITTED', 'PENDING'].includes(l.status) ? `
+                  ${['PENDING_VERIFICATION', 'SUBMITTED', 'PENDING', 'PENDING_REVIEW', 'UNDER_REVIEW'].includes(l.status) ? `
                     <button class="btn btn-secondary btn-sm" onclick="moderateListing('${l.listing_id}', 'APPROVE')"><i class="fa-solid fa-check"></i> Setujui</button>
                     <button class="btn btn-secondary btn-sm" style="color:#f87171;" onclick="moderateListing('${l.listing_id}', 'REJECT')"><i class="fa-solid fa-xmark"></i> Tolak</button>
                   ` : ''}
@@ -3186,7 +3210,18 @@
     function handleAlertAction(url, entity) {
       if (url.startsWith('#')) {
         const view = url.substring(1);
-        const navBtn = Array.from(document.querySelectorAll('.nav-item')).find(b => b.innerText.toLowerCase().includes(view));
+        if (view === 'listings' || view === 'tickets') {
+          listingsFilter = 'pending';
+          const navBtn = Array.from(document.querySelectorAll('.nav-item')).find(b => 
+            b.getAttribute('onclick') && b.getAttribute('onclick').includes("'listings'")
+          );
+          switchView('listings', navBtn);
+          return;
+        }
+        const navBtn = Array.from(document.querySelectorAll('.nav-item')).find(b => 
+          b.innerText.toLowerCase().includes(view) || 
+          (b.getAttribute('onclick') && b.getAttribute('onclick').includes(`'${view}'`))
+        );
         switchView(view, navBtn);
       }
     }
