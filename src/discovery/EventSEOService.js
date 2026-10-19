@@ -235,6 +235,19 @@ class EventSEOService {
           <h3 style="font-size:18px; font-weight:800; color:var(--color-text-primary, #111827); margin-bottom:6px;">Saat Ini Belum Ada Tiket Resale Terverifikasi</h3>
           <p style="font-size:13.5px; color:var(--color-text-muted, #6B7280); max-width:540px; margin:0 auto 16px;">Belum ada pengguna yang mendaftarkan penjualan tiket untuk event ini, atau seluruh tiket secondary sudah terjual.</p>
 
+          <div style="background:var(--color-surface-muted, #F8F9FA); border:1px solid var(--color-border-subtle, #E5E7EB); border-radius:10px; padding:14px 18px; max-width:520px; margin:0 auto 20px; text-align:left; font-size:13px; color:var(--color-text-secondary, #4B5563); display:flex; gap:12px; align-items:center;">
+            <i class="fa-solid fa-cash-register" style="font-size:22px; color:var(--color-brand-primary, #B8472F); flex-shrink:0;"></i>
+            <div style="flex:1;">
+              <strong style="color:var(--color-text-primary, #111827);">Simulasi Alur Checkout &amp; Pembayaran:</strong>
+              <div style="font-size:12.5px; margin-top:2px;">Kunjungi demonstrasi alur pembayaran untuk melihat transparansi kalkulasi biaya pembeli (6%) dan perlindungan transaksi platform-held.</div>
+              <div style="margin-top:6px;">
+                <a href="/pay" style="display:inline-flex; align-items:center; gap:6px; color:var(--color-brand-primary, #B8472F); font-weight:700; text-decoration:underline;">
+                  <i class="fa-solid fa-arrow-right"></i> Lihat Simulasi Alur Checkout (/pay)
+                </a>
+              </div>
+            </div>
+          </div>
+
           <div class="demand-capture-box" style="background:var(--color-surface-muted, #F8F9FA); border:1px solid var(--color-border-subtle, #E5E7EB); border-radius:12px; padding:20px; max-width:520px; margin:0 auto; text-align:left;">
             <div style="text-align:center;">${demandBadgeHtml}</div>
             <p style="font-size:14px; font-weight:700; color:var(--color-text-primary, #111827); margin-bottom:12px; text-align:center;">Ingin dikabari segera saat tiket tersedia?</p>

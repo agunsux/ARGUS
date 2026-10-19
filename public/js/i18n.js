@@ -236,10 +236,10 @@
       "servicesAndLegal": "Layanan & Legalitas",
       "contactUs": "Kontak Kami",
       "privacyPolicy": "Kebijakan Privasi (UU PDP)",
-      "copyright": "© 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. TIKUM — by SHINERVA.",
+      "copyright": "© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — by PT SHINERVA PRAJNA TEJAS.",
       "faq": "FAQ / Pertanyaan Umum",
       "refundPolicy": "Kebijakan Pengembalian Dana (Refund)",
-      "allRightsReserved": "© 2026 SHINERVA HQ. Seluruh hak cipta dilindungi undang-undang. TIKUM — by SHINERVA."
+      "allRightsReserved": "© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — by PT SHINERVA PRAJNA TEJAS."
     },
     "status": {
       "LISTED": "Tersedia",
@@ -1181,10 +1181,10 @@
       "servicesAndLegal": "Services & Legal",
       "contactUs": "Contact Us",
       "privacyPolicy": "Privacy Policy (PDP Law)",
-      "copyright": "© 2026 SHINERVA HQ. All rights reserved. TIKUM — by SHINERVA.",
+      "copyright": "© 2026 PT SHINERVA PRAJNA TEJAS. All rights reserved. TIKUM — by PT SHINERVA PRAJNA TEJAS.",
       "faq": "FAQ / Frequently Asked Questions",
       "refundPolicy": "Refund Policy",
-      "allRightsReserved": "© 2026 SHINERVA HQ. All rights reserved. TIKUM — by SHINERVA."
+      "allRightsReserved": "© 2026 PT SHINERVA PRAJNA TEJAS. All rights reserved. TIKUM — by PT SHINERVA PRAJNA TEJAS."
     },
     "status": {
       "LISTED": "Listed",

@@ -7,7 +7,11 @@
  */
 
 async function assertTestDatabaseIsolation(pool, options = {}) {
-  if (process.env.NODE_ENV !== 'test') {
+  const isTest = process.env.NODE_ENV === 'test' ||
+    process.env.npm_lifecycle_event === 'test' ||
+    /[\\/]test_[^\\/]+\.js$/i.test(String((process.argv && process.argv[1]) || '')) ||
+    /^test_[^\\/]+\.js$/i.test(String((process.argv && process.argv[1]) || ''));
+  if (!isTest) {
     return true;
   }
 

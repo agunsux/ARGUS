@@ -2,7 +2,7 @@ const { OfferService } = require('../services/offerService');
 
 let timer = null;
 
-function startOfferExpiryJob(intervalMs = 60000) {
+function startOfferExpiryJob(intervalMs = 300000) {
   if (timer) return timer;
 
   timer = setInterval(async () => {

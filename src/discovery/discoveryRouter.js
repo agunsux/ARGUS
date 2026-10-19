@@ -160,6 +160,8 @@ router.get('/events/:slug', (req, res, next) => {
   const { include_past, scope } = req.query;
   const showAllOrPast = include_past === 'true' || scope === 'all' || scope === 'admin';
   const now = new Date();
+  // Edge Cache: Absorb crawler and visitor traffic while allowing stale revalidation
+  res.setHeader('Cache-Control', 'public, s-maxage=180, stale-while-revalidate=600');
 
   let event = canonicalRegistry.getEventBySlug(slug) || canonicalRegistry.getEventById(slug);
 
@@ -258,10 +260,8 @@ function deduplicateAndEnrichPublicEvents(events) {
 router.get('/events', (req, res) => {
   const { q, city, category, status, include_past, scope } = req.query;
 
-  // Cache Integrity
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
+  // Edge Cache: Absorb high-frequency crawls and bot traffic while preserving fresh updates
+  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
 
   let allEvents = canonicalRegistry.getAllEvents();
   const showAllOrPast = include_past === 'true' || scope === 'all';
@@ -405,12 +405,24 @@ router.get('/events', (req, res) => {
   </header>
 
   <main class="container" style="padding-top:40px; padding-bottom:60px;">
-    <div style="text-align:center; max-width:700px; margin:0 auto 30px;">
+    <div style="text-align:center; max-width:700px; margin:0 auto 24px;">
       <div class="hero-pill" data-i18n="discovery.heroPill"><i class="fa-solid fa-compass"></i> INDONESIA EVENT DISCOVERY REGISTRY</div>
       <h1 style="font-size:32px; font-weight:800; letter-spacing:-0.5px; margin:14px 0;" data-i18n="discovery.heroTitle">Temukan Acara Langsung &amp; Akses Tiket Terpercaya</h1>
       <p style="color:#94a3b8; font-size:15px;" data-i18n="discovery.heroSubtitle">
         Pusat direktori event terverifikasi dari berbagai kanal resmi promotor, venue, dan federasi di Indonesia.
       </p>
+    </div>
+
+    <!-- Buyer Guide & Checkout Simulation Bridge -->
+    <div style="background:rgba(30,41,59,0.7); border:1px solid #334155; border-radius:10px; padding:12px 18px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+      <div style="font-size:13px; color:#cbd5e1; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-shield-halved" style="color:#38bdf8;"></i>
+        <span><strong>Pasar Sekunder &amp; Panduan:</strong> Pelajari skema biaya 6%, proteksi escrow, atau telusuri simulasi checkout Tikum.</span>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <a href="/panduan-pembeli" class="btn btn-sm btn-secondary" style="font-size:12px; padding:6px 12px; text-decoration:none;"><i class="fa-solid fa-book-open"></i> Panduan Pembeli</a>
+        <a href="/pay" class="btn btn-sm btn-primary" style="font-size:12px; padding:6px 12px; text-decoration:none;"><i class="fa-solid fa-cash-register"></i> Simulasi Checkout</a>
+      </div>
     </div>
 
     <!-- Search Form -->
@@ -698,10 +710,8 @@ function handleGetEvents(req, res) {
     sort = 'nearest', lat, lng, user_city, limit = 100, page = 1
   } = req.query;
 
-  // Cache Integrity
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
+  // Edge Cache: Absorb high-frequency public feed queries
+  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
 
   let allEvents = canonicalRegistry.getAllEvents();
   const showAllOrPast = include_past === 'true' || scope === 'all' || req.query.include_archived === 'true';
@@ -936,9 +946,8 @@ router.get('/api/discovery/events', handleGetEvents);
  * Phase 9: Returns preserved archived events (not shown on default homepage)
  */
 function handleGetArchivedEvents(req, res) {
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
+  // Edge Cache: Archived events rarely change
+  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
 
   const now = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
     ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
@@ -974,9 +983,8 @@ router.get('/api/discovery/events/archived', handleGetArchivedEvents);
  * - festivals
  */
 router.get('/api/events/home-feed', (req, res) => {
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
+  // Edge Cache: Absorb high-frequency homepage visits and bot crawls
+  res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
 
   const now = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
     ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)

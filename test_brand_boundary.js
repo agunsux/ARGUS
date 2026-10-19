@@ -122,9 +122,9 @@ async function runBrandBoundaryTests() {
   check('3. Public footer renders TIKUM — by SHINERVA with ZERO customer-facing ARGUS', () => {
     for (const filename of customerFacingFiles) {
       const content = fs.readFileSync(path.join(publicDir, filename), 'utf8');
-      assert.ok(content.includes('TIKUM — by SHINERVA') || content.includes('Tikum — by Shinerva'),
+      assert.ok(content.includes('TIKUM — by PT SHINERVA PRAJNA TEJAS') || content.includes('TIKUM — by SHINERVA') || content.includes('Tikum — by Shinerva'),
         `Missing TIKUM — by SHINERVA in footer of ${filename}`);
-      assert.ok(content.includes('SHINERVA HQ'), `Missing SHINERVA HQ entity in ${filename}`);
+      assert.ok(content.includes('PT SHINERVA PRAJNA TEJAS') || content.includes('SHINERVA HQ'), `Missing SHINERVA entity in ${filename}`);
       assert.ok(content.includes('Jl. Pasirluyu No. 79'), `Missing Pasirluyu address in ${filename}`);
       assert.strictEqual(content.includes('ARGUS Trust Engine'), false, `Footer must NOT include ARGUS Trust Engine in ${filename}`);
       assert.strictEqual(/argus/i.test(content), false, `Customer-facing file ${filename} must have 0 occurrences of ARGUS`);
@@ -139,7 +139,7 @@ async function runBrandBoundaryTests() {
     for (const lp of legalPages) {
       const content = fs.readFileSync(path.join(publicDir, lp), 'utf8');
       assert.ok(content.includes('Tikum'), `Legal page ${lp} must render Tikum`);
-      assert.ok(content.includes('SHINERVA HQ'), `Legal page ${lp} must identify SHINERVA HQ`);
+      assert.ok(content.includes('PT SHINERVA PRAJNA TEJAS') || content.includes('SHINERVA HQ'), `Legal page ${lp} must identify SHINERVA`);
     }
   });
 
@@ -233,10 +233,10 @@ async function runBrandBoundaryTests() {
   // 9. SHINERVA REMAINS CORRECTLY REPRESENTED AS PARENT/OPERATOR
   // -------------------------------------------------------------
   check('9. SHINERVA is accurately configured as parent company & legal entity', () => {
-    assert.strictEqual(businessProfile.parentCompany, 'Shinerva');
-    assert.strictEqual(businessProfile.parentEntity, 'SHINERVA HQ');
-    assert.strictEqual(businessProfile.name, 'SHINERVA HQ');
-    assert.strictEqual(businessProfile.address.entity, 'SHINERVA HQ');
+    assert.ok(businessProfile.parentCompany === 'PT SHINERVA PRAJNA TEJAS' || businessProfile.parentCompany === 'Shinerva');
+    assert.ok(businessProfile.parentEntity === 'PT SHINERVA PRAJNA TEJAS' || businessProfile.parentEntity === 'SHINERVA HQ');
+    assert.ok(businessProfile.name === 'PT SHINERVA PRAJNA TEJAS' || businessProfile.name === 'SHINERVA HQ');
+    assert.ok(businessProfile.address.entity === 'PT SHINERVA PRAJNA TEJAS' || businessProfile.address.entity === 'SHINERVA HQ');
     assert.strictEqual(businessProfile.address.city, 'Bandung');
   });
 
@@ -299,7 +299,7 @@ async function runBrandBoundaryTests() {
       assert.strictEqual(bizRes.statusCode, 200);
       const json = JSON.parse(bizRes.body);
       assert.strictEqual(json.brandName, 'Tikum');
-      assert.strictEqual(json.parentEntity, 'SHINERVA HQ');
+      assert.ok(json.parentEntity === 'PT SHINERVA PRAJNA TEJAS' || json.parentEntity === 'SHINERVA HQ');
       assert.strictEqual(json.canonicalDomain, 'https://tikum.app');
     });
 

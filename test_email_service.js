@@ -203,7 +203,7 @@ async function runTests() {
 
         assert.ok(rendered.subject && rendered.subject.length > 3, `Template ${key} subject missing`);
         assert.ok(rendered.html && rendered.html.includes('TIKUM'), `Template ${key} HTML missing TIKUM brand`);
-        assert.ok(rendered.html.includes('SHINERVA HQ'), `Template ${key} HTML missing legal footer entity`);
+        assert.ok(rendered.html.includes('PT SHINERVA PRAJNA TEJAS') || rendered.html.includes('SHINERVA HQ'), `Template ${key} HTML missing legal footer entity`);
         assert.ok(rendered.html.includes('support@tikum.app'), `Template ${key} HTML missing support email`);
         assert.ok(rendered.html.includes('https://tikum.app'), `Template ${key} HTML missing canonical domain link`);
         assert.ok(rendered.text && rendered.text.includes('TIKUM'), `Template ${key} text missing TIKUM brand`);

@@ -256,71 +256,409 @@ router.get(['/buyer-protection', '/panduan-pembeli'], (req, res) => {
   const lang = isEn ? 'en' : 'id';
 
   const contentHtml = isEn ? `
-    <div style="display:flex; flex-direction:column; gap:20px;">
-      <div style="background:#131d31; border:1px solid #10b981; border-radius:12px; padding:24px;">
-        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> Platform-Held Payment Protection</h3>
-        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Your payment is managed under platform-held controls and is not disbursed to the seller before ticket delivery and validation terms are met. If a ticket is proven invalid or rejected at the turnstile gate, buyers may initiate an evidence-based dispute.
+    <div style="display:flex; flex-direction:column; gap:24px;">
+
+      <!-- 1. Legal Entity & Brand Profile -->
+      <div style="background:#131d31; border:1px solid #10b981; border-radius:14px; padding:28px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <span style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; letter-spacing:0.5px; text-transform:uppercase;">Official Business Identity</span>
+          <span style="color:#64748b; font-size:13px;">TIKUM — Operated by PT SHINERVA PRAJNA TEJAS</span>
+        </div>
+        <h2 style="color:#f8fafc; font-size:22px; font-weight:800; margin:0 0 10px;">Operator &amp; Brand Relationship</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 16px;">
+          <strong>TIKUM</strong> is a secondary ticket marketplace brand operated under <strong>PT SHINERVA PRAJNA TEJAS</strong>, an Indonesian corporate entity dedicated to building transparent, secure secondary ticketing infrastructure.
         </p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+          <div>
+            <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Registered Business Address:</div>
+            <div style="color:#f8fafc; font-size:13px; font-weight:600;">PT SHINERVA PRAJNA TEJAS</div>
+            <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Jl. Pasirluyu No. 79<br>Bandung 40254, Indonesia</div>
+          </div>
+          <div>
+            <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Official Support &amp; Hours:</div>
+            <div style="color:#cbd5e1; font-size:13px; line-height:1.6;">
+              Email: <a href="mailto:support@tikum.app" style="color:#38bdf8; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
+              Phone / WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
+              Operating Hours: Monday – Sunday: 09:00 – 21:00 WIB
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:24px;">
-        <h3 style="color:#38bdf8; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-barcode"></i> Barcode Format Validation &amp; Anti-Duplication</h3>
-        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Every submitted ticket undergoes hash validation and unique barcode checks to prevent duplicate sales across multiple buyers.
-        </p>
+      <!-- 2. Products & Services -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-list-check" style="color:#38bdf8;"></i> Products &amp; Services</h2>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
+          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+            <h3 style="color:#38bdf8; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-ticket"></i> 1. Secondary Ticket Marketplace</h3>
+            <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+              Fan-to-fan resale marketplace for verified tickets to concerts, sporting events, and festivals in Indonesia. Buyers gain access to sold-out events safely without the risks of direct social media transactions.
+            </p>
+          </div>
+          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+            <h3 style="color:#10b981; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> 2. Ticket Verification &amp; Anti-Duplication</h3>
+            <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+              Every listing undergoes rigorous provenance checks against official booking proofs and SHA-256 barcode hashing to prevent duplicate sales across multiple buyers.
+            </p>
+          </div>
+          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+            <h3 style="color:#f59e0b; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-user-shield"></i> 3. On-Site Coordination (Select Events)</h3>
+            <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+              For confirmed eligible events, Tikum coordinates on-site Event PIC representatives during venue gate hours to assist buyers with wristband exchange and turnstile scanner verification.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:24px;">
-        <h3 style="color:#f59e0b; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-user-shield"></i> On-Site Coordination (Select Verified Events)</h3>
-        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          For select events with active assignments, Tikum coordinates with on-site Event PIC representatives to verify physical access evidence and assist with dispute intake.
-        </p>
+      <!-- 3. How It Works -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-circle-nodes" style="color:#10b981;"></i> How Tikum Works for Buyers</h2>
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; gap:14px; align-items:flex-start;">
+            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">1</div>
+            <div>
+              <strong style="color:#f8fafc; font-size:14px;">Discover Event &amp; Verified Tickets:</strong>
+              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Browse live events on the <a href="/events" style="color:#38bdf8;">Events Catalog</a>. All listed events feature validated dates, venues, and official promoter sources.</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:14px; align-items:flex-start;">
+            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">2</div>
+            <div>
+              <strong style="color:#f8fafc; font-size:14px;">Choose Buy Now or Make an Offer:</strong>
+              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Buy instantly at the listing price or submit a structured offer (min. 50% of listing price) without messy social media negotiation.</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:14px; align-items:flex-start;">
+            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">3</div>
+            <div>
+              <strong style="color:#f8fafc; font-size:14px;">Transparent Checkout &amp; Platform-Held Protection:</strong>
+              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Review transparent price breakdown on <a href="/pay" style="color:#38bdf8;">Checkout (/pay)</a>. Funds are held under platform administrative custody (platform-held) and never disbursed to the seller until after event admission.</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:14px; align-items:flex-start;">
+            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">4</div>
+            <div>
+              <strong style="color:#f8fafc; font-size:14px;">Ticket Handover &amp; Gate Entry:</strong>
+              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Receive official e-ticket PDF or coordinate wristband pickup. Scan through official turnstiles with confidence.</div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- 4. Transparent Pricing Policy -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;" id="pricing-details">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 8px;"><i class="fa-solid fa-tags" style="color:#f59e0b;"></i> Transparent Pricing &amp; Fee Policy (V1)</h2>
+        <p style="color:#94a3b8; font-size:13px; margin:0 0 16px;">Tikum enforces single-source deterministic fee rules across the platform with zero hidden markups.</p>
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px; color:#cbd5e1; text-align:left;">
+            <thead>
+              <tr style="border-bottom:1px solid #334155; color:#94a3b8;">
+                <th style="padding:10px 12px;">Component</th>
+                <th style="padding:10px 12px;">Rate / Cap</th>
+                <th style="padding:10px 12px;">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Buyer Platform Fee</td>
+                <td style="padding:10px 12px; color:#38bdf8; font-weight:700;">6% (Min Rp 35k, Max Rp 300k)</td>
+                <td style="padding:10px 12px;">Covers platform-held payment protection, ticket verification, and dispute resolution.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Seller Service Fee</td>
+                <td style="padding:10px 12px; color:#10b981; font-weight:700;">6% (Min Rp 35k, Max Rp 300k)</td>
+                <td style="padding:10px 12px;">Deducted from sales proceeds only upon successful order completion.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Listing Fee</td>
+                <td style="padding:10px 12px; color:#10b981; font-weight:700;">Rp 0 (Free)</td>
+                <td style="padding:10px 12px;">Sellers can list tickets with zero upfront charges.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Minimum Listing Price</td>
+                <td style="padding:10px 12px;">Rp 500,000 / ticket</td>
+                <td style="padding:10px 12px;">Ensures curated high-standard event inventory during the pilot phase.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Seller Markup Cap</td>
+                <td style="padding:10px 12px; color:#f59e0b; font-weight:700;">Max +30% above Face Value</td>
+                <td style="padding:10px 12px;">Eliminates predatory scalping and ensures fair ticket access.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 5. Checkout & Payment Availability Status -->
+      <div style="background:#131d31; border:1px solid #0284c7; border-radius:14px; padding:28px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <span style="background:rgba(2,132,199,0.2); color:#38bdf8; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; text-transform:uppercase;">Demonstration Checkout Mode</span>
+        </div>
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 10px;"><i class="fa-solid fa-cash-register" style="color:#38bdf8;"></i> Checkout &amp; Payment Availability</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 16px;">
+          Tikum provides an itemized, transparent checkout experience at <a href="/pay" style="color:#38bdf8; font-weight:700;">/pay</a>. During the current launch preparation phase, the platform operates in <strong>demonstration mode</strong> pending merchant onboarding verification with our payment gateway partner Xendit (PT Sinar Digital Terdepan).
+        </p>
+        <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:16px; font-size:13px; color:#cbd5e1; line-height:1.6;">
+          <strong style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> Notice for Reviewers &amp; Visitors:</strong><br>
+          Demonstration items on checkout are explicitly labeled <code style="color:#f59e0b;">DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN</code> with illustrative prices (<code style="color:#f59e0b;">Harga ilustratif — bukan penawaran tiket aktif</code>). No real credit card, bank account, or wallet deductions occur in demo mode.
+        </div>
+      </div>
+
+      <!-- 6. Refund & Dispute Policies -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-rotate-left" style="color:#f43f5e;"></i> Refund &amp; Dispute Policy Summary</h2>
+        <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0 0 16px;">
+          Transactions are backed by Tikum's official <a href="/refund-policy" style="color:#38bdf8;">Refund Policy</a>. In the event of a turnstile issue, buyers are protected:
+        </p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+          <div style="background:#0f172a; border-left:4px solid #10b981; border-radius:8px; padding:16px;">
+            <strong style="color:#10b981; font-size:14px; display:block; margin-bottom:6px;">Eligible for 100% Refund:</strong>
+            <ul style="color:#cbd5e1; font-size:12.5px; line-height:1.6; margin:0; padding-left:18px;">
+              <li>Ticket barcode verified rejected/invalid by official gate scanner.</li>
+              <li>Seller fails to deliver ticket or fails to attend agreed handoff (seller no-show).</li>
+              <li>Material discrepancy in ticket category/seating.</li>
+              <li>Official event cancellation by organizer.</li>
+            </ul>
+          </div>
+          <div style="background:#0f172a; border-left:4px solid #ef4444; border-radius:8px; padding:16px;">
+            <strong style="color:#ef4444; font-size:14px; display:block; margin-bottom:6px;">Non-Refundable Circumstances:</strong>
+            <ul style="color:#cbd5e1; font-size:12.5px; line-height:1.6; margin:0; padding-left:18px;">
+              <li>Buyer fails to attend the event (buyer no-show).</li>
+              <li>Buyer arrives after official venue gate hours have closed.</li>
+              <li>Personal scheduling conflicts or change of mind.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Quick Links Navigation -->
+      <div style="background:#0f172a; border:1px solid #1e293b; border-radius:14px; padding:24px; text-align:center;">
+        <h3 style="color:#f8fafc; font-size:18px; font-weight:800; margin:0 0 12px;">Quick Navigation</h3>
+        <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+          <a href="/" class="btn btn-secondary btn-sm"><i class="fa-solid fa-house"></i> Home</a>
+          <a href="/events" class="btn btn-secondary btn-sm"><i class="fa-solid fa-calendar-days"></i> Events Catalog</a>
+          <a href="/pay" class="btn btn-secondary btn-sm"><i class="fa-solid fa-cash-register"></i> Checkout Demo</a>
+          <a href="/terms" class="btn btn-secondary btn-sm"><i class="fa-solid fa-file-contract"></i> Terms of Service</a>
+          <a href="/refund-policy" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate-left"></i> Refund Policy</a>
+          <a href="/contact" class="btn btn-secondary btn-sm"><i class="fa-solid fa-address-book"></i> Contact Us</a>
+        </div>
+      </div>
+
     </div>
   ` : `
-    <div style="display:flex; flex-direction:column; gap:20px;">
-      <div style="background:#131d31; border:1px solid #10b981; border-radius:12px; padding:24px;">
-        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> Perlindungan Transaksi Platform (Platform-Held)</h3>
-        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Dana transaksi dikelola dengan mekanisme penahanan administratif platform (platform-held) dan tidak dicairkan ke penjual sebelum serah terima dan validasi tiket terpenuhi. Jika tiket terbukti tidak valid di turnstile gerbang resmi, pembeli dapat mengajukan proses sengketa berbasis bukti.
+    <div style="display:flex; flex-direction:column; gap:24px;">
+
+      <!-- 1. Identitas & Legalitas Usaha -->
+      <div style="background:#131d31; border:1px solid #10b981; border-radius:14px; padding:28px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <span style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; letter-spacing:0.5px; text-transform:uppercase;">Identitas Resmi Badan Usaha</span>
+          <span style="color:#64748b; font-size:13px;">TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
+        </div>
+        <h2 style="color:#f8fafc; font-size:22px; font-weight:800; margin:0 0 10px;">Badan Usaha &amp; Hubungan Brand</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 16px;">
+          <strong>TIKUM</strong> adalah brand pasar tiket sekunder terverifikasi (secondary ticket marketplace) yang dioperasikan secara sah di bawah <strong>PT SHINERVA PRAJNA TEJAS</strong>. Kami berkomitmen menyediakan ekosistem transaksi tiket yang aman, adil, dan transparan di Indonesia.
         </p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+          <div>
+            <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Alamat Kantor Operasional &amp; Terdaftar:</div>
+            <div style="color:#f8fafc; font-size:13px; font-weight:600;">PT SHINERVA PRAJNA TEJAS</div>
+            <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Jl. Pasirluyu No. 79<br>Bandung 40254, Indonesia</div>
+          </div>
+          <div>
+            <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Kontak &amp; Jam Layanan Dukungan:</div>
+            <div style="color:#cbd5e1; font-size:13px; line-height:1.6;">
+              Email Resmi: <a href="mailto:support@tikum.app" style="color:#38bdf8; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
+              Telepon / WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378 (081299927378)</a><br>
+              Jam Operasional: Senin – Minggu: 09:00 – 21:00 WIB
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:24px;">
-        <h3 style="color:#38bdf8; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-barcode"></i> Verifikasi Format Barcode &amp; Anti Duplikasi</h3>
-        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Setiap tiket yang didaftarkan melalui proses validasi hash dan nomor barcode unik untuk mencegah satu tiket dijual ke beberapa orang sekaligus.
-        </p>
+      <!-- 2. Kategori Produk & Layanan -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-list-check" style="color:#38bdf8;"></i> Produk &amp; Layanan TIKUM</h2>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
+          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+            <h3 style="color:#38bdf8; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-ticket"></i> 1. Pasar Resale Tiket Sekunder</h3>
+            <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+              Fasilitasi jual-beli tiket event sekunder resmi antar-penggemar (fan-to-fan) untuk penikmat konser, festival musik, olahraga, dan pertunjukan berbayar yang berhalangan hadir.
+            </p>
+          </div>
+          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+            <h3 style="color:#10b981; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> 2. Verifikasi Keabsahan Tiket &amp; Hashing</h3>
+            <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+              Pemeriksaan dokumen kepemilikan tiket resmi dan penerapan validasi hash barcode SHA-256 untuk mencegah tiket yang sama didaftarkan atau dijual ganda ke beberapa orang.
+            </p>
+          </div>
+          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+            <h3 style="color:#f59e0b; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-user-shield"></i> 3. Pendampingan Lapangan (Event Terpilih)</h3>
+            <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+              Untuk event terpilih yang telah terkonfirmasi, koordinator lapangan (Event PIC) TIKUM disiagakan di area venue pada jam operasional gerbang (gate hours) untuk membantu asistensi turnstile scanner.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:24px;">
-        <h3 style="color:#f59e0b; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-user-shield"></i> Koordinasi Lapangan (Event Terpilih)</h3>
-        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Untuk event tertentu yang memiliki penugasan operasional resmi, koordinator lapangan (Event PIC) disiagakan untuk membantu dokumentasi bukti fisik saat terjadi penolakan turnstile.
-        </p>
+      <!-- 3. Alur Kerja Bagi Pembeli -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-circle-nodes" style="color:#10b981;"></i> Cara Kerja Pasar Tiket Bagi Pembeli</h2>
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; gap:14px; align-items:flex-start;">
+            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">1</div>
+            <div>
+              <strong style="color:#f8fafc; font-size:14px;">Pilih Acara &amp; Tiket Terverifikasi:</strong>
+              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Temukan konser atau pertandingan di <a href="/events" style="color:#38bdf8;">Katalog Event</a>. Seluruh data event divalidasi langsung dari pengumuman resmi promotor.</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:14px; align-items:flex-start;">
+            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">2</div>
+            <div>
+              <strong style="color:#f8fafc; font-size:14px;">Pilih Beli Langsung (Buy Now) atau Ajukan Tawaran (Make Offer):</strong>
+              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Beli langsung pada harga penjual atau tawar harga secara adil (minimal 50% dari harga listing) tanpa obrolan bebas di luar platform.</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:14px; align-items:flex-start;">
+            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">3</div>
+            <div>
+              <strong style="color:#f8fafc; font-size:14px;">Rincian Harga Transparan di Checkout &amp; Perlindungan Platform-Held:</strong>
+              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Cek rincian harga di <a href="/pay" style="color:#38bdf8;">Halaman Checkout (/pay)</a>. Dana pembayaran Anda ditahan aman dalam sistem internal platform (platform-held) dan tidak diserahkan ke penjual sebelum acara berhasil dimasuki.</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:14px; align-items:flex-start;">
+            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">4</div>
+            <div>
+              <strong style="color:#f8fafc; font-size:14px;">Serah Terima Tiket &amp; Masuk Gate Acara:</strong>
+              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Terima e-voucher PDF resmi atau lakukan penukaran wristband fisik. Masuki gerbang turnstile dengan rasa tenang didukung jaminan refund jika tiket terbukti tidak valid.</div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- 4. Struktur Biaya Resmi -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;" id="pricing-details">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 8px;"><i class="fa-solid fa-tags" style="color:#f59e0b;"></i> Struktur Harga &amp; Biaya Resmi (Tikum Fee Policy V1)</h2>
+        <p style="color:#94a3b8; font-size:13px; margin:0 0 16px;">Semua rincian biaya terbuka dan dihitung secara deterministik tanpa biaya siluman.</p>
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px; color:#cbd5e1; text-align:left;">
+            <thead>
+              <tr style="border-bottom:1px solid #334155; color:#94a3b8;">
+                <th style="padding:10px 12px;">Komponen Layanan</th>
+                <th style="padding:10px 12px;">Tarif / Batasan</th>
+                <th style="padding:10px 12px;">Keterangan Operasional</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Biaya Platform Pembeli (Buyer Fee)</td>
+                <td style="padding:10px 12px; color:#38bdf8; font-weight:700;">6% (Min. Rp35.000, Maks. Rp300.000)</td>
+                <td style="padding:10px 12px;">Perlindungan pembayaran platform-held, validasi bukti tiket, dan penanganan sengketa.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Biaya Layanan Penjual (Seller Fee)</td>
+                <td style="padding:10px 12px; color:#10b981; font-weight:700;">6% (Min. Rp35.000, Maks. Rp300.000)</td>
+                <td style="padding:10px 12px;">Dipotong dari hasil penjualan saat pencairan dana pasca-acara selesai.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Biaya Pasang Listing (Seller)</td>
+                <td style="padding:10px 12px; color:#10b981; font-weight:700;">Rp 0 (Gratis)</td>
+                <td style="padding:10px 12px;">Penjual mendaftarkan tiket tanpa biaya awal di muka.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Batas Harga Minimum Listing</td>
+                <td style="padding:10px 12px;">Rp 500.000 / tiket</td>
+                <td style="padding:10px 12px;">Memastikan standar kurasi tiket pada fase pilot operasional.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Batas Markup Penjual</td>
+                <td style="padding:10px 12px; color:#f59e0b; font-weight:700;">Maksimal +30% dari Face Value</td>
+                <td style="padding:10px 12px;">Mencegah praktik calo liar dan menjaga harga tiket tetap wajar.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 5. Status Kesiapan Checkout & Pembayaran -->
+      <div style="background:#131d31; border:1px solid #0284c7; border-radius:14px; padding:28px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <span style="background:rgba(2,132,199,0.2); color:#38bdf8; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; text-transform:uppercase;">Status Mode Demonstrasi Checkout</span>
+        </div>
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 10px;"><i class="fa-solid fa-cash-register" style="color:#38bdf8;"></i> Alur Checkout &amp; Ketersediaan Pembayaran</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 16px;">
+          Halaman checkout resmi dapat diakses publik di <a href="/pay" style="color:#38bdf8; font-weight:700;">/pay</a>. Saat ini, sistem pembayaran TIKUM beroperasi dalam <strong>tahap verifikasi merchant payment gateway resmi dengan Xendit (PT Sinar Digital Terdepan)</strong>.
+        </p>
+        <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:16px; font-size:13px; color:#cbd5e1; line-height:1.6;">
+          <strong style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> Keterangan untuk Reviewer Merchant &amp; Pengguna:</strong><br>
+          Item demonstrasi pada halaman checkout ditandai dengan label <code style="color:#f59e0b;">DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN</code> dan harga ilustratif (<code style="color:#f59e0b;">Harga ilustratif — bukan penawaran tiket aktif</code>). Tidak ada pemotongan saldo nyata, penagihan kartu kredit/debit, atau pesanan palsu yang diproses dalam mode demonstrasi ini.
+        </div>
+      </div>
+
+      <!-- 6. Ringkasan Kebijakan Refund & Sengketa -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-rotate-left" style="color:#f43f5e;"></i> Ringkasan Kebijakan Pengembalian Dana (Refund Policy)</h2>
+        <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0 0 16px;">
+          Setiap transaksi dilindungi oleh <a href="/refund-policy" style="color:#38bdf8;">Kebijakan Pengembalian Dana (Refund Policy)</a> resmi Tikum:
+        </p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+          <div style="background:#0f172a; border-left:4px solid #10b981; border-radius:8px; padding:16px;">
+            <strong style="color:#10b981; font-size:14px; display:block; margin-bottom:6px;">Kondisi Berhak Refund Penuh:</strong>
+            <ul style="color:#cbd5e1; font-size:12.5px; line-height:1.6; margin:0; padding-left:18px;">
+              <li>Barcode tiket terbukti ditolak oleh scanner turnstile di pintu masuk venue resmi.</li>
+              <li>Penjual gagal menyerahkan tiket atau tidak hadir saat penukaran fisik (seller no-show).</li>
+              <li>Terdapat perbedaan kategori/seksi tiket secara material dari kesepakatan listing.</li>
+              <li>Acara dibatalkan resmi secara definitif oleh pihak promotor penyelenggara.</li>
+            </ul>
+          </div>
+          <div style="background:#0f172a; border-left:4px solid #ef4444; border-radius:8px; padding:16px;">
+            <strong style="color:#ef4444; font-size:14px; display:block; margin-bottom:6px;">Kondisi Tidak Berhak Refund:</strong>
+            <ul style="color:#cbd5e1; font-size:12.5px; line-height:1.6; margin:0; padding-left:18px;">
+              <li>Pembeli berhalangan hadir di lokasi acara (buyer no-show).</li>
+              <li>Pembeli terlambat melewati jam operasional gerbang masuk acara.</li>
+              <li>Perubahan jadwal atau preferensi pribadi pembeli.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Tautan Navigasi Cepat -->
+      <div style="background:#0f172a; border:1px solid #1e293b; border-radius:14px; padding:24px; text-align:center;">
+        <h3 style="color:#f8fafc; font-size:18px; font-weight:800; margin:0 0 12px;">Navigasi Cepat TIKUM</h3>
+        <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+          <a href="/" class="btn btn-secondary btn-sm"><i class="fa-solid fa-house"></i> Beranda</a>
+          <a href="/events" class="btn btn-secondary btn-sm"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
+          <a href="/pay" class="btn btn-secondary btn-sm"><i class="fa-solid fa-cash-register"></i> Demo Checkout</a>
+          <a href="/terms" class="btn btn-secondary btn-sm"><i class="fa-solid fa-file-contract"></i> Ketentuan Layanan</a>
+          <a href="/refund-policy" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate-left"></i> Kebijakan Refund</a>
+          <a href="/contact" class="btn btn-secondary btn-sm"><i class="fa-solid fa-address-book"></i> Hubungi Kami</a>
+        </div>
+      </div>
+
     </div>
   `;
 
   const faqPairs = isEn ? [
-    { q: 'What if my ticket is rejected at the gate?', a: 'You can open a dispute from the order tracking page and provide scanner rejection evidence. If verified invalid, the dispute is resolved in accordance with platform policies.' },
-    { q: 'Are there hidden fees for buyer protection?', a: 'All applicable platform fees are itemized transparently in the checkout breakdown.' }
+    { q: 'Who operates the TIKUM platform?', a: 'TIKUM is operated by PT SHINERVA PRAJNA TEJAS, an Indonesian corporate entity based in Bandung, West Java.' },
+    { q: 'What fees are charged to ticket buyers?', a: 'Under Tikum Fee Policy V1, buyers pay a transparent platform fee of 6% (minimum Rp 35,000, maximum Rp 300,000 per order). There are zero hidden fees.' },
+    { q: 'What happens if my ticket is rejected at the venue turnstile?', a: 'If your ticket is rejected by the gate turnstile scanner, report the issue via /track or Customer Support. Upon verification of turnstile rejection, you are protected by a full refund under Tikum Refund Policy.' },
+    { q: 'Are real payments currently active on the checkout page?', a: 'Checkout currently operates in demonstration mode pending merchant verification with our payment gateway partner Xendit. No real card or bank deductions occur during this review phase.' }
   ] : [
-    { q: 'Bagaimana jika tiket saya ditolak di pintu masuk venue?', a: 'Anda dapat langsung mengajukan dispute melalui halaman pelacakan status dengan melampirkan bukti penolakan turnstile untuk diproses sesuai kebijakan resolusi platform.' },
-    { q: 'Apakah pembeli dikenakan biaya tambahan untuk perlindungan transaksi?', a: 'Biaya layanan tertera transparan pada rincian pesanan saat Anda melakukan pembayaran, tanpa biaya tersembunyi.' }
+    { q: 'Siapa entitas hukum pengelola platform TIKUM?', a: 'TIKUM dioperasikan secara resmi di bawah PT SHINERVA PRAJNA TEJAS, badan hukum perseroan terbatas terdaftar di Bandung, Jawa Barat.' },
+    { q: 'Berapa biaya layanan yang dikenakan untuk pembeli tiket?', a: 'Sesuai Tikum Fee Policy V1, pembeli dikenakan biaya layanan platform sebesar 6% dari harga tiket (minimum Rp 35.000, maksimum Rp 300.000 per pesanan) tanpa biaya tersembunyi.' },
+    { q: 'Bagaimana jika tiket saya ditolak di pintu masuk venue acara?', a: 'Jika tiket terbukti ditolak oleh scanner turnstile di pintu masuk resmi acara, ajukan sengketa melalui halaman /track atau hubungi Customer Support. Dana pembayaran Anda dilindungi oleh jaminan pengembalian dana 100% sesuai ketentuan Refund Policy.' },
+    { q: 'Apakah pembayaran riil sudah aktif di halaman checkout (/pay)?', a: 'Saat ini halaman checkout beroperasi dalam mode demonstrasi transparan untuk keperluan pengujian alur dan proses verifikasi merchant bersama mitra payment gateway Xendit. Tidak ada pemotongan saldo nyata yang diproses dalam fase ini.' }
   ];
 
   const html = renderTrustLayout({
     lang,
-    title: isEn ? 'Buyer Protection — Genuine Ticket Verification & Platform Safeguards | Tikum' : 'Perlindungan Pembeli — Verifikasi Tiket & Perlindungan Transaksi | Tikum',
-    description: isEn ? 'Discover Tikum buyer protection: platform-held transaction safeguards, duplicate barcode prevention, and evidence-based dispute resolution.' : 'Pelajari sistem perlindungan pembeli Tikum: tata kelola penahanan transaksi platform, pencegahan tiket ganda, dan resolusi sengketa berbasis bukti.',
-    canonicalPath: '/buyer-protection',
-    h1: isEn ? 'Comprehensive Protection for Ticket Buyers' : 'Perlindungan Menyeluruh untuk Pembeli Tiket',
-    subtitle: isEn ? 'Purchase live event tickets with confidence backed by platform safeguards and ticket entry verification.' : 'Beli tiket konser favorit tanpa rasa cemas tertipu calo atau barcode palsu.',
+    title: isEn ? 'Buyer Guide & Platform Safeguards — Tikum | by PT SHINERVA PRAJNA TEJAS' : 'Panduan Pembeli & Perlindungan Transaksi — Tikum | by PT SHINERVA PRAJNA TEJAS',
+    description: isEn ? 'Comprehensive Buyer Guide for Tikum secondary ticket marketplace by PT SHINERVA PRAJNA TEJAS: pricing, platform-held safeguards, checkout simulation, and refund terms.' : 'Panduan resmi pembeli tiket di Tikum (PT SHINERVA PRAJNA TEJAS): informasi produk, struktur biaya, simulasi checkout, perlindungan dana, dan kebijakan refund.',
+    canonicalPath: '/panduan-pembeli',
+    h1: isEn ? 'Buyer Guide & Platform Protection' : 'Panduan Pembeli & Perlindungan Transaksi',
+    subtitle: isEn ? 'Learn how TIKUM protects secondary ticket buyers through platform-held payment custody, barcode hashing, and ticket verification.' : 'Panduan lengkap membeli tiket konser dan acara bertiket secara aman, adil, dan terlindungi di platform TIKUM.',
     breadcrumbs: [
       { name: isEn ? 'Home' : 'Beranda', url: '/' },
-      { name: isEn ? 'Buyer Protection' : 'Perlindungan Pembeli', url: '/buyer-protection' }
+      { name: isEn ? 'Buyer Guide' : 'Panduan Pembeli', url: '/panduan-pembeli' }
     ],
     faqPairs,
     contentHtml

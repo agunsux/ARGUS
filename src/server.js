@@ -30,6 +30,10 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true }));
 
+// Egress & payload bandwidth observability (privacy-preserving)
+const { egressTrackerMiddleware } = require('./middleware/egressTracker');
+app.use(egressTrackerMiddleware);
+
 // Initialize DB
 const dbPromise = initializeDatabase().catch(err => {
   console.error('Failed to initialize database:', err);

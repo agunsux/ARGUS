@@ -49,6 +49,8 @@ const businessProfile = {
     htmlBlock: '<strong>PT SHINERVA PRAJNA TEJAS</strong><br>Jl. Pasirluyu No. 79<br>Bandung 40254<br>Indonesia'
   },
   legalLinks: {
+    buyerGuide: '/panduan-pembeli',
+    checkout: '/pay',
     faq: '/faq',
     terms: '/terms',
     refundPolicy: '/refund-policy',
@@ -98,6 +100,8 @@ function renderFooterHtml() {
       <div class="footer-col footer-links-col">
         <div style="font-weight: 700; color: #fff; margin-bottom: 12px; font-size: 14px;" data-i18n="footer.servicesAndLegal">Layanan &amp; Legalitas</div>
         <div class="footer-links" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+          <a href="/panduan-pembeli" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-shield-halved"></i> <span data-i18n="footer.buyerGuide">Panduan Pembeli &amp; Proteksi</span></a>
+          <a href="/pay" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-cash-register"></i> <span data-i18n="footer.checkout">Simulasi Checkout (/pay)</span></a>
           <a href="${businessProfile.legalLinks.faq}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-circle-question"></i> <span data-i18n="footer.faq">FAQ / Pertanyaan Umum</span></a>
           <a href="${businessProfile.legalLinks.terms}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-file-contract"></i> <span data-i18n="footer.terms">Syarat &amp; Ketentuan</span></a>
           <a href="${businessProfile.legalLinks.refundPolicy}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="footer.refundPolicy">Kebijakan Pengembalian Dana (Refund)</span></a>

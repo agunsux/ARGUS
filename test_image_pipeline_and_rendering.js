@@ -18,6 +18,9 @@
  * 14. Unverified events remain excluded from default public feed even if they have an image URL.
  */
 
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'test';
+}
 process.env.ARGUS_DB_READ_ONLY = 'true';
 
 const assert = require('assert');

@@ -19,6 +19,18 @@ const { CatalogRepository } = require('./CatalogRepository');
 const { InMemoryCatalogRepository } = require('./InMemoryCatalogRepository');
 const { EventVisualProvenanceService } = require('../EventVisualProvenanceService');
 
+const CANONICAL_EVENT_SELECT_FIELDS = `
+  id, slug, canonical_name, event_type, category,
+  start_date, start_datetime, end_date, end_datetime, timezone,
+  venue_name, venue_city, city, province, country,
+  organizer_name, official_event_url, official_ticket_url, official_ticketing_provider,
+  min_price, max_price, is_verified, verification_status,
+  lifecycle_status, archive_status, archived_at,
+  public_visibility, homepage_visibility,
+  (metadata - 'observations') AS metadata,
+  created_at, updated_at
+`.replace(/\s+/g, ' ').trim();
+
 class PostgresCatalogRepository extends CatalogRepository {
   constructor(options = {}) {
     super();
@@ -125,7 +137,7 @@ class PostgresCatalogRepository extends CatalogRepository {
       return this.fallbackRepo.getEventById(id);
     }
     try {
-      const res = await this.query('SELECT * FROM canonical_events WHERE id = $1', [id]);
+      const res = await this.query(`SELECT ${CANONICAL_EVENT_SELECT_FIELDS} FROM canonical_events WHERE id = $1`, [id]);
       return res.rows[0] ? this.mapRowToEvent(res.rows[0]) : null;
     } catch (_) {
       return this.fallbackRepo.getEventById(id);
@@ -137,7 +149,7 @@ class PostgresCatalogRepository extends CatalogRepository {
       return this.fallbackRepo.getEventBySlug(slug);
     }
     try {
-      const res = await this.query('SELECT * FROM canonical_events WHERE slug = $1', [slug]);
+      const res = await this.query(`SELECT ${CANONICAL_EVENT_SELECT_FIELDS} FROM canonical_events WHERE slug = $1`, [slug]);
       return res.rows[0] ? this.mapRowToEvent(res.rows[0]) : null;
     } catch (_) {
       return this.fallbackRepo.getEventBySlug(slug);
@@ -149,7 +161,7 @@ class PostgresCatalogRepository extends CatalogRepository {
       return this.fallbackRepo.getAllEvents();
     }
     try {
-      const res = await this.query('SELECT * FROM canonical_events ORDER BY start_date ASC');
+      const res = await this.query(`SELECT ${CANONICAL_EVENT_SELECT_FIELDS} FROM canonical_events ORDER BY start_date ASC`);
       return res.rows.map(r => this.mapRowToEvent(r));
     } catch (_) {
       return this.fallbackRepo.getAllEvents();
@@ -163,7 +175,7 @@ class PostgresCatalogRepository extends CatalogRepository {
     try {
       const nowDateStr = (now instanceof Date ? now : new Date(now)).toISOString().substring(0, 10);
       const res = await this.query(
-        `SELECT * FROM canonical_events
+        `SELECT ${CANONICAL_EVENT_SELECT_FIELDS} FROM canonical_events
          WHERE archive_status != 'ARCHIVED'
            AND lifecycle_status != 'ARCHIVED'
            AND start_date >= $1
@@ -182,13 +194,25 @@ class PostgresCatalogRepository extends CatalogRepository {
     }
     try {
       const res = await this.query(
-        `SELECT * FROM canonical_events
+        `SELECT ${CANONICAL_EVENT_SELECT_FIELDS} FROM canonical_events
          WHERE archive_status = 'ARCHIVED' OR lifecycle_status = 'ARCHIVED'
          ORDER BY start_date DESC`
       );
       return res.rows.map(r => this.mapRowToEvent(r));
     } catch (_) {
       return this.fallbackRepo.getArchivedEvents();
+    }
+  }
+
+  async getEventWithObservations(id) {
+    if (this.degraded || !this.pool) {
+      return this.fallbackRepo.getEventById(id);
+    }
+    try {
+      const res = await this.query('SELECT * FROM canonical_events WHERE id = $1', [id]);
+      return res.rows[0] ? this.mapRowToEvent(res.rows[0]) : null;
+    } catch (_) {
+      return this.fallbackRepo.getEventById(id);
     }
   }
 
@@ -293,8 +317,8 @@ class PostgresCatalogRepository extends CatalogRepository {
       is_fallback_image: preferredImg.is_fallback_image ?? !imageUrl,
       fallback_meta: eventData.fallback_meta || (eventData.metadata && eventData.metadata.fallback_meta) || existingMeta.fallback_meta || null,
       description: eventData.description || (eventData.metadata && eventData.metadata.description) || existingMeta.description || null,
-      event_history: Array.isArray(eventData.event_history) ? eventData.event_history : (eventData.metadata && Array.isArray(eventData.metadata.event_history) ? eventData.metadata.event_history : (Array.isArray(existingMeta.event_history) ? existingMeta.event_history : [])),
-      observations: Array.isArray(eventData.observations) ? eventData.observations : (eventData.metadata && Array.isArray(eventData.metadata.observations) ? eventData.metadata.observations : (Array.isArray(existingMeta.observations) ? existingMeta.observations : [])),
+      event_history: (Array.isArray(eventData.event_history) ? eventData.event_history : (eventData.metadata && Array.isArray(eventData.metadata.event_history) ? eventData.metadata.event_history : (Array.isArray(existingMeta.event_history) ? existingMeta.event_history : []))).slice(-10),
+      observations: (Array.isArray(eventData.observations) ? eventData.observations : (eventData.metadata && Array.isArray(eventData.metadata.observations) ? eventData.metadata.observations : (Array.isArray(existingMeta.observations) ? existingMeta.observations : []))).slice(-10),
       sources: Array.isArray(eventData.sources) ? eventData.sources : (eventData.metadata && Array.isArray(eventData.metadata.sources) ? eventData.metadata.sources : (Array.isArray(existingMeta.sources) ? existingMeta.sources : [])),
       conflicts: Array.isArray(eventData.conflicts) ? eventData.conflicts : (eventData.metadata && Array.isArray(eventData.metadata.conflicts) ? eventData.metadata.conflicts : (Array.isArray(existingMeta.conflicts) ? existingMeta.conflicts : [])),
       field_provenance: eventData.field_provenance || (eventData.metadata && eventData.metadata.field_provenance) || existingMeta.field_provenance || {},
@@ -362,7 +386,7 @@ class PostgresCatalogRepository extends CatalogRepository {
         END,
         metadata = EXCLUDED.metadata,
         updated_at = NOW()
-      RETURNING *;
+      RETURNING ${CANONICAL_EVENT_SELECT_FIELDS};
     `;
 
     const params = [
