@@ -31,6 +31,8 @@ const REQUIRED_PUBLIC_ROUTES = [
   { path: '/disputes', expectedStatus: 200, label: 'Dispute Resolution' },
   { path: '/contact', expectedStatus: 200, label: 'Customer Support & Contact' },
   { path: '/seller-terms', expectedStatus: 200, label: 'Seller Obligations & Terms' },
+  { path: '/resale-policy', expectedStatus: 200, label: 'Secondary Ticket Resale Policy' },
+  { path: '/payment-flow', expectedStatus: 200, label: 'Funds Flow & Ledger Governance' },
   { path: '/pay', expectedStatus: 200, label: 'Demonstration Checkout' }
 ];
 
@@ -97,6 +99,25 @@ async function runTests() {
             res.body.includes(p),
             false,
             `Route ${route.path} contains forbidden placeholder '${p}'`
+          );
+        }
+
+        // Must not contain unsupported claims or denylist phrases
+        const denylistPhrases = [
+          'corporate guarantee',
+          'entry assurance',
+          '200% penalty',
+          'sanksi 200%',
+          'penalti 200%',
+          '200%',
+          'Langgam',
+          'money-back guarantee'
+        ];
+        for (const phrase of denylistPhrases) {
+          assert.strictEqual(
+            res.body.toLowerCase().includes(phrase.toLowerCase()),
+            false,
+            `Route ${route.path} contains unsupported denylist claim '${phrase}'`
           );
         }
       } else if (res.status === 301 || res.status === 302) {

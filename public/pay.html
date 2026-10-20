@@ -175,7 +175,7 @@
 
         <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
           <i class="fa-solid fa-shield-check" style="color: var(--success); margin-right: 4px;"></i>
-          <strong data-i18n="pay.guarantee">Garansi Tikum:</strong> <span data-i18n="pay.guaranteeDesc">Kebijakan pengembalian dana Tikum sesuai ketentuan Refund Policy dan status transaksi yang berlaku.</span>
+          <strong data-i18n="pay.guarantee">Perlindungan Transaksi:</strong> <span data-i18n="pay.guaranteeDesc">Pengembalian dana diproses penuh apabila tiket terbukti tidak valid di gerbang, acara dibatalkan resmi, atau penjual wanprestasi sesuai ketentuan <a href="/refund-policy" target="_blank" style="color:var(--terra-600); text-decoration:underline;">Kebijakan Refund</a>.</span>
         </div>
       </div>
 
@@ -302,11 +302,20 @@
           </div>
         </div>
 
-        <div class="form-group" style="margin-top: 14px; margin-bottom: 14px; background: var(--sand-50); border: 1px solid var(--line-300); padding: 12px 14px; border-radius: var(--radius-card);">
+        <div class="form-group" style="margin-top: 14px; margin-bottom: 10px; background: var(--sand-50); border: 1px solid var(--line-300); padding: 12px 14px; border-radius: var(--radius-card);">
           <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: var(--ink-900); cursor: pointer; margin: 0;">
             <input type="checkbox" id="checkAgreeTerms" style="margin-top: 2px; accent-color: var(--terra-600); width: 17px; height: 17px; flex-shrink: 0;">
             <span style="line-height: 1.5;">
               Saya telah membaca, memahami, dan menyetujui <a href="/terms" target="_blank" style="color: var(--terra-600); font-weight: 700; text-decoration: underline;">Syarat &amp; Ketentuan Layanan</a>, <a href="/fees" target="_blank" style="color: var(--terra-600); font-weight: 700; text-decoration: underline;">Rincian Biaya Platform</a>, serta <a href="/refund-policy" target="_blank" style="color: var(--terra-600); font-weight: 700; text-decoration: underline;">Kebijakan Pengembalian Dana (Refund)</a> TIKUM (PT SHINERVA PRAJNA TEJAS).
+            </span>
+          </label>
+        </div>
+
+        <div class="form-group" style="margin-top: 0; margin-bottom: 14px; background: #fffbeb; border: 1px solid #fef3c7; padding: 12px 14px; border-radius: var(--radius-card);">
+          <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: #92400e; cursor: pointer; margin: 0;">
+            <input type="checkbox" id="checkAgreeResalePolicy" style="margin-top: 2px; accent-color: var(--terra-600); width: 17px; height: 17px; flex-shrink: 0;">
+            <span style="line-height: 1.5;">
+              Saya memahami bahwa beberapa promotor/penyelenggara acara membatasi atau melarang pemindahtanganan tiket dalam syarat &amp; ketentuan mereka, dan saya menyetujui ketentuan pemindahtanganan sekunder pada <a href="/resale-policy" target="_blank" style="color: #b45309; font-weight: 700; text-decoration: underline;">Kebijakan Penjualan Kembali (Resale Policy)</a>.
             </span>
           </label>
         </div>
@@ -748,6 +757,15 @@
       if (agreeCheck && !agreeCheck.checked) {
         if (errEl) {
           errEl.innerText = 'Anda harus membaca dan mencentang persetujuan Syarat & Ketentuan Layanan, Rincian Biaya, dan Kebijakan Refund TIKUM sebelum melanjutkan.';
+          errEl.style.display = 'block';
+        }
+        return;
+      }
+
+      const agreeResaleCheck = document.getElementById('checkAgreeResalePolicy');
+      if (agreeResaleCheck && !agreeResaleCheck.checked) {
+        if (errEl) {
+          errEl.innerText = 'Anda wajib memahami dan mencentang persetujuan mengenai batasan pemindahtanganan promotor dan Kebijakan Penjualan Kembali (Resale Policy) sebelum melanjutkan.';
           errEl.style.display = 'block';
         }
         return;

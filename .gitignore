@@ -49,3 +49,4 @@ data/
 .vercel
 .env*
 .neon
+docs-private/

@@ -77,6 +77,8 @@ const businessProfile = {
     faq: '/faq',
     terms: '/terms',
     sellerTerms: '/seller-terms',
+    resalePolicy: '/resale-policy',
+    paymentFlow: '/payment-flow',
     refundPolicy: '/refund-policy',
     refunds: '/refunds',
     disputes: '/disputes',
@@ -136,6 +138,7 @@ function renderFooterHtml() {
           <a href="/ticket-verification" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-qrcode"></i> Verifikasi Tiket</a>
           <a href="/buyer-protection" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-shield-heart"></i> Perlindungan Pembeli</a>
           <a href="/fees" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-receipt"></i> Struktur Biaya Platform</a>
+          <a href="/payment-flow" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-money-bill-transfer"></i> Alur Dana &amp; Penahanan Transaksi</a>
         </div>
       </div>
 
@@ -145,6 +148,7 @@ function renderFooterHtml() {
           <a href="/pay" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-cash-register"></i> Simulasi Checkout (/pay)</a>
           <a href="/terms" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-file-contract"></i> Syarat &amp; Ketentuan</a>
           <a href="/seller-terms" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-handshake"></i> Ketentuan Penjual</a>
+          <a href="/resale-policy" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-ticket-simple"></i> Kebijakan Penjualan Kembali</a>
           <a href="/refund-policy" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-rotate-left"></i> Kebijakan Pengembalian (Refund)</a>
           <a href="/disputes" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-scale-balanced"></i> Prosedur Sengketa (Disputes)</a>
           <a href="/faq" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-circle-question"></i> FAQ / Pertanyaan Umum</a>

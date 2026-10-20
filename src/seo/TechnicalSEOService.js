@@ -95,6 +95,8 @@ Sitemap: ${origin}/sitemap.xml
       { loc: '/faq', priority: '0.7', changefreq: 'weekly' },
       { loc: '/terms', priority: '0.5', changefreq: 'monthly' },
       { loc: '/seller-terms', priority: '0.6', changefreq: 'monthly' },
+      { loc: '/resale-policy', priority: '0.7', changefreq: 'monthly' },
+      { loc: '/payment-flow', priority: '0.7', changefreq: 'monthly' },
       { loc: '/refund-policy', priority: '0.5', changefreq: 'monthly' },
       { loc: '/privacy', priority: '0.5', changefreq: 'monthly' },
       { loc: '/contact', priority: '0.5', changefreq: 'monthly' }

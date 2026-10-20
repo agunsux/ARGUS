@@ -37,7 +37,7 @@ function renderTrustNavHeader(activePath = '', lang = 'id') {
         <a href="/how-it-works" class="nav-link ${activePath === '/how-it-works' ? 'active' : ''}"><i class="fa-solid fa-circle-nodes"></i> <span data-i18n="footer.how">${isEn ? 'How It Works' : 'Cara Kerja'}</span></a>
         <a href="/buyer-protection" class="nav-link ${activePath === '/buyer-protection' ? 'active' : ''}"><i class="fa-solid fa-shield-heart"></i> <span data-i18n="footer.buyerProt">${isEn ? 'Buyer Protection' : 'Perlindungan Pembeli'}</span></a>
         <a href="/ticket-verification" class="nav-link ${activePath === '/ticket-verification' ? 'active' : ''}"><i class="fa-solid fa-qrcode"></i> <span data-i18n="footer.verifInfo">${isEn ? 'Ticket Verification' : 'Verifikasi Tiket'}</span></a>
-        <a href="/escrow" class="nav-link ${activePath === '/escrow' ? 'active' : ''}"><i class="fa-solid fa-lock"></i> <span data-i18n="escrow.title">${isEn ? 'Escrow Account' : 'Rekening Escrow'}</span></a>
+        <a href="/escrow" class="nav-link ${activePath === '/escrow' ? 'active' : ''}"><i class="fa-solid fa-lock"></i> <span data-i18n="escrow.title">${isEn ? 'Platform Holding' : 'Penahanan Dana'}</span></a>
         <a href="/disputes" class="nav-link ${activePath === '/disputes' ? 'active' : ''}"><i class="fa-solid fa-scale-balanced"></i> <span data-i18n="disputes.title">${isEn ? 'Dispute Resolution' : 'Resolusi Sengketa'}</span></a>
         <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700; margin-left: 8px;">${lang.toUpperCase()}</button>
       </nav>
@@ -677,9 +677,9 @@ router.get(['/seller-protection', '/panduan-penjual', '/how-to-sell'], (req, res
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:20px;">
       <div style="background:#131d31; border:1px solid #10b981; border-radius:12px; padding:24px;">
-        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-money-bill-transfer"></i> Guaranteed Escrow Settlement</h3>
+        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-money-bill-transfer"></i> Platform-Held Payment Protection</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          You only transfer ticket credentials after the buyer has completed payment into the secure escrow account. Zero risk of phantom transfers or unpaid handovers.
+          You only transfer ticket credentials after the buyer has completed payment into the platform-held transaction system. Zero risk of phantom transfers or unpaid handovers.
         </p>
       </div>
 
@@ -693,9 +693,9 @@ router.get(['/seller-protection', '/panduan-penjual', '/how-to-sell'], (req, res
   ` : `
     <div style="display:flex; flex-direction:column; gap:20px;">
       <div style="background:#131d31; border:1px solid #10b981; border-radius:12px; padding:24px;">
-        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-money-bill-transfer"></i> Jaminan Pembayaran Masuk (Guaranteed Settlement)</h3>
+        <h3 style="color:#10b981; font-size:18px; margin:0 0 8px;"><i class="fa-solid fa-money-bill-transfer"></i> Perlindungan Penahanan Pembayaran Platform</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0;">
-          Anda hanya mengirimkan dokumen tiket setelah pembeli menyelesaikan pembayaran ke rekening escrow. Tidak ada risiko pembeli kabur atau bukti transfer palsu.
+          Anda hanya mengirimkan dokumen tiket setelah pembayaran pembeli terverifikasi berhasil oleh gateway dan tercatat dalam sistem penahanan platform (platform-held). Tidak ada risiko pembeli kabur atau bukti transfer palsu.
         </p>
       </div>
 
@@ -718,11 +718,11 @@ router.get(['/seller-protection', '/panduan-penjual', '/how-to-sell'], (req, res
 
   const html = renderTrustLayout({
     lang,
-    title: isEn ? 'Seller Protection — Guaranteed Settlement & Safe Ticket Selling | Tikum' : 'Perlindungan Penjual — Jaminan Dana Cair & Transaksi Aman | Tikum',
-    description: isEn ? 'Sell unused concert and event tickets safely: verified escrow funding before ticket handover, fraud protection against false claims, and prompt bank payout.' : 'Jual tiket konser dan event dengan tenang di Tikum: jaminan pembayaran pasti sebelum kirim tiket, perlindungan dari penipuan pembeli, dan transfer dana transparan.',
+    title: isEn ? 'Seller Protection — Platform-Held Settlement & Safe Ticket Selling | Tikum' : 'Perlindungan Penjual — Penahanan Dana Platform & Transaksi Aman | Tikum',
+    description: isEn ? 'Sell unused concert and event tickets safely: verified platform-held funding before ticket handover, fraud protection against false claims, and prompt bank payout.' : 'Jual tiket konser dan event dengan tenang di Tikum: penahanan pembayaran terkelola platform sebelum kirim tiket, perlindungan dari penipuan pembeli, dan transfer dana transparan.',
     canonicalPath: '/seller-protection',
     h1: isEn ? 'Transaction Protection for Ticket Sellers' : 'Perlindungan Transaksi untuk Penjual Tiket',
-    subtitle: isEn ? 'Sell unused tickets with guaranteed escrow funding and protection against baseless claims.' : 'Jual tiket yang tidak terpakai dengan jaminan pembayaran pasti dan bebas klaim palsu.',
+    subtitle: isEn ? 'Sell unused tickets with platform-held funding protection and safeguard against baseless claims.' : 'Jual tiket yang tidak terpakai dengan sistem penahanan pembayaran terkelola platform dan bebas klaim palsu.',
     breadcrumbs: [
       { name: isEn ? 'Home' : 'Beranda', url: '/' },
       { name: isEn ? 'Seller Protection' : 'Perlindungan Penjual', url: '/seller-protection' }
@@ -864,14 +864,14 @@ router.get('/escrow', (req, res) => {
 
   const html = renderTrustLayout({
     lang,
-    title: isEn ? 'Tikum Escrow Infrastructure — Neutral & Transparent Fund Holding | Tikum' : 'Sistem Rekening Escrow Tikum — Penahanan Dana Transparan & Netral | Tikum',
+    title: isEn ? 'Tikum Platform-Held Governance — Transparent Fund Holding | Tikum' : 'Sistem Penahanan Transaksi Platform Tikum — Tata Kelola Dana Aman | Tikum',
     description: isEn ? 'Understand Tikum platform-held safeguards: transactions remain protected until ticket admission terms are verified.' : 'Pelajari tata kelola penahanan transaksi platform Tikum: perlindungan dana transaksi dan verifikasi tiket.',
     canonicalPath: '/escrow',
-    h1: isEn ? 'Escrow Infrastructure: Secure Holding' : 'Infrastruktur Escrow: Penahanan Dana Aman',
+    h1: isEn ? 'Platform-Held Custody: Secure Governance' : 'Penahanan Pembayaran Platform (Platform-Held)',
     subtitle: isEn ? 'A platform-held protection model ensuring your transactions stay protected through ticket delivery.' : 'Model tata kelola transaksi terlindungi untuk menjamin keamanan serah terima tiket.',
     breadcrumbs: [
       { name: isEn ? 'Home' : 'Beranda', url: '/' },
-      { name: isEn ? 'Escrow Account' : 'Rekening Escrow', url: '/escrow' }
+      { name: isEn ? 'Platform Holding' : 'Penahanan Dana', url: '/escrow' }
     ],
     faqPairs,
     contentHtml
@@ -1151,7 +1151,7 @@ router.get('/fees', (req, res) => {
               <tr style="border-bottom:1px solid #1e293b;">
                 <td style="padding:12px; color:#f8fafc; font-weight:700;">Buyer Platform Fee</td>
                 <td style="padding:12px; color:#38bdf8; font-weight:700;">6% (Min. Rp35,000, Max. Rp300,000)</td>
-                <td style="padding:12px; color:#cbd5e1;">Covers platform-held payment protection, ticket verification, and customer dispute guarantee.</td>
+                <td style="padding:12px; color:#cbd5e1;">Covers platform-held payment protection, ticket verification, and dispute resolution under our Refund Policy.</td>
               </tr>
               <tr style="border-bottom:1px solid #1e293b;">
                 <td style="padding:12px; color:#f8fafc; font-weight:700;">Seller Service Fee</td>
@@ -1170,6 +1170,13 @@ router.get('/fees', (req, res) => {
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div style="margin-top:20px; background:#0f172a; border:1px solid #0284c7; border-radius:10px; padding:18px;">
+          <h3 style="color:#38bdf8; font-size:15px; margin:0 0 6px;"><i class="fa-solid fa-money-bill-transfer"></i> Detailed Funds Flow &amp; Ledger Movement</h3>
+          <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+            Learn how buyer payments are held under our double-entry ledger controls and when seller disbursements are released: <a href="/payment-flow" style="color:#38bdf8; font-weight:700; text-decoration:underline;">View Funds Flow &amp; Ledger Architecture (/payment-flow)</a>.
+          </p>
         </div>
       </div>
     </div>
@@ -1199,7 +1206,7 @@ router.get('/fees', (req, res) => {
               <tr style="border-bottom:1px solid #1e293b;">
                 <td style="padding:12px; color:#f8fafc; font-weight:700;">Biaya Perlindungan Pembeli (Buyer Fee)</td>
                 <td style="padding:12px; color:#38bdf8; font-weight:700;">6% (Min. Rp35.000, Maks. Rp300.000)</td>
-                <td style="padding:12px; color:#cbd5e1;">Mencakup penahanan dana aman (platform-held), verifikasi keaslian dokumen tiket, dan garansi refund jika tiket terkendala.</td>
+                <td style="padding:12px; color:#cbd5e1;">Mencakup penahanan dana platform (platform-held), verifikasi keaslian dokumen tiket, dan hak pengembalian dana sesuai Kebijakan Refund.</td>
               </tr>
               <tr style="border-bottom:1px solid #1e293b;">
                 <td style="padding:12px; color:#f8fafc; font-weight:700;">Biaya Layanan Penjual (Seller Fee)</td>
@@ -1213,6 +1220,19 @@ router.get('/fees', (req, res) => {
               </tr>
               <tr style="border-bottom:1px solid #1e293b;">
                 <td style="padding:12px; color:#f8fafc; font-weight:700;">Batas Harga Tiket Minimum</td>
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Rp 500.000 per tiket</td>
+                <td style="padding:12px; color:#cbd5e1;">Standar nominal minimum untuk memastikan kelayakan kurasi tiket konser dan festival.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:20px; background:#0f172a; border:1px solid #0284c7; border-radius:10px; padding:18px;">
+          <h3 style="color:#38bdf8; font-size:15px; margin:0 0 6px;"><i class="fa-solid fa-money-bill-transfer"></i> Transparansi Alur Dana (Funds Flow)</h3>
+          <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+            Pelajari bagaimana dana pembeli dikelola dalam buku besar akuntansi berpasangan internal platform TIKUM, syarat pencairan penjual pasca-acara, dan jalur pengembalian dana: <a href="/payment-flow" style="color:#38bdf8; font-weight:700; text-decoration:underline;">Lihat Alur Dana &amp; Penahanan Transaksi (/payment-flow)</a>.
+          </p>
+        </div>
                 <td style="padding:12px; color:#f8fafc; font-weight:700;">Rp 500.000 per tiket</td>
                 <td style="padding:12px; color:#cbd5e1;">Standar nominal minimum untuk memastikan kelayakan kurasi tiket konser dan festival.</td>
               </tr>
@@ -1280,9 +1300,9 @@ router.get('/seller-terms', (req, res) => {
             </p>
           </div>
           <div style="background:#0f172a; border:1px solid #ef4444; border-radius:10px; padding:20px;">
-            <h3 style="color:#f87171; font-size:16px; margin:0 0 8px;">4. Penalties for Invalid or Defaulted Tickets</h3>
+            <h3 style="color:#f87171; font-size:16px; margin:0 0 8px;">4. Default &amp; Invalid Ticket Consequences</h3>
             <p style="color:#cbd5e1; font-size:13.5px; line-height:1.6; margin:0;">
-              If a seller fails to transfer a ticket or the ticket is rejected at the venue turnstile, the buyer is refunded 100%, the seller receives zero payout, and the seller account is subject to permanent suspension and legal escalation.
+              If a seller fails to transfer a ticket or the ticket is proven invalid at the venue turnstile, the buyer is refunded in full under our Refund Policy, seller payout is cancelled (zero payout), the seller account may be permanently blocked, and the seller may be liable for damages under applicable law (pending legal review).
             </p>
           </div>
         </div>
@@ -1308,13 +1328,13 @@ router.get('/seller-terms', (req, res) => {
           <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:20px;">
             <h3 style="color:#10b981; font-size:16px; margin:0 0 8px;">3. Jadwal Pencairan Dana Bersyarat</h3>
             <p style="color:#cbd5e1; font-size:13.5px; line-height:1.6; margin:0;">
-              Dana hasil penjualan ditahan secara aman di rekening penampungan dan baru dapat dicairkan ke rekening penjual setelah acara selesai serta masa tenggang verifikasi gerbang 1x24 jam berlalu tanpa adanya laporan sengketa.
+              Dana hasil penjualan ditahan secara aman dalam sistem penahanan transaksi platform dan baru dapat dicairkan ke rekening bank penjual setelah acara selesai serta masa peninjauan sengketa gerbang 1x24 jam berlalu tanpa adanya laporan sengketa masuk.
             </p>
           </div>
           <div style="background:#0f172a; border:1px solid #ef4444; border-radius:10px; padding:20px;">
-            <h3 style="color:#f87171; font-size:16px; margin:0 0 8px;">4. Sanksi Pembatalan &amp; Tiket Palsu</h3>
+            <h3 style="color:#f87171; font-size:16px; margin:0 0 8px;">4. Konsekuensi Pembatalan &amp; Tiket Tidak Valid</h3>
             <p style="color:#cbd5e1; font-size:13.5px; line-height:1.6; margin:0;">
-              Apabila penjual gagal menyerahkan tiket atau tiket ditolak di gerbang acara (turnstile), pembeli berhak menerima pengembalian dana penuh 100%, pencairan penjual dibatalkan, dan akun penjual akan ditangguhkan permanen serta dilaporkan ke pihak berwajib.
+              Apabila penjual gagal menyerahkan tiket atau tiket terbukti tidak valid di gerbang acara, pembeli berhak menerima pengembalian dana penuh sesuai Kebijakan Refund, pencairan dana ke penjual dibatalkan (nol rupiah), akun penjual dapat diblokir permanen, dan penjual dapat dimintakan pertanggungjawaban ganti rugi sesuai ketentuan peraturan perundang-undangan yang berlaku (menunggu peninjauan legal).
             </p>
           </div>
         </div>
@@ -1338,6 +1358,378 @@ router.get('/seller-terms', (req, res) => {
     breadcrumbs: [
       { name: isEn ? 'Home' : 'Beranda', url: '/' },
       { name: isEn ? 'Seller Terms' : 'Ketentuan Penjual', url: '/seller-terms' }
+    ],
+    faqPairs,
+    contentHtml
+  });
+
+  res.type('html').send(html);
+});
+
+// -------------------------------------------------------------
+// 10. /resale-policy — Secondary Ticket Resale & Organizer Policy
+// -------------------------------------------------------------
+router.get('/resale-policy', (req, res) => {
+  const isEn = (req.query.lang || '').toLowerCase() === 'en';
+  const lang = isEn ? 'en' : 'id';
+
+  const contentHtml = isEn ? `
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <!-- 1. Intermediary Role Statement -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-circle-nodes" style="color:#38bdf8;"></i> Platform Role: Information &amp; Payment Intermediary</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 14px;">
+          TIKUM (operated by PT SHINERVA PRAJNA TEJAS) is a technology platform providing information and payment facilitation for secondary ticket transactions between independent consumers. TIKUM is not a primary ticket issuer, box office, organizer, or promoter. We do not own, create, or re-issue event tickets.
+        </p>
+      </div>
+
+      <!-- 2. Maximum Markup Cap -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-scale-balanced" style="color:#10b981;"></i> Maximum Markup Cap: Max +30%</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 14px;">
+          To deter predatory scalping and keep live event access fair for fans, TIKUM enforces a strict server-validated markup ceiling:
+        </p>
+        <ul style="color:#cbd5e1; font-size:13.5px; line-height:1.8; margin:0; padding-left:20px;">
+          <li><strong>Maximum Markup Cap:</strong> Maximum +30% above the official promoter face value (<code style="color:#f59e0b;">MAX_MARKUP_PCT: 30</code>). Submissions exceeding this threshold are automatically rejected by our pricing engine.</li>
+          <li><strong>Minimum Listing Floor:</strong> Rp 500,000 per ticket (<code style="color:#38bdf8;">MIN_LISTING_PRICE_IDR: 500,000</code>).</li>
+          <li><strong>Transparent Pricing:</strong> Zero hidden checkout markups; all fees are disclosed before order placement.</li>
+        </ul>
+      </div>
+
+      <!-- 3. Organizer Transfer Restrictions & Buyer Warnings -->
+      <div style="background:#131d31; border:1px solid #f59e0b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f59e0b; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-triangle-exclamation"></i> Organizer Transfer Restrictions &amp; Disclaimers</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 14px;">
+          Some event organizers and promoters incorporate terms in their primary ticketing conditions that restrict, prohibit, or invalidate tickets resold or transferred outside their proprietary channels.
+        </p>
+        <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px; font-size:13px; color:#cbd5e1; line-height:1.6;">
+          <strong>Buyer Notice &amp; Pre-Payment Acknowledgment:</strong><br>
+          Before completing any order on TIKUM, buyers are explicitly presented with a dedicated warning and must check an acknowledgment box confirming they understand organizer resale restrictions. If an organizer revokes a ticket category or entry is denied with evidence, the buyer remains protected under TIKUM's official Refund Policy.
+        </div>
+      </div>
+
+      <!-- 4. Supported Transfer Methods -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-truck-ramp-box" style="color:#38bdf8;"></i> Supported Transfer Methods</h2>
+        <ul style="color:#cbd5e1; font-size:13.5px; line-height:1.8; margin:0; padding-left:20px;">
+          <li><strong>Official E-Ticket / PDF Transfer:</strong> Secure upload of authentic promoter e-voucher with unique barcode/QR code.</li>
+          <li><strong>Primary Account Transfer / Delegation:</strong> Transfer through official primary ticketing portal mechanisms where supported by the primary ticketing provider.</li>
+          <li><strong>On-Site Physical / Wristband Handover:</strong> Handover coordinated with Event PIC on-site assistance at selected events during designated gate hours.</li>
+        </ul>
+      </div>
+
+      <!-- 5. Prohibited Listings -->
+      <div style="background:#131d31; border:1px solid #ef4444; border-radius:14px; padding:28px;">
+        <h2 style="color:#f87171; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-ban"></i> Prohibited Listings</h2>
+        <ul style="color:#cbd5e1; font-size:13.5px; line-height:1.8; margin:0; padding-left:20px;">
+          <li>Counterfeit, altered, or duplicate barcode tickets (cryptographically blocked by SHA-256 hash check).</li>
+          <li>Complimentary, guest, or media passes marked 'Not for Sale' / 'Not for Resale'.</li>
+          <li>Tickets acquired via fraudulent means, identity theft, or unauthorized card transactions.</li>
+          <li>Listings priced in excess of the +30% maximum markup cap.</li>
+          <li>Tickets for events that have concluded, expired, or been officially cancelled.</li>
+        </ul>
+      </div>
+    </div>
+  ` : `
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <!-- 1. Peran Platform Intermediari -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-circle-nodes" style="color:#38bdf8;"></i> Peran Platform: Fasilitator Informasi &amp; Pembayaran</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 14px;">
+          TIKUM (dioperasikan oleh PT SHINERVA PRAJNA TEJAS) adalah platform teknologi penyedia informasi dan fasilitasi pembayaran untuk transaksi tiket sekunder antar-pengguna secara independen. TIKUM bukan penerbit tiket resmi, loket penjualan tiket primer, promotor, maupun panitia penyelenggara acara. TIKUM tidak memiliki, mencetak, atau menerbitkan ulang tiket acara.
+        </p>
+      </div>
+
+      <!-- 2. Batas Markup Maksimum -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-scale-balanced" style="color:#10b981;"></i> Batas Markup Maksimum: Maksimal +30%</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 14px;">
+          Guna mencegah praktik percaloan liar dan spekulasi harga yang merugikan penikmat acara, TIKUM memberlakukan batas atas harga jual tiket yang divalidasi langsung oleh sistem:
+        </p>
+        <ul style="color:#cbd5e1; font-size:13.5px; line-height:1.8; margin:0; padding-left:20px;">
+          <li><strong>Batas Markup Maksimal:</strong> Maksimal +30% di atas harga nominal resmi (Face Value) yang ditetapkan promotor (<code style="color:#f59e0b;">MAX_MARKUP_PCT: 30</code>). Pendaftaran tiket dengan harga melebihi batas ini ditolak otomatis oleh sistem.</li>
+          <li><strong>Batas Harga Minimum Listing:</strong> Rp 500.000 per tiket (<code style="color:#38bdf8;">MIN_LISTING_PRICE_IDR: 500.000</code>).</li>
+          <li><strong>Transparansi Penuh:</strong> Tanpa mark-up tersembunyi; seluruh komponen biaya diinformasikan sebelum konfirmasi pembayaran.</li>
+        </ul>
+      </div>
+
+      <!-- 3. Batasan Pemindahtanganan Promotor & Peringatan Pengguna -->
+      <div style="background:#131d31; border:1px solid #f59e0b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f59e0b; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-triangle-exclamation"></i> Batasan Pemindahtanganan dari Promotor &amp; Peringatan Pembeli</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 14px;">
+          Sebagian promotor atau penyelenggara acara mencantumkan ketentuan khusus dalam syarat pembelian tiket resmi yang membatasi, melarang, atau menyatakan tidak berlakunya tiket yang dipindahtangankan kepada pihak lain.
+        </p>
+        <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px; font-size:13px; color:#cbd5e1; line-height:1.6;">
+          <strong>Pemberitahuan &amp; Persetujuan Wajib Pembeli Sebelum Pembayaran:</strong><br>
+          Sebelum menyelesaikan pemesanan di halaman <a href="/pay" style="color:#38bdf8;">/pay</a>, pembeli diwajibkan membaca dan mencentang kotak persetujuan eksplisit bahwa pembeli memahami adanya risiko batasan pemindahtanganan dari promotor. Apabila tiket terbukti ditolak di turnstile gerbang venue atau dibatalkan sepihak oleh promotor, pembeli tetap dilindungi oleh prosedur sengketa dan pengembalian dana penuh sesuai Kebijakan Refund.
+        </div>
+      </div>
+
+      <!-- 4. Metode Pemindahtanganan Tiket yang Didukung -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-truck-ramp-box" style="color:#38bdf8;"></i> Metode Pemindahtanganan yang Didukung</h2>
+        <ul style="color:#cbd5e1; font-size:13.5px; line-height:1.8; margin:0; padding-left:20px;">
+          <li><strong>Transfer E-Ticket / PDF Resmi:</strong> Pengunggahan berkas e-voucher resmi yang memuat barcode/QR code sah dari kanal tiket primer.</li>
+          <li><strong>Pengalihan Akun / Booking Resmi:</strong> Mekanisme transfer resmi melalui platform tiket primer apabila fitur transfer akun didukung oleh promotor.</li>
+          <li><strong>Serah Terima Fisik / Wristband di Lokasi Acara:</strong> Penyerahan gelang fisik di lokasi venue yang dikoordinasikan bersama Event PIC TIKUM pada event terpilih selama jam buka gerbang.</li>
+        </ul>
+      </div>
+
+      <!-- 5. Daftar Listing yang Dilarang -->
+      <div style="background:#131d31; border:1px solid #ef4444; border-radius:14px; padding:28px;">
+        <h2 style="color:#f87171; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-ban"></i> Daftar Listing yang Dilarang (Prohibited Listings)</h2>
+        <ul style="color:#cbd5e1; font-size:13.5px; line-height:1.8; margin:0; padding-left:20px;">
+          <li>Tiket palsu, hasil manipulasi dokumen digital, atau duplikasi barcode (dicegah melalui verifikasi hash SHA-256).</li>
+          <li>Tiket undangan / complimentary pass bertanda 'Not for Sale' atau 'Tidak untuk Dijual'.</li>
+          <li>Tiket yang diperoleh dari tindak kejahatan siber, carding, penipuan, atau peretasan akun.</li>
+          <li>Listing dengan harga melebihi batas markup maksimum 30% dari Face Value.</li>
+          <li>Tiket untuk acara yang telah selesai, kedaluwarsa, atau telah resmi dibatalkan promotor.</li>
+        </ul>
+      </div>
+    </div>
+  `;
+
+  const faqPairs = isEn ? [
+    { q: 'Is TIKUM an official primary ticket box office?', a: 'No. TIKUM is an independent secondary ticket marketplace intermediary facilitating safe peer-to-peer ticket transactions.' },
+    { q: 'What is the maximum markup allowed on ticket listings?', a: 'Listings cannot exceed +30% above the promoter official face value. Our system automatically blocks listings that exceed this cap.' },
+    { q: 'What if an organizer prohibits ticket transfer?', a: 'Buyers are notified of organizer restrictions before payment and must explicitly acknowledge them. If entry is denied at the turnstile with evidence, the buyer is protected under our Refund Policy.' }
+  ] : [
+    { q: 'Apakah TIKUM menjual tiket resmi dari promotor?', a: 'Bukan. TIKUM adalah marketplace perantara tiket sekunder independen yang memfasilitasi transaksi aman antar-penggemar.' },
+    { q: 'Berapa batas markup harga tiket yang diperbolehkan di TIKUM?', a: 'Harga tiket dibatasi maksimal +30% di atas harga resmi (Face Value) promotor untuk mencegah percaloan liar.' },
+    { q: 'Bagaimana jika promotor melarang pemindahtanganan tiket?', a: 'Pembeli diberi peringatan eksplisit sebelum membayar. Jika tiket terbukti ditolak di turnstile gerbang acara dengan bukti sah, dana dilindungi sesuai Kebijakan Refund.' }
+  ];
+
+  const html = renderTrustLayout({
+    lang,
+    title: isEn ? 'Secondary Ticket Resale Policy | Tikum' : 'Kebijakan Penjualan Kembali Tiket (Resale Policy) | Tikum',
+    description: isEn ? 'Official resale policy: markup caps (+30%), organizer transfer restrictions, supported delivery methods, and prohibited listings on Tikum.' : 'Kebijakan resmi penjualan kembali tiket sekunder di Tikum: batas markup maksimal 30%, ketentuan promotor, metode transfer, dan larangan listing.',
+    canonicalPath: '/resale-policy',
+    h1: isEn ? 'Secondary Ticket Resale Policy' : 'Kebijakan Penjualan Kembali Tiket (Resale Policy)',
+    subtitle: isEn ? 'Fair market guidelines, markup limits, supported handover protocols, and organizer restrictions.' : 'Panduan transaksi adil, batas markup harga, metode serah terima tiket, dan kepatuhan aturan promotor.',
+    breadcrumbs: [
+      { name: isEn ? 'Home' : 'Beranda', url: '/' },
+      { name: isEn ? 'Resale Policy' : 'Kebijakan Resale', url: '/resale-policy' }
+    ],
+    faqPairs,
+    contentHtml
+  });
+
+  res.type('html').send(html);
+});
+
+// -------------------------------------------------------------
+// 11. /payment-flow — Funds Flow & Double-Entry Ledger Truth
+// -------------------------------------------------------------
+router.get('/payment-flow', (req, res) => {
+  const isEn = (req.query.lang || '').toLowerCase() === 'en';
+  const lang = isEn ? 'en' : 'id';
+
+  const contentHtml = isEn ? `
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <!-- 1. Explicit Non-Escrow Custody Statement -->
+      <div style="background:#131d31; border:1px solid #10b981; border-radius:14px; padding:28px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <span style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; text-transform:uppercase;">Platform-Held Accounting Controls</span>
+        </div>
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-vault" style="color:#10b981;"></i> Honest Funds Flow Architecture</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 16px;">
+          TIKUM enforces an internal <strong>platform-held double-entry accounting ledger</strong> (<code style="color:#38bdf8;">FinancialLedger</code>). When a buyer completes payment, funds are received into our payment gateway clearing balance and accounted for administratively.
+        </p>
+        <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px; font-size:13.5px; color:#f8fafc; line-height:1.6;">
+          <strong style="color:#f59e0b;"><i class="fa-solid fa-circle-exclamation"></i> Non-Banking Custody Clarification:</strong><br>
+          Funds held under platform transaction controls are <strong>NOT stored in a third-party bank escrow account</strong>. TIKUM is not a licensed banking institution. All payment protection operates through strict internal ledger controls, conditional post-event seller disbursal rules, and fail-closed financial invariant checks.
+        </div>
+      </div>
+
+      <!-- 2. Ledger Accounts & Money Movements -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-book-journal-whills" style="color:#38bdf8;"></i> Double-Entry Journal Accounts</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0 0 16px;">
+          Every transaction strictly satisfies the mathematical double-entry balance invariant: <code style="color:#10b981;">sum(Debits) === sum(Credits)</code>.
+        </p>
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+            <thead>
+              <tr style="border-bottom:2px solid #334155; color:#94a3b8;">
+                <th style="padding:10px;">Account Code</th>
+                <th style="padding:10px;">Classification</th>
+                <th style="padding:10px;">Role in Funds Flow</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px; color:#38bdf8; font-family:monospace; font-weight:700;">PAYMENT_GATEWAY_CLEARING</td>
+                <td style="padding:10px; color:#cbd5e1;">Asset / Receivable</td>
+                <td style="padding:10px; color:#cbd5e1;">Debited with gross buyer inflow upon payment gateway webhook confirmation.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px; color:#f59e0b; font-family:monospace; font-weight:700;">SELLER_PAYABLE_PENDING</td>
+                <td style="padding:10px; color:#cbd5e1;">Liability / Pending Payout</td>
+                <td style="padding:10px; color:#cbd5e1;">Credited with net seller proceeds; locked until event completion and dispute window expiration.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px; color:#10b981; font-family:monospace; font-weight:700;">PLATFORM_FEE_REVENUE</td>
+                <td style="padding:10px; color:#cbd5e1;">Revenue</td>
+                <td style="padding:10px; color:#cbd5e1;">Credited with platform fee (Canonical 6%, Min. Rp35,000, Max. Rp300,000).</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px; color:#cbd5e1; font-family:monospace; font-weight:700;">PROVIDER_FEE_EXPENSE</td>
+                <td style="padding:10px; color:#cbd5e1;">Expense / Clearing</td>
+                <td style="padding:10px; color:#cbd5e1;">Credited with pass-through payment gateway processing fee (Rp 5,000).</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px; color:#a855f7; font-family:monospace; font-weight:700;">SETTLEMENT_CLEARING</td>
+                <td style="padding:10px; color:#cbd5e1;">Clearing / Disbursal</td>
+                <td style="padding:10px; color:#cbd5e1;">Credited when seller payout is executed post-event, clearing the SELLER_PAYABLE liability.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. Release Timeline & Conditions -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-clock-rotate-left" style="color:#38bdf8;"></i> Release Conditions &amp; Timeline</h2>
+        <ul style="color:#cbd5e1; font-size:13.5px; line-height:1.8; margin:0; padding-left:20px;">
+          <li><strong>Release Trigger:</strong> Disbursement to the seller is only released after the event has taken place and a 24-hour turnstile dispute window has concluded with zero unaddressed buyer claims.</li>
+          <li><strong>Disbursal Speed:</strong> Released payouts are transferred to the seller's registered bank account within 1 (one) business day following verification.</li>
+        </ul>
+      </div>
+
+      <!-- 4. Refund Path & Dispute SLA -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-rotate-left" style="color:#f43f5e;"></i> Refund Path &amp; Dispute SLA</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 14px;">
+          If an order is cancelled or a buyer dispute is upheld (e.g., turnstile rejection slip verified by Event PIC), <code style="color:#f43f5e;">FinancialLedger.recordRefund()</code> executes an atomic reversal of the seller payable liability and returns 100% of the funds to the buyer's original payment method within 1-3 business days.
+        </p>
+        <ul style="color:#cbd5e1; font-size:13.5px; line-height:1.8; margin:0; padding-left:20px;">
+          <li><strong>Dispute Reporting Window:</strong> Within 60 minutes of venue gate opening or up to 24 hours post-event.</li>
+          <li><strong>Evidence Review SLA:</strong> 24 to 48 hours for Trust Officer investigation.</li>
+          <li><strong>Refund Execution:</strong> Within 1 business day of dispute approval.</li>
+        </ul>
+      </div>
+
+      <!-- 5. Regulatory Note Placeholder -->
+      <div style="background:#131d31; border:1px dashed #eab308; border-radius:14px; padding:24px;">
+        <h3 style="color:#facc15; font-size:16px; margin:0 0 8px;"><i class="fa-solid fa-gavel"></i> Regulatory Note (Catatan Regulasi)</h3>
+        <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+          Temporary holding of transaction proceeds by TIKUM constitutes internal administrative order control until ticket transfer verification is concluded. [OWNER MUST CONFIRM: Confirm licensing requirements under Bank Indonesia Payment Service Provider (PJP Category 3) regulations or authorized PJP gateway partnerships for third-party fund facilitation].
+        </p>
+      </div>
+    </div>
+  ` : `
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <!-- 1. Pernyataan Penahanan Platform (Bukan Escrow Bank) -->
+      <div style="background:#131d31; border:1px solid #10b981; border-radius:14px; padding:28px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <span style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; text-transform:uppercase;">Sistem Pembukuan Akuntansi Berpasangan</span>
+        </div>
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-vault" style="color:#10b981;"></i> Transparansi Alur Dana &amp; Tata Kelola Transaksi</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 16px;">
+          TIKUM mengelola alur dana transaksi tiket menggunakan sistem buku besar akuntansi berpasangan internal (<code style="color:#38bdf8;">FinancialLedger</code>). Ketika pembeli membayar, dana masuk ke saldo kliring payment gateway resmi dan dicatat secara administratif di bawah kontrol sistem platform.
+        </p>
+        <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px; font-size:13.5px; color:#f8fafc; line-height:1.6;">
+          <strong style="color:#f59e0b;"><i class="fa-solid fa-circle-exclamation"></i> Klarifikasi Pengelolaan Dana Bukan Rekening Escrow Perbankan:</strong><br>
+          Penahanan dana dalam sistem TIKUM adalah tata kelola administrasi transaksi internal platform dan <strong>BUKAN merupakan rekening escrow pada lembaga perbankan</strong>. TIKUM bukan lembaga perbankan. Seluruh perlindungan transaksi beroperasi melalui sistem akuntansi tertutup, syarat pencairan dana penjual pasca-acara selesai, dan validasi matematis yang ketat.
+        </div>
+      </div>
+
+      <!-- 2. Akun Buku Besar & Alur Pergerakan Uang -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-book-journal-whills" style="color:#38bdf8;"></i> Akun Jurnal Buku Besar (Double-Entry Ledger)</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0 0 16px;">
+          Setiap pergerakan transaksi dicatat dengan prinsip keseimbangan: <code style="color:#10b981;">Total Debit === Total Kredit</code>.
+        </p>
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+            <thead>
+              <tr style="border-bottom:2px solid #334155; color:#94a3b8;">
+                <th style="padding:10px;">Kode Akun Buku Besar</th>
+                <th style="padding:10px;">Klasifikasi Akun</th>
+                <th style="padding:10px;">Peran dalam Alur Transaksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px; color:#38bdf8; font-family:monospace; font-weight:700;">PAYMENT_GATEWAY_CLEARING</td>
+                <td style="padding:10px; color:#cbd5e1;">Aset / Piutang Kliring</td>
+                <td style="padding:10px; color:#cbd5e1;">Didebit sebesar total pembayaran pembeli saat webhook payment gateway mengonfirmasi pembayaran berhasil.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px; color:#f59e0b; font-family:monospace; font-weight:700;">SELLER_PAYABLE_PENDING</td>
+                <td style="padding:10px; color:#cbd5e1;">Kewajiban / Hak Penjual</td>
+                <td style="padding:10px; color:#cbd5e1;">Dikredit sebesar hasil bersih hak penjual; dikunci dan ditahan hingga acara selesai tanpa sengketa.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px; color:#10b981; font-family:monospace; font-weight:700;">PLATFORM_FEE_REVENUE</td>
+                <td style="padding:10px; color:#cbd5e1;">Pendapatan Layanan</td>
+                <td style="padding:10px; color:#cbd5e1;">Dikredit sebesar tarif biaya layanan platform TIKUM (6%, min. Rp 35.000, maks. Rp 300.000).</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px; color:#cbd5e1; font-family:monospace; font-weight:700;">PROVIDER_FEE_EXPENSE</td>
+                <td style="padding:10px; color:#cbd5e1;">Beban / Kliring Gateway</td>
+                <td style="padding:10px; color:#cbd5e1;">Dikredit sebesar biaya pemrosesan gateway pembayaran resmi (Rp 5.000 per transaksi).</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:10px; color:#a855f7; font-family:monospace; font-weight:700;">SETTLEMENT_CLEARING</td>
+                <td style="padding:10px; color:#cbd5e1;">Kliring Pengeluaran Bank</td>
+                <td style="padding:10px; color:#cbd5e1;">Dikredit saat pencairan dana ditransfer ke rekening bank penjual pasca-acara selesai.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. Syarat & Jadwal Pencairan ke Penjual -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-clock-rotate-left" style="color:#38bdf8;"></i> Syarat &amp; Jadwal Pencairan Dana ke Penjual</h2>
+        <ul style="color:#cbd5e1; font-size:13.5px; line-height:1.8; margin:0; padding-left:20px;">
+          <li><strong>Syarat Pelepasan:</strong> Pencairan dana ke penjual hanya diproses setelah acara selesai diselenggarakan dan masa sanggah verifikasi gerbang 1x24 jam berakhir tanpa adanya laporan sengketa masuk dari pembeli.</li>
+          <li><strong>Kecepatan Transfer:</strong> Dana yang disetujui dicairkan ditransfer ke rekening bank penjual terdaftar dalam waktu 1 (satu) hari kerja bank setelah verifikasi selesai.</li>
+        </ul>
+      </div>
+
+      <!-- 4. Alur Pengembalian Dana (Refund) & SLA Sengketa -->
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-rotate-left" style="color:#f43f5e;"></i> Alur Pengembalian Dana &amp; SLA Sengketa</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 14px;">
+          Jika pesanan dibatalkan atau sengketa pembeli disetujui (misalnya tiket ditolak di gerbang turnstile acara dan diverifikasi bukti oleh Event PIC), fungsi <code style="color:#f43f5e;">FinancialLedger.recordRefund()</code> membalikkan pencatatan kewajiban penjual secara otomatis dan mengembalikan 100% dana ke instrumen pembayaran asal pembeli dalam 1-3 hari kerja.
+        </p>
+        <ul style="color:#cbd5e1; font-size:13.5px; line-height:1.8; margin:0; padding-left:20px;">
+          <li><strong>Batas Pelaporan Sengketa:</strong> Maksimal 60 menit setelah gerbang venue dibuka atau selambatnya 1x24 jam setelah acara dimulai.</li>
+          <li><strong>SLA Peninjauan Bukti:</strong> 1x24 hingga 2x48 jam kerja oleh Trust Officer TIKUM.</li>
+          <li><strong>Eksekusi Pengembalian Dana:</strong> Dalam 1 hari kerja bank setelah persetujuan putusan sengketa.</li>
+        </ul>
+      </div>
+
+      <!-- 5. Catatan Regulasi (Regulatory Note) -->
+      <div style="background:#131d31; border:1px dashed #eab308; border-radius:14px; padding:24px;">
+        <h3 style="color:#facc15; font-size:16px; margin:0 0 8px;"><i class="fa-solid fa-gavel"></i> Catatan Regulasi (Regulatory Note)</h3>
+        <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+          Penahanan dana sementara oleh platform merupakan tata kelola administrasi transaksi internal hingga serah terima tiket selesai. [OWNER MUST CONFIRM: Konfirmasi kepatuhan perizinan Penyelenggara Jasa Pembayaran (PJP) Kategori 3 atau pemanfaatan kemitraan PJP berizin Bank Indonesia untuk pengelolaan dana pihak ketiga].
+        </p>
+      </div>
+    </div>
+  `;
+
+  const faqPairs = isEn ? [
+    { q: 'Is my money held in a bank escrow account?', a: 'No. Funds are managed under internal platform-held accounting ledger controls (FinancialLedger) and disbursed to the seller only after successful event entry.' },
+    { q: 'How long does a refund take if a ticket fails?', a: 'Refunds are approved upon evidence verification and processed back to the original payment method within 1 to 3 business days.' }
+  ] : [
+    { q: 'Apakah dana saya disimpan di rekening escrow bank?', a: 'Bukan. Dana dikelola dalam sistem pembukuan berpasangan internal platform (FinancialLedger) dan baru dicairkan ke penjual setelah acara selesai tanpa sengketa.' },
+    { q: 'Berapa lama proses pengembalian dana jika tiket bermasalah?', a: 'Setelah bukti penolakan turnstile diverifikasi, dana dikembalikan penuh ke rekening/e-wallet pembeli dalam 1 hingga 3 hari kerja.' }
+  ];
+
+  const html = renderTrustLayout({
+    lang,
+    title: isEn ? 'Funds Flow & Platform-Held Ledger Architecture | Tikum' : 'Alur Dana & Sistem Penahanan Transaksi Platform | Tikum',
+    description: isEn ? 'Comprehensive documentation of TIKUM double-entry ledger funds flow: payment capture, seller payable holding, disbursal release, and refund SLA.' : 'Dokumentasi transparan alur dana buku besar berpasangan TIKUM: penampungan dana penjual, syarat pencairan, alur refund, dan SLA sengketa.',
+    canonicalPath: '/payment-flow',
+    h1: isEn ? 'Funds Flow & Ledger Governance' : 'Alur Dana & Tata Kelola Pembukuan Platform',
+    subtitle: isEn ? 'Transparent fund movement governed by double-entry ledger controls without third-party bank escrow claims.' : 'Tata kelola pergerakan dana transparan yang dicatat dalam sistem buku besar berpasangan tanpa klaim escrow perbankan.',
+    breadcrumbs: [
+      { name: isEn ? 'Home' : 'Beranda', url: '/' },
+      { name: isEn ? 'Funds Flow' : 'Alur Dana', url: '/payment-flow' }
     ],
     faqPairs,
     contentHtml
