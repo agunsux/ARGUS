@@ -302,6 +302,15 @@
           </div>
         </div>
 
+        <div class="form-group" style="margin-top: 14px; margin-bottom: 14px; background: var(--sand-50); border: 1px solid var(--line-300); padding: 12px 14px; border-radius: var(--radius-card);">
+          <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: var(--ink-900); cursor: pointer; margin: 0;">
+            <input type="checkbox" id="checkAgreeTerms" style="margin-top: 2px; accent-color: var(--terra-600); width: 17px; height: 17px; flex-shrink: 0;">
+            <span style="line-height: 1.5;">
+              Saya telah membaca, memahami, dan menyetujui <a href="/terms" target="_blank" style="color: var(--terra-600); font-weight: 700; text-decoration: underline;">Syarat &amp; Ketentuan Layanan</a>, <a href="/fees" target="_blank" style="color: var(--terra-600); font-weight: 700; text-decoration: underline;">Rincian Biaya Platform</a>, serta <a href="/refund-policy" target="_blank" style="color: var(--terra-600); font-weight: 700; text-decoration: underline;">Kebijakan Pengembalian Dana (Refund)</a> TIKUM (PT SHINERVA PRAJNA TEJAS).
+            </span>
+          </label>
+        </div>
+
         <div id="orderErrorMsg" class="notice-box notice-warning" style="display: none;"></div>
 
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px;">
@@ -734,6 +743,15 @@
 
       const btn = document.getElementById('btnOrderSubmit');
       const errEl = document.getElementById('orderErrorMsg');
+
+      const agreeCheck = document.getElementById('checkAgreeTerms');
+      if (agreeCheck && !agreeCheck.checked) {
+        if (errEl) {
+          errEl.innerText = 'Anda harus membaca dan mencentang persetujuan Syarat & Ketentuan Layanan, Rincian Biaya, dan Kebijakan Refund TIKUM sebelum melanjutkan.';
+          errEl.style.display = 'block';
+        }
+        return;
+      }
 
       if (currentListing.is_demo || currentListing.id === 'list-pilot-preview' || currentListing.status === 'DEMO_NOT_FOR_SALE' || currentListing.status === 'DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN') {
         if (errEl) {

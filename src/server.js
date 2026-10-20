@@ -321,8 +321,8 @@ app.get('/terms', (req, res) => res.sendFile(path.join(publicDir, 'terms.html'),
 app.get('/privacy', (req, res) => res.sendFile(path.join(publicDir, 'privacy.html'), sendFileOpts));
 app.get('/faq', (req, res) => res.sendFile(path.join(publicDir, 'faq.html'), sendFileOpts));
 app.get('/contact', (req, res) => res.sendFile(path.join(publicDir, 'contact.html'), sendFileOpts));
-app.get('/refund-policy', (req, res) => res.sendFile(path.join(publicDir, 'refund-policy.html'), sendFileOpts));
-app.get('/refund', (req, res) => res.redirect('/refund-policy'));
+app.get(['/refund-policy', '/refund-policy.html'], (req, res) => res.sendFile(path.join(publicDir, 'refund-policy.html'), sendFileOpts));
+app.get(['/refunds', '/refund'], (req, res) => res.redirect('/refund-policy'));
 app.get('/baton', (req, res) => res.sendFile(path.join(publicDir, 'baton.html'), sendFileOpts));
 app.get('/hero', (req, res) => res.sendFile(path.join(publicDir, 'hero.html'), sendFileOpts));
 

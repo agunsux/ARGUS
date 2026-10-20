@@ -249,9 +249,9 @@ router.get('/how-it-works', (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 2. /buyer-protection & /panduan-pembeli
+// 2. /buyer-protection, /panduan-pembeli & /how-to-buy
 // -------------------------------------------------------------
-router.get(['/buyer-protection', '/panduan-pembeli'], (req, res) => {
+router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) => {
   const isEn = (req.query.lang || '').toLowerCase() === 'en';
   const lang = isEn ? 'en' : 'id';
 
@@ -668,9 +668,9 @@ router.get(['/buyer-protection', '/panduan-pembeli'], (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 3. /seller-protection
+// 3. /seller-protection, /panduan-penjual & /how-to-sell
 // -------------------------------------------------------------
-router.get('/seller-protection', (req, res) => {
+router.get(['/seller-protection', '/panduan-penjual', '/how-to-sell'], (req, res) => {
   const isEn = (req.query.lang || '').toLowerCase() === 'en';
   const lang = isEn ? 'en' : 'id';
 
@@ -957,6 +957,387 @@ router.get(['/disputes', '/dispute-resolution'], (req, res) => {
     breadcrumbs: [
       { name: isEn ? 'Home' : 'Beranda', url: '/' },
       { name: isEn ? 'Dispute Resolution' : 'Resolusi Sengketa', url: '/disputes' }
+    ],
+    faqPairs,
+    contentHtml
+  });
+
+  res.type('html').send(html);
+});
+
+// -------------------------------------------------------------
+// 7. /about — Official Business Identity & Operational Disclosures
+// -------------------------------------------------------------
+router.get('/about', (req, res) => {
+  const isEn = (req.query.lang || '').toLowerCase() === 'en';
+  const lang = isEn ? 'en' : 'id';
+
+  const contentHtml = isEn ? `
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <!-- 1. Legal Entity & Brand Profile -->
+      <div style="background:#131d31; border:1px solid #10b981; border-radius:14px; padding:28px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <span style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; letter-spacing:0.5px; text-transform:uppercase;">Official Business Identity</span>
+          <span style="color:#64748b; font-size:13px;">TIKUM — Operated by PT SHINERVA PRAJNA TEJAS</span>
+        </div>
+        <h2 style="color:#f8fafc; font-size:22px; font-weight:800; margin:0 0 10px;">About TIKUM &amp; PT SHINERVA PRAJNA TEJAS</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 16px;">
+          <strong>TIKUM</strong> (tikum.app) is a verified secondary ticket marketplace designed and operated by <strong>PT SHINERVA PRAJNA TEJAS</strong>. We provide fan-to-fan ticket resale infrastructure across Indonesia with rigorous ticket verification, platform-held transaction protection, and dedicated on-site venue assistance.
+        </p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+          <div>
+            <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Registered Legal Entity:</div>
+            <div style="color:#f8fafc; font-size:13px; font-weight:600;">PT SHINERVA PRAJNA TEJAS</div>
+            <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Jl. Pasirluyu No. 79<br>Bandung 40254, Indonesia</div>
+          </div>
+          <div>
+            <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Official Contact &amp; Support:</div>
+            <div style="color:#cbd5e1; font-size:13px; line-height:1.6;">
+              Email: <a href="mailto:support@tikum.app" style="color:#38bdf8; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
+              Phone / WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
+              Operating Hours: Monday – Sunday: 09:00 – 21:00 WIB
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Marketplace Independence Disclaimer -->
+      <div style="background:#131d31; border:1px solid #f59e0b; border-radius:14px; padding:28px;">
+        <h3 style="color:#f59e0b; font-size:18px; font-weight:700; margin:0 0 10px;"><i class="fa-solid fa-triangle-exclamation"></i> Platform Role &amp; Independence Disclaimer</h3>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0;">
+          TIKUM is an independent secondary ticket marketplace. Unless explicitly verified and documented otherwise, TIKUM is <strong>not</strong> the primary ticketing issuer, event organizer, or promoter. We provide a safe, mediated marketplace for ticket holders who can no longer attend an event to resell their genuine tickets to other fans.
+        </p>
+      </div>
+
+      <!-- 3. Core Pillars -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:18px;">
+        <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:22px;">
+          <h3 style="color:#38bdf8; font-size:16px; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> Ticket Verification</h3>
+          <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+            Every listing requires genuine proof of purchase and a unique barcode identifier. Duplicate ticket postings are systematically rejected.
+          </p>
+        </div>
+        <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:22px;">
+          <h3 style="color:#10b981; font-size:16px; margin:0 0 8px;"><i class="fa-solid fa-lock"></i> Platform-Held Protection</h3>
+          <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+            Buyer payments are securely held by the platform and only disbursed to the seller after the event entry is completed without dispute.
+          </p>
+        </div>
+        <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:22px;">
+          <h3 style="color:#818cf8; font-size:16px; margin:0 0 8px;"><i class="fa-solid fa-people-arrows"></i> Event PIC On-Site</h3>
+          <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+            For select major events, dedicated Event PIC staff are on-site at venue gates to facilitate wristband redemptions and dispute evidence logging.
+          </p>
+        </div>
+      </div>
+    </div>
+  ` : `
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <!-- 1. Legal Entity & Brand Profile -->
+      <div style="background:#131d31; border:1px solid #10b981; border-radius:14px; padding:28px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <span style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; letter-spacing:0.5px; text-transform:uppercase;">Identitas Badan Usaha Resmi</span>
+          <span style="color:#64748b; font-size:13px;">TIKUM — Dioperasikan oleh PT SHINERVA PRAJNA TEJAS</span>
+        </div>
+        <h2 style="color:#f8fafc; font-size:22px; font-weight:800; margin:0 0 10px;">Tentang TIKUM &amp; PT SHINERVA PRAJNA TEJAS</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 16px;">
+          <strong>TIKUM</strong> (tikum.app) adalah marketplace tiket sekunder terverifikasi di Indonesia yang dioperasikan di bawah naungan <strong>PT SHINERVA PRAJNA TEJAS</strong>. TIKUM hadir untuk mengatasi maraknya penipuan tiket konser dan festival di media sosial dengan menyediakan ekosistem jual-beli tiket yang aman, transparan, dan terlindungi.
+        </p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+          <div>
+            <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Badan Hukum &amp; Alamat Terdaftar:</div>
+            <div style="color:#f8fafc; font-size:13px; font-weight:600;">PT SHINERVA PRAJNA TEJAS</div>
+            <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Jl. Pasirluyu No. 79<br>Bandung 40254, Indonesia</div>
+          </div>
+          <div>
+            <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Kontak Resmi &amp; Jam Layanan:</div>
+            <div style="color:#cbd5e1; font-size:13px; line-height:1.6;">
+              Email: <a href="mailto:support@tikum.app" style="color:#38bdf8; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
+              Telepon / WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
+              Jam Layanan: Senin – Minggu: 09:00 – 21:00 WIB
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Batasan Otoritas & Independensi -->
+      <div style="background:#131d31; border:1px solid #f59e0b; border-radius:14px; padding:28px;">
+        <h3 style="color:#f59e0b; font-size:18px; font-weight:700; margin:0 0 10px;"><i class="fa-solid fa-triangle-exclamation"></i> Batasan Otoritas &amp; Independensi Platform</h3>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0;">
+          TIKUM merupakan platform marketplace tiket sekunder pihak ketiga yang independen. Kecuali dinyatakan secara tertulis melalui kemitraan resmi, TIKUM <strong>bukan</strong> merupakan agen penjual tiket resmi primer (primary ticketing agent), promotor, atau penyelenggara acara. Kami memfasilitasi transaksi aman antar penggemar yang berhalangan hadir agar tiket dapat dimanfaatkan secara sah.
+        </p>
+      </div>
+
+      <!-- 3. Pilar Kepercayaan -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:18px;">
+        <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:22px;">
+          <h3 style="color:#38bdf8; font-size:16px; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> Verifikasi Bukti Tiket</h3>
+          <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+            Setiap pendaftaran tiket wajib menyertakan bukti pembelian e-voucher sah dan barcode unik. Pendaftaran duplikat dicegah otomatis oleh sistem.
+          </p>
+        </div>
+        <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:22px;">
+          <h3 style="color:#10b981; font-size:16px; margin:0 0 8px;"><i class="fa-solid fa-lock"></i> Penahanan Dana Bersyarat</h3>
+          <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+            Dana pembayaran pembeli diamankan di rekening penampungan dan baru dicairkan ke penjual setelah tiket berhasil dipakai tanpa sengketa.
+          </p>
+        </div>
+        <div style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:22px;">
+          <h3 style="color:#818cf8; font-size:16px; margin:0 0 8px;"><i class="fa-solid fa-people-arrows"></i> Tim Event PIC di Venue</h3>
+          <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
+            Untuk event besar terkonfirmasi, staf operasional Event PIC hadir di gerbang venue untuk membantu verifikasi fisik dan berita acara turnstile.
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const faqPairs = isEn ? [
+    { q: 'What is the relationship between TIKUM and PT SHINERVA PRAJNA TEJAS?', a: 'TIKUM is the official consumer-facing marketplace brand operated by PT SHINERVA PRAJNA TEJAS.' },
+    { q: 'Is TIKUM an official ticketing partner of the events?', a: 'TIKUM operates as an independent secondary marketplace facilitating fan-to-fan resales. We are not the primary promoter unless explicitly designated.' }
+  ] : [
+    { q: 'Apa hubungan antara TIKUM dan PT SHINERVA PRAJNA TEJAS?', a: 'TIKUM adalah merek dagang dan platform marketplace konsumen yang dimiliki dan dioperasikan resmi oleh PT SHINERVA PRAJNA TEJAS.' },
+    { q: 'Apakah TIKUM merupakan promotor atau ticketing resmi acara?', a: 'TIKUM beroperasi sebagai marketplace sekunder independen untuk memfasilitasi transaksi jual-beli antar penggemar secara aman, dan bukan merupakan promotor atau agen primer acara kecuali dicantumkan secara khusus.' }
+  ];
+
+  const html = renderTrustLayout({
+    lang,
+    title: isEn ? 'About TIKUM — Secondary Ticket Marketplace | PT SHINERVA PRAJNA TEJAS' : 'Tentang TIKUM — Marketplace Tiket Sekunder | PT SHINERVA PRAJNA TEJAS',
+    description: isEn ? 'Learn about TIKUM, the verified secondary ticket marketplace operated by PT SHINERVA PRAJNA TEJAS in Indonesia.' : 'Pelajari tentang TIKUM, marketplace tiket sekunder terverifikasi yang dioperasikan oleh PT SHINERVA PRAJNA TEJAS di Indonesia.',
+    canonicalPath: '/about',
+    h1: isEn ? 'About TIKUM & PT SHINERVA PRAJNA TEJAS' : 'Tentang TIKUM & PT SHINERVA PRAJNA TEJAS',
+    subtitle: isEn ? 'Pioneering transparent secondary ticketing infrastructure with verified authenticity and on-site support.' : 'Membangun ekosistem tiket sekunder terverifikasi di Indonesia dengan transparansi, perlindungan transaksi, dan pendampingan di venue.',
+    breadcrumbs: [
+      { name: isEn ? 'Home' : 'Beranda', url: '/' },
+      { name: isEn ? 'About Us' : 'Tentang Kami', url: '/about' }
+    ],
+    faqPairs,
+    contentHtml
+  });
+
+  res.type('html').send(html);
+});
+
+// -------------------------------------------------------------
+// 8. /fees — Platform Fees & Transparent Pricing Structure
+// -------------------------------------------------------------
+router.get('/fees', (req, res) => {
+  const isEn = (req.query.lang || '').toLowerCase() === 'en';
+  const lang = isEn ? 'en' : 'id';
+
+  const contentHtml = isEn ? `
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-receipt" style="color:#38bdf8;"></i> Transparent Fee Structure (No Hidden Fees)</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0 0 20px;">
+          TIKUM applies an open, itemized fee schedule calculated by our server-authoritative pricing engine. All components are clearly disclosed before checkout confirmation.
+        </p>
+
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:13.5px; text-align:left;">
+            <thead>
+              <tr style="border-bottom:2px solid #334155; color:#94a3b8;">
+                <th style="padding:12px;">Service Component</th>
+                <th style="padding:12px;">Rate / Rule</th>
+                <th style="padding:12px;">Operational Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Seller Listing Fee</td>
+                <td style="padding:12px; color:#10b981; font-weight:700;">Rp 0 (Free)</td>
+                <td style="padding:12px; color:#cbd5e1;">Sellers list tickets without upfront publication charges.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Buyer Platform Fee</td>
+                <td style="padding:12px; color:#38bdf8; font-weight:700;">6% (Min. Rp35,000, Max. Rp300,000)</td>
+                <td style="padding:12px; color:#cbd5e1;">Covers platform-held payment protection, ticket verification, and customer dispute guarantee.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Seller Service Fee</td>
+                <td style="padding:12px; color:#38bdf8; font-weight:700;">6% (Min. Rp35,000, Max. Rp300,000)</td>
+                <td style="padding:12px; color:#cbd5e1;">Deducted from gross proceeds upon successful post-event payout.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Maximum Markup Cap</td>
+                <td style="padding:12px; color:#f59e0b; font-weight:700;">Max +30% of Face Value</td>
+                <td style="padding:12px; color:#cbd5e1;">Prevents predatory price gouging and ensures fair market rates.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Minimum Ticket Price</td>
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Rp 500,000</td>
+                <td style="padding:12px; color:#cbd5e1;">Threshold to maintain curation quality for concert and festival tickets.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  ` : `
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-receipt" style="color:#38bdf8;"></i> Rincian Struktur Biaya Platform (Tanpa Biaya Tersembunyi)</h2>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin:0 0 20px;">
+          TIKUM menerapkan skema biaya transparan yang dihitung secara otoritatif di sisi server. Seluruh komponen biaya ditampilkan secara rinci sebelum pembeli menyelesaikan pemesanan.
+        </p>
+
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:13.5px; text-align:left;">
+            <thead>
+              <tr style="border-bottom:2px solid #334155; color:#94a3b8;">
+                <th style="padding:12px;">Komponen Layanan</th>
+                <th style="padding:12px;">Tarif / Ketentuan</th>
+                <th style="padding:12px;">Keterangan Operasional</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Biaya Pasang Listing Penjual</td>
+                <td style="padding:12px; color:#10b981; font-weight:700;">Rp 0 (Gratis)</td>
+                <td style="padding:12px; color:#cbd5e1;">Penjual dapat mendaftarkan tiket tanpa biaya awal di muka.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Biaya Perlindungan Pembeli (Buyer Fee)</td>
+                <td style="padding:12px; color:#38bdf8; font-weight:700;">6% (Min. Rp35.000, Maks. Rp300.000)</td>
+                <td style="padding:12px; color:#cbd5e1;">Mencakup penahanan dana aman (platform-held), verifikasi keaslian dokumen tiket, dan garansi refund jika tiket terkendala.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Biaya Layanan Penjual (Seller Fee)</td>
+                <td style="padding:12px; color:#38bdf8; font-weight:700;">6% (Min. Rp35.000, Maks. Rp300.000)</td>
+                <td style="padding:12px; color:#cbd5e1;">Dipotong dari hasil kotor penjualan saat pencairan bersih pasca-acara selesai.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Batas Markup Maksimum</td>
+                <td style="padding:12px; color:#f59e0b; font-weight:700;">Maksimal +30% dari Face Value</td>
+                <td style="padding:12px; color:#cbd5e1;">Mencegah lonjakan harga calo dan menjaga keadilan harga tiket bagi sesama penggemar.</td>
+              </tr>
+              <tr style="border-bottom:1px solid #1e293b;">
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Batas Harga Tiket Minimum</td>
+                <td style="padding:12px; color:#f8fafc; font-weight:700;">Rp 500.000 per tiket</td>
+                <td style="padding:12px; color:#cbd5e1;">Standar nominal minimum untuk memastikan kelayakan kurasi tiket konser dan festival.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const faqPairs = isEn ? [
+    { q: 'Are there any hidden administrative fees at checkout?', a: 'No. All applicable fees, including platform protection fees and any payment channel charges, are fully itemized before order confirmation.' },
+    { q: 'Does TIKUM take fees if the event is cancelled?', a: 'In the event of official cancellation or verified seller default, platform fees are covered under our full refund guarantee.' }
+  ] : [
+    { q: 'Apakah ada biaya administrasi tersembunyi saat checkout?', a: 'Tidak. Seluruh komponen biaya tertera secara transparan di rincian pesanan (/pay) sebelum konfirmasi pembayaran.' },
+    { q: 'Apakah biaya platform dikembalikan jika event dibatalkan?', a: 'Ya, apabila acara dibatalkan resmi oleh promotor atau terjadi kegagalan serah terima oleh penjual, dana dikembalikan penuh sesuai Kebijakan Refund.' }
+  ];
+
+  const html = renderTrustLayout({
+    lang,
+    title: isEn ? 'Platform Fees & Transparent Pricing Schedule | Tikum' : 'Struktur Biaya & Skema Harga Resmi | Tikum',
+    description: isEn ? 'Comprehensive breakdown of TIKUM platform fees: 6% buyer protection, 0 listing fee, and markup caps.' : 'Rincian lengkap biaya platform TIKUM: 6% proteksi pembeli, gratis pasang listing, dan batasan markup 30%.',
+    canonicalPath: '/fees',
+    h1: isEn ? 'Platform Fees & Pricing Transparency' : 'Struktur Harga & Biaya Layanan Resmi',
+    subtitle: isEn ? 'Transparent, itemized pricing without hidden markups or unexpected fees.' : 'Keterbukaan rincian tarif layanan, tanpa biaya tersembunyi atau pungutan tak terduga.',
+    breadcrumbs: [
+      { name: isEn ? 'Home' : 'Beranda', url: '/' },
+      { name: isEn ? 'Platform Fees' : 'Struktur Biaya', url: '/fees' }
+    ],
+    faqPairs,
+    contentHtml
+  });
+
+  res.type('html').send(html);
+});
+
+// -------------------------------------------------------------
+// 9. /seller-terms — Seller Obligations & Listing Requirements
+// -------------------------------------------------------------
+router.get('/seller-terms', (req, res) => {
+  const isEn = (req.query.lang || '').toLowerCase() === 'en';
+  const lang = isEn ? 'en' : 'id';
+
+  const contentHtml = isEn ? `
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-handshake" style="color:#10b981;"></i> Seller Obligations &amp; Listing Standards</h2>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:20px;">
+            <h3 style="color:#38bdf8; font-size:16px; margin:0 0 8px;">1. Ticket Authenticity Warranty</h3>
+            <p style="color:#cbd5e1; font-size:13.5px; line-height:1.6; margin:0;">
+              Sellers explicitly warrant that each ticket listed is genuine, valid for event entry, owned by the seller, and unencumbered by prior redemptions or duplicate listings.
+            </p>
+          </div>
+          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:20px;">
+            <h3 style="color:#f59e0b; font-size:16px; margin:0 0 8px;">2. Mandatory Ownership Evidence</h3>
+            <p style="color:#cbd5e1; font-size:13.5px; line-height:1.6; margin:0;">
+              Prior to approval, sellers must provide verifiable evidence: original ticketing confirmation, unredacted barcode identifiers, and seat assignment details.
+            </p>
+          </div>
+          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:20px;">
+            <h3 style="color:#10b981; font-size:16px; margin:0 0 8px;">3. Conditional Payout Schedule</h3>
+            <p style="color:#cbd5e1; font-size:13.5px; line-height:1.6; margin:0;">
+              Sales proceeds are held by the platform and disbursed to the seller after the event has concluded and a 24-hour review window has passed without turnstile gate disputes.
+            </p>
+          </div>
+          <div style="background:#0f172a; border:1px solid #ef4444; border-radius:10px; padding:20px;">
+            <h3 style="color:#f87171; font-size:16px; margin:0 0 8px;">4. Penalties for Invalid or Defaulted Tickets</h3>
+            <p style="color:#cbd5e1; font-size:13.5px; line-height:1.6; margin:0;">
+              If a seller fails to transfer a ticket or the ticket is rejected at the venue turnstile, the buyer is refunded 100%, the seller receives zero payout, and the seller account is subject to permanent suspension and legal escalation.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  ` : `
+    <div style="display:flex; flex-direction:column; gap:24px;">
+      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
+        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-handshake" style="color:#10b981;"></i> Kewajiban &amp; Standar Pendaftaran Tiket Penjual</h2>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:20px;">
+            <h3 style="color:#38bdf8; font-size:16px; margin:0 0 8px;">1. Jaminan Keaslian &amp; Hak Milik Tiket</h3>
+            <p style="color:#cbd5e1; font-size:13.5px; line-height:1.6; margin:0;">
+              Penjual menjamin bahwa tiket yang didaftarkan adalah tiket asli dari promotor resmi, sah untuk akses masuk ke venue, dimiliki langsung oleh penjual, dan tidak sedang didaftarkan atau dijual di tempat lain.
+            </p>
+          </div>
+          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:20px;">
+            <h3 style="color:#f59e0b; font-size:16px; margin:0 0 8px;">2. Bukti Kepemilikan Wajib</h3>
+            <p style="color:#cbd5e1; font-size:13.5px; line-height:1.6; margin:0;">
+              Sebelum listing diaktifkan, penjual wajib mengunggah bukti e-voucher resmi, bukti invoice pembelian, dan nomor barcode/booking reference yang jelas untuk verifikasi tim operasional.
+            </p>
+          </div>
+          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:20px;">
+            <h3 style="color:#10b981; font-size:16px; margin:0 0 8px;">3. Jadwal Pencairan Dana Bersyarat</h3>
+            <p style="color:#cbd5e1; font-size:13.5px; line-height:1.6; margin:0;">
+              Dana hasil penjualan ditahan secara aman di rekening penampungan dan baru dapat dicairkan ke rekening penjual setelah acara selesai serta masa tenggang verifikasi gerbang 1x24 jam berlalu tanpa adanya laporan sengketa.
+            </p>
+          </div>
+          <div style="background:#0f172a; border:1px solid #ef4444; border-radius:10px; padding:20px;">
+            <h3 style="color:#f87171; font-size:16px; margin:0 0 8px;">4. Sanksi Pembatalan &amp; Tiket Palsu</h3>
+            <p style="color:#cbd5e1; font-size:13.5px; line-height:1.6; margin:0;">
+              Apabila penjual gagal menyerahkan tiket atau tiket ditolak di gerbang acara (turnstile), pembeli berhak menerima pengembalian dana penuh 100%, pencairan penjual dibatalkan, dan akun penjual akan ditangguhkan permanen serta dilaporkan ke pihak berwajib.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const faqPairs = isEn ? [
+    { q: 'When do sellers receive payout after selling a ticket?', a: 'Payouts are approved and released following successful event entry and after a 24-hour dispute review window expires.' }
+  ] : [
+    { q: 'Kapan dana hasil penjualan ditransfer ke rekening penjual?', a: 'Pencairan dana disetujui dan ditransfer setelah acara selesai dan masa peninjauan sengketa 1x24 jam berakhir tanpa klaim gagal masuk.' }
+  ];
+
+  const html = renderTrustLayout({
+    lang,
+    title: isEn ? 'Seller Obligations & Listing Terms | Tikum' : 'Ketentuan & Kewajiban Penjual (Seller Terms) | Tikum',
+    description: isEn ? 'Rules, obligations, and payout terms for ticket sellers on Tikum secondary ticket marketplace.' : 'Aturan pendaftaran tiket, kewajiban keaslian, jadwal pencairan dana, dan sanksi penjual di Tikum.',
+    canonicalPath: '/seller-terms',
+    h1: isEn ? 'Seller Obligations & Listing Terms' : 'Ketentuan Penjual (Seller Terms & Obligations)',
+    subtitle: isEn ? 'Operational standards, authenticity warranties, and payout policies for ticket sellers.' : 'Standar operasional, jaminan keaslian tiket, dan ketentuan pencairan dana bagi penjual.',
+    breadcrumbs: [
+      { name: isEn ? 'Home' : 'Beranda', url: '/' },
+      { name: isEn ? 'Seller Terms' : 'Ketentuan Penjual', url: '/seller-terms' }
     ],
     faqPairs,
     contentHtml

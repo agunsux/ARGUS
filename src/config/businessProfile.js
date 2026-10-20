@@ -33,6 +33,22 @@ const businessProfile = {
   whatsappUrl: 'https://wa.me/6281299927378',
   emailUrl: 'mailto:support@tikum.app',
 
+  // Xendit Merchant Verification & Business Identity Attributes
+  businessLegalName: 'PT SHINERVA PRAJNA TEJAS',
+  businessTradingName: 'TIKUM',
+  businessBrandName: 'TIKUM',
+  businessEntityStatus: 'REGISTERED_PT',
+  businessWebsiteUrl: 'https://tikum.app/',
+  businessContactEmail: 'support@tikum.app',
+  businessContactPhone: '081299927378',
+  businessAddress: 'Jl. Pasirluyu No. 79, Bandung 40254, Indonesia',
+  legalDocumentStatus: {
+    aktaPendirian: 'OWNER_VERIFIED_PT_SHINERVA_PRAJNA_TEJAS',
+    nib: 'OWNER_VERIFIED_PT_SHINERVA_PRAJNA_TEJAS',
+    npwp: 'OWNER_VERIFIED_PT_SHINERVA_PRAJNA_TEJAS',
+    merchantAccountAlignment: 'PT_SHINERVA_PRAJNA_TEJAS_REQUIRED'
+  },
+
   // Official Business & Transactional Email Routing Identities (Cloudflare Email Routing)
   supportEmail: 'support@tikum.app',
   helloEmail: 'hello@tikum.app',
@@ -49,11 +65,21 @@ const businessProfile = {
     htmlBlock: '<strong>PT SHINERVA PRAJNA TEJAS</strong><br>Jl. Pasirluyu No. 79<br>Bandung 40254<br>Indonesia'
   },
   legalLinks: {
+    about: '/about',
+    howItWorks: '/how-it-works',
+    howToBuy: '/how-to-buy',
+    howToSell: '/how-to-sell',
     buyerGuide: '/panduan-pembeli',
+    buyerProtection: '/buyer-protection',
+    ticketVerification: '/ticket-verification',
+    fees: '/fees',
     checkout: '/pay',
     faq: '/faq',
     terms: '/terms',
+    sellerTerms: '/seller-terms',
     refundPolicy: '/refund-policy',
+    refunds: '/refunds',
+    disputes: '/disputes',
     contact: '/contact',
     privacy: '/privacy'
   }
@@ -62,16 +88,16 @@ const businessProfile = {
 function renderFooterHtml() {
   return `
   <footer class="site-footer" style="background: rgba(10, 15, 29, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 48px 24px 32px; margin-top: 60px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-    <div class="footer-container" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 40px;">
+    <div class="footer-container" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.4fr 1fr 1fr 1.2fr; gap: 32px;">
       <div class="footer-col footer-business">
         <div style="font-weight: 800; font-size: 16px; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
           <i class="fa-solid fa-shield-halved" style="color: #06b6d4;"></i> TIKUM — by PT SHINERVA PRAJNA TEJAS
         </div>
-        <p style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 12px; max-width: 380px;" data-i18n="footer.aboutBrand">
-          Marketplace tiket sekunder terverifikasi. Transaksi aman dengan perlindungan penahanan pembayaran bersyarat dan verifikasi keabsahan tiket.
+        <p style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 12px;" data-i18n="footer.aboutBrand">
+          Marketplace tiket sekunder terverifikasi di Indonesia. Transaksi aman dengan perlindungan penahanan pembayaran bersyarat dan verifikasi keabsahan tiket.
         </p>
         <div class="footer-address" style="color: #94a3b8; font-size: 13px; line-height: 1.6;">
-          <div style="font-weight: 700; color: #cbd5e1;" data-i18n="footer.operationalOffice">Kantor Operasional &amp; Surat:</div>
+          <div style="font-weight: 700; color: #cbd5e1;" data-i18n="footer.operationalOffice">Badan Usaha &amp; Alamat Operasional:</div>
           <div>${businessProfile.address.entity}</div>
           <div>${businessProfile.address.street}</div>
           <div>${businessProfile.address.city} ${businessProfile.address.postalCode}</div>
@@ -94,24 +120,41 @@ function renderFooterHtml() {
             <span style="color: #64748b;">WhatsApp:</span>
             <a href="${businessProfile.whatsappUrl}" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none; margin-left: 6px;"><i class="fa-brands fa-whatsapp"></i> ${businessProfile.phone}</a>
           </div>
+          <div style="color: #64748b; font-size: 12px; margin-top: 4px;">
+            Jam Operasional: Senin – Minggu: 09:00 – 21:00 WIB
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-col footer-trust-col">
+        <div style="font-weight: 700; color: #fff; margin-bottom: 12px; font-size: 14px;">Infrastruktur Kepercayaan</div>
+        <div class="footer-links" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+          <a href="/about" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-circle-info"></i> Tentang TIKUM</a>
+          <a href="/how-it-works" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-circle-nodes"></i> Cara Kerja Transaksi</a>
+          <a href="/how-to-buy" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-basket-shopping"></i> Panduan Pembeli</a>
+          <a href="/how-to-sell" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-tags"></i> Panduan Penjual</a>
+          <a href="/ticket-verification" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-qrcode"></i> Verifikasi Tiket</a>
+          <a href="/buyer-protection" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-shield-heart"></i> Perlindungan Pembeli</a>
+          <a href="/fees" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-receipt"></i> Struktur Biaya Platform</a>
         </div>
       </div>
 
       <div class="footer-col footer-links-col">
         <div style="font-weight: 700; color: #fff; margin-bottom: 12px; font-size: 14px;" data-i18n="footer.servicesAndLegal">Layanan &amp; Legalitas</div>
         <div class="footer-links" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-          <a href="/panduan-pembeli" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-shield-halved"></i> <span data-i18n="footer.buyerGuide">Panduan Pembeli &amp; Proteksi</span></a>
-          <a href="/pay" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-cash-register"></i> <span data-i18n="footer.checkout">Simulasi Checkout (/pay)</span></a>
-          <a href="${businessProfile.legalLinks.faq}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-circle-question"></i> <span data-i18n="footer.faq">FAQ / Pertanyaan Umum</span></a>
-          <a href="${businessProfile.legalLinks.terms}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-file-contract"></i> <span data-i18n="footer.terms">Syarat &amp; Ketentuan</span></a>
-          <a href="${businessProfile.legalLinks.refundPolicy}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="footer.refundPolicy">Kebijakan Pengembalian Dana (Refund)</span></a>
-          <a href="${businessProfile.legalLinks.contact}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contactUs">Kontak Kami</span></a>
-          <a href="${businessProfile.legalLinks.privacy}" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-user-shield"></i> <span data-i18n="footer.privacyPolicy">Kebijakan Privasi (UU PDP)</span></a>
+          <a href="/pay" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-cash-register"></i> Simulasi Checkout (/pay)</a>
+          <a href="/terms" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-file-contract"></i> Syarat &amp; Ketentuan</a>
+          <a href="/seller-terms" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-handshake"></i> Ketentuan Penjual</a>
+          <a href="/refund-policy" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-rotate-left"></i> Kebijakan Pengembalian (Refund)</a>
+          <a href="/disputes" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-scale-balanced"></i> Prosedur Sengketa (Disputes)</a>
+          <a href="/faq" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-circle-question"></i> FAQ / Pertanyaan Umum</a>
+          <a href="/privacy" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-user-shield"></i> Kebijakan Privasi (UU PDP)</a>
+          <a href="/contact" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-address-book"></i> Kontak Kami</a>
         </div>
       </div>
     </div>
     <div style="max-width: 1200px; margin: 32px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: #64748b;" data-i18n="footer.allRightsReserved">
-      &copy; 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — by PT SHINERVA PRAJNA TEJAS.
+      &copy; 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM adalah merek marketplace tiket sekunder berizin yang dioperasikan oleh PT SHINERVA PRAJNA TEJAS.
     </div>
   </footer>
   `;

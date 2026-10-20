@@ -90,8 +90,11 @@ Sitemap: ${origin}/sitemap.xml
       { loc: '/offers', priority: '0.8', changefreq: 'daily' },
       { loc: '/create', priority: '0.7', changefreq: 'monthly' },
       { loc: '/track', priority: '0.6', changefreq: 'daily' },
+      { loc: '/about', priority: '0.7', changefreq: 'monthly' },
+      { loc: '/fees', priority: '0.7', changefreq: 'weekly' },
       { loc: '/faq', priority: '0.7', changefreq: 'weekly' },
       { loc: '/terms', priority: '0.5', changefreq: 'monthly' },
+      { loc: '/seller-terms', priority: '0.6', changefreq: 'monthly' },
       { loc: '/refund-policy', priority: '0.5', changefreq: 'monthly' },
       { loc: '/privacy', priority: '0.5', changefreq: 'monthly' },
       { loc: '/contact', priority: '0.5', changefreq: 'monthly' }
@@ -110,7 +113,9 @@ Sitemap: ${origin}/sitemap.xml
     const trustPages = [
       { loc: '/how-it-works', priority: '0.8', changefreq: 'weekly' },
       { loc: '/buyer-protection', priority: '0.8', changefreq: 'weekly' },
+      { loc: '/panduan-pembeli', priority: '0.8', changefreq: 'weekly' },
       { loc: '/seller-protection', priority: '0.8', changefreq: 'weekly' },
+      { loc: '/panduan-penjual', priority: '0.8', changefreq: 'weekly' },
       { loc: '/ticket-verification', priority: '0.8', changefreq: 'weekly' },
       { loc: '/escrow', priority: '0.8', changefreq: 'weekly' },
       { loc: '/disputes', priority: '0.8', changefreq: 'weekly' }
