@@ -151,12 +151,191 @@ router.use('/api/discovery', ensureRegistryHydrated);
 // ==========================================
 
 /**
+ * GET /events/archive
+ * Concluded & Preserved Historical Events Archive Hub
+ */
+router.get('/events/archive', (req, res) => {
+  const { q, city, category } = req.query;
+  const now = new Date();
+  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1200');
+
+  let allEvents = canonicalRegistry.getAllEvents().filter(e => {
+    const evStatus = (e.status || '').toUpperCase();
+    const evLifecycle = (e.lifecycle_status || '').toUpperCase();
+    if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
+    const isPast = EventTemporalLifecycleEngine.isEventExpired(e, now) ||
+      ['COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
+      ['COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus) ||
+      e.archive_status === 'ARCHIVED';
+    return isPast;
+  });
+
+  if (q && q.trim()) {
+    const term = q.toLowerCase().trim();
+    allEvents = allEvents.filter(e => 
+      (e.canonical_name || '').toLowerCase().includes(term) ||
+      (e.venue_name || '').toLowerCase().includes(term) ||
+      (e.city || '').toLowerCase().includes(term)
+    );
+  }
+
+  if (city && city.trim()) {
+    const cTerm = city.toLowerCase().trim();
+    allEvents = allEvents.filter(e => (e.city || '').toLowerCase().includes(cTerm));
+  }
+
+  if (category && category.trim()) {
+    const catTerm = category.toUpperCase().trim();
+    allEvents = allEvents.filter(e => (e.event_type || e.category || '').toUpperCase() === catTerm);
+  }
+
+  // Deduplicate and enrich images
+  allEvents = deduplicateAndEnrichPublicEvents(allEvents);
+
+  // Sort descending by date (most recent first)
+  allEvents.sort((a, b) => (b.start_date || '0000-00-00').localeCompare(a.start_date || '0000-00-00'));
+
+  const itemsHtml = allEvents.map(e => {
+    const hasVerifiedImg = Boolean(e.image_url && e.is_fallback_image !== true && e.image_status !== 'FALLBACK' && e.image_status !== 'BROKEN');
+    const altText = `${e.canonical_name} — ${e.venue_name}, ${e.city}`.replace(/"/g, '&quot;');
+    const officialUrl = e.official_ticket_url || e.official_event_url || e.source_url || null;
+
+    return `
+      <div class="event-card-item event-archived-item" data-event-id="${e.event_id}" style="background:#131d31; border:1px solid #1e293b; border-radius:10px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden; opacity:0.92;">
+        <div>
+          <div class="catalog-card-media" style="position:relative; height:168px; margin:-20px -20px 14px -20px; border-bottom:1px solid #1e293b; overflow:hidden; background:#0b1120;">
+            ${hasVerifiedImg ? `
+              <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block; filter:grayscale(25%);" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+            ` : ''}
+            <div class="catalog-card-fallback" style="display:${hasVerifiedImg ? 'none' : 'flex'}; width:100%; height:100%; align-items:center; justify-content:center; flex-direction:column; gap:6px; background:linear-gradient(145deg,#131d31,#0b1120); color:#94a3b8; font-size:12px; padding:12px; text-align:center;">
+              <i class="fa-solid fa-calendar-check" style="font-size:20px; color:#64748b;"></i>
+              <span style="font-weight:600; color:#cbd5e1;">Arsip Event Selesai</span>
+              <span style="font-size:11px; color:#64748b;">Terverifikasi via Sumber Resmi</span>
+            </div>
+            <div style="position:absolute; top:10px; right:10px; background:rgba(15,23,42,0.85); border:1px solid #334155; border-radius:6px; padding:4px 8px; font-size:11px; color:#94a3b8; font-weight:600;">
+              <i class="fa-solid fa-box-archive"></i> SELESAI
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span class="badge badge-sm" style="background:#1e293b; color:#94a3b8;">${e.event_type || e.category}</span>
+            <span style="font-size:12px; color:#38bdf8;"><i class="fa-solid fa-location-dot"></i> ${e.city}</span>
+          </div>
+          <h3 style="font-size:18px; margin:6px 0; color:#f8fafc;"><a href="/events/${e.slug}" style="color:inherit; text-decoration:none;">${e.canonical_name}</a></h3>
+          <div style="font-size:13px; color:#94a3b8; margin-bottom:12px;">
+            <div><i class="fa-solid fa-calendar-day"></i> ${e.start_date || e.date}</div>
+            <div><i class="fa-solid fa-building"></i> ${e.venue_name}</div>
+          </div>
+        </div>
+        <div style="border-top:1px solid #1e293b; padding-top:14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div>
+            <span style="color:#94a3b8; font-size:12px;"><i class="fa-solid fa-calendar-check"></i> Acara Telah Terlaksana</span>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center;">
+            ${officialUrl ? `<a href="${officialUrl}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-sm btn-secondary" style="font-size:11px; padding:5px 8px;">Sumber Resmi</a>` : ''}
+            <a href="/events/${e.slug}" class="btn btn-sm btn-secondary" style="font-size:12px;"><i class="fa-solid fa-file-lines"></i> Detail Arsip</a>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arsip Event Selesai — Riwayat Konser &amp; Pertunjukan Terverifikasi | Tikum</title>
+  <meta name="description" content="Arsip dan dokumentasi konser musik, festival, dan acara langsung yang telah selesai di Indonesia. Seluruh data historis terverifikasi tetap dapat diakses publik di Tikum.">
+  <link rel="canonical" href="https://tikum.app/events/archive">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand">
+        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle" data-i18n="brand.subtitle">Pasar Tiket Event Terverifikasi</span>
+        </div>
+      </a>
+      <nav class="main-nav">
+        <a href="/events" class="nav-link active"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">Katalog Event</span></a>
+        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> <span data-i18n="nav.offers">Tawaran Tiket</span></a>
+        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
+        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="nav.track">Lacak Status</span></a>
+        <div class="nav-controls" style="display: inline-flex; gap: 8px; margin-left: 12px; align-items: center;">
+          <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 12px; font-weight: 700;">ID</button>
+          <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 12px;" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon"></i></button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top:40px; padding-bottom:60px;">
+    <div style="text-align:center; max-width:700px; margin:0 auto 24px;">
+      <div class="hero-pill"><i class="fa-solid fa-box-archive"></i> TIKUM HISTORICAL ARCHIVE</div>
+      <h1 style="font-size:32px; font-weight:800; letter-spacing:-0.5px; margin:14px 0;">Arsip Event yang Telah Selesai</h1>
+      <p style="color:#94a3b8; font-size:15px;">
+        Dokumentasi historis konser, festival musik, dan pertunjukan langsung yang telah terlaksana secara resmi di Indonesia.
+      </p>
+    </div>
+
+    <!-- Catalog Tabs: Upcoming vs Archive -->
+    <div style="display:flex; justify-content:center; gap:12px; margin-bottom:28px;">
+      <a href="/events" class="btn btn-secondary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-calendar-days"></i> Event Mendatang</a>
+      <a href="/events/archive" class="btn btn-primary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-box-archive"></i> Arsip Event Selesai</a>
+    </div>
+
+    <!-- Catalog Tabs: Upcoming vs Archive -->
+    <div style="display:flex; justify-content:center; gap:12px; margin-bottom:24px;">
+      <a href="/events" class="btn btn-primary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-calendar-days"></i> Event Mendatang</a>
+      <a href="/events/archive" class="btn btn-secondary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-box-archive"></i> Arsip Event Selesai</a>
+    </div>
+
+    <!-- Search Form -->
+    <form method="GET" action="/events/archive" style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:16px; margin-bottom:30px; display:flex; gap:12px; flex-wrap:wrap;">
+      <input type="text" name="q" value="${q || ''}" placeholder="Cari nama arsip event, musisi, atau tempat..." class="form-control" style="flex:2; min-width:200px;" />
+      <select name="city" class="form-control" style="flex:1; min-width:140px;">
+        <option value="">Semua Kota</option>
+        <option value="Jakarta" ${city === 'Jakarta' ? 'selected' : ''}>Jakarta</option>
+        <option value="Bandung" ${city === 'Bandung' ? 'selected' : ''}>Bandung</option>
+        <option value="Surabaya" ${city === 'Surabaya' ? 'selected' : ''}>Surabaya</option>
+        <option value="Tangerang" ${city === 'Tangerang' ? 'selected' : ''}>Tangerang</option>
+        <option value="Bali" ${city === 'Bali' ? 'selected' : ''}>Bali</option>
+      </select>
+      <select name="category" class="form-control" style="flex:1; min-width:140px;">
+        <option value="">Semua Kategori</option>
+        <option value="CONCERT" ${category === 'CONCERT' ? 'selected' : ''}>Konser</option>
+        <option value="FESTIVAL" ${category === 'FESTIVAL' ? 'selected' : ''}>Festival</option>
+        <option value="FOOTBALL" ${category === 'FOOTBALL' ? 'selected' : ''}>Sepak Bola</option>
+        <option value="COMEDY" ${category === 'COMEDY' ? 'selected' : ''}>Stand-Up Comedy</option>
+      </select>
+      <button type="submit" class="btn btn-cyan"><i class="fa-solid fa-magnifying-glass"></i> Filter</button>
+    </form>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">
+      ${itemsHtml.length > 0 ? itemsHtml : `<div style="grid-column:1/-1; text-align:center; padding:60px; color:#64748b;">Belum ada arsip event yang selesai atau sesuai filter pencarian.</div>`}
+    </div>
+  </main>
+
+  ${renderFooterHtml()}
+  <script src="/js/i18n.js"></script>
+</body>
+</html>`;
+
+  res.type('html').send(html);
+});
+
+/**
  * GET /events/:slug
  * High-performance SSR landing page with Schema.org JSON-LD,
  * separated Official Ticket Provider, and ARGUS Resale Inventory.
  */
 router.get('/events/:slug', (req, res, next) => {
   const slug = req.params.slug;
+  if (slug === 'archive' || slug === 'city' || slug === 'category') return next();
   const { include_past, scope } = req.query;
   const showAllOrPast = include_past === 'true' || scope === 'all' || scope === 'admin';
   const now = new Date();
@@ -185,9 +364,15 @@ router.get('/events/:slug', (req, res, next) => {
     const evStatus = (event.status || '').toUpperCase();
     const evLifecycle = (event.lifecycle_status || '').toUpperCase();
     const isCancelled = evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED';
-    const isVerified = event.is_verified === true &&
-      ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status);
-    const hasProvenance = Boolean(event.source_url && event.evidence_hash && event.verified_at);
+    const isPast = EventTemporalLifecycleEngine.isEventExpired(event, now) ||
+      ['COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
+      ['COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus) ||
+      event.archive_status === 'ARCHIVED';
+
+    const isVerified = isPast
+      ? (event.verification_status !== 'REJECTED' && event.verification_status !== 'UNVERIFIED')
+      : (event.is_verified === true && ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status));
+    const hasProvenance = Boolean(event.source_url || (event.sources && event.sources.length > 0));
 
     if (isCancelled || !isVerified || !hasProvenance) {
       return res.status(404).send(`<!DOCTYPE html>
@@ -420,6 +605,12 @@ router.get('/events', (req, res) => {
         <a href="/panduan-pembeli" class="btn btn-sm btn-secondary" style="font-size:12px; padding:6px 12px; text-decoration:none;"><i class="fa-solid fa-book-open"></i> Panduan Pembeli</a>
         <a href="/pay" class="btn btn-sm btn-primary" style="font-size:12px; padding:6px 12px; text-decoration:none;"><i class="fa-solid fa-cash-register"></i> Simulasi Checkout</a>
       </div>
+    </div>
+
+    <!-- Catalog Tabs: Upcoming vs Archive -->
+    <div style="display:flex; justify-content:center; gap:12px; margin-bottom:24px;">
+      <a href="/events" class="btn btn-primary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-calendar-days"></i> Event Mendatang</a>
+      <a href="/events/archive" class="btn btn-secondary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-box-archive"></i> Arsip Event Selesai</a>
     </div>
 
     <!-- Search Form -->
@@ -1266,15 +1457,19 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
     const evStatus = (event.status || '').toUpperCase();
     const evLifecycle = (event.lifecycle_status || '').toUpperCase();
     const isCancelled = evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED';
-    const isPast = !EventTemporalLifecycleEngine.isEventUpcoming(event, now);
-    const isFinished = ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
-                       ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus);
-    const isVerified = event.is_verified === true && event.public_visibility !== false &&
-      ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status);
-    const hasProvenance = Boolean(event.source_url && e_hasProvenance(event));
+    const isPast = EventTemporalLifecycleEngine.isEventExpired(event, now) ||
+      ['COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
+      ['COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus) ||
+      event.archive_status === 'ARCHIVED';
 
-    if (isCancelled || isPast || isFinished || !isVerified || !hasProvenance) {
-      return res.status(404).json({ error: 'Event is unverified, expired, or unavailable for public discovery', code: 'EVENT_NOT_AVAILABLE' });
+    const isVerified = isPast
+      ? (event.verification_status !== 'REJECTED' && event.verification_status !== 'UNVERIFIED')
+      : (event.is_verified === true && event.public_visibility !== false &&
+         ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status));
+    const hasProvenance = Boolean(event.source_url || (event.sources && event.sources.length > 0));
+
+    if (isCancelled || !isVerified || !hasProvenance) {
+      return res.status(404).json({ error: 'Event is unverified, cancelled, or unavailable for public discovery', code: 'EVENT_NOT_AVAILABLE' });
     }
   }
 
@@ -1286,7 +1481,8 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
   }
   event = { ...event, ...EventVisualProvenanceService.resolveCatalogEventImageProvenance(event, event.metadata || {}) };
 
-  const activeListings = getActiveResaleListings(event.event_id);
+  const isPastOrConcluded = !EventTemporalLifecycleEngine.isEventUpcoming(event, now);
+  const activeListings = isPastOrConcluded ? [] : getActiveResaleListings(event.event_id);
   const demands = demandCapture.getDemandForEvent(event.event_id);
 
   res.json({
@@ -1297,7 +1493,7 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
       listings: activeListings
     },
     demand_intelligence: {
-      waitlist_count: demands.length
+      waitlist_count: isPastOrConcluded ? 0 : demands.length
     }
   });
 });

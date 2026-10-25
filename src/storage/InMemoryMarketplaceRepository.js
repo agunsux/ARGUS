@@ -76,6 +76,29 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
 
   // Listings
   async createListing(listingData) {
+    const eventId = listingData.canonical_event_id || listingData.event_id;
+    if (eventId) {
+      let ev = null;
+      try {
+        const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
+        ev = canonicalRegistry.getEventById(eventId) || canonicalRegistry.getEventBySlug(eventId);
+      } catch (_) {}
+      if (!ev) {
+        try {
+          const { state } = require('../database');
+          ev = (state.events || []).find(e => e.id === eventId || e.event_id === eventId || e.slug === eventId);
+        } catch (_) {}
+      }
+      if (ev) {
+        const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
+        if (ev.lifecycle_status === 'COMPLETED' || ev.lifecycle_status === 'ARCHIVED' || ev.archive_status === 'ARCHIVED' || EventTemporalLifecycleEngine.isEventExpired(ev)) {
+          const err = new Error(`Cannot create listing for concluded or expired event '${eventId}'`);
+          err.code = 'EVENT_EXPIRED';
+          throw err;
+        }
+      }
+    }
+
     const id = listingData.id || `list-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const listing = {
       ...listingData,
@@ -152,6 +175,30 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
       err.code = 'LISTING_NOT_FOUND';
       throw err;
     }
+
+    const eventId = listing.canonical_event_id || listing.event_id;
+    if (eventId) {
+      let ev = null;
+      try {
+        const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
+        ev = canonicalRegistry.getEventById(eventId) || canonicalRegistry.getEventBySlug(eventId);
+      } catch (_) {}
+      if (!ev) {
+        try {
+          const { state } = require('../database');
+          ev = (state.events || []).find(e => e.id === eventId || e.event_id === eventId || e.slug === eventId);
+        } catch (_) {}
+      }
+      if (ev) {
+        const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
+        if (ev.lifecycle_status === 'COMPLETED' || ev.lifecycle_status === 'ARCHIVED' || ev.archive_status === 'ARCHIVED' || EventTemporalLifecycleEngine.isEventExpired(ev)) {
+          const err = new Error(`Cannot reserve tickets for concluded or expired event`);
+          err.code = 'EVENT_EXPIRED';
+          throw err;
+        }
+      }
+    }
+
     if (listing.status !== 'ACTIVE') {
       const err = new Error(`Listing '${listingId}' is not available for purchase (status: ${listing.status})`);
       err.code = 'LISTING_NOT_ACTIVE';

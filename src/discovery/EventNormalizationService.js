@@ -788,6 +788,45 @@ const KNOWN_CITIES = {
 
 class EventNormalizationService {
   /**
+   * Normalizes a URL by stripping tracking parameters, query clutter, hash fragments,
+   * protocol variations, www prefix, and trailing slashes.
+   */
+  static normalizeUrl(rawUrl) {
+    if (!rawUrl) return '';
+    try {
+      let u = String(rawUrl).trim();
+      if (!u) return '';
+      const hasProto = /^https?:\/\//i.test(u);
+      const urlObj = new URL(hasProto ? u : `https://${u}`);
+      
+      const trackingParams = new Set([
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+        'fbclid', 'gclid', 'ref', 'source', 'campaign', 'affiliate_id', 'trk',
+        'spm', 'mc_cid', 'mc_eid', 'igshid', '_ga', '_gl', 'open_external_browser'
+      ]);
+
+      for (const key of Array.from(urlObj.searchParams.keys())) {
+        if (trackingParams.has(key.toLowerCase()) || key.toLowerCase().startsWith('utm_')) {
+          urlObj.searchParams.delete(key);
+        }
+      }
+
+      const pathname = urlObj.pathname.replace(/\/+$/, '');
+      const host = urlObj.hostname.toLowerCase().replace(/^www\./, '');
+      const search = urlObj.searchParams.toString();
+      return `${host}${pathname}${search ? '?' + search : ''}`.toLowerCase();
+    } catch (_) {
+      return String(rawUrl)
+        .trim()
+        .toLowerCase()
+        .split('#')[0]
+        .split('?')[0]
+        .replace(/^https?:\/\/(?:www\.)?/, '')
+        .replace(/\/+$/, '');
+    }
+  }
+
+  /**
    * Cleans title of tournament/sponsor prefixes and noise.
    * e.g., "BRI Liga 1: Persib Bandung vs Persija Jakarta (Matchday 28)"
    * -> "Persib Bandung vs Persija Jakarta"

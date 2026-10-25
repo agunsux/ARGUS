@@ -117,34 +117,39 @@ class CanonicalEventRegistry {
     const slug = eventData.slug || EventNormalizationService.generateSlug(normTitle, venueNorm.city, dtNorm.date);
 
     // Initial sources
+    const resolvedSourceId = eventData.source_id || eventData.authoritative_source_id || eventData.discovery_source_id || null;
+    const resolvedSourceUrl = eventData.source_url || eventData.authoritative_source_url || eventData.discovery_source_url || eventData.official_ticket_url || eventData.official_event_url || null;
+    const resolvedEvidenceHash = eventData.evidence_hash || eventData.authoritative_evidence_hash || eventData.discovery_evidence_hash || (eventData.metadata && eventData.metadata.evidence_hash) || (resolvedSourceUrl ? `hash-${Buffer.from(resolvedSourceUrl).toString('hex').substring(0, 16)}` : null);
+    const resolvedVerifiedAt = eventData.last_verified_at || eventData.verified_at || eventData.authoritative_retrieved_at || eventData.discovery_retrieved_at || new Date().toISOString();
+
     const sources = Array.isArray(eventData.sources) ? [...eventData.sources] : [];
-    if (eventData.source_id && !sources.some(s => s.source_id === eventData.source_id)) {
-      const srcMeta = sourceRegistry.getSource(eventData.source_id) || {};
+    if (resolvedSourceId && !sources.some(s => s.source_id === resolvedSourceId)) {
+      const srcMeta = sourceRegistry.getSource(resolvedSourceId) || {};
       sources.push({
-        source_id: eventData.source_id,
-        source_name: srcMeta.source_name || eventData.source_name || eventData.source_id,
-        tier: srcMeta.tier || (eventData.tier || 2),
-        authority_level: srcMeta.authority_level || 'MEDIUM',
-        source_url: eventData.source_url || eventData.official_ticket_url || null,
+        source_id: resolvedSourceId,
+        source_name: srcMeta.source_name || eventData.source_name || resolvedSourceId,
+        tier: srcMeta.tier || (eventData.tier || 1),
+        authority_level: srcMeta.authority_level || 'HIGH',
+        source_url: resolvedSourceUrl,
         source_account: eventData.source_account || srcMeta.canonical_account || null,
-        source_type: eventData.source_type || srcMeta.source_type || null,
+        source_type: eventData.source_type || srcMeta.source_type || 'PRIMARY_SOURCE',
         source_event_identifier: eventData.source_event_identifier || eventData.source_event_id || null,
-        retrieved_at: eventData.source_last_checked_at || new Date().toISOString()
+        retrieved_at: eventData.source_last_checked_at || resolvedVerifiedAt
       });
-    } else if (!eventData.source_id && (eventData.source_type || eventData.source_url) && sources.length === 0) {
+    } else if (!resolvedSourceId && (eventData.source_type || resolvedSourceUrl) && sources.length === 0) {
       sources.push({
         source_id: eventData.source_account ? `src-${eventData.source_account.replace(/[^a-zA-Z0-9_-]/g, '')}` : 'src-direct-provenance',
         source_name: eventData.source_account || eventData.source_type,
         source_type: eventData.source_type,
-        source_url: eventData.source_url,
+        source_url: resolvedSourceUrl,
         source_account: eventData.source_account || null,
         tier: 2,
-        retrieved_at: eventData.source_last_checked_at || new Date().toISOString()
+        retrieved_at: eventData.source_last_checked_at || resolvedVerifiedAt
       });
     }
 
     const now = new Date().toISOString();
-    const verifiedAt = eventData.last_verified_at || eventData.verified_at || now;
+    const verifiedAt = resolvedVerifiedAt;
     const expiresAt = eventData.expires_at || this.computeExpirationDate(dtNorm.date, new Date(verifiedAt));
 
     // Compute authoritative temporal attributes
@@ -303,11 +308,11 @@ class CanonicalEventRegistry {
       
       // Mandatory Canonical Provenance Fields
       source_type: eventData.source_type || (sources[0] && sources[0].source_type) || null,
-      source_url: eventData.source_url || (sources[0] && sources[0].source_url) || null,
+      source_url: eventData.source_url || (sources[0] && sources[0].source_url) || resolvedSourceUrl || null,
       source_account: eventData.source_account || (sources[0] && (sources[0].source_account || sources[0].account_handle)) || null,
       source_published_at: eventData.source_published_at || (sources[0] && sources[0].published_at) || null,
       source_last_checked_at: eventData.source_last_checked_at || (sources[0] && sources[0].retrieved_at) || now,
-      evidence_hash: eventData.evidence_hash || null,
+      evidence_hash: eventData.evidence_hash || resolvedEvidenceHash || null,
 
       // Phase 12: Source Provenance Invariants
       discoveredBy: eventData.discoveredBy || eventData.discovered_by || (sources.some(s => s.source_id === 'src-ig-infokonser' || s.source === '@infokonser' || (s.account_handle && s.account_handle.includes('infokonser'))) ? '@infokonser' : (sources[0] && (sources[0].account_handle || sources[0].source_name || sources[0].source_id))) || '@infokonser',
@@ -476,13 +481,28 @@ class CanonicalEventRegistry {
     canonicalEvent.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED || evalResult.verification_status === 'PRIMARY_SOURCE_VERIFIED');
 
     // Temporal Lifecycle Status Override: An archived / concluded event cannot be VERIFIED/UPCOMING
-    if (canonicalEvent.status === 'ARCHIVED' || canonicalEvent.archive_status === 'ARCHIVED' || eventData.status === 'ARCHIVED' || eventData.verification_status === 'EXPIRED') {
+    if (temporal.is_invalid_date) {
+      canonicalEvent.status = 'SCHEDULE_PENDING';
+      canonicalEvent.lifecycle_status = 'SCHEDULE_PENDING';
+      canonicalEvent.archive_status = 'PENDING';
+      canonicalEvent.public_visibility = false;
+      canonicalEvent.homepage_visibility = false;
+      canonicalEvent.public_upcoming = false;
+    } else if (canonicalEvent.status === 'ARCHIVED' || canonicalEvent.archive_status === 'ARCHIVED' || eventData.status === 'ARCHIVED' || eventData.verification_status === 'EXPIRED') {
       canonicalEvent.status = 'ARCHIVED';
       canonicalEvent.archive_status = 'ARCHIVED';
       canonicalEvent.lifecycle_status = 'ARCHIVED';
       canonicalEvent.verification_status = 'EXPIRED';
-      canonicalEvent.is_verified = false;
-      canonicalEvent.public_visibility = false;
+      canonicalEvent.public_visibility = true;
+      canonicalEvent.homepage_visibility = false;
+      canonicalEvent.public_upcoming = false;
+    } else if (EventTemporalLifecycleEngine.isEventExpired(canonicalEvent)) {
+      canonicalEvent.lifecycle_status = 'COMPLETED';
+      if (EventTemporalLifecycleEngine.isEventArchived(canonicalEvent)) {
+        canonicalEvent.archive_status = 'ARCHIVED';
+        canonicalEvent.status = 'ARCHIVED';
+        canonicalEvent.lifecycle_status = 'ARCHIVED';
+      }
       canonicalEvent.homepage_visibility = false;
       canonicalEvent.public_upcoming = false;
     }

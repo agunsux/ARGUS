@@ -258,6 +258,24 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       }
       return this.fallbackRepo.createListing(listingData);
     }
+
+    const eventId = listingData.canonical_event_id || listingData.event_id;
+    if (eventId) {
+      const evRes = await this.query(
+        'SELECT id, lifecycle_status, archive_status, start_date, end_date, end_datetime, timezone FROM canonical_events WHERE id = $1',
+        [eventId]
+      );
+      if (evRes.rows.length > 0) {
+        const ev = evRes.rows[0];
+        const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
+        if (ev.lifecycle_status === 'COMPLETED' || ev.lifecycle_status === 'ARCHIVED' || ev.archive_status === 'ARCHIVED' || EventTemporalLifecycleEngine.isEventExpired(ev)) {
+          const err = new Error(`Cannot create listing for concluded or expired event '${eventId}'`);
+          err.code = 'EVENT_EXPIRED';
+          throw err;
+        }
+      }
+    }
+
     const id = listingData.id || listingData.listing_id || `list-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
       INSERT INTO marketplace_listings (
@@ -357,6 +375,29 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       }
       return this.fallbackRepo.atomicReserveInventory(listingId, requestedQty);
     }
+
+    const checkListing = await this.query(
+      `SELECT l.id, l.status, l.metadata, l.canonical_event_id, e.lifecycle_status, e.archive_status, e.start_date, e.end_date, e.end_datetime, e.timezone
+       FROM marketplace_listings l
+       LEFT JOIN canonical_events e ON e.id = l.canonical_event_id
+       WHERE l.id = $1`,
+      [listingId]
+    );
+    if (checkListing.rows.length === 0) {
+      const err = new Error(`Listing '${listingId}' not found`);
+      err.code = 'LISTING_NOT_FOUND';
+      throw err;
+    }
+    const currentListing = checkListing.rows[0];
+    if (currentListing.lifecycle_status) {
+      const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
+      if (currentListing.lifecycle_status === 'COMPLETED' || currentListing.lifecycle_status === 'ARCHIVED' || currentListing.archive_status === 'ARCHIVED' || EventTemporalLifecycleEngine.isEventExpired(currentListing)) {
+        const err = new Error(`Cannot reserve tickets for concluded or expired event`);
+        err.code = 'EVENT_EXPIRED';
+        throw err;
+      }
+    }
+
     const req = Math.max(1, parseInt(requestedQty, 10) || 1);
 
     const sql = `

@@ -44,7 +44,9 @@ const LIFECYCLE_STATUS = {
   ARCHIVED_WITH_OPEN_OPERATIONS: 'ARCHIVED_WITH_OPEN_OPERATIONS',
   CANCELLED: 'CANCELLED',
   POSTPONED: 'POSTPONED',
-  EXPIRED: 'EXPIRED'
+  EXPIRED: 'EXPIRED',
+  SCHEDULE_PENDING: 'SCHEDULE_PENDING',
+  UNVERIFIED_DATE: 'UNVERIFIED_DATE'
 };
 
 const TERMINAL_ORDER_STATUSES = new Set([
@@ -161,8 +163,17 @@ class EventTemporalLifecycleEngine {
     if (startDate && startDate.includes('T')) {
       startDate = startDate.split('T')[0];
     }
-    if (!startDate) {
-      startDate = new Date().toISOString().substring(0, 10);
+    const isValidStartDate = Boolean(startDate && !isNaN(new Date(startDate).getTime()) && String(startDate).trim().length >= 10);
+    if (!isValidStartDate) {
+      return {
+        event_start_at: null,
+        event_end_at: null,
+        event_timezone: timezone,
+        archive_at: null,
+        start_date: null,
+        end_date: null,
+        is_invalid_date: true
+      };
     }
 
     let startTime = eventData.start_time || eventData.time;
@@ -330,8 +341,14 @@ class EventTemporalLifecycleEngine {
       }
       return LIFECYCLE_STATUS.POSTPONED;
     }
+    if (rawStatus === LIFECYCLE_STATUS.SCHEDULE_PENDING || rawStatus === LIFECYCLE_STATUS.UNVERIFIED_DATE) {
+      return rawStatus;
+    }
 
     const temporal = this.computeTemporalAttributes(event);
+    if (temporal.is_invalid_date || !temporal.event_start_at || !temporal.event_end_at) {
+      return LIFECYCLE_STATUS.SCHEDULE_PENDING;
+    }
     const nowMs = now.getTime();
     const startMs = new Date(temporal.event_start_at).getTime();
     const endMs = new Date(temporal.event_end_at).getTime();
@@ -380,10 +397,13 @@ class EventTemporalLifecycleEngine {
   static isEventExpired(event, now = new Date()) {
     if (!event) return false;
     const rawStatus = (event.status || event.lifecycle_status || '').toUpperCase();
-    if (rawStatus === 'CANCELLED') {
+    if (rawStatus === 'CANCELLED' || rawStatus === 'COMPLETED' || rawStatus === 'ARCHIVED' || rawStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS' || rawStatus === 'EXPIRED') {
       return true;
     }
     const temporal = this.computeTemporalAttributes(event);
+    if (temporal.is_invalid_date || !temporal.event_end_at) {
+      return false;
+    }
     const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
     const endMs = new Date(temporal.event_end_at).getTime();
     if (nowMs > endMs) return true;
@@ -409,6 +429,9 @@ class EventTemporalLifecycleEngine {
   static isEventArchived(event, now = new Date()) {
     if (!event) return false;
     const temporal = this.computeTemporalAttributes(event);
+    if (temporal.is_invalid_date || !temporal.archive_at) {
+      return false;
+    }
     const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
     const archiveMs = new Date(temporal.archive_at).getTime();
     if (nowMs >= archiveMs) return true;
@@ -435,12 +458,17 @@ class EventTemporalLifecycleEngine {
     if (!event) return false;
 
     const rawStatus = (event.status || event.lifecycle_status || '').toUpperCase();
-    if (rawStatus === 'CANCELLED' || rawStatus === 'DIBATALKAN' || rawStatus === 'POSTPONED') {
+    if (rawStatus === 'CANCELLED' || rawStatus === 'DIBATALKAN' || rawStatus === 'POSTPONED' ||
+        rawStatus === 'SCHEDULE_PENDING' || rawStatus === 'UNVERIFIED_DATE' ||
+        rawStatus === 'COMPLETED' || rawStatus === 'ARCHIVED' || rawStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS' || rawStatus === 'EXPIRED') {
       return false;
     }
 
     // Compute canonical end timestamp
     const temporal = this.computeTemporalAttributes(event);
+    if (temporal.is_invalid_date || !temporal.event_end_at) {
+      return false;
+    }
     const endMs = new Date(temporal.event_end_at).getTime();
     const nowMs = now.getTime();
 
@@ -462,6 +490,9 @@ class EventTemporalLifecycleEngine {
   static getHomepageTemporalWindow(event, now = new Date()) {
     if (!event) return 'EXPIRED';
     const temporal = this.computeTemporalAttributes(event);
+    if (temporal.is_invalid_date || !temporal.event_start_at || !temporal.event_end_at) {
+      return 'EXPIRED';
+    }
     const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
     const startMs = new Date(temporal.event_start_at).getTime();
     const endMs = new Date(temporal.event_end_at).getTime();

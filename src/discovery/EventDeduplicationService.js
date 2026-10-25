@@ -55,8 +55,9 @@ class EventDeduplicationService {
   static buildDeterministicKey(event) {
     const normName = EventNormalizationService.normalizeTitle(event.canonical_name || event.name || event.title).toLowerCase().trim();
     const date = event.start_date || (event.start_datetime ? event.start_datetime.substring(0, 10) : event.date) || '';
-    const venue = event.venue_id || (event.venue_name || event.venue || '').toLowerCase().trim();
-    const city = (event.city || event.venue_city || '').toLowerCase().trim();
+    const vNorm = EventNormalizationService.normalizeVenue(event.venue_name || event.venue, event.city || event.venue_city);
+    const venue = (vNorm.venue_id || event.venue_id || vNorm.venue_name || event.venue_name || event.venue || '').toLowerCase().trim();
+    const city = (vNorm.city || event.city || event.venue_city || '').toLowerCase().trim();
     return `${normName}::${venue}::${city}::${date}`;
   }
 
@@ -571,8 +572,7 @@ function hasConflictingModifiers(titleA, titleB) {
 }
 
 function normalizeUrl(u) {
-  if (!u) return '';
-  return String(u).trim().toLowerCase().split('?')[0].split('#')[0].replace(/^https?:\/\/(?:www\.)?/, '').replace(/\/$/, '');
+  return EventNormalizationService.normalizeUrl(u);
 }
 
 module.exports = {
