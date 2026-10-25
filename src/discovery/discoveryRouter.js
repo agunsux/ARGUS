@@ -372,7 +372,7 @@ router.get('/events/:slug', (req, res, next) => {
     const isVerified = isPast
       ? (event.verification_status !== 'REJECTED' && event.verification_status !== 'UNVERIFIED')
       : (event.is_verified === true && ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status));
-    const hasProvenance = Boolean(event.source_url || (event.sources && event.sources.length > 0));
+    const hasProvenance = isPast || Boolean(event.source_url || event.official_event_url || (event.sources && event.sources.length > 0) || (event.metadata && event.metadata.seeded_at));
 
     if (isCancelled || !isVerified || !hasProvenance) {
       return res.status(404).send(`<!DOCTYPE html>
@@ -1466,7 +1466,7 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
       ? (event.verification_status !== 'REJECTED' && event.verification_status !== 'UNVERIFIED')
       : (event.is_verified === true && event.public_visibility !== false &&
          ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status));
-    const hasProvenance = Boolean(event.source_url || (event.sources && event.sources.length > 0));
+    const hasProvenance = isPast || Boolean(event.source_url || event.official_event_url || (event.sources && event.sources.length > 0) || (event.metadata && event.metadata.seeded_at));
 
     if (isCancelled || !isVerified || !hasProvenance) {
       return res.status(404).json({ error: 'Event is unverified, cancelled, or unavailable for public discovery', code: 'EVENT_NOT_AVAILABLE' });
