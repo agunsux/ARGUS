@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS canonical_events (
   canonical_name VARCHAR(255) NOT NULL,
   event_type VARCHAR(64) NOT NULL DEFAULT 'CONCERT',
   category VARCHAR(64) DEFAULT 'CONCERT',
-  start_date DATE NOT NULL,
+  start_date DATE,
   start_datetime TIMESTAMPTZ,
   end_date DATE,
   end_datetime TIMESTAMPTZ,

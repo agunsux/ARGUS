@@ -34,7 +34,7 @@ const CANONICAL_EVENT_SELECT_FIELDS = `
 class PostgresCatalogRepository extends CatalogRepository {
   constructor(options = {}) {
     super();
-    this.connectionString = options.connectionString || process.env.DATABASE_URL;
+    this.connectionString = options.connectionString || process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL;
     this.readOnly = options.readOnly === true || process.env.ARGUS_DB_READ_ONLY === 'true';
     this.skipMigrations = options.skipMigrations === true || this.readOnly || process.env.ARGUS_SKIP_MIGRATIONS === 'true';
     this.pool = null;

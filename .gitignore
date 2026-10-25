@@ -50,3 +50,5 @@ data/
 .env*
 .neon
 docs-private/
+supabase/.temp/
+

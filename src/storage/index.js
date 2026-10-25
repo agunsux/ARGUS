@@ -54,17 +54,18 @@ let activeMoneyRepo = null;
 let activeUserRepo = null;
 
 function resolveDatabaseTarget() {
+  const effectiveUrl = process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL || null;
   if (isTestRuntime()) {
     // In test mode: strictly default to InMemory UNLESS TEST_DATABASE_URL or TEST_DATABASE_SCHEMA is set!
     if (process.env.TEST_DATABASE_URL) {
       return { connectionString: process.env.TEST_DATABASE_URL, schema: process.env.TEST_DATABASE_SCHEMA || null };
     }
-    if (process.env.TEST_DATABASE_SCHEMA && process.env.DATABASE_URL) {
-      return { connectionString: process.env.DATABASE_URL, schema: process.env.TEST_DATABASE_SCHEMA };
+    if (process.env.TEST_DATABASE_SCHEMA && effectiveUrl) {
+      return { connectionString: effectiveUrl, schema: process.env.TEST_DATABASE_SCHEMA };
     }
     return null;
   }
-  return process.env.DATABASE_URL ? { connectionString: process.env.DATABASE_URL, schema: null } : null;
+  return effectiveUrl ? { connectionString: effectiveUrl, schema: null } : null;
 }
 
 function isProductionRuntime() {

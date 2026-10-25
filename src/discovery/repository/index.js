@@ -42,7 +42,7 @@ function getCatalogRepository(forceNew = false) {
     return activeRepository;
   }
 
-  if (process.env.DATABASE_URL) {
+  if (process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL) {
     activeRepository = new PostgresCatalogRepository();
   } else {
     activeRepository = new InMemoryCatalogRepository();

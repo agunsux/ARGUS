@@ -46,7 +46,7 @@ class DemandCaptureService {
     if (process.env.NODE_ENV === 'test') {
       return false;
     }
-    return Boolean(process.env.DATABASE_URL || process.env.NODE_ENV === 'production' || process.env.VERCEL);
+    return Boolean(process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL || process.env.NODE_ENV === 'production' || process.env.VERCEL);
   }
 
   /**
@@ -56,7 +56,7 @@ class DemandCaptureService {
     if (this.pool) {
       return this.pool;
     }
-    const rawConn = process.env.DATABASE_URL;
+    const rawConn = process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL;
     if (!rawConn || typeof rawConn !== 'string' || !rawConn.trim()) {
       return null;
     }

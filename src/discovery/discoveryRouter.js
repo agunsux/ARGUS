@@ -128,7 +128,7 @@ function getActiveResaleListings(eventId) {
 let hydrationPromise = null;
 async function ensureRegistryHydrated(req, res, next) {
   const needsHydration = canonicalRegistry.getAllEvents().length === 0 ||
-    (!canonicalRegistry._hydratedFromRepo && Boolean(process.env.DATABASE_URL) && process.env.NODE_ENV !== 'test');
+    (!canonicalRegistry._hydratedFromRepo && Boolean(process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL) && process.env.NODE_ENV !== 'test');
   if (needsHydration) {
     if (!hydrationPromise) {
       hydrationPromise = canonicalRegistry.hydrateFromRepository().finally(() => {

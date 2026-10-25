@@ -14,7 +14,7 @@ const { assertTestDatabaseIsolation } = require('./testIsolation');
 class PostgresMoneyRepository extends MoneyRepository {
   constructor(options = {}) {
     super();
-    this.connectionString = options.connectionString || process.env.DATABASE_URL;
+    this.connectionString = options.connectionString || process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL;
     this.pool = null;
     this.fallbackRepo = new InMemoryMoneyRepository();
     this.degraded = false;

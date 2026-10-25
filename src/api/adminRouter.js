@@ -1011,7 +1011,7 @@ router.get('/overview', requireAdmin, async (req, res) => {
       meta: {
         generatedAt: nowIso,
         dataState: 'OK',
-        persistence: (isProductionRuntime() || Boolean(process.env.DATABASE_URL)) ? 'POSTGRES' : 'IN_MEMORY'
+        persistence: (isProductionRuntime() || Boolean(process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL)) ? 'POSTGRES' : 'IN_MEMORY'
       },
       timestamp: nowIso
     });

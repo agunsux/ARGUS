@@ -20,7 +20,7 @@ const DEFAULT_HASH = '$2b$12$4S3malXpyvpXvygwPeNE1.Yc6W2iP9APUve9Gi1EqG3Jt39bDUZ
 class PostgresUserRepository extends UserRepository {
   constructor(options = {}) {
     super();
-    this.connectionString = options.connectionString || process.env.DATABASE_URL;
+    this.connectionString = options.connectionString || process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL;
     this.pool = null;
     this.fallbackRepo = new InMemoryUserRepository();
     this.degraded = false;
