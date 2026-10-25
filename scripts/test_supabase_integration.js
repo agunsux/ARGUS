@@ -35,6 +35,7 @@ if (!targetUrl && fs.existsSync('.env.local')) {
         try {
           const u = new URL(val);
           u.searchParams.delete('channel_binding');
+          u.searchParams.delete('sslmode');
           val = u.toString();
         } catch (_) {}
         targetUrl = val;

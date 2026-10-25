@@ -58,19 +58,19 @@ class PostgresUserRepository extends UserRepository {
         let cleanConnStr = this.connectionString.trim();
         if (cleanConnStr.startsWith('"') && cleanConnStr.endsWith('"')) cleanConnStr = cleanConnStr.slice(1, -1);
         if (cleanConnStr.startsWith("'") && cleanConnStr.endsWith("'")) cleanConnStr = cleanConnStr.slice(1, -1);
-        if (cleanConnStr.includes('channel_binding=')) {
-          try {
-            const u = new URL(cleanConnStr);
-            u.searchParams.delete('channel_binding');
-            cleanConnStr = u.toString();
-          } catch (_) {}
-        }
+        try {
+          const u = new URL(cleanConnStr);
+          u.searchParams.delete('channel_binding');
+          u.searchParams.delete('sslmode');
+          cleanConnStr = u.toString();
+        } catch (_) {}
+
+        const isLocalhost = cleanConnStr.includes('localhost') || cleanConnStr.includes('127.0.0.1');
+        const ssl = isLocalhost ? false : { rejectUnauthorized: false };
 
         this.pool = new Pool({
           connectionString: cleanConnStr,
-          ssl: cleanConnStr.includes('sslmode=') || cleanConnStr.includes('neon.tech')
-            ? { rejectUnauthorized: false }
-            : false,
+          ssl,
           max: 10,
           idleTimeoutMillis: process.env.NODE_ENV === 'test' ? 500 : 30000,
           connectionTimeoutMillis: 10000

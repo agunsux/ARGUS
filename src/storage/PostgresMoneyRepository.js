@@ -52,13 +52,12 @@ class PostgresMoneyRepository extends MoneyRepository {
         let cleanConnStr = this.connectionString.trim();
         if (cleanConnStr.startsWith('"') && cleanConnStr.endsWith('"')) cleanConnStr = cleanConnStr.slice(1, -1);
         if (cleanConnStr.startsWith("'") && cleanConnStr.endsWith("'")) cleanConnStr = cleanConnStr.slice(1, -1);
-        if (cleanConnStr.includes('channel_binding=')) {
-          try {
-            const u = new URL(cleanConnStr);
-            u.searchParams.delete('channel_binding');
-            cleanConnStr = u.toString();
-          } catch (_) {}
-        }
+        try {
+          const u = new URL(cleanConnStr);
+          u.searchParams.delete('channel_binding');
+          u.searchParams.delete('sslmode');
+          cleanConnStr = u.toString();
+        } catch (_) {}
 
         const isLocalhost = cleanConnStr.includes('localhost') || cleanConnStr.includes('127.0.0.1');
         const ssl = isLocalhost ? undefined : { rejectUnauthorized: false };
