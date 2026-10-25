@@ -407,7 +407,20 @@ class MarketplaceOrderService {
    * @PERSISTENCE_BOUNDARY
    */
   static async cancelOrder(orderId, actorId, reason = 'Buyer cancelled before payment') {
-    const order = (state.orders || []).find(o => o.id === orderId);
+    let order = (state.orders || []).find(o => o.id === orderId);
+    if (!order) {
+      try {
+        const { getMoneyRepository } = require('../../storage');
+        const moneyRepo = getMoneyRepository();
+        if (moneyRepo && typeof moneyRepo.getOrderById === 'function') {
+          order = await moneyRepo.getOrderById(orderId);
+          if (order) {
+            if (!state.orders) state.orders = [];
+            state.orders.push(order);
+          }
+        }
+      } catch (_) {}
+    }
     if (!order) {
       const err = new Error(`Order '${orderId}' not found`);
       err.code = 'ORDER_NOT_FOUND';
@@ -415,6 +428,12 @@ class MarketplaceOrderService {
     }
 
     const currentStatus = order.marketplace_status || order.status;
+
+    // Idempotency check: repeated cancellation of an already cancelled order is safe and idempotent
+    if (currentStatus === MARKETPLACE_ORDER_STATUS.CANCELLED || currentStatus === ORDER_STATUS.CANCELLED) {
+      return order;
+    }
+
     if (currentStatus !== MARKETPLACE_ORDER_STATUS.CREATED &&
         currentStatus !== MARKETPLACE_ORDER_STATUS.PAYMENT_PENDING &&
         currentStatus !== ORDER_STATUS.PENDING_PAYMENT) {
@@ -428,10 +447,12 @@ class MarketplaceOrderService {
     order.cancellation_reason = reason;
     order.updated_at = new Date().toISOString();
 
-    // Revert inventory
+    // Revert inventory atomically using EscrowService.releaseInventoryForOrder
+    const { EscrowService } = require('../escrowService');
+    await EscrowService.releaseInventoryForOrder(orderId, reason);
+
     const listing = (state.listings || []).find(l => l.id === order.listing_id || l.listing_id === order.listing_id);
-    if (listing && (listing.status === LISTING_STATUS.RESERVED || listing.status === 'RESERVED')) {
-      listing.status = LISTING_STATUS.ACTIVE;
+    if (listing) {
       listing.reserved_at = null;
       listing.reserved_by = null;
       listing.updated_at = new Date().toISOString();

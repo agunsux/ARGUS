@@ -328,6 +328,25 @@ class PaymentRoutingService {
    * A payment attempt is PINNED to one provider for its lifetime.
    */
   static assertFailoverAllowed(orderId, requiresEscrow = false, targetProvider = null) {
+    if (requiresEscrow && targetProvider) {
+      try {
+        const provider = paymentManager.getProvider(targetProvider);
+        if (provider && !provider.getCapabilities().hold) {
+          const { CapabilityUnsupportedError } = require('./PaymentProvider');
+          const err = new CapabilityUnsupportedError(
+            targetProvider,
+            'hold',
+            `ESCROW_CAPABILITY_REQUIRED: Cannot route or failover escrow-required order '${orderId}' to provider '${targetProvider}' which lacks native milestone escrow holding capability.`
+          );
+          err.code = 'CAPABILITY_UNSUPPORTED';
+          err.status = 422;
+          throw err;
+        }
+      } catch (provErr) {
+        if (provErr.code === 'CAPABILITY_UNSUPPORTED' || provErr.name === 'CapabilityUnsupportedError') throw provErr;
+      }
+    }
+
     if (!state.payment_attempts) return true;
     const attempts = state.payment_attempts.filter(a => a.orderId === orderId);
     for (const a of attempts) {

@@ -137,7 +137,7 @@ class PaymentService {
     buyer = {},
     providerName = null,
     idempotencyKey = null,
-    requiresEscrow = true
+    requiresEscrow = undefined
   }) {
     const targetProviderName = (providerName || paymentManager.defaultProvider || 'doku').toLowerCase();
     const effectiveIdempotencyKey = idempotencyKey || `idemp-${orderId}-${targetProviderName}`;
@@ -163,15 +163,20 @@ class PaymentService {
       };
     }
 
-    // 2. Assert failover is permissible
-    PaymentRoutingService.assertFailoverAllowed(orderId, requiresEscrow, targetProviderName);
-
     const provider = paymentManager.getProvider(targetProviderName);
     if (!provider) {
       const err = new Error(`Payment provider '${targetProviderName}' not supported`);
       err.code = 'UNKNOWN_PAYMENT_PROVIDER';
       throw err;
     }
+
+    const providerSupportsHold = Boolean(provider.getCapabilities?.().hold);
+    const effectiveRequiresEscrow = (requiresEscrow !== undefined && requiresEscrow !== null)
+      ? Boolean(requiresEscrow)
+      : providerSupportsHold;
+
+    // 2. Assert failover is permissible
+    PaymentRoutingService.assertFailoverAllowed(orderId, effectiveRequiresEscrow, targetProviderName);
 
     // 2. Production Safety Gate & Verification Check
     const providerStatus = provider.getStatus();
@@ -222,7 +227,7 @@ class PaymentService {
       currency,
       channel: channel || 'QRIS',
       buyer,
-      requiresEscrow,
+      requiresEscrow: effectiveRequiresEscrow,
       idempotencyKey: effectiveIdempotencyKey
     });
 
@@ -319,6 +324,7 @@ class PaymentService {
       moneyState: canonicalRecord.money_state,
       businessState: canonicalRecord.business_state,
       channel: canonicalRecord.payment_method,
+      paymentUrl: providerResult.paymentUrl || providerResult.paymentDetails?.redirect_url || providerResult.paymentDetails?.checkoutUrl || null,
       paymentDetails: providerResult.paymentDetails || {},
       simulated: providerResult.simulated === true
     };
@@ -572,20 +578,50 @@ class PaymentService {
           throw repoErr;
         }
       }
-    } else if (event.status === MONEY_STATE.PAYMENT_FAILED) {
+    } else if (
+      event.status === MONEY_STATE.PAYMENT_FAILED ||
+      event.status === MONEY_STATE.PAYMENT_EXPIRED ||
+      event.status === 'FAILED' ||
+      event.status === 'EXPIRED'
+    ) {
+      const isExpired = event.status === MONEY_STATE.PAYMENT_EXPIRED || event.status === 'EXPIRED';
+      const targetMoneyState = isExpired ? MONEY_STATE.PAYMENT_EXPIRED : MONEY_STATE.PAYMENT_FAILED;
+
       if (state.canonical_payments) {
-        const canonical = state.canonical_payments.find(p => p.order_id === event.orderId);
+        const canonical = state.canonical_payments.find(p => p.order_id === event.orderId || p.provider_reference === event.providerRef);
         if (canonical) {
-          canonical.money_state = MONEY_STATE.PAYMENT_FAILED;
-          canonical.status = MONEY_STATE.PAYMENT_FAILED;
+          canonical.money_state = targetMoneyState;
+          canonical.status = targetMoneyState;
           canonical.updated_at = new Date().toISOString();
           DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
         }
       }
-      const order = state.orders ? state.orders.find(o => o.id === event.orderId) : null;
+      let order = state.orders ? state.orders.find(o => o.id === event.orderId) : null;
+      if (!order) {
+        try {
+          const { getMoneyRepository } = require('../../storage');
+          const moneyRepo = getMoneyRepository();
+          if (moneyRepo && typeof moneyRepo.getOrderById === 'function') {
+            order = await moneyRepo.getOrderById(event.orderId);
+            if (order) {
+              if (!state.orders) state.orders = [];
+              state.orders.push(order);
+            }
+          }
+        } catch (_) {}
+      }
+
       if (order) {
-        order.status = 'CANCELLED';
-        order.marketplace_status = 'PAYMENT_FAILED';
+        order.status = isExpired ? 'EXPIRED' : 'CANCELLED';
+        order.marketplace_status = isExpired ? 'PAYMENT_EXPIRED' : 'PAYMENT_FAILED';
+
+        // P0/P1 INVENTORY RECOVERY: Idempotently release reserved ticket inventory on terminal failure or expiration
+        try {
+          const { EscrowService } = require('../escrowService');
+          await EscrowService.releaseInventoryForOrder(order.id, isExpired ? 'GATEWAY_PAYMENT_EXPIRED' : 'GATEWAY_PAYMENT_FAILED');
+        } catch (releaseErr) {
+          console.error(`[PaymentService] Failed to release inventory for order ${order.id}:`, releaseErr.message);
+        }
       }
       webhookRecord.processing_status = 'PROCESSED';
       webhookRecord.processed_at = new Date().toISOString();

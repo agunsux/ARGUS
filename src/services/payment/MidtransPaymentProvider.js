@@ -40,7 +40,7 @@ class MidtransPaymentProvider extends PaymentProvider {
     this.irisEnabled = config.irisEnabled === true || process.env.MIDTRANS_IRIS_ENABLED === 'true';
     this.allowSimulation = config.allowSimulation !== undefined
       ? Boolean(config.allowSimulation)
-      : (process.env.NODE_ENV === 'test' && !process.env.ENABLE_MIDTRANS_PRODUCTION);
+      : (process.env.NODE_ENV === 'test' && process.env.ENABLE_MIDTRANS_PRODUCTION !== 'true');
   }
 
   getName() {
@@ -61,7 +61,10 @@ class MidtransPaymentProvider extends PaymentProvider {
 
   getStatus() {
     const hasKeys = Boolean(this.serverKey);
-    const isReady = hasKeys || this.allowSimulation;
+    const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+    const isProductionActive = isProductionEnv && process.env.ENABLE_MIDTRANS_PRODUCTION === 'true' && this.isProduction;
+    const isReady = isProductionEnv ? isProductionActive : (hasKeys || this.allowSimulation);
+
     return {
       provider: this.getName(),
       status: isReady ? MIDTRANS_STATUS.ACTIVE : MIDTRANS_STATUS.PENDING_VERIFICATION,
@@ -69,8 +72,10 @@ class MidtransPaymentProvider extends PaymentProvider {
       environment: this.isProduction ? 'production' : 'sandbox',
       hasServerKey: hasKeys,
       message: isReady
-        ? 'Midtrans payment rail active'
-        : 'PAYMENT PROVIDER MIDTRANS: Awaiting MIDTRANS_SERVER_KEY configuration',
+        ? (this.isProduction ? 'Midtrans live production payment rail active' : 'Midtrans Sandbox payment rail active')
+        : (isProductionEnv
+          ? 'PAYMENT PROVIDER MIDTRANS: Production merchant activation pending. Real-money transactions gated.'
+          : 'PAYMENT PROVIDER MIDTRANS: Awaiting MIDTRANS_SERVER_KEY configuration'),
       tier: 'TIER_2A'
     };
   }
@@ -197,6 +202,14 @@ class MidtransPaymentProvider extends PaymentProvider {
     idempotencyKey = null,
     correlationId = null
   }) {
+    const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+    if (isProductionEnv && (process.env.ENABLE_MIDTRANS_PRODUCTION !== 'true' || !this.isProduction)) {
+      const err = new Error('Midtrans Sandbox is strictly forbidden in production. Production merchant activation is required.');
+      err.code = 'SANDBOX_PROHIBITED_IN_PRODUCTION';
+      err.status = 503;
+      throw err;
+    }
+
     if (requiresEscrow) {
       // Never fake ESCROW_HELD on Midtrans!
       throw new CapabilityUnsupportedError(

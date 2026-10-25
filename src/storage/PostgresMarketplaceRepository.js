@@ -349,6 +349,95 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     return res.rows[0] || null;
   }
 
+  async atomicReserveInventory(listingId, requestedQty = 1) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.atomicReserveInventory(listingId, requestedQty);
+    }
+    const req = Math.max(1, parseInt(requestedQty, 10) || 1);
+
+    const sql = `
+      UPDATE marketplace_listings
+      SET metadata = jsonb_set(
+            jsonb_set(
+              COALESCE(metadata, '{}'::jsonb),
+              '{available_quantity}',
+              to_jsonb(GREATEST(0, COALESCE((metadata->>'available_quantity')::int, 1) - $2))
+            ),
+            '{reserved_quantity}',
+            to_jsonb(COALESCE((metadata->>'reserved_quantity')::int, 0) + $2)
+          ),
+          status = CASE 
+                     WHEN COALESCE((metadata->>'available_quantity')::int, 1) - $2 <= 0 THEN 'RESERVED'
+                     ELSE status 
+                   END,
+          updated_at = NOW()
+      WHERE id = $1
+        AND status = 'ACTIVE'
+        AND COALESCE((metadata->>'available_quantity')::int, 1) >= $2
+      RETURNING *;
+    `;
+    const res = await this.query(sql, [listingId, req]);
+    if (res.rowCount === 0) {
+      const checkRes = await this.query('SELECT id, status, metadata FROM marketplace_listings WHERE id = $1', [listingId]);
+      if (checkRes.rowCount === 0) {
+        const err = new Error(`Listing '${listingId}' not found`);
+        err.code = 'LISTING_NOT_FOUND';
+        throw err;
+      }
+      const row = checkRes.rows[0];
+      if (row.status !== 'ACTIVE') {
+        const err = new Error(`Listing '${listingId}' is not available for purchase (status: ${row.status})`);
+        err.code = 'LISTING_NOT_ACTIVE';
+        throw err;
+      }
+      let meta = row.metadata || {};
+      if (typeof meta === 'string') {
+        try { meta = JSON.parse(meta); } catch (_) { meta = {}; }
+      }
+      const avail = meta.available_quantity !== undefined ? parseInt(meta.available_quantity, 10) : 1;
+      const err = new Error(`Hanya tersisa ${avail} tiket untuk listing ini (diminta: ${req})`);
+      err.code = 'INSUFFICIENT_INVENTORY';
+      throw err;
+    }
+    return res.rows[0];
+  }
+
+  async atomicReleaseInventory(listingId, quantity = 1) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.atomicReleaseInventory(listingId, quantity);
+    }
+    const qty = Math.max(1, parseInt(quantity, 10) || 1);
+    const sql = `
+      UPDATE marketplace_listings
+      SET metadata = jsonb_set(
+            jsonb_set(
+              COALESCE(metadata, '{}'::jsonb),
+              '{available_quantity}',
+              to_jsonb(COALESCE((metadata->>'available_quantity')::int, 0) + $2)
+            ),
+            '{reserved_quantity}',
+            to_jsonb(GREATEST(0, COALESCE((metadata->>'reserved_quantity')::int, 0) - $2))
+          ),
+          status = CASE 
+                     WHEN status = 'RESERVED' AND (COALESCE((metadata->>'available_quantity')::int, 0) + $2) > 0 THEN 'ACTIVE'
+                     ELSE status 
+                   END,
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING *;
+    `;
+    const res = await this.query(sql, [listingId, qty]);
+    return res.rows[0] || null;
+  }
+
   async listActiveListings(canonicalEventId = null) {
     await this.ensureInitialized();
     if (this.degraded) {

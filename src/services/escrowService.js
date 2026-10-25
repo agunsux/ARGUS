@@ -220,33 +220,63 @@ class EscrowService {
       throw err;
     }
 
+    // P0 INVENTORY SAFETY: Atomic Reservation via MarketplaceRepository
+    let reservedListing = null;
+    const { getMarketplaceRepository } = require('../storage');
+    const marketplaceRepo = getMarketplaceRepository();
+    if (!isListingReservedByThisReservation && typeof marketplaceRepo.atomicReserveInventory === 'function') {
+      reservedListing = await marketplaceRepo.atomicReserveInventory(listingId, requestedQty);
+      if (reservedListing) {
+        let rMeta = reservedListing.metadata || {};
+        if (typeof rMeta === 'string') {
+          try { rMeta = JSON.parse(rMeta); } catch (_) { rMeta = {}; }
+        }
+        listing.available_quantity = reservedListing.available_quantity !== undefined
+          ? reservedListing.available_quantity
+          : (rMeta.available_quantity !== undefined ? rMeta.available_quantity : 0);
+        listing.reserved_quantity = reservedListing.reserved_quantity !== undefined
+          ? reservedListing.reserved_quantity
+          : (rMeta.reserved_quantity !== undefined ? rMeta.reserved_quantity : requestedQty);
+        listing.status = reservedListing.status;
+      }
+    }
+
     const effectivePrice = (customAmount !== null && customAmount !== undefined) ? parseInt(customAmount, 10) : listing.price;
     const orderId = `ord-${uuidv4()}`;
 
     // Resolve or generate immutable TransactionQuote
     let quote;
-    if (quoteId) {
-      let quoteObj = TransactionQuoteService.getQuote(quoteId);
-      if (!quoteObj) {
-        quoteObj = await TransactionQuoteService.getQuoteById(quoteId);
-      }
-      quote = TransactionQuoteService.validateQuote(quoteId);
-      await TransactionQuoteService.consumeQuote(quoteId, orderId, buyerId);
-    } else {
-      const effectivePricingPolicy = policyVersion || process.env.TIKUM_PRICING_POLICY || 'TIKUM_FEE_POLICY_V1';
-      const effectiveTaxPolicy = taxPolicyVersion || (effectivePricingPolicy === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : TaxEngine.getDefaultTaxPolicyVersion());
+    try {
+      if (quoteId) {
+        let quoteObj = TransactionQuoteService.getQuote(quoteId);
+        if (!quoteObj) {
+          quoteObj = await TransactionQuoteService.getQuoteById(quoteId);
+        }
+        quote = TransactionQuoteService.validateQuote(quoteId);
+        await TransactionQuoteService.consumeQuote(quoteId, orderId, buyerId);
+      } else {
+        const effectivePricingPolicy = policyVersion || process.env.TIKUM_PRICING_POLICY || 'TIKUM_FEE_POLICY_V1';
+        const effectiveTaxPolicy = taxPolicyVersion || (effectivePricingPolicy === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : TaxEngine.getDefaultTaxPolicyVersion());
 
-      quote = await TransactionQuoteService.generateQuote({
-        listingId,
-        ticketPrice: effectivePrice,
-        quantity: requestedQty,
-        buyerId,
-        sellerId: listing.seller_id,
-        pricingPolicyVersion: effectivePricingPolicy,
-        taxPolicyVersion: effectiveTaxPolicy,
-        ttlMinutes: paymentDeadlineHours * 60
-      });
-      await TransactionQuoteService.consumeQuote(quote.id, orderId, buyerId);
+        quote = await TransactionQuoteService.generateQuote({
+          listingId,
+          ticketPrice: effectivePrice,
+          quantity: requestedQty,
+          buyerId,
+          sellerId: listing.seller_id,
+          pricingPolicyVersion: effectivePricingPolicy,
+          taxPolicyVersion: effectiveTaxPolicy,
+          ttlMinutes: paymentDeadlineHours * 60
+        });
+        await TransactionQuoteService.consumeQuote(quote.id, orderId, buyerId);
+      }
+    } catch (quoteErr) {
+      if (reservedListing && typeof marketplaceRepo.atomicReleaseInventory === 'function') {
+        try {
+          await marketplaceRepo.atomicReleaseInventory(listingId, requestedQty);
+        } catch (_) {}
+      }
+      throw quoteErr;
     }
 
     const pricing = {
@@ -272,31 +302,31 @@ class EscrowService {
       quote_id: quote.id
     };
 
-    // Update listing inventory atomically
-    const newAvailQty = Math.max(0, availQty - requestedQty);
-    const newResQty = (parseInt(listing.reserved_quantity !== undefined ? listing.reserved_quantity : (meta.reserved_quantity || 0), 10)) + requestedQty;
+    // Synchronize listing in-memory inventory state (if not already handled by atomicReserveInventory)
+    if (!reservedListing) {
+      const newAvailQty = Math.max(0, availQty - requestedQty);
+      const newResQty = (parseInt(listing.reserved_quantity !== undefined ? listing.reserved_quantity : (meta.reserved_quantity || 0), 10)) + requestedQty;
 
-    listing.total_quantity = totalQty;
-    listing.quantity = totalQty;
-    listing.available_quantity = newAvailQty;
-    listing.reserved_quantity = newResQty;
+      listing.total_quantity = totalQty;
+      listing.quantity = totalQty;
+      listing.available_quantity = newAvailQty;
+      listing.reserved_quantity = newResQty;
 
-    if (newAvailQty === 0) {
-      listing.status = LISTING_STATUS.RESERVED;
-    }
-
-    try {
-      const { getMarketplaceRepository } = require('../storage');
-      const marketplaceRepo = getMarketplaceRepository();
-      if (typeof marketplaceRepo.updateListingInventory === 'function') {
-        await marketplaceRepo.updateListingInventory(listingId, {
-          available_quantity: newAvailQty,
-          reserved_quantity: newResQty,
-          total_quantity: totalQty,
-          status: listing.status
-        });
+      if (newAvailQty === 0) {
+        listing.status = LISTING_STATUS.RESERVED;
       }
-    } catch (_) {}
+
+      try {
+        if (typeof marketplaceRepo.updateListingInventory === 'function') {
+          await marketplaceRepo.updateListingInventory(listingId, {
+            available_quantity: newAvailQty,
+            reserved_quantity: newResQty,
+            total_quantity: totalQty,
+            status: listing.status
+          });
+        }
+      } catch (_) {}
+    }
 
     const fulfillmentType = listing.fulfillment_type || meta.fulfillment_type || 'SELLER_MANAGED';
     const picStatus = listing.pic_assistance_status || meta.pic_assistance_status || (fulfillmentType === 'TIKUM_VENUE_PIC' ? 'REQUESTED_PENDING_ASSIGNMENT' : 'NONE');
@@ -430,7 +460,9 @@ class EscrowService {
         status: ESCROW_STATUS.PENDING_PAYMENT,
         held_by: 'TIKUM_INTERNAL_ESCROW'
       });
-      await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.RESERVED);
+      if (listing.status === LISTING_STATUS.RESERVED || (listing.available_quantity !== undefined && listing.available_quantity <= 0)) {
+        await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.RESERVED);
+      }
     } catch (repoErr) {
       if (process.env.NODE_ENV === 'production' || process.env.VERCEL || (moneyRepo && !moneyRepo.degraded)) {
         throw repoErr;
@@ -610,7 +642,7 @@ class EscrowService {
     const effProvider = canonical?.provider || order.provider || 'doku';
     const isEscrow = isProviderEscrow !== undefined
       ? Boolean(isProviderEscrow)
-      : (effProvider !== 'xendit');
+      : (effProvider !== 'xendit' && effProvider !== 'midtrans');
 
     // Transition Escrow: PENDING_PAYMENT -> PAID -> ESCROWED / CAPTURED
     escrow.status = ESCROW_STATUS.ESCROWED;
@@ -1175,33 +1207,72 @@ class EscrowService {
 
   /**
    * Release reserved inventory back to listing (e.g. order cancelled, expired, or refunded)
+   * IDEMPOTENT: guarantees that repeated calls for the same order never double-release inventory.
    */
   static async releaseInventoryForOrder(orderId, reason = 'ORDER_CANCELLED') {
-    const order = (state.orders || []).find(o => o.id === orderId);
+    let order = (state.orders || []).find(o => o.id === orderId);
+    if (!order) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        if (moneyRepo && typeof moneyRepo.getOrderById === 'function') {
+          order = await moneyRepo.getOrderById(orderId);
+          if (order) {
+            if (!state.orders) state.orders = [];
+            state.orders.push(order);
+          }
+        }
+      } catch (_) {}
+    }
     if (!order || !order.listing_id) return null;
-    const listing = (state.listings || []).find(l => l.id === order.listing_id);
-    if (!listing) return null;
 
+    // Idempotency check: an order's inventory must only ever be released ONCE
+    if (order.inventory_released === true) {
+      let listing = (state.listings || []).find(l => l.id === order.listing_id);
+      return { listing, order, releasedQuantity: 0, idempotent: true, alreadyReleased: true };
+    }
+
+    // Mark as released before mutation to ensure re-entrancy / race safety
+    order.inventory_released = true;
+    order.inventory_released_at = new Date().toISOString();
+    order.inventory_release_reason = reason;
+
+    let listing = (state.listings || []).find(l => l.id === order.listing_id);
     const ordQty = Math.max(1, parseInt(order.quantity || 1, 10));
-    listing.reserved_quantity = Math.max(0, (listing.reserved_quantity || 0) - ordQty);
-    listing.available_quantity = (listing.available_quantity || 0) + ordQty;
-    if (listing.available_quantity > 0 && listing.status === LISTING_STATUS.RESERVED) {
-      listing.status = LISTING_STATUS.ACTIVE;
+
+    if (listing) {
+      listing.reserved_quantity = Math.max(0, (listing.reserved_quantity || 0) - ordQty);
+      listing.available_quantity = (listing.available_quantity || 0) + ordQty;
+      if (listing.available_quantity > 0 && listing.status === LISTING_STATUS.RESERVED) {
+        listing.status = LISTING_STATUS.ACTIVE;
+      }
     }
 
     try {
       const { getMarketplaceRepository } = require('../storage');
       const marketplaceRepo = getMarketplaceRepository();
-      if (typeof marketplaceRepo.updateListingInventory === 'function') {
-        await marketplaceRepo.updateListingInventory(listing.id, {
-          available_quantity: listing.available_quantity,
-          reserved_quantity: listing.reserved_quantity,
-          status: listing.status
+      if (typeof marketplaceRepo.atomicReleaseInventory === 'function') {
+        const updated = await marketplaceRepo.atomicReleaseInventory(order.listing_id, ordQty);
+        if (updated && !listing) {
+          listing = updated;
+        }
+      } else if (typeof marketplaceRepo.updateListingInventory === 'function') {
+        await marketplaceRepo.updateListingInventory(order.listing_id, {
+          available_quantity: listing ? listing.available_quantity : undefined,
+          reserved_quantity: listing ? listing.reserved_quantity : undefined,
+          status: listing ? listing.status : undefined
         });
       }
     } catch (_) {}
 
-    return { listing, order, releasedQuantity: ordQty };
+    try {
+      const { DurableFinancialStore } = require('./payment/DurableFinancialStore');
+      if (state.orders) {
+        DurableFinancialStore.persist('orders', state.orders);
+      }
+    } catch (_) {}
+
+    return { listing, order, releasedQuantity: ordQty, idempotent: false };
   }
 }
 

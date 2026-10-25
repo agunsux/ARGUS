@@ -747,6 +747,21 @@
       if (loginLink) loginLink.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
     }
 
+    async function ensureSnapScript(config) {
+      if (window.snap && typeof window.snap.pay === 'function') return true;
+      if (!config || !config.snapUrl) return false;
+      return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = config.snapUrl;
+        if (config.clientKey) {
+          script.setAttribute('data-client-key', config.clientKey);
+        }
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+      });
+    }
+
     async function handleCreateOrder() {
       if (!currentListing) return;
 
@@ -786,7 +801,7 @@
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses Pesanan di Ledger...';
 
       try {
-        // Step 1: Create Order
+        // Step 1: Create Order & Atomically Reserve Inventory
         const resOrder = await fetch('/api/mvp/buyer/order', {
           method: 'POST',
           headers: { 
@@ -801,13 +816,18 @@
 
         const orderData = await resOrder.json();
         if (!resOrder.ok) {
+          if (resOrder.status === 409) {
+            throw new Error(orderData.error || 'Tiket sudah tidak tersedia (habis atau sedang dipesan pembeli lain).');
+          }
           throw new Error(orderData.error || orderData.message || 'Gagal membuat pesanan');
         }
 
         const createdOrder = orderData.order;
 
-        // Step 2: Lock transaction protection payment (pilot simulated bank transfer)
-        const resPay = await fetch('/api/mvp/buyer/pay', {
+        // Step 2: Initialize Payment via Server-Selected Gateway
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghubungkan ke Gateway Pembayaran...';
+
+        const resPay = await fetch('/api/v1/payments/create', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -815,22 +835,69 @@
           },
           body: JSON.stringify({
             orderId: createdOrder.id,
-            providerRef: `BANK-PROT-${Date.now()}`,
-            idempotencyKey: `idemp-${createdOrder.id}`,
-            amountPaid: createdOrder.total_amount
+            // Server authoritatively selects the active approved payment provider
+            buyer: {
+              id: buyerId,
+              name: currentBuyer?.name || (buyerId === 'buyer-1' ? 'Dewi Lestari' : 'Tikum Customer'),
+              email: currentBuyer?.email || (buyerId === 'buyer-1' ? 'dewi.buyer@example.com' : 'customer@tikum.app')
+            }
           })
         });
 
         const payData = await resPay.json();
         if (!resPay.ok) {
-          throw new Error(payData.error || payData.message || 'Gagal mengonfirmasi pembayaran perlindungan transaksi');
+          throw new Error(payData.error || payData.message || 'Gagal menyiapkan gateway pembayaran');
         }
 
-        // Display Success State
+        const payment = payData.payment || {};
+        const snapToken = payment.paymentDetails?.token;
+        const redirectUrl = payment.paymentUrl || payment.paymentDetails?.redirect_url || payment.paymentDetails?.checkoutUrl;
+
+        // If backend resolved to Midtrans Snap modal
+        if (payment.provider === 'midtrans' && snapToken) {
+          let clientKeyConfig = null;
+          try {
+            const cfgRes = await fetch('/api/v1/payments/midtrans/client-key');
+            if (cfgRes.ok) clientKeyConfig = await cfgRes.json();
+          } catch (_) {}
+
+          if (clientKeyConfig?.snapUrl) {
+            const snapLoaded = await ensureSnapScript(clientKeyConfig);
+            if (snapLoaded && window.snap && typeof window.snap.pay === 'function') {
+              window.snap.pay(snapToken, {
+                onSuccess: function(result) {
+                  window.location.href = `/track?id=${createdOrder.id}`;
+                },
+                onPending: function(result) {
+                  window.location.href = `/track?id=${createdOrder.id}`;
+                },
+                onError: function(result) {
+                  errEl.innerText = result.status_message || 'Pembayaran gagal melalui gateway pembayaran.';
+                  errEl.style.display = 'block';
+                  btn.disabled = false;
+                  btn.innerHTML = '<i class="fa-solid fa-lock"></i> Coba Pembayaran Lagi';
+                },
+                onClose: function() {
+                  btn.disabled = false;
+                  btn.innerHTML = '<i class="fa-solid fa-lock"></i> Lanjutkan Pembayaran Tiket';
+                }
+              });
+              return;
+            }
+          }
+        }
+
+        // If gateway provided a hosted payment redirect URL (e.g. DOKU Checkout)
+        if (redirectUrl && !payment.simulated) {
+          window.location.href = redirectUrl;
+          return;
+        }
+
+        // Display Success State (Simulation / Pending fallback)
         document.getElementById('orderActionCard').style.display = 'none';
         document.getElementById('resOrderId').innerText = createdOrder.id;
-        document.getElementById('resOrderStatus').innerText = payData.order.status;
-        document.getElementById('resEscrowStatus').innerText = payData.escrow.status;
+        document.getElementById('resOrderStatus').innerText = payment.status || 'PAYMENT_PENDING';
+        document.getElementById('resEscrowStatus').innerText = payment.moneyState || 'PLATFORM_HELD';
         document.getElementById('btnGoTrack').href = `/track?id=${createdOrder.id}`;
 
         const successCard = document.getElementById('orderSuccessCard');

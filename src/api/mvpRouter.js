@@ -1439,7 +1439,12 @@ router.post('/buyer/order', async (req, res) => {
       pricing: result.pricing
     });
   } catch (err) {
-    res.status(400).json({ error: err.message, code: err.code });
+    const isConflict = err.code === 'INSUFFICIENT_INVENTORY' ||
+                       err.code === 'LISTING_NOT_ACTIVE' ||
+                       err.code === 'LISTING_ALREADY_RESERVED' ||
+                       err.status === 409;
+    const statusCode = isConflict ? 409 : (err.status || 400);
+    res.status(statusCode).json({ error: err.message, code: err.code || 'ORDER_CREATION_FAILED' });
   }
 });
 
@@ -1501,7 +1506,6 @@ router.post('/buyer/pay', async (req, res) => {
 });
 
 /**
- * Buyer gets active orders (ownership enforced)
  * GET /api/mvp/buyer/:id/orders
  */
 router.get('/buyer/:id/orders', async (req, res) => {

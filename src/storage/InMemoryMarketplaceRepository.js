@@ -91,7 +91,18 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
   }
 
   async getListingById(listingId) {
-    return this.listings.get(listingId) || null;
+    let listing = this.listings.get(listingId);
+    if (!listing) {
+      try {
+        const { state } = require('../database');
+        const legacy = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
+        if (legacy) {
+          listing = { ...legacy, id: listingId };
+          this.listings.set(listingId, listing);
+        }
+      } catch (_) {}
+    }
+    return listing || null;
   }
 
   async updateListingStatus(listingId, status) {
@@ -112,6 +123,69 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     if (updates.status) listing.status = updates.status;
     if (updates.fulfillment_type) listing.fulfillment_type = updates.fulfillment_type;
     if (updates.pic_assistance_status) listing.pic_assistance_status = updates.pic_assistance_status;
+    listing.updated_at = new Date().toISOString();
+    return listing;
+  }
+
+  async atomicReserveInventory(listingId, requestedQty = 1) {
+    let listing = this.listings.get(listingId);
+    if (!listing) {
+      try {
+        const { state } = require('../database');
+        const legacy = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
+        if (legacy) {
+          listing = {
+            ...legacy,
+            id: listingId,
+            listing_id: listingId,
+            status: legacy.status || 'ACTIVE',
+            available_quantity: legacy.available_quantity !== undefined ? legacy.available_quantity : (legacy.quantity || 1),
+            reserved_quantity: legacy.reserved_quantity !== undefined ? legacy.reserved_quantity : 0,
+            total_quantity: legacy.total_quantity !== undefined ? legacy.total_quantity : (legacy.quantity || 1)
+          };
+          this.listings.set(listingId, listing);
+        }
+      } catch (_) {}
+    }
+    if (!listing) {
+      const err = new Error(`Listing '${listingId}' not found`);
+      err.code = 'LISTING_NOT_FOUND';
+      throw err;
+    }
+    if (listing.status !== 'ACTIVE') {
+      const err = new Error(`Listing '${listingId}' is not available for purchase (status: ${listing.status})`);
+      err.code = 'LISTING_NOT_ACTIVE';
+      throw err;
+    }
+    const avail = parseInt(listing.available_quantity !== undefined ? listing.available_quantity : (listing.quantity || 1), 10);
+    const req = Math.max(1, parseInt(requestedQty, 10) || 1);
+    if (avail < req) {
+      const err = new Error(`Hanya tersisa ${avail} tiket untuk listing ini (diminta: ${req})`);
+      err.code = 'INSUFFICIENT_INVENTORY';
+      throw err;
+    }
+    const newAvail = avail - req;
+    const newRes = (parseInt(listing.reserved_quantity || 0, 10)) + req;
+    listing.available_quantity = newAvail;
+    listing.reserved_quantity = newRes;
+    if (newAvail === 0) {
+      listing.status = 'RESERVED';
+    }
+    listing.updated_at = new Date().toISOString();
+    return listing;
+  }
+
+  async atomicReleaseInventory(listingId, quantity = 1) {
+    const listing = this.listings.get(listingId);
+    if (!listing) return null;
+    const qty = Math.max(1, parseInt(quantity, 10) || 1);
+    const avail = parseInt(listing.available_quantity || 0, 10);
+    const res = parseInt(listing.reserved_quantity || 0, 10);
+    listing.available_quantity = avail + qty;
+    listing.reserved_quantity = Math.max(0, res - qty);
+    if (listing.available_quantity > 0 && listing.status === 'RESERVED') {
+      listing.status = 'ACTIVE';
+    }
     listing.updated_at = new Date().toISOString();
     return listing;
   }

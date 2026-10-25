@@ -53,6 +53,54 @@ router.get('/v1/payments/methods', (req, res) => {
 });
 
 /**
+ * GET /api/v1/payments/midtrans/client-key
+ * Returns safe public client key and Snap script URL for frontend integration (never leaks server key)
+ * Fails-closed in production if Midtrans production merchant activation is pending
+ */
+router.get(['/v1/payments/midtrans/client-key', '/payments/midtrans/client-key'], (req, res) => {
+  const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+  const isProductionActive = isProductionEnv && process.env.ENABLE_MIDTRANS_PRODUCTION === 'true' && process.env.MIDTRANS_IS_PRODUCTION === 'true';
+
+  if (isProductionEnv && !isProductionActive) {
+    return res.status(503).json({
+      error: 'Midtrans production payment provider is not yet activated for live marketplace checkout.',
+      code: 'MIDTRANS_NOT_ACTIVATED',
+      isAvailable: false
+    });
+  }
+
+  const clientKey = process.env.MIDTRANS_CLIENT_KEY || 'SB-Mid-client-demo-dummy-key';
+  const isSandbox = !isProductionActive;
+  res.json({
+    clientKey,
+    isProduction: isProductionActive,
+    isSandbox,
+    isAvailable: true,
+    snapUrl: isSandbox ? 'https://app.sandbox.midtrans.com/snap/snap.js' : 'https://app.midtrans.com/snap/snap.js'
+  });
+});
+
+/**
+ * GET /api/v1/payments/active-config
+ * Authoritative server-selected active payment configuration for checkout UI
+ */
+router.get('/v1/payments/active-config', (req, res) => {
+  const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+  const defaultProvider = (paymentManager.defaultProvider || 'doku').toLowerCase();
+  const provider = paymentManager.getProvider(defaultProvider);
+  const status = provider ? provider.getStatus() : { isVerified: false, status: 'UNKNOWN' };
+  const capabilities = provider ? provider.getCapabilities() : null;
+
+  res.json({
+    active_provider: defaultProvider,
+    status: status.status,
+    is_verified: status.isVerified,
+    is_production: Boolean(isProductionEnv),
+    requires_escrow: Boolean(capabilities?.hold)
+  });
+});
+
+/**
  * POST /api/v1/payments/create
  * Creates a payment intent for an order through configured provider
  */
@@ -94,6 +142,13 @@ router.post('/v1/payments/create', async (req, res) => {
       return res.status(403).json({ error: 'Forbidden: You do not own this order', code: 'FORBIDDEN' });
     }
 
+    const targetProvider = (providerName || paymentManager.defaultProvider || 'doku').toLowerCase();
+    const providerInstance = paymentManager.getProvider(targetProvider);
+    const providerSupportsHold = providerInstance ? Boolean(providerInstance.getCapabilities?.().hold) : false;
+    const effectiveRequiresEscrow = (requiresEscrow !== undefined && requiresEscrow !== null)
+      ? Boolean(requiresEscrow)
+      : providerSupportsHold;
+
     const paymentResult = await PaymentService.createPayment({
       orderId: order.id,
       amount: order.buyer_total || order.total_amount,
@@ -103,9 +158,9 @@ router.post('/v1/payments/create', async (req, res) => {
         name: req.body?.buyer?.name || (order.buyer_id === 'buyer-1' ? 'Dewi Lestari' : 'Tikum Customer'),
         email: req.body?.buyer?.email || (order.buyer_id === 'buyer-1' ? 'dewi.buyer@example.com' : 'customer@tikum.app')
       },
-      providerName: providerName || null,
+      providerName: targetProvider,
       idempotencyKey: idempotencyKey || req.header('x-idempotency-key') || null,
-      requiresEscrow: requiresEscrow !== false
+      requiresEscrow: effectiveRequiresEscrow
     });
 
     res.json({
