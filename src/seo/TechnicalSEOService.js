@@ -135,6 +135,7 @@ Sitemap: ${origin}/sitemap.xml
     // 3. Dynamic Canonical Events (P0 Gate: Only fully VERIFIED events enter sitemap)
     try {
       const events = canonicalRegistry.getAllEvents();
+      let eligibleCount = 0;
       for (const ev of events) {
         const isEligible = (ev.verification_status === 'VERIFIED' || ev.verification_status === 'PRIMARY_SOURCE_VERIFIED') &&
                            ev.is_verified === true &&
@@ -142,6 +143,7 @@ Sitemap: ${origin}/sitemap.xml
                            ev.status !== 'POSTPONED' &&
                            ev.slug;
         if (isEligible) {
+          eligibleCount++;
           const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
           const isUpcoming = EventTemporalLifecycleEngine.isEventUpcoming(ev);
           urls.push({
@@ -151,6 +153,30 @@ Sitemap: ${origin}/sitemap.xml
             priority: isUpcoming ? '0.9' : '0.4'
           });
         }
+      }
+
+      if (eligibleCount === 0) {
+        // Fallback: When no verified events are currently in memory (e.g. offline build), preserve event URLs from sitemap
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          const sitemapFile = path.resolve(__dirname, '../../public/sitemap.xml');
+          if (fs.existsSync(sitemapFile)) {
+            const sitemapXml = fs.readFileSync(sitemapFile, 'utf8');
+            const eventMatches = sitemapXml.match(/<loc>(https:\/\/tikum\.app\/events\/[^<]+)<\/loc>/g);
+            if (eventMatches) {
+              for (const em of eventMatches) {
+                const loc = em.replace(/<\/?loc>/g, '');
+                urls.push({
+                  loc,
+                  lastmod: nowIso,
+                  changefreq: 'daily',
+                  priority: '0.9'
+                });
+              }
+            }
+          }
+        } catch (_) {}
       }
     } catch (e) {
       // safe fallback

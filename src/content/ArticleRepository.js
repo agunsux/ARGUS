@@ -13,6 +13,7 @@ const { ContentModel, CONTENT_PILLARS, CONTENT_STATUS, SEARCH_INTENTS } = requir
 const { ContentQualityEngine } = require('./ContentQualityEngine');
 const { InternalLinkingService } = require('../seo/InternalLinkingService');
 const { EDITORIAL_ARTICLES } = require('./seeds/editorialCampaignArticles');
+const { CURATED_ARTICLES } = require('./seeds/curatedArticles');
 const { DurableArticleStore } = require('./DurableArticleStore');
 
 class ArticleRepository {
@@ -45,10 +46,18 @@ class ArticleRepository {
         changesMade = true;
       }
 
-      // 2. Check 20 editorial campaign articles
+      // 2. Check editorial campaign articles
       for (const seedArt of EDITORIAL_ARTICLES) {
         if (!this.articles.has(seedArt.id) && !this.slugMap.has(seedArt.slug)) {
           this.saveArticleInternal(seedArt, false);
+          changesMade = true;
+        }
+      }
+
+      // 3. Check curated editorial articles (Nassar & K-pop)
+      for (const curArt of CURATED_ARTICLES) {
+        if (!this.articles.has(curArt.id) && !this.slugMap.has(curArt.slug)) {
+          this.saveArticleInternal(curArt, false);
           changesMade = true;
         }
       }
@@ -95,9 +104,14 @@ class ArticleRepository {
     const draftArticle = this.buildDraftFixture();
     this.saveArticleInternal(draftArticle, false);
 
-    // 2. Seed the complete 20-article authority campaign cluster
+    // 2. Seed the complete editorial campaign cluster
     for (const art of EDITORIAL_ARTICLES) {
       this.saveArticleInternal(art, false);
+    }
+
+    // 3. Seed curated editorial articles (Nassar & K-pop)
+    for (const curArt of CURATED_ARTICLES) {
+      this.saveArticleInternal(curArt, false);
     }
 
     this.registerLegacyAliases();
@@ -203,10 +217,20 @@ class ArticleRepository {
     if (!article) return false;
     const nowIso = (now instanceof Date ? now : new Date(now)).toISOString();
     if (article.status === CONTENT_STATUS.PUBLISHED) {
-      return !article.published_at || article.published_at <= nowIso;
+      if (!article.published_at) return true;
+      try {
+        return new Date(article.published_at).toISOString() <= nowIso;
+      } catch (_) {
+        return article.published_at <= nowIso;
+      }
     }
     if (article.status === CONTENT_STATUS.SCHEDULED) {
-      return Boolean(article.scheduled_at && article.scheduled_at <= nowIso);
+      if (!article.scheduled_at) return false;
+      try {
+        return new Date(article.scheduled_at).toISOString() <= nowIso;
+      } catch (_) {
+        return article.scheduled_at <= nowIso;
+      }
     }
     return false;
   }
