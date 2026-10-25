@@ -185,19 +185,16 @@ router.get('/events/:slug', (req, res, next) => {
     const evStatus = (event.status || '').toUpperCase();
     const evLifecycle = (event.lifecycle_status || '').toUpperCase();
     const isCancelled = evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED';
-    const isPast = !EventTemporalLifecycleEngine.isEventUpcoming(event, now);
-    const isFinished = ['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
-                       ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus);
-    const isVerified = event.is_verified === true && event.public_visibility !== false &&
+    const isVerified = event.is_verified === true &&
       ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status);
     const hasProvenance = Boolean(event.source_url && event.evidence_hash && event.verified_at);
 
-    if (isCancelled || isPast || isFinished || !isVerified || !hasProvenance) {
+    if (isCancelled || !isVerified || !hasProvenance) {
       return res.status(404).send(`<!DOCTYPE html>
         <html><head><title>Event Tidak Tersedia — Tikum</title></head>
         <body style="font-family:sans-serif; background:#0f172a; color:#fff; text-align:center; padding:50px;">
           <h2>Event Tidak Tersedia</h2>
-          <p>Event yang Anda cari belum memiliki verifikasi resmi atau jadwal telah selesai.</p>
+          <p>Event yang Anda cari belum memiliki verifikasi resmi atau telah dibatalkan.</p>
           <a href="/events" style="color:#38bdf8;">Kembali ke Katalog Event</a>
         </body></html>`);
     }
@@ -983,8 +980,14 @@ router.get('/api/discovery/events/archived', handleGetArchivedEvents);
  * - festivals
  */
 router.get('/api/events/home-feed', (req, res) => {
-  // Edge Cache: Absorb high-frequency homepage visits and bot crawls
-  res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+  if (req.headers['accept'] === 'application/json' || req.headers['pragma'] === 'no-cache') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  } else {
+    // Edge Cache: Absorb high-frequency homepage visits and bot crawls
+    res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+  }
 
   const now = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
     ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
@@ -2479,88 +2482,98 @@ router.get('/api/discovery/audit/source-to-database', async (req, res) => {
 
 /**
  * GET /api/discovery/hero-concerts
- * Returns the two verified target concerts: Nassar (Bosscreator) and Ye (Jakarta)
+ * Returns the verified active hero concerts (e.g. BTS and Nassar on/after 25 Oct 2026).
  * Conforming strictly to Phase 6 zero-fake data rules (no invented supply, no fake prices).
  */
 router.get('/api/discovery/hero-concerts', async (req, res) => {
   try {
-    const heroEvents = canonicalRegistry.getHeroEvents();
-    const allState = (state && Array.isArray(state.events)) ? state.events : [];
-    const allCanonical = canonicalRegistry.getAllEvents();
+    const asOfDate = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
+      ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
+      : new Date();
 
-    const nassarEvent = heroEvents.find(e => (e.slug && e.slug.includes('nassar')) || (e.title && e.title.toLowerCase().includes('nassar'))) ||
-                        allState.find(e => e.id === 'event-nassar-lost-in-the-jungle-2026' || (e.slug && e.slug.includes('nassar'))) ||
-                        allCanonical.find(e => (e.slug && e.slug.includes('nassar')) || (e.title && e.title.toLowerCase().includes('nassar')));
-
-    const yeEvent = heroEvents.find(e => (e.slug && e.slug.includes('ye-live')) || (e.slug && e.slug.includes('kanye')) || (e.title && e.title.toLowerCase().includes('ye tour'))) ||
-                    allState.find(e => e.id === 'kanye-west-ye-tour-jakarta-2026' || (e.slug && e.slug.includes('ye-live')) || (e.slug && e.slug.includes('kanye'))) ||
-                    allCanonical.find(e => (e.slug && e.slug.includes('ye-live')) || (e.slug && e.slug.includes('kanye')) || (e.title && e.title.toLowerCase().includes('ye tour')));
-
-    const formatHeroCard = (ev, defaultMeta) => {
-      if (!ev) return null;
-      return {
-        id: ev.id || ev.event_id,
-        slug: ev.slug,
-        title: ev.title || ev.name,
-        name: ev.name || ev.title,
-        artists: ev.artists || [],
-        start_date: ev.start_date || ev.date,
-        date: ev.date || ev.start_date,
-        venue: ev.venue || ev.venue_name,
-        venue_name: ev.venue_name || ev.venue,
-        venue_city: ev.venue_city || ev.city || 'Jakarta',
-        category: ev.category || 'KONSER',
-        status: ev.status || 'UPCOMING',
-        is_verified: true,
-        verification_status: 'VERIFIED',
-        organizer_name: ev.organizer_name || defaultMeta.organizer,
-        official_event_url: ev.official_event_url || ev.official_link || defaultMeta.officialUrl,
-        official_ticket_url: ev.official_ticket_url || defaultMeta.ticketUrl,
-        poster_url: ev.poster_url || ev.image_url || defaultMeta.posterUrl,
-        image_credit: ev.image_credit || defaultMeta.imageCredit,
-        primary_ticket_status: defaultMeta.primaryTicketStatus,
-        resale_inventory_count: 0,
-        resale_available: false,
-        resale_notice: 'Belum ada tiket resale sekunder terverifikasi di TIKUM untuk event ini. TIKUM tidak membuat stok palsu atau harga fiktif.',
-        buyer_protection_policy: 'TIKUM Buyer Protection: Setiap tiket diverifikasi resmi sebelum serah terima.',
-        observed_at: ev.source_last_checked_at || ev.source_published_at || '2026-10-10T00:00:00+07:00',
-        evidence_hash: ev.evidence_hash || null
-      };
-    };
-
-    const concerts = [];
-    if (nassarEvent) {
-      concerts.push(formatHeroCard(nassarEvent, {
-        organizer: 'Boss Creator',
-        officialUrl: 'https://bosscreator.id/',
-        ticketUrl: 'https://www.tiket.com/to-do/king-nassar-lost-in-the-jungle',
-        posterUrl: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
-        imageCredit: 'King Nassar Concert: Lost In The Jungle / Boss Creator & VINDES',
-        primaryTicketStatus: 'SOLD_OUT'
-      }));
-    }
-
-    if (yeEvent) {
-      concerts.push(formatHeroCard(yeEvent, {
-        organizer: 'Raw Vision Collective & Yeezy',
-        officialUrl: 'https://yejakarta.com/',
-        ticketUrl: 'https://yejakarta.com/',
-        posterUrl: 'https://assets.loket.com/lp/sdk/prod/assets/banner/banner_1788163846_6a953706d288e.jpg',
-        imageCredit: 'YE Live in Jakarta (Raw Vision Collective / Loket / Yeezy)',
-        primaryTicketStatus: 'ON_SALE'
-      }));
-    }
+    const { HeroSelectionService } = require('./HeroSelectionService');
+    const heroSelection = HeroSelectionService.selectHeroConcerts(asOfDate);
+    const concerts = heroSelection.heroes;
 
     res.json({
       success: true,
       count: concerts.length,
-      as_of: new Date().toISOString(),
-      concerts
+      as_of: heroSelection.selected_at,
+      concerts,
+      selection_metadata: heroSelection.selection_metadata
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+/**
+ * GET /api/discovery/admin/sync-status
+ * Real-time operational metrics and discovery telemetry.
+ */
+router.get('/api/discovery/admin/sync-status', (req, res) => {
+  const { dailyCatalogRefreshService } = require('./DailyCatalogRefreshService');
+  res.json({
+    success: true,
+    ...dailyCatalogRefreshService.getStatus()
+  });
+});
+
+/**
+ * POST /api/discovery/admin/run-sync
+ * Also mapped to /api/cron/catalog-refresh and /api/discovery/cron/catalog-refresh
+ * Trigger daily catalog refresh and temporal reconciliation immediately.
+ */
+async function handleDailyRefreshTrigger(req, res) {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers ? (req.headers.authorization || req.header?.('authorization')) : null;
+  const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
+  const querySecret = req.query?.secret;
+  const candidate = bearerToken || querySecret;
+
+  if (cronSecret && typeof cronSecret === 'string' && cronSecret.trim().length > 0) {
+    if (!candidate && !resolveDiscoveryActor(req)) {
+      return res.status(401).json({ success: false, error: 'Unauthorized: Missing cron secret or admin credentials', code: 'AUTH_REQUIRED' });
+    }
+    if (candidate) {
+      const secretBuf = Buffer.from(cronSecret);
+      const candBuf = Buffer.from(candidate);
+      if (secretBuf.length !== candBuf.length || !crypto.timingSafeEqual(secretBuf, candBuf)) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Invalid cron secret', code: 'INVALID_CRON_SECRET' });
+      }
+    }
+  }
+
+  try {
+    const { dailyCatalogRefreshService } = require('./DailyCatalogRefreshService');
+    const asOfDate = req.body?.asOfDate || req.query?.asOfDate || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW;
+    const dryRun = req.body?.dryRun === true || req.query?.dryRun === 'true';
+    const force = req.body?.force === true;
+
+    const report = await dailyCatalogRefreshService.runDailyRefresh({
+      asOfDate,
+      dryRun,
+      force
+    });
+
+    if (report.status === 'LOCKED') {
+      return res.status(409).json({ success: false, ...report });
+    }
+
+    res.json({
+      success: report.status === 'SUCCESS',
+      ...report
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+router.get('/api/discovery/cron/catalog-refresh', handleDailyRefreshTrigger);
+router.post('/api/discovery/cron/catalog-refresh', handleDailyRefreshTrigger);
+router.get('/api/cron/catalog-refresh', handleDailyRefreshTrigger);
+router.post('/api/cron/catalog-refresh', handleDailyRefreshTrigger);
+router.post('/api/discovery/admin/run-sync', handleDailyRefreshTrigger);
 
 module.exports = router;
 

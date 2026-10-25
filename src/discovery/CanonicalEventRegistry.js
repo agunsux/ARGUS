@@ -1273,7 +1273,7 @@ class CanonicalEventRegistry {
 
   getEventById(id) {
     if (this.events.has(id)) return this.events.get(id);
-    const hero = this.getHeroEvents().find(e => e.id === id || e.event_id === id);
+    const hero = this.getHeroEvents({ includePast: true }).find(e => e.id === id || e.event_id === id);
     if (hero) return hero;
     return null;
   }
@@ -1282,149 +1282,273 @@ class CanonicalEventRegistry {
     const id = this.slugMap.get(slug);
     if (id && this.events.has(id)) return this.events.get(id);
     if (this.events.has(slug)) return this.events.get(slug);
-    const hero = this.getHeroEvents().find(e => e.slug === slug);
+    const hero = this.getHeroEvents({ includePast: true }).find(e => e.slug === slug);
     if (hero) return hero;
     return null;
   }
 
-  getHeroEvents() {
-    return [
-      {
-        id: 'event-nassar-lost-in-the-jungle-2026',
-        event_id: 'event-nassar-lost-in-the-jungle-2026',
-        slug: 'king-nassar-lost-in-the-jungle-jakarta-2026',
-        name: 'King Nassar: Lost In The Jungle',
-        title: 'King Nassar: Lost In The Jungle',
-        canonical_name: 'King Nassar: Lost In The Jungle',
-        artist: 'King Nassar',
-        artists: ['King Nassar', 'Erwin Gutawa Orchestra'],
-        date: '2026-11-07',
-        start_date: '2026-11-07',
-        end_date: '2026-11-07',
-        start_time: '19:00',
-        start_datetime: '2026-11-07T19:00:00+07:00',
-        end_datetime: '2026-11-07T22:30:00+07:00',
-        event_start_at: '2026-11-07T19:00:00+07:00',
-        event_end_at: '2026-11-07T22:30:00+07:00',
-        event_timezone: 'Asia/Jakarta',
-        timezone: 'Asia/Jakarta',
-        archive_at: '2026-11-10T22:30:00+07:00',
-        venue_id: 'venue-istora-senayan',
-        venue: 'Istora Senayan Jakarta',
-        venue_name: 'Istora Senayan Jakarta',
-        venue_city: 'Jakarta',
-        city: 'Jakarta',
-        province: 'DKI Jakarta',
-        country: 'Indonesia',
-        event_type: 'CONCERT',
-        category: 'KONSER',
-        admission_protocol: {
-          type: 'BARCODE_PLUS_ID',
-          description: 'Pemeriksaan tiket digital dan scan barcode resmi di pintu masuk Istora Senayan',
-          required_items: ['E-Ticket QR Resmi Tiket.com', 'KTP Asli'],
-          handoff_type: 'DIGITAL_TRANSFER',
-          venue_gate_authority: 'Boss Creator & Venue Security'
-        },
-        status: 'UPCOMING',
-        lifecycle_status: 'UPCOMING',
-        archive_status: 'ACTIVE',
-        public_visibility: true,
-        homepage_visibility: true,
-        public_upcoming: true,
-        source: 'OFFICIAL_PROMOTER',
-        source_id: 'src-promoter-boss-creator',
-        source_type: 'PRIMARY_SOURCE',
-        source_url: 'https://bosscreator.id/',
-        source_account: '@boss.creator',
-        source_published_at: '2026-09-15T10:00:00+07:00',
-        source_last_checked_at: '2026-10-10T00:00:00+07:00',
-        verification_status: 'VERIFIED',
-        verified_at: '2026-10-10T00:00:00+07:00',
-        evidence_hash: 'hash-nassar-bosscreator-2026',
-        is_verified: true,
-        organizer_name: 'Boss Creator',
-        promoter: 'Boss Creator & VINDES',
-        official_link: 'https://bosscreator.id/',
-        official_event_url: 'https://bosscreator.id/',
-        official_ticket_url: 'https://www.tiket.com/to-do/king-nassar-lost-in-the-jungle',
-        official_ticketing_provider: 'Tiket.com',
-        poster_url: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
-        image_url: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
-        thumbnail_url: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
-        image_source_url: 'https://bosscreator.id/',
-        image_source_type: 'OFFICIAL_PROMOTER_WEB',
-        image_status: 'VERIFIED_OFFICIAL',
-        image_verified: true,
-        image_verified_at: '2026-10-11T19:05:00.000Z',
-        image_credit: 'King Nassar Concert: Lost In The Jungle / Boss Creator & VINDES',
-        is_fallback_image: false,
-        primary_ticket_status: 'SOLD_OUT',
-        resale_inventory_count: 0,
-        sources: [
-          {
-            source_id: 'src-promoter-boss-creator',
-            source_name: 'Boss Creator & VINDES',
-            tier: 1,
-            authority_level: 'HIGH',
-            trust_level: TRUST_LEVELS.TIER_S,
-            source_url: 'https://bosscreator.id/',
-            source_account: '@boss.creator',
-            source_type: 'PRIMARY_SOURCE',
-            retrieved_at: '2026-10-10T00:00:00+07:00'
-          }
-        ]
+  getHeroEvents(options = {}) {
+    const nassarHero = {
+      id: 'event-nassar-lost-in-the-jungle-2026',
+      event_id: 'event-nassar-lost-in-the-jungle-2026',
+      slug: 'king-nassar-lost-in-the-jungle-jakarta-2026',
+      name: 'King Nassar: Lost In The Jungle',
+      title: 'King Nassar: Lost In The Jungle',
+      canonical_name: 'King Nassar: Lost In The Jungle',
+      artist: 'King Nassar',
+      artists: ['King Nassar', 'Erwin Gutawa Orchestra'],
+      date: '2026-11-07',
+      start_date: '2026-11-07',
+      end_date: '2026-11-07',
+      start_time: '19:00',
+      start_datetime: '2026-11-07T19:00:00+07:00',
+      end_datetime: '2026-11-07T22:30:00+07:00',
+      event_start_at: '2026-11-07T19:00:00+07:00',
+      event_end_at: '2026-11-07T22:30:00+07:00',
+      event_timezone: 'Asia/Jakarta',
+      timezone: 'Asia/Jakarta',
+      archive_at: '2026-11-10T22:30:00+07:00',
+      venue_id: 'venue-istora-senayan',
+      venue: 'Istora Senayan Jakarta',
+      venue_name: 'Istora Senayan Jakarta',
+      venue_city: 'Jakarta',
+      city: 'Jakarta',
+      province: 'DKI Jakarta',
+      country: 'Indonesia',
+      event_type: 'CONCERT',
+      category: 'KONSER',
+      admission_protocol: {
+        type: 'BARCODE_PLUS_ID',
+        description: 'Pemeriksaan tiket digital dan scan barcode resmi di pintu masuk Istora Senayan',
+        required_items: ['E-Ticket QR Resmi Tiket.com', 'KTP Asli'],
+        handoff_type: 'DIGITAL_TRANSFER',
+        venue_gate_authority: 'Boss Creator & Venue Security'
       },
-      {
-        id: 'kanye-west-ye-tour-jakarta-2026',
-        event_id: 'kanye-west-ye-tour-jakarta-2026',
-        slug: 'ye-live-in-jakarta-2026',
-        name: 'YE Live in Jakarta',
-        title: 'YE Live in Jakarta',
-        artists: ['Ye', 'Kanye West'],
-        date: '2026-10-24',
-        start_date: '2026-10-24',
-        end_date: null,
-        start_time: '20:00',
-        event_start_at: '2026-10-24T20:00:00+07:00',
-        event_end_at: '2026-10-24T23:30:00+07:00',
-        event_timezone: 'Asia/Jakarta',
-        archive_at: '2026-10-27T23:30:00+07:00',
-        venue_id: 'venue-gbk',
-        venue: 'Gelora Bung Karno (Main Stadium)',
-        venue_name: 'Gelora Bung Karno (Main Stadium)',
-        venue_city: 'Jakarta',
-        category: 'KONSER',
-        admission_protocol: {
-          type: 'BARCODE_PLUS_ID',
-          description: 'Pemeriksaan tiket digital dan turnstile scan resmi GBK Pintu 3 & 7',
-          required_items: ['E-Ticket QR Resmi Loket', 'Identitas KTP/Paspor Asli'],
-          handoff_type: 'DIGITAL_TRANSFER',
-          venue_gate_authority: 'Raw Vision Collective & GBK Security'
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
+      public_visibility: true,
+      homepage_visibility: true,
+      public_upcoming: true,
+      source: 'OFFICIAL_PROMOTER',
+      source_id: 'src-promoter-boss-creator',
+      source_type: 'PRIMARY_SOURCE',
+      source_url: 'https://bosscreator.id/',
+      source_account: '@boss.creator',
+      source_published_at: '2026-09-15T10:00:00+07:00',
+      source_last_checked_at: '2026-10-10T00:00:00+07:00',
+      verification_status: 'VERIFIED',
+      verified_at: '2026-10-10T00:00:00+07:00',
+      evidence_hash: 'hash-nassar-bosscreator-2026',
+      is_verified: true,
+      organizer_name: 'Boss Creator',
+      promoter: 'Boss Creator & VINDES',
+      official_link: 'https://bosscreator.id/',
+      official_event_url: 'https://bosscreator.id/',
+      official_ticket_url: 'https://www.tiket.com/to-do/king-nassar-lost-in-the-jungle',
+      official_ticketing_provider: 'Tiket.com',
+      poster_url: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
+      image_url: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
+      thumbnail_url: '/assets/posters/king-nassar-lost-in-the-jungle-2026.jpg',
+      image_source_url: 'https://bosscreator.id/',
+      image_source_type: 'OFFICIAL_PROMOTER_WEB',
+      image_status: 'VERIFIED_OFFICIAL',
+      image_verified: true,
+      image_verified_at: '2026-10-11T19:05:00.000Z',
+      image_credit: 'King Nassar Concert: Lost In The Jungle / Boss Creator & VINDES',
+      is_fallback_image: false,
+      primary_ticket_status: 'SOLD_OUT',
+      min_price: 500000,
+      max_price: 1500000,
+      price: 500000,
+      price_status: 'QUALIFIED',
+      meets_price_threshold: true,
+      resale_inventory_count: 0,
+      resale_available: false,
+      sources: [
+        {
+          source_id: 'src-promoter-boss-creator',
+          source_name: 'Boss Creator & VINDES',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://bosscreator.id/',
+          source_account: '@boss.creator',
+          source_type: 'PRIMARY_SOURCE',
+          retrieved_at: '2026-10-10T00:00:00+07:00'
+        }
+      ]
+    };
+
+    const btsHero = {
+      id: 'bts-world-tour-arirang-jakarta-2026',
+      event_id: 'bts-world-tour-arirang-jakarta-2026',
+      slug: 'bts-arirang-world-tour-jakarta-2026',
+      name: "BTS WORLD TOUR 'ARIRANG' 2026 IN JAKARTA",
+      title: "BTS WORLD TOUR 'ARIRANG' 2026 IN JAKARTA",
+      canonical_name: "BTS WORLD TOUR 'ARIRANG' 2026 IN JAKARTA",
+      artist: 'BTS',
+      artists: ['BTS', 'RM', 'Jin', 'SUGA', 'j-hope', 'Jimin', 'V', 'Jung Kook'],
+      date: '2026-12-26',
+      start_date: '2026-12-26',
+      end_date: '2026-12-29',
+      start_time: '19:00',
+      start_datetime: '2026-12-26T19:00:00+07:00',
+      end_datetime: '2026-12-29T23:30:00+07:00',
+      event_start_at: '2026-12-26T19:00:00+07:00',
+      event_end_at: '2026-12-29T23:30:00+07:00',
+      event_timezone: 'Asia/Jakarta',
+      timezone: 'Asia/Jakarta',
+      archive_at: '2027-01-01T23:30:00+07:00',
+      venue_id: 'venue-gbk',
+      venue: 'Gelora Bung Karno (Main Stadium)',
+      venue_name: 'Gelora Bung Karno (Main Stadium)',
+      venue_city: 'Jakarta',
+      city: 'Jakarta',
+      province: 'DKI Jakarta',
+      country: 'Indonesia',
+      event_type: 'CONCERT',
+      category: 'KONSER',
+      admission_protocol: {
+        type: 'BARCODE_PLUS_ID',
+        description: 'Pemeriksaan gelang RFID resmi & barcode turnstile di Pintu 3, 7, 10 GBK',
+        required_items: ['E-Ticket QR Resmi Tiket.com', 'KTP/Paspor Asli'],
+        handoff_type: 'DIGITAL_TRANSFER',
+        venue_gate_authority: 'Big Hit Music & Third Eye Management'
+      },
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
+      public_visibility: true,
+      homepage_visibility: true,
+      public_upcoming: true,
+      source: 'OFFICIAL_PROMOTER',
+      source_id: 'src-promoter-bighit',
+      source_type: 'PRIMARY_SOURCE',
+      source_url: 'https://ibighit.com/bts/',
+      source_account: '@bts.bighitofficial',
+      source_published_at: '2026-06-01T10:00:00+07:00',
+      source_last_checked_at: '2026-10-25T12:00:00+07:00',
+      verification_status: 'VERIFIED',
+      verified_at: '2026-10-25T12:00:00+07:00',
+      evidence_hash: 'hash-bts-arirang-jakarta-2026',
+      is_verified: true,
+      organizer_name: 'Big Hit Music & HYBE',
+      promoter: 'Big Hit Music / HYBE & Third Eye Management',
+      official_link: 'https://ibighit.com/bts/',
+      official_event_url: 'https://www.indonesia.travel/',
+      official_ticket_url: 'https://www.tiket.com/to-do/bts-world-tour-arirang-jakarta-2026',
+      official_ticketing_provider: 'Tiket.com',
+      poster_url: '/assets/posters/bts-arirang-world-tour-jakarta-2026.svg',
+      image_url: '/assets/posters/bts-arirang-world-tour-jakarta-2026.svg',
+      thumbnail_url: '/assets/posters/bts-arirang-world-tour-jakarta-2026.svg',
+      image_source_url: 'https://ibighit.com/bts/',
+      image_source_type: 'OFFICIAL_PROMOTER_WEB',
+      image_status: 'VERIFIED_OFFICIAL',
+      image_verified: true,
+      image_verified_at: '2026-10-25T12:00:00.000Z',
+      image_credit: "BTS WORLD TOUR 'ARIRANG' 2026 IN JAKARTA (Big Hit Music / HYBE / Indonesia Travel)",
+      is_fallback_image: false,
+      primary_ticket_status: 'SOLD_OUT',
+      min_price: 1350000,
+      max_price: 4500000,
+      price: 1350000,
+      price_status: 'QUALIFIED',
+      meets_price_threshold: true,
+      resale_inventory_count: 0,
+      resale_available: false,
+      price_tiers: [
+        { name: 'CAT 7 (Numbered Seating)', price: 1350000, face_value: 1350000, currency: 'IDR' },
+        { name: 'CAT 6 (Numbered Seating)', price: 1850000, face_value: 1850000, currency: 'IDR' },
+        { name: 'CAT 5 (Numbered Seating)', price: 2400000, face_value: 2400000, currency: 'IDR' },
+        { name: 'CAT 4 (Numbered Seating)', price: 2850000, face_value: 2850000, currency: 'IDR' },
+        { name: 'CAT 3 (Numbered Seating)', price: 3300000, face_value: 3300000, currency: 'IDR' },
+        { name: 'CAT 2 (Numbered Seating)', price: 3800000, face_value: 3800000, currency: 'IDR' },
+        { name: 'VIP Soundcheck (Standing)', price: 4500000, face_value: 4500000, currency: 'IDR' }
+      ],
+      sources: [
+        {
+          source_id: 'src-promoter-bighit',
+          source_name: 'Big Hit Music & HYBE',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://ibighit.com/bts/',
+          source_account: '@bts.bighitofficial',
+          source_type: 'PRIMARY_SOURCE',
+          retrieved_at: '2026-10-25T12:00:00+07:00'
         },
-        status: 'UPCOMING',
-        lifecycle_status: 'UPCOMING',
-        source: 'OFFICIAL_PROMOTER',
-        source_type: 'PRIMARY_SOURCE',
-        source_url: 'https://yejakarta.com/',
-        source_account: '@yejakarta',
-        source_published_at: '2026-09-01T10:00:00+07:00',
-        source_last_checked_at: '2026-10-10T00:00:00+07:00',
-        verification_status: 'VERIFIED',
-        verified_at: '2026-10-10T00:00:00+07:00',
-        evidence_hash: 'hash-ye-jakarta-2026',
-        is_verified: true,
-        organizer_name: 'Raw Vision Collective & Yeezy',
-        promoter: 'Raw Vision Collective & Yeezy',
-        official_link: 'https://yejakarta.com/',
-        official_event_url: 'https://yejakarta.com/',
-        official_ticket_url: 'https://yejakarta.com/',
-        poster_url: 'https://assets.loket.com/lp/sdk/prod/assets/banner/banner_1788163846_6a953706d288e.jpg',
-        image_url: 'https://assets.loket.com/lp/sdk/prod/assets/banner/banner_1788163846_6a953706d288e.jpg',
-        image_credit: 'YE Live in Jakarta (Raw Vision Collective / Loket / Yeezy)',
-        primary_ticket_status: 'ON_SALE',
-        resale_inventory_count: 0
-      }
-    ];
+        {
+          source_id: 'src-gov-calendar',
+          source_name: 'Kemenparekraf / Indonesia Travel',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://www.indonesia.travel/',
+          source_type: 'PRIMARY_SOURCE',
+          retrieved_at: '2026-10-25T12:00:00+07:00'
+        }
+      ]
+    };
+
+    const yeHero = {
+      id: 'kanye-west-ye-tour-jakarta-2026',
+      event_id: 'kanye-west-ye-tour-jakarta-2026',
+      slug: 'ye-live-in-jakarta-2026',
+      name: 'YE Live in Jakarta',
+      title: 'YE Live in Jakarta',
+      canonical_name: 'YE Live in Jakarta',
+      artists: ['Ye', 'Kanye West'],
+      date: '2026-10-24',
+      start_date: '2026-10-24',
+      end_date: null,
+      start_time: '20:00',
+      event_start_at: '2026-10-24T20:00:00+07:00',
+      event_end_at: '2026-10-24T23:30:00+07:00',
+      event_timezone: 'Asia/Jakarta',
+      archive_at: '2026-10-27T23:30:00+07:00',
+      venue_id: 'venue-gbk',
+      venue: 'Gelora Bung Karno (Main Stadium)',
+      venue_name: 'Gelora Bung Karno (Main Stadium)',
+      venue_city: 'Jakarta',
+      category: 'KONSER',
+      status: 'COMPLETED',
+      lifecycle_status: 'COMPLETED',
+      archive_status: 'ARCHIVED',
+      archived_at: '2026-10-25T00:00:00+07:00',
+      public_visibility: false,
+      homepage_visibility: false,
+      public_upcoming: false,
+      source: 'OFFICIAL_PROMOTER',
+      source_type: 'PRIMARY_SOURCE',
+      source_url: 'https://yejakarta.com/',
+      source_account: '@yejakarta',
+      source_published_at: '2026-09-01T10:00:00+07:00',
+      source_last_checked_at: '2026-10-25T00:00:00+07:00',
+      verification_status: 'VERIFIED',
+      verified_at: '2026-10-10T00:00:00+07:00',
+      evidence_hash: 'hash-ye-jakarta-2026',
+      is_verified: true,
+      organizer_name: 'Raw Vision Collective & Yeezy',
+      promoter: 'Raw Vision Collective & Yeezy',
+      official_link: 'https://yejakarta.com/',
+      official_event_url: 'https://yejakarta.com/',
+      official_ticket_url: 'https://yejakarta.com/',
+      poster_url: 'https://assets.loket.com/lp/sdk/prod/assets/banner/banner_1788163846_6a953706d288e.jpg',
+      image_url: 'https://assets.loket.com/lp/sdk/prod/assets/banner/banner_1788163846_6a953706d288e.jpg',
+      image_credit: 'YE Live in Jakarta (Raw Vision Collective / Loket / Yeezy)',
+      primary_ticket_status: 'CONCLUDED',
+      min_price: 1250000,
+      max_price: 3500000,
+      resale_inventory_count: 0
+    };
+
+    if (options && options.includePast) {
+      return [nassarHero, btsHero, yeHero];
+    }
+
+    // Default active upcoming hero concerts on/after 25 Oct 2026
+    return [nassarHero, btsHero];
   }
 
   getAllEvents() {
@@ -1639,12 +1763,14 @@ class CanonicalEventRegistry {
             this.slugMap.set(ev.slug, id);
           }
         }
-        // Ensure verified King Nassar concert from getHeroEvents() is present in global catalog
+        // Ensure verified hero concerts from getHeroEvents() are present in global catalog
         if (this === canonicalRegistryInstance && !this.repository) {
-          const nassarHero = this.getHeroEvents().find(h => h.id === 'event-nassar-lost-in-the-jungle-2026');
-          if (nassarHero && !this.events.has(nassarHero.id) && !this.slugMap.has(nassarHero.slug)) {
-            this.events.set(nassarHero.id, nassarHero);
-            this.slugMap.set(nassarHero.slug, nassarHero.id);
+          const heroes = this.getHeroEvents({ includePast: true });
+          for (const hero of heroes) {
+            if (!this.events.has(hero.id)) {
+              this.events.set(hero.id, hero);
+              if (hero.slug) this.slugMap.set(hero.slug, hero.id);
+            }
           }
         }
         this._hydratedFromRepo = true;

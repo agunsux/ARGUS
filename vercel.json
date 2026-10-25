@@ -44,6 +44,10 @@
     {
       "path": "/api/content/scheduler/cron",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/catalog-refresh",
+      "schedule": "0 18 * * *"
     }
   ]
 }

@@ -147,9 +147,9 @@ async function runSuite() {
     assert.ok(nassar);
     assert.strictEqual(nassar.resale_inventory_count, 0);
 
-    const ye = heroEvents.find(e => e.id === 'kanye-west-ye-tour-jakarta-2026');
-    assert.ok(ye);
-    assert.strictEqual(ye.resale_inventory_count, 0);
+    const secondHero = heroEvents.find(e => e.id === 'bts-world-tour-arirang-jakarta-2026' || e.id === 'kanye-west-ye-tour-jakarta-2026');
+    assert.ok(secondHero);
+    assert.strictEqual(secondHero.resale_inventory_count, 0);
   });
 
   test('1.4 Live payment gateways remain fail-closed disabled in environment', () => {
