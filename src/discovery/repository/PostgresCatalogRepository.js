@@ -70,7 +70,7 @@ class PostgresCatalogRepository extends CatalogRepository {
         ssl,
         max: 3, // Sized to allow advisory lock client + active transaction/query clients without pool starvation
         idleTimeoutMillis: process.env.NODE_ENV === 'test' ? 500 : 10000,
-        connectionTimeoutMillis: 5000
+        connectionTimeoutMillis: 10000
       });
 
       // Test connection

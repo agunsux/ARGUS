@@ -67,7 +67,7 @@ class PostgresMoneyRepository extends MoneyRepository {
           ssl,
           max: 5,
           idleTimeoutMillis: process.env.NODE_ENV === 'test' ? 500 : 10000,
-          connectionTimeoutMillis: 5000
+          connectionTimeoutMillis: 10000
         });
 
         await this.pool.query('SELECT NOW()');

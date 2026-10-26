@@ -1962,6 +1962,36 @@ async function initializeDatabase() {
         }
       }
     }
+
+    // Ensure authoritative admin account is persisted in PostgreSQL if ADMIN_PASSWORD is set
+    const defaultAdminEmail = 'admin@tikum.app';
+    const adminEmail = (process.env.ADMIN_EMAIL || process.env.ARGUS_ADMIN_EMAIL || defaultAdminEmail).toLowerCase().trim();
+    const rawPassword = process.env.ADMIN_PASSWORD || process.env.ARGUS_ADMIN_PASSWORD;
+    if (rawPassword && userRepo && typeof userRepo.getUserByEmail === 'function') {
+      const repoAdmin = await userRepo.getUserByEmail(adminEmail, true).catch(() => null);
+      const stateAdmin = (state.users || []).find(u => u.email && u.email.toLowerCase() === adminEmail);
+      const adminHash = stateAdmin?.password_hash || hashPassword(rawPassword);
+      if (!repoAdmin && typeof userRepo.createUser === 'function') {
+        try {
+          await userRepo.createUser({
+            id: adminEmail === 'admin@tikum.app' ? 'admin-tikum-primary' : `admin-${Date.now()}`,
+            email: adminEmail,
+            name: stateAdmin?.name || 'System Administrator',
+            role: 'ADMIN',
+            status: 'ACTIVE',
+            password_hash: adminHash
+          });
+        } catch (e) {
+          console.warn('[database.js] Admin bootstrap sync notice:', e.message);
+        }
+      } else if (repoAdmin && adminHash && repoAdmin.password_hash !== adminHash && typeof userRepo.updateUserPassword === 'function') {
+        try {
+          await userRepo.updateUserPassword(repoAdmin.id, adminHash);
+        } catch (e) {
+          console.warn('[database.js] Admin password update notice:', e.message);
+        }
+      }
+    }
   } catch (err) {
     if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
       console.error('[database.js] Failed to initialize user repository:', err);
