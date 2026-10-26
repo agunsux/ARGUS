@@ -201,6 +201,11 @@ class IncidentService {
     if (!state.incidents) return [];
     return state.incidents.filter(i => i.event_id === eventId);
   }
+
+  static getIncidentsForOrder(orderId) {
+    if (!state.incidents) return [];
+    return state.incidents.filter(i => i.order_id === orderId);
+  }
 }
 
 module.exports = {

@@ -162,6 +162,22 @@ class MarketplaceListingService {
       throw err;
     }
 
+    // 6b. Evaluate H-7 / H-14 Operational Listing Window Policy
+    const { ListingWindowPolicy } = require('../../policy/ListingWindowPolicy');
+    const isPilotVerified = Boolean(bypassPilotBounds || event.is_pilot || event.pilot_approved);
+    const windowEval = ListingWindowPolicy.evaluateListingWindow({
+      event,
+      isPilotVerified,
+      bypassPolicy: Boolean(bypassPilotBounds || (process.env.NODE_ENV === 'test' && !process.env.ENFORCE_LISTING_WINDOW_TEST)),
+      now: new Date()
+    });
+    if (!windowEval.allowed) {
+      const err = new Error(windowEval.reason);
+      err.code = windowEval.code;
+      err.windowDetails = windowEval;
+      throw err;
+    }
+
     // 7. Validate Price
     const numericPrice = parseInt(price, 10);
     if (isNaN(numericPrice) || numericPrice <= 0) {

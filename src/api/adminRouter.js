@@ -15,7 +15,8 @@ const router = express.Router();
 const { state, recordAuditLog, verifyPassword, hashPassword } = require('../database');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
-const { requireAdmin, resolveUser, isAdminRole, ADMIN_ROLES } = require('../middleware/auth');
+const { requireAdmin, resolveUser, isAdminRole, ADMIN_ROLES, requireFinance, requireOps } = require('../middleware/auth');
+const { TransactionControlCenterService } = require('../services/admin/TransactionControlCenterService');
 const { SessionStore } = require('../services/sessionStore');
 const { emailService } = require('../services/emailService');
 const { FinancialLedger } = require('../settlement/FinancialLedger');
@@ -3077,6 +3078,155 @@ router.patch('/partners/:id', requireAdmin, (req, res) => {
   } catch (err) {
     const status = err.status || 400;
     return res.status(status).json({ success: false, error: err.message, code: err.code || 'PARTNER_UPDATE_FAILED' });
+  }
+});
+
+// ============================================================================
+// ADMIN TRANSACTION CONTROL CENTER (Epic: Three-Color Triage & Control Center)
+// ============================================================================
+
+/**
+ * GET /api/admin/transactions/control-center
+ * Retrieves aggregate overview metrics and paginated evaluated transactions.
+ * Strict three-color triage computed server-side: RED, YELLOW, GREEN, PAID_OUT.
+ */
+router.get('/transactions/control-center', requireAdmin, async (req, res) => {
+  try {
+    const result = await TransactionControlCenterService.getControlCenterOverview({
+      page: req.query.page,
+      limit: req.query.limit,
+      status: req.query.status,
+      search: req.query.search,
+      eventId: req.query.eventId,
+      sortBy: req.query.sortBy,
+      sortOrder: req.query.sortOrder
+    });
+    return res.json({
+      success: true,
+      ...result
+    });
+  } catch (err) {
+    const status = err.code === 'DATA_UNAVAILABLE' ? 503 : 500;
+    return res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'CONTROL_CENTER_FAILED'
+    });
+  }
+});
+
+/**
+ * GET /api/admin/transactions/:orderId/timeline
+ * Retrieves unified chronological audit timeline for an individual order.
+ */
+router.get('/transactions/:orderId/timeline', requireAdmin, async (req, res) => {
+  try {
+    const timeline = await TransactionControlCenterService.getTransactionTimeline(req.params.orderId);
+    return res.json({
+      success: true,
+      ...timeline
+    });
+  } catch (err) {
+    const status = err.code === 'ORDER_NOT_FOUND' ? 404 : 500;
+    return res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'TIMELINE_FETCH_FAILED'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/transactions/:orderId/hold
+ * Applies an administrative hold on an order (forces status to RED).
+ * Least-privilege: restricted to operations & trust officers.
+ */
+router.post('/transactions/:orderId/hold', requireOps, async (req, res) => {
+  try {
+    const user = resolveUser(req) || req.user || { id: 'admin-ops' };
+    const { reason, notes } = req.body || {};
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        error: 'Hold reason is required',
+        code: 'HOLD_REASON_REQUIRED'
+      });
+    }
+
+    const result = await TransactionControlCenterService.placeAdminHold({
+      orderId: req.params.orderId,
+      reason,
+      operatorId: user.id,
+      notes
+    });
+
+    return res.json(result);
+  } catch (err) {
+    const status = err.code === 'ORDER_NOT_FOUND' ? 404 : 400;
+    return res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'HOLD_FAILED'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/transactions/:orderId/release-hold
+ * Releases an administrative hold on an order.
+ * Least-privilege: restricted to operations & trust officers.
+ */
+router.post('/transactions/:orderId/release-hold', requireOps, async (req, res) => {
+  try {
+    const user = resolveUser(req) || req.user || { id: 'admin-ops' };
+    const { reason } = req.body || {};
+
+    const result = await TransactionControlCenterService.releaseAdminHold({
+      orderId: req.params.orderId,
+      reason,
+      operatorId: user.id
+    });
+
+    return res.json(result);
+  } catch (err) {
+    const status = err.code === 'ORDER_NOT_FOUND' ? 404 : 400;
+    return res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'RELEASE_HOLD_FAILED'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/transactions/:orderId/execute-payout
+ * Executes seller payout ONLY if server-side status is GREEN (Ready for Payout).
+ * Least-privilege: strictly restricted to finance operators and super admins.
+ * PIC, VENUE_PIC, BUYER, SELLER, SUPPORT are strictly forbidden.
+ */
+router.post('/transactions/:orderId/execute-payout', requireFinance, async (req, res) => {
+  try {
+    const user = resolveUser(req) || req.user || { id: 'finance-admin' };
+    const { idempotencyKey, bankAccount } = req.body || {};
+
+    const result = await TransactionControlCenterService.executePayout({
+      orderId: req.params.orderId,
+      operatorId: user.id,
+      idempotencyKey,
+      bankAccount
+    });
+
+    return res.json(result);
+  } catch (err) {
+    const status = err.code === 'PAYOUT_NOT_ELIGIBLE' ? 400 : (err.code === 'ORDER_NOT_FOUND' ? 404 : 500);
+    return res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'PAYOUT_EXECUTION_FAILED',
+      colorStatus: err.colorStatus,
+      blockingIssues: err.blockingIssues,
+      evaluationReasons: err.evaluationReasons
+    });
   }
 });
 

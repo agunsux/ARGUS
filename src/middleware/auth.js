@@ -265,6 +265,17 @@ const requireRole = authorize;
 const requireAdmin = authorize([...ADMIN_ROLES]);
 
 /**
+ * Middleware: Requires finance authorization (ADMIN, SUPER_ADMIN, FINANCE, FINANCE_OPERATOR).
+ * Strictly forbids PIC, VENUE_PIC, BUYER, SELLER, SUPPORT from money disburse actions.
+ */
+const requireFinance = authorize(['ADMIN', 'SUPER_ADMIN', 'FINANCE', 'FINANCE_OPERATOR']);
+
+/**
+ * Middleware: Requires operations / trust authorization (ADMIN, SUPER_ADMIN, OPS, TRUST_OFFICER).
+ */
+const requireOps = authorize(['ADMIN', 'SUPER_ADMIN', 'OPS', 'TRUST_OFFICER']);
+
+/**
  * Middleware: Enforces that the authenticated user owns the resource or has an ADMIN role.
  * Eliminates client-supplied spoofing.
  *
@@ -326,6 +337,8 @@ module.exports = {
   authorize,
   requireRole,
   requireAdmin,
+  requireFinance,
+  requireOps,
   requireOwnership,
   isAdminRole,
   ADMIN_ROLES,

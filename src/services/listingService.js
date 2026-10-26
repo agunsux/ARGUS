@@ -206,6 +206,23 @@ class ListingService {
       throw err;
     }
 
+    // 2c. Evaluate H-7 / H-14 Operational Listing Window Policy
+    const { ListingWindowPolicy } = require('../policy/ListingWindowPolicy');
+    const isPilotVerified = Boolean(bypassPilotBounds || event.is_pilot || event.pilot_approved);
+    const windowEval = ListingWindowPolicy.evaluateListingWindow({
+      event,
+      isPilotVerified,
+      bypassPolicy: Boolean(bypassPilotBounds || (process.env.NODE_ENV === 'test' && !process.env.ENFORCE_LISTING_WINDOW_TEST)),
+      now: new Date()
+    });
+
+    if (!windowEval.allowed) {
+      const err = new Error(windowEval.reason);
+      err.code = windowEval.code;
+      err.windowDetails = windowEval;
+      throw err;
+    }
+
     // 3. Prevent duplicate ticket barcodes (preserves existing behavior)
     const barcodeHash = this.hashBarcode(rawBarcode);
     const duplicate = state.tickets.find(t => t.event_id === eventId && t.barcode_hash === barcodeHash);
