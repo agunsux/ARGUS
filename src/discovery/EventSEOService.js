@@ -80,11 +80,18 @@ class EventSEOService {
     const offers = [];
     if (!isPastOrConcluded) {
       if (event.official_ticket_url) {
+        const isOfficialSoldOut = (
+          event.status === 'SOLD_OUT' ||
+          event.official_ticket_availability === 'SOLD_OUT' ||
+          event.primary_ticket_status === 'SOLD_OUT' ||
+          event.availability_status === 'SOLD_OUT' ||
+          (event.metadata && (event.metadata.official_ticket_availability === 'SOLD_OUT' || event.metadata.primary_ticket_status === 'SOLD_OUT'))
+        );
         offers.push({
           '@type': 'Offer',
           'name': `Tiket Resmi (${event.official_ticketing_provider || 'Official Primary Provider'})`,
           'url': event.official_ticket_url,
-          'availability': event.status === 'SOLD_OUT' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+          'availability': isOfficialSoldOut ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
           'priceCurrency': 'IDR',
           'validFrom': event.created_at || '2026-01-01'
         });
@@ -120,8 +127,24 @@ class EventSEOService {
     const validRelated = (relatedEvents || []).filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e));
     const jsonLd = JSON.stringify(this.buildStructuredData(event, activeListings));
     const isPrelaunch = isPrelaunchListingMode();
-    const title = `${event.canonical_name} — Jadwal, Lokasi, Tiket Resmi & Resale Terverifikasi | Tikum`;
-    const metaDesc = `Informasi lengkap ${event.canonical_name} di ${event.venue_name}, ${event.city} tanggal ${event.start_date || event.date}. Cek ketersediaan tiket resmi dan perlindungan transfer tiket resale aman Tikum.`;
+    const hasActiveListings = Array.isArray(activeListings) && activeListings.length > 0;
+    const hasEventPic = Boolean(
+      event.has_venue_assist ||
+      event.has_pic ||
+      event.venue_assist_status === 'PIC_AVAILABLE' ||
+      event.venue_assist_status === 'PIC_ON_SITE' ||
+      (event.metadata && (event.metadata.has_venue_assist || event.metadata.has_pic || event.metadata.venue_assist_status === 'PIC_AVAILABLE' || event.metadata.venue_assist_status === 'PIC_ON_SITE'))
+    );
+    const title = event.seo_title || (event.metadata && event.metadata.seo_title) || (
+      hasActiveListings
+        ? `${event.canonical_name} — Jadwal, Lokasi, Tiket Resmi & Resale Terverifikasi | Tikum`
+        : `${event.canonical_name} — Jadwal, Venue & Info Tiket | Tikum`
+    );
+    const metaDesc = event.seo_description || (event.metadata && event.metadata.seo_description) || (
+      hasActiveListings
+        ? `Informasi lengkap ${event.canonical_name} di ${event.venue_name}, ${event.city} tanggal ${event.start_date || event.date}. Cek ketersediaan tiket resmi dan perlindungan transfer tiket resale aman Tikum.`
+        : `Cari informasi ${event.canonical_name} pada ${event.start_date || event.date} di ${event.venue_name}, ${event.city}. Cek detail jadwal, venue, dan status tiket dari sumber resmi.`
+    );
     const canonicalUrl = `https://tikum.app/events/${event.slug}`;
 
     let robotsDirective = 'noindex, follow';
@@ -393,16 +416,23 @@ class EventSEOService {
       }).join('');
     } else if (event.official_ticket_url) {
       const providerName = event.official_ticketing_provider || 'Penyelenggara / Kanal Resmi';
-      const isSoldOut = event.official_ticket_availability === 'SOLD_OUT' || event.availability_status === 'SOLD_OUT';
+      const isSoldOut = (
+        event.official_ticket_availability === 'SOLD_OUT' ||
+        event.availability_status === 'SOLD_OUT' ||
+        event.primary_ticket_status === 'SOLD_OUT' ||
+        event.status === 'SOLD_OUT' ||
+        (event.metadata && (event.metadata.official_ticket_availability === 'SOLD_OUT' || event.metadata.primary_ticket_status === 'SOLD_OUT'))
+      );
       const availBadge = isSoldOut
         ? `<span class="badge badge-danger" style="font-size:11px; background:#ef4444; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-xmark"></i> Tiket Resmi Habis (Sold Out)</span>`
         : `<span class="badge badge-slate" style="font-size:11px; background:#475569; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-question"></i> Cek Ketersediaan di Situs Resmi</span>`;
 
       let priceHtml = '';
       if (event.min_price) {
+        const priceLabel = isSoldOut ? 'Harga Rilis Resmi (Habis):' : 'Mulai dari';
         priceHtml = `
           <div style="font-size:13.5px; color:#38bdf8; font-weight:700; margin-top:4px;">
-            Mulai dari Rp ${event.min_price.toLocaleString('id-ID')}
+            ${priceLabel} Rp ${event.min_price.toLocaleString('id-ID')}
             ${event.max_price && event.max_price > event.min_price ? ` - Rp ${event.max_price.toLocaleString('id-ID')}` : ''}
           </div>
         `;
@@ -424,7 +454,7 @@ class EventSEOService {
             </div>
             <div class="official-action">
               <a href="${event.official_ticket_url}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-outline" style="padding:10px 18px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; border-radius:8px;">
-                Buka Halaman Tiket Resmi <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                ${isSoldOut ? 'Cek Waiting List di Situs Resmi' : 'Buka Halaman Tiket Resmi'} <i class="fa-solid fa-arrow-up-right-from-square"></i>
               </a>
             </div>
           </div>
@@ -483,11 +513,13 @@ class EventSEOService {
   <meta property="og:description" content="${metaDesc}">
   <meta property="og:url" content="${canonicalUrl}">
   <meta property="og:site_name" content="Tikum">
+  ${(event.event_image || event.poster_url || event.image_url) ? `<meta property="og:image" content="${event.event_image || event.poster_url || event.image_url}">` : ''}
   
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${title}">
   <meta name="twitter:description" content="${metaDesc}">
+  ${(event.event_image || event.poster_url || event.image_url) ? `<meta name="twitter:image" content="${event.event_image || event.poster_url || event.image_url}">` : ''}
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
@@ -635,13 +667,13 @@ class EventSEOService {
 
     <!-- Admission & Trust Protocol -->
     <section class="card" style="background: #0f172a; border-color: #1e293b; padding: 20px; margin-top: 30px; border-radius: 12px;">
-      <h3 style="font-size: 16px; margin-bottom: 8px;"><i class="fa-solid fa-user-shield"></i> <span data-i18n="events.gateProtocol">Protokol Verifikasi Gerbang (TIKUM PIC)</span></h3>
+      <h3 style="font-size: 16px; margin-bottom: 8px;"><i class="fa-solid fa-user-shield"></i> <span data-i18n="events.gateProtocol">${hasEventPic ? 'Protokol Verifikasi Gerbang (TIKUM PIC)' : 'Protokol Masuk &amp; Kebijakan Tiket'}</span></h3>
       <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
-        Tipe Tiket: <strong>${event.admission_protocol?.type || 'BARCODE_PLUS_ID'}</strong>. 
-        ${event.admission_protocol?.description || 'Verifikasi tiket digital dan fisik di gate acara bersama Event PIC Tikum.'}
+        Tipe Tiket: <strong>${(event.admission_protocol && event.admission_protocol.type) || (event.metadata && event.metadata.admission_protocol && event.metadata.admission_protocol.type) || 'BARCODE_PLUS_ID'}</strong>. 
+        ${(event.admission_protocol && event.admission_protocol.description) || (event.metadata && event.metadata.admission_protocol && event.metadata.admission_protocol.description) || (hasEventPic ? 'Verifikasi tiket digital dan fisik di gate acara bersama Event PIC Tikum.' : 'Verifikasi tiket elektronik dan kepatuhan identitas sesuai ketentuan resmi promotor dan penyedia tiket primer. Layanan PIC venue TIKUM belum dijadwalkan untuk event ini.')}
       </p>
       <div style="font-size: 11px; color: #64748b; margin-top: 6px; border-top: 1px solid #1e293b; padding-top: 6px;">
-        <em>${event.admission_protocol?.verification_disclaimer || 'Verifikasi fisik gerbang memvalidasi kepemilikan dan integritas tiket, namun tidak menggantikan validasi kriptografis langsung dari promotor penerbit tiket.'}</em>
+        <em>${(event.admission_protocol && event.admission_protocol.verification_disclaimer) || (event.metadata && event.metadata.admission_protocol && event.metadata.admission_protocol.verification_disclaimer) || (hasEventPic ? 'Verifikasi fisik gerbang memvalidasi kepemilikan dan integritas tiket, namun tidak menggantikan validasi kriptografis langsung dari promotor penerbit tiket.' : 'Layanan PIC lapangan TIKUM belum dijadwalkan untuk event ini. Ketentuan pemindahtanganan/resale sepenuhnya tunduk pada kebijakan promotor dan penyedia tiket resmi.')}</em>
       </div>
     </section>
 

@@ -895,4 +895,36 @@ BEGIN;
         metadata = EXCLUDED.metadata,
         updated_at = NOW();
     
+
+      INSERT INTO canonical_events (
+        id, slug, canonical_name, event_type, category,
+        start_date, start_datetime, end_date, end_datetime, timezone,
+        venue_name, venue_city, city, province, country,
+        organizer_name, official_event_url, official_ticket_url, official_ticketing_provider,
+        min_price, max_price, is_verified, verification_status,
+        lifecycle_status, archive_status, public_visibility, homepage_visibility,
+        metadata, created_at, updated_at
+      ) VALUES (
+        'ev-can-fd86cf7d', 'morgan-jay-the-goofy-guy-tour-jakarta-2026', 'Morgan Jay: The Goofy Guy Tour Jakarta', 'COMEDY', 'COMEDY',
+        '2026-11-11', '2026-11-11T20:00:00+07:00', '2026-11-11', '2026-11-11T21:30:00+07:00', 'Asia/Jakarta',
+        'Nafiri Convention Hall', 'Jakarta Barat', 'Jakarta', 'DKI Jakarta', 'Indonesia',
+        'Mad About Comedy', 'https://morganjay.com', 'https://megatix.co.id/events/MorganJay2026A', 'Megatix',
+        650000, 1250000, TRUE, 'PRIMARY_SOURCE_VERIFIED',
+        'UPCOMING', 'ACTIVE', TRUE, TRUE,
+        '{"artist":"Morgan Jay","artists":["Morgan Jay"],"age_restriction":"16+","official_ticket_availability":"SOLD_OUT","primary_ticket_status":"SOLD_OUT","has_venue_assist":false,"has_pic":false,"venue_assist_status":"NOT_SCHEDULED","seo_title":"Morgan Jay Jakarta 2026: Jadwal, Venue & Info Tiket | TIKUM","seo_description":"Cari informasi Morgan Jay: The Goofy Guy Tour Jakarta pada 11 November 2026 di Nafiri Convention Hall. Cek detail event dan status tiket dari sumber resmi.","description":"Tur stand-up comedy musikal perdana Morgan Jay di Jakarta dalam rangkaian The Goofy Guy Tour pada Rabu, 11 November 2026 di Nafiri Convention Hall, Central Park Mall. Seluruh penjualan tiket resmi di Megatix saat ini telah sold out dan pengunjung diarahkan ke waiting list pembatalan tiket.","image_url":"/assets/posters/morgan-jay-the-goofy-guy-tour-jakarta-2026.jpg","poster_url":"/assets/posters/morgan-jay-the-goofy-guy-tour-jakarta-2026.jpg","thumbnail_url":"/assets/posters/morgan-jay-the-goofy-guy-tour-jakarta-2026.jpg","image_source_url":"https://megatix.co.id/events/MorganJay2026A","image_source_type":"OFFICIAL_TICKETING_PORTAL","image_status":"VERIFIED_OFFICIAL","image_credit":"Morgan Jay: The Goofy Guy Tour Jakarta / Megatix / Mad About Comedy","image_verified":true,"admission_protocol":{"type":"E-TICKET_WAITLIST_MEGATIX","description":"Tiket resmi diterbitkan secara elektronik melalui portal Megatix. Syarat penukaran dan transfer tiket tunduk pada ketentuan resmi promotor Mad About Comedy dan Megatix.","verification_disclaimer":"Layanan PIC lapangan TIKUM belum dijadwalkan untuk event ini. TIKUM tidak membuka pemrosesan transaksi sekunder sebelum inventaris dan verifikasi resmi siap.","age_restriction":"16+"},"price_tiers":[{"name":"General Admission","price":650000,"status":"SOLD_OUT","face_value":650000,"currency":"IDR"},{"name":"VIP Meet & Greet","price":1250000,"status":"SOLD_OUT","face_value":1250000,"currency":"IDR"}],"provenance":{"official_source":"https://morganjay.com","ticket_source":"https://megatix.co.id/events/MorganJay2026A","promoter_source":"Mad About Comedy","venue_source":"Nafiri Convention Hall, Central Park Mall","discovery_source":"src-official-comedy","notes":["Verified via official Megatix portal (https://megatix.co.id/events/MorganJay2026A)","Tickets marked ALL TICKETS SOLD OUT! Waiting list enabled on Megatix","Presenter confirmed: Mad About Comedy"]}}'::jsonb, NOW(), NOW()
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        slug = EXCLUDED.slug,
+        canonical_name = EXCLUDED.canonical_name,
+        min_price = EXCLUDED.min_price,
+        max_price = EXCLUDED.max_price,
+        is_verified = EXCLUDED.is_verified,
+        verification_status = EXCLUDED.verification_status,
+        lifecycle_status = EXCLUDED.lifecycle_status,
+        archive_status = EXCLUDED.archive_status,
+        public_visibility = EXCLUDED.public_visibility,
+        homepage_visibility = EXCLUDED.homepage_visibility,
+        metadata = EXCLUDED.metadata,
+        updated_at = NOW();
+
 COMMIT;
