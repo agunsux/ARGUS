@@ -37,6 +37,7 @@ class ListingWindowPolicy {
     isPilotVerified = false,
     bypassPolicy = false,
     isPrelaunchCollection = false,
+    customWindowDays = null,
     now = new Date()
   }) {
     if (!event) {
@@ -108,7 +109,7 @@ class ListingWindowPolicy {
       };
     }
 
-    // 3. Determine window duration
+    // 3. Determine window duration (Configurable: explicit customWindowDays, event metadata, or default H-7 proposal)
     const isPilot = Boolean(
       isPilotVerified ||
       event.is_pilot ||
@@ -116,8 +117,18 @@ class ListingWindowPolicy {
       (event.metadata && (event.metadata.is_pilot || event.metadata.pilot_approved))
     );
 
-    const windowDays = isPilot ? 14 : 7;
-    const windowType = isPilot ? WINDOW_TYPE.H14_PILOT : WINDOW_TYPE.H7_STANDARD;
+    const configuredDays = (customWindowDays !== null && customWindowDays !== undefined)
+      ? customWindowDays
+      : (event.payment_window_days || (event.metadata && event.metadata.payment_window_days));
+
+    const windowDays = (configuredDays !== undefined && configuredDays !== null)
+      ? configuredDays
+      : (isPilot ? 14 : 7);
+
+    const windowType = (configuredDays !== undefined && configuredDays !== null)
+      ? `H-${windowDays}`
+      : (isPilot ? WINDOW_TYPE.H14_PILOT : WINDOW_TYPE.H7_STANDARD);
+
     const windowDurationMs = windowDays * 24 * 60 * 60 * 1000;
     const windowStartMs = startMs - windowDurationMs;
 
@@ -232,6 +243,61 @@ class ListingWindowPolicy {
     }
 
     return { allowed: true };
+  }
+
+  /**
+   * Evaluates an informational match between an early listing and a Want-to-Buy (WTB) request
+   * prior to the opening of the near-event payment window.
+   *
+   * Non-Negotiable Invariants (Section 2):
+   * 1. A match before the payment window is informational and non-binding.
+   * 2. No payment obligation or reservation deposit (DP) is collected in MVP.
+   * 3. Explains match validity window and when listing becomes claimable by other buyers.
+   */
+  static evaluateInformationalMatch({
+    event,
+    listing,
+    wtbRequest = null,
+    customWindowDays = null,
+    matchValidityHours = 24,
+    now = new Date()
+  }) {
+    if (!event || !listing) {
+      return {
+        matched: false,
+        isBinding: false,
+        requiresDeposit: false,
+        reason: 'Event and listing are required for match evaluation',
+        operationalDisclaimer: OPERATIONAL_DISCLAIMER
+      };
+    }
+
+    const windowEval = this.evaluateListingWindow({
+      event,
+      customWindowDays,
+      now
+    });
+
+    const isWindowOpen = windowEval.allowed && !windowEval.prelaunchCollection;
+    const nowMs = new Date(now).getTime();
+    const matchExpiresAt = new Date(nowMs + matchValidityHours * 3600 * 1000).toISOString();
+
+    return {
+      matched: true,
+      isBinding: false, // Invariant: Non-binding prior to payment window checkout
+      requiresDeposit: false, // Invariant: Zero DP in MVP
+      depositAmount: 0,
+      isPaymentWindowOpen: isWindowOpen,
+      windowStatus: isWindowOpen ? 'PAYMENT_WINDOW_OPEN' : 'PRE_PAYMENT_WINDOW_INFORMATIONAL',
+      matchExpiresAt,
+      matchValidityHours,
+      communication: {
+        id: 'Pemberitahuan pencocokan ini bersifat informasional dan tidak mengikat. Belum ada kewajiban pembayaran atau uang muka (DP). Transaksi mengikat dan pembayaran baru dibuka saat jendela pelunasan dekat hari H.',
+        en: 'This match is informational and non-binding. No payment or deposit is required. Binding checkout opens during the near-event payment window.'
+      },
+      nextAction: isWindowOpen ? 'PROCEED_TO_CHECKOUT' : 'WAIT_FOR_PAYMENT_WINDOW',
+      operationalDisclaimer: OPERATIONAL_DISCLAIMER
+    };
   }
 }
 

@@ -541,6 +541,135 @@ class MarketplaceOrderService {
   }
 
   /**
+   * Handles a seller-initiated cancellation on a binding transaction.
+   *
+   * Invariants (Section 4):
+   * 1. If order was paid/escrowed, triggers full buyer refund via refundOrder.
+   * 2. If pre-payment, cancels order and safely releases reservation.
+   * 3. Records seller cancellation, buyer impact score, and configurable strike via SellerCommitmentService.
+   * 4. Zero seller bonds or funds deducted without separate legal approval.
+   */
+  static async sellerCancelOrder({
+    orderId,
+    sellerId,
+    reason,
+    evidenceRef = null,
+    hoursToEvent = null,
+    actorId = null
+  }) {
+    const { SellerCommitmentService } = require('../sellerCommitmentService');
+
+    let order = (state.orders || []).find(o => o.id === orderId);
+    if (!order) {
+      const err = new Error(`Order '${orderId}' not found`);
+      err.code = 'ORDER_NOT_FOUND';
+      throw err;
+    }
+
+    if (order.seller_id !== sellerId) {
+      const err = new Error('Unauthorized: Only the assigned seller may cancel this commitment');
+      err.code = 'UNAUTHORIZED_SELLER_CANCELLATION';
+      err.status = 403;
+      throw err;
+    }
+
+    // Idempotency: Repeated seller cancellation calls return existing state
+    if (order.cancellation_initiator === 'SELLER' && (order.marketplace_status === MARKETPLACE_ORDER_STATUS.CANCELLED || order.status === ORDER_STATUS.CANCELLED)) {
+      const commitmentResult = await SellerCommitmentService.recordSellerCancellation({
+        orderId,
+        sellerId,
+        reason,
+        hoursToEvent: hoursToEvent || 96,
+        evidenceRef,
+        actorId: actorId || sellerId
+      });
+      return {
+        success: true,
+        idempotent: true,
+        order,
+        refundExecuted: Boolean(order.refund_executed),
+        sellerStrike: commitmentResult
+      };
+    }
+
+    // Determine hours to event if not explicitly provided
+    let calculatedHours = hoursToEvent;
+    if (calculatedHours === null) {
+      const event = (state.events || []).find(e => e.id === order.event_id);
+      if (event && event.date) {
+        const eventStartMs = new Date(event.date).getTime();
+        const diffMs = eventStartMs - Date.now();
+        calculatedHours = Math.max(0, Math.round(diffMs / (3600 * 1000)));
+      } else {
+        calculatedHours = 96;
+      }
+    }
+
+    const currentStatus = order.marketplace_status || order.status;
+
+    // If order was paid/escrowed, execute full buyer refund
+    const isPaid = [
+      MARKETPLACE_ORDER_STATUS.PAID,
+      MARKETPLACE_ORDER_STATUS.FULFILLMENT_PENDING,
+      ORDER_STATUS.PAID_ESCROWED,
+      'ESCROWED'
+    ].includes(currentStatus);
+
+    let refundRes = null;
+    if (isPaid) {
+      refundRes = await this.refundOrder({
+        orderId,
+        actorId: actorId || sellerId,
+        reason: `Seller cancelled commitment: ${reason}`
+      });
+      order.marketplace_status = MARKETPLACE_ORDER_STATUS.CANCELLED;
+      order.status = ORDER_STATUS.CANCELLED;
+      order.refund_executed = true;
+      order.refund_rail_status = refundRes?.escrow?.refund_rail_status || 'MANUAL_REFUND_REQUIRED';
+      order.provider_refund_confirmed = Boolean(refundRes?.escrow?.provider_refund_confirmed);
+    } else {
+      await this.cancelOrder(orderId, actorId || sellerId, `Seller cancelled before payment: ${reason}`);
+      order.refund_executed = false;
+      order.refund_rail_status = 'NONE';
+      order.provider_refund_confirmed = false;
+    }
+
+    order.cancellation_initiator = 'SELLER';
+    order.cancellation_reason = reason;
+
+    // Invariant: Invalidate cancelled ticket so it cannot be inadvertently purchased by others
+    const ticket = TicketInventoryService.findTicket(order.ticket_id);
+    if (ticket) {
+      ticket.status = 'CANCELLED';
+      ticket.cancellation_reason = `Seller cancelled: ${reason}`;
+      ticket.updated_at = new Date().toISOString();
+    }
+    const listing = (state.listings || []).find(l => l.id === order.listing_id || l.listing_id === order.listing_id);
+    if (listing) {
+      listing.status = 'CANCELLED';
+      listing.available_quantity = 0;
+      listing.updated_at = new Date().toISOString();
+    }
+
+    // Record seller commitment penalty & strike
+    const commitmentResult = await SellerCommitmentService.recordSellerCancellation({
+      orderId,
+      sellerId,
+      reason,
+      hoursToEvent: calculatedHours,
+      evidenceRef,
+      actorId: actorId || sellerId
+    });
+
+    return {
+      success: true,
+      order,
+      refundExecuted: isPaid,
+      sellerStrike: commitmentResult
+    };
+  }
+
+  /**
    * Transitions order status within allowed state machine constraints.
    */
   static async transitionOrderStatus(orderId, targetStatus, actorId, reason = null) {

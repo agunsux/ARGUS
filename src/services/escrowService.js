@@ -644,33 +644,50 @@ class EscrowService {
       ? Boolean(isProviderEscrow)
       : (effProvider !== 'xendit' && effProvider !== 'midtrans');
 
-    // Transition Escrow: PENDING_PAYMENT -> PAID -> ESCROWED / CAPTURED
-    escrow.status = ESCROW_STATUS.ESCROWED;
-    if (isEscrow) {
-      escrow.provider_escrow_id = `prov-esc-${payment.provider_ref}`;
-      escrow.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
-      order.status = ORDER_STATUS.PAID_ESCROWED;
-      order.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
-      order.payment_money_state = 'ESCROW_HELD';
+    const isLateOrCancelled = order.status === ORDER_STATUS.CANCELLED ||
+      order.status === 'EXPIRED' ||
+      order.status === 'LATE_PAYMENT_PENDING_REVIEW' ||
+      escrow.status === 'EXPIRED' ||
+      escrow.status === 'CANCELLED';
+
+    if (isLateOrCancelled) {
+      order.status = 'LATE_PAYMENT_PENDING_REVIEW';
+      order.late_payment = true;
+      escrow.status = 'HOLDING_FOR_REFUND';
+      escrow.provider_escrow_id = payment.provider_ref ? `prov-hold-${payment.provider_ref}` : null;
+      escrow.escrow_type = 'HOLDING_ACCOUNT';
+      order.payment_money_state = 'LATE_PAYMENT_HELD_FOR_REFUND';
     } else {
-      escrow.provider_escrow_id = null; // Truthful: No 3rd-party escrow ID on non-escrow rails
-      escrow.escrow_type = 'NONE_PLATFORM_CAPTURED';
-      escrow.internal_simulation = true;
-      order.status = ORDER_STATUS.PAID_PLATFORM_HELD;
-      order.escrow_type = 'NONE_PLATFORM_CAPTURED';
-      order.payment_money_state = 'CAPTURED_PLATFORM_SETTLEMENT';
-    }
+      // Transition Escrow: PENDING_PAYMENT -> PAID -> ESCROWED / CAPTURED
+      escrow.status = ESCROW_STATUS.ESCROWED;
+      if (isEscrow) {
+        escrow.provider_escrow_id = `prov-esc-${payment.provider_ref}`;
+        escrow.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
+        order.status = ORDER_STATUS.PAID_ESCROWED;
+        order.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
+        order.payment_money_state = 'ESCROW_HELD';
+      } else {
+        escrow.provider_escrow_id = null; // Truthful: No 3rd-party escrow ID on non-escrow rails
+        escrow.escrow_type = 'NONE_PLATFORM_CAPTURED';
+        escrow.internal_simulation = true;
+        order.status = ORDER_STATUS.PAID_PLATFORM_HELD;
+        order.escrow_type = 'NONE_PLATFORM_CAPTURED';
+        order.payment_money_state = 'CAPTURED_PLATFORM_SETTLEMENT';
+      }
 
-    // Update listing status to SOLD
-    const listing = (state.listings || []).find(l => l.id === order.listing_id);
-    if (listing) {
-      listing.status = LISTING_STATUS.SOLD;
-    }
+      // Invariant I7: Only transition active inventory to SOLD/ESCROWED if payment is on-time.
+      // Late payments after expiry credit holding ledger but NEVER resurrect or mutate released inventory.
+      // Update listing status to SOLD
+      const listing = (state.listings || []).find(l => l.id === order.listing_id);
+      if (listing) {
+        listing.status = LISTING_STATUS.SOLD;
+      }
 
-    // Update ticket owner/status
-    const ticket = (state.tickets || []).find(t => t.id === order.ticket_id);
-    if (ticket) {
-      ticket.status = 'ESCROWED';
+      // Update ticket owner/status
+      const ticket = (state.tickets || []).find(t => t.id === order.ticket_id);
+      if (ticket) {
+        ticket.status = 'ESCROWED';
+      }
     }
 
     try {
