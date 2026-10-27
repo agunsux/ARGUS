@@ -134,7 +134,18 @@ Sitemap: ${origin}/sitemap.xml
 
     // 3. Dynamic Canonical Events (P0 Gate: Only fully VERIFIED events enter sitemap)
     try {
-      const events = canonicalRegistry.getAllEvents();
+      const rawEvents = typeof providers.getEvents === 'function' ? providers.getEvents() : canonicalRegistry.getAllEvents();
+      const heroFallbacks = canonicalRegistry.getHeroEvents ? canonicalRegistry.getHeroEvents() : [];
+      const eventMap = new Map();
+      for (const ev of (rawEvents || [])) {
+        if (ev && (ev.id || ev.event_id)) eventMap.set(ev.id || ev.event_id, ev);
+      }
+      for (const hero of heroFallbacks) {
+        if (hero && hero.id && !eventMap.has(hero.id)) {
+          eventMap.set(hero.id, hero);
+        }
+      }
+      const events = Array.from(eventMap.values());
       let eligibleCount = 0;
       for (const ev of events) {
         const isEligible = (ev.verification_status === 'VERIFIED' || ev.verification_status === 'PRIMARY_SOURCE_VERIFIED') &&

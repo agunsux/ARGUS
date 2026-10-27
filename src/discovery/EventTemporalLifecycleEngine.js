@@ -154,14 +154,18 @@ class EventTemporalLifecycleEngine {
 
     // 1. Determine Start Datetime
     let startDate = eventData.start_date || eventData.date;
+    if (startDate instanceof Date) {
+      startDate = startDate.toISOString().split('T')[0];
+    } else if (typeof startDate === 'string' && startDate.includes('T')) {
+      startDate = startDate.split('T')[0];
+    }
+
     if (!startDate && (eventData.event_start_at || eventData.start_datetime)) {
       const explicitStart = eventData.event_start_at || eventData.start_datetime;
-      if (explicitStart && explicitStart.includes('T')) {
-        startDate = explicitStart.split('T')[0];
+      const explicitStartStr = explicitStart instanceof Date ? explicitStart.toISOString() : (typeof explicitStart === 'string' ? explicitStart : null);
+      if (explicitStartStr && explicitStartStr.includes('T')) {
+        startDate = explicitStartStr.split('T')[0];
       }
-    }
-    if (startDate && startDate.includes('T')) {
-      startDate = startDate.split('T')[0];
     }
     const isValidStartDate = Boolean(startDate && !isNaN(new Date(startDate).getTime()) && String(startDate).trim().length >= 10);
     if (!isValidStartDate) {
@@ -177,31 +181,34 @@ class EventTemporalLifecycleEngine {
     }
 
     let startTime = eventData.start_time || eventData.time;
-    if (eventData.start_datetime && eventData.start_datetime.includes('T')) {
-      const parts = eventData.start_datetime.split('T')[1];
+    const startDtStr = eventData.start_datetime instanceof Date ? eventData.start_datetime.toISOString() : (typeof eventData.start_datetime === 'string' ? eventData.start_datetime : null);
+    if (startDtStr && startDtStr.includes('T')) {
+      const parts = startDtStr.split('T')[1];
       if (parts) startTime = parts.substring(0, 5);
     }
-    if (eventData.event_start_at && eventData.event_start_at.includes('T')) {
-      const parts = eventData.event_start_at.split('T')[1];
+    const eventStartAtStr = eventData.event_start_at instanceof Date ? eventData.event_start_at.toISOString() : (typeof eventData.event_start_at === 'string' ? eventData.event_start_at : null);
+    if (eventStartAtStr && eventStartAtStr.includes('T')) {
+      const parts = eventStartAtStr.split('T')[1];
       if (parts) startTime = parts.substring(0, 5);
     }
     if (!startTime) {
       startTime = '19:00';
     }
-    if (!startTime.includes(':')) {
+    if (typeof startTime === 'string' && !startTime.includes(':')) {
       startTime = `${startTime}:00`;
     }
-    const sParts = startTime.split(':');
+    const sParts = String(startTime).split(':');
     startTime = `${sParts[0].padStart(2, '0')}:${(sParts[1] || '00').padStart(2, '0')}`;
 
-    let startAtIso = eventData.event_start_at || eventData.start_datetime;
+    let startAtIso = eventStartAtStr || startDtStr;
     if (!startAtIso || !startAtIso.includes('T') || (!startAtIso.includes('+') && !startAtIso.endsWith('Z')) || !startAtIso.startsWith(startDate)) {
       startAtIso = `${startDate}T${startTime}:00${offset}`;
     }
 
     // 2. Determine End Datetime
-    let endAtIso = eventData.event_end_at || eventData.end_datetime;
-    let endDate = eventData.end_date ? (eventData.end_date.includes('T') ? eventData.end_date.split('T')[0] : eventData.end_date) : null;
+    const rawEndAt = eventData.event_end_at || eventData.end_datetime;
+    let endAtIso = rawEndAt instanceof Date ? rawEndAt.toISOString() : (typeof rawEndAt === 'string' ? rawEndAt : null);
+    let endDate = eventData.end_date instanceof Date ? eventData.end_date.toISOString().split('T')[0] : (typeof eventData.end_date === 'string' ? (eventData.end_date.includes('T') ? eventData.end_date.split('T')[0] : eventData.end_date) : null);
     if (!endDate && endAtIso && endAtIso.includes('T')) {
       endDate = endAtIso.split('T')[0];
     }
@@ -212,7 +219,7 @@ class EventTemporalLifecycleEngine {
       // Valid explicit end datetime provided matching target end date
     } else if (endDate && endDate !== startDate) {
       // Multi-day event: ends at end of final day
-      const cleanEndTime = endTime ? `${endTime.padStart(5, '0')}:00` : '23:59:59';
+      const cleanEndTime = endTime ? `${String(endTime).padStart(5, '0')}:00` : '23:59:59';
       endAtIso = `${endDate}T${cleanEndTime}${offset}`;
     } else {
       // Single day event

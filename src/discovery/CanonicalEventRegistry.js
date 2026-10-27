@@ -1299,6 +1299,11 @@ class CanonicalEventRegistry {
   }
 
   getEventBySlug(slug) {
+    if (slug === 'morgan-jay-jakarta-2026') {
+      const canonicalSlug = 'morgan-jay-the-goofy-guy-tour-jakarta-2026';
+      const target = this.getEventBySlug(canonicalSlug) || this.getEventById('ev-can-fd86cf7d');
+      if (target) return target;
+    }
     const id = this.slugMap.get(slug);
     if (id && this.events.has(id)) return this.events.get(id);
     if (this.events.has(slug)) return this.events.get(slug);
@@ -1563,12 +1568,112 @@ class CanonicalEventRegistry {
       resale_inventory_count: 0
     };
 
+    const morganJayHero = {
+      id: 'ev-can-fd86cf7d',
+      event_id: 'ev-can-fd86cf7d',
+      slug: 'morgan-jay-the-goofy-guy-tour-jakarta-2026',
+      name: 'Morgan Jay: The Goofy Guy Tour Jakarta',
+      title: 'Morgan Jay: The Goofy Guy Tour Jakarta',
+      canonical_name: 'Morgan Jay: The Goofy Guy Tour Jakarta',
+      artist: 'Morgan Jay',
+      artists: ['Morgan Jay'],
+      date: '2026-11-11',
+      start_date: '2026-11-11',
+      end_date: '2026-11-11',
+      start_time: '19:00',
+      start_datetime: '2026-11-11T19:00:00+07:00',
+      end_datetime: '2026-11-11T20:30:00+07:00',
+      event_start_at: '2026-11-11T19:00:00+07:00',
+      event_end_at: '2026-11-11T20:30:00+07:00',
+      event_timezone: 'Asia/Jakarta',
+      timezone: 'Asia/Jakarta',
+      archive_at: '2026-11-14T20:30:00+07:00',
+      venue_id: 'venue-nafiri-convention-hall',
+      venue: 'Nafiri Convention Hall',
+      venue_name: 'Nafiri Convention Hall',
+      venue_city: 'Jakarta Barat',
+      city: 'Jakarta',
+      province: 'DKI Jakarta',
+      country: 'Indonesia',
+      event_type: 'COMEDY',
+      category: 'COMEDY',
+      age_restriction: '16+',
+      admission_protocol: {
+        type: 'E-TICKET_WAITLIST_MEGATIX',
+        description: 'Tiket resmi diterbitkan secara elektronik melalui portal Megatix. Syarat penukaran dan transfer tiket tunduk pada ketentuan resmi promotor Mad About Comedy dan Megatix.',
+        verification_disclaimer: 'Layanan PIC lapangan TIKUM belum dijadwalkan untuk event ini. TIKUM tidak membuka pemrosesan transaksi sekunder sebelum inventaris dan verifikasi resmi siap.',
+        required_items: ['E-Ticket Megatix', 'KTP Asli (16+)'],
+        handoff_type: 'DIGITAL_TRANSFER',
+        venue_gate_authority: 'Mad About Comedy & Megatix'
+      },
+      has_venue_assist: false,
+      has_pic: false,
+      venue_assist_status: 'NOT_SCHEDULED',
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
+      public_visibility: true,
+      homepage_visibility: true,
+      public_upcoming: true,
+      source: 'OFFICIAL_TICKETING_PORTAL',
+      source_id: 'src-official-comedy',
+      source_type: 'PRIMARY_SOURCE',
+      source_url: 'https://megatix.co.id/events/MorganJay2026A',
+      official_link: 'https://morganjay.com',
+      official_event_url: 'https://morganjay.com',
+      official_ticket_url: 'https://megatix.co.id/events/MorganJay2026A',
+      official_ticketing_provider: 'Megatix',
+      official_ticket_availability: 'SOLD_OUT',
+      primary_ticket_status: 'SOLD_OUT',
+      poster_url: '/assets/posters/morgan-jay-the-goofy-guy-tour-jakarta-2026.jpg',
+      image_url: '/assets/posters/morgan-jay-the-goofy-guy-tour-jakarta-2026.jpg',
+      thumbnail_url: '/assets/posters/morgan-jay-the-goofy-guy-tour-jakarta-2026.jpg',
+      image_source_url: 'https://megatix.co.id/events/MorganJay2026A',
+      image_source_type: 'OFFICIAL_TICKETING_PORTAL',
+      image_status: 'VERIFIED_OFFICIAL',
+      image_verified: true,
+      image_credit: 'Morgan Jay: The Goofy Guy Tour Jakarta / Megatix / Mad About Comedy',
+      is_fallback_image: false,
+      is_verified: true,
+      verification_status: 'PRIMARY_SOURCE_VERIFIED',
+      verification_confidence: 95,
+      organizer_name: 'Mad About Comedy',
+      promoter: 'Mad About Comedy',
+      min_price: 650000,
+      max_price: 1250000,
+      price: 650000,
+      price_currency: 'IDR',
+      price_status: 'QUALIFIED',
+      meets_price_threshold: true,
+      resale_inventory_count: 0,
+      resale_available: false,
+      seo_title: 'Morgan Jay Jakarta 2026: Jadwal, Venue & Info Tiket | TIKUM',
+      seo_description: 'Cari informasi Morgan Jay: The Goofy Guy Tour Jakarta pada 11 November 2026 di Nafiri Convention Hall. Cek detail event dan status tiket dari sumber resmi.',
+      description: 'Tur stand-up comedy musikal perdana Morgan Jay di Jakarta dalam rangkaian The Goofy Guy Tour pada Rabu, 11 November 2026 di Nafiri Convention Hall, Central Park Mall. Seluruh penjualan tiket resmi di Megatix saat ini telah sold out dan pengunjung diarahkan ke waiting list pembatalan tiket.',
+      price_tiers: [
+        { name: 'General Admission', price: 650000, status: 'SOLD_OUT', face_value: 650000, currency: 'IDR' },
+        { name: 'VIP Meet & Greet', price: 1250000, status: 'SOLD_OUT', face_value: 1250000, currency: 'IDR' }
+      ],
+      sources: [
+        {
+          source_id: 'src-official-comedy',
+          source_name: 'Megatix & Mad About Comedy',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://megatix.co.id/events/MorganJay2026A',
+          source_type: 'PRIMARY_SOURCE',
+          retrieved_at: '2026-10-27T10:00:00+07:00'
+        }
+      ]
+    };
+
     if (options && options.includePast) {
-      return [nassarHero, btsHero, yeHero];
+      return [nassarHero, btsHero, morganJayHero, yeHero];
     }
 
     // Default active upcoming hero concerts on/after 25 Oct 2026
-    return [nassarHero, btsHero];
+    return [nassarHero, btsHero, morganJayHero];
   }
 
   getAllEvents() {
