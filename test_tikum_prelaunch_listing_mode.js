@@ -785,6 +785,33 @@ async function runAllTests() {
     assert.strictEqual(res.json.error, PRELAUNCH_ERROR_MESSAGE);
   });
 
+  await itAsync('Legacy POST /tickets/:id/reserve is blocked -> 403 MARKETPLACE_PRELAUNCH_ONLY', async () => {
+    const res = await httpRequest('/tickets/t-dummy-01/reserve', {
+      method: 'POST',
+      body: { buyerId: 'buyer-01' }
+    });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.json.code, 'MARKETPLACE_PRELAUNCH_ONLY');
+  });
+
+  await itAsync('Legacy POST /tickets/submit is blocked -> 403 MARKETPLACE_PRELAUNCH_ONLY', async () => {
+    const res = await httpRequest('/tickets/submit', {
+      method: 'POST',
+      body: { ticketId: 't-dummy-01', eventId: 'ev-dummy', sellerId: 's-dummy', seatInfo: 'A1', price: 500000 }
+    });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.json.code, 'MARKETPLACE_PRELAUNCH_ONLY');
+  });
+
+  await itAsync('Legacy POST /api/admin/transfers/:id/release is blocked -> 403 MARKETPLACE_PRELAUNCH_ONLY', async () => {
+    const res = await httpRequest('/api/admin/transfers/trf-dummy/release', {
+      method: 'POST',
+      body: { officerId: 'admin-01' }
+    });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.json.code, 'MARKETPLACE_PRELAUNCH_ONLY');
+  });
+
   // =========================================================================
   // Section 7: Direct Service-Level Enforcements
   // =========================================================================

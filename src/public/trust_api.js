@@ -11,6 +11,7 @@ const { createEvidenceBundle, verifyBundleIntegrity } = require('../verification
 const { explainDecision } = require('./explain');
 const { validateSettlement } = require('../settlement/escrow');
 const { requireAdminApiKey } = require('../middleware/adminApiKeyAuth');
+const { enforceNoTransactions } = require('../config/marketplaceMode');
 
 // Configure multer storage
 const uploadsDir = process.env.VERCEL
@@ -74,7 +75,7 @@ router.get('/ticket/:id/verify', async (req, res) => {
  * Endpoint 2: Submit ticket & upload evidence bundle
  * POST /api/tickets/submit
  */
-router.post('/tickets/submit', upload.any(), async (req, res) => {
+router.post('/tickets/submit', enforceNoTransactions, upload.any(), async (req, res) => {
   try {
     const { ticketId, eventId, sellerId, seatInfo, price } = req.body;
     
@@ -115,7 +116,7 @@ router.post('/tickets/submit', upload.any(), async (req, res) => {
  * Endpoint 3: Buyer initiates a ticket reserve/purchase
  * POST /api/tickets/:id/reserve
  */
-router.post('/tickets/:id/reserve', async (req, res) => {
+router.post('/tickets/:id/reserve', enforceNoTransactions, async (req, res) => {
   try {
     const ticketId = req.params.id;
     const { buyerId } = req.body;
@@ -221,7 +222,7 @@ router.post('/api/admin/tickets/:id/verify', requireAdminApiKey, async (req, res
  * Endpoint 6: Ops confirms Buyer's Escrow Payment has cleared (Admin action)
  * POST /api/admin/transfers/:id/confirm-payment
  */
-router.post('/api/admin/transfers/:id/confirm-payment', requireAdminApiKey, async (req, res) => {
+router.post('/api/admin/transfers/:id/confirm-payment', enforceNoTransactions, requireAdminApiKey, async (req, res) => {
   try {
     const transferId = req.params.id;
     const { officerId } = req.body;
@@ -244,7 +245,7 @@ router.post('/api/admin/transfers/:id/confirm-payment', requireAdminApiKey, asyn
  * Endpoint 7: Ops releases funds to Seller & finalizes transfer (Admin action)
  * POST /api/admin/transfers/:id/release
  */
-router.post('/api/admin/transfers/:id/release', requireAdminApiKey, async (req, res) => {
+router.post('/api/admin/transfers/:id/release', enforceNoTransactions, requireAdminApiKey, async (req, res) => {
   try {
     const transferId = req.params.id;
     const { officerId } = req.body;
