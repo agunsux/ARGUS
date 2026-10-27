@@ -486,14 +486,20 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       }
       return this.fallbackRepo.listActiveListings(canonicalEventId);
     }
+    const { isPrelaunchListingMode } = require('../config/marketplaceMode');
+    const isPrelaunch = isPrelaunchListingMode();
+    const statusCondition = isPrelaunch
+      ? "(status = 'ACTIVE' OR status = 'APPROVED_PRELAUNCH')"
+      : "status = 'ACTIVE'";
+
     if (canonicalEventId) {
       const res = await this.query(
-        "SELECT * FROM marketplace_listings WHERE canonical_event_id = $1 AND status = 'ACTIVE' ORDER BY price ASC",
+        `SELECT * FROM marketplace_listings WHERE canonical_event_id = $1 AND ${statusCondition} ORDER BY price ASC`,
         [canonicalEventId]
       );
       return res.rows;
     }
-    const res = await this.query("SELECT * FROM marketplace_listings WHERE status = 'ACTIVE' ORDER BY created_at DESC");
+    const res = await this.query(`SELECT * FROM marketplace_listings WHERE ${statusCondition} ORDER BY created_at DESC`);
     return res.rows;
   }
 

@@ -58,6 +58,14 @@ router.get('/v1/payments/methods', (req, res) => {
  * Fails-closed in production if Midtrans production merchant activation is pending
  */
 router.get(['/v1/payments/midtrans/client-key', '/payments/midtrans/client-key'], (req, res) => {
+  const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+  if (isPrelaunchListingMode()) {
+    return res.status(403).json({
+      ...PRELAUNCH_ERROR_RESPONSE,
+      isAvailable: false
+    });
+  }
+
   const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL;
   const isProductionActive = isProductionEnv && process.env.ENABLE_MIDTRANS_PRODUCTION === 'true' && process.env.MIDTRANS_IS_PRODUCTION === 'true';
 
@@ -85,6 +93,7 @@ router.get(['/v1/payments/midtrans/client-key', '/payments/midtrans/client-key']
  * Authoritative server-selected active payment configuration for checkout UI
  */
 router.get('/v1/payments/active-config', (req, res) => {
+  const { isPrelaunchListingMode, getMarketplaceMode } = require('../config/marketplaceMode');
   const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL;
   const defaultProvider = (paymentManager.defaultProvider || 'doku').toLowerCase();
   const provider = paymentManager.getProvider(defaultProvider);
@@ -96,6 +105,8 @@ router.get('/v1/payments/active-config', (req, res) => {
     status: status.status,
     is_verified: status.isVerified,
     is_production: Boolean(isProductionEnv),
+    marketplace_mode: getMarketplaceMode(),
+    is_prelaunch: isPrelaunchListingMode(),
     requires_escrow: Boolean(capabilities?.hold)
   });
 });
@@ -106,6 +117,11 @@ router.get('/v1/payments/active-config', (req, res) => {
  */
 router.post('/v1/payments/create', async (req, res) => {
   try {
+    const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+    }
+
     const buyerId = getCallerUserId(req);
     const { orderId, channel, providerName, idempotencyKey, requiresEscrow } = req.body;
 

@@ -20,6 +20,14 @@ class SettlementService {
    * Guarded by ARGUS Trust Engine and physical gate admission evidence.
    */
   static async executeSettlement({ orderId, sellerId, officerId, idempotencyKey, bankAccount }) {
+    const { isPrelaunchListingMode } = require('../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      const err = new Error('TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.');
+      err.code = 'MARKETPLACE_PRELAUNCH_ONLY';
+      err.status = 403;
+      throw err;
+    }
+
     let order = state.orders ? state.orders.find(o => o.id === orderId) : null;
     if (!order) {
       try {

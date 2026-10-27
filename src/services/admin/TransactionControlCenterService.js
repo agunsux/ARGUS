@@ -589,6 +589,14 @@ class TransactionControlCenterService {
    * Executes seller payout strictly gated by backend GREEN status.
    */
   static async executePayout({ orderId, operatorId, idempotencyKey = null, bankAccount = null }) {
+    const { isPrelaunchListingMode } = require('../../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      const err = new Error('TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.');
+      err.code = 'MARKETPLACE_PRELAUNCH_ONLY';
+      err.status = 403;
+      throw err;
+    }
+
     const timeline = await this.getTransactionTimeline(orderId);
     const evalResult = timeline.currentEvaluation;
 

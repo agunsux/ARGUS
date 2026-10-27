@@ -5,6 +5,9 @@
  * boundary points, and anti-tampering guards for TIKUM_FEE_POLICY_V1.
  */
 
+process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
+
 const assert = require('assert');
 const http = require('http');
 const express = require('express');

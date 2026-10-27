@@ -99,6 +99,14 @@ class MarketplaceOrderService {
     policyVersion = null,
     taxPolicyVersion = null
   }) {
+    const { isPrelaunchListingMode } = require('../../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      const err = new Error('TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.');
+      err.code = 'MARKETPLACE_PRELAUNCH_ONLY';
+      err.status = 403;
+      throw err;
+    }
+
     if (!reservationId || !buyerId) {
       const err = new Error('reservationId and buyerId are required');
       err.code = 'INVALID_ORDER_PAYLOAD';

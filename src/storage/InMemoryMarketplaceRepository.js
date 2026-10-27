@@ -238,9 +238,12 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
   }
 
   async listActiveListings(canonicalEventId = null) {
+    const { isPrelaunchListingMode } = require('../config/marketplaceMode');
+    const isPrelaunch = isPrelaunchListingMode();
+    const validStatuses = isPrelaunch ? ['ACTIVE', 'APPROVED_PRELAUNCH'] : ['ACTIVE'];
     return Array.from(this.listings.values()).filter(l => {
       const matchEvent = canonicalEventId ? (l.canonical_event_id === canonicalEventId || l.event_id === canonicalEventId) : true;
-      return matchEvent && l.status === 'ACTIVE';
+      return matchEvent && validStatuses.includes(l.status);
     });
   }
 

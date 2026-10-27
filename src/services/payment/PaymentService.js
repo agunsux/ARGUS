@@ -139,6 +139,14 @@ class PaymentService {
     idempotencyKey = null,
     requiresEscrow = undefined
   }) {
+    const { isPrelaunchListingMode } = require('../../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      const err = new Error('TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.');
+      err.code = 'MARKETPLACE_PRELAUNCH_ONLY';
+      err.status = 403;
+      throw err;
+    }
+
     const targetProviderName = (providerName || paymentManager.defaultProvider || 'doku').toLowerCase();
     const effectiveIdempotencyKey = idempotencyKey || `idemp-${orderId}-${targetProviderName}`;
 

@@ -14,6 +14,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 process.env.ADMIN_PASSWORD = 'TestAdminPassword123!';
 
 const assert = require('assert');

@@ -3,6 +3,7 @@ const router = express.Router();
 const { state } = require('../database');
 const { OfferService, OFFER_STATUS, DECLINE_REASONS, NEGOTIATION_MAX_PROPOSALS, NEGOTIATION_STATUS } = require('../services/offerService');
 const { SessionStore } = require('../services/sessionStore');
+const { enforceNoTransactions } = require('../config/marketplaceMode');
 
 // In-memory rate limiting map for negotiation mutations (max 30 requests per minute per user/IP)
 const negotiationRateLimitMap = new Map();
@@ -249,7 +250,12 @@ router.get('/offers/mine', requireAuth, async (req, res) => {
  * POST /offers/:offerId/accept
  * Seller accepts a structured offer
  */
-router.post('/offers/:offerId/accept', requireAuth, async (req, res) => {
+router.post('/offers/:offerId/accept', enforceNoTransactions, requireAuth, async (req, res) => {
+  const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+  if (isPrelaunchListingMode()) {
+    return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+  }
+
   const offerId = req.params.offerId;
   const sellerId = req.user.id;
 
@@ -405,7 +411,12 @@ router.post('/offers/:offerId/buyer-counter', requireAuth, checkNegotiationRateL
  * POST /offers/:offerId/accept-counter
  * Buyer accepts counter-offer -> creates order
  */
-router.post('/offers/:offerId/accept-counter', requireAuth, async (req, res) => {
+router.post('/offers/:offerId/accept-counter', enforceNoTransactions, requireAuth, async (req, res) => {
+  const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+  if (isPrelaunchListingMode()) {
+    return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+  }
+
   const offerId = req.params.offerId;
   const buyerId = req.user.id;
 

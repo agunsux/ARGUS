@@ -677,7 +677,15 @@ router.get('/listings', async (req, res) => {
       buyer_total_price: pricing.totalAmount
     };
   });
-  res.json({ listings: listingsWithPricing });
+  const { isPrelaunchListingMode, getMarketplaceMode, PRELAUNCH_NOTICE_TEXT } = require('../config/marketplaceMode');
+  const isPrelaunch = isPrelaunchListingMode();
+  res.json({
+    success: true,
+    marketplace_mode: getMarketplaceMode(),
+    is_prelaunch: isPrelaunch,
+    prelaunch_notice: isPrelaunch ? PRELAUNCH_NOTICE_TEXT : null,
+    listings: listingsWithPricing
+  });
 });
 
 /**
@@ -741,8 +749,11 @@ router.get('/listings/:id', async (req, res) => {
   const { scope } = req.query;
   const isInternal = scope === 'admin' || scope === 'internal';
 
-  // Invariant: Listings inherit event eligibility. Active listings for unverified/expired events fail-closed.
-  if (!isInternal && listing.status === 'ACTIVE') {
+  const { isPrelaunchListingMode } = require('../config/marketplaceMode');
+  const isPrelaunch = isPrelaunchListingMode();
+
+  // Invariant: Listings inherit event eligibility. Active/Approved listings for unverified/expired events fail-closed.
+  if (!isInternal && (listing.status === 'ACTIVE' || listing.status === 'APPROVED_PRELAUNCH')) {
     const evStatus = (event.status || '').toUpperCase();
     const evLifecycle = (event.lifecycle_status || '').toUpperCase();
     const isCancelled = evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED';
@@ -751,23 +762,33 @@ router.get('/listings/:id', async (req, res) => {
                        ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus);
     const isVerified = event.is_verified === true &&
       (event.verification_status === 'VERIFIED' || event.verification_status === 'PRIMARY_SOURCE_VERIFIED');
-    const hasProvenance = Boolean(event.source_url && event.evidence_hash && event.verified_at);
+    const hasProvenance = Boolean(isPrelaunch || (event.source_url && event.evidence_hash && event.verified_at));
 
     if (isCancelled || isPast || isFinished || !isVerified || !hasProvenance) {
       return res.status(404).json({ error: 'Listing not found or event is not eligible for public sale', code: 'LISTING_NOT_ELIGIBLE' });
     }
   }
 
+  const { PRELAUNCH_NOTICE_TEXT, getMarketplaceMode } = require('../config/marketplaceMode');
   res.json({
+    success: true,
+    marketplace_mode: getMarketplaceMode(),
+    is_prelaunch: isPrelaunch,
+    prelaunch_notice: isPrelaunch ? PRELAUNCH_NOTICE_TEXT : null,
     listing: {
       id: listing.id,
       status: listing.status,
+      is_prelaunch: isPrelaunch,
+      is_purchasable: !isPrelaunch && listing.status === 'ACTIVE',
+      purchase_disabled_reason: isPrelaunch ? 'TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.' : null,
       seat_info: listing.seat_info,
       face_value: listing.face_value,
       price: listing.price,
+      seller_notes: listing.seller_notes || null,
       pricing: EscrowService.calculatePricing(listing.price),
       created_at: listing.created_at,
       rejection_reason: listing.rejection_reason,
+      correction_reason: listing.correction_reason || null,
       user_created_event: listing.user_created_event || false,
       event_verification_warning: listing.event_verification_warning || null,
       event: {
@@ -1090,6 +1111,13 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       seatType
     } = req.body || {};
 
+    const rawTicket = (typeof req.body?.ticket === 'object' && req.body.ticket !== null) ? req.body.ticket : {};
+    const isDraft = req.body?.isDraft === true || req.body?.isDraft === 'true' || (req.body?.status || '').toUpperCase() === 'DRAFT';
+    const effectiveSeatInfo = seatInfo || rawTicket.seatInfo || rawTicket.seat || rawTicket.section || (isDraft ? 'Draft / General' : null);
+    const effectiveFaceValue = faceValue || rawTicket.faceValue || rawTicket.originalPrice || rawTicket.price || price;
+    const effectivePrice = price || rawTicket.price || rawTicket.originalPrice || faceValue;
+    const effectiveBarcode = rawBarcode || rawTicket.rawBarcode || rawTicket.barcode || (isDraft ? `DRAFT-BARCODE-${uuidv4()}` : null);
+
     // 1. Resolve authenticated user from session (never from req.body.sellerId)
     let authenticatedUserId = resolveAuth(req);
     if (!authenticatedUserId) {
@@ -1139,14 +1167,23 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
 
     const sellerId = (isAdminRole(req.user.role) && bodySellerId) ? bodySellerId : authenticatedUserId;
 
-    if (!eventId || !seatInfo || !faceValue || !price || !rawBarcode) {
-      return res.status(400).json({
-        error: 'Missing required listing fields (eventId, seatInfo, faceValue, price, rawBarcode)',
-        code: 'VALIDATION_ERROR'
-      });
+    if (!isDraft) {
+      if (!eventId || !effectiveSeatInfo || !effectiveFaceValue || !effectivePrice || !effectiveBarcode) {
+        return res.status(400).json({
+          error: 'Missing required listing fields (eventId, seatInfo, faceValue, price, rawBarcode)',
+          code: 'VALIDATION_ERROR'
+        });
+      }
+    } else {
+      if (!eventId) {
+        return res.status(400).json({
+          error: 'EventId is required to save listing draft',
+          code: 'VALIDATION_ERROR'
+        });
+      }
     }
 
-    const parsedQty = parseInt(quantity !== undefined ? quantity : (totalQuantity !== undefined ? totalQuantity : 1), 10);
+    const parsedQty = parseInt(quantity !== undefined ? quantity : (rawTicket.quantity !== undefined ? rawTicket.quantity : (totalQuantity !== undefined ? totalQuantity : 1)), 10);
     if (isNaN(parsedQty) || parsedQty < 1 || parsedQty > 4) {
       return res.status(400).json({
         error: 'Ticket quantity must be between 1 and 4 tickets per listing',
@@ -1179,19 +1216,22 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
     const result = await ListingService.createListing({
       sellerId,
       eventId,
-      seatInfo,
-      faceValue,
-      price,
-      rawBarcode,
+      seatInfo: effectiveSeatInfo || 'Draft / General',
+      faceValue: effectiveFaceValue ? parseInt(effectiveFaceValue, 10) : 0,
+      price: effectivePrice ? parseInt(effectivePrice, 10) : 0,
+      rawBarcode: effectiveBarcode,
       evidenceBundleId,
       quantity: parsedQty,
       fulfillmentType: normalizedFulfillment,
-      seatType: seatType || null
+      seatType: seatType || null,
+      isDraft,
+      status: isDraft ? 'DRAFT' : 'PENDING_VERIFICATION',
+      sellerNotes: req.body?.sellerNotes || req.body?.seller_notes || req.body?.notes || rawTicket.notes || null
     });
 
     res.status(201).json({
       success: true,
-      message: 'Listing created and submitted for verification.',
+      message: isDraft ? 'Draft listing berhasil disimpan.' : 'Listing created and submitted for verification.',
       listing: result.listing,
       ticket: result.ticket
     });
@@ -1217,10 +1257,90 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       'PRICE_EXCEEDS_MARKUP_CAP',
       'INVALID_PRICE',
       'VALIDATION_ERROR',
-      'EVENT_NOT_FOUND'
+      'EVENT_NOT_FOUND',
+      'EVENT_CONCLUDED',
+      'INVALID_EVENT_DATE',
+      'LISTING_WINDOW_CLOSED',
+      'LISTING_WINDOW_NOT_OPEN'
     ].includes(err.code);
     res.status(isClientError ? 400 : 500)
       .json({ error: err.message, code: err.code, eligibility_code: err.eligibilityCode || null });
+  }
+});
+
+/**
+ * Update seller listing (draft edits, correcting rejected/needs_correction submissions, resubmission)
+ * PUT /api/mvp/seller/listings/:id
+ * PATCH /api/mvp/seller/listings/:id
+ */
+router.all(['/seller/listings/:id', '/seller/listing/:id'], upload.any(), async (req, res, next) => {
+  if (req.method !== 'PUT' && req.method !== 'PATCH') return next();
+  try {
+    let authenticatedUserId = resolveAuth(req);
+    if (!authenticatedUserId && req.user) authenticatedUserId = req.user.id;
+    if (!authenticatedUserId) {
+      return res.status(401).json({ error: 'Authentication required to update listing', code: 'AUTHENTICATION_REQUIRED' });
+    }
+
+    let evidenceBundleId = null;
+    if (req.files && req.files.length > 0) {
+      const bundle = await createEvidenceBundle(`temp-${uuidv4()}`, authenticatedUserId, req.files);
+      evidenceBundleId = bundle.id;
+    }
+
+    const updates = {
+      ...req.body,
+      ...(evidenceBundleId ? { evidenceBundleId } : {})
+    };
+
+    const isSubmit = req.body?.action === 'SUBMIT' ||
+                     req.body?.isSubmit === true ||
+                     req.body?.isSubmit === 'true' ||
+                     req.body?.resubmit === true ||
+                     req.body?.resubmit === 'true';
+
+    const result = await ListingService.updateListing({
+      listingId: req.params.id,
+      sellerId: authenticatedUserId,
+      updates,
+      isSubmit
+    });
+
+    return res.json({
+      success: true,
+      message: isSubmit ? 'Listing berhasil diperbarui dan diajukan ulang untuk verifikasi.' : 'Listing draft berhasil diperbarui.',
+      listing: result.listing
+    });
+  } catch (err) {
+    const status = err.status || (err.code === 'FORBIDDEN' ? 403 : (err.code === 'NOT_FOUND' ? 404 : (err.code === 'LISTING_LOCKED_BY_ORDER' ? 409 : 400)));
+    return res.status(status).json({ error: err.message, code: err.code || 'UPDATE_LISTING_FAILED' });
+  }
+});
+
+/**
+ * Withdraw seller listing
+ * POST /api/mvp/seller/listings/:id/withdraw
+ */
+router.post('/seller/listings/:id/withdraw', async (req, res) => {
+  try {
+    let authenticatedUserId = resolveAuth(req);
+    if (!authenticatedUserId && req.user) authenticatedUserId = req.user.id;
+    if (!authenticatedUserId) {
+      return res.status(401).json({ error: 'Authentication required to withdraw listing', code: 'AUTHENTICATION_REQUIRED' });
+    }
+
+    const result = await ListingService.withdrawListing(req.params.id, authenticatedUserId, {
+      reason: req.body?.reason || 'Withdrawn by seller'
+    });
+
+    return res.json({
+      success: true,
+      message: 'Listing berhasil ditarik.',
+      listing: result.listing
+    });
+  } catch (err) {
+    const status = err.status || (err.code === 'FORBIDDEN' ? 403 : (err.code === 'NOT_FOUND' ? 404 : (err.code === 'LISTING_LOCKED_BY_ORDER' ? 409 : 400)));
+    return res.status(status).json({ error: err.message, code: err.code || 'WITHDRAW_FAILED' });
   }
 });
 
@@ -1379,6 +1499,11 @@ router.post('/seller/orders/:orderId/handoff-challenge', async (req, res) => {
  */
 router.post('/buyer/order', async (req, res) => {
   try {
+    const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+    }
+
     resolveAuth(req);
     const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
 
@@ -1454,6 +1579,11 @@ router.post('/buyer/order', async (req, res) => {
  */
 router.post('/buyer/pay', async (req, res) => {
   try {
+    const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+    }
+
     // Production Security Gate: Direct payment mutation without gateway confirmation is forbidden in production
     if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_DIRECT_PAYMENT_SIMULATION) {
       return res.status(403).json({
@@ -2295,6 +2425,11 @@ router.post('/admin/disputes/:id/resolve', async (req, res) => {
  */
 router.post('/admin/settlements/execute', async (req, res) => {
   try {
+    const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+    }
+
     const officerId = getCallerId(req, req.body.officerId);
     if (!officerId) {
       return res.status(401).json({ error: 'officerId required', code: 'AUTH_REQUIRED' });

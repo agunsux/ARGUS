@@ -115,6 +115,12 @@ router.post('/signup', async (req, res) => {
   });
 });
 
+// Alias POST /api/auth/register -> /signup
+router.post('/register', (req, res, next) => {
+  req.url = '/signup';
+  router.handle(req, res, next);
+});
+
 /**
  * POST /api/auth/login
  * Standard password login.

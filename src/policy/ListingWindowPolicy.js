@@ -36,6 +36,7 @@ class ListingWindowPolicy {
     event,
     isPilotVerified = false,
     bypassPolicy = false,
+    isPrelaunchCollection = false,
     now = new Date()
   }) {
     if (!event) {
@@ -125,6 +126,23 @@ class ListingWindowPolicy {
       const remainingMs = windowStartMs - nowMs;
       const daysRemaining = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
       const hoursRemaining = Math.ceil(remainingMs / (60 * 60 * 1000));
+
+      const { isPrelaunchListingMode } = require('../config/marketplaceMode');
+      if (isPrelaunchCollection || (isPrelaunchListingMode() && !event.enforce_strict_window)) {
+        return {
+          allowed: true,
+          prelaunchCollection: true,
+          windowType: 'PRELAUNCH_COLLECTION',
+          windowDays: null,
+          windowStartMs,
+          eventStartMs: startMs,
+          remainingMs,
+          daysRemaining,
+          hoursRemaining,
+          reason: 'Pengumpulan listing pra-peluncuran aktif untuk persiapan event mendatang (seperti BigBang). Pembelian belum dibuka.',
+          operationalDisclaimer: OPERATIONAL_DISCLAIMER
+        };
+      }
 
       if (bypassPolicy) {
         return {

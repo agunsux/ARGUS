@@ -72,6 +72,22 @@
 
     <!-- Main Payment & Order Surface -->
     <div id="paySurface" style="display: none;">
+
+      <!-- Pre-Launch Mode Banner -->
+      <div id="prelaunchPayBanner" class="notice-box notice-warning" style="background: #FFFBEB; border: 1.5px solid #F59E0B; padding: 16px 20px; margin-bottom: 20px; border-radius: var(--radius-card); display: flex; gap: 14px; align-items: flex-start;">
+        <i class="fa-solid fa-triangle-exclamation" style="color: #D97706; font-size: 22px; margin-top: 2px; flex-shrink: 0;"></i>
+        <div>
+          <strong style="color: #92400E; font-size: 14.5px; font-weight: 800; display: block; margin-bottom: 4px;">TIKUM sedang dalam tahap persiapan peluncuran.</strong>
+          <p style="color: #78350F; font-size: 13px; margin: 0; line-height: 1.5;">
+            Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran belum tersedia. Pengajuan listing tidak menjamin tiket telah terverifikasi atau transaksi dapat dilakukan.
+          </p>
+          <div style="margin-top: 10px;">
+            <a href="/create" class="btn btn-sm btn-secondary" style="font-size: 12px; font-weight: 700; text-decoration: none;">
+              <i class="fa-solid fa-plus-circle"></i> Ajukan Listing Tiket Anda
+            </a>
+          </div>
+        </div>
+      </div>
       
       <!-- Demo Listing Notice Banner (Shown when viewing demo item) -->
       <div id="demoNoticeBanner" class="notice-box notice-warning" style="display: none; background: #FEF3C7; border: 1.5px solid #D97706; padding: 14px 18px; margin-bottom: 20px; border-radius: var(--radius-card); gap: 12px; align-items: flex-start;">
@@ -535,6 +551,16 @@
       const notFoundEl = document.getElementById('payNotFound');
       const surfaceEl = document.getElementById('paySurface');
 
+      try {
+        const cfgRes = await fetch('/api/v1/payments/active-config');
+        if (cfgRes.ok) {
+          const cfg = await cfgRes.json();
+          if (cfg.marketplace_mode === 'PRELAUNCH_LISTING_ONLY' || cfg.is_prelaunch) {
+            window.isPrelaunchMode = true;
+          }
+        }
+      } catch (_) {}
+
       if (!id) {
         // Pilot Verification Mode: When visiting /pay directly, render the canonical verified pilot listing
         // so that reviewers and users see a complete, itemized checkout page.
@@ -696,7 +722,21 @@
       // Check if purchase is possible
       const btn = document.getElementById('btnOrderSubmit');
       const btnOffer = document.getElementById('btnOpenOfferModal');
-      if (isDemo) {
+      const isPrelaunch = Boolean(window.isPrelaunchMode || listing.is_prelaunch || listing.is_purchasable === false || listing.status === 'APPROVED_PRELAUNCH');
+
+      if (isPrelaunch) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-lock"></i> Belum Tersedia';
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        btn.title = 'TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.';
+        if (btnOffer) {
+          btnOffer.disabled = true;
+          btnOffer.innerHTML = '<i class="fa-solid fa-lock"></i> Tawaran Belum Tersedia';
+          btnOffer.style.opacity = '0.6';
+          btnOffer.style.cursor = 'not-allowed';
+        }
+      } else if (isDemo) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-ban"></i> Pembelian Dinonaktifkan (DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN)';
         btn.style.opacity = '0.6';
@@ -783,6 +823,17 @@
           errEl.innerText = 'Anda wajib memahami dan mencentang persetujuan mengenai batasan pemindahtanganan promotor dan Kebijakan Penjualan Kembali (Resale Policy) sebelum melanjutkan.';
           errEl.style.display = 'block';
         }
+        return;
+      }
+
+      const isPrelaunch = Boolean(window.isPrelaunchMode || currentListing.is_prelaunch || currentListing.is_purchasable === false || currentListing.status === 'APPROVED_PRELAUNCH');
+      if (isPrelaunch) {
+        if (errEl) {
+          errEl.innerText = 'TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.';
+          errEl.style.display = 'block';
+        }
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-lock"></i> Belum Tersedia';
         return;
       }
 

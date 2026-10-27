@@ -12,6 +12,7 @@ const { renderFooterHtml } = require('../config/businessProfile');
 const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
 const { CanonicalFeeEngine } = require('../pricing/CanonicalFeeEngine');
 const { PartnerService } = require('../services/partner/PartnerService');
+const { isPrelaunchListingMode, PRELAUNCH_NOTICE_TEXT } = require('../config/marketplaceMode');
 
 class EventSEOService {
   /**
@@ -89,8 +90,8 @@ class EventSEOService {
         });
       }
 
-      // If Tikum verified resale listings exist, list them as secondary market offers
-      if (activeListings && activeListings.length > 0) {
+      // If Tikum verified resale listings exist, list them as secondary market offers (only in live mode)
+      if (activeListings && activeListings.length > 0 && !isPrelaunchListingMode()) {
         const minPrice = Math.min(...activeListings.map(l => l.price));
         offers.push({
           '@type': 'AggregateOffer',
@@ -118,6 +119,7 @@ class EventSEOService {
     const isPastOrConcluded = !EventTemporalLifecycleEngine.isEventUpcoming(event);
     const validRelated = (relatedEvents || []).filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e));
     const jsonLd = JSON.stringify(this.buildStructuredData(event, activeListings));
+    const isPrelaunch = isPrelaunchListingMode();
     const title = `${event.canonical_name} — Jadwal, Lokasi, Tiket Resmi & Resale Terverifikasi | Tikum`;
     const metaDesc = `Informasi lengkap ${event.canonical_name} di ${event.venue_name}, ${event.city} tanggal ${event.start_date || event.date}. Cek ketersediaan tiket resmi dan perlindungan transfer tiket resale aman Tikum.`;
     const canonicalUrl = `https://tikum.app/events/${event.slug}`;
@@ -213,9 +215,15 @@ class EventSEOService {
                   <div style="font-size:11.5px; color:#047857; font-weight:600; display:flex; align-items:center; gap:5px;">
                     <i class="fa-solid fa-shield-halved"></i> ${picProtectionText}
                   </div>
+                  ${isPrelaunch ? `
+                  <button type="button" class="btn btn-sm btn-disabled" disabled style="padding:10px 20px; font-weight:700; border-radius:8px; background:#64748b; color:#f8fafc; border:none; cursor:not-allowed;" title="Pembelian belum dibuka selama masa persiapan peluncuran">
+                    <i class="fa-solid fa-lock"></i> Belum Tersedia
+                  </button>
+                  ` : `
                   <a href="/pay?listing_id=${l.id}" class="btn btn-sm btn-primary" style="padding:10px 20px; font-weight:700; border-radius:8px; text-decoration:none;">
                     <i class="fa-solid fa-lock"></i> Beli Aman via Escrow
                   </a>
+                  `}
                 </div>
               </div>`;
             }).join('')}
@@ -235,6 +243,20 @@ class EventSEOService {
           <h3 style="font-size:18px; font-weight:800; color:var(--color-text-primary, #111827); margin-bottom:6px;">Saat Ini Belum Ada Tiket Resale Terverifikasi</h3>
           <p style="font-size:13.5px; color:var(--color-text-muted, #6B7280); max-width:540px; margin:0 auto 16px;">Belum ada pengguna yang mendaftarkan penjualan tiket untuk event ini, atau seluruh tiket secondary sudah terjual.</p>
 
+          ${isPrelaunch ? `
+          <div style="background:var(--color-surface-muted, #F8F9FA); border:1px solid var(--color-border-subtle, #E5E7EB); border-radius:10px; padding:14px 18px; max-width:520px; margin:0 auto 20px; text-align:left; font-size:13px; color:var(--color-text-secondary, #4B5563); display:flex; gap:12px; align-items:center;">
+            <i class="fa-solid fa-ticket" style="font-size:22px; color:var(--color-brand-primary, #B8472F); flex-shrink:0;"></i>
+            <div style="flex:1;">
+              <strong style="color:var(--color-text-primary, #111827);">Punya tiket untuk event ini?</strong>
+              <div style="font-size:12.5px; margin-top:2px;">Daftarkan dan ajukan listing tiket Anda sekarang untuk persiapan peluncuran resmi TIKUM.</div>
+              <div style="margin-top:6px;">
+                <a href="/create" style="display:inline-flex; align-items:center; gap:6px; color:var(--color-brand-primary, #B8472F); font-weight:700; text-decoration:underline;">
+                  <i class="fa-solid fa-plus-circle"></i> Ajukan Listing Tiket Sekarang (/create)
+                </a>
+              </div>
+            </div>
+          </div>
+          ` : `
           <div style="background:var(--color-surface-muted, #F8F9FA); border:1px solid var(--color-border-subtle, #E5E7EB); border-radius:10px; padding:14px 18px; max-width:520px; margin:0 auto 20px; text-align:left; font-size:13px; color:var(--color-text-secondary, #4B5563); display:flex; gap:12px; align-items:center;">
             <i class="fa-solid fa-cash-register" style="font-size:22px; color:var(--color-brand-primary, #B8472F); flex-shrink:0;"></i>
             <div style="flex:1;">
@@ -247,6 +269,7 @@ class EventSEOService {
               </div>
             </div>
           </div>
+          `}
 
           <div class="demand-capture-box" style="background:var(--color-surface-muted, #F8F9FA); border:1px solid var(--color-border-subtle, #E5E7EB); border-radius:12px; padding:20px; max-width:520px; margin:0 auto; text-align:left;">
             <div style="text-align:center;">${demandBadgeHtml}</div>
@@ -520,6 +543,17 @@ class EventSEOService {
   </header>
 
   <main class="event-seo-container">
+    ${isPrelaunch ? `
+    <div class="prelaunch-notice-banner" style="background:#fffbeb; border:1.5px solid #f59e0b; border-radius:10px; padding:16px 20px; margin-bottom:20px; display:flex; gap:14px; align-items:flex-start;">
+      <i class="fa-solid fa-circle-info" style="font-size:22px; color:#d97706; margin-top:2px; flex-shrink:0;"></i>
+      <div>
+        <strong style="display:block; font-size:14.5px; font-weight:800; color:#92400e; margin-bottom:4px;">TIKUM sedang dalam tahap persiapan peluncuran.</strong>
+        <p style="margin:0; font-size:13px; line-height:1.5; color:#78350f;">
+          Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran belum tersedia. Pengajuan listing tidak menjamin tiket telah terverifikasi atau transaksi dapat dilakukan.
+        </p>
+      </div>
+    </div>
+    ` : ''}
     <nav style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
       <a href="/" style="color: #94a3b8; text-decoration: none;" data-i18n="nav.home">Beranda</a> &rsaquo;
       <a href="/events" style="color: #94a3b8; text-decoration: none;" data-i18n="nav.events">Event</a> &rsaquo;

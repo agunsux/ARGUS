@@ -55,7 +55,7 @@
       <a class="ln-nav-link" href="/events" data-i18n="nav.events">Jelajah Konser</a>
       <a class="ln-nav-link" href="#services">Produk &amp; Layanan</a>
       <a class="ln-nav-link" href="#pricing">Harga &amp; Biaya</a>
-      <a class="ln-nav-link" href="/pay" style="color:var(--primary); font-weight:700;"><i class="fa-solid fa-cash-register"></i> Simulasi Checkout</a>
+      <a class="ln-nav-link" href="/create" style="color:var(--primary); font-weight:700;"><i class="fa-solid fa-plus-circle"></i> Ajukan Listing</a>
       <a class="ln-nav-link" href="#upcoming" data-i18n="nav.allEvents">Semua Event</a>
       <a class="ln-nav-link" href="/events?category=MUSIC" onclick="applyNavCategory('MUSIC'); return false;" data-i18n="nav.concerts">Konser</a>
       <a class="ln-nav-link" href="/events?category=SPORT" onclick="applyNavCategory('SPORT'); return false;" data-i18n="nav.sports">Olahraga</a>
@@ -76,6 +76,20 @@
       <button class="select-filter" onclick="toggleLang()" id="langToggle" title="Language" style="padding:6px 10px;">ID</button>
     </div>
   </header>
+
+  <!-- Pre-Launch Listing Collection Notice Banner -->
+  <div id="prelaunchBanner" class="prelaunch-announcement" style="background:#FFFBEB; border-bottom:1.5px solid #F59E0B; padding:14px 20px; color:#92400E; font-size:13.5px;">
+    <div style="max-width:1200px; margin:0 auto; display:flex; align-items:flex-start; gap:12px;">
+      <i class="fa-solid fa-circle-info" style="font-size:20px; color:#D97706; margin-top:2px; flex-shrink:0;"></i>
+      <div style="flex:1;">
+        <strong style="color:#78350F; font-size:14px; display:block; margin-bottom:2px;">TIKUM sedang dalam tahap persiapan peluncuran.</strong>
+        <span>Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran belum tersedia. Pengajuan listing tidak menjamin tiket telah terverifikasi atau transaksi dapat dilakukan.</span>
+      </div>
+      <a href="/create" style="padding:6px 14px; background:#D97706; color:#FFF; font-weight:700; border-radius:6px; text-decoration:none; white-space:nowrap; font-size:12.5px; align-self:center;">
+        <i class="fa-solid fa-plus-circle"></i> Ajukan Listing Tiket
+      </a>
+    </div>
+  </div>
 
   <!-- Primary Above-the-Fold Verified Concert Hero Spotlight -->
   <section class="hero-spotlight-section" id="verifiedConcertHero">
@@ -419,11 +433,11 @@
     <!-- Action Banner -->
     <div style="background: rgba(4, 120, 87, 0.08); border: 1px solid rgba(4, 120, 87, 0.25); border-radius: 12px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
       <div>
-        <div style="font-weight: 700; font-size: 14.5px; margin-bottom: 4px; color: var(--text-light);">Ingin Mencoba Alur Pembayaran &amp; Checkout?</div>
-        <div style="font-size: 13px; color: var(--color-text-muted, #6B7280);">Kunjungi halaman pembayaran resmi TIKUM dengan data rincian order transparan, perlindungan transaksi platform-held, dan opsi pembayaran berizin Bank Indonesia.</div>
+        <div style="font-weight: 700; font-size: 14.5px; margin-bottom: 4px; color: var(--text-light);">Punya Tiket Konser atau Event Mendatang?</div>
+        <div style="font-size: 13px; color: var(--color-text-muted, #6B7280);">TIKUM sedang mengumpulkan pasokan tiket terverifikasi untuk persiapan peluncuran resmi BigBang Januari. Daftarkan tiket Anda sekarang untuk ditinjau oleh kurator kami.</div>
       </div>
-      <a href="/pay" class="ln-btn ln-btn-primary" style="font-size: 13.5px; padding: 10px 20px; white-space: nowrap;">
-        <i class="fa-solid fa-cash-register"></i> Ke Halaman Checkout (/pay)
+      <a href="/create" class="ln-btn ln-btn-primary" style="font-size: 13.5px; padding: 10px 20px; white-space: nowrap;">
+        <i class="fa-solid fa-plus-circle"></i> Ajukan Listing Tiket (/create)
       </a>
     </div>
   </section>

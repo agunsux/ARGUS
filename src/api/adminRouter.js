@@ -2363,6 +2363,11 @@ router.get('/listings', requireAdmin, async (req, res) => {
 
       let bucket = 'OTHER';
       if (status === 'ACTIVE') bucket = 'ACTIVE';
+      else if (status === 'APPROVED_PRELAUNCH') bucket = 'APPROVED_PRELAUNCH';
+      else if (status === 'NEEDS_CORRECTION') bucket = 'NEEDS_CORRECTION';
+      else if (status === 'REJECTED') bucket = 'REJECTED';
+      else if (status === 'WITHDRAWN') bucket = 'WITHDRAWN';
+      else if (status === 'DRAFT') bucket = 'DRAFT';
       else if (['SUBMITTED', 'UNDER_REVIEW', 'PENDING_REVIEW', 'PENDING', 'PENDING_VERIFICATION'].includes(status)) bucket = 'PENDING';
       else if (['SOLD', 'COMPLETED', 'SETTLED'].includes(status)) bucket = 'SOLD';
       else if (['SUSPENDED', 'FROZEN'].includes(status)) bucket = 'SUSPENDED';
@@ -2400,6 +2405,8 @@ router.get('/listings', requireAdmin, async (req, res) => {
         pic_assistance_status: pStatus,
         status: l.status,
         bucket,
+        rejection_reason: l.rejection_reason || null,
+        correction_reason: l.correction_reason || null,
         created_at: l.created_at || null
       };
     });
@@ -2407,7 +2414,12 @@ router.get('/listings', requireAdmin, async (req, res) => {
     const summary = {
       total: rows.length,
       active: rows.filter(r => r.bucket === 'ACTIVE').length,
+      approved_prelaunch: rows.filter(r => r.bucket === 'APPROVED_PRELAUNCH').length,
       pending: rows.filter(r => r.bucket === 'PENDING').length,
+      needs_correction: rows.filter(r => r.bucket === 'NEEDS_CORRECTION').length,
+      rejected: rows.filter(r => r.bucket === 'REJECTED').length,
+      withdrawn: rows.filter(r => r.bucket === 'WITHDRAWN').length,
+      draft: rows.filter(r => r.bucket === 'DRAFT').length,
       sold: rows.filter(r => r.bucket === 'SOLD').length,
       suspended: rows.filter(r => r.bucket === 'SUSPENDED').length,
       other: rows.filter(r => r.bucket === 'OTHER').length
@@ -2417,7 +2429,7 @@ router.get('/listings', requireAdmin, async (req, res) => {
       ? rows
       : (filter === 'pending'
           ? rows.filter(r => r.bucket === 'PENDING')
-          : rows.filter(r => r.bucket === filter.toUpperCase()));
+          : rows.filter(r => r.bucket === filter.toUpperCase() || (r.status || '').toLowerCase() === filter));
     res.json({ summary, total: filtered.length, listings: filtered });
   } catch (err) {
     res.status(err.status || 503).json({
@@ -2436,11 +2448,22 @@ router.get('/listings', requireAdmin, async (req, res) => {
 router.post('/listings/:id/moderate', requireAdmin, async (req, res) => {
   const listingId = req.params.id;
   const { action, reason, total_quantity, quantity, officer_id, officerId: bodyOfficerId } = req.body || {};
-  const officerId = officer_id || bodyOfficerId || req.user?.id || req.adminUser?.id || req.user?.email || req.adminUser?.email || 'admin@tikum.app';
+  const officerId = req.headers['x-officer-id'] || officer_id || bodyOfficerId || req.user?.id || req.adminUser?.id || req.user?.email || req.adminUser?.email || 'admin@tikum.app';
 
-  if (!action || !['APPROVE', 'REJECT', 'SUSPEND', 'ADJUST_INVENTORY'].includes(action.toUpperCase())) {
+  const allowedActions = [
+    'APPROVE',
+    'APPROVE_PRELAUNCH',
+    'REJECT',
+    'REQUEST_CORRECTION',
+    'NEEDS_CORRECTION',
+    'WITHDRAW',
+    'SUSPEND',
+    'ADJUST_INVENTORY'
+  ];
+
+  if (!action || !allowedActions.includes(action.toUpperCase())) {
     return res.status(400).json({
-      error: 'Invalid action. Allowed: APPROVE, REJECT, SUSPEND, ADJUST_INVENTORY',
+      error: `Invalid action. Allowed: ${allowedActions.join(', ')}`,
       code: 'INVALID_ACTION'
     });
   }
@@ -2468,10 +2491,26 @@ router.post('/listings/:id/moderate', requireAdmin, async (req, res) => {
       });
     }
 
-    if (normalizedAction === 'APPROVE') {
+    if (normalizedAction === 'APPROVE' || normalizedAction === 'APPROVE_PRELAUNCH') {
       const { ListingService } = require('../services/listingService');
       const result = await ListingService.verifyListing(listingId, officerId, { approved: true, reason });
-      return res.json({ success: true, action: 'APPROVE', listing: result.listing });
+      return res.json({ success: true, action: normalizedAction, listing: result.listing });
+    }
+
+    if (normalizedAction === 'REQUEST_CORRECTION' || normalizedAction === 'NEEDS_CORRECTION') {
+      const correctionReason = reason || req.body?.notes || req.body?.correction_reason;
+      if (!correctionReason) {
+        return res.status(400).json({ error: 'Reason is required for correction request', code: 'REASON_REQUIRED' });
+      }
+      const { ListingService } = require('../services/listingService');
+      const result = await ListingService.requestListingCorrection(listingId, officerId, { reason: correctionReason });
+      return res.json({ success: true, action: 'REQUEST_CORRECTION', listing: result.listing });
+    }
+
+    if (normalizedAction === 'WITHDRAW') {
+      const { ListingService } = require('../services/listingService');
+      const result = await ListingService.withdrawListing(listingId, officerId, { reason });
+      return res.json({ success: true, action: 'WITHDRAW', listing: result.listing });
     }
 
     if (normalizedAction === 'REJECT') {
@@ -3206,6 +3245,11 @@ router.post('/transactions/:orderId/release-hold', requireOps, async (req, res) 
  */
 router.post('/transactions/:orderId/execute-payout', requireFinance, async (req, res) => {
   try {
+    const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+    }
+
     const user = resolveUser(req) || req.user || { id: 'finance-admin' };
     const { idempotencyKey, bankAccount } = req.body || {};
 
