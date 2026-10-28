@@ -22,6 +22,29 @@ const { ReservationService, RESERVATION_STATUS, reservationMutex } = require('./
 const { TicketInventoryService, TICKET_STATUS } = require('./TicketInventoryService');
 const { LISTING_STATUS } = require('./MarketplaceListingService');
 
+class OrderMutex {
+  constructor() {
+    this.locks = new Map();
+  }
+
+  async acquire(key) {
+    while (this.locks.has(key)) {
+      await this.locks.get(key);
+    }
+    let release;
+    const promise = new Promise(resolve => {
+      release = resolve;
+    });
+    this.locks.set(key, promise);
+    return () => {
+      this.locks.delete(key);
+      release();
+    };
+  }
+}
+
+const sellerCancelMutex = new OrderMutex();
+
 /**
  * Minimal, canonical marketplace order statuses.
  */
@@ -54,12 +77,14 @@ const ALLOWED_ORDER_TRANSITIONS = {
   [MARKETPLACE_ORDER_STATUS.PAID]: [
     MARKETPLACE_ORDER_STATUS.FULFILLMENT_PENDING,
     MARKETPLACE_ORDER_STATUS.REFUND_PENDING,
-    MARKETPLACE_ORDER_STATUS.REFUNDED
+    MARKETPLACE_ORDER_STATUS.REFUNDED,
+    MARKETPLACE_ORDER_STATUS.CANCELLED
   ],
   [MARKETPLACE_ORDER_STATUS.FULFILLMENT_PENDING]: [
     MARKETPLACE_ORDER_STATUS.FULFILLED,
     MARKETPLACE_ORDER_STATUS.REFUND_PENDING,
-    MARKETPLACE_ORDER_STATUS.REFUNDED
+    MARKETPLACE_ORDER_STATUS.REFUNDED,
+    MARKETPLACE_ORDER_STATUS.CANCELLED
   ],
   [MARKETPLACE_ORDER_STATUS.FULFILLED]: [
     MARKETPLACE_ORDER_STATUS.COMPLETED,
@@ -70,9 +95,13 @@ const ALLOWED_ORDER_TRANSITIONS = {
     MARKETPLACE_ORDER_STATUS.PAYMENT_PENDING,
     MARKETPLACE_ORDER_STATUS.CANCELLED
   ],
-  [MARKETPLACE_ORDER_STATUS.CANCELLED]: [], // Terminal
-  [MARKETPLACE_ORDER_STATUS.REFUND_PENDING]: [
+  [MARKETPLACE_ORDER_STATUS.CANCELLED]: [
+    MARKETPLACE_ORDER_STATUS.REFUND_PENDING,
     MARKETPLACE_ORDER_STATUS.REFUNDED
+  ],
+  [MARKETPLACE_ORDER_STATUS.REFUND_PENDING]: [
+    MARKETPLACE_ORDER_STATUS.REFUNDED,
+    MARKETPLACE_ORDER_STATUS.CANCELLED
   ],
   [MARKETPLACE_ORDER_STATUS.REFUNDED]: [] // Terminal
 };
@@ -514,26 +543,64 @@ class MarketplaceOrderService {
       return {
         success: true,
         idempotent: true,
+        confirmed: true,
         order,
         escrow,
         message: 'Order has already been refunded'
       };
     }
 
-    // Delegate refund execution to authoritative EscrowService (handles FinancialLedger reversal)
-    const refundResult = await EscrowService.refundToBuyer(orderId, actorId, reason);
+    // Idempotency: If already pending confirmation, do not duplicate provider requests
+    if (order.marketplace_status === MARKETPLACE_ORDER_STATUS.REFUND_PENDING ||
+        order.status === ORDER_STATUS.REFUND_PENDING ||
+        escrow.status === ESCROW_STATUS.REFUND_PENDING) {
+      return {
+        success: true,
+        idempotent: true,
+        confirmed: false,
+        order,
+        escrow,
+        message: 'Refund request is already in progress and awaiting confirmation'
+      };
+    }
 
-    order.marketplace_status = MARKETPLACE_ORDER_STATUS.REFUNDED;
+    // Delegate refund execution to authoritative EscrowService (handles FinancialLedger reversal strictly upon confirmation)
+    let refundResult;
+    try {
+      refundResult = await EscrowService.refundToBuyer(orderId, actorId, reason);
+    } catch (err) {
+      if (err.code === 'ALREADY_REFUNDED') {
+        return {
+          success: true,
+          idempotent: true,
+          confirmed: true,
+          order,
+          escrow,
+          message: 'Order has already been refunded'
+        };
+      }
+      throw err;
+    }
+    const isConfirmed = Boolean(refundResult?.escrow?.provider_refund_confirmed || refundResult?.confirmed);
+
+    order.marketplace_status = isConfirmed ? MARKETPLACE_ORDER_STATUS.REFUNDED : MARKETPLACE_ORDER_STATUS.REFUND_PENDING;
+    order.status = isConfirmed ? ORDER_STATUS.REFUNDED : ORDER_STATUS.REFUND_PENDING;
+    order.refund_executed = isConfirmed;
+    order.refund_rail_status = refundResult?.escrow?.refund_rail_status || 'MANUAL_REFUND_REQUIRED';
+    order.provider_refund_confirmed = isConfirmed;
     order.updated_at = new Date().toISOString();
 
-    await recordAuditLog('MARKETPLACE_ORDER', orderId, 'REFUNDED', actorId, {
+    await recordAuditLog('MARKETPLACE_ORDER', orderId, isConfirmed ? 'REFUNDED' : 'REFUND_PENDING', actorId, {
       amount: escrow.total_paid,
-      reason
+      reason,
+      confirmed: isConfirmed,
+      refund_rail_status: order.refund_rail_status
     });
 
     return {
       success: true,
       idempotent: false,
+      confirmed: isConfirmed,
       order,
       escrow: refundResult.escrow,
       reason
@@ -557,116 +624,130 @@ class MarketplaceOrderService {
     hoursToEvent = null,
     actorId = null
   }) {
-    const { SellerCommitmentService } = require('../sellerCommitmentService');
+    const unlock = await sellerCancelMutex.acquire(orderId);
+    try {
+      const { SellerCommitmentService } = require('../sellerCommitmentService');
 
-    let order = (state.orders || []).find(o => o.id === orderId);
-    if (!order) {
-      const err = new Error(`Order '${orderId}' not found`);
-      err.code = 'ORDER_NOT_FOUND';
-      throw err;
-    }
+      let order = (state.orders || []).find(o => o.id === orderId);
+      if (!order) {
+        const err = new Error(`Order '${orderId}' not found`);
+        err.code = 'ORDER_NOT_FOUND';
+        throw err;
+      }
 
-    if (order.seller_id !== sellerId) {
-      const err = new Error('Unauthorized: Only the assigned seller may cancel this commitment');
-      err.code = 'UNAUTHORIZED_SELLER_CANCELLATION';
-      err.status = 403;
-      throw err;
-    }
+      if (order.seller_id !== sellerId) {
+        const err = new Error('Unauthorized: Only the assigned seller may cancel this commitment');
+        err.code = 'UNAUTHORIZED_SELLER_CANCELLATION';
+        err.status = 403;
+        throw err;
+      }
 
-    // Idempotency: Repeated seller cancellation calls return existing state
-    if (order.cancellation_initiator === 'SELLER' && (order.marketplace_status === MARKETPLACE_ORDER_STATUS.CANCELLED || order.status === ORDER_STATUS.CANCELLED)) {
+      // Idempotency: Repeated seller cancellation calls return existing state
+      if (order.cancellation_initiator === 'SELLER' && (
+        order.marketplace_status === MARKETPLACE_ORDER_STATUS.CANCELLED ||
+        order.status === ORDER_STATUS.CANCELLED ||
+        order.marketplace_status === MARKETPLACE_ORDER_STATUS.REFUND_PENDING ||
+        order.status === ORDER_STATUS.REFUND_PENDING ||
+        order.marketplace_status === MARKETPLACE_ORDER_STATUS.REFUNDED ||
+        order.status === ORDER_STATUS.REFUNDED
+      )) {
+        const commitmentResult = await SellerCommitmentService.recordSellerCancellation({
+          orderId,
+          sellerId,
+          reason,
+          hoursToEvent: hoursToEvent || 96,
+          evidenceRef,
+          actorId: actorId || sellerId
+        });
+        return {
+          success: true,
+          idempotent: true,
+          order,
+          refundExecuted: Boolean(order.refund_executed),
+          sellerStrike: commitmentResult
+        };
+      }
+
+      // Determine hours to event if not explicitly provided
+      let calculatedHours = hoursToEvent;
+      if (calculatedHours === null) {
+        const event = (state.events || []).find(e => e.id === order.event_id);
+        if (event && event.date) {
+          const eventStartMs = new Date(event.date).getTime();
+          const diffMs = eventStartMs - Date.now();
+          calculatedHours = Math.max(0, Math.round(diffMs / (3600 * 1000)));
+        } else {
+          calculatedHours = 96;
+        }
+      }
+
+      const currentStatus = order.marketplace_status || order.status;
+
+      // If order was paid/escrowed, execute full buyer refund
+      const isPaid = [
+        MARKETPLACE_ORDER_STATUS.PAID,
+        MARKETPLACE_ORDER_STATUS.FULFILLMENT_PENDING,
+        ORDER_STATUS.PAID_ESCROWED,
+        'ESCROWED'
+      ].includes(currentStatus);
+
+      let refundRes = null;
+      if (isPaid) {
+        refundRes = await this.refundOrder({
+          orderId,
+          actorId: actorId || sellerId,
+          reason: `Seller cancelled commitment: ${reason}`
+        });
+        const isConfirmed = Boolean(refundRes?.escrow?.provider_refund_confirmed || refundRes?.confirmed);
+        order.marketplace_status = isConfirmed ? MARKETPLACE_ORDER_STATUS.CANCELLED : MARKETPLACE_ORDER_STATUS.REFUND_PENDING;
+        order.status = isConfirmed ? ORDER_STATUS.CANCELLED : ORDER_STATUS.REFUND_PENDING;
+        order.refund_executed = isConfirmed;
+        order.refund_rail_status = refundRes?.escrow?.refund_rail_status || 'MANUAL_REFUND_REQUIRED';
+        order.provider_refund_confirmed = isConfirmed;
+      } else {
+        await this.cancelOrder(orderId, actorId || sellerId, `Seller cancelled before payment: ${reason}`);
+        order.refund_executed = false;
+        order.refund_rail_status = 'NONE';
+        order.provider_refund_confirmed = false;
+      }
+
+      order.cancellation_initiator = 'SELLER';
+      order.cancellation_reason = reason;
+
+      // Invariant: Invalidate cancelled ticket so it cannot be inadvertently purchased by others
+      const ticket = TicketInventoryService.findTicket(order.ticket_id);
+      if (ticket) {
+        ticket.status = 'CANCELLED';
+        ticket.cancellation_reason = `Seller cancelled: ${reason}`;
+        ticket.updated_at = new Date().toISOString();
+      }
+      const listing = (state.listings || []).find(l => l.id === order.listing_id || l.listing_id === order.listing_id);
+      if (listing) {
+        listing.status = 'CANCELLED';
+        listing.available_quantity = 0;
+        listing.updated_at = new Date().toISOString();
+      }
+
+      // Record seller commitment penalty & strike
       const commitmentResult = await SellerCommitmentService.recordSellerCancellation({
         orderId,
         sellerId,
         reason,
-        hoursToEvent: hoursToEvent || 96,
+        hoursToEvent: calculatedHours,
         evidenceRef,
         actorId: actorId || sellerId
       });
+
       return {
         success: true,
-        idempotent: true,
         order,
         refundExecuted: Boolean(order.refund_executed),
+        refundPending: !order.refund_executed && isPaid,
         sellerStrike: commitmentResult
       };
+    } finally {
+      unlock();
     }
-
-    // Determine hours to event if not explicitly provided
-    let calculatedHours = hoursToEvent;
-    if (calculatedHours === null) {
-      const event = (state.events || []).find(e => e.id === order.event_id);
-      if (event && event.date) {
-        const eventStartMs = new Date(event.date).getTime();
-        const diffMs = eventStartMs - Date.now();
-        calculatedHours = Math.max(0, Math.round(diffMs / (3600 * 1000)));
-      } else {
-        calculatedHours = 96;
-      }
-    }
-
-    const currentStatus = order.marketplace_status || order.status;
-
-    // If order was paid/escrowed, execute full buyer refund
-    const isPaid = [
-      MARKETPLACE_ORDER_STATUS.PAID,
-      MARKETPLACE_ORDER_STATUS.FULFILLMENT_PENDING,
-      ORDER_STATUS.PAID_ESCROWED,
-      'ESCROWED'
-    ].includes(currentStatus);
-
-    let refundRes = null;
-    if (isPaid) {
-      refundRes = await this.refundOrder({
-        orderId,
-        actorId: actorId || sellerId,
-        reason: `Seller cancelled commitment: ${reason}`
-      });
-      order.marketplace_status = MARKETPLACE_ORDER_STATUS.CANCELLED;
-      order.status = ORDER_STATUS.CANCELLED;
-      order.refund_executed = true;
-      order.refund_rail_status = refundRes?.escrow?.refund_rail_status || 'MANUAL_REFUND_REQUIRED';
-      order.provider_refund_confirmed = Boolean(refundRes?.escrow?.provider_refund_confirmed);
-    } else {
-      await this.cancelOrder(orderId, actorId || sellerId, `Seller cancelled before payment: ${reason}`);
-      order.refund_executed = false;
-      order.refund_rail_status = 'NONE';
-      order.provider_refund_confirmed = false;
-    }
-
-    order.cancellation_initiator = 'SELLER';
-    order.cancellation_reason = reason;
-
-    // Invariant: Invalidate cancelled ticket so it cannot be inadvertently purchased by others
-    const ticket = TicketInventoryService.findTicket(order.ticket_id);
-    if (ticket) {
-      ticket.status = 'CANCELLED';
-      ticket.cancellation_reason = `Seller cancelled: ${reason}`;
-      ticket.updated_at = new Date().toISOString();
-    }
-    const listing = (state.listings || []).find(l => l.id === order.listing_id || l.listing_id === order.listing_id);
-    if (listing) {
-      listing.status = 'CANCELLED';
-      listing.available_quantity = 0;
-      listing.updated_at = new Date().toISOString();
-    }
-
-    // Record seller commitment penalty & strike
-    const commitmentResult = await SellerCommitmentService.recordSellerCancellation({
-      orderId,
-      sellerId,
-      reason,
-      hoursToEvent: calculatedHours,
-      evidenceRef,
-      actorId: actorId || sellerId
-    });
-
-    return {
-      success: true,
-      order,
-      refundExecuted: isPaid,
-      sellerStrike: commitmentResult
-    };
   }
 
   /**
