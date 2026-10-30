@@ -44,8 +44,8 @@ const businessProfile = {
   businessAddress: 'Jl. Pasirluyu No. 79, Bandung 40254, Indonesia',
   legalDocumentStatus: {
     aktaPendirian: 'OWNER_VERIFIED_PT_SHINERVA_PRAJNA_TEJAS',
-    nib: 'OWNER_VERIFIED_PT_SHINERVA_PRAJNA_TEJAS',
-    npwp: 'OWNER_VERIFIED_PT_SHINERVA_PRAJNA_TEJAS',
+    nib: 'PENDING_DOCUMENT_VERIFICATION',
+    npwp: 'PENDING_DOCUMENT_VERIFICATION',
     merchantAccountAlignment: 'PT_SHINERVA_PRAJNA_TEJAS_REQUIRED'
   },
 
@@ -158,7 +158,7 @@ function renderFooterHtml() {
       </div>
     </div>
     <div style="max-width: 1200px; margin: 32px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: #64748b;" data-i18n="footer.allRightsReserved">
-      &copy; 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM adalah merek marketplace tiket sekunder berizin yang dioperasikan oleh PT SHINERVA PRAJNA TEJAS.
+      &copy; 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM adalah platform marketplace tiket sekunder yang dioperasikan oleh PT SHINERVA PRAJNA TEJAS.
     </div>
   </footer>
   `;

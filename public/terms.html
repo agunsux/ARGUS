@@ -94,7 +94,7 @@
           <li><strong>Pembeli:</strong> Pengguna terdaftar yang melakukan pemesanan dan pembayaran tiket sekunder.</li>
           <li><strong>Penjual:</strong> Pengguna terverifikasi (KYC) yang mendaftarkan tiket sekunder miliknya untuk dipindahtangankan.</li>
           <li><strong>Listing:</strong> Penawaran penjualan tiket terverifikasi yang didaftarkan di katalog pasar Tikum.</li>
-          <li><strong>Sistem Penahanan Transaksi Internal (Platform-Held):</strong> Mekanisme pengelolaan transaksi internal Tikum di mana pencairan dana penjualan ke penjual ditahan secara administratif hingga proses serah terima tiket terverifikasi atau acara selesai tanpa sengketa. Tikum bukan penyedia jasa escrow independen atau perbankan.</li>
+          <li><strong>Status Pemeriksaan Transaksi (Transaction Verification Status):</strong> Mekanisme pengelolaan transaksi internal Tikum di mana penyelesaian dana penjualan ke penjual diproses setelah verifikasi serah terima tiket atau acara selesai tanpa sengketa. Tikum bukan penyedia jasa escrow perbankan.</li>
           <li><strong>Event PIC:</strong> Koordinator lapangan Tikum yang dapat ditugaskan pada event terpilih selama jam operasional gerbang (gate hours) untuk mendampingi penukaran fisik atau serah terima di lokasi (bersifat opsional per event dan tidak dijamin di seluruh acara).</li>
           <li><strong>Sistem Keamanan Tikum:</strong> Sistem internal verifikasi identitas, validasi barcode, anti-duplikasi, alur penahanan transaksi, dan penanganan sengketa yang mengamankan transaksi Tikum.</li>
           <li><strong>Sengketa (Dispute):</strong> Klaim yang diajukan oleh pembeli apabila terjadi kegagalan tiket di gerbang venue.</li>
@@ -105,7 +105,7 @@
       <div class="terms-section">
         <h2>3. Peran Tikum sebagai Platform Kepercayaan &amp; Marketplace Terverifikasi</h2>
         <p>
-          Tikum bertindak sebagai perantara netral yang menyediakan marketplace tiket terverifikasi. Tikum tidak memiliki kepemilikan atas tiket yang diperjualbelikan, melainkan memverifikasi keunikan barcode tiket, mengelola alur penahanan transaksi internal platform, dan mengoordinasikan pendampingan lapangan pada event terpilih.
+          Tikum bertindak sebagai perantara netral yang menyediakan marketplace tiket terverifikasi. Tikum tidak memiliki kepemilikan atas tiket yang diperjualbelikan, melainkan memverifikasi keunikan barcode tiket, mengelola alur pemeriksaan transaksi internal platform, dan mengoordinasikan pendampingan lapangan pada event terpilih.
         </p>
       </div>
 
@@ -183,14 +183,14 @@
         </p>
       </div>
 
-      <!-- 12. Pembayaran Escrow -->
+      <!-- 12. Pembayaran & Tata Kelola Transaksi -->
       <div class="terms-section">
-        <h2>12. Pembayaran &amp; Rekening Bersama (Escrow)</h2>
+        <h2>12. Pembayaran &amp; Tata Kelola Transaksi (Settlement Review)</h2>
         <p>
-          Seluruh pembayaran transaksi tiket di Tikum wajib disetorkan melalui kanal payment gateway resmi berizin Bank Indonesia yang terintegrasi pada sistem Tikum. Status transaksi diamankan dalam sistem pencatatan penahanan platform internal (Platform-Held Transaction Control) sebelum penyelesaian transaksi ke penjual.
+          Seluruh pembayaran transaksi tiket di Tikum wajib disetorkan melalui kanal payment gateway resmi berizin Bank Indonesia yang terintegrasi pada sistem Tikum. Status transaksi dikelola dalam sistem pencatatan pemeriksaan platform internal (Transaction Verification Status) sebelum penyelesaian transaksi ke penjual.
         </p>
         <p>
-          Tikum bukan merupakan lembaga perbankan atau penyelenggara jasa escrow berizin khusus. Istilah penampungan/escrow internal merujuk pada tata kelola transaksi di mana pencairan dana hasil penjualan kepada penjual ditahan secara administratif oleh platform hingga tiket tervalidasi dan masa sanggah selesai. Pembayaran di luar sistem resmi Tikum tidak dilindungi oleh sistem keamanan platform.
+          Tikum bukan merupakan lembaga perbankan atau penyelenggara jasa escrow berizin khusus. Istilah pemeriksaan transaksi merujuk pada tata kelola transaksi di mana penyelesaian dana hasil penjualan kepada penjual diproses setelah tiket tervalidasi dan masa peninjauan selesai. Pembayaran di luar sistem resmi Tikum tidak dilindungi oleh sistem keamanan platform.
         </p>
       </div>
 

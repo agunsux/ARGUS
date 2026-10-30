@@ -37,6 +37,7 @@ const state = {
   processed_webhooks: new Set(),
   attestations: [],
   authorization_records: [],
+  financial_authorizations: [],
   pic_velocity_log: [],
   quotes: [],
   pricing_policies: [],
@@ -123,6 +124,7 @@ function resetDatabase() {
   state.inbox_messages = [];
   state.contact_inquiries = [];
   state.demand_alerts = [];
+  state.financial_authorizations = [];
   state.processed_webhooks = new Set();
 
   try {

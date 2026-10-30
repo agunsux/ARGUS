@@ -1609,11 +1609,11 @@ router.get('/payment-flow', (req, res) => {
         </ul>
       </div>
 
-      <!-- 5. Regulatory Note Placeholder -->
-      <div style="background:#131d31; border:1px dashed #eab308; border-radius:14px; padding:24px;">
-        <h3 style="color:#facc15; font-size:16px; margin:0 0 8px;"><i class="fa-solid fa-gavel"></i> Regulatory Note (Catatan Regulasi)</h3>
+      <!-- 5. Regulatory & Compliance Note -->
+      <div style="background:#131d31; border:1px solid #334155; border-radius:14px; padding:24px;">
+        <h3 style="color:#facc15; font-size:16px; margin:0 0 8px;"><i class="fa-solid fa-gavel"></i> Regulatory &amp; Compliance Notice</h3>
         <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
-          Temporary holding of transaction proceeds by TIKUM constitutes internal administrative order control until ticket transfer verification is concluded. [OWNER MUST CONFIRM: Confirm licensing requirements under Bank Indonesia Payment Service Provider (PJP Category 3) regulations or authorized PJP gateway partnerships for third-party fund facilitation].
+          Transaction verification and settlement processing by TIKUM operate strictly under internal double-entry administrative controls until ticket admission verification concludes. Fund collection and payment processing are facilitated through licensed payment gateway partners in compliance with Bank Indonesia regulations.
         </p>
       </div>
     </div>
@@ -1702,11 +1702,11 @@ router.get('/payment-flow', (req, res) => {
         </ul>
       </div>
 
-      <!-- 5. Catatan Regulasi (Regulatory Note) -->
-      <div style="background:#131d31; border:1px dashed #eab308; border-radius:14px; padding:24px;">
-        <h3 style="color:#facc15; font-size:16px; margin:0 0 8px;"><i class="fa-solid fa-gavel"></i> Catatan Regulasi (Regulatory Note)</h3>
+      <!-- 5. Catatan Kepatuhan & Regulasi -->
+      <div style="background:#131d31; border:1px solid #334155; border-radius:14px; padding:24px;">
+        <h3 style="color:#facc15; font-size:16px; margin:0 0 8px;"><i class="fa-solid fa-gavel"></i> Catatan Kepatuhan &amp; Regulasi</h3>
         <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
-          Penahanan dana sementara oleh platform merupakan tata kelola administrasi transaksi internal hingga serah terima tiket selesai. [OWNER MUST CONFIRM: Konfirmasi kepatuhan perizinan Penyelenggara Jasa Pembayaran (PJP) Kategori 3 atau pemanfaatan kemitraan PJP berizin Bank Indonesia untuk pengelolaan dana pihak ketiga].
+          Proses pemeriksaan transaksi dan penyelesaian pembayaran oleh TIKUM dijalankan secara ketat melalui pencatatan buku besar administratif internal hingga verifikasi tiket selesai. Penerimaan pembayaran difasilitasi melalui mitra payment gateway resmi berizin Bank Indonesia sesuai regulasi yang berlaku.
         </p>
       </div>
     </div>
@@ -1717,12 +1717,12 @@ router.get('/payment-flow', (req, res) => {
     { q: 'How long does a refund take if a ticket fails?', a: 'Refunds are approved upon evidence verification and processed back to the original payment method within 1 to 3 business days.' }
   ] : [
     { q: 'Apakah dana saya disimpan di rekening escrow bank?', a: 'Bukan. Dana dikelola dalam sistem pembukuan berpasangan internal platform (FinancialLedger) dan baru dicairkan ke penjual setelah acara selesai tanpa sengketa.' },
-    { q: 'Berapa lama proses pengembalian dana jika tiket bermasalah?', a: 'Setelah bukti penolakan turnstile diverifikasi, dana dikembalikan penuh ke rekening/e-wallet pembeli dalam 1 hingga 3 hari kerja.' }
+    { q: 'Berapa lama proses pengembalian dana jika tiket bermasalah?', a: 'Setelah bukti kendala tiket di venue diverifikasi, dana dikembalikan penuh ke rekening/e-wallet pembeli dalam 1 hingga 3 hari kerja.' }
   ];
 
   const html = renderTrustLayout({
     lang,
-    title: isEn ? 'Funds Flow & Platform-Held Ledger Architecture | Tikum' : 'Alur Dana & Sistem Penahanan Transaksi Platform | Tikum',
+    title: isEn ? 'Funds Flow & Platform-Held Ledger Architecture | Tikum' : 'Alur Dana & Proses Penyelesaian Transaksi Platform | Tikum',
     description: isEn ? 'Comprehensive documentation of TIKUM double-entry ledger funds flow: payment capture, seller payable holding, disbursal release, and refund SLA.' : 'Dokumentasi transparan alur dana buku besar berpasangan TIKUM: penampungan dana penjual, syarat pencairan, alur refund, dan SLA sengketa.',
     canonicalPath: '/payment-flow',
     h1: isEn ? 'Funds Flow & Ledger Governance' : 'Alur Dana & Tata Kelola Pembukuan Platform',

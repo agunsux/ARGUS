@@ -587,8 +587,17 @@ class TransactionControlCenterService {
 
   /**
    * Executes seller payout strictly gated by backend GREEN status.
+   * Integrates with FinancialAuthorizationService for Maker-Checker dual authorization.
    */
-  static async executePayout({ orderId, operatorId, idempotencyKey = null, bankAccount = null }) {
+  static async executePayout({
+    orderId,
+    operatorId,
+    idempotencyKey = null,
+    bankAccount = null,
+    bankReferenceNumber = null,
+    proofDocumentUrl = null,
+    authorizationId = null
+  }) {
     const { isPrelaunchListingMode } = require('../../config/marketplaceMode');
     if (isPrelaunchListingMode()) {
       const err = new Error('TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.');
@@ -597,8 +606,63 @@ class TransactionControlCenterService {
       throw err;
     }
 
+    if (!authorizationId) {
+      const err = new Error('Dual authorization required: seller payout cannot be executed without an approved financial authorization.');
+      err.code = 'AUTHORIZATION_REQUIRED';
+      err.status = 400;
+      throw err;
+    }
+
+    const { FinancialAuthorizationService, AUTHORIZATION_STATUS, AUTHORIZATION_ACTION } = require('../../settlement/FinancialAuthorizationService');
+    const authorization = await FinancialAuthorizationService.getAuthorizationById(authorizationId);
+
+    if (!authorization) {
+      const err = new Error(`Financial authorization '${authorizationId}' not found`);
+      err.code = 'AUTHORIZATION_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
+    if (authorization.status !== AUTHORIZATION_STATUS.APPROVED) {
+      const isConsumed = authorization.status === AUTHORIZATION_STATUS.CONSUMED;
+      const err = new Error(isConsumed
+        ? `Financial authorization '${authorizationId}' has already been consumed and cannot be reused.`
+        : `Financial authorization is not in APPROVED state (current status: ${authorization.status})`);
+      err.code = isConsumed ? 'AUTHORIZATION_ALREADY_CONSUMED' : 'AUTHORIZATION_NOT_APPROVED';
+      err.status = 400;
+      throw err;
+    }
+    if (authorization.order_id !== orderId) {
+      const err = new Error(`Financial authorization order mismatch (${authorization.order_id} !== ${orderId})`);
+      err.code = 'AUTHORIZATION_ORDER_MISMATCH';
+      err.status = 400;
+      throw err;
+    }
+    if (authorization.action_type !== AUTHORIZATION_ACTION.EXECUTE_PAYOUT) {
+      const err = new Error(`Invalid authorization action type for payout: ${authorization.action_type}`);
+      err.code = 'INVALID_AUTHORIZATION_ACTION';
+      err.status = 400;
+      throw err;
+    }
+
     const timeline = await this.getTransactionTimeline(orderId);
     const evalResult = timeline.currentEvaluation;
+
+    // Strict Amount and Currency Binding
+    const expectedAmount = evalResult.netSellerPayout !== undefined ? evalResult.netSellerPayout : evalResult.grossAmount;
+    if (authorization.amount && authorization.amount !== expectedAmount) {
+      const err = new Error(`Authorization amount mismatch: authorized IDR ${authorization.amount} but calculated net seller payout is IDR ${expectedAmount}`);
+      err.code = 'AUTHORIZATION_AMOUNT_MISMATCH';
+      err.status = 400;
+      throw err;
+    }
+
+    const effectiveBankAccount = bankAccount || authorization.payout_destination || (authorization.metadata && authorization.metadata.bankAccount);
+    if (authorization.payout_destination && effectiveBankAccount && authorization.payout_destination !== effectiveBankAccount) {
+      const err = new Error(`Payout destination mismatch: authorized '${authorization.payout_destination}' does not match requested '${effectiveBankAccount}'`);
+      err.code = 'AUTHORIZATION_DESTINATION_MISMATCH';
+      err.status = 400;
+      throw err;
+    }
 
     if (evalResult.colorStatus !== COLOR_STATUS.GREEN) {
       const err = new Error(`Cannot execute payout: transaction is in ${evalResult.colorStatus} status (${evalResult.badgeLabel})`);
@@ -617,7 +681,17 @@ class TransactionControlCenterService {
       sellerId: order.seller.id,
       officerId: operatorId,
       idempotencyKey: effectiveKey,
-      bankAccount
+      bankAccount: effectiveBankAccount,
+      bankReferenceNumber,
+      proofDocumentUrl,
+      authorizedBy: authorization.checker_id,
+      authorizationId: authorization.id
+    });
+
+    // Atomically consume authorization to prevent duplicate execution
+    await FinancialAuthorizationService.consumeAuthorization({
+      authorizationId: authorization.id,
+      settlementId: settlementResult.settlement.id
     });
 
     // Update order status
@@ -632,6 +706,7 @@ class TransactionControlCenterService {
       success: true,
       message: 'Seller payout executed successfully',
       settlement: settlementResult.settlement,
+      authorization: authorization || null,
       idempotent: settlementResult.idempotent,
       evaluation: updatedTimeline.currentEvaluation
     };

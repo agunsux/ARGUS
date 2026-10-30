@@ -472,10 +472,9 @@ class PaymentService {
           const providerCapabilities = typeof provider.getCapabilities === 'function'
             ? provider.getCapabilities()
             : (typeof provider.capabilities === 'function' ? provider.capabilities() : {});
-          const provName = (targetProviderName || (provider.getName ? provider.getName() : '')).toLowerCase();
-          const supportsEscrowHold = (provName === 'doku' || providerCapabilities.notes?.escrow_type === 'THIRD_PARTY_ESCROW_ACCOUNT')
-            ? true
-            : (provName === 'xendit' || providerCapabilities.notes?.escrow_capability === 'ESCROW_UNAVAILABLE' ? false : Boolean(providerCapabilities.hold));
+          // Invariant: Gateway escrow hold capability must NOT be assumed by provider name alone.
+          // It requires contractual hold capability verified directly on the provider instance.
+          const supportsEscrowHold = Boolean(providerCapabilities && providerCapabilities.hold === true);
 
           if (supportsEscrowHold) {
             canonical.money_state = MONEY_STATE.ESCROW_HELD;
@@ -573,10 +572,9 @@ class PaymentService {
           const providerCapabilities = typeof provider.getCapabilities === 'function'
             ? provider.getCapabilities()
             : (typeof provider.capabilities === 'function' ? provider.capabilities() : {});
-          const provName = (targetProviderName || (provider.getName ? provider.getName() : '')).toLowerCase();
-          const supportsEscrowHold = (provName === 'doku' || providerCapabilities.notes?.escrow_type === 'THIRD_PARTY_ESCROW_ACCOUNT')
-            ? true
-            : (provName === 'xendit' || providerCapabilities.notes?.escrow_capability === 'ESCROW_UNAVAILABLE' ? false : Boolean(providerCapabilities.hold));
+          // Invariant: Gateway escrow hold capability must NOT be assumed by provider name alone.
+          // It requires contractual hold capability verified directly on the provider instance.
+          const supportsEscrowHold = Boolean(providerCapabilities && providerCapabilities.hold === true);
 
           await EscrowService.recordPayment({
             orderId: event.orderId,

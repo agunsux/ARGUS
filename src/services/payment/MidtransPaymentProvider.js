@@ -536,8 +536,8 @@ class MidtransPaymentProvider extends PaymentProvider {
       orderId,
       sellerId,
       amount: parseInt(amount, 10),
-      status: 'DISBURSED',
-      moneyState: MONEY_STATE.SETTLED,
+      status: 'PENDING_BANK_EXECUTION',
+      moneyState: MONEY_STATE.HELD_INTERNAL,
       bankAccount,
       idempotencyKey,
       simulated: true,
@@ -552,7 +552,7 @@ class MidtransPaymentProvider extends PaymentProvider {
     const id = payoutId || providerRef;
     return {
       payoutId: id,
-      status: 'DISBURSED',
+      status: 'PENDING_BANK_EXECUTION',
       provider: this.getName(),
       simulated: true
     };

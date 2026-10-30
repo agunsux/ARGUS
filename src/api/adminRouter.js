@@ -21,6 +21,7 @@ const { SessionStore } = require('../services/sessionStore');
 const { emailService } = require('../services/emailService');
 const { FinancialLedger } = require('../settlement/FinancialLedger');
 const { PaymentService } = require('../services/payment/PaymentService');
+const { FinancialAuthorizationService, AUTHORIZATION_ACTION, AUTHORIZATION_STATUS } = require('../settlement/FinancialAuthorizationService');
 const { sourceRegistry } = require('../discovery/SourceRegistry');
 const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
 const { cityRegistry } = require('../discovery/CityRegistry');
@@ -3250,19 +3251,33 @@ router.post('/transactions/:orderId/execute-payout', requireFinance, async (req,
       return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
     }
 
-    const user = resolveUser(req) || req.user || { id: 'finance-admin' };
-    const { idempotencyKey, bankAccount } = req.body || {};
+    const user = resolveUser(req) || req.user;
+    if (!user || !user.id) {
+      return res.status(401).json({ success: false, error: 'Authentication required', code: 'AUTH_REQUIRED' });
+    }
+    const { idempotencyKey, bankAccount, authorizationId, bankReferenceNumber, proofDocumentUrl } = req.body || {};
+
+    if (!authorizationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'authorizationId is required: seller payout cannot be executed without approved financial authorization (Maker-Checker).',
+        code: 'AUTHORIZATION_REQUIRED'
+      });
+    }
 
     const result = await TransactionControlCenterService.executePayout({
       orderId: req.params.orderId,
       operatorId: user.id,
       idempotencyKey,
-      bankAccount
+      bankAccount,
+      bankReferenceNumber,
+      proofDocumentUrl,
+      authorizationId
     });
 
     return res.json(result);
   } catch (err) {
-    const status = err.code === 'PAYOUT_NOT_ELIGIBLE' ? 400 : (err.code === 'ORDER_NOT_FOUND' ? 404 : 500);
+    const status = err.status || (err.code === 'PAYOUT_NOT_ELIGIBLE' || err.code === 'AUTHORIZATION_REQUIRED' || err.code === 'AUTHORIZATION_NOT_APPROVED' || err.code === 'AUTHORIZATION_AMOUNT_MISMATCH' || err.code === 'AUTHORIZATION_DESTINATION_MISMATCH' ? 400 : (err.code === 'ORDER_NOT_FOUND' || err.code === 'AUTHORIZATION_NOT_FOUND' ? 404 : 500));
     return res.status(status).json({
       success: false,
       error: err.message,
@@ -3270,6 +3285,234 @@ router.post('/transactions/:orderId/execute-payout', requireFinance, async (req,
       colorStatus: err.colorStatus,
       blockingIssues: err.blockingIssues,
       evaluationReasons: err.evaluationReasons
+    });
+  }
+});
+
+/**
+ * POST /api/admin/transactions/:orderId/payout-request
+ * Maker step: Requests financial authorization for seller payout.
+ * Requires finance operator or admin role.
+ */
+router.post('/transactions/:orderId/payout-request', requireFinance, async (req, res) => {
+  try {
+    const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+    }
+
+    const user = resolveUser(req) || req.user;
+    if (!user || !user.id) {
+      return res.status(401).json({ success: false, error: 'Authentication required', code: 'AUTH_REQUIRED' });
+    }
+
+    const { reason, amount, bankAccount, metadata } = req.body || {};
+
+    // Bind amount to order evaluation if omitted
+    let effectiveAmount = amount;
+    let effectiveDestination = bankAccount;
+    try {
+      const timeline = await TransactionControlCenterService.getTransactionTimeline(req.params.orderId);
+      if (timeline && timeline.currentEvaluation) {
+        if (!effectiveAmount) {
+          effectiveAmount = timeline.currentEvaluation.netSellerPayout !== undefined
+            ? timeline.currentEvaluation.netSellerPayout
+            : timeline.currentEvaluation.grossAmount;
+        }
+      }
+      if (!effectiveDestination && timeline && timeline.order && timeline.order.seller) {
+        effectiveDestination = timeline.order.seller.bank_account || timeline.order.seller.bankAccount;
+      }
+    } catch (_) {}
+
+    const result = await FinancialAuthorizationService.requestAuthorization({
+      orderId: req.params.orderId,
+      actionType: AUTHORIZATION_ACTION.EXECUTE_PAYOUT,
+      makerId: user.id,
+      amount: effectiveAmount || 0,
+      currency: 'IDR',
+      payoutDestination: effectiveDestination || null,
+      reason: reason || 'Maker payout authorization request for completed order',
+      metadata: {
+        ...(metadata || {}),
+        bankAccount: effectiveDestination
+      }
+    });
+
+    return res.status(result.idempotent ? 200 : 201).json({
+      success: true,
+      message: result.idempotent ? 'Authorization request already pending' : 'Payout authorization requested successfully',
+      authorization: result.authorization,
+      idempotent: result.idempotent
+    });
+  } catch (err) {
+    const status = err.status || (err.code === 'INVALID_AUTHORIZATION_PARAMS' || err.code === 'REASON_REQUIRED' ? 400 : 500);
+    return res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'PAYOUT_REQUEST_FAILED'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/transactions/:orderId/payout-approve
+ * Checker step: Independent Checker reviews and approves the payout, then triggers execution.
+ * NON-NEGOTIABLE INVARIANT: Maker cannot approve their own request (maker_id !== checker_id).
+ */
+router.post('/transactions/:orderId/payout-approve', requireFinance, async (req, res) => {
+  try {
+    const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+    }
+
+    const user = resolveUser(req) || req.user;
+    if (!user || !user.id) {
+      return res.status(401).json({ success: false, error: 'Authentication required', code: 'AUTH_REQUIRED' });
+    }
+
+    const { authorizationId, notes, bankReferenceNumber, proofDocumentUrl, idempotencyKey } = req.body || {};
+
+    if (!authorizationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'authorizationId is required to approve payout',
+        code: 'MISSING_AUTHORIZATION_ID'
+      });
+    }
+
+    // Step 1: Checker approves authorization (strictly enforces maker_id !== checker_id)
+    const approveResult = await FinancialAuthorizationService.approveAuthorization({
+      authorizationId,
+      checkerId: user.id,
+      notes
+    });
+
+    const auth = approveResult.authorization;
+
+    // Step 2: Execute payout with verified dual authorization
+    const payoutResult = await TransactionControlCenterService.executePayout({
+      orderId: req.params.orderId,
+      operatorId: user.id,
+      idempotencyKey,
+      bankAccount: auth.payout_destination || (auth.metadata && auth.metadata.bankAccount ? auth.metadata.bankAccount : null),
+      bankReferenceNumber,
+      proofDocumentUrl,
+      authorizationId: auth.id
+    });
+
+    return res.json({
+      success: true,
+      message: 'Payout approved and executed successfully',
+      authorization: auth,
+      settlement: payoutResult.settlement,
+      evaluation: payoutResult.evaluation
+    });
+  } catch (err) {
+    const status = err.status || (err.code === 'MAKER_CHECKER_VIOLATION' ? 403 : (err.code === 'AUTHORIZATION_NOT_FOUND' ? 404 : 400));
+    return res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'PAYOUT_APPROVAL_FAILED',
+      colorStatus: err.colorStatus,
+      blockingIssues: err.blockingIssues
+    });
+  }
+});
+
+/**
+ * GET /api/admin/financial-authorizations
+ * List pending, approved, or rejected dual authorization requests.
+ */
+router.get('/financial-authorizations', requireAdmin, async (req, res) => {
+  try {
+    const { status, orderId } = req.query || {};
+    const authorizations = FinancialAuthorizationService.listAuthorizations({
+      status: status || undefined,
+      orderId: orderId || undefined
+    });
+
+    return res.json({
+      success: true,
+      count: authorizations.length,
+      authorizations
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: err.message,
+      code: 'LIST_AUTHORIZATIONS_FAILED'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/financial-authorizations/:id/reject
+ * Checker step: Rejects the financial authorization request with reason.
+ */
+router.post('/financial-authorizations/:id/reject', requireFinance, async (req, res) => {
+  try {
+    const user = resolveUser(req) || req.user;
+    if (!user || !user.id) {
+      return res.status(401).json({ success: false, error: 'Authentication required', code: 'AUTH_REQUIRED' });
+    }
+    const { rejectionReason } = req.body || {};
+
+    if (!rejectionReason) {
+      return res.status(400).json({
+        success: false,
+        error: 'rejectionReason is required to reject authorization',
+        code: 'MISSING_REJECTION_REASON'
+      });
+    }
+
+    const result = await FinancialAuthorizationService.rejectAuthorization({
+      authorizationId: req.params.id,
+      checkerId: user.id,
+      rejectionReason
+    });
+
+    return res.json(result);
+  } catch (err) {
+    const status = err.status || (err.code === 'AUTHORIZATION_NOT_FOUND' ? 404 : 400);
+    return res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'REJECT_AUTHORIZATION_FAILED'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/settlements/:id/confirm-disbursement
+ * Confirms bank disbursement with verified bank transaction reference and receipt proof.
+ * Requires finance operator or admin role.
+ */
+router.post('/settlements/:id/confirm-disbursement', requireFinance, async (req, res) => {
+  try {
+    const user = resolveUser(req) || req.user;
+    if (!user || !user.id) {
+      return res.status(401).json({ success: false, error: 'Authentication required', code: 'AUTH_REQUIRED' });
+    }
+    const { bankReferenceNumber, proofDocumentUrl, bankAccount, orderId } = req.body || {};
+
+    const result = await SettlementService.confirmBankDisbursement({
+      settlementId: req.params.id,
+      orderId,
+      officerId: user.id,
+      bankReferenceNumber,
+      proofDocumentUrl,
+      bankAccount
+    });
+
+    return res.json(result);
+  } catch (err) {
+    const status = err.status || (err.code === 'INVALID_BANK_REFERENCE' || err.code === 'DUPLICATE_BANK_REFERENCE' || err.code === 'INVALID_PROOF_URL' ? 400 : (err.code === 'SETTLEMENT_NOT_FOUND' ? 404 : 500));
+    return res.status(status).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'CONFIRM_DISBURSEMENT_FAILED'
     });
   }
 });

@@ -35,6 +35,7 @@ process.env.ENABLE_DOKU_PRODUCTION = 'false';
 process.env.ENABLE_IPAYMU_PRODUCTION = 'false';
 process.env.ENABLE_MIDTRANS_PRODUCTION = 'false';
 process.env.ENABLE_XENDIT_PRODUCTION = 'false';
+process.env.MARKETPLACE_MODE = 'LIVE';
 
 const assert = require('assert');
 const crypto = require('crypto');
@@ -328,6 +329,17 @@ async function runTrustAndReadinessSuite() {
       gate: 'Gate 1',
       notes: 'Entry confirmed at gate',
       status: 'CONFIRMED'
+    });
+
+    // Authentic buyer attestation confirming successful entry
+    const { TrustPolicyEngine, ATTESTATION_TYPE } = require('./src/trust/TrustPolicyEngine');
+    await TrustPolicyEngine.recordAttestation({
+      orderId: orderRes.order.id,
+      attestationType: ATTESTATION_TYPE.BUYER_ATTESTATION,
+      actorId: 'buyer-1',
+      actorRole: 'buyer',
+      result: 'PASS',
+      metadata: { notes: 'Buyer confirmed entry at venue' }
     });
 
     // First release

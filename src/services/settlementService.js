@@ -19,12 +19,54 @@ class SettlementService {
    * Execute settlement disbursement to seller account.
    * Guarded by ARGUS Trust Engine and physical gate admission evidence.
    */
-  static async executeSettlement({ orderId, sellerId, officerId, idempotencyKey, bankAccount }) {
+  static async executeSettlement({
+    orderId,
+    sellerId,
+    officerId,
+    idempotencyKey,
+    bankAccount,
+    bankReferenceNumber = null,
+    proofDocumentUrl = null,
+    authorizedBy = null,
+    authorizationId = null
+  }) {
     const { isPrelaunchListingMode } = require('../config/marketplaceMode');
     if (isPrelaunchListingMode()) {
       const err = new Error('TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.');
       err.code = 'MARKETPLACE_PRELAUNCH_ONLY';
       err.status = 403;
+      throw err;
+    }
+
+    if (!authorizationId) {
+      const err = new Error('Dual authorization required: settlement payout cannot be executed without an approved financial authorization.');
+      err.code = 'AUTHORIZATION_REQUIRED';
+      err.status = 400;
+      throw err;
+    }
+
+    const { FinancialAuthorizationService, AUTHORIZATION_STATUS } = require('../settlement/FinancialAuthorizationService');
+    const authorization = await FinancialAuthorizationService.getAuthorizationById(authorizationId);
+
+    if (!authorization) {
+      const err = new Error(`Financial authorization '${authorizationId}' not found`);
+      err.code = 'AUTHORIZATION_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
+    if (authorization.status !== AUTHORIZATION_STATUS.APPROVED) {
+      const isConsumed = authorization.status === AUTHORIZATION_STATUS.CONSUMED;
+      const err = new Error(isConsumed
+        ? `Financial authorization '${authorizationId}' has already been consumed and cannot be reused.`
+        : `Financial authorization is not in APPROVED state (current status: ${authorization.status})`);
+      err.code = isConsumed ? 'AUTHORIZATION_ALREADY_CONSUMED' : 'AUTHORIZATION_NOT_APPROVED';
+      err.status = 400;
+      throw err;
+    }
+    if (authorization.order_id !== orderId) {
+      const err = new Error(`Financial authorization order mismatch (${authorization.order_id} !== ${orderId})`);
+      err.code = 'AUTHORIZATION_ORDER_MISMATCH';
+      err.status = 400;
       throw err;
     }
 
@@ -118,6 +160,7 @@ class SettlementService {
 
     let settlementMode = 'MANUAL_BANK_TRANSFER';
     let payoutRef = `payout-${Date.now()}`;
+    let isDisbursed = false;
 
     if (caps.payout) {
       settlementMode = 'PROVIDER_RAIL_AUTOMATED';
@@ -130,15 +173,20 @@ class SettlementService {
           idempotencyKey
         });
         payoutRef = payoutResult.payoutId || payoutRef;
+        // Invariant: Simulated payouts must NEVER be recorded as actual DISBURSED transactions.
+        isDisbursed = Boolean(payoutResult && payoutResult.status === 'DISBURSED' && !payoutResult.simulated);
       } catch (payoutErr) {
         settlementMode = 'FAILED';
         throw payoutErr;
       }
     } else {
-      // Settle via verified banking rail / manual operator disburse
-      settlementMode = process.env.NODE_ENV === 'test' ? 'SIMULATED' : 'MANUAL_BANK_TRANSFER';
-      payoutRef = `ops-clear-${Date.now()}`;
+      // Manual bank transfer rail: starts at PENDING_BANK_EXECUTION until explicit verified confirmation
+      settlementMode = 'MANUAL_BANK_TRANSFER';
+      payoutRef = bankReferenceNumber ? String(bankReferenceNumber).trim() : `pending-bank-tx-${Date.now()}`;
+      isDisbursed = false;
     }
+
+    const canonicalStatus = isDisbursed ? 'DISBURSED' : 'PENDING_BANK_EXECUTION';
 
     const settlement = {
       id: settlementId,
@@ -146,10 +194,15 @@ class SettlementService {
       seller_id: order.seller_id,
       amount: escrow.amount,
       status: 'EXECUTED',
+      disbursement_status: canonicalStatus,
       mode: settlementMode,
       settlement_mode: settlementMode,
       payout_ref: payoutRef,
       bank_account: effectiveBankAccount,
+      bank_reference_number: bankReferenceNumber ? String(bankReferenceNumber).trim() : null,
+      proof_document_url: proofDocumentUrl || null,
+      authorization_id: authorizationId || null,
+      authorized_by: authorizedBy || null,
       idempotency_key: idempotencyKey,
       executed_at: new Date().toISOString()
     };
@@ -165,10 +218,14 @@ class SettlementService {
       seller_id: order.seller_id,
       provider: providerName,
       amount: escrow.amount,
-      status: 'DISBURSED',
+      status: canonicalStatus,
       settlement_mode: settlementMode,
       payout_ref: payoutRef,
       bank_account: effectiveBankAccount,
+      bank_reference_number: bankReferenceNumber ? String(bankReferenceNumber).trim() : null,
+      proof_document_url: proofDocumentUrl || null,
+      authorization_id: authorizationId || null,
+      authorized_by: authorizedBy || null,
       executed_at: settlement.executed_at
     });
 
@@ -211,6 +268,151 @@ class SettlementService {
     });
 
     return { settlement, idempotent: false };
+  }
+
+  /**
+   * Confirms a manual bank transfer disbursement with authentic bank reference and transfer receipt proof.
+   * Only transitions to DISBURSED when verifiable bank reference and valid HTTPS evidence are provided.
+   * Strictly enforces uniqueness: duplicate bank references cannot be reused.
+   */
+  static async confirmBankDisbursement({
+    settlementId,
+    orderId,
+    officerId,
+    bankReferenceNumber,
+    proofDocumentUrl = null,
+    bankAccount = null
+  }) {
+    if (!officerId) {
+      const err = new Error('Authorized finance officer ID is required to confirm bank disbursement');
+      err.code = 'OFFICER_REQUIRED';
+      err.status = 401;
+      throw err;
+    }
+
+    const officer = state.users ? state.users.find(u => u.id === officerId) : null;
+    if (officer && !['admin', 'super_admin', 'ops', 'finance', 'finance_operator'].includes((officer.role || '').toLowerCase())) {
+      const err = new Error('Forbidden: only authorized finance officers can confirm bank disbursement');
+      err.code = 'FORBIDDEN_FINANCE_ROLE';
+      err.status = 403;
+      throw err;
+    }
+
+    const cleanRef = (bankReferenceNumber || '').trim();
+    const isTrivial = /^(\d)\1+$/.test(cleanRef) || cleanRef === '12345678' || cleanRef.toLowerCase() === 'testtest' || cleanRef.toLowerCase() === 'transfer';
+    if (!cleanRef || cleanRef.length < 8 || isTrivial) {
+      const err = new Error('Authentic bank transaction reference number is required to confirm disbursement (minimum 8 characters and non-trivial)');
+      err.code = 'INVALID_BANK_REFERENCE';
+      err.status = 400;
+      throw err;
+    }
+
+    // Proof Document URL is MANDATORY: transfer reference alone is never sufficient proof
+    if (!proofDocumentUrl || typeof proofDocumentUrl !== 'string' || !/^https:\/\/[a-zA-Z0-9.-]+(\/.*)?$/i.test(proofDocumentUrl)) {
+      const err = new Error('Disbursement proof document URL is mandatory and must be a valid, secure HTTPS URL');
+      err.code = 'INVALID_PROOF_URL';
+      err.status = 400;
+      throw err;
+    }
+
+    let record = (state.settlement_records || []).find(s => s.id === settlementId || s.order_id === orderId);
+    let settlement = (state.settlements || []).find(s => s.id === settlementId || s.order_id === orderId);
+
+    // Segregation of Duties: Confirming officer CANNOT be the Maker who requested the authorization
+    const authId = settlement?.authorization_id || record?.authorization_id;
+    if (authId) {
+      const { FinancialAuthorizationService } = require('../settlement/FinancialAuthorizationService');
+      const auth = await FinancialAuthorizationService.getAuthorizationById(authId);
+      if (auth && auth.maker_id === officerId) {
+        const err = new Error('Maker-Checker violation: The officer who requested the payout authorization (Maker) cannot confirm the bank disbursement (Independent Checker required)');
+        err.code = 'MAKER_CHECKER_VIOLATION';
+        err.status = 403;
+        throw err;
+      }
+    }
+
+    const targetAccount = bankAccount || record?.bank_account || settlement?.bank_account || null;
+
+    // Check duplicate bank reference in memory
+    const existingWithSameRef = (state.settlement_records || []).concat(state.settlements || []).find(
+      s => (s.id !== settlementId && (!record || s.id !== record.id)) &&
+           s.bank_reference_number === cleanRef &&
+           (!targetAccount || s.bank_account === targetAccount)
+    );
+    if (existingWithSameRef) {
+      const err = new Error(`Duplicate bank reference number '${cleanRef}' has already been recorded for settlement '${existingWithSameRef.id}'`);
+      err.code = 'DUPLICATE_BANK_REFERENCE';
+      err.status = 400;
+      throw err;
+    }
+
+    // Persist via PostgresMoneyRepository
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      if (moneyRepo && typeof moneyRepo.confirmSettlementDisbursement === 'function') {
+        const repoRes = await moneyRepo.confirmSettlementDisbursement({
+          settlementId: settlementId || record?.id || settlement?.id,
+          orderId: orderId || record?.order_id || settlement?.order_id,
+          officerId,
+          bankReferenceNumber: cleanRef,
+          proofDocumentUrl,
+          bankAccount: targetAccount
+        });
+        if (repoRes && repoRes.settlement) {
+          if (record) Object.assign(record, repoRes.settlement);
+          if (settlement) Object.assign(settlement, repoRes.settlement);
+        }
+      }
+    } catch (repoErr) {
+      if (repoErr.code === 'DUPLICATE_BANK_REFERENCE' || repoErr.code === 'INVALID_BANK_REFERENCE') throw repoErr;
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw repoErr;
+    }
+
+    if (!record && !settlement) {
+      const err = new Error('Settlement record not found');
+      err.code = 'SETTLEMENT_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
+
+    const now = new Date().toISOString();
+    if (record) {
+      record.status = 'DISBURSED';
+      record.bank_reference_number = cleanRef;
+      record.proof_document_url = proofDocumentUrl;
+      record.disbursed_at = now;
+      record.confirmed_by_officer = officerId;
+    }
+
+    if (settlement) {
+      settlement.status = 'DISBURSED';
+      settlement.disbursement_status = 'DISBURSED';
+      settlement.bank_reference_number = cleanRef;
+      settlement.proof_document_url = proofDocumentUrl;
+      settlement.disbursed_at = now;
+      settlement.confirmed_by_officer = officerId;
+    }
+
+    try {
+      const { DurableFinancialStore } = require('../settlement/DurableFinancialStore');
+      DurableFinancialStore.persist('settlement_records', state.settlement_records);
+    } catch (_) {}
+
+    await recordAuditLog('SETTLEMENT', settlementId || record?.id, 'BANK_DISBURSEMENT_CONFIRMED', officerId, {
+      order_id: orderId || record?.order_id,
+      bank_reference_number: cleanRef,
+      proof_document_url: proofDocumentUrl,
+      bank_account: targetAccount
+    });
+
+    return {
+      success: true,
+      status: 'DISBURSED',
+      settlement: record || settlement,
+      bankReferenceNumber: cleanRef,
+      confirmedAt: now
+    };
   }
 }
 

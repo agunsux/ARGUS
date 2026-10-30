@@ -870,12 +870,17 @@ class EscrowService {
         throw err;
       }
 
-      // 3. Operational invariant check: Must have confirmed entry verification
+      // 3. Operational invariant check: Must have confirmed entry verification OR authoritative dispute resolution in seller favor
       const verification = state.entry_verifications.find(
         ev => ev.order_id === orderId && ev.status === 'CONFIRMED'
       );
-      if (!verification) {
-        const err = new Error('Security violation: Cannot release escrow without confirmed venue entry by Event PIC');
+      const disputeFavorable = (state.disputes || []).some(
+        d => d.order_id === orderId &&
+             (d.status === 'RESOLVED' || d.status === 'CLOSED_FINAL') &&
+             (d.outcome === 'SELLER_FAVORED' || d.outcome === 'RELEASE_SELLER')
+      );
+      if (!verification && !disputeFavorable) {
+        const err = new Error('Security violation: Cannot release escrow without confirmed venue entry by Event PIC or authoritative dispute resolution in seller favor');
         err.code = 'ENTRY_NOT_CONFIRMED';
         throw err;
       }

@@ -34,6 +34,7 @@ const STORE_FILES = {
   chargebacks: 'chargebacks.json',
   payment_reconciliation_logs: 'payment_reconciliation_logs.json',
   idempotency_records: 'idempotency_records.json',
+  financial_authorizations: 'financial_authorizations.json',
   escrows: 'escrows.json',
   orders: 'orders.json'
 };

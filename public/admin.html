@@ -1102,7 +1102,7 @@
                   <span id="payProviderStatusBadge" class="tag tag-medium">SANDBOX TESTING</span>
                 </div>
                 <div id="paySafetyGateDesc" style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
-                  Real-money marketplace activation is gated. Funds are held in licensed DOKU Escrow Account.
+                  Real-money marketplace activation is gated. Transaction settlements are recorded in internal dual-entry ledger.
                 </div>
               </div>
             </div>
@@ -3451,7 +3451,7 @@
         } else {
           badge.className = 'tag tag-medium';
           badge.innerText = 'SANDBOX TESTING (GATED)';
-          document.getElementById('paySafetyGateDesc').innerText = 'Aktivasi uang riil ditahan (fail-closed). Rekening penampungan diamankan di DOKU Escrow Account.';
+          document.getElementById('paySafetyGateDesc').innerText = 'Aktivasi uang riil ditahan (fail-closed). Pencatatan transaksi dikelola via buku besar internal (ledger).';
         }
 
         // 3. Render Canonical Payments Table

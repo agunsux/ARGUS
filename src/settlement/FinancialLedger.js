@@ -205,6 +205,10 @@ class FinancialLedger {
    * Credits: PLATFORM_FEE_REVENUE (Buyer Fee + Seller Fee)
    * Credits: TAX_PAYABLE (Buyer PPN + Seller PPh 22 Withholding)
    */
+  static async recordCapture(params) {
+    return await this.recordPaymentCapture(params);
+  }
+
   static async recordPaymentCapture({
     orderId,
     quoteId = null,
@@ -324,6 +328,8 @@ class FinancialLedger {
     sellerFee,
     buyerTax = 0,
     sellerTax = 0,
+    providerFee = 0,
+    refundProviderFee = false,
     actorId = 'SYSTEM',
     reason = 'ORDER_CANCELLED_REFUND'
   }) {
@@ -332,6 +338,7 @@ class FinancialLedger {
     const effSellerFee = sellerFee !== undefined ? parseInt(sellerFee, 10) : 0;
     const effBuyerTax = parseInt(buyerTax || 0, 10);
     const effSellerTax = parseInt(sellerTax || 0, 10);
+    const effProviderFee = parseInt(providerFee || 0, 10);
 
     const buyerTotal = price + effBuyerFee + effBuyerTax;
     const sellerNetPayout = price - effSellerFee - effSellerTax;
@@ -364,10 +371,20 @@ class FinancialLedger {
       });
     }
 
+    // Account for non-refundable gateway processing fees retained by payment providers
+    if (effProviderFee > 0) {
+      entries.push({
+        account: LEDGER_ACCOUNTS.PROVIDER_FEE_EXPENSE,
+        type: 'DEBIT',
+        amount: effProviderFee
+      });
+    }
+
+    const totalClearingCredit = buyerTotal + (effProviderFee > 0 ? effProviderFee : 0);
     entries.push({
       account: LEDGER_ACCOUNTS.PAYMENT_GATEWAY_CLEARING,
       type: 'CREDIT',
-      amount: buyerTotal
+      amount: totalClearingCredit
     });
 
     return await this.recordTransaction({
@@ -375,7 +392,7 @@ class FinancialLedger {
       orderId,
       quoteId,
       actorId,
-      description: `Refund issued to buyer for order ${orderId}: Rp ${buyerTotal}. Reason: ${reason}`,
+      description: `Refund issued to buyer for order ${orderId}: Rp ${buyerTotal}. Reason: ${reason}${effProviderFee > 0 ? ` (Gateway non-refundable fee: Rp ${effProviderFee})` : ''}`,
       entries
     });
   }

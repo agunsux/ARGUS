@@ -1785,14 +1785,90 @@ router.post(['/buyer/orders/:orderId/entry-challenge', '/buyer/entry-challenge']
 });
 
 /**
- * Blocked legacy endpoint: Buyer cannot confirm entry
- * POST /api/mvp/buyer/confirm-entry
+ * Authenticated Buyer confirms successful venue entry / ticket receipt
+ * POST /api/mvp/buyer/orders/:id/confirm-entry
+ * POST /api/mvp/buyer/confirm-entry (with req.body.orderId)
+ * Strictly restricted to the authenticated buyer of the specific order.
  */
-router.post('/buyer/confirm-entry', (req, res) => {
-  return res.status(403).json({
-    error: 'Buyer cannot confirm entry. PIC must physically inspect turnstile admission and enter Buyer code (POST /api/mvp/pic/confirm-entry).',
-    code: 'BUYER_CANNOT_CONFIRM_ENTRY'
-  });
+router.post(['/buyer/orders/:id/confirm-entry', '/buyer/confirm-entry'], async (req, res) => {
+  try {
+    const callerId = getCallerId(req, req.body.buyerId, req.body.userId);
+    if (!callerId) {
+      return res.status(401).json({
+        error: 'Authentication required. Valid buyer session token or identity header required.',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
+    const orderId = req.params.id || req.body.orderId;
+    if (!orderId) {
+      return res.status(400).json({
+        error: 'Order ID is required to confirm entry',
+        code: 'ORDER_ID_REQUIRED'
+      });
+    }
+
+    let order = (state.orders || []).find(o => o.id === orderId);
+    if (!order) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        order = await moneyRepo.getOrderById(orderId);
+      } catch (_) {}
+    }
+    if (!order) {
+      return res.status(404).json({
+        error: `Order '${orderId}' not found`,
+        code: 'ORDER_NOT_FOUND'
+      });
+    }
+
+    // Ownership Verification: ONLY the buyer of this specific order can attest
+    if (order.buyer_id !== callerId) {
+      const user = findUser(callerId);
+      const isAdmin = user && ['admin', 'super_admin'].includes((user.role || '').toLowerCase());
+      if (!isAdmin) {
+        return res.status(403).json({
+          error: 'Forbidden: only the authenticated buyer associated with this order can submit buyer confirmation',
+          code: 'FORBIDDEN_BUYER_MISMATCH'
+        });
+      }
+    }
+
+    const { TrustPolicyEngine, ATTESTATION_TYPE } = require('../trust/TrustPolicyEngine');
+    const attResult = await TrustPolicyEngine.recordAttestation({
+      orderId: order.id,
+      attestationType: ATTESTATION_TYPE.BUYER_ATTESTATION,
+      actorId: callerId,
+      actorRole: 'buyer',
+      result: 'PASS',
+      metadata: {
+        notes: req.body.notes || 'Buyer confirmed successful venue entry and ticket validity',
+        confirmed_at: new Date().toISOString()
+      }
+    });
+
+    order.buyer_entry_confirmed = true;
+    order.buyer_entry_confirmed_at = new Date().toISOString();
+
+    await recordAuditLog('ORDER', order.id, 'BUYER_ENTRY_CONFIRMED', callerId, {
+      buyer_id: callerId,
+      attestation_id: attResult?.attestation?.id || null
+    });
+
+    return res.json({
+      success: true,
+      message: 'Kehadiran di venue berhasil dikonfirmasi oleh pembeli.',
+      orderId: order.id,
+      buyerConfirmed: true,
+      attestation: attResult?.attestation || null
+    });
+  } catch (err) {
+    return res.status(mapRouterError(err)).json({
+      error: err.message,
+      code: err.code || 'CONFIRM_ENTRY_FAILED'
+    });
+  }
 });
 
 // =============================================================================
@@ -2437,7 +2513,29 @@ router.post('/admin/settlements/execute', async (req, res) => {
 
     // Epic 3.5: Step-Up Authentication Required
     const stepUp = verifyAdminStepUp(req, officerId);
-    const { orderId, sellerId, idempotencyKey, bankAccount } = req.body;
+    const { orderId, sellerId, idempotencyKey, bankAccount, authorizationId, bankReferenceNumber, proofDocumentUrl } = req.body;
+
+    if (!authorizationId) {
+      return res.status(400).json({
+        error: 'authorizationId required: Payout execution strictly requires dual financial authorization (Maker-Checker).',
+        code: 'AUTHORIZATION_REQUIRED'
+      });
+    }
+
+    const { FinancialAuthorizationService, AUTHORIZATION_STATUS, AUTHORIZATION_ACTION } = require('../settlement/FinancialAuthorizationService');
+    const auth = await FinancialAuthorizationService.getAuthorizationById(authorizationId);
+    if (!auth) {
+      return res.status(404).json({ error: 'Financial authorization not found', code: 'AUTHORIZATION_NOT_FOUND' });
+    }
+    if (auth.status !== AUTHORIZATION_STATUS.APPROVED) {
+      return res.status(400).json({ error: `Financial authorization is not approved (status: ${auth.status})`, code: 'AUTHORIZATION_NOT_APPROVED' });
+    }
+    if (auth.order_id !== orderId) {
+      return res.status(400).json({ error: 'Financial authorization order mismatch', code: 'AUTHORIZATION_ORDER_MISMATCH' });
+    }
+    if (auth.action_type !== AUTHORIZATION_ACTION.EXECUTE_PAYOUT) {
+      return res.status(400).json({ error: 'Invalid authorization action type', code: 'INVALID_AUTHORIZATION_ACTION' });
+    }
 
     // Release escrow first if not yet released
     const escrow = state.escrows.find(e => e.order_id === orderId);
@@ -2450,19 +2548,29 @@ router.post('/admin/settlements/execute', async (req, res) => {
       sellerId,
       officerId,
       idempotencyKey: idempotencyKey || `stl-key-${orderId}`,
-      bankAccount
+      bankAccount: auth.payout_destination || bankAccount,
+      bankReferenceNumber,
+      proofDocumentUrl,
+      authorizedBy: auth.checker_id,
+      authorizationId: auth.id
+    });
+
+    await FinancialAuthorizationService.consumeAuthorization({
+      authorizationId: auth.id,
+      settlementId: result.settlement.id
     });
 
     await recordAuditLog('ADMIN_STEP_UP', orderId, 'SETTLEMENT_STEP_UP_EXECUTED', officerId, {
       reason: stepUp.reason,
-      amount: escrow?.amount
+      amount: escrow?.amount,
+      authorizationId: auth.id
     });
 
     res.json({
       success: true,
-      message: 'Settlement successfully executed and disbursed to seller. [SIMULATED / PILOT-ONLY / STEP-UP VERIFIED]',
+      message: 'Settlement successfully executed under verified dual authorization.',
       settlement: result.settlement,
-      settlement_mode: 'SIMULATED'
+      settlement_mode: result.settlement.settlement_mode || 'MANUAL_BANK_TRANSFER'
     });
   } catch (err) {
     res.status(mapRouterError(err)).json({ error: err.message, code: err.code });
@@ -2475,6 +2583,11 @@ router.post('/admin/settlements/execute', async (req, res) => {
  */
 router.post('/admin/override-state', async (req, res) => {
   try {
+    const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+    }
+
     const officerId = getCallerId(req, req.body.officerId);
     if (!officerId) {
       return res.status(401).json({ error: 'officerId required', code: 'AUTH_REQUIRED' });
@@ -2482,6 +2595,14 @@ router.post('/admin/override-state', async (req, res) => {
 
     const stepUp = verifyAdminStepUp(req, officerId);
     const { orderId, targetState } = req.body;
+
+    const restrictedFinancialStates = ['SETTLED', 'DISBURSED', 'PAID_OUT'];
+    if (restrictedFinancialStates.includes(targetState)) {
+      return res.status(400).json({
+        error: `Manual override to financial state '${targetState}' is forbidden. Financial settlements must use the Maker-Checker authorization pipeline.`,
+        code: 'FINANCIAL_OVERRIDE_FORBIDDEN'
+      });
+    }
 
     const order = state.orders.find(o => o.id === orderId);
     if (!order) return res.status(404).json({ error: 'Order not found', code: 'NOT_FOUND' });

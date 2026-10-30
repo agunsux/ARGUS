@@ -153,19 +153,19 @@ class IPaymuProvider extends PaymentProvider {
 
   getSupportedChannels() {
     return [
-      { code: 'BCA_VA', name: 'BCA Virtual Account (Escrow)', type: 'VA', isEscrowSupported: true },
-      { code: 'MANDIRI_VA', name: 'Mandiri Virtual Account (Escrow)', type: 'VA', isEscrowSupported: true },
-      { code: 'BNI_VA', name: 'BNI Virtual Account (Escrow)', type: 'VA', isEscrowSupported: true },
-      { code: 'BRI_VA', name: 'BRI Virtual Account (Escrow)', type: 'VA', isEscrowSupported: true },
-      { code: 'PERMATA_VA', name: 'Permata Virtual Account (Escrow)', type: 'VA', isEscrowSupported: true },
-      { code: 'VA_BCA', name: 'BCA Virtual Account (Escrow)', type: 'VA', isEscrowSupported: true },
-      { code: 'VA_MANDIRI', name: 'Mandiri Virtual Account (Escrow)', type: 'VA', isEscrowSupported: true },
-      { code: 'VA_BNI', name: 'BNI Virtual Account (Escrow)', type: 'VA', isEscrowSupported: true },
-      { code: 'VA_BRI', name: 'BRI Virtual Account (Escrow)', type: 'VA', isEscrowSupported: true },
-      { code: 'VA_PERMATA', name: 'Permata Virtual Account (Escrow)', type: 'VA', isEscrowSupported: true },
-      { code: 'QRIS', name: 'QRIS Standar Nasional (Non-Escrow)', type: 'QRIS', isEscrowSupported: false },
-      { code: 'DIRECT_BANK_TRANSFER', name: 'Transfer Bank Langsung (Non-Escrow)', type: 'DIRECT_TRANSFER', isEscrowSupported: false },
-      { code: 'CREDIT_CARD_INSTANT', name: 'Kartu Kredit Instan (Non-Escrow)', type: 'CREDIT_CARD', isEscrowSupported: false }
+      { code: 'BCA_VA', name: 'BCA Virtual Account', type: 'VA', isEscrowSupported: true },
+      { code: 'MANDIRI_VA', name: 'Mandiri Virtual Account', type: 'VA', isEscrowSupported: true },
+      { code: 'BNI_VA', name: 'BNI Virtual Account', type: 'VA', isEscrowSupported: true },
+      { code: 'BRI_VA', name: 'BRI Virtual Account', type: 'VA', isEscrowSupported: true },
+      { code: 'PERMATA_VA', name: 'Permata Virtual Account', type: 'VA', isEscrowSupported: true },
+      { code: 'VA_BCA', name: 'BCA Virtual Account', type: 'VA', isEscrowSupported: true },
+      { code: 'VA_MANDIRI', name: 'Mandiri Virtual Account', type: 'VA', isEscrowSupported: true },
+      { code: 'VA_BNI', name: 'BNI Virtual Account', type: 'VA', isEscrowSupported: true },
+      { code: 'VA_BRI', name: 'BRI Virtual Account', type: 'VA', isEscrowSupported: true },
+      { code: 'VA_PERMATA', name: 'Permata Virtual Account', type: 'VA', isEscrowSupported: true },
+      { code: 'QRIS', name: 'QRIS Standar Nasional', type: 'QRIS', isEscrowSupported: false },
+      { code: 'DIRECT_BANK_TRANSFER', name: 'Transfer Bank Langsung', type: 'DIRECT_TRANSFER', isEscrowSupported: false },
+      { code: 'CREDIT_CARD_INSTANT', name: 'Kartu Kredit Instan', type: 'CREDIT_CARD', isEscrowSupported: false }
     ];
   }
 

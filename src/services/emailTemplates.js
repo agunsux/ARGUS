@@ -116,17 +116,17 @@ const TEMPLATES = {
       const content = isEn ? `
         <span class="badge badge-success">Account Created Successfully</span>
         <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Hello, ${d.name || 'User'}!</h2>
-        <p>Your TIKUM account is now active. You can now discover verified secondary tickets protected by an internal escrow vault and physical gate assistance.</p>
+        <p>Your TIKUM account is now active. You can now discover verified secondary tickets protected by conditional payment holding and physical gate assistance.</p>
         <p>Always prioritize your account security and never share your passwords or OTPs with anyone.</p>
       ` : `
         <span class="badge badge-success">Akun Berhasil Dibuat</span>
         <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Halo, ${d.name || 'Pengguna'}!</h2>
-        <p>Akun TIKUM Anda telah aktif. Anda kini dapat mencari tiket sekunder terverifikasi dengan jaminan rekening bersama (escrow) dan pendampingan fisik di venue.</p>
+        <p>Akun TIKUM Anda telah aktif. Anda kini dapat mencari tiket sekunder terverifikasi dengan sistem perlindungan transaksi bersyarat dan pendampingan fisik di venue.</p>
         <p>Prioritaskan selalu keamanan akun Anda dan jangan pernah membagikan password atau OTP kepada siapa pun.</p>
       `;
       const textContent = isEn
-        ? `Hello ${d.name || 'User'},\n\nYour TIKUM account is now active. You can now discover verified tickets protected by escrow and on-site gate assistance.`
-        : `Halo ${d.name || 'Pengguna'},\n\nAkun TIKUM Anda telah aktif. Anda kini dapat mencari tiket terverifikasi dengan proteksi escrow dan verifikasi gate fisik.`;
+        ? `Hello ${d.name || 'User'},\n\nYour TIKUM account is now active. You can now discover verified tickets protected by transaction holding and on-site gate assistance.`
+        : `Halo ${d.name || 'Pengguna'},\n\nAkun TIKUM Anda telah aktif. Anda kini dapat mencari tiket terverifikasi dengan sistem perlindungan transaksi dan verifikasi gate fisik.`;
       return {
         html: wrapHtml({ title, preheader: isEn ? 'Your TIKUM account is now active' : 'Akun TIKUM Anda telah aktif', content, actionButton: { text: isEn ? 'Explore Events' : 'Jelajahi Event', url: `${CANONICAL_ORIGIN}/events` }, locale: isEn ? 'en' : 'id' }),
         text: wrapText({ title, content: textContent, actionUrl: `${CANONICAL_ORIGIN}/events`, locale: isEn ? 'en' : 'id' })
@@ -209,7 +209,7 @@ const TEMPLATES = {
       const content = isEn ? `
         <span class="badge badge-warning">Awaiting Payment</span>
         <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Your Order Has Been Recorded</h2>
-        <p>The ticket is held temporarily in reserved status. Please complete payment to lock funds securely into the TIKUM Escrow Vault.</p>
+        <p>The ticket is held temporarily in reserved status. Please complete payment to confirm your order and activate transaction protection.</p>
         <div class="info-card">
           <div class="info-row"><span class="info-label">Order ID:</span><span class="info-value">${d.orderId || '-'}</span></div>
           <div class="info-row"><span class="info-label">Event:</span><span class="info-value">${d.eventTitle || '-'}</span></div>
@@ -219,7 +219,7 @@ const TEMPLATES = {
       ` : `
         <span class="badge badge-warning">Menunggu Pembayaran</span>
         <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Pesanan Anda Telah Dicatat</h2>
-        <p>Tiket telah diamankan sementara dalam status reservasi. Silakan selesaikan pembayaran untuk mengunci dana ke dalam Rekening Bersama (Escrow) TIKUM.</p>
+        <p>Tiket telah diamankan sementara dalam status reservasi. Silakan selesaikan pembayaran untuk mengonfirmasi pesanan dan mengaktifkan perlindungan transaksi TIKUM.</p>
         <div class="info-card">
           <div class="info-row"><span class="info-label">ID Pesanan:</span><span class="info-value">${d.orderId || '-'}</span></div>
           <div class="info-row"><span class="info-label">Event:</span><span class="info-value">${d.eventTitle || '-'}</span></div>
@@ -432,38 +432,38 @@ const TEMPLATES = {
 
   PAYMENT_SUCCESSFUL: {
     subject: (d) => (d && (d.locale === 'en' || d.lang === 'en'))
-      ? `Payment Received #${d.orderId || ''} — Funds Locked in Escrow`
-      : `Pembayaran Diterima #${d.orderId || ''} — Dana Terkunci di Escrow`,
+      ? `Payment Received #${d.orderId || ''} — Payment Protected`
+      : `Pembayaran Diterima #${d.orderId || ''} — Pembayaran Terlindungi`,
     render: (d) => {
       const isEn = Boolean(d && (d.locale === 'en' || d.lang === 'en'));
       const title = isEn ? 'Payment Successfully Received' : 'Pembayaran Berhasil Diterima';
       const trackUrl = `${CANONICAL_ORIGIN}/track/${d.orderId || ''}`;
       const content = isEn ? `
-        <span class="badge badge-success">Funds Safe in Escrow</span>
+        <span class="badge badge-success">Payment Protected</span>
         <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Your Payment Was Successful</h2>
-        <p>Payment of <strong>Rp ${(d.amount || 0).toLocaleString('id-ID')}</strong> has been verified and securely locked in the TIKUM Escrow Vault.</p>
-        <p>Funds will NOT be released to the seller before your successful entry at the venue with our Person in Charge (PIC).</p>
+        <p>Payment of <strong>Rp ${(d.amount || 0).toLocaleString('id-ID')}</strong> has been verified and placed under transaction verification.</p>
+        <p>Funds will NOT be released to the seller before admission verification at the venue.</p>
         <div class="info-card">
           <div class="info-row"><span class="info-label">Order ID:</span><span class="info-value">${d.orderId || '-'}</span></div>
           <div class="info-row"><span class="info-label">Event:</span><span class="info-value">${d.eventTitle || '-'}</span></div>
-          <div class="info-row"><span class="info-label">Escrow Status:</span><span class="info-value" style="color: #38bdf8;">ESCROWED (LOCKED)</span></div>
+          <div class="info-row"><span class="info-label">Verification Status:</span><span class="info-value" style="color: #38bdf8;">TRANSACTION VERIFICATION</span></div>
         </div>
       ` : `
-        <span class="badge badge-success">Dana Aman di Escrow</span>
+        <span class="badge badge-success">Pembayaran Terlindungi</span>
         <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Pembayaran Anda Berhasil</h2>
-        <p>Pembayaran sebesar <strong>Rp ${(d.amount || 0).toLocaleString('id-ID')}</strong> telah diverifikasi dan aman terkunci di Rekening Bersama (Escrow) TIKUM.</p>
-        <p>Dana TIDAK AKAN dicairkan ke penjual sebelum Anda terbukti berhasil masuk ke venue event bersama Person in Charge (PIC) kami.</p>
+        <p>Pembayaran sebesar <strong>Rp ${(d.amount || 0).toLocaleString('id-ID')}</strong> telah diverifikasi dan dicatat dalam status pemeriksaan transaksi TIKUM.</p>
+        <p>Dana TIDAK AKAN dicairkan ke penjual sebelum verifikasi tiket dan kehadiran acara selesai.</p>
         <div class="info-card">
           <div class="info-row"><span class="info-label">ID Pesanan:</span><span class="info-value">${d.orderId || '-'}</span></div>
           <div class="info-row"><span class="info-label">Event:</span><span class="info-value">${d.eventTitle || '-'}</span></div>
-          <div class="info-row"><span class="info-label">Status Escrow:</span><span class="info-value" style="color: #38bdf8;">ESCROWED (TERKUNCI)</span></div>
+          <div class="info-row"><span class="info-label">Status Pemeriksaan:</span><span class="info-value" style="color: #38bdf8;">PEMERIKSAAN TRANSAKSI</span></div>
         </div>
       `;
       const textContent = isEn
-        ? `Payment for order #${d.orderId || ''} verified.\nAmount: Rp ${(d.amount || 0).toLocaleString('id-ID')} safely held in TIKUM Escrow.\nEscrow Status: ESCROWED.`
-        : `Pembayaran pesanan #${d.orderId || ''} berhasil diverifikasi.\nDana sebesar Rp ${(d.amount || 0).toLocaleString('id-ID')} aman tersimpan di Rekening Bersama TIKUM.\nStatus Escrow: ESCROWED.`;
+        ? `Payment for order #${d.orderId || ''} verified.\nAmount: Rp ${(d.amount || 0).toLocaleString('id-ID')} under TIKUM Transaction Verification.\nStatus: VERIFICATION_IN_PROGRESS.`
+        : `Pembayaran pesanan #${d.orderId || ''} berhasil diverifikasi.\nDana sebesar Rp ${(d.amount || 0).toLocaleString('id-ID')} dalam status pemeriksaan transaksi TIKUM.\nStatus: PEMERIKSAAN TRANSAKSI.`;
       return {
-        html: wrapHtml({ title, preheader: isEn ? `Payment for order #${d.orderId} verified. Funds locked in Escrow.` : `Pembayaran pesanan #${d.orderId} diverifikasi. Dana terkunci di Escrow.`, content, actionButton: { text: isEn ? 'View Ticket & Entry Guide' : 'Buka Tiket & Panduan Masuk', url: trackUrl }, locale: isEn ? 'en' : 'id' }),
+        html: wrapHtml({ title, preheader: isEn ? `Payment for order #${d.orderId} verified. Status: Transaction Verification.` : `Pembayaran pesanan #${d.orderId} diverifikasi. Status: Pemeriksaan Transaksi.`, content, actionButton: { text: isEn ? 'View Ticket & Entry Guide' : 'Buka Tiket & Panduan Masuk', url: trackUrl }, locale: isEn ? 'en' : 'id' }),
         text: wrapText({ title, content: textContent, actionUrl: trackUrl, locale: isEn ? 'en' : 'id' })
       };
     }
@@ -507,18 +507,18 @@ const TEMPLATES = {
       const title = isEn ? 'Your Ticket Has Been Sold' : 'Tiket Anda Telah Terjual';
       const trackUrl = `${CANONICAL_ORIGIN}/track/${d.orderId || ''}`;
       const content = isEn ? `
-        <span class="badge badge-success">Ticket Sold &amp; Escrow Locked</span>
-        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Buyer Paid into Escrow</h2>
-        <p>Your ticket for <strong>${d.eventTitle || '-'}</strong> has been purchased. Payment is locked securely in the TIKUM Escrow Vault.</p>
+        <span class="badge badge-success">Ticket Sold &amp; Payment Secured</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Buyer Paid into Conditional Hold</h2>
+        <p>Your ticket for <strong>${d.eventTitle || '-'}</strong> has been purchased. Buyer payment has been confirmed and placed in conditional transaction holding.</p>
         <div class="info-card">
           <div class="info-row"><span class="info-label">Order ID:</span><span class="info-value">${d.orderId || '-'}</span></div>
           <div class="info-row"><span class="info-label">Net Seller Earnings:</span><span class="info-value" style="color: #34d399;">Rp ${(d.sellerEarnings || 0).toLocaleString('id-ID')}</span></div>
         </div>
         <p>Please prepare the ticket and coordinate with our Event PIC at the venue before showtime.</p>
       ` : `
-        <span class="badge badge-success">Tiket Terjual & Escrow Terkunci</span>
-        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Pembeli Telah Membayar ke Escrow</h2>
-        <p>Tiket Anda untuk event <strong>${d.eventTitle || '-'}</strong> telah dibeli. Pembayaran telah terkunci di Rekening Bersama TIKUM.</p>
+        <span class="badge badge-success">Tiket Terjual &amp; Dana Terlindungi</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Pembeli Telah Membayar</h2>
+        <p>Tiket Anda untuk event <strong>${d.eventTitle || '-'}</strong> telah dibeli. Pembayaran pembeli telah terkonfirmasi dan ditahan dalam perlindungan transaksi TIKUM.</p>
         <div class="info-card">
           <div class="info-row"><span class="info-label">ID Pesanan:</span><span class="info-value">${d.orderId || '-'}</span></div>
           <div class="info-row"><span class="info-label">Hasil Penjualan Bersih:</span><span class="info-value" style="color: #34d399;">Rp ${(d.sellerEarnings || 0).toLocaleString('id-ID')}</span></div>
@@ -526,10 +526,10 @@ const TEMPLATES = {
         <p>Harap siapkan tiket dan koordinasikan dengan Event PIC di lokasi sebelum jadwal konser dimulai.</p>
       `;
       const textContent = isEn
-        ? `Your ticket for ${d.eventTitle || '-'} has been sold!\nBuyer payment is securely locked in Escrow.\nNet earnings: Rp ${(d.sellerEarnings || 0).toLocaleString('id-ID')}.`
-        : `Tiket Anda untuk ${d.eventTitle || '-'} telah terjual!\nPembayaran pembeli aman terkunci di Escrow.\nHasil bersih: Rp ${(d.sellerEarnings || 0).toLocaleString('id-ID')}.`;
+        ? `Your ticket for ${d.eventTitle || '-'} has been sold!\nBuyer payment is secured under transaction protection.\nNet earnings: Rp ${(d.sellerEarnings || 0).toLocaleString('id-ID')}.`
+        : `Tiket Anda untuk ${d.eventTitle || '-'} telah terjual!\nPembayaran pembeli aman dalam sistem perlindungan transaksi TIKUM.\nHasil bersih: Rp ${(d.sellerEarnings || 0).toLocaleString('id-ID')}.`;
       return {
-        html: wrapHtml({ title, preheader: isEn ? `Ticket sold! Buyer funds locked in TIKUM Escrow.` : `Tiket terjual! Dana pembeli terkunci di Escrow TIKUM.`, content, actionButton: { text: isEn ? 'Handover Details' : 'Detail Penyerahan', url: trackUrl }, locale: isEn ? 'en' : 'id' }),
+        html: wrapHtml({ title, preheader: isEn ? `Ticket sold! Buyer payment secured under transaction protection.` : `Tiket terjual! Dana pembeli aman dalam sistem perlindungan transaksi TIKUM.`, content, actionButton: { text: isEn ? 'Handover Details' : 'Detail Penyerahan', url: trackUrl }, locale: isEn ? 'en' : 'id' }),
         text: wrapText({ title, content: textContent, actionUrl: trackUrl, locale: isEn ? 'en' : 'id' })
       };
     }
@@ -556,7 +556,7 @@ const TEMPLATES = {
       ` : `
         <span class="badge badge-info">Pendampingan PIC Aktif</span>
         <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Person in Charge (PIC) Siap di Gate</h2>
-        <p>Untuk memastikan tiket Anda 100% valid dan dapat discan di gerbang, PIC TIKUM telah ditugaskan di venue:</p>
+        <p>Untuk mendampingi verifikasi tiket Anda di venue pada event terpilih ini, PIC TIKUM bertugas di lokasi:</p>
         <div class="info-card">
           <div class="info-row"><span class="info-label">Venue:</span><span class="info-value">${d.venueName || '-'}</span></div>
           <div class="info-row"><span class="info-label">Gate Info:</span><span class="info-value">${d.gateInfo || '-'}</span></div>
@@ -586,23 +586,24 @@ const TEMPLATES = {
       const title = isEn ? 'Issue / Dispute Notice' : 'Laporan Kendala / Sengketa';
       const trackUrl = `${CANONICAL_ORIGIN}/track/${d.orderId || ''}`;
       const content = isEn ? `
-        <span class="badge badge-warning">Escrow Frozen</span>
+        <span class="badge badge-warning">Disbursement Held</span>
         <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Gate Issue Report Received</h2>
-        <p>A ticket issue was reported for order #${d.orderId || ''}. Funds in the Escrow Vault have been FROZEN automatically.</p>
+        <p>A ticket issue was reported for order #${d.orderId || ''}. Payout to the seller has been placed on HOLD automatically.</p>
         <p>Reason: <strong>${d.reason || 'Gate scan failure'}</strong></p>
         <p>Our Event PIC and Trust Officer Team are collecting physical turnstile logs and proof before a final determination.</p>
       ` : `
-        <span class="badge badge-warning">Escrow Dibekukan</span>
+        <span class="badge badge-warning">Pencairan Ditahan</span>
         <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Laporan Masalah di Gate Diterima</h2>
-        <p>Kendala tiket telah dilaporkan untuk pesanan #${d.orderId || ''}. Dana di Rekening Bersama (Escrow) telah DIBEKUKAN otomatis.</p>
+        <p>Kendala tiket telah dilaporkan untuk pesanan #${d.orderId || ''}. Pencairan dana ke penjual telah DITAHAN otomatis.</p>
         <p>Alasan: <strong>${d.reason || 'Kendala scan gate venue'}</strong></p>
         <p>Event PIC dan Tim Trust Officer TIKUM sedang mengumpulkan bukti fisik dan log turnstile sebelum keputusan diambil.</p>
       `;
       const textContent = isEn
-        ? `Dispute opened for order #${d.orderId || ''}.\nEscrow funds frozen.\nReason: ${d.reason || 'Gate scan failure'}.\nInvestigation in progress.`
-        : `Sengketa dibuka untuk pesanan #${d.orderId || ''}.\nDana escrow dibekukan.\nAlasan: ${d.reason || 'Kendala scan gate venue'}.\nInvestigasi sedang berlangsung.`;
+        ? `Dispute opened for order #${d.orderId || ''}.\nPayout placed on hold.\nReason: ${d.reason || 'Gate scan failure'}.\nInvestigation in progress.`
+        : `Sengketa dibuka untuk pesanan #${d.orderId || ''}.\nPencairan dana ditahan sementara.\nAlasan: ${d.reason || 'Kendala scan gate venue'}.\nInvestigasi sedang berlangsung.`;
       return {
-        html: wrapHtml({ title, preheader: isEn ? `Dispute opened for order #${d.orderId}. Escrow frozen.` : `Sengketa dibuka untuk pesanan #${d.orderId}. Escrow dibekukan.`, content, actionButton: { text: isEn ? 'View Dispute Status' : 'Lihat Status Sengketa', url: trackUrl }, locale: isEn ? 'en' : 'id' }),
+        html: wrapHtml({ title, preheader: isEn ? `Dispute opened for order #${d.orderId}. Payout placed on hold.` : `Sengketa dibuka untuk pesanan #${d.orderId}. Pencairan dana ditahan.`, content, actionButton: { text: isEn ? 'View Dispute Status' : 'Lihat Status Sengketa', url: trackUrl }, locale: isEn ? 'en' : 'id' }),
+        text: wrapText({ title, content: textContent, actionUrl: trackUrl, locale: isEn ? 'en' : 'id' }),
         text: wrapText({ title, content: textContent, actionUrl: trackUrl, locale: isEn ? 'en' : 'id' })
       };
     }
@@ -793,7 +794,7 @@ const TEMPLATES = {
           <div class="info-row"><span class="info-label">Order ID:</span><span class="info-value">${escapeHtml(d.orderId || '-')}</span></div>
           <div class="info-row"><span class="info-label">Event:</span><span class="info-value">${escapeHtml(d.eventTitle || '-')}</span></div>
           <div class="info-row"><span class="info-label">Verification Time:</span><span class="info-value">${escapeHtml(d.verifiedAt || new Date().toISOString())}</span></div>
-          <div class="info-row"><span class="info-label">Escrow Status:</span><span class="info-value" style="color: #34d399;">READY FOR RELEASE TO SELLER</span></div>
+          <div class="info-row"><span class="info-label">Protection Status:</span><span class="info-value" style="color: #34d399;">READY FOR RELEASE TO SELLER</span></div>
         </div>
         <p>Thank you for transacting safely through the TIKUM platform.</p>
       ` : `
@@ -804,13 +805,13 @@ const TEMPLATES = {
           <div class="info-row"><span class="info-label">ID Pesanan:</span><span class="info-value">${escapeHtml(d.orderId || '-')}</span></div>
           <div class="info-row"><span class="info-label">Event:</span><span class="info-value">${escapeHtml(d.eventTitle || '-')}</span></div>
           <div class="info-row"><span class="info-label">Waktu Verifikasi:</span><span class="info-value">${escapeHtml(d.verifiedAt || new Date().toISOString())}</span></div>
-          <div class="info-row"><span class="info-label">Status Escrow:</span><span class="info-value" style="color: #34d399;">SIAP DILEPAS KE PENJUAL</span></div>
+          <div class="info-row"><span class="info-label">Status Perlindungan:</span><span class="info-value" style="color: #34d399;">SIAP DILEPAS KE PENJUAL</span></div>
         </div>
         <p>Terima kasih telah bertransaksi secara aman melalui platform TIKUM.</p>
       `;
       const textContent = isEn
-        ? `Ticket Handover Confirmed #${d.orderId || ''}.\nEvent: ${d.eventTitle || '-'}\nTime: ${d.verifiedAt || new Date().toISOString()}\nEscrow Status: Ready for release.`
-        : `Konfirmasi Penyerahan Tiket Selesai #${d.orderId || ''}.\nEvent: ${d.eventTitle || '-'}\nWaktu: ${d.verifiedAt || new Date().toISOString()}\nStatus Escrow: Siap dilepas.`;
+        ? `Ticket Handover Confirmed #${d.orderId || ''}.\nEvent: ${d.eventTitle || '-'}\nTime: ${d.verifiedAt || new Date().toISOString()}\nProtection Status: Ready for release.`
+        : `Konfirmasi Penyerahan Tiket Selesai #${d.orderId || ''}.\nEvent: ${d.eventTitle || '-'}\nWaktu: ${d.verifiedAt || new Date().toISOString()}\nStatus Perlindungan: Siap dilepas.`;
       return {
         html: wrapHtml({ title, preheader: isEn ? `Ticket handover for order #${d.orderId} verified` : `Penyerahan tiket pesanan #${d.orderId} selesai diverifikasi`, content, actionButton: { text: isEn ? 'View Transaction Status' : 'Lihat Status Transaksi', url: trackUrl }, locale: isEn ? 'en' : 'id' }),
         text: wrapText({ title, content: textContent, actionUrl: trackUrl, locale: isEn ? 'en' : 'id' })
@@ -835,7 +836,7 @@ const TEMPLATES = {
           ${d.orderId ? `<div class="info-row"><span class="info-label">Order ID:</span><span class="info-value">${escapeHtml(d.orderId)}</span></div>` : ''}
           ${d.refundAmount ? `<div class="info-row"><span class="info-label">Refund Estimate:</span><span class="info-value" style="color: #34d399;">Rp ${(d.refundAmount || 0).toLocaleString('id-ID')}</span></div>` : ''}
         </div>
-        <p>Under the <strong>TIKUM Buyer Protection Policy</strong>, ticket funds remaining in the Escrow Vault will be processed for a 100% refund to buyers.</p>
+        <p>Under the <strong>TIKUM Buyer Protection Policy</strong>, ticket funds held under conditional platform protection will be processed for refund to buyers according to policy.</p>
       ` : `
         <span class="badge badge-warning" style="background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">Event Dibatalkan</span>
         <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Event Resmi Dibatalkan oleh Promotor</h2>
@@ -846,11 +847,11 @@ const TEMPLATES = {
           ${d.orderId ? `<div class="info-row"><span class="info-label">ID Pesanan:</span><span class="info-value">${escapeHtml(d.orderId)}</span></div>` : ''}
           ${d.refundAmount ? `<div class="info-row"><span class="info-label">Estimasi Refund:</span><span class="info-value" style="color: #34d399;">Rp ${(d.refundAmount || 0).toLocaleString('id-ID')}</span></div>` : ''}
         </div>
-        <p>Sesuai dengan <strong>Kebijakan Perlindungan Konsumen TIKUM</strong>, dana tiket yang masih berada di Rekening Bersama (Escrow) akan diproses untuk pengembalian 100% kepada pembeli.</p>
+        <p>Sesuai dengan <strong>Kebijakan Perlindungan Transaksi TIKUM</strong>, dana transaksi tiket yang masih dalam proses pemeriksaan transaksi oleh platform akan diproses untuk pengembalian dana kepada pembeli sesuai ketentuan.</p>
       `;
       const textContent = isEn
-        ? `Event Cancellation Notice: ${d.eventTitle || 'Event'}\nReason: ${d.cancellationReason || d.reason || 'Promoter decision'}\nEscrow funds will be refunded in accordance with TIKUM policies.`
-        : `Pemberitahuan Pembatalan Event: ${d.eventTitle || 'Event'}\nAlasan: ${d.cancellationReason || d.reason || 'Keputusan resmi promotor'}\nDana di Escrow akan dikembalikan 100% sesuai kebijakan TIKUM.`;
+        ? `Event Cancellation Notice: ${d.eventTitle || 'Event'}\nReason: ${d.cancellationReason || d.reason || 'Promoter decision'}\nTransaction funds will be refunded in accordance with TIKUM policies.`
+        : `Pemberitahuan Pembatalan Event: ${d.eventTitle || 'Event'}\nAlasan: ${d.cancellationReason || d.reason || 'Keputusan resmi promotor'}\nDana transaksi akan diproses untuk pengembalian sesuai Kebijakan Refund TIKUM.`;
       return {
         html: wrapHtml({ title, preheader: isEn ? `Event ${d.eventTitle || ''} officially cancelled` : `Event ${d.eventTitle || ''} resmi dibatalkan`, content, actionButton: { text: isEn ? 'Refund Information & Policy' : 'Informasi Refund & Kebijakan', url: `${CANONICAL_ORIGIN}/refund-policy` }, locale: isEn ? 'en' : 'id' }),
         text: wrapText({ title, content: textContent, actionUrl: `${CANONICAL_ORIGIN}/refund-policy`, locale: isEn ? 'en' : 'id' })

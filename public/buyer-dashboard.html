@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Pembeli — TIKUM</title>
-  <meta name="description" content="Kelola tiket, pesanan escrow, tawaran harga, sengketa, dan keamanan akun pembeli Anda di TIKUM.">
+  <meta name="description" content="Kelola tiket, pesanan, tawaran harga, sengketa, dan keamanan akun pembeli Anda di TIKUM.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
@@ -425,7 +425,7 @@
     <div class="dash-hero">
       <div>
         <h1 class="dash-title">Dashboard Pembeli</h1>
-        <p class="dash-subtitle">Pantau pesanan tiket berproteksi escrow, negosiasi tawaran harga, sengketa, dan keamanan akun Anda secara real-time.</p>
+        <p class="dash-subtitle">Pantau pesanan tiket berproteksi transaksi, negosiasi tawaran harga, sengketa, dan keamanan akun Anda secara real-time.</p>
       </div>
       <div style="text-align:right; font-size:12px; color:var(--text-muted);">
         <div>Status Data: <strong id="dataStateBadge">MEMUAT...</strong></div>
@@ -455,7 +455,7 @@
         <div class="kpi-card">
           <div class="kpi-label"><span>Pesanan Aktif</span> <i class="fa-solid fa-ticket" style="color:var(--primary);"></i></div>
           <div class="kpi-value" id="kpiActiveOrders">0</div>
-          <div class="kpi-foot">Dilindungi Escrow TIKUM</div>
+          <div class="kpi-foot">Perlindungan Transaksi TIKUM</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label"><span>Menunggu Pembayaran</span> <i class="fa-solid fa-clock" style="color:var(--warning);"></i></div>
@@ -797,7 +797,7 @@
             <div class="empty-box">
               <i class="fa-solid fa-ticket"></i>
               <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">Belum Ada Pesanan Tiket (0)</h3>
-              <p style="margin:0 0 16px; font-size:13px;">Anda belum memiliki transaksi pembelian tiket. Semua pembelian di TIKUM dilindungi rekening bersama (Escrow).</p>
+              <p style="margin:0 0 16px; font-size:13px;">Anda belum memiliki transaksi pembelian tiket. Semua pembelian di TIKUM dilindungi prosedur pemeriksaan transaksi.</p>
               <a href="/" class="btn btn-primary"><i class="fa-solid fa-compass"></i> Jelajahi Event Terverifikasi</a>
             </div>
           `;
@@ -815,7 +815,7 @@
                   <span><i class="fa-solid fa-hashtag"></i> Order: <code>${escapeHtml(o.order_id)}</code></span>
                   <span><i class="fa-solid fa-chair"></i> Kursi/Kat: ${escapeHtml(o.seat_info)}</span>
                   <span><i class="fa-solid fa-location-dot"></i> ${escapeHtml(o.event_venue)}</span>
-                  <span><i class="fa-solid fa-vault"></i> Escrow: <strong>${escapeHtml(o.escrow_status)}</strong></span>
+                  <span><i class="fa-solid fa-shield-halved"></i> Verifikasi: <strong>${escapeHtml(o.escrow_status)}</strong></span>
                   <span><i class="fa-solid fa-door-open"></i> Gate: <strong>${escapeHtml(o.entry_verification_status)}</strong></span>
                   <span><i class="fa-regular fa-clock"></i> ${escapeHtml(formatDate(o.created_at))}</span>
                 </div>
