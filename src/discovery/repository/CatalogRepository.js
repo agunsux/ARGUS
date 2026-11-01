@@ -80,6 +80,14 @@ class CatalogRepository {
     throw new Error('getJobSchedulerState() must be implemented');
   }
 
+  async recordEventChange(changeData) {
+    throw new Error('recordEventChange() must be implemented');
+  }
+
+  async getEventChangeHistory(eventId) {
+    throw new Error('getEventChangeHistory() must be implemented');
+  }
+
   isDegraded() {
     return false;
   }

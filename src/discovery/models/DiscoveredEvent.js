@@ -35,6 +35,7 @@ const PRICE_STATUS = {
   STANDARD_VALUE: 'STANDARD_VALUE',
   PRICE_TIERED: 'PRICE_TIERED',
   EXCLUDED_PRICE_TOO_LOW: 'EXCLUDED_PRICE_TOO_LOW',
+  PENDING_VERIFICATION: 'PENDING_VERIFICATION',
   UNKNOWN: 'UNKNOWN'
 };
 
@@ -102,6 +103,8 @@ class DiscoveredEvent {
     this.official_event_url = data.official_event_url || data.official_url || null;
     this.official_ticket_url = data.official_ticket_url || data.ticket_url || null;
     this.official_ticketing_provider = data.official_ticketing_provider || data.ticketing_provider || null;
+    this.official_ticket_availability = data.official_ticket_availability || data.ticket_status || data.primary_ticket_status || null;
+    this.primary_ticket_status = data.primary_ticket_status || this.official_ticket_availability || null;
 
     // Pricing Qualification
     this.price_currency = data.price_currency || data.currency || 'IDR';
@@ -114,7 +117,19 @@ class DiscoveredEvent {
     this.price_tiers = Array.isArray(data.price_tiers) ? data.price_tiers : [];
     this.price_source = data.price_source || this.source_id;
     this.price_checked_at = data.price_checked_at || new Date().toISOString();
+    this.price_verified_at = data.price_verified_at || data.verified_at || this.price_checked_at;
     this.price_status = data.price_status || this.evaluatePriceStatus();
+
+    // Admin locks & manual overrides (prevents crawler overwriting admin-edited fields)
+    this.admin_lock_mask = Array.isArray(data.admin_lock_mask) ? data.admin_lock_mask : [];
+
+    // Poster & visual enrichment
+    this.poster_url = data.poster_url || data.image_url || data.banner_url || null;
+    this.poster_thumbnail_url = data.poster_thumbnail_url || data.thumbnail_url || this.poster_url;
+    this.poster_source_url = data.poster_source_url || data.image_source_url || null;
+    this.poster_attribution = data.poster_attribution || data.image_attribution || data.image_credit || null;
+    this.poster_verification_status = data.poster_verification_status || (this.poster_url ? 'VERIFIED_OFFICIAL' : 'PENDING_REVIEW');
+    this.confidence_score = typeof data.confidence_score === 'number' ? data.confidence_score : (typeof data.verification_confidence === 'number' ? data.verification_confidence : 0);
 
     // Lifecycle & Verification
     this.event_status = data.event_status || data.status || 'UPCOMING';
@@ -186,46 +201,61 @@ class DiscoveredEvent {
     return DISCOVERY_CATEGORIES.OTHER;
   }
 
-  evaluatePriceStatus(minThreshold = 300000) {
-    if (this.price_min === null && this.price_max === null && this.price_tiers.length === 0) {
-      return PRICE_STATUS.UNKNOWN;
+  evaluatePriceStatus(minThreshold = 500000) {
+    // If prices are completely unannounced / unavailable -> PENDING_VERIFICATION
+    if (this.price_min === null && this.price_max === null && (!Array.isArray(this.price_tiers) || this.price_tiers.length === 0)) {
+      return PRICE_STATUS.PENDING_VERIFICATION;
     }
 
+    // Check tiers if present
+    if (Array.isArray(this.price_tiers) && this.price_tiers.length > 0) {
+      const validTiers = this.price_tiers
+        .map(t => ({
+          name: t.name || '',
+          price: Number(t.price !== undefined && t.price !== null ? t.price : (t.face_value !== undefined && t.face_value !== null ? t.face_value : 0)),
+          is_single_day: /1-day|single|daily|1 day|harian/i.test(t.name || ''),
+          is_full_pass: /full|3-day|2-day|pass|terusan/i.test(t.name || '')
+        }))
+        .filter(t => t.price > 0);
+
+      if (validTiers.length > 0) {
+        // Multi-day festival exception:
+        // Evaluated by lowest official FULL EVENT or GA pass. If lowest GA pass >= 500k, it qualifies.
+        const isFestival = this.category === DISCOVERY_CATEGORIES.FESTIVAL || /festival|fest\b/i.test(this.canonical_name);
+        const fullPassTiers = validTiers.filter(t => t.is_full_pass);
+        const hasSingleAndFull = validTiers.some(t => t.is_single_day) && fullPassTiers.length > 0;
+
+        let lowestEvalPrice;
+        if (isFestival && hasSingleAndFull) {
+          lowestEvalPrice = Math.min(...fullPassTiers.map(t => t.price));
+        } else {
+          lowestEvalPrice = Math.min(...validTiers.map(t => t.price));
+        }
+
+        if (lowestEvalPrice >= minThreshold) {
+          return PRICE_STATUS.QUALIFIED;
+        } else {
+          return PRICE_STATUS.EXCLUDED_PRICE_TOO_LOW;
+        }
+      }
+    }
+
+    // Single / Min price check
     const minP = this.price_min !== null ? this.price_min : 0;
-    const maxP = this.price_max !== null ? this.price_max : minP;
+    if (minP <= 0 && (!this.price_max || this.price_max <= 0)) {
+      return PRICE_STATUS.PENDING_VERIFICATION;
+    }
 
     if (minP >= minThreshold) {
       return PRICE_STATUS.QUALIFIED;
     }
 
-    if (maxP >= minThreshold && minP < minThreshold) {
-      return PRICE_STATUS.PRICE_TIERED;
-    }
-
-    // "Mulai Dari" Starting Price Partial:
-    // Triggered when upper bound is unknown (open-ended starting price), explicitly flagged as partial,
-    // or a single starting price >= 200k is reported without multi-tier breakdown for high-tier categories.
-    const isSingleStartingPriceTrap = this.price_min !== null &&
-      this.price_min >= 200000 &&
-      (this.price_max === null || this.price_max === this.price_min) &&
-      (!Array.isArray(this.price_tiers) || this.price_tiers.length <= 1);
-
-    if (this.is_partial_price || this.starting_from || this.has_more_tiers || (this.price_min !== null && this.price_max === null) || isSingleStartingPriceTrap) {
-      if (['CONCERT', 'FESTIVAL', 'COMEDY', 'SPORTS', 'THEATER', 'FANMEET'].includes(this.category)) {
-        return PRICE_STATUS.PRICE_PARTIAL;
-      }
-    }
-
-    if (maxP > 0 && maxP < minThreshold) {
-      return PRICE_STATUS.EXCLUDED_PRICE_TOO_LOW;
-    }
-
-    return PRICE_STATUS.UNKNOWN;
+    return PRICE_STATUS.EXCLUDED_PRICE_TOO_LOW;
   }
 
-  isQualified(minThreshold = 300000) {
+  isQualified(minThreshold = 500000) {
     const status = this.evaluatePriceStatus(minThreshold);
-    return status === PRICE_STATUS.QUALIFIED || status === PRICE_STATUS.PRICE_TIERED || status === PRICE_STATUS.HIGH_VALUE_QUALIFIED || status === PRICE_STATUS.PRICE_PARTIAL;
+    return status === PRICE_STATUS.QUALIFIED || status === PRICE_STATUS.HIGH_VALUE_QUALIFIED;
   }
 
   isHighValue(highValueThreshold = 500000) {
@@ -365,15 +395,23 @@ class DiscoveredEvent {
       verified_at: this.verified_at || new Date().toISOString(),
       last_verified_at: this.verified_at || new Date().toISOString(),
       price_status: this.price_status,
-      meets_price_threshold: (this.price_max || this.price_min || 0) >= 500000,
+      price_verified_at: this.price_verified_at || this.verified_at || new Date().toISOString(),
+      meets_price_threshold: (this.price_min !== null && this.price_min >= 500000),
       is_verified: this.is_verified,
       verification_status: this.verification_status,
+      confidence_score: this.confidence_score || this.quality_score || 0,
       lifecycle_status: 'UPCOMING',
       archive_status: 'ACTIVE',
       public_visibility: true,
-      homepage_visibility: Boolean(this.is_verified && (this.quality_grade === QUALITY_GRADES.A || this.quality_grade === QUALITY_GRADES.B || this.priority === EVENT_PRIORITY.P0)),
+      homepage_visibility: Boolean(this.is_verified && this.price_status === PRICE_STATUS.QUALIFIED && (this.quality_grade === QUALITY_GRADES.A || this.quality_grade === QUALITY_GRADES.B || this.priority === EVENT_PRIORITY.P0)),
       image_url: this.image_url,
       thumbnail_url: this.thumbnail_url,
+      poster_url: this.poster_url || this.image_url,
+      poster_thumbnail_url: this.poster_thumbnail_url || this.thumbnail_url,
+      poster_source_url: this.poster_source_url || this.image_source_url,
+      poster_attribution: this.poster_attribution || this.image_attribution,
+      poster_verification_status: this.poster_verification_status,
+      admin_lock_mask: this.admin_lock_mask,
       image_source_url: this.image_source_url,
       image_source_type: this.image_source_type,
       image_verified_at: this.image_verified_at,
@@ -387,10 +425,18 @@ class DiscoveredEvent {
         price_status: this.price_status,
         price_tiers: this.price_tiers,
         price_checked_at: this.price_checked_at,
+        price_verified_at: this.price_verified_at,
         price_source: this.price_source,
         quality_score: this.quality_score,
         quality_grade: this.quality_grade,
         priority: this.priority,
+        confidence_score: this.confidence_score || this.quality_score || 0,
+        admin_lock_mask: this.admin_lock_mask,
+        poster_url: this.poster_url || this.image_url,
+        poster_thumbnail_url: this.poster_thumbnail_url || this.thumbnail_url,
+        poster_source_url: this.poster_source_url || this.image_source_url,
+        poster_attribution: this.poster_attribution || this.image_attribution,
+        poster_verification_status: this.poster_verification_status,
         artists: this.artists,
         artist: this.artist,
         provenance: this.provenance,

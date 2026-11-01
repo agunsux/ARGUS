@@ -903,6 +903,38 @@ class PostgresCatalogRepository extends CatalogRepository {
     };
   }
 
+  async recordEventChange(changeData) {
+    if (this.degraded || !this.pool) {
+      return this.fallbackRepo.recordEventChange(changeData);
+    }
+    const id = changeData.id || `chg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    try {
+      await this.query(
+        `INSERT INTO event_change_history (id, event_id, field_name, old_value, new_value, changed_by, change_source, reason, timestamp)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [id, changeData.event_id, changeData.field_name, changeData.old_value || null, changeData.new_value || null, changeData.changed_by || 'SYSTEM', changeData.change_source || 'CRAWLER', changeData.reason || null, changeData.timestamp || new Date().toISOString()]
+      );
+      return { id, ...changeData };
+    } catch (_) {
+      return this.fallbackRepo.recordEventChange(changeData);
+    }
+  }
+
+  async getEventChangeHistory(eventId) {
+    if (this.degraded || !this.pool) {
+      return this.fallbackRepo.getEventChangeHistory(eventId);
+    }
+    try {
+      const q = eventId
+        ? `SELECT * FROM event_change_history WHERE event_id = $1 ORDER BY timestamp DESC`
+        : `SELECT * FROM event_change_history ORDER BY timestamp DESC LIMIT 200`;
+      const res = await this.query(q, eventId ? [eventId] : []);
+      return res.rows || [];
+    } catch (_) {
+      return this.fallbackRepo.getEventChangeHistory(eventId);
+    }
+  }
+
   isDegraded() {
     return this.degraded;
   }

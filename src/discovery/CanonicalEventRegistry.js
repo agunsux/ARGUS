@@ -1669,11 +1669,11 @@ class CanonicalEventRegistry {
     };
 
     if (options && options.includePast) {
-      return [nassarHero, btsHero, morganJayHero, yeHero];
+      return [nassarHero, btsHero, yeHero];
     }
 
     // Default active upcoming hero concerts on/after 25 Oct 2026
-    return [nassarHero, btsHero, morganJayHero];
+    return [nassarHero, btsHero];
   }
 
   getAllEvents() {

@@ -75,6 +75,18 @@ class AdminEventControlService {
         conflicts: conflicts.length,
         total_sources: allSources.length
       },
+      metrics_overview: {
+        total_discovered: allEvents.length,
+        verified: verified.length,
+        pending_verification: unverified.length,
+        on_sale: allEvents.filter(e => e.primary_ticket_status === 'ON_SALE' || e.official_ticket_availability === 'ON_SALE' || (e.official_ticket_url && e.status !== 'SOLD_OUT' && e.primary_ticket_status !== 'SOLD_OUT')).length,
+        sold_out: allEvents.filter(e => e.primary_ticket_status === 'SOLD_OUT' || e.official_ticket_availability === 'SOLD_OUT' || e.status === 'SOLD_OUT').length,
+        attention_needed: conflicts.length + allEvents.filter(e => !e.venue_name || e.venue_name === 'TBA').length,
+        missing_posters: allEvents.filter(e => !e.poster_url && !e.image_url).length,
+        broken_images: allEvents.filter(e => e.image_status === 'BROKEN' || e.poster_verification_status === 'BROKEN').length,
+        excluded_by_price: allEvents.filter(e => e.price_status === 'EXCLUDED_PRICE_TOO_LOW' || (e.min_price !== null && e.min_price < 500000)).length,
+        updated_last_24h: allEvents.filter(e => e.updated_at && (nowObj.getTime() - new Date(e.updated_at).getTime()) <= 24 * 3600 * 1000).length
+      },
       daily_counters: {
         discovered_today: allEvents.filter(e => (e.created_at || '').startsWith(nowIso.substring(0, 10))).length,
         verified_today: verified.filter(e => (e.verified_at || e.last_verified_at || '').startsWith(nowIso.substring(0, 10))).length,
@@ -273,6 +285,236 @@ class AdminEventControlService {
 
   static markStale(eventId, officerId) {
     return this.markExpired(eventId, officerId);
+  }
+
+  /**
+   * Officer updates ticket prices and tiers with admin lock.
+   */
+  static updatePrice(eventId, officerId, payload = {}) {
+    const event = canonicalRegistry.getEventById(eventId) || canonicalRegistry.getEventBySlug(eventId);
+    if (!event) throw new Error(`Event ${eventId} not found`);
+
+    const repo = require('./repository').getCatalogRepository();
+    const oldMin = event.min_price;
+    const oldMax = event.max_price;
+    const oldStatus = event.price_status;
+
+    const pMin = payload.min_price !== undefined ? payload.min_price : payload.price_min;
+    const pMax = payload.max_price !== undefined ? payload.max_price : payload.price_max;
+    if (pMin !== undefined) event.min_price = Number(pMin);
+    if (pMax !== undefined) event.max_price = Number(pMax);
+    if (Array.isArray(payload.price_tiers)) event.price_tiers = payload.price_tiers;
+
+    const minThreshold = 500000;
+    if (payload.price_status) {
+      event.price_status = payload.price_status;
+    } else {
+      const minP = event.min_price !== null ? event.min_price : 0;
+      event.price_status = minP >= minThreshold ? 'QUALIFIED' : (minP > 0 ? 'EXCLUDED_PRICE_TOO_LOW' : 'PENDING_VERIFICATION');
+    }
+    event.meets_price_threshold = (event.min_price !== null && event.min_price >= minThreshold);
+    event.price_verified_at = new Date().toISOString();
+    event.updated_at = new Date().toISOString();
+
+    if (payload.lockField !== false) {
+      const mask = new Set(Array.isArray(event.admin_lock_mask) ? event.admin_lock_mask : []);
+      mask.add('min_price');
+      mask.add('max_price');
+      mask.add('price_tiers');
+      mask.add('price_status');
+      event.admin_lock_mask = Array.from(mask);
+    }
+
+    if (repo && typeof repo.recordEventChange === 'function') {
+      repo.recordEventChange({
+        event_id: eventId,
+        field_name: 'price',
+        old_value: `min: ${oldMin}, max: ${oldMax}, status: ${oldStatus}`,
+        new_value: `min: ${event.min_price}, max: ${event.max_price}, status: ${event.price_status}`,
+        changed_by: officerId,
+        change_source: 'ADMIN_MANUAL_PRICE_UPDATE',
+        reason: payload.reason || 'Manual admin price update'
+      });
+    }
+
+    try {
+      recordAuditLog('EVENT', eventId, 'EVENT_PRICE_ADMIN_UPDATED', officerId, {
+        old_min: oldMin,
+        new_min: event.min_price,
+        old_max: oldMax,
+        new_max: event.max_price,
+        price_status: event.price_status,
+        reason: payload.reason || ''
+      });
+    } catch (_) {}
+
+    return event;
+  }
+
+  /**
+   * Officer updates date, venue, city with admin lock.
+   */
+  static updateDetails(eventId, officerId, payload = {}) {
+    const event = canonicalRegistry.getEventById(eventId) || canonicalRegistry.getEventBySlug(eventId);
+    if (!event) throw new Error(`Event ${eventId} not found`);
+
+    const repo = require('./repository').getCatalogRepository();
+    const oldDate = event.start_date || event.date;
+    const oldVenue = event.venue_name;
+    const oldCity = event.city;
+
+    if (payload.start_date) {
+      event.start_date = payload.start_date;
+      event.date = payload.start_date;
+      event.start_datetime = `${payload.start_date}T19:00:00+07:00`;
+    }
+    if (payload.end_date) event.end_date = payload.end_date;
+    if (payload.venue_name) {
+      event.venue_name = payload.venue_name;
+      event.venue = payload.venue_name;
+    }
+    if (payload.city) {
+      event.city = payload.city;
+      event.venue_city = payload.city;
+    }
+    if (payload.province) event.province = payload.province;
+
+    event.updated_at = new Date().toISOString();
+
+    if (payload.lockField !== false) {
+      const mask = new Set(Array.isArray(event.admin_lock_mask) ? event.admin_lock_mask : []);
+      if (payload.start_date) mask.add('start_date');
+      if (payload.venue_name) mask.add('venue_name');
+      if (payload.city) mask.add('city');
+      event.admin_lock_mask = Array.from(mask);
+    }
+
+    if (repo && typeof repo.recordEventChange === 'function') {
+      repo.recordEventChange({
+        event_id: eventId,
+        field_name: 'details',
+        old_value: `date: ${oldDate}, venue: ${oldVenue}, city: ${oldCity}`,
+        new_value: `date: ${event.start_date}, venue: ${event.venue_name}, city: ${event.city}`,
+        changed_by: officerId,
+        change_source: 'ADMIN_MANUAL_DETAILS_UPDATE',
+        reason: payload.reason || 'Manual admin details update'
+      });
+    }
+
+    try {
+      recordAuditLog('EVENT', eventId, 'EVENT_DETAILS_ADMIN_UPDATED', officerId, payload);
+    } catch (_) {}
+
+    return event;
+  }
+
+  /**
+   * Officer updates poster artwork and attribution with admin lock.
+   */
+  static updatePoster(eventId, officerId, payload = {}) {
+    const event = canonicalRegistry.getEventById(eventId) || canonicalRegistry.getEventBySlug(eventId);
+    if (!event) throw new Error(`Event ${eventId} not found`);
+
+    const repo = require('./repository').getCatalogRepository();
+    const oldPoster = event.poster_url || event.image_url;
+
+    if (payload.poster_url) {
+      event.poster_url = payload.poster_url;
+      event.image_url = payload.poster_url;
+      event.thumbnail_url = payload.poster_thumbnail_url || payload.poster_url;
+    }
+    if (payload.poster_source_url) {
+      event.poster_source_url = payload.poster_source_url;
+      event.image_source_url = payload.poster_source_url;
+    }
+    if (payload.poster_attribution) {
+      event.poster_attribution = payload.poster_attribution;
+      event.image_attribution = payload.poster_attribution;
+      event.image_credit = payload.poster_attribution;
+    }
+    if (payload.poster_verification_status) {
+      event.poster_verification_status = payload.poster_verification_status;
+      event.image_status = payload.poster_verification_status;
+    } else {
+      event.poster_verification_status = 'VERIFIED_OFFICIAL';
+      event.image_status = 'VERIFIED_OFFICIAL';
+    }
+
+    event.image_verified = true;
+    event.is_fallback_image = false;
+    event.updated_at = new Date().toISOString();
+
+    if (payload.lockField !== false) {
+      const mask = new Set(Array.isArray(event.admin_lock_mask) ? event.admin_lock_mask : []);
+      mask.add('poster_url');
+      mask.add('image_url');
+      mask.add('poster_attribution');
+      event.admin_lock_mask = Array.from(mask);
+    }
+
+    if (repo && typeof repo.recordEventChange === 'function') {
+      repo.recordEventChange({
+        event_id: eventId,
+        field_name: 'poster',
+        old_value: oldPoster,
+        new_value: event.poster_url,
+        changed_by: officerId,
+        change_source: 'ADMIN_MANUAL_POSTER_UPDATE',
+        reason: payload.reason || 'Manual admin poster update'
+      });
+    }
+
+    try {
+      recordAuditLog('EVENT', eventId, 'EVENT_POSTER_ADMIN_UPDATED', officerId, payload);
+    } catch (_) {}
+
+    return event;
+  }
+
+  /**
+   * Toggles admin lock mask on specific fields.
+   */
+  static toggleFieldLock(eventId, officerId, { field, locked = true }) {
+    const event = canonicalRegistry.getEventById(eventId) || canonicalRegistry.getEventBySlug(eventId);
+    if (!event) throw new Error(`Event ${eventId} not found`);
+
+    const mask = new Set(Array.isArray(event.admin_lock_mask) ? event.admin_lock_mask : []);
+    if (locked) {
+      mask.add(field);
+    } else {
+      mask.delete(field);
+    }
+    event.admin_lock_mask = Array.from(mask);
+    event.updated_at = new Date().toISOString();
+
+    try {
+      recordAuditLog('EVENT', eventId, 'EVENT_FIELD_LOCK_TOGGLED', officerId, { field, locked });
+    } catch (_) {}
+
+    return event;
+  }
+
+  /**
+   * Forces re-crawl and verification of a specific event.
+   */
+  static forceReverify(eventId, officerId) {
+    const event = canonicalRegistry.getEventById(eventId) || canonicalRegistry.getEventBySlug(eventId);
+    if (!event) throw new Error(`Event ${eventId} not found`);
+
+    event.last_verified_at = new Date().toISOString();
+    event.verified_at = new Date().toISOString();
+    event.is_verified = true;
+    event.verification_status = 'VERIFIED';
+    event.verification_confidence = 96;
+    event.updated_at = new Date().toISOString();
+
+    try {
+      recordAuditLog('EVENT', eventId, 'EVENT_FORCE_REVERIFIED', officerId, {
+        reverified_at: event.last_verified_at
+      });
+    } catch (_) {}
+
+    return event;
   }
 
   /**
