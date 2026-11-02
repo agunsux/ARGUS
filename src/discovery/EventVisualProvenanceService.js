@@ -247,6 +247,74 @@ class EventVisualProvenanceService {
   }
 
   /**
+   * Generates a clean, branded SVG event poster fallback.
+   * Ensures no broken image link is ever displayed to buyers or crawlers.
+   */
+  static generateBrandedPosterSvg(event = {}) {
+    const xmlEscape = (str) => String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+
+    const rawTitle = String(event.canonical_name || event.title || event.name || 'Event');
+    const rawArtist = String(event.artist || (Array.isArray(event.artists) ? event.artists[0] : '') || '');
+    const rawDate = String(event.start_date || event.date || 'TBA');
+    const rawVenue = String(event.venue_name || event.venue || 'TBA');
+    const rawCity = String(event.city || 'Indonesia');
+    const rawCategory = String(event.event_type || event.category || 'EVENT').toUpperCase();
+
+    const titleEscaped = xmlEscape(rawTitle);
+    const line1 = xmlEscape(rawTitle.substring(0, 30));
+    const line2 = rawTitle.length > 30 ? xmlEscape(rawTitle.substring(30, 60)) : '';
+    const artist = xmlEscape(rawArtist);
+    const date = xmlEscape(rawDate);
+    const venue = xmlEscape(rawVenue);
+    const city = xmlEscape(rawCity);
+    const category = xmlEscape(rawCategory);
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="100%" height="100%" style="background:#0f172a; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="800" fill="url(#bg)"/>
+  <rect x="30" y="30" width="540" height="740" rx="14" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <g transform="translate(50, 70)">
+    <rect width="110" height="32" rx="16" fill="url(#accent)"/>
+    <text x="55" y="21" fill="#ffffff" font-size="12" font-weight="700" text-anchor="middle" letter-spacing="1.2">${category}</text>
+  </g>
+  <g transform="translate(50, 170)">
+    <text x="0" y="0" fill="#f8fafc" font-size="32" font-weight="800" letter-spacing="-0.6">${line1}</text>
+    ${line2 ? `<text x="0" y="42" fill="#f8fafc" font-size="28" font-weight="800" letter-spacing="-0.6">${line2}</text>` : ''}
+    ${artist ? `<text x="0" y="${line2 ? 88 : 46}" fill="#94a3b8" font-size="20" font-weight="600">${artist}</text>` : ''}
+  </g>
+  <g transform="translate(50, 560)">
+    <rect width="500" height="1" fill="#334155"/>
+    <g transform="translate(0, 35)">
+      <circle cx="12" cy="12" r="12" fill="#1e293b"/>
+      <text x="36" y="18" fill="#38bdf8" font-size="16" font-weight="700">${date}</text>
+    </g>
+    <g transform="translate(0, 75)">
+      <circle cx="12" cy="12" r="12" fill="#1e293b"/>
+      <text x="36" y="18" fill="#cbd5e1" font-size="15" font-weight="600">${venue}, ${city}</text>
+    </g>
+  </g>
+  <g transform="translate(300, 735)">
+    <text x="0" y="0" fill="#64748b" font-size="11" font-weight="700" text-anchor="middle" letter-spacing="1.5">TIKUM VERIFIED · TERVERIFIKASI SUMBER RESMI</text>
+  </g>
+</svg>`;
+  }
+
+  /**
    * Classifies the semantic type of an image based on source type, scope, and context.
    */
   static classifyImageType(sourceType, scope, isEventSpecific = true, sourceId = '') {

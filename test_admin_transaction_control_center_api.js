@@ -15,6 +15,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 process.env.ADMIN_EMAIL = 'admin.tcc@tikum.app';
 process.env.ADMIN_PASSWORD = 'Tcc-Control-Center-2026!';
 
@@ -41,7 +42,7 @@ function makeRequest(path, options = {}) {
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         let json = null;
-        try { json = JSON.parse(data); } catch (e) {}
+        try { json = JSON.parse(data); } catch (e) { }
         resolve({
           statusCode: res.statusCode,
           headers: res.headers,
@@ -99,6 +100,13 @@ async function runSuite() {
     role: 'ADMIN',
     status: 'ACTIVE'
   };
+  const checkerAdminUser = {
+    id: 'usr-admin-checker',
+    email: 'checker.admin@example.com',
+    password_hash: hashPassword('checker-pass'),
+    role: 'ADMIN',
+    status: 'ACTIVE'
+  };
   const buyerUser = {
     id: 'usr-buyer-tcc',
     email: 'buyer.tcc@example.com',
@@ -121,16 +129,25 @@ async function runSuite() {
     status: 'ACTIVE'
   };
 
-  state.users = [adminUser, buyerUser, picUser, sellerUser];
+  state.users = [adminUser, checkerAdminUser, buyerUser, picUser, sellerUser];
   state.seller_profiles = [
-    { user_id: 'usr-seller-tcc', kyc_status: 'VERIFIED' }
+    {
+      user_id: 'usr-seller-tcc',
+      kyc_status: 'VERIFIED',
+      bank_account_details: 'BCA 1234567890 (a.n Seller TCC)',
+      bank_account_number: '1234567890',
+      bank_name: 'BCA',
+      bank_account_holder: 'Seller TCC'
+    }
   ];
 
   const adminSession = SessionStore.createSession({ userId: adminUser.id, role: 'ADMIN' });
+  const checkerAdminSession = SessionStore.createSession({ userId: checkerAdminUser.id, role: 'ADMIN' });
   const buyerSession = SessionStore.createSession({ userId: buyerUser.id, role: 'BUYER' });
   const picSession = SessionStore.createSession({ userId: picUser.id, role: 'VENUE_PIC' });
 
   const adminToken = adminSession.session_token;
+  const checkerAdminToken = checkerAdminSession.session_token;
   const buyerToken = buyerSession.session_token;
   const picToken = picSession.session_token;
 
@@ -279,16 +296,36 @@ async function runSuite() {
   });
 
   await test('Payout execution rejects when order is in YELLOW state (ord-http-yellow)', async () => {
-    const res = await makeRequest('/api/admin/transactions/ord-http-yellow/execute-payout', {
+    // 1. Request dual authorization for yellow order
+    const reqRes = await makeRequest('/api/admin/transactions/ord-http-yellow/payout-request', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${adminToken}` }
+      headers: { 'Authorization': `Bearer ${adminToken}` },
+      body: {
+        bankAccount: 'BCA 1234567890 (a.n Seller TCC)',
+        amount: 450000,
+        currency: 'IDR',
+        reason: 'Attempted premature payout on yellow state'
+      }
+    });
+    assert.strictEqual(reqRes.statusCode, 201);
+    const yellowAuthId = reqRes.json.authorization.id;
+
+    // 2. Checker approves request, but execution fails due to YELLOW state
+    const res = await makeRequest('/api/admin/transactions/ord-http-yellow/payout-approve', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${checkerAdminToken}` },
+      body: {
+        authorizationId: yellowAuthId,
+        bankReferenceNumber: 'TRF-YELLOW-12345',
+        proofDocumentUrl: 'https://storage.tikum.id/proofs/ord-http-yellow.pdf'
+      }
     });
     assert.strictEqual(res.statusCode, 400);
     assert.strictEqual(res.json.code, 'PAYOUT_NOT_ELIGIBLE');
     assert.strictEqual(res.json.colorStatus, 'YELLOW');
   });
 
-  await test('Payout execution succeeds on GREEN state (ord-http-green) and transitions to PAID_OUT', async () => {
+  await test('Direct payout execution without dual authorization is rejected (400 AUTHORIZATION_REQUIRED)', async () => {
     const res = await makeRequest('/api/admin/transactions/ord-http-green/execute-payout', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${adminToken}` },
@@ -297,10 +334,72 @@ async function runSuite() {
         idempotencyKey: 'idemp-http-green-disburse'
       }
     });
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.json.code, 'AUTHORIZATION_REQUIRED');
+  });
+
+  let authId;
+  await test('Maker initiates payout dual authorization request', async () => {
+    const res = await makeRequest('/api/admin/transactions/ord-http-green/payout-request', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${adminToken}` },
+      body: {
+        bankAccount: 'BCA 1234567890 (a.n Seller TCC)',
+        amount: 900000,
+        currency: 'IDR',
+        reason: 'Event concluded without dispute'
+      }
+    });
+    assert.strictEqual(res.statusCode, 201);
+    assert.strictEqual(res.json.success, true);
+    assert.strictEqual(res.json.authorization.status, 'PENDING_APPROVAL');
+    authId = res.json.authorization.id;
+  });
+
+  await test('Maker attempting self-approval is rejected with 403 (MAKER_CHECKER_VIOLATION)', async () => {
+    const res = await makeRequest('/api/admin/transactions/ord-http-green/payout-approve', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${adminToken}` },
+      body: {
+        authorizationId: authId,
+        bankReferenceNumber: 'TRF-1234567890',
+        proofDocumentUrl: 'https://storage.tikum.id/proofs/ord-http-green.pdf',
+        idempotencyKey: 'idemp-http-green-disburse'
+      }
+    });
+    assert.strictEqual(res.statusCode, 403);
+    assert.strictEqual(res.json.code, 'MAKER_CHECKER_VIOLATION');
+  });
+
+  await test('Independent Checker approves and executes payout successfully', async () => {
+    const res = await makeRequest('/api/admin/transactions/ord-http-green/payout-approve', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${checkerAdminToken}` },
+      body: {
+        authorizationId: authId,
+        bankReferenceNumber: 'TRF-1234567890',
+        proofDocumentUrl: 'https://storage.tikum.id/proofs/ord-http-green.pdf',
+        idempotencyKey: 'idemp-http-green-disburse'
+      }
+    });
     assert.strictEqual(res.statusCode, 200);
     assert.strictEqual(res.json.success, true);
     assert.strictEqual(res.json.evaluation.colorStatus, 'PAID_OUT');
     assert.ok(res.json.settlement.payout_ref);
+  });
+
+  await test('Replaying executed authorization is rejected (AUTHORIZATION_CONSUMED)', async () => {
+    const res = await makeRequest('/api/admin/transactions/ord-http-green/execute-payout', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${adminToken}` },
+      body: {
+        authorizationId: authId,
+        bankAccount: 'BCA 1234567890 (a.n Seller TCC)',
+        idempotencyKey: 'idemp-replay-disburse'
+      }
+    });
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.json.code, 'AUTHORIZATION_ALREADY_CONSUMED');
   });
 
   server.close();

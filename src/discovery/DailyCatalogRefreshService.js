@@ -22,6 +22,9 @@ const fs = require('fs');
 const { canonicalRegistry } = require('./CanonicalEventRegistry');
 const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('./EventTemporalLifecycleEngine');
 const { HeroSelectionService, MIN_QUALIFYING_PRICE } = require('./HeroSelectionService');
+const { CuratedCatalogPolicy, OFFICIAL_MIN_TICKET_PRICE } = require('./CuratedCatalogPolicy');
+const { EventChangeTrackingService } = require('./EventChangeTrackingService');
+const { state } = require('../database');
 const { LoketAdapter } = require('./adapters/LoketAdapter');
 const { GoersAdapter } = require('./adapters/GoersAdapter');
 const { EventIngestionPipeline } = require('./EventIngestionPipeline');
@@ -33,7 +36,7 @@ class DailyCatalogRefreshService {
     this.loketAdapter = options.loketAdapter || new LoketAdapter();
     this.goersAdapter = options.goersAdapter || new GoersAdapter();
     this.ingestionPipeline = options.ingestionPipeline || new EventIngestionPipeline();
-    this.minQualifyingPrice = options.minQualifyingPrice || MIN_QUALIFYING_PRICE; // Rp 400,000
+    this.minQualifyingPrice = options.minQualifyingPrice || OFFICIAL_MIN_TICKET_PRICE;
     this.discoveryWindowDays = options.discoveryWindowDays || 90;
 
     this._isSyncRunning = false;
@@ -241,7 +244,25 @@ class DailyCatalogRefreshService {
             (candidatePayload.slug ? canonicalRegistry.getEventBySlug(candidatePayload.slug) : null);
 
           if (existing) {
+            const trackResult = EventChangeTrackingService.processCandidateUpdate(existing, candidatePayload, {
+              sourceTier: 2,
+              sourceId: 'src-loket',
+              actorId: 'DAILY_CATALOG_REFRESH',
+              isAdmin: false
+            });
+            if (trackResult.canUpdate) {
+              Object.assign(existing, trackResult.resolvedEvent);
+              canonicalRegistry.syncToState(state.events);
+            }
             telemetry.events_updated++;
+            if (trackResult.changes && trackResult.changes.length > 0) {
+              telemetry.audit_log.push({
+                event_id: existing.id || existing.event_id,
+                slug: existing.slug,
+                action: 'UPDATE_EVENT_FIELDS',
+                changes: trackResult.changes
+              });
+            }
           } else {
             canonicalRegistry.createEvent(candidatePayload);
             telemetry.events_inserted++;
@@ -332,53 +353,18 @@ class DailyCatalogRefreshService {
    * Evaluates price eligibility against the Rp 400,000 threshold.
    */
   evaluatePriceEligibility(eventItem) {
-    // Check price tiers if present
-    if (Array.isArray(eventItem.price_tiers) && eventItem.price_tiers.length > 0) {
-      const qualifyingTiers = eventItem.price_tiers
-        .map(t => Number(t.price || t.face_value || 0))
-        .filter(p => p >= this.minQualifyingPrice);
-
-      if (qualifyingTiers.length > 0) {
-        return {
-          qualified: true,
-          eligible_min_price: Math.min(...qualifyingTiers),
-          eligible_max_price: Math.max(...qualifyingTiers),
-          reason: 'TIER_MEETS_THRESHOLD'
-        };
-      }
+    const evalResult = CuratedCatalogPolicy.evaluateOfficialPriceQualification(eventItem, { minThreshold: this.minQualifyingPrice });
+    if (!evalResult.qualified) {
       return {
         qualified: false,
-        reason: 'EXCLUDED_ALL_TIERS_BELOW_400K'
+        reason: evalResult.status === 'PENDING_VERIFICATION' ? 'PRICE_UNVERIFIED' : 'EXCLUDED_PRICE_TOO_LOW'
       };
     }
-
-    const hasMin = eventItem.min_price !== undefined && eventItem.min_price !== null && !isNaN(Number(eventItem.min_price));
-    const hasMax = eventItem.max_price !== undefined && eventItem.max_price !== null && !isNaN(Number(eventItem.max_price));
-    const hasPrice = eventItem.price !== undefined && eventItem.price !== null && !isNaN(Number(eventItem.price));
-
-    if (!hasMin && !hasMax && !hasPrice) {
-      return {
-        qualified: false,
-        reason: 'PRICE_UNVERIFIED'
-      };
-    }
-
-    const rawMin = hasMin ? Number(eventItem.min_price) : (hasPrice ? Number(eventItem.price) : 0);
-    const rawMax = hasMax ? Number(eventItem.max_price) : (hasPrice ? Number(eventItem.price) : rawMin);
-
-    if (rawMax < this.minQualifyingPrice) {
-      return {
-        qualified: false,
-        reason: 'EXCLUDED_PRICE_TOO_LOW'
-      };
-    }
-
-    const eligibleMin = rawMin >= this.minQualifyingPrice ? rawMin : this.minQualifyingPrice;
     return {
       qualified: true,
-      eligible_min_price: eligibleMin,
-      eligible_max_price: Math.max(rawMax, eligibleMin),
-      reason: 'BASE_PRICE_QUALIFIED'
+      eligible_min_price: evalResult.lowest_official_price,
+      eligible_max_price: evalResult.highest_official_price || evalResult.lowest_official_price,
+      reason: 'TIER_MEETS_THRESHOLD'
     };
   }
 }

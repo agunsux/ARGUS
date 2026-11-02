@@ -319,21 +319,12 @@ class DisputeService {
     if (dispute.outcome === 'REFUND_BUYER' || canonicalOutcome === 'BUYER_FAVORED') {
       await EscrowService.refundToBuyer(dispute.order_id, officerId, dispute.decision_notes);
     } else if (dispute.outcome === 'RELEASE_SELLER' || canonicalOutcome === 'SELLER_FAVORED') {
-      let verification = state.entry_verifications.find(ev => ev.order_id === dispute.order_id);
-      if (!verification) {
-        verification = {
-          id: `ent-${uuidv4()}`,
-          order_id: dispute.order_id,
-          ticket_id: dispute.ticket_id,
-          pic_id: officerId,
-          status: 'CONFIRMED',
-          gate: 'Admin Resolution',
-          verified_at: now,
-          notes: 'Confirmed by Admin dispute resolution'
-        };
-        state.entry_verifications.push(verification);
-      } else {
-        verification.status = 'CONFIRMED';
+      // INVARIANT: Dispute resolution must NEVER fabricate a physical turnstile gate scan into state.entry_verifications.
+      // Physical gate scans must reflect actual field observations only.
+      // If gate verification was confirmed by an actual on-site PIC inspection, preserve that record.
+      const existingEntry = (state.entry_verifications || []).find(ev => ev.order_id === dispute.order_id);
+      if (existingEntry && existingEntry.status === 'CONFIRMED') {
+        // Genuine PIC field confirmation already exists
       }
 
       if (order) {
@@ -356,30 +347,25 @@ class DisputeService {
 
       try {
         const { TrustPolicyEngine, ATTESTATION_TYPE } = require('../trust/TrustPolicyEngine');
+        // Record Platform/Officer dispute adjudication attestation
         await TrustPolicyEngine.recordAttestation({
           orderId: dispute.order_id,
-          attestationType: ATTESTATION_TYPE.PIC_ATTESTATION,
-          actorId: dispute.pic_id || officerId,
-          actorRole: dispute.pic_id ? 'pic' : 'admin',
+          attestationType: ATTESTATION_TYPE.PLATFORM_ATTESTATION,
+          actorId: officerId,
+          actorRole: 'admin',
           result: 'PASS',
           metadata: { dispute_id: disputeId, notes: dispute.decision_notes }
         });
-        await TrustPolicyEngine.recordAttestation({
-          orderId: dispute.order_id,
-          attestationType: ATTESTATION_TYPE.VENUE_ENTRY_ATTESTATION,
-          actorId: dispute.pic_id || officerId,
-          actorRole: dispute.pic_id ? 'pic' : 'admin',
-          result: 'PASS',
-          metadata: { dispute_id: disputeId }
-        });
-        await TrustPolicyEngine.recordAttestation({
-          orderId: dispute.order_id,
-          attestationType: ATTESTATION_TYPE.BUYER_ATTESTATION,
-          actorId: dispute.buyer_id,
-          actorRole: 'buyer',
-          result: 'PASS',
-          metadata: { dispute_id: disputeId, confirmed_via: 'DISPUTE_INVESTIGATION_SUCCESS' }
-        });
+        if (dispute.pic_id) {
+          await TrustPolicyEngine.recordAttestation({
+            orderId: dispute.order_id,
+            attestationType: ATTESTATION_TYPE.PIC_ATTESTATION,
+            actorId: dispute.pic_id,
+            actorRole: 'pic',
+            result: 'PASS',
+            metadata: { dispute_id: disputeId, notes: dispute.pic_notes || dispute.decision_notes }
+          });
+        }
       } catch (e) {}
 
       await EscrowService.releaseToSeller(dispute.order_id, officerId);

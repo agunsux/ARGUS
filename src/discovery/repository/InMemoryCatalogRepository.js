@@ -22,6 +22,7 @@ class InMemoryCatalogRepository extends CatalogRepository {
     this.reconciliationRuns = new Map(); // id -> run
     this.locks = new Set(); // active lock IDs
     this.schedulerStates = new Map(); // job_name -> state row
+    this.changeHistory = []; // event change audit records
     this.initialized = false;
     this.degraded = false;
   }
@@ -62,12 +63,23 @@ class InMemoryCatalogRepository extends CatalogRepository {
     );
   }
 
-  async upsertCanonicalEvent(eventData) {
+  async upsertCanonicalEvent(eventData, options = {}) {
     if (!eventData || (!eventData.id && !eventData.event_id)) {
       throw new Error('Canonical event must have an id or event_id');
     }
     const id = eventData.id || eventData.event_id;
     const existing = this.events.get(id);
+
+    // ADMIN LOCK CONFLICT RESOLUTION:
+    // If fields are locked by an admin (admin_lock_mask), automated crawlers cannot overwrite them.
+    const effectiveData = { ...eventData };
+    if (existing && Array.isArray(existing.admin_lock_mask) && existing.admin_lock_mask.length > 0 && !options.isAdminOverride) {
+      for (const lockedField of existing.admin_lock_mask) {
+        if (effectiveData[lockedField] !== undefined) {
+          effectiveData[lockedField] = existing[lockedField];
+        }
+      }
+    }
 
     // ANTI-RESURRECTION INVARIANT:
     // If already ARCHIVED or COMPLETED, incoming UPCOMING updates must not resurrect it
@@ -78,28 +90,52 @@ class InMemoryCatalogRepository extends CatalogRepository {
         existing.lifecycle_status === 'COMPLETED' ||
         existing.status === 'ARCHIVED'
       );
-      if (isTerminal && (eventData.lifecycle_status === 'UPCOMING' || eventData.status === 'UPCOMING' || !eventData.lifecycle_status)) {
+      if (isTerminal && (effectiveData.lifecycle_status === 'UPCOMING' || effectiveData.status === 'UPCOMING' || !effectiveData.lifecycle_status)) {
         // Retain archived lifecycle
-        eventData.archive_status = 'ARCHIVED';
-        eventData.lifecycle_status = existing.lifecycle_status;
-        eventData.homepage_visibility = false;
+        effectiveData.archive_status = 'ARCHIVED';
+        effectiveData.lifecycle_status = existing.lifecycle_status;
+        effectiveData.homepage_visibility = false;
       }
     }
 
     const preferredImg = existing
-      ? EventVisualProvenanceService.selectPreferredImage(existing, eventData)
-      : EventVisualProvenanceService.resolveCatalogEventImageProvenance(eventData, eventData.metadata || {});
+      ? EventVisualProvenanceService.selectPreferredImage(existing, effectiveData)
+      : EventVisualProvenanceService.resolveCatalogEventImageProvenance(effectiveData, effectiveData.metadata || {});
+
+    // CONTINUOUS TRACKING ENGINE: Track field changes for audit
+    if (existing) {
+      const trackableFields = ['start_date', 'date', 'venue_name', 'city', 'min_price', 'max_price', 'status', 'event_status', 'ticket_status', 'poster_url', 'image_url', 'poster_verification_status'];
+      for (const field of trackableFields) {
+        if (effectiveData[field] !== undefined && existing[field] !== undefined && String(effectiveData[field]) !== String(existing[field])) {
+          this.recordEventChange({
+            event_id: id,
+            field_name: field,
+            old_value: existing[field],
+            new_value: effectiveData[field],
+            changed_by: options.changedBy || (options.isAdminOverride ? 'ADMIN' : 'CRAWLER'),
+            change_source: options.changeSource || 'INGESTION_PIPELINE',
+            reason: options.reason || 'Continuous discovery state update'
+          });
+        }
+      }
+    }
 
     const merged = {
       ...(existing || {}),
-      ...eventData,
+      ...effectiveData,
       id,
       ...preferredImg,
-      poster_url: preferredImg.image_url,
+      poster_url: effectiveData.poster_url || preferredImg.image_url,
+      poster_thumbnail_url: effectiveData.poster_thumbnail_url || preferredImg.thumbnail_url || preferredImg.image_url,
+      poster_source_url: effectiveData.poster_source_url || preferredImg.image_source_url,
+      poster_attribution: effectiveData.poster_attribution || preferredImg.image_attribution || preferredImg.image_credit,
+      poster_verification_status: effectiveData.poster_verification_status || (preferredImg.image_url ? 'VERIFIED_OFFICIAL' : 'PENDING_REVIEW'),
+      admin_lock_mask: effectiveData.admin_lock_mask || existing?.admin_lock_mask || [],
+      confidence_score: effectiveData.confidence_score !== undefined ? effectiveData.confidence_score : (existing?.confidence_score || 0),
       event_image: preferredImg.image_url,
       metadata: {
         ...(existing?.metadata || {}),
-        ...(eventData.metadata || {}),
+        ...(effectiveData.metadata || {}),
         ...preferredImg
       },
       updated_at: new Date().toISOString()
@@ -113,6 +149,27 @@ class InMemoryCatalogRepository extends CatalogRepository {
       this.slugMap.set(merged.slug, id);
     }
     return merged;
+  }
+
+  recordEventChange(changeData) {
+    const entry = {
+      id: changeData.id || `chg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      event_id: changeData.event_id,
+      field_name: changeData.field_name,
+      old_value: changeData.old_value !== undefined ? String(changeData.old_value) : null,
+      new_value: changeData.new_value !== undefined ? String(changeData.new_value) : null,
+      changed_by: changeData.changed_by || 'SYSTEM',
+      change_source: changeData.change_source || 'CRAWLER',
+      reason: changeData.reason || null,
+      timestamp: changeData.timestamp || new Date().toISOString()
+    };
+    this.changeHistory.push(entry);
+    return entry;
+  }
+
+  getEventChangeHistory(eventId) {
+    if (!eventId) return [...this.changeHistory];
+    return this.changeHistory.filter(h => h.event_id === eventId);
   }
 
   async upsertEvent(eventData) {

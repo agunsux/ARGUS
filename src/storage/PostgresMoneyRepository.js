@@ -755,8 +755,9 @@ class PostgresMoneyRepository extends MoneyRepository {
     const sql = `
       INSERT INTO financial_settlements (
         id, order_id, seller_id, officer_id, amount, currency,
-        status, settlement_mode, payout_ref, bank_account, idempotency_key
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        status, settlement_mode, payout_ref, bank_account, idempotency_key,
+        bank_reference_number, proof_document_url, authorization_id, authorized_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       ON CONFLICT (order_id) DO NOTHING
       RETURNING *;
     `;
@@ -771,7 +772,11 @@ class PostgresMoneyRepository extends MoneyRepository {
       settlementData.settlement_mode || 'MANUAL_BANK_TRANSFER',
       settlementData.payout_ref || null,
       settlementData.bank_account || null,
-      settlementData.idempotency_key || null
+      settlementData.idempotency_key || null,
+      settlementData.bank_reference_number || null,
+      settlementData.proof_document_url || null,
+      settlementData.authorization_id || null,
+      settlementData.authorized_by || null
     ];
     const res = await this.query(sql, params);
     if (!res.rows || res.rows.length === 0) {
@@ -1102,6 +1107,338 @@ class PostgresMoneyRepository extends MoneyRepository {
     `;
     const res = await this.query(sql, [key, scope, JSON.stringify(responsePayload || {})]);
     return res.rows[0];
+  }
+
+  // Financial Dual Authorization (Maker-Checker Gate)
+  async createFinancialAuthorization(authData) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createFinancialAuthorization(authData);
+    }
+    const id = authData.authorization_id || authData.id || `fauth-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const sql = `
+      INSERT INTO financial_authorizations (
+        id, authorization_id, order_id, action_type, maker_id, checker_id,
+        status, amount, currency, payout_destination, reason, metadata, created_at
+      ) VALUES ($1, $2, $3, $4, $5, NULL, 'PENDING_APPROVAL', $6, $7, $8, $9, $10, NOW())
+      ON CONFLICT (order_id, action_type) WHERE status = 'PENDING_APPROVAL' DO NOTHING
+      RETURNING *;
+    `;
+    const params = [
+      id,
+      id,
+      authData.order_id,
+      authData.action_type,
+      authData.maker_id,
+      parseInt(authData.amount || 0, 10),
+      authData.currency || 'IDR',
+      authData.payout_destination || authData.bankAccount || null,
+      authData.reason,
+      JSON.stringify(authData.metadata || {})
+    ];
+    const res = await this.query(sql, params);
+    if (!res.rows || res.rows.length === 0) {
+      const existing = await this.getPendingFinancialAuthorization(authData.order_id, authData.action_type);
+      return { authorization: existing, idempotent: true };
+    }
+    return { authorization: res.rows[0], idempotent: false };
+  }
+
+  async getFinancialAuthorizationById(id) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getFinancialAuthorizationById(id);
+    }
+    const res = await this.query(
+      'SELECT * FROM financial_authorizations WHERE id = $1 OR authorization_id = $1',
+      [id]
+    );
+    return res.rows[0] || null;
+  }
+
+  async getPendingFinancialAuthorization(orderId, actionType) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.getPendingFinancialAuthorization(orderId, actionType);
+    }
+    const res = await this.query(
+      "SELECT * FROM financial_authorizations WHERE order_id = $1 AND action_type = $2 AND status = 'PENDING_APPROVAL'",
+      [orderId, actionType]
+    );
+    return res.rows[0] || null;
+  }
+
+  async approveFinancialAuthorization(authorizationId, checkerId, notes = null) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.approveFinancialAuthorization(authorizationId, checkerId, notes);
+    }
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const selectRes = await client.query(
+        'SELECT * FROM financial_authorizations WHERE id = $1 OR authorization_id = $1 FOR UPDATE',
+        [authorizationId]
+      );
+      const auth = selectRes.rows[0];
+      if (!auth) {
+        await client.query('ROLLBACK');
+        const err = new Error(`Financial authorization '${authorizationId}' not found`);
+        err.code = 'AUTHORIZATION_NOT_FOUND';
+        err.status = 404;
+        throw err;
+      }
+      if (auth.status !== 'PENDING_APPROVAL') {
+        await client.query('ROLLBACK');
+        const err = new Error(`Cannot approve: authorization request is already ${auth.status}`);
+        err.code = 'AUTHORIZATION_NOT_PENDING';
+        err.status = 400;
+        throw err;
+      }
+      if (auth.maker_id === checkerId) {
+        await client.query('ROLLBACK');
+        const err = new Error('Maker-Checker violation: Initiator (Maker) cannot approve their own financial authorization request');
+        err.code = 'MAKER_CHECKER_VIOLATION';
+        err.status = 403;
+        throw err;
+      }
+
+      const updateRes = await client.query(
+        `UPDATE financial_authorizations
+         SET status = 'APPROVED', checker_id = $1, approval_notes = $2, approved_at = NOW()
+         WHERE id = $3
+         RETURNING *`,
+        [checkerId, notes, auth.id]
+      );
+      await client.query('COMMIT');
+      return { success: true, authorization: updateRes.rows[0] };
+    } catch (e) {
+      try { await client.query('ROLLBACK'); } catch (_) {}
+      throw e;
+    } finally {
+      client.release();
+    }
+  }
+
+  async rejectFinancialAuthorization(authorizationId, checkerId, rejectionReason) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.rejectFinancialAuthorization(authorizationId, checkerId, rejectionReason);
+    }
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const selectRes = await client.query(
+        'SELECT * FROM financial_authorizations WHERE id = $1 OR authorization_id = $1 FOR UPDATE',
+        [authorizationId]
+      );
+      const auth = selectRes.rows[0];
+      if (!auth) {
+        await client.query('ROLLBACK');
+        const err = new Error(`Financial authorization '${authorizationId}' not found`);
+        err.code = 'AUTHORIZATION_NOT_FOUND';
+        err.status = 404;
+        throw err;
+      }
+      if (auth.status !== 'PENDING_APPROVAL') {
+        await client.query('ROLLBACK');
+        const err = new Error(`Cannot reject: authorization request is already ${auth.status}`);
+        err.code = 'AUTHORIZATION_NOT_PENDING';
+        err.status = 400;
+        throw err;
+      }
+
+      const updateRes = await client.query(
+        `UPDATE financial_authorizations
+         SET status = 'REJECTED', checker_id = $1, rejection_reason = $2, rejected_at = NOW()
+         WHERE id = $3
+         RETURNING *`,
+        [checkerId, rejectionReason, auth.id]
+      );
+      await client.query('COMMIT');
+      return { success: true, authorization: updateRes.rows[0] };
+    } catch (e) {
+      try { await client.query('ROLLBACK'); } catch (_) {}
+      throw e;
+    } finally {
+      client.release();
+    }
+  }
+
+  async consumeFinancialAuthorization(authorizationId, settlementId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.consumeFinancialAuthorization(authorizationId, settlementId);
+    }
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const selectRes = await client.query(
+        'SELECT * FROM financial_authorizations WHERE id = $1 OR authorization_id = $1 FOR UPDATE',
+        [authorizationId]
+      );
+      const auth = selectRes.rows[0];
+      if (!auth) {
+        await client.query('ROLLBACK');
+        const err = new Error(`Financial authorization '${authorizationId}' not found`);
+        err.code = 'AUTHORIZATION_NOT_FOUND';
+        err.status = 404;
+        throw err;
+      }
+      if (auth.status !== 'APPROVED') {
+        await client.query('ROLLBACK');
+        const err = new Error(`Cannot consume authorization: status is ${auth.status}`);
+        err.code = 'AUTHORIZATION_NOT_APPROVED';
+        err.status = 400;
+        throw err;
+      }
+
+      const updateRes = await client.query(
+        `UPDATE financial_authorizations
+         SET status = 'CONSUMED', consumed_at = NOW(), consumed_by_settlement_id = $1
+         WHERE id = $2
+         RETURNING *`,
+        [settlementId, auth.id]
+      );
+      await client.query('COMMIT');
+      return { success: true, authorization: updateRes.rows[0] };
+    } catch (e) {
+      try { await client.query('ROLLBACK'); } catch (_) {}
+      throw e;
+    } finally {
+      client.release();
+    }
+  }
+
+  async listFinancialAuthorizations(filter = {}) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.listFinancialAuthorizations(filter);
+    }
+
+    const clauses = [];
+    const params = [];
+    if (filter.status) {
+      params.push(filter.status);
+      clauses.push(`status = $${params.length}`);
+    }
+    if (filter.orderId) {
+      params.push(filter.orderId);
+      clauses.push(`order_id = $${params.length}`);
+    }
+    if (filter.actionType) {
+      params.push(filter.actionType);
+      clauses.push(`action_type = $${params.length}`);
+    }
+    const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+    const sql = `SELECT * FROM financial_authorizations ${where} ORDER BY created_at DESC LIMIT 200`;
+    const res = await this.query(sql, params);
+    return res.rows;
+  }
+
+  async confirmSettlementDisbursement({
+    settlementId,
+    orderId,
+    officerId,
+    bankReferenceNumber,
+    proofDocumentUrl = null,
+    bankAccount = null
+  }) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.confirmSettlementDisbursement({
+        settlementId, orderId, officerId, bankReferenceNumber, proofDocumentUrl, bankAccount
+      });
+    }
+
+    if (!bankReferenceNumber || typeof bankReferenceNumber !== 'string' || bankReferenceNumber.trim().length < 5) {
+      const err = new Error('Authentic bank transaction reference number is required (min 5 characters)');
+      err.code = 'INVALID_BANK_REFERENCE';
+      err.status = 400;
+      throw err;
+    }
+    const cleanRef = bankReferenceNumber.trim();
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const dupCheck = await client.query(
+        'SELECT id, bank_account FROM financial_settlements WHERE bank_reference_number = $1 AND id <> $2',
+        [cleanRef, settlementId]
+      );
+      if (dupCheck.rows.length > 0) {
+        const dup = dupCheck.rows[0];
+        if (!bankAccount || dup.bank_account === bankAccount) {
+          await client.query('ROLLBACK');
+          const err = new Error(`Duplicate bank reference number '${cleanRef}' has already been used for settlement '${dup.id}'`);
+          err.code = 'DUPLICATE_BANK_REFERENCE';
+          err.status = 400;
+          throw err;
+        }
+      }
+
+      const updateRes = await client.query(
+        `UPDATE financial_settlements
+         SET status = 'DISBURSED',
+             bank_reference_number = $1,
+             proof_document_url = $2,
+             confirmed_by_officer = $3,
+             disbursed_at = NOW(),
+             updated_at = NOW()
+         WHERE (id = $4 OR (order_id = $5 AND $5 IS NOT NULL))
+         RETURNING *`,
+        [cleanRef, proofDocumentUrl, officerId, settlementId, orderId || null]
+      );
+
+      if (updateRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        const err = new Error(`Settlement '${settlementId || orderId}' not found`);
+        err.code = 'SETTLEMENT_NOT_FOUND';
+        err.status = 404;
+        throw err;
+      }
+
+      await client.query('COMMIT');
+      return {
+        success: true,
+        status: 'DISBURSED',
+        settlement: updateRes.rows[0],
+        bankReferenceNumber: cleanRef,
+        confirmedAt: updateRes.rows[0].disbursed_at
+      };
+    } catch (e) {
+      try { await client.query('ROLLBACK'); } catch (_) {}
+      throw e;
+    } finally {
+      client.release();
+    }
   }
 }
 

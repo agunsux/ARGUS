@@ -148,8 +148,8 @@ const TRANSLATIONS = {
       subheadline: "Uang Anda kami tahan hingga agen kami mengonfirmasi Anda masuk. Tidak ada tiket, tidak ada pembayaran. Simpel.",
       ctaPrimary: "Beli Tiket",
       ctaSecondary: "Jual Tiket",
-      trustAntiGhost: "100% Anti Tiket Ghaib",
-      trustEscrow: "Escrow Protection",
+      trustAntiGhost: "Verifikasi Tiket Berlapis",
+      trustEscrow: "Perlindungan Transaksi",
       trustPhysical: "Verifikasi Fisik"
     },
     tracker: {
@@ -161,44 +161,44 @@ const TRANSLATIONS = {
       foundTitle: "Status Transaksi Terkini",
       orderLabel: "ID Pesanan",
       eventLabel: "Event & Gate",
-      escrowLabel: "Status Escrow",
-      escrowDetail: "DANA TERKUNCI AMAN (Rp 1.850.000)",
+      escrowLabel: "Status Pemeriksaan Transaksi",
+      escrowDetail: "VERIFIKASI TRANSAKSI AKTIF (Rp 1.850.000)",
       agentLabel: "Agen PIC Lapangan",
       agentDetail: "Bagus Setiawan (Gate 3A - Terkoneksi)",
-      nextStep: "Menunggu Anda di lokasi untuk verifikasi fisik & pemindaian turnstile."
+      nextStep: "Menunggu Anda di lokasi untuk verifikasi fisik & pendampingan masuk gate."
     },
     howItWorks: {
       tag: "Protokol Kepercayaan",
       title: "Cara Kerja Baton",
-      subtitle: "Arsitektur keamanan 3 tahap: dana tidak pernah berpindah sebelum Anda melangkah melewati pintu gerbang acara.",
+      subtitle: "Arsitektur keamanan 3 tahap: penyelesaian transaksi diproses setelah verifikasi acara dan tiket selesai.",
       steps: [
         {
           num: "01",
-          title: "Beli & Kunci",
-          desc: "Pilih tiket. Uang Anda masuk ke rekening penampungan (escrow). Penjual belum menerima apa-apa.",
+          title: "Beli & Verifikasi",
+          desc: "Pilih tiket. Pembayaran dicatat dalam status pemeriksaan transaksi. Penjual belum menerima pencairan sebelum verifikasi selesai.",
           accent: "amber",
-          metric: "100% Dana Aman di Escrow"
+          metric: "Status Pemeriksaan Transaksi"
         },
         {
           num: "02",
           title: "Ketemu di Gate",
-          desc: "Di hari-H, agen BATON (PIC) menunggu di venue. Kami verifikasi tiket dan identitas Anda secara fisik.",
+          desc: "Di hari-H, agen BATON (PIC) menunggu di venue acara terpilih. Kami verifikasi tiket dan identitas Anda secara fisik.",
           accent: "amber",
           metric: "Pendampingan Lapangan Nyata"
         },
         {
           num: "03",
           title: "Masuk & Cair",
-          desc: "Begitu Anda melewati turnstile, uang langsung dicairkan ke penjual. Jika gagal masuk, 100% refund.",
+          desc: "Setelah verifikasi tiket dan kehadiran terkonfirmasi serta periode peninjauan berlalu, penyelesaian transaksi diproses. Jika tiket bermasalah di gerbang masuk, pembeli berhak mengajukan refund sesuai kebijakan.",
           accent: "emerald",
-          metric: "Garansi Turnstile / 100% Refund"
+          metric: "Verifikasi Gate & Prosedur Refund"
         }
       ]
     },
     events: {
       tag: "Katalog Terverifikasi",
       title: "Event Mendatang",
-      subtitle: "Tiket sekunder resmi dengan pendampingan verifikator fisik BATON di lokasi gerbang masuk.",
+      subtitle: "Tiket sekunder resmi dengan pendampingan verifikator fisik BATON di lokasi gerbang masuk acara terpilih.",
       ticketsAvailable: "Tiket Tersedia",
       startingAt: "Mulai dari",
       viewAll: "Lihat Semua Event",
@@ -207,10 +207,10 @@ const TRANSLATIONS = {
     manifesto: {
       badge: "KOMITMEN PERLINDUNGAN KONSUMEN",
       h2: "Berhenti khawatir tentang tiket ghaib.",
-      body: "OJK dan kepolisian terus memperingatkan tentang penipuan tiket online. Marketplace global tidak punya orang di lokasi. BATON berbeda. Kami tidak hanya menghubungkan penjual dan pembeli; kami menempatkan manusia tepercaya di setiap gate untuk memastikan Anda masuk.",
+      body: "OJK dan kepolisian terus memperingatkan tentang penipuan tiket online. Marketplace global tidak punya orang di lokasi. BATON berbeda. Kami tidak hanya menghubungkan penjual dan pembeli; kami menempatkan manusia tepercaya di gate acara terpilih untuk mendampingi Anda.",
       stats: [
-        { label: "Insiden Tiket Ghaib", value: "0%" },
-        { label: "Garansi Refund Turnstile", value: "100%" },
+        { label: "Verifikasi Tiket", value: "Ketat" },
+        { label: "Penyelesaian Sengketa", value: "Transparan" },
         { label: "Rerata Waktu Temu PIC di Gate", value: "< 3 Menit" }
       ],
       compliance: "Sepenuhnya tunduk pada UU Perlindungan Data Pribadi (UU PDP No. 27/2022) & Standar Keamanan Finansial."
@@ -222,10 +222,10 @@ const TRANSLATIONS = {
       buyerCard: {
         badge: "UNTUK PEMBELI",
         badgeColor: "text-emerald-400 bg-emerald-950/40 border-emerald-500/30",
-        heading: "Tiket Sold Out? Masuk Venue dengan 100% Rasa Aman.",
-        desc: "Dana Anda tertahan aman di escrow penampungan hingga turnstile terbuka. Didampingi verifikator fisik BATON langsung di depan gate. Jika tiket gagal atau ditolak, dana kembali 100% otomatis.",
+        heading: "Tiket Sold Out? Transaksi Sekunder Lebih Terlindungi.",
+        desc: "Dana pembayaran ditahan bersyarat oleh platform hingga verifikasi gate selesai pada event yang didukung. Didampingi PIC di venue acara terpilih. Jika terjadi masalah tiket, laporkan sengketa untuk penanganan refund sesuai ketentuan.",
         cta: "Cari & Beli Tiket",
-        metric: "100% Garansi Turnstile"
+        metric: "Prosedur Verifikasi Gate"
       },
       sellerCard: {
         badge: "UNTUK PENJUAL",
@@ -241,7 +241,7 @@ const TRANSLATIONS = {
       colProduct: "Produk",
       colCompany: "Perusahaan",
       colLegal: "Legal & Regulasi",
-      productLinks: ["Beli Tiket", "Jual Tiket", "Lacak Pesanan", "Protokol Escrow"],
+      productLinks: ["Beli Tiket", "Jual Tiket", "Lacak Pesanan", "Proses Penyelesaian Transaksi"],
       companyLinks: ["Tentang BATON", "Menjadi Agen PIC", "Media & Kontak", "Laporan Transparansi"],
       legalLinks: ["Syarat & Ketentuan", "Kebijakan Privasi", "Kepatuhan UU PDP", "Sanksi Calo Ghaib"],
       copyright: "© 2026 SHINERVA HQ. Hak cipta dilindungi undang-undang.",
@@ -262,11 +262,11 @@ const TRANSLATIONS = {
     hero: {
       taglinePre: "We'll be at the ",
       taglineHighlight: "gate.",
-      subheadline: "Your money is held until our agent confirms your entry. No ticket, no payment. Simple.",
+      subheadline: "Your payment is placed under transaction verification until our agent confirms your admission. No valid ticket, no settlement. Simple.",
       ctaPrimary: "Buy Tickets",
       ctaSecondary: "Sell Ticket",
       trustAntiGhost: "Anti Ghost Tickets",
-      trustEscrow: "Escrow Protection",
+      trustEscrow: "Transaction Verification",
       trustPhysical: "Physical Verification"
     },
     tracker: {
@@ -278,44 +278,44 @@ const TRANSLATIONS = {
       foundTitle: "Live Transaction Status",
       orderLabel: "Order ID",
       eventLabel: "Event & Gate",
-      escrowLabel: "Escrow Status",
-      escrowDetail: "FUNDS SECURELY HELD (IDR 1,850,000)",
+      escrowLabel: "Transaction Verification Status",
+      escrowDetail: "VERIFICATION IN PROGRESS (IDR 1,850,000)",
       agentLabel: "On-Site PIC Agent",
       agentDetail: "Bagus Setiawan (Gate 3A - Connected)",
-      nextStep: "Awaiting your arrival at venue for physical verification & turnstile admission."
+      nextStep: "Awaiting your arrival at venue for physical verification & gate admission."
     },
     howItWorks: {
       tag: "Trust Protocol",
       title: "How Baton Works",
-      subtitle: "A 3-stage security architecture: money never changes hands until you step past the venue turnstile.",
+      subtitle: "A 3-stage security architecture: settlement is finalized only after event verification and review period conclude.",
       steps: [
         {
           num: "01",
-          title: "Buy & Lock",
-          desc: "Choose a ticket. Your money goes into escrow. The seller receives nothing yet.",
+          title: "Order & Verify",
+          desc: "Choose a ticket. Your payment is placed under transaction verification. The seller receives settlement only after admission verification.",
           accent: "amber",
-          metric: "100% Funds Escrowed"
+          metric: "Transaction Verification Status"
         },
         {
           num: "02",
           title: "Meet at Gate",
-          desc: "On event day, a BATON agent (PIC) waits at the venue. We physically verify your ticket and ID.",
+          desc: "On event day, a BATON agent (PIC) waits at supported venues. We physically verify your ticket and ID.",
           accent: "amber",
           metric: "Live Human Assistance"
         },
         {
           num: "03",
           title: "Walk In & Release",
-          desc: "Once you pass the turnstile, funds are released to the seller. If entry fails, 100% refund.",
+          desc: "Once ticket verification and gate attendance are confirmed and the review period concludes, seller payout is processed. If gate issues arise, buyers can file disputes according to policy.",
           accent: "emerald",
-          metric: "Turnstile Guaranteed / 100% Refund"
+          metric: "Gate Verification & Refund Policy"
         }
       ]
     },
     events: {
       tag: "Verified Catalog",
       title: "Upcoming Events",
-      subtitle: "Authentic secondary tickets paired with on-site BATON physical agents at every venue gate.",
+      subtitle: "Authentic secondary tickets paired with on-site BATON physical agents at supported venue gates.",
       ticketsAvailable: "Tickets Available",
       startingAt: "Starting at",
       viewAll: "View All Events",
@@ -324,33 +324,33 @@ const TRANSLATIONS = {
     manifesto: {
       badge: "CONSUMER PROTECTION MANDATE",
       h2: "Stop worrying about ghost tickets.",
-      body: "Regulators constantly warn about online ticket scams. Global marketplaces don't have people on the ground. BATON is different. We don't just connect buyers and sellers; we place trusted humans at every gate to ensure you get in.",
+      body: "Regulators constantly warn about online ticket scams. Global marketplaces don't have people on the ground. BATON is different. We don't just connect buyers and sellers; we place trusted humans at supported gates to assist you.",
       stats: [
-        { label: "Ghost Ticket Rate", value: "0%" },
-        { label: "Turnstile Refund Guarantee", value: "100%" },
+        { label: "Ticket Verification", value: "Strict" },
+        { label: "Dispute Resolution", value: "Transparent" },
         { label: "Avg Gate Meetup Wait", value: "< 3 Mins" }
       ],
-      compliance: "Fully compliant with Indonesian Personal Data Protection (UU PDP No. 27/2022) & secure escrow standards."
+      compliance: "Fully compliant with Indonesian Personal Data Protection (UU PDP No. 27/2022) & transaction safety controls."
     },
     actionSection: {
       tag: "Trusted Secondary Marketplace",
-      title: "Buy & Sell Tickets with Zero Risk",
+      title: "Buy & Sell Tickets with Verified Protection",
       subtitle: "A dual turnstile protocol protecting buyers from fraudulent tickets and sellers from unfair disputes.",
       buyerCard: {
         badge: "FOR BUYERS",
         badgeColor: "text-emerald-400 bg-emerald-950/40 border-emerald-500/30",
-        heading: "Sold Out Event? Enter the Venue with 100% Peace of Mind.",
-        desc: "Your money stays safe in escrow until the turnstile gate opens. Accompanied by on-site BATON physical agents. If entry fails, 100% automated refund.",
+        heading: "Sold Out Event? Transact with Verified Protection.",
+        desc: "Your payment remains under transaction verification until gate verification completes at supported events. Accompanied by on-site PIC agents at select venues. If issues arise, report disputes for review under our refund policy.",
         cta: "Browse & Buy Tickets",
-        metric: "100% Turnstile Guarantee"
+        metric: "Gate Verification Protocol"
       },
       sellerCard: {
         badge: "FOR SELLERS",
         badgeColor: "text-amber-400 bg-amber-950/40 border-amber-500/30",
         heading: "Can’t Attend? Cash In Your Ticket Without Fraud Accusations.",
-        desc: "BATON field agents validate your ticket with the buyer right at the gate. As soon as the buyer steps in, payout is instantly released to your bank account with zero chargeback risk.",
+        desc: "BATON field agents validate your ticket with the buyer right at the gate. As soon as the admission is verified and the review period concludes, payout is processed to your bank account with zero chargeback risk.",
         cta: "Start Selling Tickets",
-        metric: "Instant Gate Payout"
+        metric: "Structured Settlement"
       }
     },
     footer: {
@@ -358,7 +358,7 @@ const TRANSLATIONS = {
       colProduct: "Product",
       colCompany: "Company",
       colLegal: "Legal & Compliance",
-      productLinks: ["Buy Tickets", "Sell Tickets", "Track Order", "Escrow Protocol"],
+      productLinks: ["Buy Tickets", "Sell Tickets", "Track Order", "Settlement Protocol"],
       companyLinks: ["About BATON", "Become a PIC Agent", "Press & Media", "Transparency Report"],
       legalLinks: ["Terms of Service", "Privacy Policy", "UU PDP Compliance", "Anti-Scalping Rules"],
       copyright: "© 2026 SHINERVA HQ. All rights reserved.",
@@ -484,9 +484,9 @@ export default function BatonHomepage() {
       setTrackResult({
         id: trackQuery.trim() || 'BAT-88219',
         event: 'Coldplay — Music of the Spheres (GBK Jakarta)',
-        gate: 'Gate 3A — Turnstile Utara',
+        gate: 'Gate 3A — Zona Utara',
         amount: 'Rp 1.850.000',
-        escrowStatus: 'ESCROW_LOCKED_SECURE',
+        escrowStatus: 'VERIFIKASI_BERJALAN',
         agent: 'Bagus S. (ID: AGT-042)',
         step: 'AGENT_AT_GATE'
       });
@@ -512,8 +512,8 @@ export default function BatonHomepage() {
               "name": "BATON Trust Infrastructure",
               "alternateName": "BATON Marketplace Tiket Sekunder Terverifikasi Jual Beli",
               "url": "https://tikum.app",
-              "description": "Secondary ticket marketplace with physical on-site verification, human gate agents, and escrow protection under Indonesian Law.",
-              "serviceType": "Ticket Escrow & Gate Admission Verification",
+              "description": "Secondary ticket marketplace with physical on-site verification, human gate agents, and transaction safety controls under Indonesian Law.",
+              "serviceType": "Ticket Verification & Settlement Review",
               "areaServed": "Indonesia"
             })
           }}
@@ -1005,7 +1005,7 @@ export default function BatonHomepage() {
                       </span>
                     </div>
                     <span className="text-xs font-mono text-zinc-400">
-                      Sync: Gate Realtime (Turnstile Connected)
+                      Sync: Gate Realtime (Field PIC Connected)
                     </span>
                   </div>
 
@@ -1018,7 +1018,7 @@ export default function BatonHomepage() {
                     <div>
                       <span className="block text-zinc-500 mb-1">{t.tracker.escrowLabel}</span>
                       <span className="font-semibold text-emerald-400">{t.tracker.escrowDetail}</span>
-                      <span className="block text-zinc-400 mt-0.5">Penjual: 0 IDR hingga Anda lolos scan</span>
+                      <span className="block text-zinc-400 mt-0.5">Penjual: 0 IDR hingga verifikasi selesai</span>
                     </div>
                     <div>
                       <span className="block text-zinc-500 mb-1">{t.tracker.agentLabel}</span>
@@ -1183,7 +1183,7 @@ export default function BatonHomepage() {
                           {event.ticketsAvailable} {t.events.ticketsAvailable}
                         </span>
                         <span className="text-[11px] text-zinc-500 uppercase">
-                          Escrow PIC
+                          Verifikasi PIC
                         </span>
                       </div>
 

@@ -247,7 +247,9 @@ class EventPicService {
         escrow.status = 'RELEASE_PENDING';
       }
 
-      // Record PIC, VENUE_ENTRY, and BUYER attestations in TrustPolicyEngine
+      // Record PIC and VENUE_ENTRY attestations in TrustPolicyEngine.
+      // INVARIANT: PIC scan must NEVER automatically fabricate or impersonate a BUYER_ATTESTATION.
+      // Buyer attestation must originate strictly from the authenticated buyer session or a verified cooling window.
       try {
         await TrustPolicyEngine.recordAttestation({
           orderId,
@@ -265,14 +267,6 @@ class EventPicService {
           actorRole: 'pic',
           result: 'PASS',
           evidenceRef: evidenceBundleId,
-          metadata: { gate: verification.gate }
-        });
-        await TrustPolicyEngine.recordAttestation({
-          orderId,
-          attestationType: ATTESTATION_TYPE.BUYER_ATTESTATION,
-          actorId: order.buyer_id,
-          actorRole: 'buyer',
-          result: 'PASS',
           metadata: { gate: verification.gate }
         });
       } catch (e) {}

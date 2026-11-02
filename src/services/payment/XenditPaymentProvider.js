@@ -37,6 +37,8 @@ class XenditPaymentProvider extends PaymentProvider {
     this.mode = config.mode || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox');
 
     this.xenPlatformEnabled = config.xenPlatformEnabled === true || process.env.XENDIT_XENPLATFORM_ENABLED === 'true';
+    this.disbursementsEnabled = config.disbursementsEnabled === true || process.env.XENDIT_DISBURSEMENT_ENABLED === 'true';
+    this.payoutEnabled = this.disbursementsEnabled;
     this.allowSimulation = config.allowSimulation !== undefined
       ? Boolean(config.allowSimulation)
       : (process.env.NODE_ENV === 'test' && !process.env.ENABLE_XENDIT_PRODUCTION);
@@ -80,16 +82,19 @@ class XenditPaymentProvider extends PaymentProvider {
   }
 
   getCapabilities() {
+    const isPayoutActive = Boolean(this.disbursementsEnabled && process.env.XENDIT_DISBURSEMENT_ENABLED === 'true');
+    const isSplitActive = Boolean(this.xenPlatformEnabled && process.env.XENDIT_SPLIT_SETTLEMENT_ENABLED === 'true');
+
     return new ProviderCapabilities({
       paymentCollection: true,
       refund: true,
       partialRefund: false,
       hold: false, // ESCROW_UNAVAILABLE: xenPlatform split payment != milestone escrow
       release: false, // ESCROW_UNAVAILABLE
-      payout: true, // Xendit Disbursements API
-      splitSettlement: true, // xenPlatform split rule
-      sellerAccounts: true, // Subaccounts
-      subAccounts: true,
+      payout: isPayoutActive, // Fail-closed: Gated by explicit env and underwriting activation
+      splitSettlement: isSplitActive,
+      sellerAccounts: Boolean(this.xenPlatformEnabled && process.env.XENDIT_SELLER_ACCOUNTS_ENABLED === 'true'),
+      subAccounts: Boolean(this.xenPlatformEnabled && process.env.XENDIT_SUBACCOUNTS_ENABLED === 'true'),
       webhooks: true,
       reconciliation: true,
       disputeHandling: false,
@@ -98,7 +103,8 @@ class XenditPaymentProvider extends PaymentProvider {
         escrow_capability: 'ESCROW_UNAVAILABLE',
         marketplace_model: 'XENPLATFORM_SPLIT_AND_TRANSFER',
         underwriting_status: 'REQUIRES_PARTNER_RISK_APPROVAL',
-        cross_border_status: 'RESTRICTED_ID_DOMESTIC_ONLY'
+        cross_border_status: 'RESTRICTED_ID_DOMESTIC_ONLY',
+        payout_status: isPayoutActive ? 'VERIFIED_SUPPORTED' : 'REQUIRES_DISBURSEMENT_ACTIVATION'
       }
     });
   }
@@ -700,13 +706,24 @@ class XenditPaymentProvider extends PaymentProvider {
   }
 
   async createPayout({ orderId, sellerId, amount, bankAccount = {}, idempotencyKey }) {
+    const isPayoutActive = Boolean(this.disbursementsEnabled && process.env.XENDIT_DISBURSEMENT_ENABLED === 'true');
+    if (!isPayoutActive && !this.allowSimulation) {
+      throw new CapabilityUnsupportedError(
+        this.getName(),
+        'payout',
+        'Xendit automated disbursements require XENDIT_DISBURSEMENT_ENABLED=true and underwriting activation'
+      );
+    }
+
+    // Fail-Closed: Even in simulation mode, automated payouts NEVER self-mark as DISBURSED.
+    // They enter PENDING_BANK_EXECUTION awaiting dual authorization and bank confirmation.
     return {
       payoutId: `disb-${orderId}-${Date.now()}`,
       orderId,
       sellerId,
       amount: parseInt(amount, 10),
-      status: 'DISBURSED',
-      moneyState: MONEY_STATE.SETTLED,
+      status: 'PENDING_BANK_EXECUTION',
+      moneyState: MONEY_STATE.HELD_INTERNAL,
       bankAccount,
       idempotencyKey,
       simulated: true,
@@ -718,7 +735,7 @@ class XenditPaymentProvider extends PaymentProvider {
     const id = payoutId || providerRef;
     return {
       payoutId: id,
-      status: 'DISBURSED',
+      status: 'PENDING_BANK_EXECUTION',
       provider: this.getName(),
       simulated: true
     };

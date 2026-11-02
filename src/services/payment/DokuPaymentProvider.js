@@ -66,8 +66,9 @@ class DokuPaymentProvider extends PaymentProvider {
       ? DOKU_ACCOUNT_STATUS.VERIFIED
       : (config.accountStatus || DOKU_ACCOUNT_STATUS.PENDING_KYC);
 
-    // Section 2 & 3: Escrow Activation State
+    // Section 2 & 3: Escrow & Payout Activation State
     this.holdReleaseEnabled = config.holdReleaseEnabled === true || process.env.DOKU_HOLD_RELEASE_ENABLED === 'true';
+    this.payoutEnabled = config.payoutEnabled === true || process.env.DOKU_PAYOUT_ENABLED === 'true';
     this.contractVerified = config.contractVerified === true || process.env.DOKU_CONTRACT_VERIFIED === 'true';
     this.sandboxTested = config.sandboxTested === true || process.env.DOKU_SANDBOX_TESTED === 'true';
     this.enableProduction = process.env.ENABLE_DOKU_PRODUCTION === 'true';
@@ -222,24 +223,30 @@ class DokuPaymentProvider extends PaymentProvider {
   }
 
   getCapabilities() {
+    const isPayoutActive = Boolean(this.payoutEnabled && this.contractVerified && process.env.DOKU_PAYOUT_ENABLED === 'true');
+    const isHoldReleaseActive = Boolean(this.holdReleaseEnabled && this.contractVerified && process.env.DOKU_HOLD_RELEASE_ENABLED === 'true');
+
     return new ProviderCapabilities({
       paymentCollection: true,
       refund: true,
       partialRefund: true,
-      hold: Boolean(this.holdReleaseEnabled), // Gated by enterprise contract activation
-      release: Boolean(this.holdReleaseEnabled), // Gated by enterprise contract activation
-      payout: true,
-      splitSettlement: true,
-      sellerAccounts: true,
-      subAccounts: true,
+      hold: isHoldReleaseActive, // Gated by verified contract and env activation
+      release: isHoldReleaseActive, // Gated by verified contract and env activation
+      payout: isPayoutActive, // Gated by verified contract and env activation
+      splitSettlement: Boolean(this.contractVerified && process.env.DOKU_SPLIT_SETTLEMENT_ENABLED === 'true'),
+      sellerAccounts: Boolean(this.contractVerified && process.env.DOKU_SELLER_ACCOUNTS_ENABLED === 'true'),
+      subAccounts: Boolean(this.contractVerified && process.env.DOKU_SUBACCOUNTS_ENABLED === 'true'),
       webhooks: true,
       reconciliation: true,
       disputeHandling: true,
       chargebackHandling: true,
       notes: {
-        escrow_type: 'THIRD_PARTY_ESCROW_ACCOUNT',
-        settlement_model: 'HOLD_AND_RELEASE_SETTLEMENT',
-        hold_release_status: this.holdReleaseEnabled
+        escrow_type: isHoldReleaseActive ? 'VERIFIED_PROVIDER_ESCROW' : 'INTERNAL_LEDGER_RESTRICTION_ONLY',
+        settlement_model: isHoldReleaseActive ? 'HOLD_AND_RELEASE_SETTLEMENT' : 'MANUAL_DISBURSEMENT_REQUIRED',
+        hold_release_status: isHoldReleaseActive
+          ? PROVIDER_CAPABILITY_STATUS.VERIFIED_SUPPORTED
+          : PROVIDER_CAPABILITY_STATUS.PROVIDER_CONTRACT_DEPENDENT,
+        payout_status: isPayoutActive
           ? PROVIDER_CAPABILITY_STATUS.VERIFIED_SUPPORTED
           : PROVIDER_CAPABILITY_STATUS.PROVIDER_CONTRACT_DEPENDENT
       }
@@ -809,25 +816,32 @@ class DokuPaymentProvider extends PaymentProvider {
    * Creates payout / disbursement to seller bank account
    */
   async createPayout({ orderId, sellerId, amount, bankAccount = {}, idempotencyKey }) {
+    const isPayoutActive = Boolean(this.payoutEnabled && this.contractVerified && process.env.DOKU_PAYOUT_ENABLED === 'true');
+    if (!isPayoutActive && !this.allowSimulation) {
+      throw new CapabilityUnsupportedError(
+        this.getName(),
+        'payout',
+        'PROVIDER-CONTRACT-DEPENDENT: DOKU automated payout disbursement requires signed merchant contract and DOKU_PAYOUT_ENABLED=true'
+      );
+    }
+
     const payoutId = `doku-disb-${orderId}-${Date.now()}`;
     const payoutAmount = parseInt(amount, 10);
 
-    if (this.allowSimulation || !this.secretKey) {
-      return {
-        payoutId,
-        orderId,
-        sellerId,
-        amount: payoutAmount,
-        status: 'DISBURSED',
-        moneyState: MONEY_STATE.SETTLED,
-        bankAccount,
-        idempotencyKey,
-        disbursedAt: new Date().toISOString(),
-        simulated: true
-      };
-    }
-
-    throw new Error('Live DOKU payout disburse API awaiting production credentials.');
+    // Fail-Closed: Even in simulation mode, automated payouts NEVER self-mark as DISBURSED.
+    // They enter PENDING_BANK_EXECUTION awaiting dual authorization and bank confirmation.
+    return {
+      payoutId,
+      orderId,
+      sellerId,
+      amount: payoutAmount,
+      status: 'PENDING_BANK_EXECUTION',
+      moneyState: MONEY_STATE.HELD_INTERNAL,
+      bankAccount,
+      idempotencyKey,
+      simulated: true,
+      createdAt: new Date().toISOString()
+    };
   }
 
   /**
@@ -837,7 +851,7 @@ class DokuPaymentProvider extends PaymentProvider {
     const id = payoutId || providerRef;
     return {
       payoutId: id,
-      status: 'DISBURSED',
+      status: 'PENDING_BANK_EXECUTION',
       provider: this.getName(),
       simulated: true
     };

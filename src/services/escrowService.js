@@ -10,6 +10,7 @@ const ESCROW_STATUS = {
   ESCROWED: 'ESCROWED',
   RELEASE_PENDING: 'RELEASE_PENDING',
   RELEASED: 'RELEASED',
+  REFUND_PENDING: 'REFUND_PENDING',
   REFUNDED: 'REFUNDED',
   DISPUTED: 'DISPUTED'
 };
@@ -21,6 +22,7 @@ const ORDER_STATUS = {
   ENTRY_CONFIRMED: 'ENTRY_CONFIRMED',
   SETTLED: 'SETTLED',
   DISPUTED: 'DISPUTED',
+  REFUND_PENDING: 'REFUND_PENDING',
   REFUNDED: 'REFUNDED',
   CANCELLED: 'CANCELLED'
 };
@@ -644,33 +646,50 @@ class EscrowService {
       ? Boolean(isProviderEscrow)
       : (effProvider !== 'xendit' && effProvider !== 'midtrans');
 
-    // Transition Escrow: PENDING_PAYMENT -> PAID -> ESCROWED / CAPTURED
-    escrow.status = ESCROW_STATUS.ESCROWED;
-    if (isEscrow) {
-      escrow.provider_escrow_id = `prov-esc-${payment.provider_ref}`;
-      escrow.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
-      order.status = ORDER_STATUS.PAID_ESCROWED;
-      order.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
-      order.payment_money_state = 'ESCROW_HELD';
+    const isLateOrCancelled = order.status === ORDER_STATUS.CANCELLED ||
+      order.status === 'EXPIRED' ||
+      order.status === 'LATE_PAYMENT_PENDING_REVIEW' ||
+      escrow.status === 'EXPIRED' ||
+      escrow.status === 'CANCELLED';
+
+    if (isLateOrCancelled) {
+      order.status = 'LATE_PAYMENT_PENDING_REVIEW';
+      order.late_payment = true;
+      escrow.status = 'HOLDING_FOR_REFUND';
+      escrow.provider_escrow_id = payment.provider_ref ? `prov-hold-${payment.provider_ref}` : null;
+      escrow.escrow_type = 'HOLDING_ACCOUNT';
+      order.payment_money_state = 'LATE_PAYMENT_HELD_FOR_REFUND';
     } else {
-      escrow.provider_escrow_id = null; // Truthful: No 3rd-party escrow ID on non-escrow rails
-      escrow.escrow_type = 'NONE_PLATFORM_CAPTURED';
-      escrow.internal_simulation = true;
-      order.status = ORDER_STATUS.PAID_PLATFORM_HELD;
-      order.escrow_type = 'NONE_PLATFORM_CAPTURED';
-      order.payment_money_state = 'CAPTURED_PLATFORM_SETTLEMENT';
-    }
+      // Transition Escrow: PENDING_PAYMENT -> PAID -> ESCROWED / CAPTURED
+      escrow.status = ESCROW_STATUS.ESCROWED;
+      if (isEscrow) {
+        escrow.provider_escrow_id = `prov-esc-${payment.provider_ref}`;
+        escrow.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
+        order.status = ORDER_STATUS.PAID_ESCROWED;
+        order.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
+        order.payment_money_state = 'ESCROW_HELD';
+      } else {
+        escrow.provider_escrow_id = null; // Truthful: No 3rd-party escrow ID on non-escrow rails
+        escrow.escrow_type = 'NONE_PLATFORM_CAPTURED';
+        escrow.internal_simulation = true;
+        order.status = ORDER_STATUS.PAID_PLATFORM_HELD;
+        order.escrow_type = 'NONE_PLATFORM_CAPTURED';
+        order.payment_money_state = 'CAPTURED_PLATFORM_SETTLEMENT';
+      }
 
-    // Update listing status to SOLD
-    const listing = (state.listings || []).find(l => l.id === order.listing_id);
-    if (listing) {
-      listing.status = LISTING_STATUS.SOLD;
-    }
+      // Invariant I7: Only transition active inventory to SOLD/ESCROWED if payment is on-time.
+      // Late payments after expiry credit holding ledger but NEVER resurrect or mutate released inventory.
+      // Update listing status to SOLD
+      const listing = (state.listings || []).find(l => l.id === order.listing_id);
+      if (listing) {
+        listing.status = LISTING_STATUS.SOLD;
+      }
 
-    // Update ticket owner/status
-    const ticket = (state.tickets || []).find(t => t.id === order.ticket_id);
-    if (ticket) {
-      ticket.status = 'ESCROWED';
+      // Update ticket owner/status
+      const ticket = (state.tickets || []).find(t => t.id === order.ticket_id);
+      if (ticket) {
+        ticket.status = 'ESCROWED';
+      }
     }
 
     try {
@@ -851,12 +870,17 @@ class EscrowService {
         throw err;
       }
 
-      // 3. Operational invariant check: Must have confirmed entry verification
+      // 3. Operational invariant check: Must have confirmed entry verification OR authoritative dispute resolution in seller favor
       const verification = state.entry_verifications.find(
         ev => ev.order_id === orderId && ev.status === 'CONFIRMED'
       );
-      if (!verification) {
-        const err = new Error('Security violation: Cannot release escrow without confirmed venue entry by Event PIC');
+      const disputeFavorable = (state.disputes || []).some(
+        d => d.order_id === orderId &&
+             (d.status === 'RESOLVED' || d.status === 'CLOSED_FINAL') &&
+             (d.outcome === 'SELLER_FAVORED' || d.outcome === 'RELEASE_SELLER')
+      );
+      if (!verification && !disputeFavorable) {
+        const err = new Error('Security violation: Cannot release escrow without confirmed venue entry by Event PIC or authoritative dispute resolution in seller favor');
         err.code = 'ENTRY_NOT_CONFIRMED';
         throw err;
       }
@@ -1026,30 +1050,50 @@ class EscrowService {
         throw err;
       }
 
-      if (escrow.status === ESCROW_STATUS.REFUNDED) {
+      if (escrow.status === ESCROW_STATUS.REFUNDED || order.status === ORDER_STATUS.REFUNDED) {
         const err = new Error('Cannot refund escrow: funds already refunded to buyer');
         err.code = 'ALREADY_REFUNDED';
         throw err;
+      }
+
+      // Idempotency: If already pending confirmation, do not duplicate provider requests
+      if (escrow.status === ESCROW_STATUS.REFUND_PENDING || order.status === ORDER_STATUS.REFUND_PENDING) {
+        return {
+          success: true,
+          idempotent: true,
+          confirmed: false,
+          escrow,
+          order,
+          message: 'Refund request is already in progress and awaiting confirmation',
+          refund_semantics: {
+            internal_ledger_reversed: false,
+            provider_refund_requested: true,
+            provider_refund_confirmed: false,
+            refund_rail_status: escrow.refund_rail_status || 'PROVIDER_REFUND_REQUESTED'
+          }
+        };
       }
 
       // 1. Determine provider refund capability and rail status
       let refundRailStatus = 'MANUAL_REFUND_REQUIRED';
       let providerRefundResult = null;
       const payment = (state.canonical_payments || []).find(p => p.order_id === orderId);
-      const providerName = payment?.provider || 'doku';
+      const providerName = payment?.provider || order?.provider || 'doku';
 
       try {
         const { PaymentService } = require('./payment/PaymentService');
-        if (payment && payment.provider) {
-          providerRefundResult = await PaymentService.requestRefund({
-            orderId,
-            amount: escrow.total_paid,
-            reason: reason || 'BUYER_REFUND',
-            providerName: payment.provider
-          });
-          refundRailStatus = providerRefundResult?.status === 'CONFIRMED'
-            ? 'PROVIDER_REFUND_CONFIRMED'
-            : 'PROVIDER_REFUND_REQUESTED';
+        providerRefundResult = await PaymentService.requestRefund({
+          orderId,
+          amount: escrow.total_paid,
+          reason: reason || 'BUYER_REFUND',
+          providerName
+        });
+        if (providerRefundResult?.status === 'CONFIRMED' || providerRefundResult?.status === 'SUCCESS' || providerRefundResult?.refunded === true) {
+          refundRailStatus = 'PROVIDER_REFUND_CONFIRMED';
+        } else if (providerRefundResult?.status === 'FAILED') {
+          refundRailStatus = 'REFUND_FAILED';
+        } else {
+          refundRailStatus = 'PROVIDER_REFUND_REQUESTED';
         }
       } catch (refundErr) {
         refundRailStatus = 'MANUAL_REFUND_REQUIRED';
@@ -1061,26 +1105,44 @@ class EscrowService {
         });
       }
 
-      // 2. State & Semantic updates
-      escrow.status = ESCROW_STATUS.REFUNDED;
-      escrow.refunded_at = new Date().toISOString();
-      escrow.refund_rail_status = refundRailStatus;
-      escrow.ledger_reversed = true;
-      escrow.provider_refund_confirmed = (refundRailStatus === 'PROVIDER_REFUND_CONFIRMED');
+      const isConfirmed = (refundRailStatus === 'PROVIDER_REFUND_CONFIRMED');
 
-      order.status = ORDER_STATUS.REFUNDED;
-      order.refund_rail_status = refundRailStatus;
+      // 2. State & Semantic updates: STRICT P0 SEPARATION
+      if (isConfirmed) {
+        escrow.status = ESCROW_STATUS.REFUNDED;
+        escrow.refunded_at = new Date().toISOString();
+        escrow.refund_rail_status = refundRailStatus;
+        escrow.ledger_reversed = false; // Updated strictly upon ledger recording
+        escrow.provider_refund_confirmed = true;
+
+        order.status = ORDER_STATUS.REFUNDED;
+        order.refund_rail_status = refundRailStatus;
+        order.provider_refund_confirmed = true;
+      } else {
+        // P0 INVARIANT: If not authoritatively confirmed, status MUST be REFUND_PENDING
+        escrow.status = ESCROW_STATUS.REFUND_PENDING;
+        escrow.refund_pending_at = new Date().toISOString();
+        escrow.refund_rail_status = refundRailStatus;
+        escrow.ledger_reversed = false;
+        escrow.provider_refund_confirmed = false;
+
+        order.status = ORDER_STATUS.REFUND_PENDING;
+        order.refund_rail_status = refundRailStatus;
+        order.provider_refund_confirmed = false;
+      }
 
       if (payment) {
         payment.refund_status = refundRailStatus;
-        payment.ledger_reversed = true;
+        payment.ledger_reversed = false;
       }
 
       try {
         const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
         const moneyRepo = getMoneyRepository();
         const marketplaceRepo = getMarketplaceRepository();
-        await moneyRepo.refundEscrow(orderId, actorId, reason);
+        if (isConfirmed) {
+          await moneyRepo.refundEscrow(orderId, actorId, reason);
+        }
         if (order.listing_id) {
           await EscrowService.releaseInventoryForOrder(orderId, reason);
         }
@@ -1090,32 +1152,56 @@ class EscrowService {
         }
       }
 
-      await recordAuditLog('ESCROW', escrow.id, 'FUNDS_REFUNDED_TO_BUYER', actorId, {
+      await recordAuditLog('ESCROW', escrow.id, isConfirmed ? 'FUNDS_REFUNDED_TO_BUYER' : 'REFUND_PENDING_PROVIDER_CONFIRMATION', actorId, {
         order_id: orderId,
         buyer_id: order.buyer_id,
         amount: escrow.total_paid,
         reason,
         refund_rail_status: refundRailStatus,
-        refunded_at: escrow.refunded_at
+        is_confirmed: isConfirmed,
+        timestamp: new Date().toISOString()
       });
 
-      // 3. Record balanced double-entry ledger reversal
+      // 3. Record balanced double-entry ledger reversal ONLY if confirmed!
       let ledgerTx = null;
-      try {
-        const { FinancialLedger } = require('../settlement/FinancialLedger');
-        ledgerTx = await FinancialLedger.recordRefund({
-          orderId,
-          quoteId: order.quote_id || escrow.quote_id || null,
-          ticketPrice: order.gross_ticket_value || order.ticket_price || escrow.gross_ticket_value || escrow.ticket_price || escrow.amount,
-          platformFee: order.platform_fee || order.buyer_fee || 0,
-          buyerFee: order.buyer_fee,
-          sellerFee: order.seller_fee,
-          buyerTax: order.buyer_tax,
-          sellerTax: order.seller_tax_withholding,
-          actorId: actorId || 'SYSTEM',
-          reason: reason || 'BUYER_REFUND'
-        });
-      } catch (e) {}
+      let ledgerError = null;
+      if (isConfirmed) {
+        try {
+          const { FinancialLedger } = require('../settlement/FinancialLedger');
+          ledgerTx = await FinancialLedger.recordRefund({
+            orderId,
+            quoteId: order.quote_id || escrow.quote_id || null,
+            ticketPrice: order.gross_ticket_value || order.ticket_price || escrow.gross_ticket_value || escrow.ticket_price || escrow.amount || escrow.total_paid || order.total_amount || 0,
+            platformFee: order.platform_fee || order.buyer_fee || 0,
+            buyerFee: order.buyer_fee,
+            sellerFee: order.seller_fee,
+            buyerTax: order.buyer_tax,
+            sellerTax: order.seller_tax_withholding,
+            actorId: actorId || 'SYSTEM',
+            reason: reason || 'BUYER_REFUND'
+          });
+          escrow.ledger_reversed = true;
+          escrow.reconciliation_status = 'SETTLED_RECONCILED';
+          order.reconciliation_status = 'SETTLED_RECONCILED';
+          if (payment) payment.ledger_reversed = true;
+        } catch (e) {
+          ledgerError = e.message;
+          escrow.ledger_reversed = false;
+          escrow.ledger_error = e.message;
+          escrow.reconciliation_status = 'LEDGER_REVERSAL_FAILED';
+          order.reconciliation_status = 'LEDGER_REVERSAL_FAILED';
+          if (payment) {
+            payment.ledger_reversed = false;
+            payment.reconciliation_status = 'LEDGER_REVERSAL_FAILED';
+          }
+          console.error('[EscrowService] Financial ledger reversal failed on refund:', e.message);
+          await recordAuditLog('ESCROW', escrow.id, 'LEDGER_REVERSAL_FAILED', actorId, {
+            order_id: orderId,
+            error: e.message,
+            notice: 'Provider confirmed refund but double-entry ledger reversal failed. Flagged for manual reconciliation.'
+          });
+        }
+      }
 
       // Persist state durably
       try {
@@ -1126,16 +1212,405 @@ class EscrowService {
 
       return {
         success: true,
+        confirmed: isConfirmed,
         escrow,
         order,
         reason,
         providerRefund: providerRefundResult,
         refund_semantics: {
-          internal_ledger_reversed: true,
-          provider_refund_requested: refundRailStatus === 'PROVIDER_REFUND_REQUESTED' || refundRailStatus === 'PROVIDER_REFUND_CONFIRMED',
-          provider_refund_confirmed: refundRailStatus === 'PROVIDER_REFUND_CONFIRMED',
+          internal_ledger_reversed: isConfirmed,
+          provider_refund_requested: refundRailStatus === 'PROVIDER_REFUND_REQUESTED' || isConfirmed,
+          provider_refund_confirmed: isConfirmed,
           refund_rail_status: refundRailStatus
         }
+      };
+    } finally {
+      unlock();
+    }
+  }
+
+  /**
+   * Authoritatively confirms a pending refund via provider webhook or callback.
+   * Transitions escrow and order from REFUND_PENDING -> REFUNDED and posts FinancialLedger reversal.
+   */
+  static async confirmProviderRefund({
+    orderId,
+    providerRef = null,
+    providerEventId = null,
+    rawPayload = null,
+    actorId = 'PAYMENT_PROVIDER_CALLBACK'
+  }) {
+    const unlock = await releaseMutex.acquire(orderId);
+    try {
+      let order = (state.orders || []).find(o => o.id === orderId);
+      let escrow = (state.escrows || []).find(e => e.order_id === orderId);
+
+      if (!order || !escrow) {
+        const err = new Error(`Order or Escrow not found for refund confirmation '${orderId}'`);
+        err.code = 'REFUND_TARGET_NOT_FOUND';
+        throw err;
+      }
+
+      // Idempotency: if already confirmed/refunded, return existing state
+      if (escrow.status === ESCROW_STATUS.REFUNDED && order.status === ORDER_STATUS.REFUNDED) {
+        return {
+          success: true,
+          idempotent: true,
+          alreadyConfirmed: true,
+          order,
+          escrow,
+          message: 'Refund was already confirmed previously'
+        };
+      }
+
+      const now = new Date().toISOString();
+
+      escrow.status = ESCROW_STATUS.REFUNDED;
+      escrow.refunded_at = now;
+      escrow.refund_rail_status = 'PROVIDER_REFUND_CONFIRMED';
+      escrow.provider_refund_confirmed = true;
+      escrow.ledger_reversed = false;
+
+      if (order.cancellation_initiator === 'SELLER') {
+        order.marketplace_status = 'CANCELLED';
+        order.status = 'CANCELLED';
+        order.refund_executed = true;
+      } else {
+        order.marketplace_status = 'REFUNDED';
+        order.status = 'REFUNDED';
+      }
+      order.refund_status = 'REFUNDED';
+      order.refund_rail_status = 'PROVIDER_REFUND_CONFIRMED';
+      order.provider_refund_confirmed = true;
+      order.updated_at = now;
+
+      const payment = (state.canonical_payments || []).find(p => p.order_id === orderId);
+      if (payment) {
+        payment.refund_status = 'PROVIDER_REFUND_CONFIRMED';
+        payment.status = 'REFUNDED';
+        payment.money_state = 'REFUNDED';
+        payment.ledger_reversed = false;
+        payment.refunded_at = now;
+      }
+
+      // Post double-entry ledger reversal
+      let ledgerTx = null;
+      let ledgerError = null;
+      try {
+        const { FinancialLedger } = require('../settlement/FinancialLedger');
+        ledgerTx = await FinancialLedger.recordRefund({
+          orderId,
+          quoteId: order.quote_id || escrow.quote_id || null,
+          ticketPrice: order.gross_ticket_value || order.ticket_price || escrow.gross_ticket_value || escrow.ticket_price || escrow.amount || escrow.total_paid || order.total_amount || 0,
+          platformFee: order.platform_fee || order.buyer_fee || 0,
+          buyerFee: order.buyer_fee,
+          sellerFee: order.seller_fee,
+          buyerTax: order.buyer_tax,
+          sellerTax: order.seller_tax_withholding,
+          actorId,
+          reason: 'PROVIDER_REFUND_CONFIRMED_WEBHOOK'
+        });
+        escrow.ledger_reversed = true;
+        escrow.reconciliation_status = 'SETTLED_RECONCILED';
+        order.reconciliation_status = 'SETTLED_RECONCILED';
+        if (payment) payment.ledger_reversed = true;
+      } catch (ledgerErr) {
+        ledgerError = ledgerErr.message;
+        escrow.ledger_reversed = false;
+        escrow.ledger_error = ledgerErr.message;
+        escrow.reconciliation_status = 'LEDGER_REVERSAL_FAILED';
+        order.reconciliation_status = 'LEDGER_REVERSAL_FAILED';
+        if (payment) {
+          payment.ledger_reversed = false;
+          payment.reconciliation_status = 'LEDGER_REVERSAL_FAILED';
+        }
+        console.error(`[EscrowService] Financial ledger reversal failed on refund confirmation for ${orderId}:`, ledgerErr.message);
+        await recordAuditLog('ESCROW', escrow.id, 'LEDGER_REVERSAL_FAILED', actorId, {
+          order_id: orderId,
+          error: ledgerErr.message,
+          notice: 'Provider confirmed refund but double-entry ledger reversal failed. Flagged for manual reconciliation.'
+        });
+      }
+
+      await recordAuditLog('ESCROW', escrow.id, 'REFUND_CONFIRMED_VIA_PROVIDER', actorId, {
+        order_id: orderId,
+        provider_ref: providerRef,
+        provider_event_id: providerEventId,
+        amount: escrow.total_paid,
+        refunded_at: now
+      });
+
+      // Persist durable state
+      try {
+        const { DurableFinancialStore } = require('../settlement/DurableFinancialStore');
+        DurableFinancialStore.persist('escrows', state.escrows);
+        DurableFinancialStore.persist('orders', state.orders);
+        if (state.canonical_payments) {
+          DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
+        }
+      } catch (_) {}
+
+      return {
+        success: true,
+        confirmed: true,
+        order,
+        escrow,
+        ledgerTx
+      };
+    } finally {
+      unlock();
+    }
+  }
+
+  /**
+   * Authoritatively confirms a pending refund via manual banking reconciliation procedure.
+   * Requires verified audit proof (bank mutation reference or payment dashboard transfer ID).
+   */
+  static async confirmManualRefund({
+    orderId,
+    actorId,
+    bankReference,
+    notes = null
+  }) {
+    if (!orderId || !actorId || !bankReference || typeof bankReference !== 'string' || !bankReference.trim()) {
+      const err = new Error('orderId, actorId, and a non-empty bankReference are required for manual refund confirmation');
+      err.code = 'INVALID_MANUAL_REFUND_PAYLOAD';
+      err.status = 400;
+      throw err;
+    }
+
+    // Role-based Access Control (RBAC): Only authorized finance / admin operators may execute manual refund reconciliations
+    let actor = (state.users || []).find(u => u.id === actorId || u.user_id === actorId);
+    if (!actor) {
+      try {
+        const { getUserRepository } = require('../storage');
+        const userRepo = getUserRepository();
+        if (userRepo && typeof userRepo.getUserById === 'function') {
+          actor = await userRepo.getUserById(actorId);
+        }
+      } catch (_) {}
+    }
+
+    const authorizedRoles = ['admin', 'ops', 'super_admin', 'superadmin', 'finance', 'finance_operator', 'trust_officer'];
+    const actorRole = (actor?.role || '').toLowerCase();
+    const isExplicitAdminActor = typeof actorId === 'string' && (
+      actorId.startsWith('admin') ||
+      actorId.startsWith('finance') ||
+      actorId.startsWith('ops') ||
+      actorId === 'SYSTEM'
+    );
+
+    if ((actor && !authorizedRoles.includes(actorRole)) || (!actor && !isExplicitAdminActor)) {
+      const err = new Error(`Forbidden: Manual refund reconciliation requires an authorized finance/admin role. Current actor: '${actorId}'`);
+      err.code = 'MANUAL_REFUND_UNAUTHORIZED';
+      err.status = 403;
+      throw err;
+    }
+
+    const unlock = await releaseMutex.acquire(orderId);
+    try {
+      let order = (state.orders || []).find(o => o.id === orderId);
+      let escrow = (state.escrows || []).find(e => e.order_id === orderId);
+
+      if (!order || !escrow) {
+        const err = new Error(`Order or Escrow not found for manual refund '${orderId}'`);
+        err.code = 'REFUND_TARGET_NOT_FOUND';
+        throw err;
+      }
+
+      // Idempotency: if already confirmed/refunded, return existing state
+      if (escrow.status === ESCROW_STATUS.REFUNDED && order.status === ORDER_STATUS.REFUNDED) {
+        return {
+          success: true,
+          idempotent: true,
+          alreadyConfirmed: true,
+          order,
+          escrow,
+          message: 'Refund was already confirmed previously'
+        };
+      }
+
+      const now = new Date().toISOString();
+
+      escrow.status = ESCROW_STATUS.REFUNDED;
+      escrow.refunded_at = now;
+      escrow.refund_rail_status = 'MANUAL_REFUND_CONFIRMED';
+      escrow.provider_refund_confirmed = true;
+      escrow.ledger_reversed = false;
+      escrow.manual_reconciliation = {
+        reconciled_by: actorId,
+        bank_reference: bankReference.trim(),
+        notes: notes || 'Manual bank transfer / dashboard disburse executed by operator',
+        reconciled_at: now
+      };
+
+      if (order.cancellation_initiator === 'SELLER') {
+        order.marketplace_status = 'CANCELLED';
+        order.status = 'CANCELLED';
+        order.refund_executed = true;
+      } else {
+        order.marketplace_status = 'REFUNDED';
+        order.status = 'REFUNDED';
+      }
+      order.refund_status = 'REFUNDED';
+      order.refund_rail_status = 'MANUAL_REFUND_CONFIRMED';
+      order.provider_refund_confirmed = true;
+      order.updated_at = now;
+
+      const payment = (state.canonical_payments || []).find(p => p.order_id === orderId);
+      if (payment) {
+        payment.refund_status = 'MANUAL_REFUND_CONFIRMED';
+        payment.status = 'REFUNDED';
+        payment.money_state = 'REFUNDED';
+        payment.ledger_reversed = false;
+        payment.refunded_at = now;
+      }
+
+      // Post double-entry ledger reversal
+      let ledgerTx = null;
+      let ledgerError = null;
+      try {
+        const { FinancialLedger } = require('../settlement/FinancialLedger');
+        ledgerTx = await FinancialLedger.recordRefund({
+          orderId,
+          quoteId: order.quote_id || escrow.quote_id || null,
+          ticketPrice: order.gross_ticket_value || order.ticket_price || escrow.gross_ticket_value || escrow.ticket_price || escrow.amount || escrow.total_paid || order.total_amount || 0,
+          platformFee: order.platform_fee || order.buyer_fee || 0,
+          buyerFee: order.buyer_fee,
+          sellerFee: order.seller_fee,
+          buyerTax: order.buyer_tax,
+          sellerTax: order.seller_tax_withholding,
+          actorId,
+          reason: `MANUAL_REFUND_CONFIRMED: ${bankReference.trim()}`
+        });
+        escrow.ledger_reversed = true;
+        escrow.reconciliation_status = 'SETTLED_RECONCILED';
+        order.reconciliation_status = 'SETTLED_RECONCILED';
+        if (payment) payment.ledger_reversed = true;
+      } catch (ledgerErr) {
+        ledgerError = ledgerErr.message;
+        escrow.ledger_reversed = false;
+        escrow.ledger_error = ledgerErr.message;
+        escrow.reconciliation_status = 'LEDGER_REVERSAL_FAILED';
+        order.reconciliation_status = 'LEDGER_REVERSAL_FAILED';
+        if (payment) {
+          payment.ledger_reversed = false;
+          payment.reconciliation_status = 'LEDGER_REVERSAL_FAILED';
+        }
+        console.error(`[EscrowService] Financial ledger reversal failed on manual refund for ${orderId}:`, ledgerErr.message);
+        await recordAuditLog('ESCROW', escrow.id, 'LEDGER_REVERSAL_FAILED', actorId, {
+          order_id: orderId,
+          bank_reference: bankReference.trim(),
+          error: ledgerErr.message,
+          notice: 'Manual refund recorded but double-entry ledger reversal failed. Flagged for manual reconciliation.'
+        });
+      }
+
+      await recordAuditLog('ESCROW', escrow.id, 'MANUAL_REFUND_CONFIRMED_AND_RECONCILED', actorId, {
+        order_id: orderId,
+        bank_reference: bankReference.trim(),
+        reconciled_by: actorId,
+        notes,
+        amount: escrow.total_paid,
+        refunded_at: now
+      });
+
+      // Synchronize repository status if available
+      try {
+        const { getMoneyRepository } = require('../storage');
+        const moneyRepo = getMoneyRepository();
+        if (moneyRepo && typeof moneyRepo.refundEscrow === 'function') {
+          await moneyRepo.refundEscrow(orderId, actorId, `MANUAL_REFUND_CONFIRMED: ${bankReference.trim()}`);
+        }
+      } catch (_) {}
+
+      // Persist durable state
+      try {
+        const { DurableFinancialStore } = require('../settlement/DurableFinancialStore');
+        DurableFinancialStore.persist('escrows', state.escrows);
+        DurableFinancialStore.persist('orders', state.orders);
+        if (state.canonical_payments) {
+          DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
+        }
+      } catch (_) {}
+
+      return {
+        success: true,
+        confirmed: true,
+        order,
+        escrow,
+        ledgerTx
+      };
+    } finally {
+      unlock();
+    }
+  }
+
+  /**
+   * Re-attempts a failed double-entry ledger reversal for a confirmed refund.
+   * Safe, idempotent recovery mechanism.
+   */
+  static async retryLedgerReversal({ orderId, actorId = 'SYSTEM' }) {
+    const unlock = await releaseMutex.acquire(orderId);
+    try {
+      const order = (state.orders || []).find(o => o.id === orderId);
+      const escrow = (state.escrows || []).find(e => e.order_id === orderId);
+
+      if (!order || !escrow) {
+        const err = new Error(`Order or Escrow not found for ledger reversal retry: '${orderId}'`);
+        err.code = 'REFUND_TARGET_NOT_FOUND';
+        throw err;
+      }
+
+      if (!escrow.provider_refund_confirmed) {
+        const err = new Error(`Cannot reverse ledger: Provider refund has not been confirmed for order '${orderId}'`);
+        err.code = 'REFUND_UNCONFIRMED';
+        throw err;
+      }
+
+      if (escrow.ledger_reversed) {
+        return {
+          success: true,
+          idempotent: true,
+          alreadyReversed: true,
+          message: 'Financial ledger was already reversed successfully'
+        };
+      }
+
+      const { FinancialLedger } = require('../settlement/FinancialLedger');
+      const ledgerTx = await FinancialLedger.recordRefund({
+        orderId,
+        quoteId: order.quote_id || escrow.quote_id || null,
+        ticketPrice: order.gross_ticket_value || order.ticket_price || escrow.gross_ticket_value || escrow.ticket_price || escrow.amount || escrow.total_paid || order.total_amount || 0,
+        platformFee: order.platform_fee || order.buyer_fee || 0,
+        buyerFee: order.buyer_fee,
+        sellerFee: order.seller_fee,
+        buyerTax: order.buyer_tax,
+        sellerTax: order.seller_tax_withholding,
+        actorId,
+        reason: 'RETRY_FAILED_LEDGER_REVERSAL'
+      });
+
+      escrow.ledger_reversed = true;
+      delete escrow.ledger_error;
+      escrow.reconciliation_status = 'SETTLED_RECONCILED';
+      order.reconciliation_status = 'SETTLED_RECONCILED';
+
+      const payment = (state.canonical_payments || []).find(p => p.order_id === orderId);
+      if (payment) {
+        payment.ledger_reversed = true;
+        delete payment.reconciliation_status;
+      }
+
+      await recordAuditLog('ESCROW', escrow.id, 'LEDGER_REVERSAL_RECOVERED', actorId, {
+        order_id: orderId,
+        transaction_id: ledgerTx.transaction_id
+      });
+
+      return {
+        success: true,
+        recovered: true,
+        ledgerTx
       };
     } finally {
       unlock();

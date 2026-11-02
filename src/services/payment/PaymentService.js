@@ -373,7 +373,21 @@ class PaymentService {
 
     // 2. Normalize payload
     const event = provider.parseWebhook(body, headers);
-    const eventId = event.providerEventId || `wh-${event.providerRef || Date.now()}`;
+    const rawStatus = (event.rawStatus || event.status || body.status || body.transaction_status || body.trx_status || '').toUpperCase();
+    const isRefundEvent = event.status === MONEY_STATE.REFUNDED ||
+      event.status === 'REFUNDED' ||
+      rawStatus === 'REFUND' ||
+      rawStatus === 'REFUNDED' ||
+      rawStatus === 'REFUND_SUCCESS' ||
+      event.eventType === 'REFUND_CONFIRMED' ||
+      event.eventType === 'REFUND_EVENT' ||
+      event.event_type === 'REFUND_CONFIRMED' ||
+      event.event_type === 'REFUND_EVENT' ||
+      body.event === 'refund.succeeded';
+
+    const eventId = event.providerEventId || (isRefundEvent
+      ? `wh-ref-${event.idempotencyKey || event.providerRef || Date.now()}`
+      : (event.idempotencyKey ? `wh-${event.idempotencyKey}` : `wh-${event.providerRef || Date.now()}`));
     const payloadHash = crypto.createHash('sha256').update(rawBodyBuffer || (typeof body === 'string' ? body : JSON.stringify(body))).digest('hex');
 
     // 3. Persistent Idempotency Check in provider_webhooks & processed_webhooks
@@ -384,7 +398,9 @@ class PaymentService {
       w => w.provider === targetProviderName &&
         (w.provider_event_id === eventId || (w.payload_hash === payloadHash && w.processing_status === 'PROCESSED'))
     );
-    const isLegacyDuplicate = state.processed_webhooks.has(event.providerRef);
+    const isLegacyDuplicate = isRefundEvent
+      ? (state.processed_webhooks.has(`ref:${event.providerRef}`) || state.processed_webhooks.has(eventId))
+      : (state.processed_webhooks.has(event.providerRef) || state.processed_webhooks.has(eventId));
 
     if (existingWebhook || isLegacyDuplicate) {
       return {
@@ -401,7 +417,7 @@ class PaymentService {
       const webhookInsert = await moneyRepo.recordWebhook({
         provider: targetProviderName,
         provider_event_id: eventId,
-        event_type: event.eventType || 'PAYMENT_EVENT',
+        event_type: event.eventType || (isRefundEvent ? 'REFUND_EVENT' : 'PAYMENT_EVENT'),
         payload_hash: payloadHash,
         raw_payload: body,
         signature_status: 'VALID',
@@ -426,7 +442,7 @@ class PaymentService {
       id: `pwh-${uuidv4()}`,
       provider: targetProviderName,
       provider_event_id: eventId,
-      event_type: event.eventType || 'PAYMENT_EVENT',
+      event_type: event.eventType || (isRefundEvent ? 'REFUND_EVENT' : 'PAYMENT_EVENT'),
       signature_status: 'VALID',
       processing_status: 'PROCESSING',
       payload_hash: payloadHash,
@@ -437,7 +453,12 @@ class PaymentService {
       error_message: null
     };
     state.provider_webhooks.push(webhookRecord);
-    state.processed_webhooks.add(event.providerRef);
+    if (isRefundEvent) {
+      state.processed_webhooks.add(`ref:${event.providerRef}`);
+    } else {
+      state.processed_webhooks.add(event.providerRef);
+    }
+    state.processed_webhooks.add(eventId);
     DurableFinancialStore.persist('provider_webhooks', state.provider_webhooks);
 
     // 5. Domain State Update on Successful Payment Event
@@ -451,10 +472,9 @@ class PaymentService {
           const providerCapabilities = typeof provider.getCapabilities === 'function'
             ? provider.getCapabilities()
             : (typeof provider.capabilities === 'function' ? provider.capabilities() : {});
-          const provName = (targetProviderName || (provider.getName ? provider.getName() : '')).toLowerCase();
-          const supportsEscrowHold = (provName === 'doku' || providerCapabilities.notes?.escrow_type === 'THIRD_PARTY_ESCROW_ACCOUNT')
-            ? true
-            : (provName === 'xendit' || providerCapabilities.notes?.escrow_capability === 'ESCROW_UNAVAILABLE' ? false : Boolean(providerCapabilities.hold));
+          // Invariant: Gateway escrow hold capability must NOT be assumed by provider name alone.
+          // It requires contractual hold capability verified directly on the provider instance.
+          const supportsEscrowHold = Boolean(providerCapabilities && providerCapabilities.hold === true);
 
           if (supportsEscrowHold) {
             canonical.money_state = MONEY_STATE.ESCROW_HELD;
@@ -552,10 +572,9 @@ class PaymentService {
           const providerCapabilities = typeof provider.getCapabilities === 'function'
             ? provider.getCapabilities()
             : (typeof provider.capabilities === 'function' ? provider.capabilities() : {});
-          const provName = (targetProviderName || (provider.getName ? provider.getName() : '')).toLowerCase();
-          const supportsEscrowHold = (provName === 'doku' || providerCapabilities.notes?.escrow_type === 'THIRD_PARTY_ESCROW_ACCOUNT')
-            ? true
-            : (provName === 'xendit' || providerCapabilities.notes?.escrow_capability === 'ESCROW_UNAVAILABLE' ? false : Boolean(providerCapabilities.hold));
+          // Invariant: Gateway escrow hold capability must NOT be assumed by provider name alone.
+          // It requires contractual hold capability verified directly on the provider instance.
+          const supportsEscrowHold = Boolean(providerCapabilities && providerCapabilities.hold === true);
 
           await EscrowService.recordPayment({
             orderId: event.orderId,
@@ -634,6 +653,38 @@ class PaymentService {
       webhookRecord.processing_status = 'PROCESSED';
       webhookRecord.processed_at = new Date().toISOString();
       DurableFinancialStore.persist('provider_webhooks', state.provider_webhooks);
+    } else if (isRefundEvent) {
+      const { EscrowService } = require('../escrowService');
+
+      // Update Canonical Payment record
+      if (state.canonical_payments) {
+        const canonical = state.canonical_payments.find(p => p.order_id === event.orderId || p.provider_reference === event.providerRef);
+        if (canonical) {
+          canonical.money_state = MONEY_STATE.REFUNDED;
+          canonical.status = MONEY_STATE.REFUNDED;
+          canonical.refund_status = 'PROVIDER_REFUND_CONFIRMED';
+          canonical.refunded_at = new Date().toISOString();
+          canonical.updated_at = new Date().toISOString();
+          DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
+        }
+      }
+
+      // Authoritative provider confirmation transition in EscrowService
+      try {
+        await EscrowService.confirmProviderRefund({
+          orderId: event.orderId,
+          providerRef: event.providerRef,
+          providerEventId: eventId,
+          rawPayload: body,
+          actorId: `WEBHOOK_${targetProviderName.toUpperCase()}`
+        });
+      } catch (confirmErr) {
+        console.error(`[PaymentService] Failed to confirm provider refund via webhook for order ${event.orderId}:`, confirmErr.message);
+      }
+
+      webhookRecord.processing_status = 'PROCESSED';
+      webhookRecord.processed_at = new Date().toISOString();
+      DurableFinancialStore.persist('provider_webhooks', state.provider_webhooks);
     } else {
       webhookRecord.processing_status = 'PROCESSED';
       webhookRecord.processed_at = new Date().toISOString();
@@ -681,12 +732,27 @@ class PaymentService {
       idempotencyKey: idempotencyKey || `ref-${orderId}-${Date.now()}`
     });
 
+    const isConfirmed = refundResult?.status === 'CONFIRMED' || refundResult?.status === 'SUCCESS' || refundResult?.refunded === true;
+    const isFailed = refundResult?.status === 'FAILED';
+
     if (state.canonical_payments) {
       const canonical = state.canonical_payments.find(p => p.order_id === orderId);
       if (canonical) {
-        canonical.money_state = MONEY_STATE.REFUNDED;
-        canonical.status = MONEY_STATE.REFUNDED;
-        canonical.refunded_at = new Date().toISOString();
+        if (isConfirmed) {
+          canonical.money_state = MONEY_STATE.REFUNDED;
+          canonical.status = MONEY_STATE.REFUNDED;
+          canonical.refund_status = 'PROVIDER_REFUND_CONFIRMED';
+          canonical.refunded_at = new Date().toISOString();
+        } else if (isFailed) {
+          canonical.money_state = MONEY_STATE.RECONCILIATION_REQUIRED;
+          canonical.status = MONEY_STATE.RECONCILIATION_REQUIRED;
+          canonical.refund_status = 'REFUND_FAILED';
+        } else {
+          canonical.money_state = MONEY_STATE.REFUND_PENDING;
+          canonical.status = MONEY_STATE.REFUND_PENDING;
+          canonical.refund_status = 'PROVIDER_REFUND_REQUESTED';
+          canonical.refund_pending_at = new Date().toISOString();
+        }
         canonical.updated_at = new Date().toISOString();
         DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
       }

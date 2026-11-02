@@ -35,6 +35,7 @@ const crypto = require('crypto');
 const { getCatalogRepository } = require('./repository');
 const { SourceToDatabaseAuditService } = require('./SourceToDatabaseAuditService');
 const { requireAdminApiKey } = require('../middleware/adminApiKeyAuth');
+const { CuratedCatalogPolicy, OFFICIAL_MIN_TICKET_PRICE } = require('./CuratedCatalogPolicy');
 
 // ==========================================
 // PROMOTER IMPORT ADMIN GUARD & CSV UPLOAD
@@ -383,6 +384,18 @@ router.get('/events/:slug', (req, res, next) => {
           <a href="/events" style="color:#38bdf8;">Kembali ke Katalog Event</a>
         </body></html>`);
     }
+
+    // STRICT RP 500.000 PRICE INVARIANT: Events with lowest price < 500k cannot be accessed via public direct URL
+    const isPriceDisqualified = event.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(event);
+    if (isPriceDisqualified) {
+      return res.status(404).send(`<!DOCTYPE html>
+        <html><head><title>Event Tidak Memenuhi Kriteria — Tikum</title></head>
+        <body style="font-family:sans-serif; background:#0f172a; color:#fff; text-align:center; padding:50px;">
+          <h2>Event Tidak Tersedia di Katalog Publik</h2>
+          <p>Event ini memiliki nilai tiket resmi di bawah batas minimum katalog Tikum (Rp 500.000) atau telah diarsipkan.</p>
+          <a href="/events" style="color:#38bdf8;">Kembali ke Katalog Event</a>
+        </body></html>`);
+    }
   }
 
   // Corroborate with any duplicate canonical record in registry (e.g. snapshot vs LOKET live) so detail page gets full verified image provenance
@@ -440,7 +453,7 @@ function deduplicateAndEnrichPublicEvents(events) {
  * Main Event Discovery Catalog Hub
  */
 router.get('/events', (req, res) => {
-  const { q, city, category, status, include_past, scope } = req.query;
+  const { q, city, category, status, include_past, scope, price_range, ticket_status, date_range, date_from, date_to } = req.query;
 
   // Edge Cache: Absorb high-frequency crawls and bot traffic while preserving fresh updates
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
@@ -468,6 +481,67 @@ router.get('/events', (req, res) => {
     allEvents = allEvents.filter(e => (e.event_type || e.category || '').toUpperCase() === catTerm);
   }
 
+  // Price range filter (Strict invariant: min >= 500k)
+  if (price_range && price_range.trim()) {
+    const pRange = price_range.toLowerCase().trim();
+    if (pRange === '500k-1m') {
+      allEvents = allEvents.filter(e => {
+        const p = Number(e.min_price || 0);
+        return p >= 500000 && p <= 1000000;
+      });
+    } else if (pRange === '1m-2m') {
+      allEvents = allEvents.filter(e => {
+        const p = Number(e.min_price || 0);
+        return p >= 1000000 && p <= 2000000;
+      });
+    } else if (pRange === '2m_plus') {
+      allEvents = allEvents.filter(e => {
+        const p = Number(e.min_price || 0);
+        return p >= 2000000;
+      });
+    }
+  }
+
+  // Date range filter
+  if (date_range && date_range.trim()) {
+    const dRange = date_range.toLowerCase().trim();
+    const nowDateStr = now.toISOString().substring(0, 10);
+    if (dRange === 'weekend') {
+      const day = now.getDay();
+      const diffToFri = (5 - day + 7) % 7;
+      const fri = new Date(now.getTime() + diffToFri * 24 * 3600 * 1000);
+      const sun = new Date(fri.getTime() + 2 * 24 * 3600 * 1000);
+      const friStr = fri.toISOString().substring(0, 10);
+      const sunStr = sun.toISOString().substring(0, 10);
+      allEvents = allEvents.filter(e => (e.start_date || '') >= friStr && (e.start_date || '') <= sunStr);
+    } else if (dRange === 'this_month') {
+      const monthPrefix = nowDateStr.substring(0, 7);
+      allEvents = allEvents.filter(e => (e.start_date || '').startsWith(monthPrefix));
+    } else if (dRange === 'next_month') {
+      const nextM = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const nextMonthPrefix = nextM.toISOString().substring(0, 7);
+      allEvents = allEvents.filter(e => (e.start_date || '').startsWith(nextMonthPrefix));
+    }
+  }
+  if (date_from) {
+    allEvents = allEvents.filter(e => (e.start_date || '') >= date_from);
+  }
+  if (date_to) {
+    allEvents = allEvents.filter(e => (e.start_date || '') <= date_to);
+  }
+
+  // Ticket status filter
+  const targetTicketStatus = (ticket_status || status || '').toUpperCase().trim();
+  if (targetTicketStatus && targetTicketStatus !== 'ALL') {
+    if (targetTicketStatus === 'SOLD_OUT') {
+      allEvents = allEvents.filter(e => e.primary_ticket_status === 'SOLD_OUT' || e.official_ticket_availability === 'SOLD_OUT' || e.status === 'SOLD_OUT');
+    } else if (targetTicketStatus === 'ON_SALE') {
+      allEvents = allEvents.filter(e => (e.primary_ticket_status === 'ON_SALE' || e.official_ticket_availability === 'ON_SALE' || (e.official_ticket_url && e.status !== 'SOLD_OUT' && e.primary_ticket_status !== 'SOLD_OUT')));
+    } else if (targetTicketStatus === 'PRESALE') {
+      allEvents = allEvents.filter(e => e.primary_ticket_status === 'PRESALE' || (e.price_tiers && e.price_tiers.some(t => /presale/i.test(t.name))));
+    }
+  }
+
   if (!showAllOrPast) {
     allEvents = allEvents.filter(e => {
       const evStatus = (e.status || '').toUpperCase();
@@ -480,10 +554,11 @@ router.get('/events', (req, res) => {
         ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(e.verification_status);
       const hasProvenance = Boolean(e.source_url && e.evidence_hash && e.verified_at);
       if (!isVerified || !hasProvenance) return false;
-      if (status && status.trim()) {
-        const qStatus = status.toUpperCase();
-        if (qStatus !== 'UPCOMING' && qStatus !== 'ON_SALE' && evStatus !== qStatus && evLifecycle !== qStatus) return false;
-      }
+
+      // STRICT RP 500.000 PRICE FILTER: Events with lowest price < 500k are EXCLUDED from public catalog
+      if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(e)) return false;
+      if (e.price_status === 'PENDING_VERIFICATION') return false;
+
       return true;
     });
     allEvents = deduplicateAndEnrichPublicEvents(allEvents);
@@ -514,34 +589,44 @@ router.get('/events', (req, res) => {
     const altText = `${e.canonical_name} — ${e.venue_name}, ${e.city}`.replace(/"/g, '&quot;');
     const officialUrl = e.official_ticket_url || e.official_event_url || e.source_url || null;
 
+    // Status pill evaluation
+    const isSoldOut = e.primary_ticket_status === 'SOLD_OUT' || e.official_ticket_availability === 'SOLD_OUT' || e.status === 'SOLD_OUT';
+    const isPresale = !isSoldOut && (e.primary_ticket_status === 'PRESALE' || (Array.isArray(e.price_tiers) && e.price_tiers.some(t => /presale/i.test(t.name))));
+    const statusBadge = isSoldOut
+      ? `<span class="badge" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4); font-size:11px; padding:3px 8px; font-weight:700;"><i class="fa-solid fa-fire"></i> SOLD OUT</span>`
+      : (isPresale
+        ? `<span class="badge" style="background:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); font-size:11px; padding:3px 8px; font-weight:700;"><i class="fa-solid fa-bolt"></i> PRESALE</span>`
+        : `<span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); font-size:11px; padding:3px 8px; font-weight:700;"><i class="fa-solid fa-circle-check"></i> ON SALE</span>`);
+
     return `
-      <div class="event-card-item" data-event-id="${e.event_id}" data-image-status="${e.image_status || (hasVerifiedImg ? 'VERIFIED_AUTHORIZED_SELLER' : 'SOURCE_LINK_ONLY')}" style="background:#131d31; border:1px solid #1e293b; border-radius:10px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
+      <div class="event-card-item" data-event-id="${e.event_id}" data-ticket-status="${isSoldOut ? 'SOLD_OUT' : (isPresale ? 'PRESALE' : 'ON_SALE')}" style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
         <div>
-          <div class="catalog-card-media" style="position:relative; height:168px; margin:-20px -20px 14px -20px; border-bottom:1px solid #1e293b; overflow:hidden; background:#0b1120;">
+          <div class="catalog-card-media" style="position:relative; aspect-ratio:16/9; max-height:190px; margin:-20px -20px 14px -20px; border-bottom:1px solid #1e293b; overflow:hidden; background:#0b1120;">
             ${hasVerifiedImg ? `
-              <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
-            ` : ''}
-            <div class="catalog-card-fallback" style="display:${hasVerifiedImg ? 'none' : 'flex'}; width:100%; height:100%; align-items:center; justify-content:center; flex-direction:column; gap:6px; background:linear-gradient(145deg,#131d31,#0b1120); color:#94a3b8; font-size:12px; padding:12px; text-align:center;">
-              <i class="fa-solid fa-ticket" style="font-size:20px; color:#38bdf8;"></i>
-              <span style="font-weight:600; color:#cbd5e1;">Poster Resmi Belum Tersedia</span>
-              <span style="font-size:11px; color:#64748b;">Terverifikasi via Sumber Resmi</span>
+              <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='/api/discovery/events/${e.event_id || e.id}/poster.svg';" />
+            ` : `
+              <img src="/api/discovery/events/${e.event_id || e.id}/poster.svg" alt="${altText} — Tikum Verified Fallback" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" />
+            `}
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
+            <div style="display:flex; gap:6px; align-items:center;">
+              <span class="badge badge-sm" style="background:#1e293b; color:#94a3b8; border:1px solid #334155;">${e.event_type || e.category}</span>
+              <span style="font-size:12px; color:#38bdf8;"><i class="fa-solid fa-location-dot"></i> ${e.city}</span>
             </div>
+            ${statusBadge}
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-            <span class="badge badge-sm">${e.event_type || e.category}</span>
-            <span style="font-size:12px; color:#38bdf8;"><i class="fa-solid fa-location-dot"></i> ${e.city}</span>
-          </div>
-          <h3 style="font-size:18px; margin:6px 0; color:#f8fafc;"><a href="/events/${e.slug}" style="color:inherit; text-decoration:none;">${e.canonical_name}</a></h3>
-          <div style="font-size:13px; color:#94a3b8; margin-bottom:12px;">
-            <div><i class="fa-solid fa-calendar-day"></i> ${e.start_date || e.date}</div>
-            <div><i class="fa-solid fa-building"></i> ${e.venue_name}</div>
+          <h3 style="font-size:17px; font-weight:700; margin:6px 0 10px 0; color:#f8fafc; line-height:1.3;"><a href="/events/${e.slug}" style="color:inherit; text-decoration:none;">${e.canonical_name}</a></h3>
+          <div style="font-size:13px; color:#94a3b8; margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
+            <div><i class="fa-solid fa-calendar-day" style="color:#64748b; width:16px;"></i> ${e.start_date || e.date}</div>
+            <div><i class="fa-solid fa-building" style="color:#64748b; width:16px;"></i> ${e.venue_name}</div>
+            <div style="color:#cbd5e1; font-weight:600;"><i class="fa-solid fa-tag" style="color:#38bdf8; width:16px;"></i> Resmi mulai Rp ${Number(e.min_price || 500000).toLocaleString('id-ID')}</div>
           </div>
         </div>
         <div style="border-top:1px solid #1e293b; padding-top:14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
           <div>
             ${activeListings.length > 0 ? 
-              `<span style="color:#10b981; font-weight:700; font-size:13px;"><i class="fa-solid fa-ticket"></i> ${activeListings.length} Tiket Resale (Rp ${minPrice.toLocaleString('id-ID')})</span>` : 
-              `<span style="color:#64748b; font-size:12px;">Tiket Resmi Tersedia${e.min_price ? ` · Mulai Rp ${Number(e.min_price).toLocaleString('id-ID')}` : ''}</span>`}
+              `<span style="color:#10b981; font-weight:700; font-size:12px;"><i class="fa-solid fa-ticket"></i> ${activeListings.length} Tiket Resale (Rp ${minPrice.toLocaleString('id-ID')})</span>` : 
+              `<span style="color:#64748b; font-size:12px;"><i class="fa-solid fa-ticket"></i> Belum ada tiket resale</span>`}
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
             ${officialUrl ? `<a href="${officialUrl}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-sm btn-secondary" style="font-size:11px; padding:5px 8px;">Sumber Resmi</a>` : ''}
@@ -613,24 +698,43 @@ router.get('/events', (req, res) => {
       <a href="/events/archive" class="btn btn-secondary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-box-archive"></i> Arsip Event Selesai</a>
     </div>
 
-    <!-- Search Form -->
-    <form method="GET" action="/events" style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:16px; margin-bottom:30px; display:flex; gap:12px; flex-wrap:wrap;">
+    <!-- Search & Filter Form -->
+    <form method="GET" action="/events" style="background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:18px; margin-bottom:30px; display:flex; gap:12px; flex-wrap:wrap;">
       <input type="text" name="q" value="${q || ''}" placeholder="Cari nama event, musisi, atau tempat..." data-i18n="discovery.searchPlaceholder" class="form-control" style="flex:2; min-width:200px;" />
-      <select name="city" class="form-control" style="flex:1; min-width:140px;">
+      <select name="city" class="form-control" style="flex:1; min-width:130px;">
         <option value="" data-i18n="discovery.allCities">Semua Kota</option>
         <option value="Jakarta" ${city === 'Jakarta' ? 'selected' : ''}>Jakarta</option>
+        <option value="Tangerang" ${city === 'Tangerang' ? 'selected' : ''}>Tangerang</option>
         <option value="Bandung" ${city === 'Bandung' ? 'selected' : ''}>Bandung</option>
         <option value="Surabaya" ${city === 'Surabaya' ? 'selected' : ''}>Surabaya</option>
-        <option value="Tangerang" ${city === 'Tangerang' ? 'selected' : ''}>Tangerang</option>
         <option value="Bali" ${city === 'Bali' ? 'selected' : ''}>Bali</option>
+        <option value="Yogyakarta" ${city === 'Yogyakarta' ? 'selected' : ''}>Yogyakarta</option>
       </select>
-      <select name="category" class="form-control" style="flex:1; min-width:140px;">
+      <select name="category" class="form-control" style="flex:1; min-width:130px;">
         <option value="" data-i18n="discovery.allCategories">Semua Kategori</option>
         <option value="CONCERT" ${category === 'CONCERT' ? 'selected' : ''}>Konser</option>
         <option value="FESTIVAL" ${category === 'FESTIVAL' ? 'selected' : ''}>Festival</option>
-        <option value="FOOTBALL" ${category === 'FOOTBALL' ? 'selected' : ''}>Sepak Bola</option>
-        <option value="BASKETBALL" ${category === 'BASKETBALL' ? 'selected' : ''}>Bola Basket</option>
         <option value="COMEDY" ${category === 'COMEDY' ? 'selected' : ''}>Stand-Up Comedy</option>
+        <option value="SPORTS" ${category === 'SPORTS' ? 'selected' : ''}>Olahraga</option>
+        <option value="THEATER" ${category === 'THEATER' ? 'selected' : ''}>Teater</option>
+      </select>
+      <select name="price_range" class="form-control" style="flex:1; min-width:150px;">
+        <option value="">Semua Harga (&gt;= Rp 500rb)</option>
+        <option value="500k-1m" ${price_range === '500k-1m' ? 'selected' : ''}>Rp 500rb - 1 Juta</option>
+        <option value="1m-2m" ${price_range === '1m-2m' ? 'selected' : ''}>Rp 1 Juta - 2 Juta</option>
+        <option value="2m_plus" ${price_range === '2m_plus' ? 'selected' : ''}>&gt; Rp 2 Juta</option>
+      </select>
+      <select name="ticket_status" class="form-control" style="flex:1; min-width:130px;">
+        <option value="">Semua Status Tiket</option>
+        <option value="ON_SALE" ${ticket_status === 'ON_SALE' ? 'selected' : ''}>Tersedia (On Sale)</option>
+        <option value="SOLD_OUT" ${ticket_status === 'SOLD_OUT' ? 'selected' : ''}>Habis (Sold Out)</option>
+        <option value="PRESALE" ${ticket_status === 'PRESALE' ? 'selected' : ''}>Presale</option>
+      </select>
+      <select name="date_range" class="form-control" style="flex:1; min-width:130px;">
+        <option value="">Semua Tanggal</option>
+        <option value="weekend" ${date_range === 'weekend' ? 'selected' : ''}>Akhir Pekan Ini</option>
+        <option value="this_month" ${date_range === 'this_month' ? 'selected' : ''}>Bulan Ini</option>
+        <option value="next_month" ${date_range === 'next_month' ? 'selected' : ''}>Bulan Depan</option>
       </select>
       <button type="submit" class="btn btn-cyan"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="discovery.filter">Filter</span></button>
     </form>
@@ -1009,6 +1113,13 @@ function handleGetEvents(req, res) {
         ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(e.verification_status);
       const hasProvenance = Boolean(e.source_url && e.evidence_hash && e.verified_at);
       if (!isVerified || !hasProvenance) return false;
+
+      // STRICT RP 500.000 PRICE FILTER: Events with lowest price < 500k are EXCLUDED unless explicitly requested
+      if (req.query.include_all_prices !== 'true') {
+        if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(e)) return false;
+        if (e.price_status === 'PENDING_VERIFICATION') return false;
+      }
+
       if (status && status.trim()) {
         const qStatus = status.toUpperCase();
         if (qStatus !== 'UPCOMING' && qStatus !== 'ON_SALE' && evStatus !== qStatus && evLifecycle !== qStatus) return false;
@@ -1200,6 +1311,7 @@ router.get('/api/events/home-feed', (req, res) => {
     if (e.archive_status === 'ARCHIVED' || e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
     if (EventTemporalLifecycleEngine.isEventArchived(e, now)) return false;
     if (e.homepage_visibility === false) return false;
+    if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(e)) return false;
 
     // Defense-in-depth: query-time H+2 check (now > event_end_at + 48h)
     const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(e);
@@ -1471,6 +1583,12 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
     if (isCancelled || !isVerified || !hasProvenance) {
       return res.status(404).json({ error: 'Event is unverified, cancelled, or unavailable for public discovery', code: 'EVENT_NOT_AVAILABLE' });
     }
+
+    // STRICT RP 500.000 PRICE INVARIANT: Events with lowest price < 500k cannot be accessed via public direct API
+    const isPriceDisqualified = event.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(event);
+    if (isPriceDisqualified) {
+      return res.status(404).json({ error: 'Event is not eligible for public discovery (minimum ticket price below Rp 500.000)', code: 'PRICE_DISQUALIFIED' });
+    }
   }
 
   // Corroborate with any duplicate canonical record in registry and resolve image provenance
@@ -1496,6 +1614,26 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
       waitlist_count: isPastOrConcluded ? 0 : demands.length
     }
   });
+});
+
+/**
+ * GET /api/discovery/events/:id/poster.svg
+ * Serves deterministic, branded 3:4 SVG fallback poster for an event.
+ */
+router.get('/api/discovery/events/:id/poster.svg', (req, res) => {
+  const param = req.params.id;
+  const event = canonicalRegistry.getEventById(param) ||
+    canonicalRegistry.getEventBySlug(param) ||
+    (state.events || []).find(e => e.id === param || e.slug === param || e.event_id === param);
+
+  if (!event) {
+    return res.status(404).type('text/plain').send('Event not found');
+  }
+
+  const svg = EventVisualProvenanceService.generateBrandedPosterSvg(event);
+  res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+  res.send(svg);
 });
 
 function e_hasProvenance(event) {
@@ -2229,6 +2367,95 @@ router.post('/api/discovery/admin/events/:id/expire', requireDiscoveryAdmin, (re
     const updated = AdminEventControlService.markExpired(req.params.id, officerId);
     canonicalRegistry.syncToState(state.events);
     res.json({ success: true, event: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * PATCH /api/discovery/admin/events/:id/price
+ * Officer manually updates price, tiers, and locks price fields
+ */
+router.patch('/api/discovery/admin/events/:id/price', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const officerId = req.adminUser.id;
+    const updated = AdminEventControlService.updatePrice(req.params.id, officerId, req.body);
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, event: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * PATCH /api/discovery/admin/events/:id/details
+ * Officer manually updates dates, venue, and city with admin lock
+ */
+router.patch('/api/discovery/admin/events/:id/details', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const officerId = req.adminUser.id;
+    const updated = AdminEventControlService.updateDetails(req.params.id, officerId, req.body);
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, event: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * PATCH /api/discovery/admin/events/:id/poster
+ * Officer replaces poster image, attribution, and verification status with admin lock
+ */
+router.patch('/api/discovery/admin/events/:id/poster', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const officerId = req.adminUser.id;
+    const updated = AdminEventControlService.updatePoster(req.params.id, officerId, req.body);
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, event: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/admin/events/:id/lock-fields
+ * Toggles crawler lock masks on specific event fields
+ */
+router.post('/api/discovery/admin/events/:id/lock-fields', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const officerId = req.adminUser.id;
+    const updated = AdminEventControlService.toggleFieldLock(req.params.id, officerId, req.body);
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, event: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/discovery/admin/events/:id/force-verify
+ * Forces re-crawl and verification of a specific event
+ */
+router.post('/api/discovery/admin/events/:id/force-verify', requireDiscoveryAdmin, (req, res) => {
+  try {
+    const officerId = req.adminUser.id;
+    const updated = AdminEventControlService.forceReverify(req.params.id, officerId);
+    canonicalRegistry.syncToState(state.events);
+    res.json({ success: true, event: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/discovery/admin/events/:id/history
+ * Full audit history of field-level changes
+ */
+router.get('/api/discovery/admin/events/:id/history', requireDiscoveryAdmin, async (req, res) => {
+  try {
+    const repo = getCatalogRepository();
+    const history = await repo.getEventChangeHistory(req.params.id);
+    res.json({ success: true, event_id: req.params.id, total_changes: history.length, history });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

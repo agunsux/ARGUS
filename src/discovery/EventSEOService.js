@@ -599,27 +599,17 @@ class EventSEOService {
         const officialSrcUrl = event.image_source_url || event.official_event_url || event.official_ticket_url || event.source_url || null;
         const posterAttrText = event.image_attribution || (event.image_credit ? `Sumber: ${event.image_credit}` : (event.official_ticketing_provider ? `Sumber: ${event.official_ticketing_provider}` : 'Sumber resmi penyelenggara'));
         const hasVerifiedPoster = Boolean(event.image_url && event.is_fallback_image !== true && event.image_status !== 'FALLBACK' && event.image_status !== 'BROKEN');
-        const fallbackBannerHtml = `
-          <div class="event-poster-fallback" style="display:${hasVerifiedPoster ? 'none' : 'flex'}; flex-direction:column; align-items:center; justify-content:center; min-height:180px; padding:24px; background:linear-gradient(145deg,#131d31,#0b1120); text-align:center; gap:8px;">
-            <div style="width:42px; height:42px; border-radius:50%; background:rgba(56,189,248,0.12); display:flex; align-items:center; justify-content:center; color:#38bdf8; font-size:18px;">
-              <i class="fa-solid fa-ticket"></i>
-            </div>
-            <div style="font-size:14px; font-weight:700; color:#e2e8f0;">Poster Resmi Belum Tersedia dari Sumber</div>
-            <div style="font-size:12px; color:#94a3b8; max-width:520px;">
-              Event ini telah terverifikasi di katalog TIKUM (${event.image_status || 'SOURCE_LINK_ONLY'}). Silakan kunjungi halaman resmi penyelenggara atau platform tiket terkait untuk informasi visual terbaru.
-            </div>
-            ${officialSrcUrl ? `<a href="${officialSrcUrl}" target="_blank" rel="noopener noreferrer nofollow" style="margin-top:4px; font-size:12px; color:#38bdf8; font-weight:600; text-decoration:underline;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat di Sumber Resmi</a>` : ''}
-          </div>
-        `;
+        const fallbackPosterSrc = `/api/discovery/events/${event.event_id || event.id}/poster.svg`;
         return `
-          <figure class="event-poster" data-image-status="${event.image_status || (hasVerifiedPoster ? 'VERIFIED_AUTHORIZED_SELLER' : 'SOURCE_LINK_ONLY')}">
+          <figure class="event-poster" data-image-status="${event.image_status || (hasVerifiedPoster ? 'VERIFIED_AUTHORIZED_SELLER' : 'FALLBACK_VERIFIED')}">
             ${hasVerifiedPoster ? `
               <img src="${event.image_url}" alt="${posterAlt}" loading="lazy" decoding="async"
-                   onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
-            ` : ''}
-            ${fallbackBannerHtml}
+                   onerror="this.onerror=null; this.src='${fallbackPosterSrc}';">
+            ` : `
+              <img src="${fallbackPosterSrc}" alt="${posterAlt} — Tikum Verified Fallback" loading="lazy" decoding="async" style="width:100%; max-width:480px; aspect-ratio:3/4; object-fit:contain; border-radius:8px; display:block; margin:0 auto;">
+            `}
             <figcaption>
-              ${hasVerifiedPoster ? `Poster resmi · ${posterAttrText}` : `Status visual: ${event.image_status || 'SOURCE_LINK_ONLY'} · ${posterAttrText}`}
+              ${hasVerifiedPoster ? `Poster resmi · ${posterAttrText}` : `Status visual: POSTER_FALLBACK_TIKUM · Poster pengganti terverifikasi TIKUM (3:4 ratio) · ${posterAttrText}`}
               ${officialSrcUrl ? ` · <a href="${officialSrcUrl}" target="_blank" rel="noopener noreferrer nofollow">sumber resmi</a>` : ''}
             </figcaption>
           </figure>

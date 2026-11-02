@@ -18,6 +18,7 @@ const { Pool } = require('pg');
 const { CatalogRepository } = require('./CatalogRepository');
 const { InMemoryCatalogRepository } = require('./InMemoryCatalogRepository');
 const { EventVisualProvenanceService } = require('../EventVisualProvenanceService');
+const { CuratedCatalogPolicy, OFFICIAL_MIN_TICKET_PRICE } = require('../CuratedCatalogPolicy');
 
 const CANONICAL_EVENT_SELECT_FIELDS = `
   id, slug, canonical_name, event_type, category,
@@ -27,6 +28,9 @@ const CANONICAL_EVENT_SELECT_FIELDS = `
   min_price, max_price, is_verified, verification_status,
   lifecycle_status, archive_status, archived_at,
   public_visibility, homepage_visibility,
+  price_verified_at, price_status, confidence_score,
+  poster_url, poster_thumbnail_url, poster_source_url, poster_attribution, poster_verification_status,
+  admin_lock_mask, lowest_official_price,
   (metadata - 'observations') AS metadata,
   created_at, updated_at
 `.replace(/\s+/g, ' ').trim();
@@ -810,6 +814,15 @@ class PostgresCatalogRepository extends CatalogRepository {
 
     const resolvedImgUrl = resolvedImageProvenance.image_url;
 
+    const isPriceQual = CuratedCatalogPolicy.isPriceQualified({
+      price_tiers: Array.isArray(meta.price_tiers) ? meta.price_tiers : [],
+      min_price: row.min_price ? parseFloat(row.min_price) : null,
+      max_price: row.max_price ? parseFloat(row.max_price) : null,
+      lowest_official_price: row.lowest_official_price ? parseFloat(row.lowest_official_price) : null,
+      title: row.canonical_name,
+      category: row.category
+    });
+
     return {
       id: row.id,
       event_id: row.id,
@@ -844,16 +857,25 @@ class PostgresCatalogRepository extends CatalogRepository {
       lifecycle_status: row.lifecycle_status,
       archive_status: row.archive_status,
       archived_at: row.archived_at ? (row.archived_at instanceof Date ? row.archived_at.toISOString() : row.archived_at) : null,
-      public_visibility: row.public_visibility === true,
-      homepage_visibility: row.homepage_visibility === true || (isVerifiedBool && row.public_visibility === true && row.archive_status !== 'ARCHIVED' && row.lifecycle_status !== 'ARCHIVED'),
+      public_visibility: row.public_visibility === true && isPriceQual,
+      homepage_visibility: (row.homepage_visibility === true || (isVerifiedBool && row.public_visibility === true && row.archive_status !== 'ARCHIVED' && row.lifecycle_status !== 'ARCHIVED')) && isPriceQual,
       // Source & Verification Provenance attributes
       source_url: resolvedSourceUrl,
       source_id: resolvedSourceId,
       evidence_hash: meta.evidence_hash || meta.image_evidence_hash || (row.canonical_name ? crypto.createHash('sha256').update(String(row.canonical_name) + String(startDateStr || '')).digest('hex') : null),
       verified_at: resolvedVerifiedAt,
       last_verified_at: meta.last_verified_at || resolvedVerifiedAt,
-      meets_price_threshold: (row.max_price || row.min_price || 0) >= 500000 || meta.price_status === 'PRICE_PARTIAL',
-      price_status: meta.price_status || meta.pricing_status || ((row.max_price || row.min_price || 0) >= 500000 ? 'HIGH_VALUE_QUALIFIED' : 'STANDARD_VALUE'),
+      lowest_official_price: row.lowest_official_price ? parseFloat(row.lowest_official_price) : (row.min_price ? parseFloat(row.min_price) : null),
+      meets_price_threshold: isPriceQual,
+      price_status: (row.price_status && row.price_status !== 'UNKNOWN') ? row.price_status : (meta.price_status && meta.price_status !== 'UNKNOWN' ? meta.price_status : CuratedCatalogPolicy.evaluateOfficialPriceQualification({
+        price_tiers: Array.isArray(meta.price_tiers) ? meta.price_tiers : [],
+        min_price: row.min_price ? parseFloat(row.min_price) : null,
+        max_price: row.max_price ? parseFloat(row.max_price) : null,
+        lowest_official_price: row.lowest_official_price ? parseFloat(row.lowest_official_price) : null,
+        title: row.canonical_name,
+        category: row.category
+      }).status),
+      admin_lock_mask: Array.isArray(row.admin_lock_mask) ? row.admin_lock_mask : (Array.isArray(meta.admin_lock_mask) ? meta.admin_lock_mask : []),
       // S1 & S2 Tier, Seating & Map Standards (W5 Honesty: never fabricate fake tiers or guess seating types)
       price_tiers: Array.isArray(meta.price_tiers) && meta.price_tiers.length > 0 ? meta.price_tiers : [],
       tier_data_status: Array.isArray(meta.price_tiers) && meta.price_tiers.length > 0
@@ -901,6 +923,38 @@ class PostgresCatalogRepository extends CatalogRepository {
       created_at: row.created_at instanceof Date ? row.created_at.toISOString() : (row.created_at || null),
       updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : (row.updated_at || null)
     };
+  }
+
+  async recordEventChange(changeData) {
+    if (this.degraded || !this.pool) {
+      return this.fallbackRepo.recordEventChange(changeData);
+    }
+    const id = changeData.id || `chg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    try {
+      await this.query(
+        `INSERT INTO event_change_history (id, event_id, field_name, old_value, new_value, changed_by, change_source, reason, timestamp)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [id, changeData.event_id, changeData.field_name, changeData.old_value || null, changeData.new_value || null, changeData.changed_by || 'SYSTEM', changeData.change_source || 'CRAWLER', changeData.reason || null, changeData.timestamp || new Date().toISOString()]
+      );
+      return { id, ...changeData };
+    } catch (_) {
+      return this.fallbackRepo.recordEventChange(changeData);
+    }
+  }
+
+  async getEventChangeHistory(eventId) {
+    if (this.degraded || !this.pool) {
+      return this.fallbackRepo.getEventChangeHistory(eventId);
+    }
+    try {
+      const q = eventId
+        ? `SELECT * FROM event_change_history WHERE event_id = $1 ORDER BY timestamp DESC`
+        : `SELECT * FROM event_change_history ORDER BY timestamp DESC LIMIT 200`;
+      const res = await this.query(q, eventId ? [eventId] : []);
+      return res.rows || [];
+    } catch (_) {
+      return this.fallbackRepo.getEventChangeHistory(eventId);
+    }
   }
 
   isDegraded() {

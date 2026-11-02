@@ -118,9 +118,10 @@ function calculateFeeBreakdown(ticketPrice, quantity = 1, paymentProcessingFee =
  * @param {number|string} params.price - Ticket asking price
  * @param {number|string} [params.faceValue] - Ticket original face value (if provided)
  * @param {Object} [params.event] - Event object (to look up event face_value/min_price)
- * @returns {{ valid: boolean, error?: string, code?: string, needsManualReview: boolean, resolvedFaceValue?: number|null, maxAllowedPrice?: number }}
+ * @param {number} [params.configuredMarkupPct] - Explicitly configured markup cap (e.g. 20, 25, 30)
+ * @returns {{ valid: boolean, error?: string, code?: string, needsManualReview: boolean, resolvedFaceValue?: number|null, maxAllowedPrice?: number, effectiveMarkupPct?: number }}
  */
-function validateListingPrice({ price, faceValue, event }) {
+function validateListingPrice({ price, faceValue, event, configuredMarkupPct = null }) {
   const numericPrice = typeof price === 'number' ? price : parseInt(price, 10);
   if (isNaN(numericPrice) || numericPrice <= 0) {
     return {
@@ -159,24 +160,37 @@ function validateListingPrice({ price, faceValue, event }) {
     }
   }
 
-  // 3. Markup cap validation: if face value exists, price cannot exceed 130% of face value
+  // 3. Markup cap validation: if face value exists, price cannot exceed (1 + markupPct / 100)
   if (resolvedFaceValue && resolvedFaceValue > 0) {
-    const maxAllowedPrice = Math.floor(resolvedFaceValue * (1 + PRICING_CONFIG.MAX_MARKUP_PCT / 100));
+    let markupPct = PRICING_CONFIG.MAX_MARKUP_PCT;
+    if (configuredMarkupPct !== null && configuredMarkupPct !== undefined) {
+      markupPct = Math.min(Math.max(configuredMarkupPct, 0), PRICING_CONFIG.MAX_MARKUP_PCT);
+    } else if (event?.max_markup_pct || event?.metadata?.max_markup_pct) {
+      const eventMarkup = parseInt(event.max_markup_pct || event.metadata.max_markup_pct, 10);
+      if (!isNaN(eventMarkup) && eventMarkup > 0) {
+        // Anti-scalping security invariant: Event metadata may tighten the markup cap (e.g. to 20%),
+        // but can NEVER silently expand past the global platform maximum ceiling (30%).
+        markupPct = Math.min(eventMarkup, PRICING_CONFIG.MAX_MARKUP_PCT);
+      }
+    }
+    const maxAllowedPrice = Math.floor(resolvedFaceValue * (1 + markupPct / 100));
     if (numericPrice > maxAllowedPrice) {
       return {
         valid: false,
-        error: `Harga tiket melebihi batas markup maksimum ${PRICING_CONFIG.MAX_MARKUP_PCT}% dari harga resmi promotor (maksimal Rp ${maxAllowedPrice.toLocaleString('id-ID')}).`,
+        error: `Harga tiket melebihi batas markup maksimum ${markupPct}% dari harga resmi promotor (maksimal Rp ${maxAllowedPrice.toLocaleString('id-ID')}).`,
         code: 'PRICE_EXCEEDS_MARKUP_CAP',
         needsManualReview: false,
         resolvedFaceValue,
-        maxAllowedPrice
+        maxAllowedPrice,
+        effectiveMarkupPct: markupPct
       };
     }
     return {
       valid: true,
       needsManualReview: false,
       resolvedFaceValue,
-      maxAllowedPrice
+      maxAllowedPrice,
+      effectiveMarkupPct: markupPct
     };
   }
 

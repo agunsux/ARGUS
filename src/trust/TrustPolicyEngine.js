@@ -364,8 +364,48 @@ class TrustPolicyEngine {
       type => policy.requirements[type] === REQUIREMENT_LEVEL.REQUIRED
     );
 
+    // Evaluate Buyer Attestation vs Legitimate Settlement Exceptions
+    const dispute = state.disputes ? state.disputes.find(d => d.order_id === orderId) : null;
+    const isDisputeResolvedForSeller = dispute && (dispute.status === 'RESOLVED' || dispute.status === 'CLOSED_FINAL') &&
+      (dispute.outcome === 'RELEASE_SELLER' || dispute.canonical_outcome === 'SELLER_FAVORED' || dispute.outcome === 'SELLER_FAVORED');
+
+    // 24-Hour Post-Event Cooling Period Settlement Policy:
+    // Only evaluated if:
+    // 1. Event completed (>24h past event date, or event status COMPLETED/CONCLUDED)
+    // 2. Zero open disputes
+    // 3. Zero unresolved fraud, device, or velocity anomalies
+    // 4. Ticket verification confirmed (by PIC admission or ticket verification evidence)
+    const event = state.events ? state.events.find(e => e.id === order?.event_id || e.id === order?.canonical_event_id) : null;
+    const eventDate = event && event.date ? new Date(event.date) : null;
+    const currentDate = new Date();
+    const isEventEnded24h = Boolean(
+      (event && (event.status === 'COMPLETED' || event.lifecycle_stage === 'CONCLUDED')) ||
+      (eventDate && !isNaN(eventDate.getTime()) && (currentDate.getTime() - eventDate.getTime()) >= 24 * 3600 * 1000)
+    );
+    const hasOpenDispute = Boolean(dispute && ['OPEN', 'INVESTIGATING', 'ACTION_NEEDED', 'APPEALED'].includes(dispute.status));
+    const hasFraudOrAnomaly = Boolean(options.anomalyDetected || (order && (order.anomaly_detected || order.admin_hold)));
+    const hasEntryProof = Boolean(
+      (state.entry_verifications || []).some(ev => ev.order_id === orderId && ev.status === 'CONFIRMED') ||
+      order?.status === 'ENTRY_CONFIRMED' ||
+      order?.buyer_entry_confirmed ||
+      (receivedMap.get(ATTESTATION_TYPE.PIC_ATTESTATION)?.result === 'PASS') ||
+      (receivedMap.get(ATTESTATION_TYPE.TICKET_EVIDENCE_ATTESTATION)?.result === 'PASS')
+    );
+
+    const isCoolingPeriodSettlementEligible = isEventEnded24h && !hasOpenDispute && !hasFraudOrAnomaly && hasEntryProof;
+
     const missingAttestations = [];
     for (const reqType of requiredTypes) {
+      if (reqType === ATTESTATION_TYPE.BUYER_ATTESTATION) {
+        if (isDisputeResolvedForSeller) {
+          // Formally adjudicated dispute in seller's favor with verified evidence supersedes missing buyer confirmation
+          continue;
+        }
+        if (isCoolingPeriodSettlementEligible) {
+          // 24-hour post-event cooling period expired with verified entry, zero disputes, and zero fraud flags
+          continue;
+        }
+      }
       const att = receivedMap.get(reqType);
       if (!att) {
         missingAttestations.push(reqType);
@@ -472,6 +512,19 @@ class TrustPolicyEngine {
     });
 
     return authRecord;
+  }
+
+  /**
+   * Helper to evaluate release authorization returning convenient outcome flags
+   */
+  static async evaluateFinancialRelease(orderId, options = {}) {
+    const auth = await this.evaluateAuthorization(orderId, options);
+    return {
+      authorized: auth.financial_release_authorized,
+      outcome: auth.outcome,
+      reasons: auth.reasons,
+      record: auth
+    };
   }
 
   /**

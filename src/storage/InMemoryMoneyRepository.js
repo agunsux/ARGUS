@@ -21,6 +21,7 @@ class InMemoryMoneyRepository extends MoneyRepository {
     this.ledgerTransactions = new Map();
     this.ledgerEntries = [];
     this.idempotency = new Map();
+    this.authorizations = new Map();
   }
 
   async init() {
@@ -447,6 +448,182 @@ class InMemoryMoneyRepository extends MoneyRepository {
     const record = { key, scope, status: 'COMPLETED', response_payload: responsePayload, created_at: new Date().toISOString() };
     this.idempotency.set(key, record);
     return record;
+  }
+
+  // Financial Dual Authorization (Maker-Checker Gate)
+  async createFinancialAuthorization(authData) {
+    const id = authData.authorization_id || authData.id || `fauth-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    for (const a of this.authorizations.values()) {
+      if (a.order_id === authData.order_id && a.action_type === authData.action_type && a.status === 'PENDING_APPROVAL') {
+        return { authorization: a, idempotent: true };
+      }
+    }
+    const authorization = {
+      id,
+      authorization_id: id,
+      order_id: authData.order_id,
+      action_type: authData.action_type,
+      maker_id: authData.maker_id,
+      checker_id: null,
+      status: 'PENDING_APPROVAL',
+      amount: parseInt(authData.amount || 0, 10),
+      currency: authData.currency || 'IDR',
+      payout_destination: authData.payout_destination || authData.bankAccount || null,
+      reason: authData.reason,
+      approval_notes: null,
+      rejection_reason: null,
+      metadata: authData.metadata || {},
+      created_at: new Date().toISOString(),
+      approved_at: null,
+      rejected_at: null,
+      consumed_at: null,
+      consumed_by_settlement_id: null
+    };
+    this.authorizations.set(id, authorization);
+    return { authorization, idempotent: false };
+  }
+
+  async getFinancialAuthorizationById(id) {
+    for (const a of this.authorizations.values()) {
+      if (a.id === id || a.authorization_id === id) return a;
+    }
+    return null;
+  }
+
+  async getPendingFinancialAuthorization(orderId, actionType) {
+    for (const a of this.authorizations.values()) {
+      if (a.order_id === orderId && a.action_type === actionType && a.status === 'PENDING_APPROVAL') {
+        return a;
+      }
+    }
+    return null;
+  }
+
+  async approveFinancialAuthorization(authorizationId, checkerId, notes = null) {
+    const auth = await this.getFinancialAuthorizationById(authorizationId);
+    if (!auth) {
+      const err = new Error(`Financial authorization '${authorizationId}' not found`);
+      err.code = 'AUTHORIZATION_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
+    if (auth.status !== 'PENDING_APPROVAL') {
+      const err = new Error(`Cannot approve: authorization request is already ${auth.status}`);
+      err.code = 'AUTHORIZATION_NOT_PENDING';
+      err.status = 400;
+      throw err;
+    }
+    if (auth.maker_id === checkerId) {
+      const err = new Error('Maker-Checker violation: Initiator (Maker) cannot approve their own financial authorization request');
+      err.code = 'MAKER_CHECKER_VIOLATION';
+      err.status = 403;
+      throw err;
+    }
+    auth.status = 'APPROVED';
+    auth.checker_id = checkerId;
+    auth.approval_notes = notes;
+    auth.approved_at = new Date().toISOString();
+    return { success: true, authorization: auth };
+  }
+
+  async rejectFinancialAuthorization(authorizationId, checkerId, rejectionReason) {
+    const auth = await this.getFinancialAuthorizationById(authorizationId);
+    if (!auth) {
+      const err = new Error(`Financial authorization '${authorizationId}' not found`);
+      err.code = 'AUTHORIZATION_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
+    if (auth.status !== 'PENDING_APPROVAL') {
+      const err = new Error(`Cannot reject: authorization request is already ${auth.status}`);
+      err.code = 'AUTHORIZATION_NOT_PENDING';
+      err.status = 400;
+      throw err;
+    }
+    auth.status = 'REJECTED';
+    auth.checker_id = checkerId;
+    auth.rejection_reason = rejectionReason;
+    auth.rejected_at = new Date().toISOString();
+    return { success: true, authorization: auth };
+  }
+
+  async consumeFinancialAuthorization(authorizationId, settlementId) {
+    const auth = await this.getFinancialAuthorizationById(authorizationId);
+    if (!auth) {
+      const err = new Error(`Financial authorization '${authorizationId}' not found`);
+      err.code = 'AUTHORIZATION_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
+    if (auth.status !== 'APPROVED') {
+      const err = new Error(`Cannot consume authorization: status is ${auth.status}`);
+      err.code = 'AUTHORIZATION_NOT_APPROVED';
+      err.status = 400;
+      throw err;
+    }
+    auth.status = 'CONSUMED';
+    auth.consumed_at = new Date().toISOString();
+    auth.consumed_by_settlement_id = settlementId;
+    return { success: true, authorization: auth };
+  }
+
+  async listFinancialAuthorizations(filter = {}) {
+    let list = Array.from(this.authorizations.values());
+    if (filter.status) list = list.filter(a => a.status === filter.status);
+    if (filter.orderId) list = list.filter(a => a.order_id === filter.orderId);
+    if (filter.actionType) list = list.filter(a => a.action_type === filter.actionType);
+    return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
+
+  async confirmSettlementDisbursement({
+    settlementId,
+    orderId,
+    officerId,
+    bankReferenceNumber,
+    proofDocumentUrl = null,
+    bankAccount = null
+  }) {
+    if (!bankReferenceNumber || typeof bankReferenceNumber !== 'string' || bankReferenceNumber.trim().length < 5) {
+      const err = new Error('Authentic bank transaction reference number is required (min 5 characters)');
+      err.code = 'INVALID_BANK_REFERENCE';
+      err.status = 400;
+      throw err;
+    }
+    const cleanRef = bankReferenceNumber.trim();
+
+    for (const s of this.settlements.values()) {
+      if (s.id !== settlementId && s.bank_reference_number === cleanRef) {
+        if (!bankAccount || s.bank_account === bankAccount) {
+          const err = new Error(`Duplicate bank reference number '${cleanRef}' has already been used for settlement '${s.id}'`);
+          err.code = 'DUPLICATE_BANK_REFERENCE';
+          err.status = 400;
+          throw err;
+        }
+      }
+    }
+
+    let settlement = null;
+    for (const s of this.settlements.values()) {
+      if (s.id === settlementId || (orderId && s.order_id === orderId)) {
+        settlement = s;
+        break;
+      }
+    }
+    if (!settlement) {
+      const err = new Error(`Settlement '${settlementId || orderId}' not found`);
+      err.code = 'SETTLEMENT_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
+
+    const now = new Date().toISOString();
+    settlement.status = 'DISBURSED';
+    settlement.disbursement_status = 'DISBURSED';
+    settlement.bank_reference_number = cleanRef;
+    settlement.proof_document_url = proofDocumentUrl;
+    settlement.disbursed_at = now;
+    settlement.confirmed_by_officer = officerId;
+    return { success: true, status: 'DISBURSED', settlement, bankReferenceNumber: cleanRef, confirmedAt: now };
   }
 }
 

@@ -69,6 +69,18 @@ class MoneyRepository {
   // Idempotency
   async checkIdempotency(key, scope) { throw new Error('Not implemented'); }
   async saveIdempotency(key, scope, responsePayload) { throw new Error('Not implemented'); }
+
+  // Financial Dual Authorization (Maker-Checker Gate)
+  async createFinancialAuthorization(authData) { throw new Error('Not implemented'); }
+  async getFinancialAuthorizationById(id) { throw new Error('Not implemented'); }
+  async getPendingFinancialAuthorization(orderId, actionType) { throw new Error('Not implemented'); }
+  async approveFinancialAuthorization(authorizationId, checkerId, notes) { throw new Error('Not implemented'); }
+  async rejectFinancialAuthorization(authorizationId, checkerId, rejectionReason) { throw new Error('Not implemented'); }
+  async consumeFinancialAuthorization(authorizationId, settlementId) { throw new Error('Not implemented'); }
+  async listFinancialAuthorizations(filter) { throw new Error('Not implemented'); }
+
+  // Verified Bank Disbursement
+  async confirmSettlementDisbursement(params) { throw new Error('Not implemented'); }
 }
 
 module.exports = { MoneyRepository };

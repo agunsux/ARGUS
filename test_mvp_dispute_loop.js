@@ -1,4 +1,5 @@
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 const assert = require('assert');
 const { state, resetDatabase } = require('./src/database');
 const { ListingService, LISTING_STATUS } = require('./src/services/listingService');
