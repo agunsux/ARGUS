@@ -15,8 +15,9 @@
 
 const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
 const { canonicalRegistry } = require('./CanonicalEventRegistry');
+const { CuratedCatalogPolicy, OFFICIAL_MIN_TICKET_PRICE } = require('./CuratedCatalogPolicy');
 
-const MIN_QUALIFYING_PRICE = 400000;
+const MIN_QUALIFYING_PRICE = OFFICIAL_MIN_TICKET_PRICE;
 
 class HeroSelectionService {
   /**
@@ -114,21 +115,10 @@ class HeroSelectionService {
       return { eligible: false, reason: 'UNVERIFIED', score: 0 };
     }
 
-    // 4. Ticket Price Eligibility (>= Rp 400,000)
-    const maxP = Math.max(
-      Number(event.max_price) || 0,
-      Number(event.min_price) || 0,
-      Number(event.price) || 0
-    );
-
-    // Also check price tiers if available
-    let hasEligibleTier = false;
-    if (Array.isArray(event.price_tiers) && event.price_tiers.length > 0) {
-      hasEligibleTier = event.price_tiers.some(t => Number(t.price || t.face_value || 0) >= MIN_QUALIFYING_PRICE);
-    }
-
-    if (maxP < MIN_QUALIFYING_PRICE && !hasEligibleTier) {
-      return { eligible: false, reason: 'PRICE_BELOW_MINIMUM_400K', score: 0 };
+    // 4. Strict Official Minimum Ticket Price Invariant (official_min_ticket_price >= 500.000)
+    const priceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(event, { minThreshold: MIN_QUALIFYING_PRICE });
+    if (!priceEval.qualified || event.price_status === 'EXCLUDED_PRICE_TOO_LOW') {
+      return { eligible: false, reason: 'PRICE_BELOW_MINIMUM_500K', score: 0 };
     }
 
     // 5. Official URL & Image Availability

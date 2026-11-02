@@ -16,6 +16,7 @@
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { EventNormalizationService } = require('../EventNormalizationService');
+const { CuratedCatalogPolicy, OFFICIAL_MIN_TICKET_PRICE } = require('../CuratedCatalogPolicy');
 
 const DISCOVERY_CATEGORIES = {
   CONCERT: 'CONCERT',
@@ -118,7 +119,10 @@ class DiscoveredEvent {
     this.price_source = data.price_source || this.source_id;
     this.price_checked_at = data.price_checked_at || new Date().toISOString();
     this.price_verified_at = data.price_verified_at || data.verified_at || this.price_checked_at;
-    this.price_status = data.price_status || this.evaluatePriceStatus();
+    const initialPriceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(this);
+    this.lowest_official_price = data.lowest_official_price !== undefined && data.lowest_official_price !== null ? Number(data.lowest_official_price) : initialPriceEval.lowest_official_price;
+    this.price_status = data.price_status || initialPriceEval.status;
+    this.meets_price_threshold = data.meets_price_threshold !== undefined ? Boolean(data.meets_price_threshold) : initialPriceEval.meets_threshold;
 
     // Admin locks & manual overrides (prevents crawler overwriting admin-edited fields)
     this.admin_lock_mask = Array.isArray(data.admin_lock_mask) ? data.admin_lock_mask : [];
@@ -201,61 +205,16 @@ class DiscoveredEvent {
     return DISCOVERY_CATEGORIES.OTHER;
   }
 
-  evaluatePriceStatus(minThreshold = 500000) {
-    // If prices are completely unannounced / unavailable -> PENDING_VERIFICATION
-    if (this.price_min === null && this.price_max === null && (!Array.isArray(this.price_tiers) || this.price_tiers.length === 0)) {
-      return PRICE_STATUS.PENDING_VERIFICATION;
-    }
-
-    // Check tiers if present
-    if (Array.isArray(this.price_tiers) && this.price_tiers.length > 0) {
-      const validTiers = this.price_tiers
-        .map(t => ({
-          name: t.name || '',
-          price: Number(t.price !== undefined && t.price !== null ? t.price : (t.face_value !== undefined && t.face_value !== null ? t.face_value : 0)),
-          is_single_day: /1-day|single|daily|1 day|harian/i.test(t.name || ''),
-          is_full_pass: /full|3-day|2-day|pass|terusan/i.test(t.name || '')
-        }))
-        .filter(t => t.price > 0);
-
-      if (validTiers.length > 0) {
-        // Multi-day festival exception:
-        // Evaluated by lowest official FULL EVENT or GA pass. If lowest GA pass >= 500k, it qualifies.
-        const isFestival = this.category === DISCOVERY_CATEGORIES.FESTIVAL || /festival|fest\b/i.test(this.canonical_name);
-        const fullPassTiers = validTiers.filter(t => t.is_full_pass);
-        const hasSingleAndFull = validTiers.some(t => t.is_single_day) && fullPassTiers.length > 0;
-
-        let lowestEvalPrice;
-        if (isFestival && hasSingleAndFull) {
-          lowestEvalPrice = Math.min(...fullPassTiers.map(t => t.price));
-        } else {
-          lowestEvalPrice = Math.min(...validTiers.map(t => t.price));
-        }
-
-        if (lowestEvalPrice >= minThreshold) {
-          return PRICE_STATUS.QUALIFIED;
-        } else {
-          return PRICE_STATUS.EXCLUDED_PRICE_TOO_LOW;
-        }
-      }
-    }
-
-    // Single / Min price check
-    const minP = this.price_min !== null ? this.price_min : 0;
-    if (minP <= 0 && (!this.price_max || this.price_max <= 0)) {
-      return PRICE_STATUS.PENDING_VERIFICATION;
-    }
-
-    if (minP >= minThreshold) {
-      return PRICE_STATUS.QUALIFIED;
-    }
-
-    return PRICE_STATUS.EXCLUDED_PRICE_TOO_LOW;
+  evaluatePriceStatus(minThreshold = OFFICIAL_MIN_TICKET_PRICE) {
+    const result = CuratedCatalogPolicy.evaluateOfficialPriceQualification(this, { minThreshold });
+    this.price_status = result.status;
+    this.lowest_official_price = result.lowest_official_price;
+    this.meets_price_threshold = result.meets_threshold;
+    return result.status;
   }
 
-  isQualified(minThreshold = 500000) {
-    const status = this.evaluatePriceStatus(minThreshold);
-    return status === PRICE_STATUS.QUALIFIED || status === PRICE_STATUS.HIGH_VALUE_QUALIFIED;
+  isQualified(minThreshold = OFFICIAL_MIN_TICKET_PRICE) {
+    return CuratedCatalogPolicy.isPriceQualified(this, minThreshold);
   }
 
   isHighValue(highValueThreshold = 500000) {

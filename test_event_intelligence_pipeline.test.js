@@ -185,6 +185,28 @@ async function runSuite() {
     assert.strictEqual(status, PRICE_STATUS.EXCLUDED_PRICE_TOO_LOW, 'Resale price must not bypass official face value gating');
   });
 
+  await test('1.9 Boundary test: Rp 499.999 evaluates to EXCLUDED_PRICE_TOO_LOW', async () => {
+    const boundarySub = new DiscoveredEvent({
+      id: 'boundary-sub-499999',
+      title: 'Boundary Sub-Threshold Event',
+      price_min: 499999,
+      price_max: 750000
+    });
+    const status = boundarySub.evaluatePriceStatus(500000);
+    assert.strictEqual(status, PRICE_STATUS.EXCLUDED_PRICE_TOO_LOW);
+  });
+
+  await test('1.10 Boundary test: Exactly Rp 500.000 evaluates to QUALIFIED', async () => {
+    const boundaryExact = new DiscoveredEvent({
+      id: 'boundary-exact-500000',
+      title: 'Boundary Exact Threshold Event',
+      price_min: 500000,
+      price_max: 500000
+    });
+    const status = boundaryExact.evaluatePriceStatus(500000);
+    assert.strictEqual(status, PRICE_STATUS.QUALIFIED);
+  });
+
   // ===========================================================================
   // SECTION 2: TEMPORAL DISCOVERY WINDOW & GEOGRAPHIC INVARIANTS
   // ===========================================================================
@@ -369,6 +391,45 @@ async function runSuite() {
     assert.strictEqual(String(history[0].new_value), '650000');
   });
 
+  await test('4.5 DailyCatalogRefreshService honors admin_lock_mask and invokes EventChangeTrackingService', async () => {
+    const { DailyCatalogRefreshService } = require('./src/discovery/DailyCatalogRefreshService');
+    const refreshService = new DailyCatalogRefreshService({ autoStart: false });
+    
+    // Existing event in registry with admin_lock_mask on venue_name
+    const lockedEventId = 'test-refresh-locked-' + Date.now();
+    canonicalRegistry.createEvent({
+      id: lockedEventId,
+      canonical_name: 'Locked Event Test',
+      venue_name: 'Original Admin Venue',
+      min_price: 600000,
+      admin_lock_mask: ['venue_name']
+    });
+
+    const existing = canonicalRegistry.getEventById(lockedEventId);
+    assert.ok(existing);
+    assert.ok(existing.admin_lock_mask.includes('venue_name'));
+
+    // Candidate trying to overwrite venue_name and min_price
+    const candidate = {
+      venue_name: 'Overwritten Crawler Venue',
+      min_price: 750000
+    };
+
+    const trackingResult = await EventChangeTrackingService.processCandidateUpdate(
+      existing,
+      candidate,
+      { source: 'crawler-test' }
+    );
+
+    assert.ok(trackingResult.canUpdate);
+    // venue_name must NOT change due to lock mask
+    assert.strictEqual(trackingResult.resolvedEvent.venue_name, 'Original Admin Venue');
+    // min_price was not locked so it updates in resolvedEvent
+    assert.strictEqual(trackingResult.resolvedEvent.min_price, 750000);
+    assert.ok(trackingResult.changes.some(c => c.field === 'min_price'), 'Change tracking must record min_price mutation');
+    assert.ok(!trackingResult.changes.some(c => c.field === 'venue_name'), 'Change tracking must NOT permit locked venue_name mutation');
+  });
+
   // ===========================================================================
   // SECTION 5: PUBLIC CATALOG & SSR FILTERING
   // ===========================================================================
@@ -424,6 +485,38 @@ async function runSuite() {
       assert.ok(html.includes('name="category"'), 'Category filter dropdown must be present');
       assert.ok(html.includes('name="price_range"'), 'Price range dropdown with >= 500k options must be present');
       assert.ok(html.includes('ON SALE') || html.includes('SOLD OUT') || html.includes('PRESALE'), 'Status badges must be rendered in HTML');
+    });
+
+    await test('5.4 Direct slug access /events/:slug returns 404 for price-disqualified events (Maddix & Nassar)', async () => {
+      // Maddix (< 500k)
+      const resMaddix = await fetch(`${baseUrl}/events/maddix-live-in-tangerang-2026`);
+      assert.strictEqual(resMaddix.status, 404, 'Maddix direct slug must return HTTP 404');
+
+      // Nassar (< 500k)
+      const resNassar = await fetch(`${baseUrl}/events/king-nassar-lost-in-the-jungle-jakarta-2026`);
+      assert.strictEqual(resNassar.status, 404, 'Nassar direct slug must return HTTP 404');
+
+      // Also verify direct API returns 404
+      const resApi = await fetch(`${baseUrl}/api/discovery/events/maddix-live-in-tangerang-2026`);
+      assert.strictEqual(resApi.status, 404, 'Maddix direct API must return HTTP 404');
+    });
+
+    await test('5.5 Direct slug access /events/morgan-jay-the-goofy-guy-tour-jakarta-2026 returns 200 OK and renders SOLD OUT badge', async () => {
+      const res = await fetch(`${baseUrl}/events/morgan-jay-the-goofy-guy-tour-jakarta-2026`);
+      assert.strictEqual(res.status, 200, 'Morgan Jay direct slug must return HTTP 200');
+      const html = await res.text();
+      assert.ok(html.includes('Morgan Jay'), 'Page must contain Morgan Jay');
+      assert.ok(/sold out/i.test(html) || /habis/i.test(html), 'Page must indicate SOLD OUT status');
+    });
+
+    await test('5.6 GET /api/discovery/events/:id/poster.svg returns 200 OK with Content-Type image/svg+xml and valid SVG markup', async () => {
+      const res = await fetch(`${baseUrl}/api/discovery/events/ev-can-fd86cf7d/poster.svg`);
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.headers.get('content-type'), 'image/svg+xml; charset=utf-8');
+      const svg = await res.text();
+      assert.ok(svg.includes('viewBox="0 0 600 800"'), 'Must have 3:4 viewBox');
+      assert.ok(svg.includes('TIKUM VERIFIED'), 'Must include TIKUM VERIFIED watermark');
+      assert.ok(svg.includes('Morgan Jay'), 'Must render event title in SVG');
     });
 
     // ===========================================================================

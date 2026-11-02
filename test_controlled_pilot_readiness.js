@@ -16,6 +16,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 const assert = require('assert');
 const crypto = require('crypto');
 const { state, resetDatabase, recordAuditLog } = require('./src/database');
@@ -143,13 +144,19 @@ async function runSuite() {
     const heroEvents = registry.getHeroEvents();
     assert.strictEqual(heroEvents.length, 2);
 
-    const nassar = heroEvents.find(e => e.id === 'event-nassar-lost-in-the-jungle-2026');
-    assert.ok(nassar);
-    assert.strictEqual(nassar.resale_inventory_count, 0);
+    const morganJay = heroEvents.find(e => e.id === 'ev-can-fd86cf7d');
+    assert.ok(morganJay, 'Morgan Jay must be active hero');
+    assert.strictEqual(morganJay.resale_inventory_count, 0);
 
     const secondHero = heroEvents.find(e => e.id === 'bts-world-tour-arirang-jakarta-2026' || e.id === 'kanye-west-ye-tour-jakarta-2026');
     assert.ok(secondHero);
     assert.strictEqual(secondHero.resale_inventory_count, 0);
+
+    // Nassar preserved in registry with includePast: true
+    const allHeroes = registry.getHeroEvents({ includePast: true });
+    const nassar = allHeroes.find(e => e.id === 'event-nassar-lost-in-the-jungle-2026');
+    assert.ok(nassar, 'Nassar preserved in historical registry');
+    assert.strictEqual(nassar.resale_inventory_count, 0);
   });
 
   test('1.4 Live payment gateways remain fail-closed disabled in environment', () => {
@@ -189,7 +196,7 @@ async function runSuite() {
     assert.strictEqual(pricing.ticketPrice, 1500000);
     assert.strictEqual(pricing.platformFee, 90000); // 6% fee
     assert.strictEqual(pricing.buyer_total, 1590000);
-    assert.strictEqual(pricing.seller_net_payout, 1410000); // 1.500.000 minus 6% (90.000) = 1.410.000 net payout
+    assert.strictEqual(pricing.seller_net_payout, 1402500); // 1.500.000 minus 6% platform fee (90.000) and withholding tax (7.500) = 1.402.500 net payout
   });
 
   await testAsync('2.2 Order created: order in PENDING_PAYMENT, escrow created, listing RESERVED', async () => {
@@ -244,12 +251,28 @@ async function runSuite() {
   });
 
   await testAsync('2.5 Settlement disbursement executed: payout logged, duplicate prevented', async () => {
+    const { FinancialAuthorizationService, AUTHORIZATION_ACTION } = require('./src/settlement/FinancialAuthorizationService');
+    const authResA = await FinancialAuthorizationService.requestAuthorization({
+      orderId: orderA.id,
+      actionType: AUTHORIZATION_ACTION.EXECUTE_PAYOUT,
+      makerId: 'maker-1',
+      amount: escrowA.amount,
+      reason: 'Turnstile admission confirmed by PIC, authorized for payout',
+      metadata: { bankAccount: 'BCA 8899001122 a.n. Partner Pilot Consignor' }
+    });
+    await FinancialAuthorizationService.approveAuthorization({
+      authorizationId: authResA.authorization.id,
+      checkerId: 'checker-1',
+      notes: 'Approved payout for verified pilot order'
+    });
+
     const settleRes = await SettlementService.executeSettlement({
       orderId: orderA.id,
       sellerId: orderA.seller_id,
       officerId: 'admin-1',
       idempotencyKey: 'idem-settle-001',
-      bankAccount: 'BCA 8899001122 a.n. Partner Pilot Consignor'
+      bankAccount: 'BCA 8899001122 a.n. Partner Pilot Consignor',
+      authorizationId: authResA.authorization.id
     });
 
     assert.strictEqual(settleRes.settlement.status, 'EXECUTED');
@@ -261,7 +284,8 @@ async function runSuite() {
       sellerId: orderA.seller_id,
       officerId: 'admin-1',
       idempotencyKey: 'idem-settle-002',
-      bankAccount: 'BCA 8899001122 a.n. Partner Pilot Consignor'
+      bankAccount: 'BCA 8899001122 a.n. Partner Pilot Consignor',
+      authorizationId: authResA.authorization.id
     });
     assert.strictEqual(dupSettle.idempotent, true);
     assert.strictEqual(dupSettle.duplicatePrevented, true);
@@ -385,6 +409,21 @@ async function runSuite() {
     assert.strictEqual(escrowD.status, ESCROW_STATUS.DISPUTED);
     assert.strictEqual(orderD.status, ORDER_STATUS.DISPUTED);
 
+    const { FinancialAuthorizationService, AUTHORIZATION_ACTION } = require('./src/settlement/FinancialAuthorizationService');
+    const authResD = await FinancialAuthorizationService.requestAuthorization({
+      orderId: orderD.id,
+      actionType: AUTHORIZATION_ACTION.EXECUTE_PAYOUT,
+      makerId: 'maker-1',
+      amount: escrowD.amount,
+      reason: 'Attempted payout authorization for disputed order',
+      metadata: { bankAccount: 'BCA 123456789' }
+    });
+    await FinancialAuthorizationService.approveAuthorization({
+      authorizationId: authResD.authorization.id,
+      checkerId: 'checker-1',
+      notes: 'Approved'
+    });
+
     // Attempting settlement on DISPUTED order must throw error
     await assert.rejects(
       async () => {
@@ -393,7 +432,8 @@ async function runSuite() {
           sellerId: orderD.seller_id,
           officerId: 'admin-1',
           idempotencyKey: 'idem-settle-invalid',
-          bankAccount: 'BCA 123456789'
+          bankAccount: 'BCA 123456789',
+          authorizationId: authResD.authorization.id
         });
       },
       (err) => err.code === 'TRANSACTION_DISPUTED'

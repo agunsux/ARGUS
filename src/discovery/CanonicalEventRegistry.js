@@ -21,6 +21,7 @@ const { SourceClaim, CLAIM_TYPES } = require('./models/SourceClaim');
 const { cityRegistry } = require('./CityRegistry');
 const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('./EventTemporalLifecycleEngine');
 const { EventVisualProvenanceService } = require('./EventVisualProvenanceService');
+const { CuratedCatalogPolicy, OFFICIAL_MIN_TICKET_PRICE } = require('./CuratedCatalogPolicy');
 
 class CanonicalEventRegistry {
   constructor(repository = null) {
@@ -189,23 +190,13 @@ class CanonicalEventRegistry {
     let computedPriceStatus;
     let computedMeetsThreshold;
 
-    if (highestPrice >= 500000) {
-      computedPriceStatus = 'QUALIFIED';
-      computedMeetsThreshold = true;
-    } else if (lowestPrice > 0 && isHighTierCategory && (!eventData.price_tiers || eventData.price_tiers.length <= 1)) {
-      // "Mulai Dari" Starting Price Trap: high-tier entertainment with starting price < 500k is enqueued for enrichment
-      computedPriceStatus = 'PRICE_PARTIAL';
-      computedMeetsThreshold = true; // Tentatively qualified for priority audit
-    } else if (lowestPrice > 0) {
-      computedPriceStatus = 'STANDARD_VALUE';
-      computedMeetsThreshold = false;
-    } else {
-      computedPriceStatus = 'UNKNOWN';
-      computedMeetsThreshold = false;
-    }
-
-    const finalPriceStatus = eventData.price_status || computedPriceStatus;
-    const finalMeetsThreshold = eventData.meets_price_threshold !== undefined ? eventData.meets_price_threshold : computedMeetsThreshold;
+    // Canonical Official Price Qualification (Mandatory P0 Invariant: official_min_ticket_price >= 500.000)
+    const priceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(eventData);
+    const finalPriceStatus = eventData.price_status || priceEval.status;
+    const finalMeetsThreshold = eventData.meets_price_threshold !== undefined ? Boolean(eventData.meets_price_threshold) : priceEval.meets_threshold;
+    const lowestOfficialPrice = eventData.lowest_official_price !== undefined && eventData.lowest_official_price !== null
+      ? Number(eventData.lowest_official_price)
+      : priceEval.lowest_official_price;
 
     const priceTiers = eventData.price_tiers || EventNormalizationService.normalizePriceTiers([], rawMinP, rawMaxP, resolvedCurrency);
     const seatingType = eventData.seating_type || (venueNorm.capacity_tier === 'STADIUM_MEGA' || venueNorm.capacity_tier === 'ARENA_LARGE' ? 'MIXED' : 'ASSIGNED_SEATING');
@@ -291,11 +282,13 @@ class CanonicalEventRegistry {
       price: eventData.price || rawMinP || null,
       price_status: finalPriceStatus,
       meets_price_threshold: finalMeetsThreshold,
+      lowest_official_price: lowestOfficialPrice,
       price_tiers: priceTiers,
       seating_type: seatingType,
       seat_map_url: seatMapUrl,
       tier_enrichment_needed: finalPriceStatus === 'PRICE_PARTIAL',
       image_locked: eventData.image_locked || (visual.image_url ? true : false),
+      admin_lock_mask: Array.isArray(eventData.admin_lock_mask) ? [...eventData.admin_lock_mask] : [],
       image_verified_against_source_event: eventData.image_verified_against_source_event !== undefined ? eventData.image_verified_against_source_event : (visual.image_url ? true : false),
       image_source_id: eventData.image_source_id || (sources[0] && sources[0].source_id) || null,
       official_event_url: eventData.official_event_url || eventData.official_link || null,
@@ -1021,11 +1014,15 @@ class CanonicalEventRegistry {
       const inMax = parseFloat(incomingRecord.max_price || incomingRecord.price || 0);
       if (inMin > 0 && (!event.min_price || inMin < event.min_price)) event.min_price = inMin;
       if (inMax > 0 && (!event.max_price || inMax > event.max_price)) event.max_price = inMax;
-      if (event.max_price >= 500000 || event.min_price >= 500000) {
-        event.price_status = 'QUALIFIED';
-        event.meets_price_threshold = true;
-        event.metadata.pricing_status = 'QUALIFIED';
-        event.metadata.tier_enrichment_needed = false;
+      const obsPriceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(event);
+      event.lowest_official_price = obsPriceEval.lowest_official_price;
+      event.price_status = obsPriceEval.status;
+      event.meets_price_threshold = obsPriceEval.meets_threshold;
+      event.metadata.pricing_status = obsPriceEval.status;
+      event.metadata.tier_enrichment_needed = !obsPriceEval.meets_threshold;
+      if (!obsPriceEval.meets_threshold) {
+        event.public_visibility = false;
+        event.homepage_visibility = false;
       }
     }
     if (incomingRecord.seating_type) {
@@ -1125,13 +1122,13 @@ class CanonicalEventRegistry {
       if (!event.price && sourceRecord.price) {
         event.price = Number(sourceRecord.price);
       }
-      const maxP = Math.max(event.min_price || 0, event.max_price || 0, event.price || 0);
-      if (maxP > 500000) {
-        event.meets_price_threshold = true;
-        event.price_status = 'QUALIFIED';
-      } else if (maxP > 0) {
-        event.meets_price_threshold = false;
-        event.price_status = 'EXCLUDED_PRICE_TOO_LOW';
+      const srcPriceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(event);
+      event.lowest_official_price = srcPriceEval.lowest_official_price;
+      event.price_status = srcPriceEval.status;
+      event.meets_price_threshold = srcPriceEval.meets_threshold;
+      if (!srcPriceEval.meets_threshold) {
+        event.public_visibility = false;
+        event.homepage_visibility = false;
       }
     }
 
@@ -1383,11 +1380,19 @@ class CanonicalEventRegistry {
       image_credit: 'King Nassar Concert: Lost In The Jungle / Boss Creator & VINDES',
       is_fallback_image: false,
       primary_ticket_status: 'SOLD_OUT',
-      min_price: 500000,
-      max_price: 1500000,
-      price: 500000,
-      price_status: 'QUALIFIED',
-      meets_price_threshold: true,
+      min_price: 350000,
+      max_price: 1200000,
+      price: 350000,
+      lowest_official_price: 350000,
+      price_tiers: [
+        { name: 'Tribun Regular', price: 350000, currency: 'IDR' },
+        { name: 'Festival VIP', price: 1200000, currency: 'IDR' }
+      ],
+      price_status: 'EXCLUDED_PRICE_TOO_LOW',
+      meets_price_threshold: false,
+      public_visibility: false,
+      homepage_visibility: false,
+      exclusion_reason: 'Lowest official ticket tier (Tribun Regular Rp 350.000) is below Rp 500.000 minimum threshold',
       resale_inventory_count: 0,
       resale_available: false,
       sources: [
@@ -1669,11 +1674,12 @@ class CanonicalEventRegistry {
     };
 
     if (options && options.includePast) {
-      return [nassarHero, btsHero, yeHero];
+      return [btsHero, morganJayHero, nassarHero, yeHero];
     }
 
-    // Default active upcoming hero concerts on/after 25 Oct 2026
-    return [nassarHero, btsHero];
+    // Default active upcoming hero concerts: strictly qualified (lowest official tier >= 500k)
+    // King Nassar is excluded due to Rp 350.000 Tribun Regular tier.
+    return [btsHero, morganJayHero];
   }
 
   getAllEvents() {

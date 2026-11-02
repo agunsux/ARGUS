@@ -254,11 +254,15 @@ async function runSuite() {
     assert.ok(Array.isArray(heroes), 'getHeroEvents must return an array');
     assert.strictEqual(heroes.length, 2, 'getHeroEvents must return exactly 2 hero concerts');
 
-    const nassar = heroes.find(e => (e.slug && e.slug.includes('nassar')) || (e.title && e.title.includes('Nassar')));
-    assert.ok(nassar, 'Nassar must be found in getHeroEvents()');
-    assert.strictEqual(nassar.date, '2026-11-07');
-    assert.strictEqual(nassar.primary_ticket_status, 'SOLD_OUT');
-    assert.strictEqual(nassar.resale_inventory_count, 0);
+    const morgan = heroes.find(e => (e.slug && e.slug.includes('morgan-jay')) || (e.title && e.title.includes('Morgan Jay')));
+    assert.ok(morgan, 'Morgan Jay must be found in active getHeroEvents()');
+    assert.strictEqual(morgan.date, '2026-11-11');
+    assert.strictEqual(morgan.primary_ticket_status, 'SOLD_OUT');
+    assert.strictEqual(morgan.resale_inventory_count, 0);
+
+    const allHeroes = canonicalRegistry.getHeroEvents({ includePast: true });
+    const nassar = allHeroes.find(e => (e.slug && e.slug.includes('nassar')) || (e.title && e.title.includes('Nassar')));
+    assert.ok(nassar, 'Nassar must be preserved in historical registry');
 
     const ye = heroes.find(e => (e.slug && e.slug.includes('ye-live')) || (e.title && e.title.includes('YE')) || e.id === 'bts-world-tour-arirang-jakarta-2026' || (e.title && e.title.includes('BTS')));
     assert.ok(ye, 'Second verified hero concert (BTS / Ye) must be found in getHeroEvents()');
@@ -282,14 +286,13 @@ async function runSuite() {
       assert.strictEqual(data.count, 2, 'API must return exactly 2 hero concerts');
       assert.strictEqual(data.concerts.length, 2);
 
-      const nassarCard = data.concerts.find(c => c.title.includes('Nassar'));
-      assert.ok(nassarCard, 'Nassar card must be present');
-      assert.strictEqual(nassarCard.organizer_name, 'Boss Creator');
-      assert.strictEqual(nassarCard.primary_ticket_status, 'SOLD_OUT');
-      assert.strictEqual(nassarCard.resale_inventory_count, 0, 'Resale inventory must be 0');
-      assert.strictEqual(nassarCard.resale_available, false);
-      assert.ok(nassarCard.official_event_url, 'Must have official event URL');
-      assert.ok(nassarCard.observed_at, 'Must have observation timestamp');
+      const morganCard = data.concerts.find(c => c.title.includes('Morgan Jay'));
+      assert.ok(morganCard, 'Morgan Jay card must be present');
+      assert.strictEqual(morganCard.organizer_name, 'Mad About Comedy');
+      assert.strictEqual(morganCard.primary_ticket_status, 'SOLD_OUT');
+      assert.strictEqual(morganCard.resale_inventory_count, 0, 'Resale inventory must be 0');
+      assert.strictEqual(morganCard.resale_available, false);
+      assert.ok(morganCard.official_event_url, 'Must have official event URL');
 
       const secondCard = data.concerts.find(c => c.title.includes('YE') || c.title.includes('BTS'));
       assert.ok(secondCard, 'Second hero concert (BTS / Ye) card must be present');

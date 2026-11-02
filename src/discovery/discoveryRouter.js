@@ -35,6 +35,7 @@ const crypto = require('crypto');
 const { getCatalogRepository } = require('./repository');
 const { SourceToDatabaseAuditService } = require('./SourceToDatabaseAuditService');
 const { requireAdminApiKey } = require('../middleware/adminApiKeyAuth');
+const { CuratedCatalogPolicy, OFFICIAL_MIN_TICKET_PRICE } = require('./CuratedCatalogPolicy');
 
 // ==========================================
 // PROMOTER IMPORT ADMIN GUARD & CSV UPLOAD
@@ -383,6 +384,18 @@ router.get('/events/:slug', (req, res, next) => {
           <a href="/events" style="color:#38bdf8;">Kembali ke Katalog Event</a>
         </body></html>`);
     }
+
+    // STRICT RP 500.000 PRICE INVARIANT: Events with lowest price < 500k cannot be accessed via public direct URL
+    const isPriceDisqualified = event.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(event);
+    if (isPriceDisqualified) {
+      return res.status(404).send(`<!DOCTYPE html>
+        <html><head><title>Event Tidak Memenuhi Kriteria — Tikum</title></head>
+        <body style="font-family:sans-serif; background:#0f172a; color:#fff; text-align:center; padding:50px;">
+          <h2>Event Tidak Tersedia di Katalog Publik</h2>
+          <p>Event ini memiliki nilai tiket resmi di bawah batas minimum katalog Tikum (Rp 500.000) atau telah diarsipkan.</p>
+          <a href="/events" style="color:#38bdf8;">Kembali ke Katalog Event</a>
+        </body></html>`);
+    }
   }
 
   // Corroborate with any duplicate canonical record in registry (e.g. snapshot vs LOKET live) so detail page gets full verified image provenance
@@ -543,9 +556,7 @@ router.get('/events', (req, res) => {
       if (!isVerified || !hasProvenance) return false;
 
       // STRICT RP 500.000 PRICE FILTER: Events with lowest price < 500k are EXCLUDED from public catalog
-      if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW') return false;
-      const minP = (e.min_price !== undefined && e.min_price !== null) ? Number(e.min_price) : null;
-      if (minP !== null && minP < 500000 && e.price_status !== 'QUALIFIED') return false;
+      if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(e)) return false;
       if (e.price_status === 'PENDING_VERIFICATION') return false;
 
       return true;
@@ -592,13 +603,10 @@ router.get('/events', (req, res) => {
         <div>
           <div class="catalog-card-media" style="position:relative; aspect-ratio:16/9; max-height:190px; margin:-20px -20px 14px -20px; border-bottom:1px solid #1e293b; overflow:hidden; background:#0b1120;">
             ${hasVerifiedImg ? `
-              <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
-            ` : ''}
-            <div class="catalog-card-fallback" style="display:${hasVerifiedImg ? 'none' : 'flex'}; width:100%; height:100%; align-items:center; justify-content:center; flex-direction:column; gap:6px; background:linear-gradient(145deg,#131d31,#0b1120); color:#94a3b8; font-size:12px; padding:12px; text-align:center;">
-              <i class="fa-solid fa-ticket" style="font-size:24px; color:#38bdf8;"></i>
-              <span style="font-weight:700; color:#cbd5e1;">${e.canonical_name}</span>
-              <span style="font-size:11px; color:#64748b;">Terverifikasi Sumber Resmi</span>
-            </div>
+              <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='/api/discovery/events/${e.event_id || e.id}/poster.svg';" />
+            ` : `
+              <img src="/api/discovery/events/${e.event_id || e.id}/poster.svg" alt="${altText} — Tikum Verified Fallback" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" />
+            `}
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
             <div style="display:flex; gap:6px; align-items:center;">
@@ -1108,9 +1116,7 @@ function handleGetEvents(req, res) {
 
       // STRICT RP 500.000 PRICE FILTER: Events with lowest price < 500k are EXCLUDED unless explicitly requested
       if (req.query.include_all_prices !== 'true') {
-        if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW') return false;
-        const minP = (e.min_price !== undefined && e.min_price !== null) ? Number(e.min_price) : null;
-        if (minP !== null && minP < 500000 && e.price_status !== 'QUALIFIED') return false;
+        if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(e)) return false;
         if (e.price_status === 'PENDING_VERIFICATION') return false;
       }
 
@@ -1305,6 +1311,7 @@ router.get('/api/events/home-feed', (req, res) => {
     if (e.archive_status === 'ARCHIVED' || e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
     if (EventTemporalLifecycleEngine.isEventArchived(e, now)) return false;
     if (e.homepage_visibility === false) return false;
+    if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(e)) return false;
 
     // Defense-in-depth: query-time H+2 check (now > event_end_at + 48h)
     const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(e);
@@ -1576,6 +1583,12 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
     if (isCancelled || !isVerified || !hasProvenance) {
       return res.status(404).json({ error: 'Event is unverified, cancelled, or unavailable for public discovery', code: 'EVENT_NOT_AVAILABLE' });
     }
+
+    // STRICT RP 500.000 PRICE INVARIANT: Events with lowest price < 500k cannot be accessed via public direct API
+    const isPriceDisqualified = event.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(event);
+    if (isPriceDisqualified) {
+      return res.status(404).json({ error: 'Event is not eligible for public discovery (minimum ticket price below Rp 500.000)', code: 'PRICE_DISQUALIFIED' });
+    }
   }
 
   // Corroborate with any duplicate canonical record in registry and resolve image provenance
@@ -1601,6 +1614,26 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
       waitlist_count: isPastOrConcluded ? 0 : demands.length
     }
   });
+});
+
+/**
+ * GET /api/discovery/events/:id/poster.svg
+ * Serves deterministic, branded 3:4 SVG fallback poster for an event.
+ */
+router.get('/api/discovery/events/:id/poster.svg', (req, res) => {
+  const param = req.params.id;
+  const event = canonicalRegistry.getEventById(param) ||
+    canonicalRegistry.getEventBySlug(param) ||
+    (state.events || []).find(e => e.id === param || e.slug === param || e.event_id === param);
+
+  if (!event) {
+    return res.status(404).type('text/plain').send('Event not found');
+  }
+
+  const svg = EventVisualProvenanceService.generateBrandedPosterSvg(event);
+  res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+  res.send(svg);
 });
 
 function e_hasProvenance(event) {

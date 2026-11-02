@@ -356,31 +356,39 @@ async function runAll() {
     }
   });
 
-  // Test 15: Nassar and Ye hero cards use canonical records and their verified source fields
+  // Test 15: Hero cards use canonical records and their verified source fields
   await runTest('15. Nassar and Ye hero cards use canonical records and their verified source fields', async () => {
     const heroEvents = canonicalRegistry.getHeroEvents();
-    const nassar = heroEvents.find(e => e.id === 'event-nassar-lost-in-the-jungle-2026' || (e.title && e.title.includes('Nassar')));
-    assert.ok(nassar, 'Nassar event must exist in hero events');
-    assert.strictEqual(nassar.date, '2026-11-07');
-    assert.strictEqual(nassar.venue_name, 'Istora Senayan Jakarta');
-    assert.strictEqual(nassar.organizer_name, 'Boss Creator');
-    assert.strictEqual(nassar.is_verified, true);
+    const morgan = heroEvents.find(e => e.id === 'ev-can-fd86cf7d' || (e.title && e.title.includes('Morgan Jay')));
+    assert.ok(morgan, 'Morgan Jay event must exist in active hero events');
+    assert.strictEqual(morgan.date, '2026-11-11');
+    assert.strictEqual(morgan.venue_name, 'Nafiri Convention Hall');
+    assert.strictEqual(morgan.organizer_name, 'Mad About Comedy');
+    assert.strictEqual(morgan.is_verified, true);
 
-    const secondHero = heroEvents.find(e => e.id === 'bts-world-tour-arirang-jakarta-2026' || e.id === 'kanye-west-ye-tour-jakarta-2026' || (e.title && (e.title.includes('BTS') || e.title.includes('YE'))));
-    assert.ok(secondHero, 'Second hero (BTS / Ye) event must exist in hero events');
+    const secondHero = heroEvents.find(e => e.id === 'bts-world-tour-arirang-jakarta-2026' || (e.title && e.title.includes('BTS')));
+    assert.ok(secondHero, 'Second hero (BTS) event must exist in hero events');
     assert.ok(secondHero.date, 'Must have valid date');
     assert.ok(secondHero.venue_name, 'Must have venue name');
     assert.ok(secondHero.official_event_url, 'Must have official event URL');
     assert.strictEqual(secondHero.is_verified, true);
+
+    // Nassar preserved in historical/all hero registry
+    const allHeroes = canonicalRegistry.getHeroEvents({ includePast: true });
+    const nassar = allHeroes.find(e => e.id === 'event-nassar-lost-in-the-jungle-2026');
+    assert.ok(nassar, 'Nassar must exist in historical registry');
+    assert.strictEqual(nassar.price_status, 'EXCLUDED_PRICE_TOO_LOW');
   });
 
   // Test 16: Unverified hero events cannot be represented as confirmed or available for purchase
   await runTest('16. Unverified hero events cannot be represented as confirmed or available for purchase', async () => {
     const heroEvents = canonicalRegistry.getHeroEvents();
-    const nassar = heroEvents.find(e => e.id === 'event-nassar-lost-in-the-jungle-2026');
+    const morgan = heroEvents.find(e => e.id === 'ev-can-fd86cf7d');
     const secondHero = heroEvents.find(e => e.id === 'bts-world-tour-arirang-jakarta-2026' || e.id === 'kanye-west-ye-tour-jakarta-2026');
 
-    assert.strictEqual(nassar.resale_inventory_count, 0, 'Nassar resale inventory must be 0 (no fake supply)');
+    assert.ok(morgan);
+    assert.strictEqual(morgan.resale_inventory_count, 0, 'Morgan Jay resale inventory must be 0 (no fake supply)');
+    assert.ok(secondHero);
     assert.strictEqual(secondHero.resale_inventory_count, 0, 'Second hero resale inventory must be 0 (no fake supply)');
   });
 
