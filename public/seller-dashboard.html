@@ -388,7 +388,8 @@
       </div>
 
       <div class="header-right">
-        <a href="/create" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Buat Listing Tiket</a>
+        <a href="/create" class="btn btn-primary"><i class="fa-solid fa-plus"></i> <span data-i18n="nav.sellTicket">Buat Listing Tiket</span></a>
+        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 6px 12px; font-size: 12px; font-weight: 700;">ID</button>
         <div class="user-pill">
           <i class="fa-regular fa-user"></i>
           <span id="headerUserEmail">Memuat...</span>
@@ -1029,5 +1030,6 @@
 
     loadSellerDashboard();
   </script>
+  <script src="/js/i18n.js"></script>
 </body>
 </html>

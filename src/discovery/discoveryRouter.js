@@ -27,6 +27,24 @@ const { discoverySignalService, SIGNAL_STATUS } = require('./EventDiscoverySigna
 const { state, recordAuditLog } = require('../database');
 const { renderFooterHtml } = require('../config/businessProfile');
 const { cityRegistry, CityRegistry } = require('./CityRegistry');
+
+function resolveRequestLocale(req) {
+  if (!req) return 'id';
+  if (req.query && (req.query.lang || req.query.locale)) {
+    const q = (req.query.lang || req.query.locale).toLowerCase();
+    if (q === 'en' || q.startsWith('en-')) return 'en';
+    if (q === 'id' || q.startsWith('id-')) return 'id';
+  }
+  if (req.headers && req.headers.cookie) {
+    const match = req.headers.cookie.match(/(?:^|;\s*)tikum_lang=([^;]+)/);
+    if (match && match[1]) {
+      const c = decodeURIComponent(match[1]).toLowerCase();
+      if (c === 'en' || c.startsWith('en-')) return 'en';
+      if (c === 'id' || c.startsWith('id-')) return 'id';
+    }
+  }
+  return 'id';
+}
 const { PopularityEngine } = require('./PopularityEngine');
 const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS, HOMEPAGE_EVENT_GRACE_DAYS } = require('./EventTemporalLifecycleEngine');
 const { inventoryReconciliationService } = require('./EventInventoryReconciliationService');
@@ -321,7 +339,7 @@ router.get('/events/archive', (req, res) => {
     </div>
   </main>
 
-  ${renderFooterHtml()}
+  ${renderFooterHtml(locale)}
   <script src="/js/i18n.js"></script>
 </body>
 </html>`;
@@ -419,7 +437,8 @@ router.get('/events/:slug', (req, res, next) => {
     return true;
   });
 
-  const html = EventSEOService.renderEventPageHtml(event, listings, related);
+  const locale = resolveRequestLocale(req);
+  const html = EventSEOService.renderEventPageHtml(event, listings, related, locale);
   res.type('html').send(html);
 });
 
@@ -638,12 +657,12 @@ router.get('/events', (req, res) => {
   }).join('');
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${locale}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Katalog Event Indonesia — Temukan Jadwal Konser, Olahraga &amp; Tiket Terverifikasi | Tikum</title>
-  <meta name="description" content="Eksplorasi seluruh event musik, festival, sepak bola, basket, dan pertunjukan di Jakarta, Bandung, Surabaya, dan Bali. Dapatkan informasi tiket resmi dan transfer tiket terverifikasi di Tikum.">
+  <title>${isEn ? 'Indonesia Event Catalog — Discover Concert Schedules, Sports &amp; Verified Tickets | Tikum' : 'Katalog Event Indonesia — Temukan Jadwal Konser, Olahraga &amp; Tiket Terverifikasi | Tikum'}</title>
+  <meta name="description" content="${isEn ? 'Explore all music concerts, festivals, sports, and live shows across Indonesia. Get official ticket information and verified ticket resale at Tikum.' : 'Eksplorasi seluruh event musik, festival, sepak bola, basket, dan pertunjukan di Jakarta, Bandung, Surabaya, dan Bali. Dapatkan informasi tiket resmi dan transfer tiket terverifikasi di Tikum.'}">
   <link rel="canonical" href="https://tikum.app/events">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">

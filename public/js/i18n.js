@@ -123,7 +123,11 @@
       "terms": "Syarat & Ketentuan",
       "refund": "Kebijakan Refund",
       "contact": "Kontak Resmi",
-      "help": "Bantuan"
+      "help": "Bantuan",
+      "productsAndServices": "Produk & Layanan",
+      "pricingAndFees": "Harga & Biaya",
+      "submitListing": "Ajukan Listing",
+      "buyerGuide": "Panduan Pembeli"
     },
     "hero": {
       "headline": "TIKUM — Pasar Tiket Event Terverifikasi",
@@ -239,7 +243,23 @@
       "copyright": "© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — by PT SHINERVA PRAJNA TEJAS.",
       "faq": "FAQ / Pertanyaan Umum",
       "refundPolicy": "Kebijakan Pengembalian Dana (Refund)",
-      "allRightsReserved": "© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — by PT SHINERVA PRAJNA TEJAS."
+      "allRightsReserved": "© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — by PT SHINERVA PRAJNA TEJAS.",
+      "phoneAndWa": "Telepon & WhatsApp:",
+      "supportHours": "Jam Layanan Customer Support:",
+      "supportHoursValue": "Senin - Minggu 09:00 - 21:00 WIB (WhatsApp & Email)",
+      "picVenueNote": "(Tim Event PIC bertugas di venue pada jam operasional gerbang acara terkonfirmasi)",
+      "aboutTikum": "Tentang TIKUM",
+      "checkoutDemo": "Halaman Checkout (/pay)",
+      "buyerGuide": "Panduan Pembeli & Proteksi",
+      "sellerGuide": "Panduan Penjual",
+      "feeStructure": "Struktur Harga & Biaya",
+      "fundsFlow": "Alur Dana & Penahanan Transaksi",
+      "ticketVerification": "Verifikasi Tiket",
+      "blogAndGuides": "Blog & Panduan Tiket",
+      "sellerTerms": "Ketentuan Penjual",
+      "resalePolicy": "Kebijakan Penjualan Kembali",
+      "disputes": "Resolusi Sengketa (Disputes)",
+      "copyrightBuiltIn": "© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — brand marketplace yang dioperasikan di bawah naungan PT SHINERVA PRAJNA TEJAS. Built in Indonesia."
     },
     "status": {
       "LISTED": "Tersedia",
@@ -318,7 +338,9 @@
       "confirm": "Konfirmasi",
       "close": "Tutup",
       "yes": "Ya",
-      "no": "Tidak"
+      "no": "Tidak",
+      "indonesia": "Indonesia",
+      "from": "Mulai"
     },
     "venuePicSection": {
       "kicker": "Diferensiasi Utama TIKUM",
@@ -555,7 +577,8 @@
       "verifiedCatalog": "Katalog Resmi TIKUM",
       "radarVerified": "Radar Terverifikasi",
       "allCategories": "Semua Kategori",
-      "gateProtocol": "Protokol Verifikasi Gerbang (TIKUM PIC)"
+      "gateProtocol": "Protokol Verifikasi Gerbang (TIKUM PIC)",
+      "listedPrice": "Harga tertera"
     },
     "search": {
       "placeholder": "Cari konser, artis, festival, atau kota...",
@@ -1001,6 +1024,162 @@
       "allCities": "Semua Kota",
       "allCategories": "Semua Kategori",
       "filter": "Filter"
+    },
+    "prelaunch": {
+      "title": "TIKUM sedang dalam tahap persiapan peluncuran.",
+      "bannerDesc": "Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran belum tersedia. Pengajuan listing tidak menjamin tiket telah terverifikasi atau transaksi dapat dilakukan.",
+      "submitListingBtn": "Ajukan Listing Tiket"
+    },
+    "spotlight": {
+      "eyebrow": "TIKUM oleh PT SHINERVA PRAJNA TEJAS • Official Concert Radar & Secondary Ticket Marketplace",
+      "title": "Sorotan Konser Terverifikasi",
+      "subtitle": "Data konser resmi dengan validasi tanggal, promotor otoritatif, dan visual provenance terkonfirmasi. TIKUM menerapkan Zero Fake Inventory — tidak ada stok palsu atau kuota buatan.",
+      "promoterVerified": "✓ PROMOTOR TERVERIFIKASI",
+      "officialChannel": "✓ KANAL RESMI",
+      "primarySoldOut": "PRIMARY: SOLD OUT",
+      "artistLabel": "Artis:",
+      "nassarDate": "Sabtu, 7 November 2026 • 19:00 WIB",
+      "nassarVenue": "Istora Senayan Jakarta • Jakarta Pusat",
+      "nassarArtists": "King Nassar & Erwin Gutawa Orchestra",
+      "nassarNotice": "Tiket primary resmi melalui Tiket.com / myBCA telah berstatus Sold Out. Pemberitahuan resmi dapat dicek di website promotor Boss Creator.",
+      "nassarBossCreatorBtn": "Lihat Pengumuman Resmi Boss Creator ↗",
+      "morganDate": "11 November 2026 • 20:00 WIB (Pintu Buka 19:00 WIB)",
+      "morganVenue": "Nafiri Convention Hall (Central Park Mall) • Jakarta Barat",
+      "morganArtist": "Morgan Jay",
+      "morganNotice": "Jadwal resmi terkonfirmasi di portal Megatix dan Mad About Comedy. Seluruh tiket resmi telah SOLD OUT. Calon penonton diarahkan mendaftar Waiting List resmi di portal Megatix / mac.lol.",
+      "morganWaitlistBtn": "Cek Waiting List di Megatix ↗",
+      "resaleStockLabel": "Stok Resale Sekunder TIKUM:",
+      "zeroInventory": "0 Tiket (Belum Ada)",
+      "zeroFakeInventory": "0 Tiket (Zero Fake Inventory)",
+      "viewEventDetails": "Lihat Detail Event di TIKUM →",
+      "learnBuyerProtection": "Pelajari Proteksi Pembeli TIKUM"
+    },
+    "services": {
+      "kicker": "PRODUK & LAYANAN RESMI",
+      "title": "Layanan Utama Ekosistem Tiket TIKUM",
+      "lead": "TIKUM menyediakan infrastruktur pasar sekunder yang aman dan transparan bagi penikmat konser, olahraga, dan festival di Indonesia.",
+      "card1Title": "1. Pasar Resale Tiket Sekunder",
+      "card1Desc": "Platform resmi jual-beli tiket sekunder bagi pemilik tiket yang berhalangan hadir. Pembeli mendapatkan tiket valid tanpa risiko transaksi langsung di media sosial.",
+      "card2Title": "2. Perlindungan Transaksi & Verifikasi Tiket",
+      "card2Desc": "Dana pembayaran ditahan sementara oleh platform Tikum (platform-held) dan baru dilepaskan ke penjual setelah tiket terkonfirmasi valid atau pembeli berhasil masuk ke acara.",
+      "card3Title": "3. Layanan Pendampingan Lapangan (Event PIC)",
+      "card3Desc": "Koordinator lapangan TIKUM hadir mendampingi pada event-event terpilih yang terkonfirmasi selama jam operasional gerbang (gate hours) untuk asistensi turnstile dan verifikasi fisik.",
+      "card4Title": "4. Verifikasi Tiket & Hashing Anti-Duplikasi",
+      "card4Desc": "Sistem pencatatan riwayat tiket dan hashing bukti SHA-256 untuk memverifikasi dokumen kepemilikan dan mencegah tiket yang sama didaftarkan ganda.",
+      "card5Title": "5. Penawaran Terstruktur & Beli Langsung",
+      "card5Desc": "Mekanisme negosiasi terstruktur (Make Offer) dengan batas wajar dan fitur Beli Langsung (Buy Now) dengan kalkulasi all-in transparan sejak awal."
+    },
+    "pricing": {
+      "kicker": "STRUKTUR HARGA & BIAYA TRANSPARAN",
+      "title": "Skema Biaya Resmi & Simulasi Checkout",
+      "lead": "Semua rincian biaya terbuka dan dihitung otomatis tanpa biaya tersembunyi. Berlaku aturan batas markup maksimal 30% dari harga resmi promotor demi keadilan harga.",
+      "colComponent": "Komponen Layanan",
+      "colRate": "Ketentuan / Tarif",
+      "colNotes": "Keterangan Operasional",
+      "row1Name": "Biaya Pasang Listing (Seller)",
+      "row1Rate": "Rp 0 (Gratis)",
+      "row1Notes": "Penjual dapat mendaftarkan tiket tanpa biaya awal di muka.",
+      "row2Name": "Biaya Platform Pembeli (Buyer Fee)",
+      "row2Rate": "6% (Min. Rp35.000, Maks. Rp300.000)",
+      "row2Notes": "Mencakup perlindungan transaksi terkelola (platform-held) dan verifikasi bukti tiket.",
+      "row3Name": "Biaya Layanan Penjual (Seller Fee)",
+      "row3Rate": "6% (Min. Rp35.000, Maks. Rp300.000)",
+      "row3Notes": "Dipotong dari hasil penjualan saat pencairan dana pasca-acara berhasil.",
+      "row4Name": "Batas Harga Tiket Minimum",
+      "row4Rate": "Rp 500.000 per tiket",
+      "row4Notes": "Batas nominal transaksi minimum untuk memastikan standar kurasi tiket.",
+      "row5Name": "Batas Markup Penjual (Markup Cap)",
+      "row5Rate": "Maksimal +30% dari Face Value",
+      "row5Notes": "Mencegah praktik calo liar dan menjaga harga tiket tetap wajar.",
+      "card1Badge": "Simulasi 1 • Floor Fee",
+      "card1Cat": "Kategori Standar",
+      "card1Title": "Tiket Konser Rp 500.000",
+      "card1SellerPriceLabel": "Harga Tiket Penjual:",
+      "card1BuyerFeeLabel": "Biaya Platform Pembeli (6%, Min Rp35k):",
+      "card1TotalLabel": "Total Bayar Pembeli:",
+      "card1SellerNetLabel": "Pencairan Bersih Penjual:",
+      "card1SellerNetDesc": "Rp 465.000 (setelah fee Rp 35.000)",
+      "card1Btn": "Cek Halaman Pembayaran",
+      "card2BadgeTop": "DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN",
+      "card2Badge": "Simulasi 2 • Proportional 6%",
+      "card2Cat": "Kategori Ilustratif",
+      "card2Title": "Contoh Simulasi Checkout Tiket (Cat 1 — Ilustrasi)",
+      "card2Notice": "Harga ilustratif — bukan penawaran tiket aktif. Simulasi alur transaksi item demonstrasi.",
+      "card2TicketPriceLabel": "Harga Tiket (Harga ilustratif — bukan penawaran tiket aktif):",
+      "card2BuyerFeeLabel": "Biaya Platform Pembeli (6%):",
+      "card2TotalLabel": "Total Bayar Pembeli:",
+      "card2SellerNetLabel": "Pencairan Bersih Penjual:",
+      "card2SellerNetDesc": "Rp 1.410.000 (setelah fee Rp 90.000)",
+      "card2Btn": "Lihat Demo Checkout (/pay) →",
+      "bannerTitle": "Punya Tiket Konser atau Event Mendatang?",
+      "bannerDesc": "TIKUM sedang mengumpulkan pasokan tiket terverifikasi untuk persiapan peluncuran resmi BigBang Januari. Daftarkan tiket Anda sekarang untuk ditinjau oleh kurator kami.",
+      "bannerBtn": "Ajukan Listing Tiket (/create)"
+    },
+    "comparison": {
+      "kicker": "PERBANDINGAN KEAMANAN",
+      "title": "Mengapa TIKUM Berbeda dari Cara Biasa?",
+      "lead": "Lihat perbandingan perlindungan transaksi di TIKUM dibandingkan pasar calo liar atau media sosial.",
+      "colNeeds": "Kebutuhan Pembeli & Penjual",
+      "colScalpers": "Calo Liar / Media Sosial (Twitter, IG)",
+      "colStandard": "Marketplace Biasa",
+      "colTikum": "TIKUM — Verified Marketplace",
+      "row1Title": "Keamanan Pembayaran",
+      "row1Scalpers": "Transfer langsung, risiko uang hilang 100%",
+      "row1Standard": "Escrow e-commerce standar",
+      "row1Tikum": "Dana ditahan platform hingga pembeli sukses masuk gate",
+      "row2Title": "Validitas Tiket & Barcode",
+      "row2Scalpers": "Rawan barcode ganda & screenshot palsu",
+      "row2Standard": "Pemeriksaan bukti manual tanpa jaminan",
+      "row2Tikum": "Pencatatan riwayat transaksi & verifikasi data resmi",
+      "row3Title": "Pendampingan Hari-H di Acara",
+      "row3Scalpers": "Ditinggal sendirian, nomor kontak diblokir",
+      "row3Standard": "Hanya layanan chatbot online",
+      "row3Tikum": "Staf PIC TIKUM hadir di venue (event terpilih)",
+      "row4Title": "Transparansi Harga",
+      "row4Scalpers": "Markup liar tak terkendali",
+      "row4Standard": "Biaya admin mendadak saat checkout",
+      "row4Tikum": "All-in transparan 6% (minimum Rp35.000 per tiket), tanpa biaya kejutan"
+    },
+    "discoveryRails": {
+      "justAnnouncedTitle": "Baru Diumumkan",
+      "justAnnouncedLead": "Pengumuman resmi terbaru dari promotor & penyelenggara terverifikasi",
+      "radarJabodetabekTitle": "Radar Konser Jabodetabek (Songkick & Bandsintown)",
+      "radarJabodetabekLead": "Konser terkurasi dari radar Songkick & Bandsintown yang lolos verifikasi ganda promotor/artis",
+      "upcomingShowsTitle": "Upcoming Shows",
+      "upcomingShowsLead": "Seluruh event Indonesia yang sudah terverifikasi sumber resminya",
+      "lastCallTitle": "Last Call for Tickets",
+      "lastCallLead": "Berlangsung dalam 7 hari ke depan",
+      "concertsTitle": "Konser",
+      "concertsLead": "Tur dan konser resmi terverifikasi",
+      "festivalsTitle": "Festival & Pameran",
+      "festivalsLead": "Festival musik, pameran seni, dan budaya",
+      "sportsTitle": "Olahraga",
+      "sportsLead": "Pertandingan dan turnamen olahraga resmi",
+      "searchResultsTitle": "Hasil Pencarian",
+      "searchResultsLead": "event terverifikasi ditemukan",
+      "emptyUpcoming": "Belum ada event terverifikasi yang akan datang.",
+      "emptySearch": "Tidak ada event terverifikasi yang sesuai dengan pencarian Anda.",
+      "heroKicker": "Baru Diumumkan · Terverifikasi Resmi",
+      "heroVerified": "Diverifikasi",
+      "heroViewEvent": "Lihat Detail Event",
+      "heroOfficialTickets": "Tiket Resmi",
+      "attributionText": "Atribusi sumber resmi & radar penemuan konser. Informasi tiket resmi disediakan oleh Live Nation Asia, LOKET, BBO Events, dan kanal resmi promotor (Color Asia Live, Plainsong Live, Ismaya Live, Dyandra Global, TEM Presents, PK Entertainment). Kanal radar penemuan konser Songkick dan Bandsintown (Jakarta & Jabodetabek) digunakan untuk pemantauan agenda tur dan seluruhnya diverifikasi silang dengan situs resmi penampil/promotor sebelum dipublikasikan. TIKUM hanya menyimpan data faktual (nama event, tanggal, venue, kota, harga, serta tautan dan poster resmi) dan tidak menyalin materi promosi. Kanal Instagram @infokonser, @livenationasia, dan @ticketmasterasia digunakan sebagai sinyal penemuan (Tier 3) dan tidak pernah menjadi dasar verifikasi."
+    },
+    "modals": {
+      "provenanceTitle": "Status Verifikasi Resmi",
+      "prov1": "Penyelenggara & Promotor Resmi Dikonfirmasi",
+      "prov2": "Lokasi & Izin Penyelenggaraan Valid",
+      "prov3": "Harga Tiket & Struktur Kategori Resmi",
+      "prov4": "Opsi Asistensi PIC di Venue untuk Event Terpilih",
+      "authTitle": "Masuk ke Tikum",
+      "authPrompt": "Masukkan email Anda untuk menerima tautan masuk instan (magic link).",
+      "emailLabel": "Email",
+      "emailPlaceholder": "nama@email.com",
+      "sendMagicLinkBtn": "Kirim Magic Link",
+      "successTitle": "Cek email Anda",
+      "successSentTo": "Kami telah mengirim magic link ke",
+      "linkValidNote": "Link berlaku selama 15 menit dan hanya dapat digunakan sekali.",
+      "closeBtn": "Tutup"
     }
   },
   "en": {
@@ -1068,7 +1247,11 @@
       "terms": "Terms of Service",
       "refund": "Refund Policy",
       "contact": "Official Contact",
-      "help": "Support"
+      "help": "Support",
+      "productsAndServices": "Products & Services",
+      "pricingAndFees": "Pricing & Fees",
+      "submitListing": "Submit Listing",
+      "buyerGuide": "Buyer Guide"
     },
     "hero": {
       "headline": "TIKUM — Verified Event Ticket Marketplace",
@@ -1184,7 +1367,23 @@
       "copyright": "© 2026 PT SHINERVA PRAJNA TEJAS. All rights reserved. TIKUM — by PT SHINERVA PRAJNA TEJAS.",
       "faq": "FAQ / Frequently Asked Questions",
       "refundPolicy": "Refund Policy",
-      "allRightsReserved": "© 2026 PT SHINERVA PRAJNA TEJAS. All rights reserved. TIKUM — by PT SHINERVA PRAJNA TEJAS."
+      "allRightsReserved": "© 2026 PT SHINERVA PRAJNA TEJAS. All rights reserved. TIKUM — by PT SHINERVA PRAJNA TEJAS.",
+      "phoneAndWa": "Phone & WhatsApp:",
+      "supportHours": "Customer Support Operating Hours:",
+      "supportHoursValue": "Monday - Sunday 09:00 - 21:00 WIB (WhatsApp & Email)",
+      "picVenueNote": "(Event PIC team operates on-site at venue during confirmed event gate hours)",
+      "aboutTikum": "About TIKUM",
+      "checkoutDemo": "Checkout Page (/pay)",
+      "buyerGuide": "Buyer Guide & Protection",
+      "sellerGuide": "Seller Guide",
+      "feeStructure": "Pricing & Fee Structure",
+      "fundsFlow": "Funds Flow & Escrow Holding",
+      "ticketVerification": "Ticket Verification",
+      "blogAndGuides": "Blog & Ticket Guides",
+      "sellerTerms": "Seller Terms",
+      "resalePolicy": "Secondary Resale Policy",
+      "disputes": "Dispute Resolution",
+      "copyrightBuiltIn": "© 2026 PT SHINERVA PRAJNA TEJAS. All rights reserved. TIKUM — verified ticket marketplace operated under PT SHINERVA PRAJNA TEJAS. Built in Indonesia."
     },
     "status": {
       "LISTED": "Listed",
@@ -1263,7 +1462,9 @@
       "confirm": "Confirm",
       "close": "Close",
       "yes": "Yes",
-      "no": "No"
+      "no": "No",
+      "indonesia": "Indonesia",
+      "from": "From"
     },
     "venuePicSection": {
       "kicker": "Key TIKUM Differentiator",
@@ -1500,7 +1701,8 @@
       "verifiedCatalog": "TIKUM Official Catalog",
       "radarVerified": "Verified Radar",
       "allCategories": "All Categories",
-      "gateProtocol": "Gate Verification Protocol (TIKUM PIC)"
+      "gateProtocol": "Gate Verification Protocol (TIKUM PIC)",
+      "listedPrice": "Listed price"
     },
     "search": {
       "placeholder": "Search concerts, artists, festivals, or cities...",
@@ -1946,6 +2148,162 @@
       "allCities": "All Cities",
       "allCategories": "All Categories",
       "filter": "Filter"
+    },
+    "prelaunch": {
+      "title": "TIKUM is in pre-launch preparation.",
+      "bannerDesc": "Prospective sellers can now submit ticket listings for review. Purchasing, checkout, and payments are not yet available. Submitting a listing does not guarantee ticket verification or that a transaction can occur.",
+      "submitListingBtn": "Submit Ticket Listing"
+    },
+    "spotlight": {
+      "eyebrow": "TIKUM by PT SHINERVA PRAJNA TEJAS • Official Concert Radar & Secondary Ticket Marketplace",
+      "title": "Verified Concert Spotlight",
+      "subtitle": "Authoritative concert schedule verified against official promoters, dates, and confirmed visual provenance. TIKUM enforces Zero Fake Inventory — no phantom listings or artificial allocations.",
+      "promoterVerified": "✓ PROMOTER VERIFIED",
+      "officialChannel": "✓ OFFICIAL CHANNEL",
+      "primarySoldOut": "PRIMARY: SOLD OUT",
+      "artistLabel": "Artist:",
+      "nassarDate": "Saturday, November 7, 2026 • 19:00 WIB",
+      "nassarVenue": "Istora Senayan Jakarta • Central Jakarta",
+      "nassarArtists": "King Nassar & Erwin Gutawa Orchestra",
+      "nassarNotice": "Official primary tickets via Tiket.com / myBCA are Sold Out. Official announcements can be verified on Boss Creator's promoter portal.",
+      "nassarBossCreatorBtn": "View Official Boss Creator Announcement ↗",
+      "morganDate": "November 11, 2026 • 20:00 WIB (Doors Open 19:00 WIB)",
+      "morganVenue": "Nafiri Convention Hall (Central Park Mall) • West Jakarta",
+      "morganArtist": "Morgan Jay",
+      "morganNotice": "Official schedule confirmed on Megatix and Mad About Comedy. All official tickets are SOLD OUT. Prospective attendees are directed to the official Waiting List on Megatix / mac.lol.",
+      "morganWaitlistBtn": "Check Waiting List on Megatix ↗",
+      "resaleStockLabel": "TIKUM Secondary Resale Stock:",
+      "zeroInventory": "0 Tickets (None Available)",
+      "zeroFakeInventory": "0 Tickets (Zero Fake Inventory)",
+      "viewEventDetails": "View Event Details on TIKUM →",
+      "learnBuyerProtection": "Learn About TIKUM Buyer Protection"
+    },
+    "services": {
+      "kicker": "OFFICIAL PRODUCTS & SERVICES",
+      "title": "Core Services of the TIKUM Ticket Ecosystem",
+      "lead": "TIKUM provides secure and transparent secondary ticket marketplace infrastructure for concert, sports, and festival attendees in Indonesia.",
+      "card1Title": "1. Secondary Ticket Resale Marketplace",
+      "card1Desc": "Official marketplace for verified ticket holders who can no longer attend. Buyers acquire authentic tickets without the risks of informal social media deals.",
+      "card2Title": "2. Transaction Protection & Ticket Verification",
+      "card2Desc": "Payment funds are held administratively by the Tikum platform (platform-held) and only released to sellers once ticket validity is confirmed upon venue entry.",
+      "card3Title": "3. On-Site Field Assistance (Event PIC)",
+      "card3Desc": "TIKUM on-site coordinators attend selected confirmed events during gate hours to provide turnstile gate assistance and physical verification.",
+      "card4Title": "4. Ticket Verification & Anti-Duplication Hashing",
+      "card4Desc": "Ledger history logging and SHA-256 proof hashing to authenticate ownership documentation and prevent duplicate barcode registrations.",
+      "card5Title": "5. Structured Offers & Buy Now",
+      "card5Desc": "Structured negotiation mechanisms (Make Offer) within fair pricing caps and Buy Now purchasing with transparent all-in fee calculations upfront."
+    },
+    "pricing": {
+      "kicker": "TRANSPARENT PRICING & FEE STRUCTURE",
+      "title": "Official Fee Schedule & Checkout Simulation",
+      "lead": "All fee line-items are transparent and calculated automatically with zero hidden fees. A maximum +30% markup cap above official face value is strictly enforced for fair pricing.",
+      "colComponent": "Service Component",
+      "colRate": "Rate / Terms",
+      "colNotes": "Operational Notes",
+      "row1Name": "Listing Fee (Seller)",
+      "row1Rate": "IDR 0 (Free)",
+      "row1Notes": "Sellers can list tickets with zero upfront charges.",
+      "row2Name": "Buyer Platform Fee",
+      "row2Rate": "6% (Min. IDR 35,000, Max. IDR 300,000)",
+      "row2Notes": "Covers managed platform-held protection and ticket proof verification.",
+      "row3Name": "Seller Service Fee",
+      "row3Rate": "6% (Min. IDR 35,000, Max. IDR 300,000)",
+      "row3Notes": "Deducted from gross proceeds upon successful post-event payout.",
+      "row4Name": "Minimum Ticket Price Threshold",
+      "row4Rate": "IDR 500,000 per ticket",
+      "row4Notes": "Minimum transaction floor to ensure strict curation standards.",
+      "row5Name": "Seller Markup Cap",
+      "row5Rate": "Maximum +30% above Face Value",
+      "row5Notes": "Prevents unauthorized scalping and preserves fair ticket pricing.",
+      "card1Badge": "Simulation 1 • Floor Fee",
+      "card1Cat": "Standard Category",
+      "card1Title": "Concert Ticket IDR 500,000",
+      "card1SellerPriceLabel": "Seller Asking Price:",
+      "card1BuyerFeeLabel": "Buyer Platform Fee (6%, Min IDR 35k):",
+      "card1TotalLabel": "Buyer Total Checkout:",
+      "card1SellerNetLabel": "Net Seller Payout:",
+      "card1SellerNetDesc": "IDR 465,000 (after IDR 35,000 fee)",
+      "card1Btn": "View Payment Page",
+      "card2BadgeTop": "DEMO — NOT AVAILABLE FOR PURCHASE",
+      "card2Badge": "Simulation 2 • Proportional 6%",
+      "card2Cat": "Illustrative Category",
+      "card2Title": "Sample Ticket Checkout Simulation (Cat 1 — Illustrative)",
+      "card2Notice": "Illustrative price — not an active ticket offer. Demonstration transaction simulation only.",
+      "card2TicketPriceLabel": "Ticket Price (Illustrative price — not an active offer):",
+      "card2BuyerFeeLabel": "Buyer Platform Fee (6%):",
+      "card2TotalLabel": "Buyer Total Checkout:",
+      "card2SellerNetLabel": "Net Seller Payout:",
+      "card2SellerNetDesc": "IDR 1,410,000 (after IDR 90,000 fee)",
+      "card2Btn": "View Checkout Demo (/pay) →",
+      "bannerTitle": "Have Tickets for an Upcoming Concert or Event?",
+      "bannerDesc": "TIKUM is curating verified ticket inventory ahead of our official launch. Submit your tickets now for review by our curation team.",
+      "bannerBtn": "Submit Ticket Listing (/create)"
+    },
+    "comparison": {
+      "kicker": "SAFETY COMPARISON",
+      "title": "Why is TIKUM Different from the Usual Ways?",
+      "lead": "See how TIKUM transaction protection compares against informal scalpers and general marketplaces.",
+      "colNeeds": "Buyer & Seller Needs",
+      "colScalpers": "Informal Scalpers / Social Media (X, IG)",
+      "colStandard": "General E-Commerce",
+      "colTikum": "TIKUM — Verified Marketplace",
+      "row1Title": "Payment Security",
+      "row1Scalpers": "Direct wire transfer, 100% loss risk",
+      "row1Standard": "Generic e-commerce escrow",
+      "row1Tikum": "Funds held by platform until buyer successfully enters gate",
+      "row2Title": "Ticket Validity & Barcodes",
+      "row2Scalpers": "High risk of duplicate barcodes & fake screenshots",
+      "row2Standard": "Unverified manual document checks",
+      "row2Tikum": "Ledger transaction history & official data cross-check",
+      "row3Title": "Event-Day Venue Support",
+      "row3Scalpers": "Abandoned alone, seller contacts blocked",
+      "row3Standard": "Online chatbot support only",
+      "row3Tikum": "TIKUM on-site PIC team at venue (selected events)",
+      "row4Title": "Pricing Transparency",
+      "row4Scalpers": "Unchecked predatory markups",
+      "row4Standard": "Surprise administrative checkout fees",
+      "row4Tikum": "Transparent all-in 6% (min. IDR 35,000 per ticket), no surprise fees"
+    },
+    "discoveryRails": {
+      "justAnnouncedTitle": "Just Announced",
+      "justAnnouncedLead": "Latest official announcements from verified promoters & organizers",
+      "radarJabodetabekTitle": "Greater Jakarta Concert Radar (Songkick & Bandsintown)",
+      "radarJabodetabekLead": "Curated concerts from Songkick & Bandsintown radar verified against official promoter/artist sources",
+      "upcomingShowsTitle": "Upcoming Shows",
+      "upcomingShowsLead": "All verified events across Indonesia with authentic source provenance",
+      "lastCallTitle": "Last Call for Tickets",
+      "lastCallLead": "Happening within the next 7 days",
+      "concertsTitle": "Concerts",
+      "concertsLead": "Officially verified tours and concerts",
+      "festivalsTitle": "Festivals & Exhibitions",
+      "festivalsLead": "Music festivals, art exhibitions, and cultural experiences",
+      "sportsTitle": "Sports",
+      "sportsLead": "Official sports matches and tournaments",
+      "searchResultsTitle": "Search Results",
+      "searchResultsLead": "verified events found",
+      "emptyUpcoming": "No verified upcoming events yet.",
+      "emptySearch": "No verified events match your search criteria.",
+      "heroKicker": "Just Announced · Officially Verified",
+      "heroVerified": "Verified",
+      "heroViewEvent": "View Event Details",
+      "heroOfficialTickets": "Official Tickets",
+      "attributionText": "Official source attribution & concert discovery radar. Official ticketing data is provided by Live Nation Asia, LOKET, BBO Events, and official promoter channels (Color Asia Live, Plainsong Live, Ismaya Live, Dyandra Global, TEM Presents, PK Entertainment). Concert discovery radar channels Songkick and Bandsintown (Jakarta & Greater Jakarta) are used for tour monitoring and all entries are cross-verified against official performer/promoter channels before publication. TIKUM stores only factual data (event title, date, venue, city, price, and official links/posters with promoter credit) and does not copy promotional material. Instagram channels @infokonser, @livenationasia, and @ticketmasterasia serve as discovery signals (Tier 3) and are never used as verification authorities."
+    },
+    "modals": {
+      "provenanceTitle": "Official Verification Status",
+      "prov1": "Official Organizer & Promoter Confirmed",
+      "prov2": "Valid Venue & Event Permits Verified",
+      "prov3": "Official Ticket Pricing & Tier Structure Verified",
+      "prov4": "On-Site PIC Venue Assistance Option for Selected Events",
+      "authTitle": "Sign In to Tikum",
+      "authPrompt": "Enter your email to receive an instant sign-in magic link.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "name@email.com",
+      "sendMagicLinkBtn": "Send Magic Link",
+      "successTitle": "Check your email",
+      "successSentTo": "We have sent a magic link to",
+      "linkValidNote": "Link is valid for 15 minutes and can only be used once.",
+      "closeBtn": "Close"
     }
   },
   "zh-CN": {
@@ -3821,7 +4179,18 @@
       }
     } catch (e) {}
 
-    // 2. Stored user preference (localStorage 'tikum_lang')
+    // 2. Cookie user preference ('tikum_lang')
+    if (hasDoc && typeof document !== 'undefined' && document.cookie) {
+      try {
+        const match = document.cookie.match(/(?:^|;\s*)tikum_lang=([^;]+)/);
+        if (match && match[1]) {
+          const normCookie = normalizeLang(decodeURIComponent(match[1]));
+          if (normCookie) return normCookie;
+        }
+      } catch (e) {}
+    }
+
+    // 3. Stored user preference (localStorage 'tikum_lang')
     try {
       let saved = null;
       if (overrideStorage !== undefined) {
@@ -3833,7 +4202,7 @@
       if (normSaved) return normSaved;
     } catch (e) {}
 
-    // 3. Default fallback: Indonesian ('id')
+    // 4. Default fallback: Indonesian ('id')
     return 'id';
   }
 
@@ -3922,16 +4291,20 @@
     if (amount === null || amount === undefined || isNaN(Number(amount))) return '0';
     const n = Number(amount);
     const curr = String(currency || 'IDR').toUpperCase();
+    if (curr === 'IDR') {
+      if (currentLang === 'en') {
+        return 'IDR ' + Math.round(n).toLocaleString('en-US');
+      } else {
+        return 'Rp ' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+    }
     try {
       return new Intl.NumberFormat(getLocaleTag(currentLang), {
         style: 'currency',
         currency: curr,
-        maximumFractionDigits: (curr === 'IDR' ? 0 : 2)
-      }).format(n);
+        maximumFractionDigits: 0
+      }).format(n).replace(/\u00a0/g, ' ');
     } catch (e) {
-      if (curr === 'IDR') {
-        return 'Rp ' + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-      }
       return `${curr} ${n.toLocaleString()}`;
     }
   }
@@ -3967,6 +4340,9 @@
     }
 
     if (hasDoc) {
+      try {
+        document.cookie = 'tikum_lang=' + encodeURIComponent(norm) + ';path=/;max-age=31536000;SameSite=Lax';
+      } catch (e) {}
       document.documentElement.lang = norm;
       const isRtl = norm === 'ar';
       document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
@@ -4132,6 +4508,7 @@
     getLang: () => currentLang,
     getTheme: () => currentTheme,
     setLang: applyLanguage,
+    applyLanguage: applyLanguage,
     setTheme: applyTheme,
     translateStatus,
     translateError,
