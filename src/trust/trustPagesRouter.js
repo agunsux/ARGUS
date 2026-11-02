@@ -19,6 +19,24 @@ const { TechnicalSEOService } = require('../seo/TechnicalSEOService');
 const { StructuredDataFactory } = require('../seo/StructuredDataFactory');
 const { renderFooterHtml } = require('../config/businessProfile');
 
+function resolveRequestLang(req) {
+  if (!req) return 'id';
+  if (req.query && (req.query.lang || req.query.locale)) {
+    const q = (req.query.lang || req.query.locale).toLowerCase();
+    if (q === 'en' || q.startsWith('en-')) return 'en';
+    if (q === 'id' || q.startsWith('id-')) return 'id';
+  }
+  if (req.headers && req.headers.cookie) {
+    const match = req.headers.cookie.match(/(?:^|;\s*)tikum_lang=([^;]+)/);
+    if (match && match[1]) {
+      const c = decodeURIComponent(match[1]).toLowerCase();
+      if (c === 'en' || c.startsWith('en-')) return 'en';
+      if (c === 'id' || c.startsWith('id-')) return 'id';
+    }
+  }
+  return 'id';
+}
+
 function renderTrustNavHeader(activePath = '', lang = 'id') {
   const isEn = lang === 'en';
   return `
@@ -117,8 +135,8 @@ function renderTrustLayout({ lang = 'id', title, description, canonicalPath, h1,
 // 1. /how-it-works
 // -------------------------------------------------------------
 router.get('/how-it-works', (req, res) => {
-  const isEn = (req.query.lang || '').toLowerCase() === 'en';
-  const lang = isEn ? 'en' : 'id';
+  const lang = resolveRequestLang(req);
+  const isEn = lang === 'en';
 
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:20px;">
@@ -252,8 +270,8 @@ router.get('/how-it-works', (req, res) => {
 // 2. /buyer-protection, /panduan-pembeli & /how-to-buy
 // -------------------------------------------------------------
 router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) => {
-  const isEn = (req.query.lang || '').toLowerCase() === 'en';
-  const lang = isEn ? 'en' : 'id';
+  const lang = resolveRequestLang(req);
+  const isEn = lang === 'en';
 
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:24px;">
@@ -671,8 +689,8 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
 // 3. /seller-protection, /panduan-penjual & /how-to-sell
 // -------------------------------------------------------------
 router.get(['/seller-protection', '/panduan-penjual', '/how-to-sell'], (req, res) => {
-  const isEn = (req.query.lang || '').toLowerCase() === 'en';
-  const lang = isEn ? 'en' : 'id';
+  const lang = resolveRequestLang(req);
+  const isEn = lang === 'en';
 
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:20px;">
@@ -738,8 +756,8 @@ router.get(['/seller-protection', '/panduan-penjual', '/how-to-sell'], (req, res
 // 4. /ticket-verification
 // -------------------------------------------------------------
 router.get('/ticket-verification', (req, res) => {
-  const isEn = (req.query.lang || '').toLowerCase() === 'en';
-  const lang = isEn ? 'en' : 'id';
+  const lang = resolveRequestLang(req);
+  const isEn = lang === 'en';
 
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:20px;">
@@ -817,8 +835,8 @@ router.get('/ticket-verification', (req, res) => {
 // 5. /escrow
 // -------------------------------------------------------------
 router.get('/escrow', (req, res) => {
-  const isEn = (req.query.lang || '').toLowerCase() === 'en';
-  const lang = isEn ? 'en' : 'id';
+  const lang = resolveRequestLang(req);
+  const isEn = lang === 'en';
 
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:20px;">
@@ -884,8 +902,8 @@ router.get('/escrow', (req, res) => {
 // 6. /disputes & /dispute-resolution
 // -------------------------------------------------------------
 router.get(['/disputes', '/dispute-resolution'], (req, res) => {
-  const isEn = (req.query.lang || '').toLowerCase() === 'en';
-  const lang = isEn ? 'en' : 'id';
+  const lang = resolveRequestLang(req);
+  const isEn = lang === 'en';
 
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:20px;">
@@ -969,8 +987,8 @@ router.get(['/disputes', '/dispute-resolution'], (req, res) => {
 // 7. /about — Official Business Identity & Operational Disclosures
 // -------------------------------------------------------------
 router.get('/about', (req, res) => {
-  const isEn = (req.query.lang || '').toLowerCase() === 'en';
-  const lang = isEn ? 'en' : 'id';
+  const lang = resolveRequestLang(req);
+  const isEn = lang === 'en';
 
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:24px;">
@@ -1122,8 +1140,8 @@ router.get('/about', (req, res) => {
 // 8. /fees — Platform Fees & Transparent Pricing Structure
 // -------------------------------------------------------------
 router.get('/fees', (req, res) => {
-  const isEn = (req.query.lang || '').toLowerCase() === 'en';
-  const lang = isEn ? 'en' : 'id';
+  const lang = resolveRequestLang(req);
+  const isEn = lang === 'en';
 
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:24px;">
@@ -1273,8 +1291,8 @@ router.get('/fees', (req, res) => {
 // 9. /seller-terms — Seller Obligations & Listing Requirements
 // -------------------------------------------------------------
 router.get('/seller-terms', (req, res) => {
-  const isEn = (req.query.lang || '').toLowerCase() === 'en';
-  const lang = isEn ? 'en' : 'id';
+  const lang = resolveRequestLang(req);
+  const isEn = lang === 'en';
 
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:24px;">
@@ -1370,8 +1388,8 @@ router.get('/seller-terms', (req, res) => {
 // 10. /resale-policy — Secondary Ticket Resale & Organizer Policy
 // -------------------------------------------------------------
 router.get('/resale-policy', (req, res) => {
-  const isEn = (req.query.lang || '').toLowerCase() === 'en';
-  const lang = isEn ? 'en' : 'id';
+  const lang = resolveRequestLang(req);
+  const isEn = lang === 'en';
 
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:24px;">
@@ -1521,8 +1539,8 @@ router.get('/resale-policy', (req, res) => {
 // 11. /payment-flow — Funds Flow & Double-Entry Ledger Truth
 // -------------------------------------------------------------
 router.get('/payment-flow', (req, res) => {
-  const isEn = (req.query.lang || '').toLowerCase() === 'en';
-  const lang = isEn ? 'en' : 'id';
+  const lang = resolveRequestLang(req);
+  const isEn = lang === 'en';
 
   const contentHtml = isEn ? `
     <div style="display:flex; flex-direction:column; gap:24px;">

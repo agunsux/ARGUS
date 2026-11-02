@@ -122,7 +122,8 @@ class EventSEOService {
   /**
    * Generates complete SSR HTML for the event landing page.
    */
-  static renderEventPageHtml(event, activeListings = [], relatedEvents = []) {
+  static renderEventPageHtml(event, activeListings = [], relatedEvents = [], locale = 'id') {
+    const isEn = locale === 'en';
     const isPastOrConcluded = !EventTemporalLifecycleEngine.isEventUpcoming(event);
     const validRelated = (relatedEvents || []).filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e));
     const jsonLd = JSON.stringify(this.buildStructuredData(event, activeListings));
@@ -498,7 +499,7 @@ class EventSEOService {
     }
 
     return `<!DOCTYPE html>
-<html lang="id">
+<html lang="${locale}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -579,16 +580,16 @@ class EventSEOService {
     <div class="prelaunch-notice-banner" style="background:#fffbeb; border:1.5px solid #f59e0b; border-radius:10px; padding:16px 20px; margin-bottom:20px; display:flex; gap:14px; align-items:flex-start;">
       <i class="fa-solid fa-circle-info" style="font-size:22px; color:#d97706; margin-top:2px; flex-shrink:0;"></i>
       <div>
-        <strong style="display:block; font-size:14.5px; font-weight:800; color:#92400e; margin-bottom:4px;">TIKUM sedang dalam tahap persiapan peluncuran.</strong>
-        <p style="margin:0; font-size:13px; line-height:1.5; color:#78350f;">
-          Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran belum tersedia. Pengajuan listing tidak menjamin tiket telah terverifikasi atau transaksi dapat dilakukan.
+        <strong style="display:block; font-size:14.5px; font-weight:800; color:#92400e; margin-bottom:4px;" data-i18n="prelaunch.title">${isEn ? 'TIKUM is in pre-launch preparation.' : 'TIKUM sedang dalam tahap persiapan peluncuran.'}</strong>
+        <p style="margin:0; font-size:13px; line-height:1.5; color:#78350f;" data-i18n="prelaunch.bannerDesc">
+          ${isEn ? 'Prospective sellers can submit ticket listings for review. Purchasing, checkout, and payments are not yet available. Submitting a listing does not guarantee tickets are verified or that transactions can take place.' : 'Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran belum tersedia. Pengajuan listing tidak menjamin tiket telah terverifikasi atau transaksi dapat dilakukan.'}
         </p>
       </div>
     </div>
     ` : ''}
     <nav style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
-      <a href="/" style="color: #94a3b8; text-decoration: none;" data-i18n="nav.home">Beranda</a> &rsaquo;
-      <a href="/events" style="color: #94a3b8; text-decoration: none;" data-i18n="nav.events">Event</a> &rsaquo;
+      <a href="/" style="color: #94a3b8; text-decoration: none;" data-i18n="nav.home">${isEn ? 'Home' : 'Beranda'}</a> &rsaquo;
+      <a href="/events" style="color: #94a3b8; text-decoration: none;" data-i18n="nav.events">${isEn ? 'Events' : 'Event'}</a> &rsaquo;
       <a href="/events/city/${encodeURIComponent(city.toLowerCase())}" style="color: #94a3b8; text-decoration: none;">${city}</a> &rsaquo; 
       <span style="color: #f8fafc;">${event.canonical_name}</span>
     </nav>
@@ -686,7 +687,7 @@ class EventSEOService {
     ${relatedHtml}
   </main>
 
-  ${renderFooterHtml()}
+  ${renderFooterHtml(locale)}
 
   <script src="/js/i18n.js"></script>
 

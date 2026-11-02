@@ -53,19 +53,19 @@
     <nav class="ln-nav-links">
       <a class="ln-nav-link" href="#verifiedConcertHero" style="color:#34d399; font-weight:700;"><i class="fa-solid fa-star"></i> <span data-i18n="nav.featuredEvents">Konser Pilihan</span></a>
       <a class="ln-nav-link" href="/events" data-i18n="nav.events">Jelajah Konser</a>
-      <a class="ln-nav-link" href="#services">Produk &amp; Layanan</a>
-      <a class="ln-nav-link" href="#pricing">Harga &amp; Biaya</a>
-      <a class="ln-nav-link" href="/create" style="color:var(--primary); font-weight:700;"><i class="fa-solid fa-plus-circle"></i> Ajukan Listing</a>
+      <a class="ln-nav-link" href="#services" data-i18n="nav.productsAndServices">Produk &amp; Layanan</a>
+      <a class="ln-nav-link" href="#pricing" data-i18n="nav.pricingAndFees">Harga &amp; Biaya</a>
+      <a class="ln-nav-link" href="/create" style="color:var(--primary); font-weight:700;"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.submitListing">Ajukan Listing</span></a>
       <a class="ln-nav-link" href="#upcoming" data-i18n="nav.allEvents">Semua Event</a>
       <a class="ln-nav-link" href="/events?category=MUSIC" onclick="applyNavCategory('MUSIC'); return false;" data-i18n="nav.concerts">Konser</a>
       <a class="ln-nav-link" href="/events?category=SPORT" onclick="applyNavCategory('SPORT'); return false;" data-i18n="nav.sports">Olahraga</a>
       <a class="ln-nav-link" href="/events?category=COMEDY" onclick="applyNavCategory('COMEDY'); return false;" data-i18n="nav.comedy">Stand Up Comedy</a>
-      <a class="ln-nav-link" href="/panduan-pembeli" style="color:#38bdf8; font-weight:700;"><i class="fa-solid fa-book-open"></i> Panduan Pembeli</a>
+      <a class="ln-nav-link" href="/panduan-pembeli" style="color:#38bdf8; font-weight:700;"><i class="fa-solid fa-book-open"></i> <span data-i18n="nav.buyerGuide">Panduan Pembeli</span></a>
       <a class="ln-nav-link" href="/contact" data-i18n="nav.support">Bantuan</a>
     </nav>
     <div class="header-actions">
       <span class="ln-nav-link header-location-badge" style="cursor:default; display:inline-flex; align-items:center; gap:6px;">
-        <img src="/assets/tikum-mark-pin.svg" width="14" height="14" alt="Indonesia"> Indonesia
+        <img src="/assets/tikum-mark-pin.svg" width="14" height="14" alt="Indonesia"> <span data-i18n="common.indonesia">Indonesia</span>
       </span>
       <div id="authHeaderContainer">
         <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up" data-i18n="auth.signInSignUp">Masuk / Daftar</button>
@@ -82,11 +82,11 @@
     <div style="max-width:1200px; margin:0 auto; display:flex; align-items:flex-start; gap:12px;">
       <i class="fa-solid fa-circle-info" style="font-size:20px; color:#D97706; margin-top:2px; flex-shrink:0;"></i>
       <div style="flex:1;">
-        <strong style="color:#78350F; font-size:14px; display:block; margin-bottom:2px;">TIKUM sedang dalam tahap persiapan peluncuran.</strong>
-        <span>Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran belum tersedia. Pengajuan listing tidak menjamin tiket telah terverifikasi atau transaksi dapat dilakukan.</span>
+        <strong style="color:#78350F; font-size:14px; display:block; margin-bottom:2px;" data-i18n="prelaunch.title">TIKUM sedang dalam tahap persiapan peluncuran.</strong>
+        <span data-i18n="prelaunch.bannerDesc">Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran belum tersedia. Pengajuan listing tidak menjamin tiket telah terverifikasi atau transaksi dapat dilakukan.</span>
       </div>
       <a href="/create" style="padding:6px 14px; background:#D97706; color:#FFF; font-weight:700; border-radius:6px; text-decoration:none; white-space:nowrap; font-size:12.5px; align-self:center;">
-        <i class="fa-solid fa-plus-circle"></i> Ajukan Listing Tiket
+        <i class="fa-solid fa-plus-circle"></i> <span data-i18n="prelaunch.submitListingBtn">Ajukan Listing Tiket</span>
       </a>
     </div>
   </div>
@@ -95,10 +95,10 @@
   <section class="hero-spotlight-section" id="verifiedConcertHero">
     <div class="hero-banner">
       <div class="hero-eyebrow">
-        <span>●</span> TIKUM oleh PT SHINERVA PRAJNA TEJAS • Official Concert Radar &amp; Secondary Ticket Marketplace
+        <span>●</span> <span data-i18n="spotlight.eyebrow">TIKUM oleh PT SHINERVA PRAJNA TEJAS • Official Concert Radar &amp; Secondary Ticket Marketplace</span>
       </div>
-      <h1 class="hero-title">Sorotan Konser Terverifikasi</h1>
-      <p class="hero-subtitle">
+      <h1 class="hero-title" data-i18n="spotlight.title">Sorotan Konser Terverifikasi</h1>
+      <p class="hero-subtitle" data-i18n="spotlight.subtitle">
         Data konser resmi dengan validasi tanggal, promotor otoritatif, dan visual provenance terkonfirmasi. TIKUM menerapkan <em>Zero Fake Inventory</em> — tidak ada stok palsu atau kuota buatan.
       </p>
     </div>
@@ -119,8 +119,8 @@
             onerror="this.onerror=null; this.src='/assets/placeholder-event.svg';"
           >
           <div class="poster-overlay">
-            <span class="badge badge-verified">✓ PROMOTER VERIFIED</span>
-            <span class="badge badge-soldout">PRIMARY: SOLD OUT</span>
+            <span class="badge badge-verified" data-i18n="spotlight.promoterVerified">✓ PROMOTER VERIFIED</span>
+            <span class="badge badge-soldout" data-i18n="spotlight.primarySoldOut">PRIMARY: SOLD OUT</span>
           </div>
         </div>
         <div class="card-body">
@@ -129,36 +129,36 @@
           <div class="meta-list">
             <div class="meta-item">
               <span>📅</span>
-              <div><strong>Sabtu, 7 November 2026</strong> • 19:00 WIB</div>
+              <div><strong data-i18n="spotlight.nassarDate">Sabtu, 7 November 2026 • 19:00 WIB</strong></div>
             </div>
             <div class="meta-item">
               <span>📍</span>
-              <div><strong>Istora Senayan Jakarta</strong> • Jakarta Pusat</div>
+              <div><strong data-i18n="spotlight.nassarVenue">Istora Senayan Jakarta • Jakarta Pusat</strong></div>
             </div>
             <div class="meta-item">
               <span>👥</span>
-              <div>Artis: <strong>King Nassar &amp; Erwin Gutawa Orchestra</strong></div>
+              <div><span data-i18n="spotlight.artistLabel">Artis:</span> <strong data-i18n="spotlight.nassarArtists">King Nassar &amp; Erwin Gutawa Orchestra</strong></div>
             </div>
           </div>
 
-          <div class="notice-box">
+          <div class="notice-box" data-i18n-html data-i18n="spotlight.nassarNotice">
             Tiket primary resmi melalui Tiket.com / myBCA telah berstatus <strong>Sold Out</strong>.
             Pemberitahuan resmi dapat dicek di website promotor Boss Creator.
           </div>
 
           <div class="resale-status">
-            <span>Stok Resale Sekunder TIKUM:</span>
-            <span class="resale-zero">0 Tiket (Belum Ada)</span>
+            <span data-i18n="spotlight.resaleStockLabel">Stok Resale Sekunder TIKUM:</span>
+            <span class="resale-zero" data-i18n="spotlight.zeroInventory">0 Tiket (Belum Ada)</span>
           </div>
 
           <div class="btn-group">
-            <a href="https://bosscreator.id/" target="_blank" rel="noopener noreferrer" class="btn-primary">
+            <a href="https://bosscreator.id/" target="_blank" rel="noopener noreferrer" class="btn-primary" data-i18n="spotlight.nassarBossCreatorBtn">
               Lihat Pengumuman Resmi Boss Creator ↗
             </a>
-            <a href="/events/king-nassar-lost-in-the-jungle-jakarta-2026" class="btn-secondary">
+            <a href="/events/king-nassar-lost-in-the-jungle-jakarta-2026" class="btn-secondary" data-i18n="spotlight.viewEventDetails">
               Lihat Halaman Event di TIKUM →
             </a>
-            <a href="/panduan-pembeli" class="btn-secondary">
+            <a href="/panduan-pembeli" class="btn-secondary" data-i18n="spotlight.learnBuyerProtection">
               Pelajari Proteksi Pembeli TIKUM
             </a>
           </div>
@@ -179,8 +179,8 @@
             onerror="this.onerror=null; this.src='/assets/placeholder-event.svg';"
           >
           <div class="poster-overlay">
-            <span class="badge badge-verified">✓ OFFICIAL CHANNEL</span>
-            <span class="badge badge-soldout" style="background:#dc2626; color:#fff;">PRIMARY: SOLD OUT</span>
+            <span class="badge badge-verified" data-i18n="spotlight.officialChannel">✓ OFFICIAL CHANNEL</span>
+            <span class="badge badge-soldout" style="background:#dc2626; color:#fff;" data-i18n="spotlight.primarySoldOut">PRIMARY: SOLD OUT</span>
           </div>
         </div>
         <div class="card-body">
@@ -189,35 +189,35 @@
           <div class="meta-list">
             <div class="meta-item">
               <span>📅</span>
-              <div><strong>11 November 2026</strong> • 20:00 WIB (Pintu Buka 19:00 WIB)</div>
+              <div><strong data-i18n="spotlight.morganDate">11 November 2026 • 20:00 WIB (Pintu Buka 19:00 WIB)</strong></div>
             </div>
             <div class="meta-item">
               <span>📍</span>
-              <div><strong>Nafiri Convention Hall (Central Park Mall)</strong> • Jakarta Barat</div>
+              <div><strong data-i18n="spotlight.morganVenue">Nafiri Convention Hall (Central Park Mall) • Jakarta Barat</strong></div>
             </div>
             <div class="meta-item">
               <span>👥</span>
-              <div>Artis: <strong>Morgan Jay</strong></div>
+              <div><span data-i18n="spotlight.artistLabel">Artis:</span> <strong data-i18n="spotlight.morganArtist">Morgan Jay</strong></div>
             </div>
           </div>
 
-          <div class="notice-box">
+          <div class="notice-box" data-i18n-html data-i18n="spotlight.morganNotice">
             Jadwal resmi terkonfirmasi di portal Megatix dan Mad About Comedy. Seluruh tiket resmi telah <strong>SOLD OUT</strong>. Calon penonton diarahkan mendaftar <strong>Waiting List</strong> resmi di portal Megatix / mac.lol.
           </div>
 
           <div class="resale-status">
-            <span>Stok Resale Sekunder TIKUM:</span>
-            <span class="resale-zero">0 Tiket (Zero Fake Inventory)</span>
+            <span data-i18n="spotlight.resaleStockLabel">Stok Resale Sekunder TIKUM:</span>
+            <span class="resale-zero" data-i18n="spotlight.zeroFakeInventory">0 Tiket (Zero Fake Inventory)</span>
           </div>
 
           <div class="btn-group">
-            <a href="https://megatix.co.id/events/MorganJay2026A" target="_blank" rel="noopener noreferrer" class="btn-primary">
+            <a href="https://megatix.co.id/events/MorganJay2026A" target="_blank" rel="noopener noreferrer" class="btn-primary" data-i18n="spotlight.morganWaitlistBtn">
               Cek Waiting List di Megatix ↗
             </a>
-            <a href="/events/morgan-jay-the-goofy-guy-tour-jakarta-2026" class="btn-secondary">
+            <a href="/events/morgan-jay-the-goofy-guy-tour-jakarta-2026" class="btn-secondary" data-i18n="spotlight.viewEventDetails">
               Lihat Detail Event di TIKUM →
             </a>
-            <a href="/panduan-pembeli" class="btn-secondary">
+            <a href="/panduan-pembeli" class="btn-secondary" data-i18n="spotlight.learnBuyerProtection">
               Pelajari Proteksi Pembeli TIKUM
             </a>
           </div>
@@ -282,35 +282,35 @@
   <!-- Products and Services Section -->
   <section class="landing-section" id="services">
     <div class="landing-section-header">
-      <div class="landing-kicker">PRODUK &amp; LAYANAN RESMI</div>
-      <h2 class="landing-title">Layanan Utama Ekosistem Tiket TIKUM</h2>
-      <p class="landing-lead">TIKUM menyediakan infrastruktur pasar sekunder yang aman dan transparan bagi penikmat konser, olahraga, dan festival di Indonesia.</p>
+      <div class="landing-kicker" data-i18n="services.kicker">PRODUK &amp; LAYANAN RESMI</div>
+      <h2 class="landing-title" data-i18n="services.title">Layanan Utama Ekosistem Tiket TIKUM</h2>
+      <p class="landing-lead" data-i18n="services.lead">TIKUM menyediakan infrastruktur pasar sekunder yang aman dan transparan bagi penikmat konser, olahraga, dan festival di Indonesia.</p>
     </div>
     <div class="trust-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
       <div class="trust-card">
         <div class="trust-card-icon" style="color:#047857; background:rgba(4, 120, 87, 0.12);"><i class="fa-solid fa-ticket"></i></div>
-        <h3 class="trust-card-title">1. Pasar Resale Tiket Sekunder</h3>
-        <p class="trust-card-desc">Platform resmi jual-beli tiket sekunder bagi pemilik tiket yang berhalangan hadir. Pembeli mendapatkan tiket valid tanpa risiko transaksi langsung di media sosial.</p>
+        <h3 class="trust-card-title" data-i18n="services.card1Title">1. Pasar Resale Tiket Sekunder</h3>
+        <p class="trust-card-desc" data-i18n="services.card1Desc">Platform resmi jual-beli tiket sekunder bagi pemilik tiket yang berhalangan hadir. Pembeli mendapatkan tiket valid tanpa risiko transaksi langsung di media sosial.</p>
       </div>
       <div class="trust-card">
         <div class="trust-card-icon" style="color:#2563EB; background:rgba(37, 99, 235, 0.12);"><i class="fa-solid fa-shield-halved"></i></div>
-        <h3 class="trust-card-title">2. Perlindungan Transaksi &amp; Verifikasi Tiket</h3>
-        <p class="trust-card-desc">Dana pembayaran ditahan sementara oleh platform Tikum (platform-held) dan baru dilepaskan ke penjual setelah tiket terkonfirmasi valid atau pembeli berhasil masuk ke acara.</p>
+        <h3 class="trust-card-title" data-i18n="services.card2Title">2. Perlindungan Transaksi &amp; Verifikasi Tiket</h3>
+        <p class="trust-card-desc" data-i18n="services.card2Desc">Dana pembayaran ditahan sementara oleh platform Tikum (platform-held) dan baru dilepaskan ke penjual setelah tiket terkonfirmasi valid atau pembeli berhasil masuk ke acara.</p>
       </div>
       <div class="trust-card">
         <div class="trust-card-icon" style="color:#D97706; background:rgba(217, 119, 6, 0.12);"><i class="fa-solid fa-user-shield"></i></div>
-        <h3 class="trust-card-title">3. Layanan Pendampingan Lapangan (Event PIC)</h3>
-        <p class="trust-card-desc">Koordinator lapangan TIKUM hadir mendampingi pada event-event terpilih yang terkonfirmasi selama jam operasional gerbang (gate hours) untuk asistensi turnstile dan verifikasi fisik.</p>
+        <h3 class="trust-card-title" data-i18n="services.card3Title">3. Layanan Pendampingan Lapangan (Event PIC)</h3>
+        <p class="trust-card-desc" data-i18n="services.card3Desc">Koordinator lapangan TIKUM hadir mendampingi pada event-event terpilih yang terkonfirmasi selama jam operasional gerbang (gate hours) untuk asistensi turnstile dan verifikasi fisik.</p>
       </div>
       <div class="trust-card">
         <div class="trust-card-icon" style="color:#7C3AED; background:rgba(124, 58, 237, 0.12);"><i class="fa-solid fa-fingerprint"></i></div>
-        <h3 class="trust-card-title">4. Verifikasi Tiket &amp; Hashing Anti-Duplikasi</h3>
-        <p class="trust-card-desc">Sistem pencatatan riwayat tiket dan hashing bukti SHA-256 untuk memverifikasi dokumen kepemilikan dan mencegah tiket yang sama didaftarkan ganda.</p>
+        <h3 class="trust-card-title" data-i18n="services.card4Title">4. Verifikasi Tiket &amp; Hashing Anti-Duplikasi</h3>
+        <p class="trust-card-desc" data-i18n="services.card4Desc">Sistem pencatatan riwayat tiket dan hashing bukti SHA-256 untuk memverifikasi dokumen kepemilikan dan mencegah tiket yang sama didaftarkan ganda.</p>
       </div>
       <div class="trust-card">
         <div class="trust-card-icon" style="color:#059669; background:rgba(5, 150, 105, 0.12);"><i class="fa-solid fa-handshake-angle"></i></div>
-        <h3 class="trust-card-title">5. Penawaran Terstruktur &amp; Beli Langsung</h3>
-        <p class="trust-card-desc">Mekanisme negosiasi terstruktur (Make Offer) dengan batas wajar dan fitur Beli Langsung (Buy Now) dengan kalkulasi all-in transparan sejak awal.</p>
+        <h3 class="trust-card-title" data-i18n="services.card5Title">5. Penawaran Terstruktur &amp; Beli Langsung</h3>
+        <p class="trust-card-desc" data-i18n="services.card5Desc">Mekanisme negosiasi terstruktur (Make Offer) dengan batas wajar dan fitur Beli Langsung (Buy Now) dengan kalkulasi all-in transparan sejak awal.</p>
       </div>
     </div>
   </section>
@@ -318,9 +318,9 @@
   <!-- Pricing & Fee Structure Section -->
   <section class="landing-section" id="pricing">
     <div class="landing-section-header">
-      <div class="landing-kicker">STRUKTUR HARGA &amp; BIAYA TRANSPARAN</div>
-      <h2 class="landing-title">Skema Biaya Resmi &amp; Simulasi Checkout</h2>
-      <p class="landing-lead">Semua rincian biaya terbuka dan dihitung otomatis tanpa biaya tersembunyi. Berlaku aturan batas markup maksimal 30% dari harga resmi promotor demi keadilan harga.</p>
+      <div class="landing-kicker" data-i18n="pricing.kicker">STRUKTUR HARGA &amp; BIAYA TRANSPARAN</div>
+      <h2 class="landing-title" data-i18n="pricing.title">Skema Biaya Resmi &amp; Simulasi Checkout</h2>
+      <p class="landing-lead" data-i18n="pricing.lead">Semua rincian biaya terbuka dan dihitung otomatis tanpa biaya tersembunyi. Berlaku aturan batas markup maksimal 30% dari harga resmi promotor demi keadilan harga.</p>
     </div>
 
     <!-- Pricing Policy Table -->
@@ -328,36 +328,36 @@
       <table class="comparison-table">
         <thead>
           <tr>
-            <th>Komponen Layanan</th>
-            <th>Ketentuan / Tarif</th>
-            <th>Keterangan Operasional</th>
+            <th data-i18n="pricing.colComponent">Komponen Layanan</th>
+            <th data-i18n="pricing.colRate">Ketentuan / Tarif</th>
+            <th data-i18n="pricing.colNotes">Keterangan Operasional</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>Biaya Pasang Listing (Seller)</strong></td>
-            <td><strong style="color: #34D399;">Rp 0 (Gratis)</strong></td>
-            <td>Penjual dapat mendaftarkan tiket tanpa biaya awal di muka.</td>
+            <td><strong data-i18n="pricing.row1Name">Biaya Pasang Listing (Seller)</strong></td>
+            <td><strong style="color: #34D399;" data-i18n="pricing.row1Rate">Rp 0 (Gratis)</strong></td>
+            <td data-i18n="pricing.row1Notes">Penjual dapat mendaftarkan tiket tanpa biaya awal di muka.</td>
           </tr>
           <tr>
-            <td><strong>Biaya Platform Pembeli (Buyer Fee)</strong></td>
-            <td><strong>6%</strong> (Min. Rp35.000, Maks. Rp300.000)</td>
-            <td>Mencakup perlindungan transaksi terkelola (platform-held) dan verifikasi bukti tiket.</td>
+            <td><strong data-i18n="pricing.row2Name">Biaya Platform Pembeli (Buyer Fee)</strong></td>
+            <td data-i18n="pricing.row2Rate"><strong>6%</strong> (Min. Rp35.000, Maks. Rp300.000)</td>
+            <td data-i18n="pricing.row2Notes">Mencakup perlindungan transaksi terkelola (platform-held) dan verifikasi bukti tiket.</td>
           </tr>
           <tr>
-            <td><strong>Biaya Layanan Penjual (Seller Fee)</strong></td>
-            <td><strong>6%</strong> (Min. Rp35.000, Maks. Rp300.000)</td>
-            <td>Dipotong dari hasil penjualan saat pencairan dana pasca-acara berhasil.</td>
+            <td><strong data-i18n="pricing.row3Name">Biaya Layanan Penjual (Seller Fee)</strong></td>
+            <td data-i18n="pricing.row3Rate"><strong>6%</strong> (Min. Rp35.000, Maks. Rp300.000)</td>
+            <td data-i18n="pricing.row3Notes">Dipotong dari hasil penjualan saat pencairan dana pasca-acara berhasil.</td>
           </tr>
           <tr>
-            <td><strong>Batas Harga Tiket Minimum</strong></td>
-            <td><strong>Rp 500.000</strong> per tiket</td>
-            <td>Batas nominal transaksi minimum untuk memastikan standar kurasi tiket.</td>
+            <td><strong data-i18n="pricing.row4Name">Batas Harga Tiket Minimum</strong></td>
+            <td data-i18n="pricing.row4Rate"><strong>Rp 500.000</strong> per tiket</td>
+            <td data-i18n="pricing.row4Notes">Batas nominal transaksi minimum untuk memastikan standar kurasi tiket.</td>
           </tr>
           <tr>
-            <td><strong>Batas Markup Penjual (Markup Cap)</strong></td>
-            <td><strong>Maksimal +30%</strong> dari Face Value</td>
-            <td>Mencegah praktik calo liar dan menjaga harga tiket tetap wajar.</td>
+            <td><strong data-i18n="pricing.row5Name">Batas Markup Penjual (Markup Cap)</strong></td>
+            <td data-i18n="pricing.row5Rate"><strong>Maksimal +30%</strong> dari Face Value</td>
+            <td data-i18n="pricing.row5Notes">Mencegah praktik calo liar dan menjaga harga tiket tetap wajar.</td>
           </tr>
         </tbody>
       </table>
@@ -368,64 +368,64 @@
       <!-- Card 1: Contoh Tiket Rp 500.000 -->
       <div class="trust-card" style="border: 1px solid var(--line-300); background: var(--surface); padding: 24px; border-radius: 12px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <span class="badge badge-neutral">Simulasi 1 • Floor Fee</span>
-          <span style="font-size: 13px; color: var(--color-text-muted, #6B7280);">Kategori Standar</span>
+          <span class="badge badge-neutral" data-i18n="pricing.card1Badge">Simulasi 1 • Floor Fee</span>
+          <span style="font-size: 13px; color: var(--color-text-muted, #6B7280);" data-i18n="pricing.card1Cat">Kategori Standar</span>
         </div>
-        <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 16px;">Tiket Konser Rp 500.000</h3>
+        <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 16px;" data-i18n="pricing.card1Title">Tiket Konser Rp 500.000</h3>
         <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; border-top: 1px solid var(--line-100); padding-top: 12px; margin-bottom: 16px;">
           <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--color-text-muted, #6B7280);">Harga Tiket Penjual:</span>
-            <strong>Rp 500.000</strong>
+            <span style="color: var(--color-text-muted, #6B7280);" data-i18n="pricing.card1SellerPriceLabel">Harga Tiket Penjual:</span>
+            <strong data-price-idr="500000">Rp 500.000</strong>
           </div>
           <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--color-text-muted, #6B7280);">Biaya Platform Pembeli (6%, Min Rp35k):</span>
-            <span style="color: var(--primary); font-weight: 600;">+Rp 35.000</span>
+            <span style="color: var(--color-text-muted, #6B7280);" data-i18n="pricing.card1BuyerFeeLabel">Biaya Platform Pembeli (6%, Min Rp35k):</span>
+            <span style="color: var(--primary); font-weight: 600;" data-price-idr="35000">+Rp 35.000</span>
           </div>
           <div style="display: flex; justify-content: space-between; border-top: 1px dashed var(--line-300); padding-top: 8px; font-size: 14.5px;">
-            <span><strong>Total Bayar Pembeli:</strong></span>
-            <strong style="color: #34D399;">Rp 535.000</strong>
+            <span><strong data-i18n="pricing.card1TotalLabel">Total Bayar Pembeli:</strong></span>
+            <strong style="color: #34D399;" data-price-idr="535000">Rp 535.000</strong>
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 12.5px; color: var(--color-text-muted, #6B7280);">
-            <span>Pencairan Bersih Penjual:</span>
-            <span>Rp 465.000 (setelah fee Rp 35.000)</span>
+            <span data-i18n="pricing.card1SellerNetLabel">Pencairan Bersih Penjual:</span>
+            <span data-i18n="pricing.card1SellerNetDesc">Rp 465.000 (setelah fee Rp 35.000)</span>
           </div>
         </div>
         <a href="/pay" class="ln-btn ln-btn-ghost" style="width: 100%; text-align: center; justify-content: center; font-size: 13px; padding: 10px;">
-          <i class="fa-solid fa-cash-register"></i> Cek Halaman Pembayaran
+          <i class="fa-solid fa-cash-register"></i> <span data-i18n="pricing.card1Btn">Cek Halaman Pembayaran</span>
         </a>
       </div>
 
       <!-- Card 2: Contoh Simulasi Checkout (Demo) -->
       <div class="trust-card" style="border: 1.5px solid var(--primary); background: var(--surface); padding: 24px; border-radius: 12px; position: relative;">
         <div style="position: absolute; top: -11px; right: 20px;">
-          <span class="badge" style="font-size: 11px; padding: 3px 8px; background: #FEF3C7; color: #92400E; border: 1px solid #D97706; font-weight: 700;">DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN</span>
+          <span class="badge" style="font-size: 11px; padding: 3px 8px; background: #FEF3C7; color: #92400E; border: 1px solid #D97706; font-weight: 700;" data-i18n="pricing.card2BadgeTop">DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN</span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <span class="badge badge-trust">Simulasi 2 • Proportional 6%</span>
-          <span style="font-size: 13px; color: var(--color-text-muted, #6B7280);">Kategori Ilustratif</span>
+          <span class="badge badge-trust" data-i18n="pricing.card2Badge">Simulasi 2 • Proportional 6%</span>
+          <span style="font-size: 13px; color: var(--color-text-muted, #6B7280);" data-i18n="pricing.card2Cat">Kategori Ilustratif</span>
         </div>
-        <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 8px;">Contoh Simulasi Checkout Tiket (Cat 1 — Ilustrasi)</h3>
-        <p style="font-size: 12px; color: var(--color-text-muted, #6B7280); margin-bottom: 14px;"><strong>Harga ilustratif — bukan penawaran tiket aktif.</strong> Simulasi alur transaksi item demonstrasi.</p>
+        <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 8px;" data-i18n="pricing.card2Title">Contoh Simulasi Checkout Tiket (Cat 1 — Ilustrasi)</h3>
+        <p style="font-size: 12px; color: var(--color-text-muted, #6B7280); margin-bottom: 14px;" data-i18n-html data-i18n="pricing.card2Notice"><strong>Harga ilustratif — bukan penawaran tiket aktif.</strong> Simulasi alur transaksi item demonstrasi.</p>
         <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; border-top: 1px solid var(--line-100); padding-top: 12px; margin-bottom: 16px;">
           <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--color-text-muted, #6B7280);">Harga Tiket (Harga ilustratif — bukan penawaran tiket aktif):</span>
-            <strong>Rp 1.500.000</strong>
+            <span style="color: var(--color-text-muted, #6B7280);" data-i18n="pricing.card2TicketPriceLabel">Harga Tiket (Harga ilustratif — bukan penawaran tiket aktif):</span>
+            <strong data-price-idr="1500000">Rp 1.500.000</strong>
           </div>
           <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--color-text-muted, #6B7280);">Biaya Platform Pembeli (6%):</span>
-            <span style="color: var(--primary); font-weight: 600;">+Rp 90.000</span>
+            <span style="color: var(--color-text-muted, #6B7280);" data-i18n="pricing.card2BuyerFeeLabel">Biaya Platform Pembeli (6%):</span>
+            <span style="color: var(--primary); font-weight: 600;" data-price-idr="90000">+Rp 90.000</span>
           </div>
           <div style="display: flex; justify-content: space-between; border-top: 1px dashed var(--line-300); padding-top: 8px; font-size: 14.5px;">
-            <span><strong>Total Bayar Pembeli:</strong></span>
-            <strong style="color: #34D399;">Rp 1.590.000</strong>
+            <span><strong data-i18n="pricing.card2TotalLabel">Total Bayar Pembeli:</strong></span>
+            <strong style="color: #34D399;" data-price-idr="1590000">Rp 1.590.000</strong>
           </div>
           <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 12.5px; color: var(--color-text-muted, #6B7280);">
-            <span>Pencairan Bersih Penjual:</span>
-            <span>Rp 1.410.000 (setelah fee Rp 90.000)</span>
+            <span data-i18n="pricing.card2SellerNetLabel">Pencairan Bersih Penjual:</span>
+            <span data-i18n="pricing.card2SellerNetDesc">Rp 1.410.000 (setelah fee Rp 90.000)</span>
           </div>
         </div>
         <a href="/pay" class="ln-btn ln-btn-primary" style="width: 100%; text-align: center; justify-content: center; font-size: 13px; padding: 10px;">
-          <i class="fa-solid fa-arrow-right"></i> Lihat Demo Checkout (/pay) →
+          <i class="fa-solid fa-arrow-right"></i> <span data-i18n="pricing.card2Btn">Lihat Demo Checkout (/pay) →</span>
         </a>
       </div>
     </div>
@@ -433,11 +433,11 @@
     <!-- Action Banner -->
     <div style="background: rgba(4, 120, 87, 0.08); border: 1px solid rgba(4, 120, 87, 0.25); border-radius: 12px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
       <div>
-        <div style="font-weight: 700; font-size: 14.5px; margin-bottom: 4px; color: var(--text-light);">Punya Tiket Konser atau Event Mendatang?</div>
-        <div style="font-size: 13px; color: var(--color-text-muted, #6B7280);">TIKUM sedang mengumpulkan pasokan tiket terverifikasi untuk persiapan peluncuran resmi BigBang Januari. Daftarkan tiket Anda sekarang untuk ditinjau oleh kurator kami.</div>
+        <div style="font-weight: 700; font-size: 14.5px; margin-bottom: 4px; color: var(--text-light);" data-i18n="pricing.bannerTitle">Punya Tiket Konser atau Event Mendatang?</div>
+        <div style="font-size: 13px; color: var(--color-text-muted, #6B7280);" data-i18n="pricing.bannerDesc">TIKUM sedang mengumpulkan pasokan tiket terverifikasi untuk persiapan peluncuran resmi BigBang Januari. Daftarkan tiket Anda sekarang untuk ditinjau oleh kurator kami.</div>
       </div>
       <a href="/create" class="ln-btn ln-btn-primary" style="font-size: 13.5px; padding: 10px 20px; white-space: nowrap;">
-        <i class="fa-solid fa-plus-circle"></i> Ajukan Listing Tiket (/create)
+        <i class="fa-solid fa-plus-circle"></i> <span data-i18n="pricing.bannerBtn">Ajukan Listing Tiket (/create)</span>
       </a>
     </div>
   </section>
@@ -480,15 +480,15 @@
         <i class="fa-solid fa-user-shield"></i>
       </div>
       <div class="venue-pic-content">
-        <div class="landing-kicker" style="color: #FCD34D;">LAYANAN PENDAMPINGAN LAPANGAN</div>
-        <h3 class="venue-pic-title">DUKUNGAN PIC DI VENUE PADA EVENT TERPILIH</h3>
-        <p class="venue-pic-desc">
+        <div class="landing-kicker" style="color: #FCD34D;" data-i18n="venuePicSection.kicker">LAYANAN PENDAMPINGAN LAPANGAN</div>
+        <h3 class="venue-pic-title" data-i18n="venuePicSection.headline">DUKUNGAN PIC DI VENUE PADA EVENT TERPILIH</h3>
+        <p class="venue-pic-desc" data-i18n="venuePicSection.desc">
           Marketplace tiket dengan opsi pendampingan fisik hingga pintu masuk. Koordinator lapangan (PIC) TIKUM hadir langsung di konser dan festival terpilih untuk mendampingi pembeli saat penukaran wristband gelang dan asistensi turnstile gate jika terjadi kendala tiket.
         </p>
         <div class="venue-pic-badges">
-          <span class="venue-pic-badge"><i class="fa-solid fa-map-pin" style="color: #FCD34D;"></i> On-Site Coordinator</span>
-          <span class="venue-pic-badge"><i class="fa-solid fa-door-open" style="color: #34D399;"></i> Turnstile Gate Assistance</span>
-          <span class="venue-pic-badge"><i class="fa-solid fa-handshake" style="color: #60A5FA;"></i> Pendampingan Kendala di Gate</span>
+          <span class="venue-pic-badge"><i class="fa-solid fa-map-pin" style="color: #FCD34D;"></i> <span data-i18n="venuePicSection.badgeCoord">On-Site Coordinator</span></span>
+          <span class="venue-pic-badge"><i class="fa-solid fa-door-open" style="color: #34D399;"></i> <span data-i18n="venuePicSection.badgeTurnstile">Turnstile Gate Assistance</span></span>
+          <span class="venue-pic-badge"><i class="fa-solid fa-handshake" style="color: #60A5FA;"></i> <span data-i18n="venuePicSection.badgeDispute">Pendampingan Kendala di Gate</span></span>
         </div>
       </div>
     </div>
@@ -497,44 +497,44 @@
   <!-- Section 18: Comparison / Differentiation -->
   <section class="landing-section" id="comparison">
     <div class="landing-section-header">
-      <div class="landing-kicker">PERBANDINGAN KEAMANAN</div>
-      <h2 class="landing-title">Mengapa TIKUM Berbeda dari Cara Biasa?</h2>
-      <p class="landing-lead">Lihat perbandingan perlindungan transaksi di TIKUM dibandingkan pasar calo liar atau media sosial.</p>
+      <div class="landing-kicker" data-i18n="comparison.kicker">PERBANDINGAN KEAMANAN</div>
+      <h2 class="landing-title" data-i18n="comparison.title">Mengapa TIKUM Berbeda dari Cara Biasa?</h2>
+      <p class="landing-lead" data-i18n="comparison.lead">Lihat perbandingan perlindungan transaksi di TIKUM dibandingkan pasar calo liar atau media sosial.</p>
     </div>
     <div class="comparison-table-wrapper">
       <table class="comparison-table">
         <thead>
           <tr>
-            <th>Kebutuhan Pembeli &amp; Penjual</th>
-            <th>Calo Liar / Media Sosial (Twitter, IG)</th>
-            <th>Marketplace Biasa</th>
-            <th class="col-tikum">TIKUM — Verified Marketplace</th>
+            <th data-i18n="comparison.colNeeds">Kebutuhan Pembeli &amp; Penjual</th>
+            <th data-i18n="comparison.colScalpers">Calo Liar / Media Sosial (Twitter, IG)</th>
+            <th data-i18n="comparison.colStandard">Marketplace Biasa</th>
+            <th class="col-tikum" data-i18n="comparison.colTikum">TIKUM — Verified Marketplace</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>Keamanan Pembayaran</strong></td>
-            <td>Transfer langsung, risiko uang hilang 100%</td>
-            <td>Escrow e-commerce standar</td>
-            <td class="col-tikum"><strong>Dana ditahan platform hingga pembeli sukses masuk gate</strong></td>
+            <td><strong data-i18n="comparison.row1Title">Keamanan Pembayaran</strong></td>
+            <td data-i18n="comparison.row1Scalpers">Transfer langsung, risiko uang hilang 100%</td>
+            <td data-i18n="comparison.row1Standard">Escrow e-commerce standar</td>
+            <td class="col-tikum"><strong data-i18n="comparison.row1Tikum">Dana ditahan platform hingga pembeli sukses masuk gate</strong></td>
           </tr>
           <tr>
-            <td><strong>Validitas Tiket &amp; Barcode</strong></td>
-            <td>Rawan barcode ganda &amp; screenshot palsu</td>
-            <td>Pemeriksaan bukti manual tanpa jaminan</td>
-            <td class="col-tikum"><strong>Pencatatan riwayat transaksi &amp; verifikasi data resmi</strong></td>
+            <td><strong data-i18n="comparison.row2Title">Validitas Tiket &amp; Barcode</strong></td>
+            <td data-i18n="comparison.row2Scalpers">Rawan barcode ganda &amp; screenshot palsu</td>
+            <td data-i18n="comparison.row2Standard">Pemeriksaan bukti manual tanpa jaminan</td>
+            <td class="col-tikum"><strong data-i18n="comparison.row2Tikum">Pencatatan riwayat transaksi &amp; verifikasi data resmi</strong></td>
           </tr>
           <tr>
-            <td><strong>Pendampingan Hari-H di Acara</strong></td>
-            <td>Ditinggal sendirian, nomor kontak diblokir</td>
-            <td>Hanya layanan chatbot online</td>
-            <td class="col-tikum"><strong>Staf PIC TIKUM hadir di venue (event terpilih)</strong></td>
+            <td><strong data-i18n="comparison.row3Title">Pendampingan Hari-H di Acara</strong></td>
+            <td data-i18n="comparison.row3Scalpers">Ditinggal sendirian, nomor kontak diblokir</td>
+            <td data-i18n="comparison.row3Standard">Hanya layanan chatbot online</td>
+            <td class="col-tikum"><strong data-i18n="comparison.row3Tikum">Staf PIC TIKUM hadir di venue (event terpilih)</strong></td>
           </tr>
           <tr>
-            <td><strong>Transparansi Harga</strong></td>
-            <td>Markup liar tak terkendali</td>
-            <td>Biaya admin mendadak saat checkout</td>
-            <td class="col-tikum"><strong>All-in transparan 6% (minimum Rp35.000 per tiket), tanpa biaya kejutan</strong></td>
+            <td><strong data-i18n="comparison.row4Title">Transparansi Harga</strong></td>
+            <td data-i18n="comparison.row4Scalpers">Markup liar tak terkendali</td>
+            <td data-i18n="comparison.row4Standard">Biaya admin mendadak saat checkout</td>
+            <td class="col-tikum"><strong data-i18n="comparison.row4Tikum">All-in transparan 6% (minimum Rp35.000 per tiket), tanpa biaya kejutan</strong></td>
           </tr>
         </tbody>
       </table>
@@ -544,43 +544,43 @@
   <!-- How It Works Section (Dual Buyer / Seller Flows) -->
   <section class="landing-section" id="howItWorks">
     <div class="landing-section-header">
-      <div class="landing-kicker">ALUR TRANSAKSI AMAN</div>
-      <h2 class="landing-title">Cara Kerja Pasar Tiket TIKUM</h2>
-      <p class="landing-lead">Proses transparan yang melindungi pembeli dan penjual dari awal hingga gerbang acara.</p>
+      <div class="landing-kicker" data-i18n="howItWorksSection.kicker">ALUR TRANSAKSI AMAN</div>
+      <h2 class="landing-title" data-i18n="howItWorksSection.title">Cara Kerja Pasar Tiket TIKUM</h2>
+      <p class="landing-lead" data-i18n="howItWorksSection.lead">Proses transparan yang melindungi pembeli dan penjual dari awal hingga gerbang acara.</p>
     </div>
     <div class="how-grid-cols">
       <!-- Buyer Flow -->
       <div class="how-column">
         <div class="how-col-header">
           <i class="fa-solid fa-bag-shopping" style="color: var(--primary);"></i>
-          <span>Untuk Pembeli</span>
+          <span data-i18n="howItWorksSection.buyerColTitle">Untuk Pembeli</span>
         </div>
         <div class="how-step">
           <div class="how-step-num">1</div>
           <div class="how-step-content">
-            <div class="how-step-title">Pilih Event &amp; Tiket Terverifikasi</div>
-            <div class="how-step-desc">Pilih tiket dengan harga all-in transparan tanpa markup tersembunyi saat checkout.</div>
+            <div class="how-step-title" data-i18n="howItWorksSection.buyerStep1">Pilih Event &amp; Tiket Terverifikasi</div>
+            <div class="how-step-desc" data-i18n="howItWorksSection.buyerStep1Desc">Pilih tiket dengan harga all-in transparan tanpa markup tersembunyi saat checkout.</div>
           </div>
         </div>
         <div class="how-step">
           <div class="how-step-num">2</div>
           <div class="how-step-content">
-            <div class="how-step-title">Pembayaran Terlindungi Platform</div>
-            <div class="how-step-desc">Dana Anda ditahan dalam sistem penampungan internal Tikum (platform-held), bukan langsung ke penjual.</div>
+            <div class="how-step-title" data-i18n="howItWorksSection.buyerStep2">Pembayaran Terlindungi Platform</div>
+            <div class="how-step-desc" data-i18n="howItWorksSection.buyerStep2Desc">Dana Anda ditahan dalam sistem penampungan internal Tikum (platform-held), bukan langsung ke penjual.</div>
           </div>
         </div>
         <div class="how-step">
           <div class="how-step-num">3</div>
           <div class="how-step-content">
-            <div class="how-step-title">Terima Tiket &amp; Panduan Masuk</div>
-            <div class="how-step-desc">Dapatkan e-ticket resmi dan instruksi penukaran gelang turnstile sebelum acara.</div>
+            <div class="how-step-title" data-i18n="howItWorksSection.buyerStep3">Terima Tiket &amp; Panduan Masuk</div>
+            <div class="how-step-desc" data-i18n="howItWorksSection.buyerStep3Desc">Dapatkan e-ticket resmi dan instruksi penukaran gelang turnstile sebelum acara.</div>
           </div>
         </div>
         <div class="how-step">
           <div class="how-step-num">4</div>
           <div class="how-step-content">
-            <div class="how-step-title">Masuk Venue dengan Aman</div>
-            <div class="how-step-desc">Tunjukkan tiket di gerbang. Pada event dengan status PIC aktif, staf TIKUM siap mendampingi langsung jika terjadi kendala barcode.</div>
+            <div class="how-step-title" data-i18n="howItWorksSection.buyerStep4">Masuk Venue dengan Aman</div>
+            <div class="how-step-desc" data-i18n="howItWorksSection.buyerStep4Desc">Tunjukkan tiket di gerbang. Pada event dengan status PIC aktif, staf TIKUM siap mendampingi langsung jika terjadi kendala barcode.</div>
           </div>
         </div>
       </div>
@@ -589,34 +589,34 @@
       <div class="how-column">
         <div class="how-col-header">
           <i class="fa-solid fa-ticket-simple" style="color: #047857;"></i>
-          <span>Untuk Penjual</span>
+          <span data-i18n="howItWorksSection.sellerColTitle">Untuk Penjual</span>
         </div>
         <div class="how-step">
           <div class="how-step-num" style="background: rgba(4, 120, 87, 0.12); color: #047857;">1</div>
           <div class="how-step-content">
-            <div class="how-step-title">Pasang Listing Tanpa Biaya Awal</div>
-            <div class="how-step-desc">Masukkan detail tiket, bukti kepemilikan, dan harga jual yang wajar.</div>
+            <div class="how-step-title" data-i18n="howItWorksSection.sellerStep1">Pasang Listing Tanpa Biaya Awal</div>
+            <div class="how-step-desc" data-i18n="howItWorksSection.sellerStep1Desc">Masukkan detail tiket, bukti kepemilikan, dan harga jual yang wajar.</div>
           </div>
         </div>
         <div class="how-step">
           <div class="how-step-num" style="background: rgba(4, 120, 87, 0.12); color: #047857;">2</div>
           <div class="how-step-content">
-            <div class="how-step-title">Verifikasi Tiket Anti-Duplikasi</div>
-            <div class="how-step-desc">Pemeriksaan bukti kepemilikan oleh tim operasional dan pencegahan duplikasi barcode sebelum listing tayang.</div>
+            <div class="how-step-title" data-i18n="howItWorksSection.sellerStep2">Verifikasi Tiket Anti-Duplikasi</div>
+            <div class="how-step-desc" data-i18n="howItWorksSection.sellerStep2Desc">Pemeriksaan bukti kepemilikan oleh tim operasional dan pencegahan duplikasi barcode sebelum listing tayang.</div>
           </div>
         </div>
         <div class="how-step">
           <div class="how-step-num" style="background: rgba(4, 120, 87, 0.12); color: #047857;">3</div>
           <div class="how-step-content">
-            <div class="how-step-title">Pemberitahuan Saat Tiket Terjual</div>
-            <div class="how-step-desc">Dapatkan notifikasi instan saat pembeli menyelesaikan pembayaran ke sistem penampungan Tikum.</div>
+            <div class="how-step-title" data-i18n="howItWorksSection.sellerStep3">Pemberitahuan Saat Tiket Terjual</div>
+            <div class="how-step-desc" data-i18n="howItWorksSection.sellerStep3Desc">Dapatkan notifikasi instan saat pembeli menyelesaikan pembayaran ke sistem penampungan Tikum.</div>
           </div>
         </div>
         <div class="how-step">
           <div class="how-step-num" style="background: rgba(4, 120, 87, 0.12); color: #047857;">4</div>
           <div class="how-step-content">
-            <div class="how-step-title">Pencairan Dana Pasca-Acara</div>
-            <div class="how-step-desc">Setelah pembeli terkonfirmasi sukses masuk gate atau batas verifikasi pasca-event selesai, dana dicairkan ke rekening bank Anda.</div>
+            <div class="how-step-title" data-i18n="howItWorksSection.sellerStep4">Pencairan Dana Pasca-Acara</div>
+            <div class="how-step-desc" data-i18n="howItWorksSection.sellerStep4Desc">Setelah pembeli terkonfirmasi sukses masuk gate atau batas verifikasi pasca-event selesai, dana dicairkan ke rekening bank Anda.</div>
           </div>
         </div>
       </div>
@@ -627,14 +627,14 @@
   <section class="landing-section" id="sellerExperience">
     <div class="seller-callout-box">
       <div style="max-width: 620px;">
-        <div class="landing-kicker">PENGALAMAN PENJUAL</div>
-        <h3 style="font-size: 22px; font-weight: 800; margin: 0 0 8px;">Punya Tiket yang Tidak Bisa Dipakai?</h3>
-        <p style="font-size: 14px; color: var(--color-text-muted, #6B7280); line-height: 1.6; margin: 0;">
+        <div class="landing-kicker" data-i18n="sellerExperienceSection.kicker">PENGALAMAN PENJUAL</div>
+        <h3 style="font-size: 22px; font-weight: 800; margin: 0 0 8px;" data-i18n="sellerExperienceSection.headline">Punya Tiket yang Tidak Bisa Dipakai?</h3>
+        <p style="font-size: 14px; color: var(--color-text-muted, #6B7280); line-height: 1.6; margin: 0;" data-i18n="sellerExperienceSection.desc">
           Daftarkan tiketmu secara gratis tanpa biaya awal. Dapatkan pembeli dengan harga wajar dan pencairan dana langsung ke rekening bank Anda setelah acara selesai.
         </p>
       </div>
       <a href="/create" class="ln-btn ln-btn-primary" style="padding: 13px 26px; font-size: 14px;">
-        <i class="fa-solid fa-ticket"></i> Pasang Listing Tiket
+        <i class="fa-solid fa-ticket"></i> <span data-i18n="sellerExperienceSection.cta">Pasang Listing Tiket</span>
       </a>
     </div>
   </section>
@@ -642,31 +642,31 @@
   <!-- FAQ Section -->
   <section class="landing-section" id="faqPreview">
     <div class="landing-section-header">
-      <div class="landing-kicker">PERTANYAAN UMUM</div>
-      <h2 class="landing-title">Pertanyaan yang Sering Diajukan</h2>
-      <p class="landing-lead">Jawaban transparan seputar cara bertransaksi, perlindungan transaksi platform, dan kehadiran staf di venue.</p>
+      <div class="landing-kicker" data-i18n="faqPreviewSection.kicker">PERTANYAAN UMUM</div>
+      <h2 class="landing-title" data-i18n="faqPreviewSection.title">Pertanyaan yang Sering Diajukan</h2>
+      <p class="landing-lead" data-i18n="faqPreviewSection.lead">Jawaban transparan seputar cara bertransaksi, perlindungan transaksi platform, dan kehadiran staf di venue.</p>
     </div>
     <div class="faq-grid">
       <div class="faq-card">
-        <div class="faq-question"><i class="fa-solid fa-circle-question" style="color:var(--primary);"></i> Bagaimana TIKUM menekan penipuan tiket?</div>
-        <div class="faq-answer">Kami menggunakan verifikasi dokumen kepemilikan tiket, penahanan dana oleh platform (platform-held) sampai penonton masuk gerbang, serta pendampingan staf PIC di acara terkonfirmasi.</div>
+        <div class="faq-question"><i class="fa-solid fa-circle-question" style="color:var(--primary);"></i> <span data-i18n="faqPreviewSection.q1">Bagaimana TIKUM menekan penipuan tiket?</span></div>
+        <div class="faq-answer" data-i18n="faqPreviewSection.a1">Kami menggunakan verifikasi dokumen kepemilikan tiket, penahanan dana oleh platform (platform-held) sampai penonton masuk gerbang, serta pendampingan staf PIC di acara terkonfirmasi.</div>
       </div>
       <div class="faq-card">
-        <div class="faq-question"><i class="fa-solid fa-circle-question" style="color:var(--primary);"></i> Kapan penjual menerima pencairan dana?</div>
-        <div class="faq-answer">Dana ditahan di sistem penampungan internal Tikum dan baru dicairkan setelah pembeli terkonfirmasi berhasil masuk gerbang turnstile acara.</div>
+        <div class="faq-question"><i class="fa-solid fa-circle-question" style="color:var(--primary);"></i> <span data-i18n="faqPreviewSection.q2">Kapan penjual menerima pencairan dana?</span></div>
+        <div class="faq-answer" data-i18n="faqPreviewSection.a2">Dana ditahan di sistem penampungan internal Tikum dan baru dicairkan setelah pembeli terkonfirmasi berhasil masuk gerbang turnstile acara.</div>
       </div>
       <div class="faq-card">
-        <div class="faq-question"><i class="fa-solid fa-circle-question" style="color:var(--primary);"></i> Apa peran staf PIC TIKUM di lokasi?</div>
-        <div class="faq-answer">Staf operasional (Event PIC) TIKUM hadir di sekitar area venue pada event terkonfirmasi selama jam operasional gerbang untuk membantu pembeli saat penukaran gelang dan mendampingi jika terjadi kendala pemindaian tiket.</div>
+        <div class="faq-question"><i class="fa-solid fa-circle-question" style="color:var(--primary);"></i> <span data-i18n="faqPreviewSection.q3">Apa peran staf PIC TIKUM di lokasi?</span></div>
+        <div class="faq-answer" data-i18n="faqPreviewSection.a3">Staf operasional (Event PIC) TIKUM hadir di sekitar area venue pada event terkonfirmasi selama jam operasional gerbang untuk membantu pembeli saat penukaran gelang dan mendampingi jika terjadi kendala pemindaian tiket.</div>
       </div>
       <div class="faq-card">
-        <div class="faq-question"><i class="fa-solid fa-circle-question" style="color:var(--primary);"></i> Bagaimana jika tiket bermasalah di gerbang?</div>
-        <div class="faq-answer">Pembeli dapat langsung melapor ke PIC venue atau sistem dispute. Jika tiket terbukti tidak valid atau sudah dipakai, dana pembeli dikembalikan sesuai kebijakan refund.</div>
+        <div class="faq-question"><i class="fa-solid fa-circle-question" style="color:var(--primary);"></i> <span data-i18n="faqPreviewSection.q4">Bagaimana jika tiket bermasalah di gerbang?</span></div>
+        <div class="faq-answer" data-i18n="faqPreviewSection.a4">Pembeli dapat langsung melapor ke PIC venue atau sistem dispute. Jika tiket terbukti tidak valid atau sudah dipakai, dana pembeli dikembalikan sesuai kebijakan refund.</div>
       </div>
     </div>
     <div style="text-align: center; margin-top: 24px;">
       <a href="/faq" style="color: var(--primary); text-decoration: none; font-size: 13.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-        Lihat seluruh FAQ &amp; panduan bantuan <i class="fa-solid fa-arrow-right"></i>
+        <span data-i18n="faqPreviewSection.viewAll">Lihat seluruh FAQ &amp; panduan bantuan</span> <i class="fa-solid fa-arrow-right"></i>
       </a>
     </div>
   </section>
@@ -674,19 +674,19 @@
   <!-- Final CTA -->
   <section class="landing-section" id="finalCta">
     <div class="final-cta-box">
-      <div class="landing-kicker" style="color: #FCD34D;">MULAI BERTRANSAKSI</div>
-      <h2 style="font-size: clamp(24px, 4vw, 36px); font-weight: 800; color: #fff; margin-bottom: 12px;">
+      <div class="landing-kicker" style="color: #FCD34D;" data-i18n="finalCtaSection.kicker">MULAI BERTRANSAKSI</div>
+      <h2 style="font-size: clamp(24px, 4vw, 36px); font-weight: 800; color: #fff; margin-bottom: 12px;" data-i18n="finalCtaSection.title">
         Siap Menghadiri Acara Favoritmu?
       </h2>
-      <p style="font-size: 14.5px; color: #E2E8F0; max-width: 580px; margin: 0 auto 24px; line-height: 1.6;">
+      <p style="font-size: 14.5px; color: #E2E8F0; max-width: 580px; margin: 0 auto 24px; line-height: 1.6;" data-i18n="finalCtaSection.lead">
         Jual dan temukan tiket konser, olahraga, dan festival di ekosistem tiket sekunder yang terlindungi sistem platform-held dan opsi pendampingan PIC di venue acara terkonfirmasi.
       </p>
       <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
         <a href="#upcoming" class="ln-btn ln-btn-primary" style="padding: 13px 28px; font-size: 14px;">
-          <i class="fa-solid fa-magnifying-glass"></i> Cari Tiket Sekarang
+          <i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="finalCtaSection.ctaFind">Cari Tiket Sekarang</span>
         </a>
         <a href="/create" class="ln-btn ln-btn-ghost" style="padding: 13px 28px; font-size: 14px;">
-          <i class="fa-solid fa-ticket"></i> Jual Tiket Anda
+          <i class="fa-solid fa-ticket"></i> <span data-i18n="finalCtaSection.ctaSell">Jual Tiket Anda</span>
         </a>
       </div>
     </div>
@@ -723,14 +723,14 @@
             <a href="mailto:support@tikum.app" style="color: var(--color-text-muted, #6B7280); text-decoration: none; margin-left: 6px;">support@tikum.app</a>
           </div>
           <div>
-            <span style="color: var(--color-text-muted, #6B7280);">Telepon &amp; WhatsApp:</span>
+            <span style="color: var(--color-text-muted, #6B7280);" data-i18n="footer.phoneAndWa">Telepon &amp; WhatsApp:</span>
             <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #047857; text-decoration: none; margin-left: 6px; font-weight: 600;"><i class="fa-brands fa-whatsapp"></i> +62 812-9992-7378 (081299927378)</a>
           </div>
           <div>
-            <span style="color: var(--color-text-muted, #6B7280);">Jam Layanan Customer Support:</span>
-            <span style="margin-left: 6px; color: var(--text-light);">Senin - Minggu 09:00 - 21:00 WIB (WhatsApp &amp; Email)</span>
+            <span style="color: var(--color-text-muted, #6B7280);" data-i18n="footer.supportHours">Jam Layanan Customer Support:</span>
+            <span style="margin-left: 6px; color: var(--text-light);" data-i18n="footer.supportHoursValue">Senin - Minggu 09:00 - 21:00 WIB (WhatsApp &amp; Email)</span>
           </div>
-          <div style="font-size: 12px; color: var(--color-text-muted, #6B7280);">
+          <div style="font-size: 12px; color: var(--color-text-muted, #6B7280);" data-i18n="footer.picVenueNote">
             (Tim Event PIC bertugas di venue pada jam operasional gerbang acara terkonfirmasi)
           </div>
         </div>
@@ -739,27 +739,27 @@
       <div class="footer-col footer-links-col">
         <h4 data-i18n="footer.servicesAndLegal">Layanan &amp; Legalitas</h4>
         <div class="footer-links">
-          <a href="/about"><i class="fa-solid fa-circle-info"></i> Tentang TIKUM</a>
-          <a href="/pay"><i class="fa-solid fa-cash-register"></i> Halaman Checkout (/pay)</a>
-          <a href="/panduan-pembeli"><i class="fa-solid fa-shield-halved"></i> Panduan Pembeli &amp; Proteksi</a>
-          <a href="/how-to-sell"><i class="fa-solid fa-tags"></i> Panduan Penjual</a>
-          <a href="/fees"><i class="fa-solid fa-receipt"></i> Struktur Harga &amp; Biaya</a>
-          <a href="/payment-flow"><i class="fa-solid fa-money-bill-transfer"></i> Alur Dana &amp; Penahanan Transaksi</a>
-          <a href="/ticket-verification"><i class="fa-solid fa-qrcode"></i> Verifikasi Tiket</a>
-          <a href="/blog"><i class="fa-solid fa-newspaper"></i> Blog &amp; Panduan Tiket</a>
+          <a href="/about"><i class="fa-solid fa-circle-info"></i> <span data-i18n="footer.aboutTikum">Tentang TIKUM</span></a>
+          <a href="/pay"><i class="fa-solid fa-cash-register"></i> <span data-i18n="footer.checkoutDemo">Halaman Checkout (/pay)</span></a>
+          <a href="/panduan-pembeli"><i class="fa-solid fa-shield-halved"></i> <span data-i18n="footer.buyerGuide">Panduan Pembeli &amp; Proteksi</span></a>
+          <a href="/how-to-sell"><i class="fa-solid fa-tags"></i> <span data-i18n="footer.sellerGuide">Panduan Penjual</span></a>
+          <a href="/fees"><i class="fa-solid fa-receipt"></i> <span data-i18n="footer.feeStructure">Struktur Harga &amp; Biaya</span></a>
+          <a href="/payment-flow"><i class="fa-solid fa-money-bill-transfer"></i> <span data-i18n="footer.fundsFlow">Alur Dana &amp; Penahanan Transaksi</span></a>
+          <a href="/ticket-verification"><i class="fa-solid fa-qrcode"></i> <span data-i18n="footer.ticketVerification">Verifikasi Tiket</span></a>
+          <a href="/blog"><i class="fa-solid fa-newspaper"></i> <span data-i18n="footer.blogAndGuides">Blog &amp; Panduan Tiket</span></a>
           <a href="/faq"><i class="fa-solid fa-circle-question"></i> <span data-i18n="footer.faq">FAQ / Bantuan</span></a>
           <a href="/terms"><i class="fa-solid fa-file-contract"></i> <span data-i18n="footer.terms">Syarat &amp; Ketentuan</span></a>
-          <a href="/seller-terms"><i class="fa-solid fa-handshake"></i> Ketentuan Penjual</a>
-          <a href="/resale-policy"><i class="fa-solid fa-ticket-simple"></i> Kebijakan Penjualan Kembali</a>
+          <a href="/seller-terms"><i class="fa-solid fa-handshake"></i> <span data-i18n="footer.sellerTerms">Ketentuan Penjual</span></a>
+          <a href="/resale-policy"><i class="fa-solid fa-ticket-simple"></i> <span data-i18n="footer.resalePolicy">Kebijakan Penjualan Kembali</span></a>
           <a href="/refund-policy"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="footer.refundPolicy">Kebijakan Pengembalian Dana (Refund)</span></a>
-          <a href="/disputes"><i class="fa-solid fa-scale-balanced"></i> Resolusi Sengketa (Disputes)</a>
+          <a href="/disputes"><i class="fa-solid fa-scale-balanced"></i> <span data-i18n="footer.disputes">Resolusi Sengketa (Disputes)</span></a>
           <a href="/contact"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contactUs">Kontak Kami</span></a>
           <a href="/privacy"><i class="fa-solid fa-user-shield"></i> <span data-i18n="footer.privacyPolicy">Kebijakan Privasi (UU PDP)</span></a>
         </div>
       </div>
     </div>
     <div style="max-width: 1200px; margin: 32px auto 0; padding-top: 20px; border-top: 1px solid var(--border-light); text-align: center; font-size: 12px; color: var(--color-text-muted, #6B7280);">
-      &copy; 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — brand marketplace yang dioperasikan di bawah naungan PT SHINERVA PRAJNA TEJAS. Built in Indonesia.
+      <span data-i18n="footer.copyrightBuiltIn">&copy; 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — brand marketplace yang dioperasikan di bawah naungan PT SHINERVA PRAJNA TEJAS. Built in Indonesia.</span>
     </div>
   </footer>
 
@@ -791,15 +791,15 @@
   <div class="modal-overlay" id="verifModal" onclick="closeModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <div class="modal-title"><i class="fa-solid fa-shield-check" style="color:#047857"></i> Status Verifikasi Resmi</div>
+        <div class="modal-title"><i class="fa-solid fa-shield-check" style="color:#047857"></i> <span data-i18n="modals.provenanceTitle">Status Verifikasi Resmi</span></div>
         <button class="btn-close" onclick="closeModal(event)">&times;</button>
       </div>
       <p id="modalVerifDate" style="margin-bottom: 16px; font-weight: 700; font-size: 13.5px;"></p>
       <ul class="provenance-list">
-        <li><i class="fa-solid fa-check-circle"></i> Penyelenggara &amp; Promotor Resmi Dikonfirmasi</li>
-        <li><i class="fa-solid fa-check-circle"></i> Lokasi &amp; Izin Penyelenggaraan Valid</li>
-        <li><i class="fa-solid fa-check-circle"></i> Harga Tiket &amp; Struktur Kategori Resmi</li>
-        <li><i class="fa-solid fa-check-circle"></i> Opsi Asistensi PIC di Venue untuk Event Terpilih</li>
+        <li><i class="fa-solid fa-check-circle"></i> <span data-i18n="modals.prov1">Penyelenggara &amp; Promotor Resmi Dikonfirmasi</span></li>
+        <li><i class="fa-solid fa-check-circle"></i> <span data-i18n="modals.prov2">Lokasi &amp; Izin Penyelenggaraan Valid</span></li>
+        <li><i class="fa-solid fa-check-circle"></i> <span data-i18n="modals.prov3">Harga Tiket &amp; Struktur Kategori Resmi</span></li>
+        <li><i class="fa-solid fa-check-circle"></i> <span data-i18n="modals.prov4">Opsi Asistensi PIC di Venue untuk Event Terpilih</span></li>
       </ul>
     </div>
   </div>
@@ -809,14 +809,14 @@
     <div class="modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title">
-          <i class="fa-solid fa-ticket" style="color:var(--primary);"></i> Masuk ke Tikum
+          <i class="fa-solid fa-ticket" style="color:var(--primary);"></i> <span data-i18n="modals.authTitle">Masuk ke Tikum</span>
         </div>
         <button class="btn-close" onclick="closeAuthModal()">&times;</button>
       </div>
 
       <!-- State 1: Input Email -->
       <div id="authModalInputView">
-        <p style="font-size:13.5px; margin-bottom:16px; line-height:1.5; color:inherit; opacity:0.85;">
+        <p style="font-size:13.5px; margin-bottom:16px; line-height:1.5; color:inherit; opacity:0.85;" data-i18n="modals.authPrompt">
           Masukkan email Anda untuk menerima tautan masuk instan (magic link).
         </p>
         <form id="authModalForm" onsubmit="submitMagicLink(event)">
@@ -826,7 +826,7 @@
           </div>
           <div id="modalAuthError" style="display:none; color:#DC2626; font-size:13px; margin-bottom:12px; line-height:1.4;"></div>
           <button type="submit" id="btnModalSubmit" class="btn-auth-primary">
-            <span>Kirim Magic Link</span>
+            <span data-i18n="modals.sendMagicLinkBtn">Kirim Magic Link</span>
             <i class="fa-solid fa-paper-plane" style="font-size:13px;"></i>
           </button>
         </form>
@@ -837,14 +837,14 @@
         <div style="width:48px; height:48px; border-radius:50%; background:rgba(4, 120, 87, 0.12); display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px;">
           <i class="fa-solid fa-envelope-circle-check" style="font-size:24px; color:#047857;"></i>
         </div>
-        <h3 style="font-size:18px; font-weight:700; margin:0 0 8px;">Cek email Anda</h3>
+        <h3 style="font-size:18px; font-weight:700; margin:0 0 8px;" data-i18n="modals.successTitle">Cek email Anda</h3>
         <p style="font-size:13.5px; line-height:1.5; margin:0 0 10px; color:inherit; opacity:0.85;">
-          Kami telah mengirim magic link ke <strong id="modalSentEmail">alamat email Anda</strong>.
+          <span data-i18n="modals.successSentTo">Kami telah mengirim magic link ke</span> <strong id="modalSentEmail">alamat email Anda</strong>.
         </p>
-        <p style="font-size:12px; color:var(--color-text-muted, #6B7280); margin:0 0 20px; line-height:1.4;">
+        <p style="font-size:12px; color:var(--color-text-muted, #6B7280); margin:0 0 20px; line-height:1.4;" data-i18n="modals.linkValidNote">
           Link berlaku selama 15 menit dan hanya dapat digunakan sekali.
         </p>
-        <button class="select-filter" style="width:100%; padding:10px;" onclick="closeAuthModal()">Tutup</button>
+        <button class="select-filter" style="width:100%; padding:10px;" onclick="closeAuthModal()" data-i18n="modals.closeBtn">Tutup</button>
       </div>
     </div>
   </div>
@@ -1046,11 +1046,17 @@
     }
 
     function formatRupiah(num) {
-      return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "0";
+      if (window.TikumI18n && typeof window.TikumI18n.formatCurrency === 'function') {
+        return window.TikumI18n.formatCurrency(num, 'IDR');
+      }
+      return num ? ('Rp ' + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")) : "Rp 0";
     }
 
     function formatDate(dateStr) {
       if (!dateStr) return "-";
+      if (window.TikumI18n && typeof window.TikumI18n.formatDate === 'function') {
+        return window.TikumI18n.formatDate(dateStr);
+      }
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
       const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
@@ -1073,22 +1079,23 @@
         ? e.resale_listings_count
         : (typeof e.active_listings_count === 'number' ? e.active_listings_count : 0);
       const hasResale = Boolean(e.resale_available || resaleCount > 0);
+      const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
 
       if (hasResale) {
-        return { css: 'status-resale', text: 'Resale tersedia' };
+        return { css: 'status-resale', text: t('events.resaleAvailable', 'Resale tersedia') };
       }
 
       const rawStatus = (e.official_ticket_status || e.ticket_status || e.status || '').toUpperCase();
       if (rawStatus === 'SOLD_OUT' || rawStatus === 'HABIS') {
-        return { css: 'status-soldout', text: 'Tiket resmi sold out' };
+        return { css: 'status-soldout', text: t('events.officialTicketsSoldOut', 'Tiket resmi sold out') };
       }
       if (rawStatus === 'COMING_SOON' || rawStatus === 'SEGERA') {
-        return { css: 'status-comingsoon', text: 'Segera dibuka' };
+        return { css: 'status-comingsoon', text: t('events.openingSoon', 'Segera dibuka') };
       }
       if (e.official_ticket_url && (rawStatus === 'ON_SALE' || rawStatus === 'UPCOMING' || !rawStatus)) {
-        return { css: 'status-onsale', text: 'Tiket resmi tersedia' };
+        return { css: 'status-onsale', text: t('events.officialTicketsAvailable', 'Tiket resmi tersedia') };
       }
-      return { css: 'status-unconfirmed', text: 'Status belum dikonfirmasi' };
+      return { css: 'status-unconfirmed', text: t('events.unconfirmedStatus', 'Status belum dikonfirmasi') };
     }
 
     function getCategoryVisual(cat) {
@@ -1160,11 +1167,12 @@
 
     function resolveCategoryLabel(e) {
       const cat = (e.category || e.category_group || e.event_type || '').toUpperCase();
-      if (cat.includes('SPORT') || cat.includes('BADMINTON') || cat.includes('FOOTBALL')) return 'Olahraga';
+      const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
+      if (cat.includes('SPORT') || cat.includes('BADMINTON') || cat.includes('FOOTBALL')) return isEn ? 'Sports' : 'Olahraga';
       if (cat.includes('COMEDY') || cat.includes('SHOWS_COMEDY') || cat.includes('STANDUP')) return 'Stand Up Comedy';
-      if (cat.includes('EXHIBITION') || cat.includes('PAMERAN')) return 'Pameran';
-      if (cat.includes('THEATER') || cat.includes('FAMILY') || cat.includes('BUSINESS')) return 'Hiburan Lainnya';
-      return 'Konser';
+      if (cat.includes('EXHIBITION') || cat.includes('PAMERAN')) return isEn ? 'Exhibitions' : 'Pameran';
+      if (cat.includes('THEATER') || cat.includes('FAMILY') || cat.includes('BUSINESS')) return isEn ? 'Other Entertainment' : 'Hiburan Lainnya';
+      return isEn ? 'Concerts' : 'Konser';
     }
 
     const TIKUM_WHATSAPP_NUMBER = '6281299927378';
@@ -1193,8 +1201,11 @@
       }
       const title = eventTitle || 'Event';
       const eventUrl = window.location.origin + '/events/' + encodeURIComponent(eventSlug);
+      const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
       if (isValidSupportPhone(TIKUM_WHATSAPP_NUMBER)) {
-        const text = `Halo TIKUM, saya tertarik jika ada tiket resale terverifikasi untuk event: ${title} (${eventUrl}). Mohon berkabar jika ada penjual terverifikasi.`;
+        const text = isEn
+          ? `Hello TIKUM, I am interested in verified resale tickets for: ${title} (${eventUrl}). Please notify me when a verified seller is available.`
+          : `Halo TIKUM, saya tertarik jika ada tiket resale terverifikasi untuk event: ${title} (${eventUrl}). Mohon berkabar jika ada penjual terverifikasi.`;
         const waUrl = `https://wa.me/${TIKUM_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
         window.open(waUrl, '_blank', 'noopener,noreferrer');
       } else {
@@ -1217,6 +1228,9 @@
       const verifDate = e.verified_at || '';
       const categoryLabel = resolveCategoryLabel(e);
       const isPriority = Boolean(opts && opts.priority);
+      const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
+      const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
+      const fmtCur = (amount) => (window.TikumI18n ? window.TikumI18n.formatCurrency(amount, 'IDR') : formatRupiah(amount));
 
       const resaleCount = (typeof e.resale_listings_count === 'number')
         ? e.resale_listings_count
@@ -1230,21 +1244,21 @@
 
       if (hasResale) {
         const resalePrice = e.resale_price_min || e.price_min;
-        priceLabel = 'Resale mulai';
-        priceDisplay = resalePrice ? `Rp ${formatRupiah(resalePrice)}` : 'Harga tertera';
+        priceLabel = t('events.resaleFrom', 'Resale mulai');
+        priceDisplay = resalePrice ? fmtCur(resalePrice) : t('events.listedPrice', 'Harga tertera');
         resaleCue = '';
         waitlistBtn = '';
       } else {
         const officialPrice = e.primary_price_min || e.min_price;
-        priceLabel = 'Harga resmi promotor';
-        priceDisplay = officialPrice ? `Mulai Rp ${formatRupiah(officialPrice)}` : 'TBA';
-        resaleCue = '<div class="card-resale-empty-cue" data-i18n="events.noResaleTickets"><i class="fa-solid fa-circle-info"></i> Belum ada tiket resale di TIKUM</div>';
-        waitlistBtn = `<button type="button" class="btn-waitlist" onclick="handleWaitlistClick(event, '${escapeHtml(title)}', '${escapeHtml(slug)}')" data-i18n="events.notifyWhenAvailable"><i class="fa-brands fa-whatsapp"></i> Kabari Saya Saat Tiket Ada</button>`;
+        priceLabel = t('events.officialPromoterPrice', 'Harga resmi promotor');
+        priceDisplay = officialPrice ? (isEn ? `From ${fmtCur(officialPrice)}` : `Mulai ${fmtCur(officialPrice)}`) : 'TBA';
+        resaleCue = `<div class="card-resale-empty-cue" data-i18n="events.noResaleTickets"><i class="fa-solid fa-circle-info"></i> ${t('events.noResaleTickets', 'Belum ada tiket resale di TIKUM')}</div>`;
+        waitlistBtn = `<button type="button" class="btn-waitlist" onclick="handleWaitlistClick(event, '${escapeHtml(title)}', '${escapeHtml(slug)}')" data-i18n="events.notifyWhenAvailable"><i class="fa-brands fa-whatsapp"></i> ${t('events.notifyWhenAvailable', 'Kabari Saya Saat Tiket Ada')}</button>`;
       }
 
       let radarBadge = '';
       if (e.discovery_source_id === 'src-songkick-jakarta' || e.discovery_source_id === 'src-bandsintown-jakarta') {
-        radarBadge = '<div class="ln-badge ln-badge--radar"><i class="fa-solid fa-satellite-dish"></i> Radar Terverifikasi</div>';
+        radarBadge = `<div class="ln-badge ln-badge--radar" data-i18n="events.radarVerified"><i class="fa-solid fa-satellite-dish"></i> ${t('events.radarVerified', 'Radar Terverifikasi')}</div>`;
       }
 
       const hasPic = Boolean(
@@ -1255,7 +1269,7 @@
         e.venue_pic_assigned === true
       );
       const picBadge = hasPic
-        ? '<div class="card-pic-cue"><i class="fa-solid fa-user-check"></i> TIKUM PIC di venue</div>'
+        ? `<div class="card-pic-cue" data-i18n="events.picAtVenue"><i class="fa-solid fa-user-check"></i> ${t('events.picAtVenue', 'TIKUM PIC di venue')}</div>`
         : '';
 
       return `
@@ -1270,8 +1284,8 @@
                 <span class="poster-price-label" data-i18n="${hasResale ? 'events.resaleFrom' : 'events.officialPromoterPrice'}">${priceLabel}</span>
                 <span class="poster-price">${priceDisplay}</span>
               </div>
-              <span class="badge-card-trust" onclick="showVerifModal(event, '${verifDate}')" title="Event Terverifikasi Resmi" data-i18n="common.verified">
-                <i class="fa-solid fa-shield-check"></i> Terverifikasi
+              <span class="badge-card-trust" onclick="showVerifModal(event, '${verifDate}')" title="${t('common.verified', 'Terverifikasi')}" data-i18n="common.verified">
+                <i class="fa-solid fa-shield-check"></i> ${t('common.verified', 'Terverifikasi')}
               </span>
             </div>
             ${resaleCue}
@@ -1288,12 +1302,13 @@
     function renderHeroFeature(e) {
       const mount = document.getElementById('heroFeature');
       if (!mount) return;
+      const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
       if (!e) {
         mount.innerHTML = `
           <div class="ln-hero-inner">
-            <div class="ln-kicker"><i class="fa-solid fa-shield-check"></i> TIKUM — Pasar Tiket Event Terverifikasi</div>
-            <h1 class="ln-hero-title">Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli.</h1>
-            <p class="ln-hero-meta">Katalog Upcoming akan muncul di sini setelah ada pengumuman resmi dari promotor atau penyelenggara terverifikasi.</p>
+            <div class="ln-kicker"><i class="fa-solid fa-shield-check"></i> ${t('brand.tagline', 'TIKUM — Pasar Tiket Event Terverifikasi')}</div>
+            <h1 class="ln-hero-title">${t('meta.description', 'Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli.')}</h1>
+            <p class="ln-hero-meta">${t('discoveryRails.emptyUpcoming', 'Katalog Upcoming akan muncul di sini setelah ada pengumuman resmi dari promotor atau penyelenggara terverifikasi.')}</p>
           </div>`;
         mount.style.backgroundImage = '';
         return;
@@ -1311,16 +1326,16 @@
 
       mount.innerHTML = `
         <div class="ln-hero-inner">
-          <div class="ln-kicker"><i class="fa-solid fa-certificate"></i> Baru Diumumkan · Terverifikasi Resmi</div>
+          <div class="ln-kicker"><i class="fa-solid fa-certificate"></i> <span data-i18n="discoveryRails.heroKicker">${t('discoveryRails.heroKicker', 'Baru Diumumkan · Terverifikasi Resmi')}</span></div>
           <h1 class="ln-hero-title">${title}</h1>
           <p class="ln-hero-meta">
             <i class="fa-regular fa-calendar"></i> ${formatDate(e.date || e.start_date)}
             &nbsp;·&nbsp; <i class="fa-solid fa-location-dot"></i> ${[venue, city].filter(Boolean).join(', ')}
-            ${verif ? `&nbsp;·&nbsp; <i class="fa-solid fa-shield-check" style="color:#34D399;"></i> Diverifikasi ${verif}` : ''}
+            ${verif ? `&nbsp;·&nbsp; <i class="fa-solid fa-shield-check" style="color:#34D399;"></i> <span data-i18n="discoveryRails.heroVerified">${t('discoveryRails.heroVerified', 'Diverifikasi')}</span> ${verif}` : ''}
           </p>
           <div class="ln-hero-actions">
-            <a class="ln-btn ln-btn-primary" href="/events/${slug}"><i class="fa-solid fa-ticket"></i> Lihat Detail Event</a>
-            ${e.official_ticket_url ? `<a class="ln-btn ln-btn-ghost" href="${e.official_ticket_url}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i> Tiket Resmi</a>` : ''}
+            <a class="ln-btn ln-btn-primary" href="/events/${slug}"><i class="fa-solid fa-ticket"></i> <span data-i18n="discoveryRails.heroViewEvent">${t('discoveryRails.heroViewEvent', 'Lihat Detail Event')}</span></a>
+            ${e.official_ticket_url ? `<a class="ln-btn ln-btn-ghost" href="${e.official_ticket_url}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i> <span data-i18n="discoveryRails.heroOfficialTickets">${t('discoveryRails.heroOfficialTickets', 'Tiket Resmi')}</span></a>` : ''}
           </div>
         </div>`;
     }
@@ -1329,16 +1344,10 @@
      * Official attribution required by compliance policy.
      */
     function renderAttribution() {
+      const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
       return `
-        <div class="ln-attribution">
-          <strong>Atribusi sumber resmi &amp; radar penemuan konser.</strong>
-          Informasi tiket resmi disediakan oleh <strong>Live Nation Asia</strong>, <strong>LOKET</strong>, <strong>BBO Events</strong>,
-          dan kanal resmi promotor (Color Asia Live, Plainsong Live, Ismaya Live, Dyandra Global, TEM Presents, PK Entertainment).
-          Kanal radar penemuan konser <strong>Songkick</strong> dan <strong>Bandsintown</strong> (Jakarta &amp; Jabodetabek)
-          digunakan untuk pemantauan agenda tur dan seluruhnya diverifikasi silang dengan situs resmi penampil/promotor sebelum dipublikasikan.
-          TIKUM hanya menyimpan data faktual (nama event, tanggal, venue, kota, harga, serta tautan dan poster resmi) dan tidak menyalin materi promosi.
-          Kanal Instagram <strong>@infokonser</strong>, <strong>@livenationasia</strong>, dan <strong>@ticketmasterasia</strong> digunakan
-          sebagai sinyal penemuan (Tier 3) dan tidak pernah menjadi dasar verifikasi.
+        <div class="ln-attribution" data-i18n="discoveryRails.attributionText">
+          ${t('discoveryRails.attributionText', 'Atribusi sumber resmi &amp; radar penemuan konser. Informasi tiket resmi disediakan oleh Live Nation Asia, LOKET, BBO Events, dan kanal resmi promotor (Color Asia Live, Plainsong Live, Ismaya Live, Dyandra Global, TEM Presents, PK Entertainment). Kanal radar penemuan konser Songkick dan Bandsintown (Jakarta &amp; Jabodetabek) digunakan untuk pemantauan agenda tur dan seluruhnya diverifikasi silang dengan situs resmi penampil/promotor sebelum dipublikasikan. TIKUM hanya menyimpan data faktual (nama event, tanggal, venue, kota, harga, serta tautan dan poster resmi) dan tidak menyalin materi promosi. Kanal Instagram @infokonser, @livenationasia, dan @ticketmasterasia digunakan sebagai sinyal penemuan (Tier 3) dan tidak pernah menjadi dasar verifikasi.')}
         </div>`;
     }
 
@@ -1390,13 +1399,19 @@
       const dateValue = document.getElementById('dateFilter').value;
       const filtersActive = Boolean(searchValue || currentCategory || cityValue || dateValue);
 
+      const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
+
       if (filtersActive) {
         renderHeroFeature(null);
         if (!filtered.length) {
-          main.innerHTML = '<div class="ln-empty"><i class="fa-solid fa-magnifying-glass" style="font-size:26px; display:block; margin-bottom:12px;"></i>Tidak ada event terverifikasi yang sesuai dengan pencarian Anda.</div>';
+          main.innerHTML = `<div class="ln-empty"><i class="fa-solid fa-magnifying-glass" style="font-size:26px; display:block; margin-bottom:12px;"></i>${t('discoveryRails.emptySearch', 'Tidak ada event terverifikasi yang sesuai dengan pencarian Anda.')}</div>`;
           return;
         }
-        main.innerHTML = renderGridSection('Hasil Pencarian', `${filtered.length} event terverifikasi ditemukan`, filtered);
+        main.innerHTML = renderGridSection(
+          t('discoveryRails.searchResultsTitle', 'Hasil Pencarian'),
+          `${filtered.length} ${t('discoveryRails.searchResultsLead', 'event terverifikasi ditemukan')}`,
+          filtered
+        );
         return;
       }
 
@@ -1404,7 +1419,7 @@
       const upcoming = (sections.upcoming_nearest && sections.upcoming_nearest.length ? sections.upcoming_nearest : filtered);
       if (!upcoming.length) {
         renderHeroFeature(null);
-        main.innerHTML = '<div class="ln-empty">Belum ada event terverifikasi yang akan datang.</div>';
+        main.innerHTML = `<div class="ln-empty">${t('discoveryRails.emptyUpcoming', 'Belum ada event terverifikasi yang akan datang.')}</div>`;
         return;
       }
 
@@ -1425,17 +1440,17 @@
       renderHeroFeature(justAnnounced[0] || upcoming[0]);
 
       main.innerHTML = [
-        renderRail('Baru Diumumkan', 'Pengumuman resmi terbaru dari promotor & penyelenggara terverifikasi', justAnnounced.length ? justAnnounced : upcoming.slice(0, 8), { priority: true }),
-        radarConcerts.length ? renderRail('Radar Konser Jabodetabek (Songkick & Bandsintown)', 'Konser terkurasi dari radar Songkick & Bandsintown yang lolos verifikasi ganda promotor/artis', radarConcerts) : '',
-        renderGridSection('Upcoming Shows', 'Seluruh event Indonesia yang sudah terverifikasi sumber resminya', upcoming, { anchor: 'upcomingShows' }),
-        lastCall.length ? renderRail('Last Call for Tickets', 'Berlangsung dalam 7 hari ke depan', lastCall) : '',
-        concerts.length ? renderRail('Konser', 'Tur dan konser resmi terverifikasi', concerts) : '',
-        festivals.length ? renderRail('Festival & Pameran', 'Festival musik, pameran seni, dan budaya', festivals) : '',
-        sports.length ? renderRail('Olahraga', 'Pertandingan dan turnamen olahraga resmi', sports) : '',
+        renderRail(t('discoveryRails.justAnnouncedTitle', 'Baru Diumumkan'), t('discoveryRails.justAnnouncedLead', 'Pengumuman resmi terbaru dari promotor & penyelenggara terverifikasi'), justAnnounced.length ? justAnnounced : upcoming.slice(0, 8), { priority: true }),
+        radarConcerts.length ? renderRail(t('discoveryRails.radarJabodetabekTitle', 'Radar Konser Jabodetabek (Songkick & Bandsintown)'), t('discoveryRails.radarJabodetabekLead', 'Konser terkurasi dari radar Songkick & Bandsintown yang lolos verifikasi ganda promotor/artis'), radarConcerts) : '',
+        renderGridSection(t('discoveryRails.upcomingShowsTitle', 'Upcoming Shows'), t('discoveryRails.upcomingShowsLead', 'Seluruh event Indonesia yang sudah terverifikasi sumber resminya'), upcoming, { anchor: 'upcomingShows' }),
+        lastCall.length ? renderRail(t('discoveryRails.lastCallTitle', 'Last Call for Tickets'), t('discoveryRails.lastCallLead', 'Berlangsung dalam 7 hari ke depan'), lastCall) : '',
+        concerts.length ? renderRail(t('discoveryRails.concertsTitle', 'Konser'), t('discoveryRails.concertsLead', 'Tur dan konser resmi terverifikasi'), concerts) : '',
+        festivals.length ? renderRail(t('discoveryRails.festivalsTitle', 'Festival & Pameran'), t('discoveryRails.festivalsLead', 'Festival musik, pameran seni, dan budaya'), festivals) : '',
+        sports.length ? renderRail(t('discoveryRails.sportsTitle', 'Olahraga'), t('discoveryRails.sportsLead', 'Pertandingan dan turnamen olahraga resmi'), sports) : '',
         renderAttribution()
       ].join('');
-      if (window.TikumI18n && typeof window.TikumI18n.applyLanguage === 'function') {
-        window.TikumI18n.applyLanguage(window.TikumI18n.getLang());
+      if (window.TikumI18n && typeof window.TikumI18n.setLang === 'function') {
+        window.TikumI18n.setLang(window.TikumI18n.getLang());
       }
     }
 
@@ -1595,10 +1610,11 @@
       }
     }
 
-    window.addEventListener('tikum:languageChanged', function() {
+    window.addEventListener('tikum:languageChanged', function(e) {
       const heroEvent = (homeFeed && homeFeed.sections && homeFeed.sections.hero) || allEvents[0];
       renderHeroFeature(heroEvent);
       renderAllSections();
+      if (homeFeed) updateFreshnessBadge(homeFeed);
     });
 
     // Init
