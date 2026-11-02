@@ -175,8 +175,11 @@ router.use('/api/discovery', ensureRegistryHydrated);
  */
 router.get('/events/archive', (req, res) => {
   const { q, city, category } = req.query;
+  const locale = resolveRequestLocale(req);
+  const isEn = locale === 'en';
   const now = new Date();
   res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=1200');
+  res.setHeader('Vary', 'Cookie, Accept-Language');
 
   let allEvents = canonicalRegistry.getAllEvents().filter(e => {
     const evStatus = (e.status || '').toUpperCase();
@@ -259,12 +262,12 @@ router.get('/events/archive', (req, res) => {
   }).join('');
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${locale}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arsip Event Selesai — Riwayat Konser &amp; Pertunjukan Terverifikasi | Tikum</title>
-  <meta name="description" content="Arsip dan dokumentasi konser musik, festival, dan acara langsung yang telah selesai di Indonesia. Seluruh data historis terverifikasi tetap dapat diakses publik di Tikum.">
+  <title>${isEn ? 'Concluded Events Archive — Verified Concert &amp; Performance History | Tikum' : 'Arsip Event Selesai — Riwayat Konser &amp; Pertunjukan Terverifikasi | Tikum'}</title>
+  <meta name="description" content="${isEn ? 'Archive and documentation of completed music concerts, festivals, and live events in Indonesia. All verified historical data remains publicly accessible on Tikum.' : 'Arsip dan dokumentasi konser musik, festival, dan acara langsung yang telah selesai di Indonesia. Seluruh data historis terverifikasi tetap dapat diakses publik di Tikum.'}">
   <link rel="canonical" href="https://tikum.app/events/archive">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
@@ -355,11 +358,14 @@ router.get('/events/archive', (req, res) => {
 router.get('/events/:slug', (req, res, next) => {
   const slug = req.params.slug;
   if (slug === 'archive' || slug === 'city' || slug === 'category') return next();
+  const locale = resolveRequestLocale(req);
+  const isEn = locale === 'en';
   const { include_past, scope } = req.query;
   const showAllOrPast = include_past === 'true' || scope === 'all' || scope === 'admin';
   const now = new Date();
   // Edge Cache: Absorb crawler and visitor traffic while allowing stale revalidation
   res.setHeader('Cache-Control', 'public, s-maxage=180, stale-while-revalidate=600');
+  res.setHeader('Vary', 'Cookie, Accept-Language');
 
   let event = canonicalRegistry.getEventBySlug(slug) || canonicalRegistry.getEventById(slug);
 
@@ -437,7 +443,6 @@ router.get('/events/:slug', (req, res, next) => {
     return true;
   });
 
-  const locale = resolveRequestLocale(req);
   const html = EventSEOService.renderEventPageHtml(event, listings, related, locale);
   res.type('html').send(html);
 });
@@ -473,9 +478,12 @@ function deduplicateAndEnrichPublicEvents(events) {
  */
 router.get('/events', (req, res) => {
   const { q, city, category, status, include_past, scope, price_range, ticket_status, date_range, date_from, date_to } = req.query;
+  const locale = resolveRequestLocale(req);
+  const isEn = locale === 'en';
 
   // Edge Cache: Absorb high-frequency crawls and bot traffic while preserving fresh updates
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  res.setHeader('Vary', 'Cookie, Accept-Language');
 
   let allEvents = canonicalRegistry.getAllEvents();
   const showAllOrPast = include_past === 'true' || scope === 'all';
@@ -763,7 +771,7 @@ router.get('/events', (req, res) => {
     </div>
   </main>
 
-  ${renderFooterHtml()}
+  ${renderFooterHtml(locale)}
   <script src="/js/i18n.js"></script>
 </body>
 </html>`;
@@ -792,6 +800,7 @@ router.get('/events/category/:category', (req, res) => {
  * APMI Promoters Directory & Verified Events Archive Hub
  */
 router.get(['/promoters', '/promoters/apmi'], (req, res) => {
+  const locale = resolveRequestLocale(req);
   const directory = apmiPromoterRegistry.getAllPromotersWithEvents(canonicalRegistry);
   const assoc = directory.association;
 
@@ -880,7 +889,7 @@ router.get(['/promoters', '/promoters/apmi'], (req, res) => {
     </div>
   </main>
 
-  ${renderFooterHtml()}
+  ${renderFooterHtml(locale)}
   <script src="/js/i18n.js"></script>
 </body>
 </html>`;
@@ -893,6 +902,7 @@ router.get(['/promoters', '/promoters/apmi'], (req, res) => {
  * Individual APMI Promoter Profile & Event Showcase Page
  */
 router.get('/promoters/apmi/:slug', (req, res) => {
+  const locale = resolveRequestLocale(req);
   const result = apmiPromoterRegistry.getEventsForPromoter(req.params.slug, canonicalRegistry);
   if (!result) {
     return res.status(404).send(`<!DOCTYPE html>
@@ -989,7 +999,7 @@ router.get('/promoters/apmi/:slug', (req, res) => {
     </div>
   </main>
 
-  ${renderFooterHtml()}
+  ${renderFooterHtml(locale)}
   <script src="/js/i18n.js"></script>
 </body>
 </html>`;
