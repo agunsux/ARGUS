@@ -103,8 +103,10 @@ function isKnownDeployment() {
  */
 function validateMidtransConfiguration(config = {}) {
   const depEnv = getDeploymentEnv();
-  const serverKey = (config.serverKey || process.env.MIDTRANS_SERVER_KEY || '').trim();
-  const clientKey = (config.clientKey || process.env.MIDTRANS_CLIENT_KEY || '').trim();
+  const rawServerKey = (config.serverKey || process.env.MIDTRANS_SERVER_KEY || '').trim();
+  const rawClientKey = (config.clientKey || process.env.MIDTRANS_CLIENT_KEY || '').trim();
+  const serverKey = rawServerKey.replace(/^["']|["']$/g, '').trim();
+  const clientKey = rawClientKey.replace(/^["']|["']$/g, '').trim();
   const rawIsProd = config.isProduction === true || process.env.MIDTRANS_IS_PRODUCTION === 'true';
 
   if (depEnv === DEPLOYMENT_ENV.UNKNOWN) {
@@ -128,24 +130,46 @@ function validateMidtransConfiguration(config = {}) {
       };
     }
 
-    if (serverKey && !serverKey.startsWith('SB-Mid-') && process.env.NODE_ENV !== 'test') {
-      return {
-        allowed: false,
-        reason: 'Live production server key detected on Preview environment. Sandbox key required.',
-        isSandbox: false,
-        isProduction: false,
-        environment: depEnv
-      };
+    if (serverKey && process.env.NODE_ENV !== 'test') {
+      if (serverKey.startsWith('Mid-server-')) {
+        return {
+          allowed: false,
+          reason: 'Live production server key (Mid-server-*) detected on Preview environment. Sandbox key (SB-Mid-server-*) required.',
+          isSandbox: false,
+          isProduction: false,
+          environment: depEnv
+        };
+      }
+      if (!serverKey.startsWith('SB-Mid-')) {
+        return {
+          allowed: false,
+          reason: 'Unrecognized Midtrans server key format on Preview. Expected SB-Mid-server-* for Sandbox.',
+          isSandbox: false,
+          isProduction: false,
+          environment: depEnv
+        };
+      }
     }
 
-    if (clientKey && !clientKey.startsWith('SB-Mid-') && process.env.NODE_ENV !== 'test') {
-      return {
-        allowed: false,
-        reason: 'Live production client key detected on Preview environment. Sandbox key required.',
-        isSandbox: false,
-        isProduction: false,
-        environment: depEnv
-      };
+    if (clientKey && process.env.NODE_ENV !== 'test') {
+      if (clientKey.startsWith('Mid-client-')) {
+        return {
+          allowed: false,
+          reason: 'Live production client key (Mid-client-*) detected on Preview environment. Sandbox key (SB-Mid-client-*) required.',
+          isSandbox: false,
+          isProduction: false,
+          environment: depEnv
+        };
+      }
+      if (!clientKey.startsWith('SB-Mid-')) {
+        return {
+          allowed: false,
+          reason: 'Unrecognized Midtrans client key format on Preview. Expected SB-Mid-client-* for Sandbox.',
+          isSandbox: false,
+          isProduction: false,
+          environment: depEnv
+        };
+      }
     }
 
     return {

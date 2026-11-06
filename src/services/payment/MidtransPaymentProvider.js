@@ -36,8 +36,8 @@ const MIDTRANS_STATUS = {
 class MidtransPaymentProvider extends PaymentProvider {
   constructor(config = {}) {
     super(config);
-    this.serverKey = (config.serverKey || process.env.MIDTRANS_SERVER_KEY || '').trim() || null;
-    this.clientKey = (config.clientKey || process.env.MIDTRANS_CLIENT_KEY || '').trim() || null;
+    this.serverKey = (config.serverKey || process.env.MIDTRANS_SERVER_KEY || '').trim().replace(/^["']|["']$/g, '') || null;
+    this.clientKey = (config.clientKey || process.env.MIDTRANS_CLIENT_KEY || '').trim().replace(/^["']|["']$/g, '') || null;
 
     const depEnv = getDeploymentEnv();
     if (depEnv === DEPLOYMENT_ENV.PREVIEW) {

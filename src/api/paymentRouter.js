@@ -109,7 +109,7 @@ router.get(['/v1/payments/midtrans/client-key', '/payments/midtrans/client-key']
       });
     }
 
-    const clientKey = (process.env.MIDTRANS_CLIENT_KEY || '').trim();
+    const clientKey = (process.env.MIDTRANS_CLIENT_KEY || '').trim().replace(/^["']|["']$/g, '');
     if (!clientKey) {
       return res.status(503).json({
         error: 'Midtrans client key is not configured in Preview.',

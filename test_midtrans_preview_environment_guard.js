@@ -175,7 +175,7 @@ async function runSuite() {
     const liveKeyInPreview = new MidtransPaymentProvider();
     const lkStatus = liveKeyInPreview.getStatus();
     assert.strictEqual(lkStatus.status, MIDTRANS_STATUS.BLOCKED);
-    assert.match(lkStatus.message, /Live production server key detected on Preview/);
+    assert.match(lkStatus.message, /Live production server key .* detected on Preview/);
     pass('2.3 Non-sandbox server key detected on Preview is strictly BLOCKED');
 
     // 2.4 Production without credentials fails closed
