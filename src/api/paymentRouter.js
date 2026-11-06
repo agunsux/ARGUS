@@ -56,20 +56,98 @@ router.get('/v1/payments/methods', (req, res) => {
  * GET /api/v1/payments/midtrans/client-key
  * Returns safe public client key and Snap script URL for frontend integration (never leaks server key)
  * Fails-closed in production if Midtrans production merchant activation is pending
+ * In Preview: permitted only when verified as Vercel Preview with validated Sandbox credentials
  */
 router.get(['/v1/payments/midtrans/client-key', '/payments/midtrans/client-key'], (req, res) => {
   const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
-  if (isPrelaunchListingMode()) {
+  const {
+    getDeploymentEnv,
+    DEPLOYMENT_ENV,
+    isVercelPreview,
+    validateMidtransConfiguration
+  } = require('../config/deploymentEnv');
+
+  const depEnv = getDeploymentEnv();
+  const prelaunch = isPrelaunchListingMode();
+
+  // 1. In Production: prelaunch protection is absolute
+  if (depEnv === DEPLOYMENT_ENV.PRODUCTION && prelaunch) {
     return res.status(403).json({
       ...PRELAUNCH_ERROR_RESPONSE,
       isAvailable: false
     });
   }
 
-  const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL;
-  const isProductionActive = isProductionEnv && process.env.ENABLE_MIDTRANS_PRODUCTION === 'true' && process.env.MIDTRANS_IS_PRODUCTION === 'true';
+  // 2. In Unknown / Contradictory deployment: fail closed
+  if (depEnv === DEPLOYMENT_ENV.UNKNOWN) {
+    return res.status(503).json({
+      error: 'Midtrans client key unavailable in ambiguous deployment environment.',
+      code: 'UNKNOWN_ENVIRONMENT',
+      isAvailable: false
+    });
+  }
 
-  if (isProductionEnv && !isProductionActive) {
+  // 3. Narrowly scoped Vercel Preview exception:
+  // Permitted ONLY when:
+  // - Verified as Vercel Preview (isVercelPreview() === true)
+  // - Midtrans is explicitly configured for Sandbox
+  // - Sandbox credentials format validated
+  // - Production mode is strictly false
+  // - Production checkout remains disabled
+  if (isVercelPreview()) {
+    const validation = validateMidtransConfiguration({
+      clientKey: process.env.MIDTRANS_CLIENT_KEY,
+      serverKey: process.env.MIDTRANS_SERVER_KEY,
+      isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true'
+    });
+
+    if (!validation.allowed || !validation.isSandbox) {
+      return res.status(503).json({
+        error: validation.reason || 'Midtrans Sandbox is not properly configured for Preview.',
+        code: 'MIDTRANS_NOT_ACTIVATED',
+        isAvailable: false
+      });
+    }
+
+    const clientKey = (process.env.MIDTRANS_CLIENT_KEY || '').trim();
+    if (!clientKey) {
+      return res.status(503).json({
+        error: 'Midtrans client key is not configured in Preview.',
+        code: 'MIDTRANS_NOT_CONFIGURED',
+        isAvailable: false
+      });
+    }
+
+    if (!clientKey.startsWith('SB-Mid-client-') && process.env.NODE_ENV !== 'test') {
+      return res.status(503).json({
+        error: 'Invalid Midtrans client key format for Sandbox.',
+        code: 'INVALID_SANDBOX_CLIENT_KEY',
+        isAvailable: false
+      });
+    }
+
+    return res.json({
+      clientKey,
+      isProduction: false,
+      isSandbox: true,
+      isAvailable: true,
+      snapUrl: 'https://app.sandbox.midtrans.com/snap/snap.js'
+    });
+  }
+
+  // 4. Standard non-Preview environments (Development / Test)
+  if (prelaunch && process.env.NODE_ENV !== 'test') {
+    return res.status(403).json({
+      ...PRELAUNCH_ERROR_RESPONSE,
+      isAvailable: false
+    });
+  }
+
+  const isProductionActive = depEnv === DEPLOYMENT_ENV.PRODUCTION
+    && process.env.ENABLE_MIDTRANS_PRODUCTION === 'true'
+    && process.env.MIDTRANS_IS_PRODUCTION === 'true';
+
+  if (depEnv === DEPLOYMENT_ENV.PRODUCTION && !isProductionActive) {
     return res.status(503).json({
       error: 'Midtrans production payment provider is not yet activated for live marketplace checkout.',
       code: 'MIDTRANS_NOT_ACTIVATED',
@@ -94,7 +172,7 @@ router.get(['/v1/payments/midtrans/client-key', '/payments/midtrans/client-key']
  */
 router.get('/v1/payments/active-config', (req, res) => {
   const { isPrelaunchListingMode, getMarketplaceMode } = require('../config/marketplaceMode');
-  const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+  const { isProductionDeployment } = require('../config/deploymentEnv');
   const defaultProvider = (paymentManager.defaultProvider || 'doku').toLowerCase();
   const provider = paymentManager.getProvider(defaultProvider);
   const status = provider ? provider.getStatus() : { isVerified: false, status: 'UNKNOWN' };
@@ -104,7 +182,7 @@ router.get('/v1/payments/active-config', (req, res) => {
     active_provider: defaultProvider,
     status: status.status,
     is_verified: status.isVerified,
-    is_production: Boolean(isProductionEnv),
+    is_production: isProductionDeployment(),
     marketplace_mode: getMarketplaceMode(),
     is_prelaunch: isPrelaunchListingMode(),
     requires_escrow: Boolean(capabilities?.hold)

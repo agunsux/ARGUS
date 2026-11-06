@@ -20,6 +20,11 @@ const {
   MONEY_STATE,
   ProviderCapabilities
 } = require('./canonicalPaymentTypes');
+const {
+  getDeploymentEnv,
+  DEPLOYMENT_ENV,
+  validateMidtransConfiguration
+} = require('../../config/deploymentEnv');
 
 const MIDTRANS_STATUS = {
   ACTIVE: 'ACTIVE',
@@ -33,7 +38,15 @@ class MidtransPaymentProvider extends PaymentProvider {
     super(config);
     this.serverKey = (config.serverKey || process.env.MIDTRANS_SERVER_KEY || '').trim() || null;
     this.clientKey = (config.clientKey || process.env.MIDTRANS_CLIENT_KEY || '').trim() || null;
-    this.isProduction = config.isProduction === true || process.env.MIDTRANS_IS_PRODUCTION === 'true';
+
+    const depEnv = getDeploymentEnv();
+    if (depEnv === DEPLOYMENT_ENV.PREVIEW) {
+      // In Preview: strictly force sandbox, live production is impossible
+      this.isProduction = false;
+    } else {
+      this.isProduction = config.isProduction === true || process.env.MIDTRANS_IS_PRODUCTION === 'true';
+    }
+
     this.apiBaseUrl = config.apiBaseUrl || (this.isProduction ? 'https://api.midtrans.com' : 'https://api.sandbox.midtrans.com');
     this.snapBaseUrl = this.isProduction ? 'https://app.midtrans.com/snap/v1' : 'https://app.sandbox.midtrans.com/snap/v1';
 
@@ -60,11 +73,69 @@ class MidtransPaymentProvider extends PaymentProvider {
   }
 
   getStatus() {
+    const depEnv = getDeploymentEnv();
     const hasKeys = Boolean(this.serverKey);
-    const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL;
-    const isProductionActive = isProductionEnv && process.env.ENABLE_MIDTRANS_PRODUCTION === 'true' && this.isProduction;
-    const isReady = isProductionEnv ? isProductionActive : (hasKeys || this.allowSimulation);
+    const validation = validateMidtransConfiguration({
+      serverKey: this.serverKey,
+      clientKey: this.clientKey,
+      isProduction: this.isProduction
+    });
 
+    if (depEnv === DEPLOYMENT_ENV.UNKNOWN) {
+      return {
+        provider: this.getName(),
+        status: MIDTRANS_STATUS.BLOCKED,
+        isVerified: false,
+        environment: 'unknown',
+        hasServerKey: hasKeys,
+        message: validation.reason,
+        tier: 'TIER_2A'
+      };
+    }
+
+    if (depEnv === DEPLOYMENT_ENV.PREVIEW) {
+      if (!validation.allowed) {
+        return {
+          provider: this.getName(),
+          status: MIDTRANS_STATUS.BLOCKED,
+          isVerified: false,
+          environment: 'sandbox',
+          hasServerKey: hasKeys,
+          message: validation.reason,
+          tier: 'TIER_2A'
+        };
+      }
+      const isReady = hasKeys || this.allowSimulation;
+      return {
+        provider: this.getName(),
+        status: isReady ? MIDTRANS_STATUS.ACTIVE : MIDTRANS_STATUS.PENDING_VERIFICATION,
+        isVerified: isReady,
+        environment: 'sandbox',
+        hasServerKey: hasKeys,
+        message: isReady
+          ? 'Midtrans Sandbox payment rail active (Preview)'
+          : 'PAYMENT PROVIDER MIDTRANS: Awaiting MIDTRANS_SERVER_KEY configuration',
+        tier: 'TIER_2A'
+      };
+    }
+
+    if (depEnv === DEPLOYMENT_ENV.PRODUCTION) {
+      const isReady = validation.allowed;
+      return {
+        provider: this.getName(),
+        status: isReady ? MIDTRANS_STATUS.ACTIVE : MIDTRANS_STATUS.PENDING_VERIFICATION,
+        isVerified: isReady,
+        environment: this.isProduction ? 'production' : 'sandbox',
+        hasServerKey: hasKeys,
+        message: isReady
+          ? 'Midtrans live production payment rail active'
+          : (validation.reason || 'PAYMENT PROVIDER MIDTRANS: Production merchant activation pending. Real-money transactions gated.'),
+        tier: 'TIER_2A'
+      };
+    }
+
+    // Development / Test
+    const isReady = hasKeys || this.allowSimulation;
     return {
       provider: this.getName(),
       status: isReady ? MIDTRANS_STATUS.ACTIVE : MIDTRANS_STATUS.PENDING_VERIFICATION,
@@ -73,9 +144,7 @@ class MidtransPaymentProvider extends PaymentProvider {
       hasServerKey: hasKeys,
       message: isReady
         ? (this.isProduction ? 'Midtrans live production payment rail active' : 'Midtrans Sandbox payment rail active')
-        : (isProductionEnv
-          ? 'PAYMENT PROVIDER MIDTRANS: Production merchant activation pending. Real-money transactions gated.'
-          : 'PAYMENT PROVIDER MIDTRANS: Awaiting MIDTRANS_SERVER_KEY configuration'),
+        : 'PAYMENT PROVIDER MIDTRANS: Awaiting MIDTRANS_SERVER_KEY configuration',
       tier: 'TIER_2A'
     };
   }
@@ -202,10 +271,18 @@ class MidtransPaymentProvider extends PaymentProvider {
     idempotencyKey = null,
     correlationId = null
   }) {
-    const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL;
-    if (isProductionEnv && (process.env.ENABLE_MIDTRANS_PRODUCTION !== 'true' || !this.isProduction)) {
-      const err = new Error('Midtrans Sandbox is strictly forbidden in production. Production merchant activation is required.');
-      err.code = 'SANDBOX_PROHIBITED_IN_PRODUCTION';
+    const depEnv = getDeploymentEnv();
+    const validation = validateMidtransConfiguration({
+      serverKey: this.serverKey,
+      clientKey: this.clientKey,
+      isProduction: this.isProduction
+    });
+
+    if (!validation.allowed) {
+      const err = new Error(validation.reason || 'Midtrans payment creation not permitted.');
+      err.code = depEnv === DEPLOYMENT_ENV.PRODUCTION
+        ? 'SANDBOX_PROHIBITED_IN_PRODUCTION'
+        : (depEnv === DEPLOYMENT_ENV.UNKNOWN ? 'UNKNOWN_ENVIRONMENT' : 'MIDTRANS_NOT_ACTIVATED');
       err.status = 503;
       throw err;
     }
