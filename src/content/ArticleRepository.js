@@ -126,16 +126,16 @@ class ArticleRepository {
   }
 
   saveArticleInternal(articleData, shouldPersist = true) {
+    const article = ContentModel.create(articleData);
     // Slug collision protection: Ensure slug is not already used by another article
-    const targetSlug = articleData.slug;
+    const targetSlug = article.slug;
     if (targetSlug) {
       const existingId = this.slugMap.get(targetSlug);
-      if (existingId && existingId !== articleData.id) {
+      if (existingId && existingId !== article.id) {
         throw new Error(`Article with slug '${targetSlug}' already exists (ID: ${existingId})`);
       }
     }
 
-    const article = ContentModel.create(articleData);
     const validation = ContentModel.validate(article);
     if (!validation.isValid) {
       throw new Error(`Article validation failed: ${validation.errors.join(', ')}`);
@@ -152,11 +152,20 @@ class ArticleRepository {
     const recLinks = InternalLinkingService.getRecommendedLinks(article);
     article.internal_links = recLinks;
 
+    const previous = this.articles.get(article.id);
+    const previousSlugs = new Map(this.slugMap);
     this.articles.set(article.id, article);
     this.slugMap.set(article.slug, article.id);
 
     if (shouldPersist) {
-      this.persistToStorage();
+      try {
+        this.persistToStorage();
+      } catch (err) {
+        if (previous) this.articles.set(article.id, previous);
+        else this.articles.delete(article.id);
+        this.slugMap = previousSlugs;
+        throw err;
+      }
     }
     return article;
   }
@@ -171,6 +180,7 @@ class ArticleRepository {
       DurableArticleStore.persist(list);
     } catch (err) {
       console.error('[ArticleRepository] Durable persistence error:', err.message);
+      throw err;
     }
     this.syncStateDatabase();
   }
@@ -210,7 +220,7 @@ class ArticleRepository {
   /**
    * Evaluates if an article is due for public consumption at a given point in time.
    * - Published articles: due if published_at is not set or published_at <= now
-   * - Scheduled articles: due if scheduled_at <= now (request-time auto publication)
+   * - Scheduled articles are private until a successful publication transition.
    * - Other statuses (draft, review, archived): never due
    */
   static isArticleDue(article, now = new Date()) {
@@ -222,14 +232,6 @@ class ArticleRepository {
         return new Date(article.published_at).toISOString() <= nowIso;
       } catch (_) {
         return article.published_at <= nowIso;
-      }
-    }
-    if (article.status === CONTENT_STATUS.SCHEDULED) {
-      if (!article.scheduled_at) return false;
-      try {
-        return new Date(article.scheduled_at).toISOString() <= nowIso;
-      } catch (_) {
-        return article.scheduled_at <= nowIso;
       }
     }
     return false;
@@ -292,8 +294,13 @@ class ArticleRepository {
       throw new Error('Only approved articles can be scheduled for publication');
     }
 
+    const parsed = new Date(targetDate);
+    if (isNaN(parsed.getTime())) {
+      throw new Error(`Invalid time format for schedule: ${targetDate}`);
+    }
+    const scheduledAt = parsed.toISOString();
     article.status = CONTENT_STATUS.SCHEDULED;
-    article.scheduled_at = new Date(targetDate).toISOString();
+    article.scheduled_at = scheduledAt;
     article.updated_at = new Date().toISOString();
     this.persistToStorage();
     return article;
@@ -321,11 +328,32 @@ class ArticleRepository {
       throw new Error(`Cannot publish article with status '${article.status}'. Human approval is required.`);
     }
 
+    // A local /tmp snapshot is not a shared durable store on Vercel. Fail closed
+    // rather than acknowledge a publication that another instance cannot see.
+    if (process.env.VERCEL && process.env.NODE_ENV !== 'test') {
+      if (!DurableArticleStore.isDurableStoreConfigured()) {
+        throw new Error('CONTENT_DURABLE_STORE_REQUIRED: serverless publication requires shared transactional storage');
+      }
+    }
+    if (!article.human_approved_by || !article.human_approved_at) {
+      throw new Error('Publication requires a recorded editorial approval');
+    }
+    const quality = ContentQualityEngine.evaluate(article);
+    if (!quality.fact_check_passed) {
+      throw new Error(`Publication blocked by content checks: ${quality.flags.join(', ')}`);
+    }
+    const publishedAt = new Date(options.publishedAt || Date.now()).toISOString();
+    const previous = { ...article };
     article.status = CONTENT_STATUS.PUBLISHED;
-    article.published_at = options.publishedAt || new Date().toISOString();
+    article.published_at = publishedAt;
     article.publish_error = null;
     article.updated_at = new Date().toISOString();
-    this.persistToStorage();
+    try {
+      this.persistToStorage();
+    } catch (err) {
+      Object.assign(article, previous);
+      throw err;
+    }
 
     return {
       success: true,

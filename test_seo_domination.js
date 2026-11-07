@@ -184,10 +184,10 @@ async function runSeoDominationSuite() {
 
     const trustRoutes = [
       { path: '/how-it-works', expectedText: 'Bagaimana Tikum Melindungi Transaksi Anda' },
-      { path: '/buyer-protection', expectedText: 'Perlindungan Menyeluruh untuk Pembeli Tiket' },
+      { path: '/buyer-protection', expectedText: 'Panduan Pembeli & Perlindungan Transaksi' },
       { path: '/seller-protection', expectedText: 'Perlindungan Transaksi untuk Penjual Tiket' },
       { path: '/ticket-verification', expectedText: 'Protokol Verifikasi Tiket' },
-      { path: '/escrow', expectedText: 'Infrastruktur Escrow: Penahanan Dana Aman' },
+      { path: '/escrow', expectedText: 'Penahanan Pembayaran Platform (Platform-Held)' },
       { path: '/disputes', expectedText: 'Prosedur Resolusi Sengketa (Dispute)' },
       { path: '/dispute-resolution', expectedText: 'Prosedur Resolusi Sengketa (Dispute)' }
     ];
@@ -199,7 +199,10 @@ async function runSeoDominationSuite() {
         assert.ok(res.body.includes(tr.expectedText), `Must include ${tr.expectedText}`);
         assert.ok(res.body.includes('https://schema.org'), 'Must include Schema.org JSON-LD');
         assert.ok(res.body.includes('FAQPage'), 'Must include FAQPage structured data');
-        assert.ok(res.body.includes(`https://tikum.app${tr.path.split('/')[1] === 'dispute-resolution' ? '/disputes' : tr.path}`), 'Must have canonical URL');
+        const expectedCanonical = tr.path === '/buyer-protection'
+          ? '/panduan-pembeli'
+          : (tr.path.split('/')[1] === 'dispute-resolution' ? '/disputes' : tr.path);
+        assert.ok(res.body.includes(`https://tikum.app${expectedCanonical}`), 'Must have canonical URL');
       });
     }
 
@@ -411,7 +414,10 @@ async function runSeoDominationSuite() {
     console.log(`  All ${passed}/${total} SEO Domination & Red Team checks PASSED!`);
     console.log('====================================================\n');
   } finally {
-    server.close();
+    if (server) {
+      server.close();
+    }
+    articleRepository.reset();
   }
 }
 

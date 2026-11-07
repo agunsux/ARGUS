@@ -6,12 +6,15 @@
  *
  * Invariants:
  * - Atomic write via temporary file + atomic rename (fs.renameSync).
+ * - Shared transactional database persistence when DATABASE_URL is available.
  * - Guaranteed consistency across restarts and multi-instance reads.
  * - Idempotent data handling.
  */
 
 const fs = require('fs');
 const path = require('path');
+const { PostgresArticleStore } = require('./PostgresArticleStore');
+const { InMemoryArticleStore } = require('./InMemoryArticleStore');
 
 const DATA_DIR = process.env.VERCEL
   ? '/tmp/argus_data'
@@ -19,6 +22,15 @@ const DATA_DIR = process.env.VERCEL
 
 const ARTICLES_FILE = path.join(DATA_DIR, 'articles.json');
 const SNAPSHOT_FILE = path.resolve(__dirname, 'fixtures/articles_snapshot.json');
+
+let activeArticleStore = null;
+
+function isTestRuntime() {
+  if (process.env.NODE_ENV === 'test') return true;
+  if (process.env.npm_lifecycle_event === 'test') return true;
+  const entryScript = String((process.argv && process.argv[1]) || '');
+  return /[\\/]test_[^\\/]+\.js$/i.test(entryScript) || /^test_[^\\/]+\.js$/i.test(entryScript);
+}
 
 class DurableArticleStore {
   static init() {
@@ -39,6 +51,31 @@ class DurableArticleStore {
         }
       }
     } catch (_) {}
+  }
+
+  static getStore(forceNew = false) {
+    if (activeArticleStore && !forceNew) {
+      return activeArticleStore;
+    }
+    const hasDbUrl = Boolean(process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL);
+    const isTest = isTestRuntime();
+
+    if (isTest && !process.env.TEST_DATABASE_URL && !process.env.TEST_DATABASE_SCHEMA) {
+      activeArticleStore = new InMemoryArticleStore();
+    } else if (hasDbUrl || process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      activeArticleStore = new PostgresArticleStore();
+    } else {
+      activeArticleStore = new InMemoryArticleStore();
+    }
+    return activeArticleStore;
+  }
+
+  static setStore(store) {
+    activeArticleStore = store;
+  }
+
+  static isDurableStoreConfigured() {
+    return Boolean(process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL);
   }
 
   static getDataDir() {

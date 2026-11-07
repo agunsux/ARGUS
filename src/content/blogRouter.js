@@ -558,8 +558,8 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
     'https://tikum.app/icons/icon-512x512.png';
 
   const headMeta = TechnicalSEOService.renderHeadMeta({
-    title: `${article.title} | Tikum`,
-    description: article.description,
+    title: `${article.seo_title || article.title} | Tikum`,
+    description: article.meta_description || article.description,
     canonicalPath: `/blog/${article.slug}`,
     ogType: 'article',
     image: ogImage,
@@ -580,14 +580,14 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
   const faqHtml = renderFaqSection(article.faq);
 
   // Intent-matched CTA content
-  let ctaTitle = 'Temukan Tiket Konser Terverifikasi di Tikum';
-  let ctaDesc = 'Transaksi aman dengan perlindungan pembayaran escrow dan pendampingan di gerbang venue.';
+  let ctaTitle = 'Jelajahi Event di Tikum';
+  let ctaDesc = 'Periksa informasi event, ketersediaan listing, serta ketentuan transaksi yang berlaku. Dukungan venue tidak tersedia untuk setiap event.';
   let ctaBtn1 = '<a href="/events" class="btn btn-sm btn-primary">Lihat Event</a>';
-  let ctaBtn2 = '<a href="/how-it-works" class="btn btn-sm btn-secondary">Pelajari Escrow</a>';
+  let ctaBtn2 = '<a href="/how-it-works" class="btn btn-sm btn-secondary">Pelajari Cara Kerja Tikum</a>';
 
   if (article.search_intent === 'commercial' || (article.keywords && article.keywords.some(k => k.includes('jual')))) {
-    ctaTitle = 'Punya Tiket dan Berhalangan Hadir? Jual dengan Aman di Tikum';
-    ctaDesc = 'Pembayaran pembeli terkunci aman di escrow sebelum Anda menyerahkan tiket.';
+    ctaTitle = 'Punya Tiket dan Berhalangan Hadir?';
+    ctaDesc = 'Periksa aturan transfer dan resale dari penyelenggara sebelum membuat listing di Tikum.';
     ctaBtn1 = '<a href="/create" class="btn btn-sm btn-primary">Mulai Jual Tiket</a>';
     ctaBtn2 = '<a href="/seller-protection" class="btn btn-sm btn-secondary">Proteksi Penjual</a>';
   }
@@ -636,7 +636,7 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
       <h1 style="font-size: 32px; font-weight: 800; color: #f8fafc; line-height: 1.3; margin: 10px 0 14px;">${article.title}</h1>
       <p style="font-size: 17px; color: #94a3b8; line-height: 1.6; margin: 0;">${article.description}</p>
       <div style="margin-top: 16px; font-size: 13px; color: #cbd5e1;">
-        Penulis: <a href="/blog/editorial-standards" style="color:#38bdf8; text-decoration:underline;">${article.author}</a> | Verifikasi: <strong>Tim Keamanan Tikum</strong>
+        Penulis: <a href="/blog/editorial-standards" style="color:#38bdf8; text-decoration:underline;">${article.author}</a>
       </div>
     </header>
 

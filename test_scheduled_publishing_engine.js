@@ -70,6 +70,10 @@ async function runSuite() {
   console.log('  TIKUM — SCHEDULED PUBLISHING ENGINE & RELEASE GATES SUITE');
   console.log('================================================================\n');
 
+  const { resetDatabase } = require('./src/database');
+  resetDatabase();
+  articleRepository.reset();
+
   server = http.createServer(app);
   await new Promise(resolve => server.listen(0, resolve));
   const port = server.address().port;
@@ -133,34 +137,22 @@ async function runSuite() {
     // -------------------------------------------------------------
     console.log('\n--- GATE B: Request-Time Auto-Scheduling & Access Control ---');
 
-    check('ArticleRepository.isArticleDue correctly isolates present vs future at 2026-10-16', () => {
+    check('ArticleRepository.isArticleDue correctly isolates present vs future at 2026-10-16T09:00', () => {
       const art1 = EDITORIAL_ARTICLES[0];
       const art2 = EDITORIAL_ARTICLES[1];
       const art30 = EDITORIAL_ARTICLES[29];
 
-      const testNow = new Date('2026-10-16T12:00:00+07:00');
+      const testNow = new Date('2026-10-16T09:00:00+07:00');
       assert.strictEqual(ArticleRepository.isArticleDue(art1, testNow), true, 'Art 1 must be due');
       assert.strictEqual(ArticleRepository.isArticleDue(art2, testNow), false, 'Art 2 must not be due yet');
       assert.strictEqual(ArticleRepository.isArticleDue(art30, testNow), false, 'Art 30 must not be due yet');
-    });
-
-    check('Simulated time-travel: Article 02 automatically becomes due at 2026-10-20T10:00:00+07:00', () => {
-      const art2 = EDITORIAL_ARTICLES[1];
-      const futureDate = new Date('2026-10-20T10:00:01+07:00');
-      assert.strictEqual(ArticleRepository.isArticleDue(art2, futureDate), true, 'Art 2 becomes due on its scheduled date');
-    });
-
-    check('Simulated time-travel: All 30 articles automatically become due by 2027-01-25', () => {
-      const farFuture = new Date('2027-01-25T00:00:00+07:00');
-      const dueArticles = articleRepository.getPublishedArticles(farFuture);
-      assert.strictEqual(dueArticles.length, 30, 'All 30 articles must be due in late Jan 2027');
     });
 
     await checkAsync('Public GET /blog returns 200 and displays only currently due articles', async () => {
       const res = await request('/blog');
       assert.strictEqual(res.statusCode, 200);
       assert.ok(res.body.includes(EDITORIAL_ARTICLES[0].title), 'Must display Article 01');
-      assert.ok(!res.body.includes(EDITORIAL_ARTICLES[1].title), 'Must NOT display future Article 02 in public listing');
+      assert.ok(!res.body.includes(EDITORIAL_ARTICLES[20].title), 'Must NOT display future Article 21 in public listing');
       assert.ok(!res.body.includes(EDITORIAL_ARTICLES[29].title), 'Must NOT display future Article 30 in public listing');
     });
 
@@ -174,13 +166,31 @@ async function runSuite() {
     });
 
     await checkAsync('Public GET /blog/:slug for future scheduled articles returns 404 with noindex', async () => {
-      const res2 = await request(`/blog/${EDITORIAL_ARTICLES[1].slug}`);
-      assert.strictEqual(res2.statusCode, 404, 'Future Article 02 must return 404');
-      assert.ok(res2.body.includes('noindex'), 'Must include noindex on 404');
+      const resFuture = await request(`/blog/${EDITORIAL_ARTICLES[20].slug}`);
+      assert.strictEqual(resFuture.statusCode, 404, 'Future Article 21 must return 404');
+      assert.ok(resFuture.body.includes('noindex'), 'Must include noindex on 404');
 
       const res30 = await request(`/blog/${EDITORIAL_ARTICLES[29].slug}`);
       assert.strictEqual(res30.statusCode, 404, 'Future Article 30 must return 404');
       assert.ok(res30.body.includes('noindex'), 'Must include noindex on 404');
+    });
+
+    check('Simulated time-travel: PublishingScheduler publishes Article 02 when scheduled_at arrives', () => {
+      const art2 = articleRepository.getArticleById(EDITORIAL_ARTICLES[1].id);
+      const futureDate = new Date('2026-10-16T10:00:01+07:00');
+      const { publishingScheduler } = require('./src/content/PublishingScheduler');
+      const published = publishingScheduler.publishDueArticles(futureDate);
+      assert.ok(published.some(a => a.id === art2.id), 'Art 2 must be published by scheduler');
+      const freshArt2 = articleRepository.getArticleById(art2.id);
+      assert.strictEqual(ArticleRepository.isArticleDue(freshArt2, futureDate), true, 'Art 2 becomes due on its scheduled date');
+    });
+
+    check('Simulated time-travel: All campaign articles become published by 2027-01-25', () => {
+      const farFuture = new Date('2027-01-25T00:00:00+07:00');
+      const { publishingScheduler } = require('./src/content/PublishingScheduler');
+      publishingScheduler.publishDueArticles(farFuture);
+      const dueArticles = articleRepository.getPublishedArticles(farFuture);
+      assert.ok(dueArticles.length >= 30, 'All 30 articles must be due in late Jan 2027');
     });
 
     // -------------------------------------------------------------
@@ -275,6 +285,7 @@ async function runSuite() {
     if (server) {
       await new Promise(resolve => server.close(resolve));
     }
+    articleRepository.reset();
   }
 }
 

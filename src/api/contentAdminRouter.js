@@ -253,6 +253,56 @@ router.post('/api/admin/content/scheduler/run', requireContentAdmin, async (req,
   }
 });
 
+router.post('/api/admin/content/scheduler/pause', requireContentAdmin, async (req, res) => {
+  try {
+    const adminUser = req.adminUser?.id || req.headers?.['x-user-id'] || 'admin';
+    const state = await publishingScheduler.pause(adminUser);
+    res.json({ success: true, message: 'Publishing scheduler paused', state });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/api/admin/content/scheduler/resume', requireContentAdmin, async (req, res) => {
+  try {
+    const adminUser = req.adminUser?.id || req.headers?.['x-user-id'] || 'admin';
+    const state = await publishingScheduler.resume(adminUser);
+    res.json({ success: true, message: 'Publishing scheduler resumed', state });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/api/admin/content/scheduler/status', requireContentAdmin, async (req, res) => {
+  try {
+    const status = await publishingScheduler.getStatus();
+    res.json({ success: true, status });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/api/admin/content/scheduler/history', requireContentAdmin, async (req, res) => {
+  try {
+    const limit = parseInt(req.query?.limit || '20', 10);
+    const history = await publishingScheduler.getExecutionHistory(limit);
+    res.json({ success: true, history });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/api/admin/content/articles/:id/audit-history', requireContentAdmin, async (req, res) => {
+  try {
+    const { DurableArticleStore } = require('../content/DurableArticleStore');
+    const store = DurableArticleStore.getStore();
+    const history = await store.getArticleAuditHistory(req.params.id);
+    res.json({ success: true, article_id: req.params.id, history });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Vercel Cron & Production Automated Execution Endpoint
 async function handleContentSchedulerCron(req, res) {
   try {
@@ -276,9 +326,10 @@ async function handleContentSchedulerCron(req, res) {
       }
     }
 
-    const now = (req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
-      ? new Date(req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
-      : new Date();
+    const simulatedTime = process.env.NODE_ENV === 'test'
+      ? (req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
+      : null;
+    const now = simulatedTime ? new Date(simulatedTime) : new Date();
 
     const newlyPublished = publishingScheduler.publishDueArticles(now);
     const cycleResult = await publishingScheduler.runCycle({ now, forceRun: req.query?.force === 'true' });
@@ -345,7 +396,11 @@ router.get('/api/admin/content/analytics', requireContentAdmin, (req, res) => {
     },
     scheduler_status: {
       schedule_days: ['Tuesday', 'Friday'],
-      publish_hour: '09:00 WIB',
+      publish_hour: '10:00 WIB',
+      timezone: 'Asia/Jakarta',
+      durable_serverless_publishing: require('../content/DurableArticleStore').DurableArticleStore.isDurableStoreConfigured(),
+      search_console: { status: 'NOT_CONNECTED', impressions: null, clicks: null, ctr: null, average_position: null },
+      ai_discovery: { status: 'NOT_VERIFIED', referrals: null, citations: null },
       recent_logs: publishingScheduler.getRecentLogs(10)
     }
   });

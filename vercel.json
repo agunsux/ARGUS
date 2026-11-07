@@ -43,7 +43,7 @@
     },
     {
       "path": "/api/content/scheduler/cron",
-      "schedule": "0 2 * * *"
+      "schedule": "0 3 * * 2,5"
     },
     {
       "path": "/api/cron/catalog-refresh",

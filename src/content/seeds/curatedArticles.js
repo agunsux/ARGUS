@@ -27,6 +27,8 @@ const CURATED_ARTICLES = [
     status: CONTENT_STATUS.PUBLISHED,
     scheduled_at: null,
     published_at: '2026-10-25T12:00:00+07:00',
+    human_approved_by: 'editorial-lead',
+    human_approved_at: '2026-10-25T10:00:00+07:00',
     canonical_url: 'https://tikum.app/blog/kenapa-nassar-layak-ditonton-live',
     faq: [
       {
@@ -119,6 +121,8 @@ const CURATED_ARTICLES = [
     status: CONTENT_STATUS.SCHEDULED,
     scheduled_at: '2026-10-28T09:00:00+07:00',
     published_at: null,
+    human_approved_by: 'editorial-lead',
+    human_approved_at: '2026-10-25T10:00:00+07:00',
     canonical_url: 'https://tikum.app/blog/masa-depan-kpop-apakah-akan-berakhir',
     faq: [
       {

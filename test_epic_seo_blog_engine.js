@@ -101,15 +101,15 @@ async function runBlogEngineSuite() {
 
   try {
     // -------------------------------------------------------------
-    // PART 1: 20-ARTICLE AUTHORITY CAMPAIGN INTEGRITY
+    // PART 1: 30-ARTICLE AUTHORITY CAMPAIGN INTEGRITY
     // -------------------------------------------------------------
     console.log('--- 1. Editorial Campaign & Cluster Topology ---');
 
-    check('Seeded campaign contains exactly 20 authoritative articles', () => {
-      assert.strictEqual(EDITORIAL_ARTICLES.length, 20, 'Campaign must have 20 articles');
+    check('Seeded campaign contains exactly 30 authoritative articles', () => {
+      assert.strictEqual(EDITORIAL_ARTICLES.length, 30, 'Campaign must have 30 articles');
     });
 
-    check('All 20 article slugs are strictly unique and valid', () => {
+    check('All 30 article slugs are strictly unique and valid', () => {
       const slugs = new Set();
       for (const art of EDITORIAL_ARTICLES) {
         assert.ok(art.slug && /^[a-z0-9-]+$/.test(art.slug), `Invalid slug format: ${art.slug}`);
@@ -118,7 +118,7 @@ async function runBlogEngineSuite() {
       }
     });
 
-    check('All 20 articles have non-empty title, description, and substantive content', () => {
+    check('All 30 articles have non-empty title, description, and substantive content', () => {
       for (const art of EDITORIAL_ARTICLES) {
         assert.ok(art.title && art.title.length >= 20, `Title too short for ${art.slug}`);
         assert.ok(art.description && art.description.length >= 40, `Description too short for ${art.slug}`);
@@ -127,44 +127,51 @@ async function runBlogEngineSuite() {
       }
     });
 
-    check('Flagship article (Article 17) is PUBLISHED as this week\'s anchor', () => {
-      const flagship = articleRepository.getArticleBySlug('kenapa-tikum-dibangun-mengubah-secondary-ticketing-indonesia');
+    check('Flagship anchor article (art-campaign-01) is PUBLISHED as campaign anchor', () => {
+      const flagship = articleRepository.getArticleById('art-campaign-01');
       assert.ok(flagship, 'Flagship article must exist');
       assert.strictEqual(flagship.status, CONTENT_STATUS.PUBLISHED);
-      assert.ok(flagship.published_at.startsWith('2026-10-06'), 'Must be published on 2026-10-06');
+      assert.ok(flagship.published_at.startsWith('2026-10-15'), 'Must be published on 2026-10-15');
     });
 
-    check('Strict 2x/week editorial calendar: exactly 3 articles PUBLISHED, 17 SCHEDULED', () => {
+    check('Strict 2x/week editorial calendar: 1 campaign article PUBLISHED, 29 SCHEDULED', () => {
       const published = articleRepository.getPublishedArticles();
       const scheduled = articleRepository.getAllArticles({ status: CONTENT_STATUS.SCHEDULED });
 
-      assert.strictEqual(published.length, 3, 'Must have exactly 3 published articles');
-      assert.strictEqual(scheduled.length, 17, 'Must have exactly 17 scheduled articles');
+      assert.strictEqual(published.length, 2, 'Repository must have exactly 2 published articles (art-campaign-01 and art-curated-nassar-2026)');
+      assert.strictEqual(scheduled.length, 30, 'Repository must have exactly 30 scheduled articles (29 campaign + 1 curated)');
+
+      const campaignPublished = EDITORIAL_ARTICLES.filter(a => a.status === CONTENT_STATUS.PUBLISHED);
+      const campaignScheduled = EDITORIAL_ARTICLES.filter(a => a.status === CONTENT_STATUS.SCHEDULED);
+
+      assert.strictEqual(campaignPublished.length, 1, 'Must have exactly 1 campaign published article');
+      assert.strictEqual(campaignScheduled.length, 29, 'Must have exactly 29 campaign scheduled articles');
 
       const art01 = articleRepository.getArticleById('art-campaign-01');
       assert.strictEqual(art01.status, CONTENT_STATUS.PUBLISHED);
-      assert.ok(art01.published_at.startsWith('2026-09-29'), 'Article 01 published on 2026-09-29 (Tuesday last week)');
+      assert.ok(art01.published_at.startsWith('2026-10-15'), 'Article 01 published on 2026-10-15');
 
       const art02 = articleRepository.getArticleById('art-campaign-02');
-      assert.strictEqual(art02.status, CONTENT_STATUS.PUBLISHED);
-      assert.ok(art02.published_at.startsWith('2026-10-02'), 'Article 02 published on 2026-10-02 (Friday last week)');
-
-      const art17 = articleRepository.getArticleById('art-campaign-17');
-      assert.strictEqual(art17.status, CONTENT_STATUS.PUBLISHED);
-      assert.ok(art17.published_at.startsWith('2026-10-06'), 'Article 17 published on 2026-10-06 (Tuesday this week)');
+      assert.strictEqual(art02.status, CONTENT_STATUS.SCHEDULED);
+      assert.strictEqual(art02.scheduled_at, '2026-10-16T10:00:00+07:00', 'Article 02 scheduled on 2026-10-16');
 
       const art03 = articleRepository.getArticleById('art-campaign-03');
       assert.strictEqual(art03.status, CONTENT_STATUS.SCHEDULED);
-      assert.strictEqual(art03.scheduled_at, '2026-10-09T09:00:00+07:00', 'Article 03 is next up on 2026-10-09 (Friday)');
+      assert.strictEqual(art03.scheduled_at, '2026-10-20T10:00:00+07:00', 'Article 03 scheduled on 2026-10-20');
+
+      const nassar = articleRepository.getArticleById('art-curated-nassar-2026');
+      assert.strictEqual(nassar.status, CONTENT_STATUS.PUBLISHED);
+
+      const kpop = articleRepository.getArticleById('art-curated-kpop-future-2026');
+      assert.strictEqual(kpop.status, CONTENT_STATUS.SCHEDULED);
     });
 
-    check('Pillar page (Article 20) links out to supporting cluster articles', () => {
-      const pillar = EDITORIAL_ARTICLES.find(a => a.slug === 'panduan-lengkap-secondary-ticketing-di-indonesia');
-      assert.ok(pillar, 'Pillar page must exist');
-      assert.ok(pillar.content.includes('/blog/kenapa-tikum-menggunakan-escrow-untuk-transaksi-tiket'));
-      assert.ok(pillar.content.includes('/blog/kenapa-tikum-punya-pic-di-venue'));
-      assert.ok(pillar.content.includes('/blog/10-modus-penipuan-tiket-konser-harus-diwaspadai'));
-      assert.ok(pillar.content.includes('/blog/apa-itu-double-selling-tiket-modus-scam'));
+    check('Anchor article links out to supporting pillar and trust resources', () => {
+      const art01 = articleRepository.getArticleById('art-campaign-01');
+      assert.ok(art01, 'Anchor article must exist');
+      const links = art01.internal_links || [];
+      assert.ok(links.some(l => l.url.includes('/buyer-protection')), 'Must link to buyer protection');
+      assert.ok(links.some(l => l.url.includes('/ticket-verification') || l.url.includes('/escrow')), 'Must link to trust infrastructure');
     });
 
     // -------------------------------------------------------------
@@ -197,13 +204,13 @@ async function runBlogEngineSuite() {
     });
 
     check('All authors use genuine institutional author identities', () => {
-      const allowedAuthors = new Set(['Tim Editorial Tikum', 'Tim Riset Keamanan Tikum']);
+      const allowedAuthors = new Set(['Tim Editorial Tikum', 'Tim Riset Keamanan Tikum', 'Tim Riset & Editorial Tikum']);
       for (const art of EDITORIAL_ARTICLES) {
         assert.ok(allowedAuthors.has(art.author), `Unknown or non-institutional author: ${art.author}`);
       }
     });
 
-    check('ContentQualityEngine validates all 20 articles pass fact check', () => {
+    check('ContentQualityEngine validates all 30 articles pass fact check', () => {
       for (const art of EDITORIAL_ARTICLES) {
         const evalReport = ContentQualityEngine.evaluate(art);
         assert.strictEqual(evalReport.fact_check_passed, true, `Fact check failed for ${art.slug}: ${evalReport.flags.join(', ')}`);
@@ -225,13 +232,13 @@ async function runBlogEngineSuite() {
       assert.ok(res.body.includes('Secondary Ticketing'), 'Must include category pill');
     });
 
-    await checkAsync('Flagship article /blog/kenapa-tikum-dibangun-mengubah-secondary-ticketing-indonesia returns 200 with Article & FAQ schema', async () => {
-      const res = await request('/blog/kenapa-tikum-dibangun-mengubah-secondary-ticketing-indonesia');
+    await checkAsync('Anchor article /blog/cara-membeli-tiket-konser-dengan-aman-checklist-sebelum-transfer-uang returns 200 with Article & FAQ schema', async () => {
+      const res = await request('/blog/cara-membeli-tiket-konser-dengan-aman-checklist-sebelum-transfer-uang');
       assert.strictEqual(res.statusCode, 200);
-      assert.ok(res.body.includes('Kenapa Tikum Dibangun'), 'Must render article title');
+      assert.ok(res.body.includes('Cara Membeli Tiket Konser'), 'Must render article title');
       assert.ok(res.body.includes('BlogPosting'), 'Must have BlogPosting JSON-LD');
       assert.ok(res.body.includes('FAQPage'), 'Must have FAQPage JSON-LD');
-      assert.ok(res.body.includes('https://tikum.app/blog/kenapa-tikum-dibangun-mengubah-secondary-ticketing-indonesia'), 'Canonical URL match');
+      assert.ok(res.body.includes('https://tikum.app/blog/cara-membeli-tiket-konser-dengan-aman-checklist-sebelum-transfer-uang'), 'Canonical URL match');
       assert.ok(res.body.includes('menit baca'), 'Must render dynamic reading time');
       assert.ok(res.body.includes('Standar Editorial &amp; Riset Keamanan Tikum') || res.body.includes('/blog/editorial-standards'), 'Author must link to editorial standards');
     });
@@ -245,7 +252,7 @@ async function runBlogEngineSuite() {
     });
 
     await checkAsync('Scheduled article with future date returns 404 with noindex before release', async () => {
-      const scheduledArt = articleRepository.getArticleBySlug('cara-menjual-tiket-konser-dengan-aman');
+      const scheduledArt = articleRepository.getArticleBySlug('nonton-konser-sendirian-checklist-keamanan-dan-persiapan');
       assert.ok(scheduledArt, 'Scheduled article must exist');
       assert.strictEqual(scheduledArt.status, CONTENT_STATUS.SCHEDULED);
       const res = await request(`/blog/${scheduledArt.slug}`);
@@ -302,7 +309,7 @@ async function runBlogEngineSuite() {
       assert.ok(res.headers['content-type'].includes('xml'), 'Content type must be XML');
       assert.ok(res.body.includes('<rss version="2.0"'), 'Must have RSS 2.0 tag');
       assert.ok(res.body.includes('<title>Tikum Blog'), 'Must have blog title');
-      assert.ok(res.body.includes('<link>https://tikum.app/blog/secondary-ticketing-indonesia-cara-baru-beli-tiket-event</link>'), 'Must list published article link');
+      assert.ok(res.body.includes('<link>https://tikum.app/blog/cara-membeli-tiket-konser-dengan-aman-checklist-sebelum-transfer-uang</link>'), 'Must list published article link');
     });
 
     // -------------------------------------------------------------
@@ -317,9 +324,9 @@ async function runBlogEngineSuite() {
       assert.ok(res.body.includes('<loc>https://tikum.app/blog/editorial-standards</loc>'), 'Must include editorial standards');
       assert.ok(res.body.includes('<loc>https://tikum.app/blog/category/ticket-safety</loc>'), 'Must include category ticket-safety');
       assert.ok(res.body.includes('<loc>https://tikum.app/blog/category/secondary-ticketing</loc>'), 'Must include category secondary-ticketing');
-      assert.ok(res.body.includes('<loc>https://tikum.app/blog/kenapa-tikum-dibangun-mengubah-secondary-ticketing-indonesia</loc>'), 'Must include flagship article');
+      assert.ok(res.body.includes('<loc>https://tikum.app/blog/cara-membeli-tiket-konser-dengan-aman-checklist-sebelum-transfer-uang</loc>'), 'Must include anchor article');
       // Must not include scheduled future articles
-      assert.ok(!res.body.includes('<loc>https://tikum.app/blog/cara-menjual-tiket-konser-dengan-aman</loc>'), 'Must NOT include future scheduled articles in sitemap');
+      assert.ok(!res.body.includes('<loc>https://tikum.app/blog/nonton-konser-sendirian-checklist-keamanan-dan-persiapan</loc>'), 'Must NOT include future scheduled articles in sitemap');
     });
 
     await checkAsync('Robots.txt allows /blog crawling while protecting /admin and query filters', async () => {
@@ -438,12 +445,12 @@ async function runBlogEngineSuite() {
       const articles = restartedRepo.getAllArticles();
       assert.strictEqual(articles.length, articleRepository.getAllArticles().length, 'Article count matches after restart');
 
-      const art17 = restartedRepo.getArticleById('art-campaign-17');
-      assert.strictEqual(art17.status, CONTENT_STATUS.PUBLISHED);
-      assert.ok(art17.published_at.startsWith('2026-10-06'));
+      const art01 = restartedRepo.getArticleById('art-campaign-01');
+      assert.strictEqual(art01.status, CONTENT_STATUS.PUBLISHED);
+      assert.ok(art01.published_at.startsWith('2026-10-15'));
 
       const scheduledList = restartedRepo.getAllArticles({ status: CONTENT_STATUS.SCHEDULED });
-      assert.ok(scheduledList.length >= 8, 'Scheduled articles survive restart intact');
+      assert.ok(scheduledList.length >= 20, 'Scheduled articles survive restart intact');
     });
 
     check('Idempotent seeding: multiple repository boots create zero duplicate articles', () => {
@@ -462,8 +469,8 @@ async function runBlogEngineSuite() {
         articleRepository.saveArticle({
           id: 'conflicting-art-id',
           title: 'Artikel Berbenturan Slug dengan Artikel 01',
-          slug: 'secondary-ticketing-indonesia-cara-baru-beli-tiket-event',
-          description: 'Deskripsi untuk artikel konflik dengan slug yang sama.',
+          slug: 'cara-membeli-tiket-konser-dengan-aman-checklist-sebelum-transfer-uang',
+          description: 'Deskripsi untuk artikel konflik dengan slug yang sama dengan batas karakter valid.',
           category: 'secondary-ticketing',
           content: '<p>Konten duplikat yang memiliki panjang lebih dari seratus karakter agar lolos validasi dasar model konten Tikum secara lengkap.</p>'
         });
@@ -471,48 +478,49 @@ async function runBlogEngineSuite() {
     });
 
     await checkAsync('Production Simulation: scheduled article becomes published upon scheduled_at reached', async () => {
-      // 1. Initial State: art-campaign-03 is scheduled for 2026-10-09
-      const art03 = articleRepository.getArticleById('art-campaign-03');
-      assert.strictEqual(art03.status, CONTENT_STATUS.SCHEDULED);
-      assert.strictEqual(art03.scheduled_at, '2026-10-09T09:00:00+07:00');
+      // 1. Initial State: art-campaign-02 is scheduled for 2026-10-16
+      const art02 = articleRepository.getArticleById('art-campaign-02');
+      assert.strictEqual(art02.status, CONTENT_STATUS.SCHEDULED);
+      assert.strictEqual(art02.scheduled_at, '2026-10-16T10:00:00+07:00');
 
-      // 2. Verify hidden at current time (404 with noindex, nofollow)
-      const resBefore = await request(`/blog/${art03.slug}`);
+      // 2. Advanced scheduled article art-campaign-20 (Dec 2026) is strictly hidden at current time (404 with noindex, nofollow)
+      const futureArt = articleRepository.getArticleById('art-campaign-20');
+      const resBefore = await request(`/blog/${futureArt.slug}`);
       assert.strictEqual(resBefore.statusCode, 404);
       assert.ok(resBefore.body.includes('noindex, nofollow'));
 
-      // 3. Verify NOT in sitemap or RSS
+      // 3. Verify future article NOT in sitemap or RSS
       const sitemapBefore = await request('/sitemap.xml');
-      assert.ok(!sitemapBefore.body.includes(art03.slug));
+      assert.ok(!sitemapBefore.body.includes(futureArt.slug));
       const rssBefore = await request('/blog/rss.xml');
-      assert.ok(!rssBefore.body.includes(art03.slug));
+      assert.ok(!rssBefore.body.includes(futureArt.slug));
 
-      // 4. Simulate advancing time to scheduled_at: 2026-10-09T09:01:00+07:00 via Cron endpoint
+      // 4. Simulate advancing time to scheduled_at: 2026-10-16T10:01:00+07:00 via Cron endpoint
       const countBefore = articleRepository.getAllArticles().length;
-      const cronRes = await request('/api/content/scheduler/cron?now=2026-10-09T09:01:00%2B07:00');
+      const cronRes = await request('/api/content/scheduler/cron?now=2026-10-16T10:01:00%2B07:00');
       assert.strictEqual(cronRes.statusCode, 200, 'Cron endpoint must return 200');
       const cronData = JSON.parse(cronRes.body);
       assert.strictEqual(cronData.success, true);
       assert.strictEqual(cronData.published_due_count, 1);
-      assert.strictEqual(cronData.published_due_articles[0].id, 'art-campaign-03');
+      assert.strictEqual(cronData.published_due_articles[0].id, 'art-campaign-02');
 
-      const reloadedArt03 = articleRepository.getArticleById('art-campaign-03');
-      assert.strictEqual(reloadedArt03.status, CONTENT_STATUS.PUBLISHED);
+      const reloadedArt02 = articleRepository.getArticleById('art-campaign-02');
+      assert.strictEqual(reloadedArt02.status, CONTENT_STATUS.PUBLISHED);
 
-      // 5. Verify art-campaign-03 is now 200 on /blog/:slug
-      const resAfter = await request(`/blog/${art03.slug}`);
+      // 5. Verify art-campaign-02 is now 200 on /blog/:slug
+      const resAfter = await request(`/blog/${art02.slug}`);
       assert.strictEqual(resAfter.statusCode, 200);
-      assert.ok(resAfter.body.includes(art03.title));
+      assert.ok(resAfter.body.includes(art02.title));
 
       // 6. Verify appears in /blog, /blog/category, /sitemap.xml, /blog/rss.xml
       const blogAfter = await request('/blog');
-      assert.ok(blogAfter.body.includes(art03.slug));
+      assert.ok(blogAfter.body.includes(art02.slug));
 
       const sitemapAfter = await request('/sitemap.xml');
-      assert.ok(sitemapAfter.body.includes(art03.slug));
+      assert.ok(sitemapAfter.body.includes(art02.slug));
 
       const rssAfter = await request('/blog/rss.xml');
-      assert.ok(rssAfter.body.includes(art03.slug));
+      assert.ok(rssAfter.body.includes(art02.slug));
 
       // 7. Verify total article count remains unchanged (zero duplicates created)
       assert.strictEqual(articleRepository.getAllArticles().length, countBefore, 'Zero duplicate articles created');
@@ -520,7 +528,7 @@ async function runBlogEngineSuite() {
       // 8. Verify restart survival: new published status persists on restart
       const { ArticleRepository } = require('./src/content/ArticleRepository');
       const restarted = new ArticleRepository();
-      const reloadedArt = restarted.getArticleById('art-campaign-03');
+      const reloadedArt = restarted.getArticleById('art-campaign-02');
       assert.strictEqual(reloadedArt.status, CONTENT_STATUS.PUBLISHED);
     });
 
@@ -528,7 +536,10 @@ async function runBlogEngineSuite() {
     console.log(`  All ${passed}/${total} SEO Blog Engine & Editorial Tests PASSED!`);
     console.log('===================================================================\n');
   } finally {
-    server.close();
+    if (server) {
+      server.close();
+    }
+    articleRepository.reset();
   }
 }
 
