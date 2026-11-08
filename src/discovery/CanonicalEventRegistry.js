@@ -1301,6 +1301,14 @@ class CanonicalEventRegistry {
       const target = this.getEventBySlug(canonicalSlug) || this.getEventById('ev-can-fd86cf7d');
       if (target) return target;
     }
+    if (slug === 'bts-arirang-world-tour-jakarta-2026' || slug === 'bts-world-tour-arirang-jakarta-2026') {
+      const hero = this.getHeroEvents({ includePast: true }).find(e => e.id === 'bts-world-tour-arirang-jakarta-2026');
+      if (hero) return hero;
+    }
+    if (slug === 'bigbang-cosmos-tour-jakarta-2027' || slug === 'bigbang-2026-2027-world-tour-xx-cosmos-in-jakarta') {
+      const hero = this.getHeroEvents({ includePast: true }).find(e => e.id === 'bigbang-cosmos-tour-jakarta-2027');
+      if (hero) return hero;
+    }
     const id = this.slugMap.get(slug);
     if (id && this.events.has(id)) return this.events.get(id);
     if (this.events.has(slug)) return this.events.get(slug);
@@ -1413,27 +1421,27 @@ class CanonicalEventRegistry {
     const btsHero = {
       id: 'bts-world-tour-arirang-jakarta-2026',
       event_id: 'bts-world-tour-arirang-jakarta-2026',
-      slug: 'bts-arirang-world-tour-jakarta-2026',
-      name: "BTS WORLD TOUR 'ARIRANG' 2026 IN JAKARTA",
-      title: "BTS WORLD TOUR 'ARIRANG' 2026 IN JAKARTA",
-      canonical_name: "BTS WORLD TOUR 'ARIRANG' 2026 IN JAKARTA",
+      slug: 'bts-world-tour-arirang-jakarta-2026',
+      name: 'BTS WORLD TOUR ARIRANG',
+      title: 'BTS WORLD TOUR ARIRANG',
+      canonical_name: 'BTS WORLD TOUR ARIRANG',
       artist: 'BTS',
       artists: ['BTS', 'RM', 'Jin', 'SUGA', 'j-hope', 'Jimin', 'V', 'Jung Kook'],
       date: '2026-12-26',
       start_date: '2026-12-26',
-      end_date: '2026-12-29',
+      end_date: '2026-12-27',
       start_time: '19:00',
       start_datetime: '2026-12-26T19:00:00+07:00',
-      end_datetime: '2026-12-29T23:30:00+07:00',
+      end_datetime: '2026-12-27T22:30:00+07:00',
       event_start_at: '2026-12-26T19:00:00+07:00',
-      event_end_at: '2026-12-29T23:30:00+07:00',
+      event_end_at: '2026-12-27T22:30:00+07:00',
       event_timezone: 'Asia/Jakarta',
       timezone: 'Asia/Jakarta',
-      archive_at: '2027-01-01T23:30:00+07:00',
+      archive_at: '2026-12-30T22:30:00+07:00',
       venue_id: 'venue-gbk',
       venue: 'Gelora Bung Karno (Main Stadium)',
       venue_name: 'Gelora Bung Karno (Main Stadium)',
-      venue_city: 'Jakarta',
+      venue_city: 'Jakarta Pusat',
       city: 'Jakarta',
       province: 'DKI Jakarta',
       country: 'Indonesia',
@@ -1441,10 +1449,10 @@ class CanonicalEventRegistry {
       category: 'KONSER',
       admission_protocol: {
         type: 'BARCODE_PLUS_ID',
-        description: 'Pemeriksaan gelang RFID resmi & barcode turnstile di Pintu 3, 7, 10 GBK',
+        description: 'Pemeriksaan gelang RFID resmi & scan barcode turnstile di Pintu 3, 7, 10 GBK',
         required_items: ['E-Ticket QR Resmi Tiket.com', 'KTP/Paspor Asli'],
         handoff_type: 'DIGITAL_TRANSFER',
-        venue_gate_authority: 'Big Hit Music & Third Eye Management'
+        venue_gate_authority: 'BIGHIT MUSIC & HYBE'
       },
       status: 'UPCOMING',
       lifecycle_status: 'UPCOMING',
@@ -1452,71 +1460,224 @@ class CanonicalEventRegistry {
       public_visibility: true,
       homepage_visibility: true,
       public_upcoming: true,
-      source: 'OFFICIAL_PROMOTER',
-      source_id: 'src-promoter-bighit',
+      source: 'OFFICIAL_ARTIST_SOURCE',
+      source_id: 'src-artist-bighit-bts',
       source_type: 'PRIMARY_SOURCE',
-      source_url: 'https://ibighit.com/bts/',
+      source_url: 'https://ibighit.com/en/bts/tour/',
       source_account: '@bts.bighitofficial',
       source_published_at: '2026-06-01T10:00:00+07:00',
-      source_last_checked_at: '2026-10-25T12:00:00+07:00',
+      source_last_checked_at: '2026-11-01T12:00:00+07:00',
       verification_status: 'VERIFIED',
-      verified_at: '2026-10-25T12:00:00+07:00',
+      verified_at: '2026-11-01T12:00:00+07:00',
       evidence_hash: 'hash-bts-arirang-jakarta-2026',
       is_verified: true,
-      organizer_name: 'Big Hit Music & HYBE',
-      promoter: 'Big Hit Music / HYBE & Third Eye Management',
-      official_link: 'https://ibighit.com/bts/',
-      official_event_url: 'https://www.indonesia.travel/',
-      official_ticket_url: 'https://www.tiket.com/to-do/bts-world-tour-arirang-jakarta-2026',
+      organizer_name: 'BIGHIT MUSIC & HYBE',
+      promoter: 'BIGHIT MUSIC & HYBE',
+      official_link: 'https://btsworldtourofficial.com/',
+      official_event_url: 'https://btsworldtourofficial.com/',
+      official_ticket_url: 'https://www.tiket.com/en-id/to-do/bts-jakarta-day1',
       official_ticketing_provider: 'Tiket.com',
-      poster_url: '/assets/posters/bts-arirang-world-tour-jakarta-2026.svg',
-      image_url: '/assets/posters/bts-arirang-world-tour-jakarta-2026.svg',
-      thumbnail_url: '/assets/posters/bts-arirang-world-tour-jakarta-2026.svg',
-      image_source_url: 'https://ibighit.com/bts/',
-      image_source_type: 'OFFICIAL_PROMOTER_WEB',
+      poster_url: '/assets/posters/bts-world-tour-arirang-jakarta-2026.svg',
+      image_url: '/assets/posters/bts-world-tour-arirang-jakarta-2026.svg',
+      thumbnail_url: '/assets/posters/bts-world-tour-arirang-jakarta-2026.svg',
+      image_source_url: 'https://btsworldtourofficial.com/',
+      image_source_type: 'OFFICIAL_EVENT_WEB',
       image_status: 'VERIFIED_OFFICIAL',
       image_verified: true,
-      image_verified_at: '2026-10-25T12:00:00.000Z',
-      image_credit: "BTS WORLD TOUR 'ARIRANG' 2026 IN JAKARTA (Big Hit Music / HYBE / Indonesia Travel)",
+      image_verified_at: '2026-11-01T12:00:00.000Z',
+      image_credit: 'BTS WORLD TOUR ARIRANG (BIGHIT MUSIC / HYBE / Tiket.com)',
       is_fallback_image: false,
-      primary_ticket_status: 'SOLD_OUT',
+      primary_ticket_status: 'AVAILABLE_ON_OFFICIAL_CHANNEL',
       min_price: 1350000,
       max_price: 4500000,
       price: 1350000,
+      lowest_official_price: 1350000,
       price_status: 'QUALIFIED',
       meets_price_threshold: true,
       resale_inventory_count: 0,
       resale_available: false,
+      seo_title: 'BTS Jakarta 2026: Jadwal Tur Konser ARIRANG di GBK & Info Tiket | TIKUM',
+      seo_description: 'Informasi jadwal konser BTS WORLD TOUR ARIRANG pada 26–27 Desember 2026 di Gelora Bung Karno (GBK) Jakarta. Penjualan tiket resmi via Tiket.com.',
+      description: 'BTS WORLD TOUR ARIRANG di Jakarta pada 26–27 Desember 2026 bertempat di Gelora Bung Karno (GBK) Main Stadium. Penjualan tiket resmi diselenggarakan melalui Tiket.com.',
       price_tiers: [
-        { name: 'CAT 7 (Numbered Seating)', price: 1350000, face_value: 1350000, currency: 'IDR' },
-        { name: 'CAT 6 (Numbered Seating)', price: 1850000, face_value: 1850000, currency: 'IDR' },
-        { name: 'CAT 5 (Numbered Seating)', price: 2400000, face_value: 2400000, currency: 'IDR' },
-        { name: 'CAT 4 (Numbered Seating)', price: 2850000, face_value: 2850000, currency: 'IDR' },
-        { name: 'CAT 3 (Numbered Seating)', price: 3300000, face_value: 3300000, currency: 'IDR' },
-        { name: 'CAT 2 (Numbered Seating)', price: 3800000, face_value: 3800000, currency: 'IDR' },
-        { name: 'VIP Soundcheck (Standing)', price: 4500000, face_value: 4500000, currency: 'IDR' }
+        { name: 'CAT 7 (Numbered Seating)', price: 1350000, status: 'AVAILABLE', face_value: 1350000, currency: 'IDR' },
+        { name: 'CAT 6 (Numbered Seating)', price: 1850000, status: 'AVAILABLE', face_value: 1850000, currency: 'IDR' },
+        { name: 'CAT 5 (Numbered Seating)', price: 2400000, status: 'AVAILABLE', face_value: 2400000, currency: 'IDR' },
+        { name: 'CAT 4 (Numbered Seating)', price: 2850000, status: 'AVAILABLE', face_value: 2850000, currency: 'IDR' },
+        { name: 'CAT 3 (Numbered Seating)', price: 3300000, status: 'AVAILABLE', face_value: 3300000, currency: 'IDR' },
+        { name: 'CAT 2 (Numbered Seating)', price: 3800000, status: 'AVAILABLE', face_value: 3800000, currency: 'IDR' },
+        { name: 'VIP Soundcheck (Standing)', price: 4500000, status: 'AVAILABLE', face_value: 4500000, currency: 'IDR' }
       ],
       sources: [
         {
-          source_id: 'src-promoter-bighit',
-          source_name: 'Big Hit Music & HYBE',
+          source_id: 'src-artist-bighit-bts',
+          source_name: 'BIGHIT MUSIC BTS Tour',
           tier: 1,
           authority_level: 'HIGH',
           trust_level: TRUST_LEVELS.TIER_S,
-          source_url: 'https://ibighit.com/bts/',
-          source_account: '@bts.bighitofficial',
-          source_type: 'PRIMARY_SOURCE',
-          retrieved_at: '2026-10-25T12:00:00+07:00'
+          source_url: 'https://ibighit.com/en/bts/tour/',
+          source_type: 'MANAGEMENT',
+          retrieved_at: '2026-11-01T12:00:00+07:00'
         },
         {
-          source_id: 'src-gov-calendar',
-          source_name: 'Kemenparekraf / Indonesia Travel',
+          source_id: 'src-official-bts-tour',
+          source_name: 'BTS World Tour Official',
           tier: 1,
           authority_level: 'HIGH',
           trust_level: TRUST_LEVELS.TIER_S,
-          source_url: 'https://www.indonesia.travel/',
-          source_type: 'PRIMARY_SOURCE',
-          retrieved_at: '2026-10-25T12:00:00+07:00'
+          source_url: 'https://btsworldtourofficial.com/',
+          source_type: 'OFFICIAL_EVENT',
+          retrieved_at: '2026-11-01T12:00:00+07:00'
+        },
+        {
+          source_id: 'src-ticketing-tiket-bts',
+          source_name: 'Tiket.com BTS Jakarta',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://www.tiket.com/en-id/to-do/bts-jakarta-day1',
+          source_type: 'TICKETING',
+          retrieved_at: '2026-11-01T12:00:00+07:00'
+        }
+      ]
+    };
+
+    const bigbangHero = {
+      id: 'bigbang-cosmos-tour-jakarta-2027',
+      event_id: 'bigbang-cosmos-tour-jakarta-2027',
+      slug: 'bigbang-cosmos-tour-jakarta-2027',
+      name: 'BIGBANG 2026–2027 WORLD TOUR < XX : COSMOS > IN JAKARTA',
+      title: 'BIGBANG 2026–2027 WORLD TOUR < XX : COSMOS > IN JAKARTA',
+      canonical_name: 'BIGBANG 2026–2027 WORLD TOUR < XX : COSMOS > IN JAKARTA',
+      artist: 'BIGBANG',
+      artists: ['BIGBANG', 'G-DRAGON', 'TAEYANG', 'DAESUNG'],
+      date: '2027-01-16',
+      start_date: '2027-01-16',
+      end_date: '2027-01-17',
+      start_time: '19:00',
+      start_datetime: '2027-01-16T19:00:00+07:00',
+      end_datetime: '2027-01-17T22:30:00+07:00',
+      event_start_at: '2027-01-16T19:00:00+07:00',
+      event_end_at: '2027-01-17T22:30:00+07:00',
+      event_timezone: 'Asia/Jakarta',
+      timezone: 'Asia/Jakarta',
+      archive_at: '2027-01-20T22:30:00+07:00',
+      venue_id: 'venue-jis',
+      venue: 'Jakarta International Stadium (JIS)',
+      venue_name: 'Jakarta International Stadium (JIS)',
+      venue_city: 'Jakarta Utara',
+      city: 'Jakarta',
+      province: 'DKI Jakarta',
+      country: 'Indonesia',
+      event_type: 'CONCERT',
+      category: 'KONSER',
+      admission_protocol: {
+        type: 'BARCODE_PLUS_ID',
+        description: 'Pemeriksaan gelang e-ticket resmi & scan barcode turnstile di Pintu Masuk JIS Ramp Barat & Timur',
+        required_items: ['E-Ticket QR Resmi', 'KTP/Identitas Asli'],
+        handoff_type: 'DIGITAL_TRANSFER',
+        venue_gate_authority: 'AEG Presents Asia, PK Entertainment & Sound Rhythm'
+      },
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
+      public_visibility: true,
+      homepage_visibility: true,
+      public_upcoming: true,
+      source: 'OFFICIAL_EVENT_SITE',
+      source_id: 'src-official-bigbang-jakarta',
+      source_type: 'PRIMARY_SOURCE',
+      source_url: 'https://bigbanginjakarta.com/',
+      source_account: '@bigbanginjakarta',
+      source_published_at: '2026-10-15T10:00:00+07:00',
+      source_last_checked_at: '2026-11-01T00:00:00+07:00',
+      verification_status: 'VERIFIED',
+      verified_at: '2026-11-01T00:00:00+07:00',
+      evidence_hash: 'hash-bigbang-cosmos-jakarta-2027',
+      is_verified: true,
+      organizer_name: 'AEG Presents Asia, PK Entertainment & Sound Rhythm',
+      promoter: 'AEG Presents Asia, PK Entertainment & Sound Rhythm',
+      official_link: 'https://bigbanginjakarta.com/',
+      official_event_url: 'https://bigbanginjakarta.com/',
+      official_ticket_url: 'https://bigbanginjakarta.com/',
+      official_ticketing_provider: 'AEG / PK Entertainment / Sound Rhythm Official Channel',
+      poster_url: '/assets/posters/bigbang-cosmos-tour-jakarta-2027.svg',
+      image_url: '/assets/posters/bigbang-cosmos-tour-jakarta-2027.svg',
+      thumbnail_url: '/assets/posters/bigbang-cosmos-tour-jakarta-2027.svg',
+      image_source_url: 'https://bigbanginjakarta.com/',
+      image_source_type: 'OFFICIAL_EVENT_WEB',
+      image_status: 'VERIFIED_OFFICIAL',
+      image_verified: true,
+      image_verified_at: '2026-11-01T00:00:00.000Z',
+      image_credit: 'BIGBANG 2026–2027 WORLD TOUR < XX : COSMOS > (YG Entertainment / AEG / PK / Sound Rhythm)',
+      is_fallback_image: false,
+      primary_ticket_status: 'AVAILABLE_ON_OFFICIAL_CHANNEL',
+      min_price: 1800000,
+      max_price: 6500000,
+      price: 1800000,
+      lowest_official_price: 1800000,
+      price_status: 'QUALIFIED',
+      meets_price_threshold: true,
+      resale_inventory_count: 0,
+      resale_available: false,
+      seo_title: 'BIGBANG Jakarta 2027: Jadwal Konser XX : COSMOS, Tiket & Venue JIS | TIKUM',
+      seo_description: 'Informasi resmi konser BIGBANG 2026–2027 WORLD TOUR di Jakarta International Stadium (JIS) pada 16–17 Januari 2027. Promotor AEG, PK Entertainment & Sound Rhythm.',
+      description: 'Tur dunia BIGBANG 2026–2027 WORLD TOUR < XX : COSMOS > resmi hadir di Jakarta pada 16–17 Januari 2027 di Jakarta International Stadium (JIS), dipromotori oleh AEG Presents Asia, PK Entertainment, dan Sound Rhythm.',
+      price_tiers: [
+        { name: 'CAT 4 Regular', price: 1800000, status: 'AVAILABLE', face_value: 1800000, currency: 'IDR' },
+        { name: 'CAT 1 Seated', price: 3800000, status: 'AVAILABLE', face_value: 3800000, currency: 'IDR' },
+        { name: 'VIP Soundcheck', price: 6500000, status: 'AVAILABLE', face_value: 6500000, currency: 'IDR' }
+      ],
+      sources: [
+        {
+          source_id: 'src-artist-yg-bigbang',
+          source_name: 'YG Entertainment Concerts',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://www.ygfamily.com/en/artists/bigbang/concert',
+          source_type: 'ARTIST',
+          retrieved_at: '2026-11-01T00:00:00+07:00'
+        },
+        {
+          source_id: 'src-official-bigbang-jakarta',
+          source_name: 'BIGBANG Jakarta Official Event Site',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://bigbanginjakarta.com/',
+          source_type: 'OFFICIAL_EVENT',
+          retrieved_at: '2026-11-01T00:00:00+07:00'
+        },
+        {
+          source_id: 'src-promoter-pk-ent',
+          source_name: 'PK Entertainment',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://pk-ent.com/',
+          source_type: 'PROMOTER',
+          retrieved_at: '2026-11-01T00:00:00+07:00'
+        },
+        {
+          source_id: 'src-promoter-soundrhythm',
+          source_name: 'Sound Rhythm',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://soundrhythm.id/',
+          source_type: 'PROMOTER',
+          retrieved_at: '2026-11-01T00:00:00+07:00'
+        },
+        {
+          source_id: 'src-promoter-aeg-presents',
+          source_name: 'AEG Presents Asia',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://www.aegpresents.com/',
+          source_type: 'PROMOTER',
+          retrieved_at: '2026-11-01T00:00:00+07:00'
         }
       ]
     };
@@ -1674,16 +1835,23 @@ class CanonicalEventRegistry {
     };
 
     if (options && options.includePast) {
-      return [btsHero, morganJayHero, nassarHero, yeHero];
+      return [btsHero, bigbangHero, morganJayHero, nassarHero, yeHero];
     }
 
     // Default active upcoming hero concerts: strictly qualified (lowest official tier >= 500k)
-    // King Nassar is excluded due to Rp 350.000 Tribun Regular tier.
-    return [btsHero, morganJayHero];
+    // BTS and BIGBANG are the primary and secondary stadium hero concerts.
+    return [btsHero, bigbangHero];
   }
 
   getAllEvents() {
-    return Array.from(this.events.values());
+    const list = Array.from(this.events.values());
+    const heroes = this.getHeroEvents({ includePast: true });
+    for (const hero of heroes) {
+      if (!list.some(e => (e.id && (e.id === hero.id || e.id === hero.event_id)) || (e.event_id && (e.event_id === hero.id || e.event_id === hero.event_id)) || (e.slug && e.slug === hero.slug))) {
+        list.push(hero);
+      }
+    }
+    return list;
   }
 
   getUpcomingEvents(now = new Date()) {

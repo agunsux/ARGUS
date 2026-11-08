@@ -71,54 +71,60 @@ async function runHeroRefreshSuite() {
   // --- 2. Visual Artwork Verification ---
   console.log('\n--- 2. High-Quality Artwork Assets ---');
 
-  const bbPosterPath = path.join(__dirname, 'public', 'assets', 'posters', 'bigbang-artist-discovery.svg');
-  const btsPosterPath = path.join(__dirname, 'public', 'assets', 'posters', 'bts-artist-discovery.svg');
+  const bbPosterPath = path.join(__dirname, 'public', 'assets', 'posters', 'bigbang-cosmos-tour-jakarta-2027.svg');
+  const btsPosterPath = path.join(__dirname, 'public', 'assets', 'posters', 'bts-world-tour-arirang-jakarta-2026.svg');
 
-  check('BIGBANG discovery poster SVG exists and is non-empty', () => {
-    assert(fs.existsSync(bbPosterPath), 'bigbang-artist-discovery.svg must exist');
+  check('BIGBANG concert poster SVG exists and is non-empty', () => {
+    assert(fs.existsSync(bbPosterPath), 'bigbang-cosmos-tour-jakarta-2027.svg must exist');
     const content = fs.readFileSync(bbPosterPath, 'utf8');
     assert(content.includes('<svg') && content.includes('BIGBANG'), 'Must be valid SVG with BIGBANG title');
   });
 
-  check('BTS discovery poster SVG exists and is non-empty', () => {
-    assert(fs.existsSync(btsPosterPath), 'bts-artist-discovery.svg must exist');
+  check('BTS concert poster SVG exists and is non-empty', () => {
+    assert(fs.existsSync(btsPosterPath), 'bts-world-tour-arirang-jakarta-2026.svg must exist');
     const content = fs.readFileSync(btsPosterPath, 'utf8');
     assert(content.includes('<svg') && content.includes('BTS'), 'Must be valid SVG with BTS title');
   });
 
-  check('index.html links to new SVG poster assets', () => {
-    assert(indexHtml.includes('src="/assets/posters/bigbang-artist-discovery.svg"'), 'Must reference BIGBANG poster');
-    assert(indexHtml.includes('src="/assets/posters/bts-artist-discovery.svg"'), 'Must reference BTS poster');
+  check('index.html links to verified SVG poster assets', () => {
+    assert(indexHtml.includes('src="/assets/posters/bigbang-cosmos-tour-jakarta-2027.svg"'), 'Must reference BIGBANG poster');
+    assert(indexHtml.includes('src="/assets/posters/bts-world-tour-arirang-jakarta-2026.svg"'), 'Must reference BTS poster');
   });
 
-  // --- 3. Factual Invariant & Zero-Hallucination Policy ---
+  // --- 3. Factual Invariant & Zero-Fake Inventory Invariant ---
   console.log('\n--- 3. Factual Invariants & Zero-Fake Inventory Invariant ---');
 
-  check('Hero cards do not invent fake concert dates or fake venues', () => {
-    // Must not state confirmed concert dates for BTS or BIGBANG
-    assert(!indexHtml.includes('26 • 27 • 29 DESEMBER 2026'), 'Must not contain unconfirmed December dates');
-    assert(indexHtml.includes('Menunggu Pengumuman Resmi Promotor'), 'Must state awaiting promoter announcement');
+  check('Hero cards show verified dates and venues', () => {
+    assert(indexHtml.includes('16–17 Januari 2027'), 'Must show BIGBANG verified date');
+    assert(indexHtml.includes('Jakarta International Stadium (JIS)'), 'Must show JIS venue');
+    assert(indexHtml.includes('26–27 Desember 2026'), 'Must show BTS verified date');
+    assert(indexHtml.includes('Gelora Bung Karno (GBK) Main Stadium'), 'Must show GBK venue');
   });
 
   check('Both cards clearly display zero resale inventory (Zero Fake Inventory)', () => {
     const cardBigbang = indexHtml.split('id="card-bigbang"')[1].split('</article>')[0];
     const cardBts = indexHtml.split('id="card-bts"')[1].split('</article>')[0];
 
-    assert(cardBigbang.includes('0 Tiket (Zero Fake Inventory'), 'BIGBANG card must show 0 tickets');
-    assert(cardBts.includes('0 Tiket (Zero Fake Inventory'), 'BTS card must show 0 tickets');
+    assert(cardBigbang.includes('0 Tiket (Belum ada tiket resale terverifikasi di TIKUM — Zero Fake Inventory)'), 'BIGBANG card must show 0 tickets');
+    assert(cardBts.includes('0 Tiket (Belum ada tiket resale terverifikasi di TIKUM — Zero Fake Inventory)'), 'BTS card must show 0 tickets');
   });
 
-  check('Notice boxes state secondary sales are closed until official promoter announcements', () => {
-    assert(indexHtml.includes('Belum ada jadwal konser resmi yang terverifikasi di Indonesia'), 'Must have BIGBANG notice');
-    assert(indexHtml.includes('Belum ada tanggal konser resmi atau kuota tiket yang terkonfirmasi untuk Indonesia'), 'Must have BTS notice');
+  check('Notice boxes state official source confirmations and no TIKUM resale yet', () => {
+    assert(indexHtml.includes('Event resmi terkonfirmasi di situs resmi YG Entertainment dan bigbanginjakarta.com'), 'Must have BIGBANG notice');
+    assert(indexHtml.includes('Jadwal tur resmi terkonfirmasi di btsworldtourofficial.com dan penjualan tiket resmi bermitra dengan Tiket.com'), 'Must have BTS notice');
   });
 
   // --- 4. Working CTAs & Navigation ---
   console.log('\n--- 4. Working Action Buttons & Safe Routing ---');
 
-  check('Primary CTAs route to search / event radar without fake checkout links', () => {
-    assert(indexHtml.includes('href="/events?q=BIGBANG"'), 'Must have BIGBANG search CTA');
-    assert(indexHtml.includes('href="/events?q=BTS"'), 'Must have BTS search CTA');
+  check('Primary CTAs route to canonical event detail pages without fake checkout links', () => {
+    assert(indexHtml.includes('href="/events/bigbang-cosmos-tour-jakarta-2027"'), 'Must have BIGBANG event CTA');
+    assert(indexHtml.includes('href="/events/bts-world-tour-arirang-jakarta-2026"'), 'Must have BTS event CTA');
+  });
+
+  check('Official primary ticketing channels linked with external ↗', () => {
+    assert(indexHtml.includes('https://bigbanginjakarta.com/'), 'Must link to bigbanginjakarta.com');
+    assert(indexHtml.includes('https://www.tiket.com/en-id/to-do/bts-jakarta-day1'), 'Must link to Tiket.com');
   });
 
   check('Secondary CTAs route to buyer protection and general event catalog', () => {
@@ -142,10 +148,10 @@ async function runHeroRefreshSuite() {
   });
 
   check('i18n dictionary contains BIGBANG and BTS keys in English', () => {
-    assert(i18nContent.includes('"BIGBANG: Discover the Live Music Experience"'), 'Must have EN bigbangTitle');
-    assert(i18nContent.includes('"BTS: Track Live Event & Ticket Radar"'), 'Must have EN btsTitle');
-    assert(i18nContent.includes('"Monitor BIGBANG Event Radar →"'), 'Must have EN bigbangExploreBtn');
-    assert(i18nContent.includes('"Monitor BTS Event Radar →"'), 'Must have EN btsExploreBtn');
+    assert(i18nContent.includes('"BIGBANG 2026–2027 WORLD TOUR < XX : COSMOS > IN JAKARTA"'), 'Must have EN bigbangTitle');
+    assert(i18nContent.includes('"BTS WORLD TOUR ARIRANG"'), 'Must have EN btsTitle');
+    assert(i18nContent.includes('"View BIGBANG Event Details →"'), 'Must have EN bigbangExploreBtn');
+    assert(i18nContent.includes('"View BTS Event Details →"'), 'Must have EN btsExploreBtn');
   });
 
   // --- 6. Live Server Verification ---

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="btsArirangBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080314" />
+      <stop offset="35%" stop-color="#14082e" />
+      <stop offset="70%" stop-color="#100524" />
+      <stop offset="100%" stop-color="#04010a" />
+    </linearGradient>
+    <radialGradient id="arirangGlow" cx="50%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.4" />
+      <stop offset="35%" stop-color="#7c3aed" stop-opacity="0.22" />
+      <stop offset="65%" stop-color="#4c1d95" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="purpleTitleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#f5f3ff" />
+      <stop offset="65%" stop-color="#ddd6fe" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+  </defs>
+
+  <!-- Deep Purple Midnight Background -->
+  <rect width="600" height="360" fill="url(#btsArirangBg)" />
+  <circle cx="300" cy="130" r="280" fill="url(#arirangGlow)" />
+
+  <!-- Stadium Lighting Light Beams -->
+  <polygon points="90,0 210,0 320,360 30,360" fill="url(#arirangGlow)" opacity="0.45" />
+  <polygon points="510,0 390,0 280,360 570,360" fill="url(#arirangGlow)" opacity="0.45" />
+
+  <!-- Management Top Eyebrow -->
+  <g transform="translate(300, 38)">
+    <rect x="-185" y="-13" width="370" height="26" rx="13" fill="rgba(20, 8, 44, 0.88)" stroke="rgba(192, 132, 252, 0.45)" stroke-width="1.2" />
+    <text text-anchor="middle" y="4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="800" fill="#c084fc" letter-spacing="2">BIGHIT MUSIC &amp; HYBE • OFFICIAL TOUR</text>
+  </g>
+
+  <!-- Stylized BTS Door Icon -->
+  <g transform="translate(300, 76)" stroke="#f3e8ff" stroke-width="1.5" fill="none">
+    <path d="M -15,-10 L -6,-13 L -6,13 L -15,10 Z" fill="rgba(192, 132, 252, 0.3)" />
+    <path d="M 15,-10 L 6,-13 L 6,13 L 15,10 Z" fill="rgba(192, 132, 252, 0.3)" />
+  </g>
+
+  <!-- Tour Title -->
+  <text x="300" y="142" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="36" font-weight="900" fill="url(#purpleTitleGrad)" letter-spacing="6">BTS</text>
+
+  <text x="300" y="172" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="800" fill="#f5f3ff" letter-spacing="4">WORLD TOUR ARIRANG</text>
+
+  <text x="300" y="198" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14.5" font-weight="900" fill="#c084fc" letter-spacing="4">IN JAKARTA</text>
+
+  <!-- Date & Venue Card -->
+  <g transform="translate(300, 252)">
+    <rect x="-205" y="-20" width="410" height="40" rx="8" fill="rgba(18, 7, 38, 0.92)" stroke="rgba(168, 85, 247, 0.45)" stroke-width="1.2" />
+    <text text-anchor="middle" y="-2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="800" fill="#ffffff" letter-spacing="1.5">26–27 DESEMBER 2026</text>
+    <text text-anchor="middle" y="14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10.5" font-weight="700" fill="#e9d5ff" letter-spacing="1.2">GELORA BUNG KARNO (GBK) MAIN STADIUM</text>
+  </g>
+
+  <!-- Official Ticketing & Provenance Footer -->
+  <g transform="translate(300, 314)">
+    <text text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="700" fill="#a855f7" letter-spacing="1">
+      OFFICIAL PRIMARY TICKETING: TIKET.COM • btsworldtourofficial.com
+    </text>
+    <text text-anchor="middle" y="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9" font-weight="600" fill="#64748b" letter-spacing="0.5">
+      TIKUM SECONDARY MARKETPLACE • ZERO FAKE INVENTORY ENFORCED
+    </text>
+  </g>
+</svg>

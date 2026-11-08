@@ -7,7 +7,17 @@
  * TIER 3: Discovery Signals (Social Channels: Instagram, TikTok, X. Strictly discovery signals — cannot solely verify)
  */
 
+const { UnifiedSource, UNIFIED_SOURCE_TYPES } = require('./models/UnifiedSource');
+
 const SOURCE_TYPES = {
+  // Unified 6 Authoritative Core Types
+  ARTIST: 'ARTIST',
+  MANAGEMENT: 'MANAGEMENT',
+  PROMOTER: 'PROMOTER',
+  OFFICIAL_EVENT: 'OFFICIAL_EVENT',
+  TICKETING: 'TICKETING',
+  VENUE: 'VENUE',
+
   // 4 Approved Authoritative Source Types (with web / IG split)
   OFFICIAL_PROMOTER_WEB: 'OFFICIAL_PROMOTER_WEB',
   OFFICIAL_PROMOTER_IG: 'OFFICIAL_PROMOTER_IG',
@@ -19,7 +29,6 @@ const SOURCE_TYPES = {
   // Backward compatibility authoritative aliases
   OFFICIAL_PROMOTER: 'OFFICIAL_PROMOTER',
   OFFICIAL_ORGANIZER: 'OFFICIAL_ORGANIZER', // backward compatibility
-  OFFICIAL_ORGANIZER: 'OFFICIAL_ORGANIZER',
   OFFICIAL_VENUE: 'OFFICIAL_VENUE',
   OFFICIAL_ARTIST: 'OFFICIAL_ARTIST',
   OFFICIAL_EVENT: 'OFFICIAL_EVENT',
@@ -57,6 +66,12 @@ const SOURCE_TYPES = {
 };
 
 const AUTHORITATIVE_SOURCE_TYPES = [
+  SOURCE_TYPES.ARTIST,
+  SOURCE_TYPES.MANAGEMENT,
+  SOURCE_TYPES.PROMOTER,
+  SOURCE_TYPES.OFFICIAL_EVENT,
+  SOURCE_TYPES.TICKETING,
+  SOURCE_TYPES.VENUE,
   SOURCE_TYPES.OFFICIAL_PROMOTER_WEB,
   SOURCE_TYPES.OFFICIAL_PROMOTER_IG,
   SOURCE_TYPES.OFFICIAL_ARTIST_WEB,
@@ -167,6 +182,162 @@ class SourceRegistry {
 
   _initializeDefaultSources() {
     const defaults = [
+      // ==========================================
+      // OFFICIAL EVENT DISCOVERY SOURCES (BIGBANG & BTS EPIC INTEGRATION)
+      // ==========================================
+      {
+        source_id: 'src-artist-yg-bigbang',
+        source_name: 'YG Entertainment (BIGBANG Official)',
+        source_type: SOURCE_TYPES.ARTIST,
+        canonical_url: 'https://www.ygfamily.com/en/artists/bigbang/concert',
+        base_url: 'https://www.ygfamily.com/en/artists/bigbang/concert',
+        supported_event_scope: 'BIGBANG 2026–2027 WORLD TOUR < XX : COSMOS >',
+        priority: 1,
+        tier: 1,
+        authority_level: 'HIGH',
+        trust_level: TRUST_LEVELS.TIER_1,
+        fetch_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        permission_status: PERMISSION_STATUS.PUBLIC_DISCOVERY_ONLY,
+        verification_status: 'VERIFIED',
+        enabled: true,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Primary artist label and global concert schedule portal for BIGBANG'
+      },
+      {
+        source_id: 'src-official-bigbang-jakarta',
+        source_name: 'BIGBANG in Jakarta Official Event Website',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT,
+        canonical_url: 'https://bigbanginjakarta.com/',
+        base_url: 'https://bigbanginjakarta.com/',
+        supported_event_scope: 'BIGBANG 2026–2027 WORLD TOUR < XX : COSMOS > IN JAKARTA',
+        priority: 2,
+        tier: 1,
+        authority_level: 'HIGH',
+        trust_level: TRUST_LEVELS.TIER_1,
+        fetch_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        permission_status: PERMISSION_STATUS.PUBLIC_DISCOVERY_ONLY,
+        verification_status: 'VERIFIED',
+        enabled: true,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Authoritative event portal for BIGBANG Jakarta International Stadium concert dates'
+      },
+      {
+        source_id: 'src-promoter-pk-ent',
+        source_name: 'PK Entertainment',
+        source_type: SOURCE_TYPES.PROMOTER,
+        canonical_url: 'https://pk-ent.com/',
+        base_url: 'https://pk-ent.com/',
+        supported_event_scope: 'CONCERTS_INDONESIA',
+        priority: 3,
+        tier: 1,
+        authority_level: 'HIGH',
+        trust_level: TRUST_LEVELS.TIER_1,
+        fetch_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        permission_status: PERMISSION_STATUS.PUBLIC_DISCOVERY_ONLY,
+        verification_status: 'VERIFIED',
+        enabled: true,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Independent co-promoter for BIGBANG Jakarta and major stadium tours'
+      },
+      {
+        source_id: 'src-promoter-soundrhythm',
+        source_name: 'Sound Rhythm',
+        source_type: SOURCE_TYPES.PROMOTER,
+        canonical_url: 'https://soundrhythm.id/',
+        base_url: 'https://soundrhythm.id/',
+        supported_event_scope: 'CONCERTS_INDONESIA',
+        priority: 3,
+        tier: 1,
+        authority_level: 'HIGH',
+        trust_level: TRUST_LEVELS.TIER_1,
+        fetch_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        permission_status: PERMISSION_STATUS.PUBLIC_DISCOVERY_ONLY,
+        verification_status: 'VERIFIED',
+        enabled: true,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Independent co-promoter for BIGBANG Jakarta and live music events'
+      },
+      {
+        source_id: 'src-promoter-aeg-presents',
+        source_name: 'AEG Presents Asia',
+        source_type: SOURCE_TYPES.PROMOTER,
+        canonical_url: 'https://www.aegpresents.com/',
+        base_url: 'https://www.aegpresents.com/',
+        supported_event_scope: 'CONCERTS_ASIA',
+        priority: 3,
+        tier: 1,
+        authority_level: 'HIGH',
+        trust_level: TRUST_LEVELS.TIER_1,
+        fetch_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        permission_status: PERMISSION_STATUS.PUBLIC_DISCOVERY_ONLY,
+        verification_status: 'VERIFIED',
+        enabled: true,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Global touring division and lead promoter partner for BIGBANG Cosmos Tour'
+      },
+      {
+        source_id: 'src-artist-bighit-bts',
+        source_name: 'BIGHIT MUSIC (BTS Official Tour)',
+        source_type: SOURCE_TYPES.MANAGEMENT,
+        canonical_url: 'https://ibighit.com/en/bts/tour/',
+        base_url: 'https://ibighit.com/en/bts/tour/',
+        supported_event_scope: 'BTS WORLD TOUR ARIRANG',
+        priority: 1,
+        tier: 1,
+        authority_level: 'HIGH',
+        trust_level: TRUST_LEVELS.TIER_1,
+        fetch_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        permission_status: PERMISSION_STATUS.PUBLIC_DISCOVERY_ONLY,
+        verification_status: 'VERIFIED',
+        enabled: true,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Primary artist management and global tour authority for BTS'
+      },
+      {
+        source_id: 'src-official-bts-tour',
+        source_name: 'BTS Official Tour Website',
+        source_type: SOURCE_TYPES.OFFICIAL_EVENT,
+        canonical_url: 'https://btsworldtourofficial.com/',
+        base_url: 'https://btsworldtourofficial.com/',
+        supported_event_scope: 'BTS WORLD TOUR ARIRANG',
+        priority: 2,
+        tier: 1,
+        authority_level: 'HIGH',
+        trust_level: TRUST_LEVELS.TIER_1,
+        fetch_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        permission_status: PERMISSION_STATUS.PUBLIC_DISCOVERY_ONLY,
+        verification_status: 'VERIFIED',
+        enabled: true,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Dedicated global tour website for BTS WORLD TOUR ARIRANG'
+      },
+      {
+        source_id: 'src-ticketing-tiket-bts',
+        source_name: 'Tiket.com (Official Ticketing Partner)',
+        source_type: SOURCE_TYPES.TICKETING,
+        canonical_url: 'https://www.tiket.com/en-id/to-do/bts-jakarta-day1',
+        base_url: 'https://www.tiket.com/en-id/to-do/bts-jakarta-day1',
+        supported_event_scope: 'BTS WORLD TOUR ARIRANG IN JAKARTA',
+        priority: 4,
+        tier: 2,
+        authority_level: 'HIGH',
+        trust_level: TRUST_LEVELS.TIER_2,
+        fetch_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        access_method: ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+        permission_status: PERMISSION_STATUS.PUBLIC_DISCOVERY_ONLY,
+        verification_status: 'VERIFIED',
+        enabled: true,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Official primary ticketing platform partner for BTS Jakarta stadium dates'
+      },
+
       // ==========================================
       // TIER 1: AUTHORITATIVE ARTIST CHANNELS & MANAGEMENTS
       // ==========================================
@@ -3372,10 +3543,17 @@ class SourceRegistry {
       terms_url: sourceData.terms_url || null,
       robots_url: sourceData.robots_url || null,
       api_url: sourceData.api_url || null,
+      canonical_url: sourceData.canonical_url || sourceData.official_url || sourceData.base_url || '',
+      supported_event_scope: sourceData.supported_event_scope || sourceData.scope || 'ALL_EVENTS',
+      fetch_method: sourceData.fetch_method || sourceData.access_method || ACCESS_METHODS.PUBLIC_DISCOVERY_ONLY,
+      last_checked_at: sourceData.last_checked_at || sourceData.last_attempted_fetch || new Date().toISOString(),
+      last_success_at: sourceData.last_success_at || sourceData.last_successful_sync || new Date().toISOString(),
+      last_error: sourceData.last_error || null,
+      verification_status: sourceData.verification_status || (tier === 1 ? 'VERIFIED' : 'UNVERIFIED'),
       account_handle: sourceData.account_handle || null,
       rate_limit: sourceData.rate_limit || '30 req/min',
       crawl_frequency: sourceData.crawl_frequency || CRAWL_FREQUENCY.DAILY,
-      priority: sourceData.priority || 1,
+      priority: sourceData.priority || (tier === 1 ? 1 : (tier === 2 ? 3 : 5)),
       reliability_score: sourceData.reliability_score || (tier === 1 ? 1.0 : (tier === 2 ? 0.8 : 0.5)),
       enabled: sourceData.enabled !== false && sourceData.active !== false,
       active: sourceData.enabled !== false && sourceData.active !== false, // compatibility
@@ -3415,6 +3593,28 @@ class SourceRegistry {
     };
 
     this.sources.set(source.source_id, source);
+    return source;
+  }
+
+  getUnifiedSource(sourceId) {
+    const raw = this.getSource(sourceId);
+    if (!raw) return null;
+    return new UnifiedSource(raw);
+  }
+
+  updateSourceCheck(sourceId, success = true, error = null) {
+    const source = this.getSource(sourceId);
+    if (!source) return null;
+    const nowIso = new Date().toISOString();
+    source.last_checked_at = nowIso;
+    if (success) {
+      source.last_success_at = nowIso;
+      source.last_error = null;
+      source.last_successful_sync = nowIso;
+    } else {
+      source.last_error = error ? String(error) : 'Check failure';
+      source.last_failed_sync = nowIso;
+    }
     return source;
   }
 

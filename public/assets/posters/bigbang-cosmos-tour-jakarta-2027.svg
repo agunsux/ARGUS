@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bbCosmosBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07070a" />
+      <stop offset="35%" stop-color="#141118" />
+      <stop offset="70%" stop-color="#1c160e" />
+      <stop offset="100%" stop-color="#050507" />
+    </linearGradient>
+    <radialGradient id="cosmosGlow" cx="50%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.38" />
+      <stop offset="35%" stop-color="#b45309" stop-opacity="0.22" />
+      <stop offset="65%" stop-color="#78350f" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="goldTitleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#fef3c7" />
+      <stop offset="65%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="goldAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+  </defs>
+
+  <!-- Deep Cosmos Background -->
+  <rect width="600" height="360" fill="url(#bbCosmosBg)" />
+  <circle cx="300" cy="130" r="280" fill="url(#cosmosGlow)" />
+
+  <!-- Dynamic Celestial Stage Beams -->
+  <polygon points="110,0 230,0 330,360 50,360" fill="url(#cosmosGlow)" opacity="0.45" />
+  <polygon points="490,0 370,0 270,360 550,360" fill="url(#cosmosGlow)" opacity="0.45" />
+
+  <!-- Promoters Top Eyebrow -->
+  <g transform="translate(300, 38)">
+    <rect x="-210" y="-13" width="420" height="26" rx="13" fill="rgba(24, 21, 28, 0.88)" stroke="rgba(251, 191, 36, 0.4)" stroke-width="1.2" />
+    <text text-anchor="middle" y="4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9.5" font-weight="800" fill="#fbbf24" letter-spacing="1.8">AEG PRESENTS ASIA • PK ENTERTAINMENT • SOUND RHYTHM</text>
+  </g>
+
+  <!-- Crown Cosmos Icon -->
+  <g transform="translate(300, 76)" fill="#fbbf24">
+    <path d="M -22,8 L -30,-8 L -13,-1 L 0,-13 L 13,-1 L 30,-8 L 22,8 Z" opacity="0.95" />
+    <circle cx="-30" cy="-11" r="2.2" fill="#fff" />
+    <circle cx="0" cy="-17" r="2.8" fill="#fff" />
+    <circle cx="30" cy="-11" r="2.2" fill="#fff" />
+  </g>
+
+  <!-- Tour Title -->
+  <text x="300" y="142" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="900" fill="url(#goldTitleGrad)" letter-spacing="5">BIGBANG</text>
+
+  <text x="300" y="172" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14.5" font-weight="800" fill="#fef3c7" letter-spacing="3.5">2026–2027 WORLD TOUR</text>
+
+  <text x="300" y="198" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="900" fill="#fbbf24" letter-spacing="4">&lt; XX : COSMOS &gt; IN JAKARTA</text>
+
+  <!-- Date & Venue Card -->
+  <g transform="translate(300, 252)">
+    <rect x="-195" y="-20" width="390" height="40" rx="8" fill="rgba(18, 15, 24, 0.92)" stroke="rgba(245, 158, 11, 0.45)" stroke-width="1.2" />
+    <text text-anchor="middle" y="-2" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="800" fill="#ffffff" letter-spacing="1.5">16–17 JANUARI 2027</text>
+    <text text-anchor="middle" y="14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10.5" font-weight="700" fill="#fbbf24" letter-spacing="1.2">JAKARTA INTERNATIONAL STADIUM (JIS)</text>
+  </g>
+
+  <!-- Official Provenance Footer -->
+  <g transform="translate(300, 314)">
+    <text text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="700" fill="#94a3b8" letter-spacing="1">
+      OFFICIAL SOURCES: bigbanginjakarta.com • ygfamily.com/artists/bigbang
+    </text>
+    <text text-anchor="middle" y="18" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9" font-weight="600" fill="#64748b" letter-spacing="0.5">
+      TIKUM SECONDARY MARKETPLACE • ZERO FAKE INVENTORY ENFORCED
+    </text>
+  </g>
+</svg>

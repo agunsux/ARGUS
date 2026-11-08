@@ -144,6 +144,7 @@ class DiscoveredEvent {
     this.source_origin = data.source_origin || data.provenance?.source_origin || 'LIVE_OR_ADAPTER_DISCOVERED';
     this.discovery_method = data.discovery_method || data.provenance?.discovery_method || 'ADAPTER_DISCOVERY';
     this.provenance = {
+      ...(data.provenance || {}),
       official_source: data.provenance?.official_source || this.official_event_url,
       ticket_source: data.provenance?.ticket_source || this.official_ticket_url,
       promoter_source: data.provenance?.promoter_source || (this.organizer_name ? `promoter:${this.organizer_name}` : null),
