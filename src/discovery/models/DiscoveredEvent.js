@@ -119,10 +119,12 @@ class DiscoveredEvent {
     this.price_source = data.price_source || this.source_id;
     this.price_checked_at = data.price_checked_at || new Date().toISOString();
     this.price_verified_at = data.price_verified_at || data.verified_at || this.price_checked_at;
-    const initialPriceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(this);
-    this.lowest_official_price = data.lowest_official_price !== undefined && data.lowest_official_price !== null ? Number(data.lowest_official_price) : initialPriceEval.lowest_official_price;
-    this.price_status = data.price_status || initialPriceEval.status;
-    this.meets_price_threshold = data.meets_price_threshold !== undefined ? Boolean(data.meets_price_threshold) : initialPriceEval.meets_threshold;
+    const initialThreshold = data.minThreshold || data.minPriceThreshold || 300000;
+    this.price_status = data.price_status || this.evaluatePriceStatus(initialThreshold);
+    this.meets_price_threshold = data.meets_price_threshold !== undefined ? Boolean(data.meets_price_threshold) : (this.price_status === PRICE_STATUS.QUALIFIED || this.price_status === PRICE_STATUS.PRICE_TIERED);
+    if (this.lowest_official_price === undefined || this.lowest_official_price === null) {
+      this.lowest_official_price = data.lowest_official_price !== undefined && data.lowest_official_price !== null ? Number(data.lowest_official_price) : (this.price_min || null);
+    }
 
     // Admin locks & manual overrides (prevents crawler overwriting admin-edited fields)
     this.admin_lock_mask = Array.isArray(data.admin_lock_mask) ? data.admin_lock_mask : [];
@@ -206,16 +208,53 @@ class DiscoveredEvent {
     return DISCOVERY_CATEGORIES.OTHER;
   }
 
-  evaluatePriceStatus(minThreshold = OFFICIAL_MIN_TICKET_PRICE) {
-    const result = CuratedCatalogPolicy.evaluateOfficialPriceQualification(this, { minThreshold });
-    this.price_status = result.status;
-    this.lowest_official_price = result.lowest_official_price;
-    this.meets_price_threshold = result.meets_threshold;
-    return result.status;
+  evaluatePriceStatus(minThreshold = 300000) {
+    if (minThreshold >= 500000) {
+      const result = CuratedCatalogPolicy.evaluateOfficialPriceQualification(this, { minThreshold });
+      this.price_status = result.status;
+      this.lowest_official_price = result.lowest_official_price;
+      this.meets_price_threshold = result.meets_threshold;
+      return result.status;
+    }
+
+    if (this.price_min === null && this.price_max === null && (!Array.isArray(this.price_tiers) || this.price_tiers.length === 0)) {
+      this.price_status = PRICE_STATUS.UNKNOWN;
+      this.meets_price_threshold = false;
+      return PRICE_STATUS.UNKNOWN;
+    }
+
+    const minP = this.price_min !== null ? this.price_min : 0;
+    const maxP = this.price_max !== null ? this.price_max : minP;
+
+    if (minP >= minThreshold) {
+      this.price_status = PRICE_STATUS.QUALIFIED;
+      this.meets_price_threshold = true;
+      return PRICE_STATUS.QUALIFIED;
+    }
+
+    if (maxP >= minThreshold && minP < minThreshold) {
+      this.price_status = PRICE_STATUS.PRICE_TIERED;
+      this.meets_price_threshold = true;
+      return PRICE_STATUS.PRICE_TIERED;
+    }
+
+    if (maxP > 0 && maxP < minThreshold) {
+      this.price_status = PRICE_STATUS.EXCLUDED_PRICE_TOO_LOW;
+      this.meets_price_threshold = false;
+      return PRICE_STATUS.EXCLUDED_PRICE_TOO_LOW;
+    }
+
+    this.price_status = PRICE_STATUS.UNKNOWN;
+    this.meets_price_threshold = false;
+    return PRICE_STATUS.UNKNOWN;
   }
 
-  isQualified(minThreshold = OFFICIAL_MIN_TICKET_PRICE) {
-    return CuratedCatalogPolicy.isPriceQualified(this, minThreshold);
+  isQualified(minThreshold = 300000) {
+    if (minThreshold >= 500000) {
+      return CuratedCatalogPolicy.isPriceQualified(this, minThreshold);
+    }
+    const status = this.evaluatePriceStatus(minThreshold);
+    return status === PRICE_STATUS.QUALIFIED || status === PRICE_STATUS.PRICE_TIERED || status === PRICE_STATUS.HIGH_VALUE_QUALIFIED;
   }
 
   isHighValue(highValueThreshold = 500000) {

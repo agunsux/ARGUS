@@ -29,6 +29,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 const assert = require('assert');
 const { state, resetDatabase } = require('./src/database');
 const { TrustPolicyEngine, RISK_LEVEL, ATTESTATION_TYPE, AUTHORIZATION_OUTCOME } = require('./src/trust/TrustPolicyEngine');
@@ -56,7 +57,7 @@ async function testAsync(title, fn) {
   }
 }
 
-async function setupBaselineOrder({ orderId = 'ord-test-1', amount = 1000000, buyerId = 'buyer-1', sellerId = 'seller-1', eventId = 'event-pestapora-2026', ticketId = 'tkt-test-1' } = {}) {
+async function setupBaselineOrder({ orderId = 'ord-test-1', amount = 1000000, buyerId = 'buyer-1', sellerId = 'seller-1', eventId = 'event-bts-2026', ticketId = 'tkt-test-1' } = {}) {
   // Clear any existing matching order
   state.orders = state.orders ? state.orders.filter(o => o.id !== orderId) : [];
   state.escrows = state.escrows ? state.escrows.filter(e => e.order_id !== orderId) : [];
@@ -1078,6 +1079,15 @@ async function runEpic5Suite() {
       orderId,
       gate: 'Gate 1',
       status: 'CONFIRMED'
+    });
+
+    // 6b. Buyer attestation recorded
+    await TrustPolicyEngine.recordAttestation({
+      orderId,
+      attestationType: ATTESTATION_TYPE.BUYER_ATTESTATION,
+      actorId: 'buyer-1',
+      actorRole: 'buyer',
+      result: 'PASS'
     });
 
     // 7. Trust Policy evaluates and authorizes release

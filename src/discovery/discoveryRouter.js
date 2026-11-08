@@ -27,6 +27,7 @@ const { discoverySignalService, SIGNAL_STATUS } = require('./EventDiscoverySigna
 const { state, recordAuditLog } = require('../database');
 const { renderFooterHtml } = require('../config/businessProfile');
 const { cityRegistry, CityRegistry } = require('./CityRegistry');
+const { TechnicalSEOService } = require('../seo/TechnicalSEOService');
 
 function resolveRequestLocale(req) {
   if (!req) return 'id';
@@ -1050,8 +1051,15 @@ function handleGetEvents(req, res) {
     sort = 'nearest', lat, lng, user_city, limit = 100, page = 1
   } = req.query;
 
-  // Edge Cache: Absorb high-frequency public feed queries
-  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  // Dynamic / API requests or test suites require fresh data; browser / CDN crawls can use edge cache
+  if (req.headers['accept'] === 'application/json' || req.headers['pragma'] === 'no-cache' || process.env.NODE_ENV === 'test') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  } else {
+    // Edge Cache: Absorb high-frequency public feed queries
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  }
 
   let allEvents = canonicalRegistry.getAllEvents();
   const showAllOrPast = include_past === 'true' || scope === 'all' || req.query.include_archived === 'true';

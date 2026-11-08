@@ -169,14 +169,29 @@ class CuratedCatalogPolicy {
       };
     }
 
-    if (lowestOfficialPrice < minThreshold) {
+    const currency = (eventData.currency || eventData.currency_code || 'IDR').toUpperCase();
+    const isForeignCurrency = currency !== 'IDR';
+    let threshold = minThreshold;
+    if (isForeignCurrency) {
+      const foreignThresholds = {
+        SGD: 40,
+        MYR: 140,
+        THB: 1100,
+        PHP: 1500,
+        VND: 100000,
+        USD: 30
+      };
+      threshold = foreignThresholds[currency] !== undefined ? foreignThresholds[currency] : 0;
+    }
+
+    if (lowestOfficialPrice < threshold) {
       return {
         qualified: false,
         meets_threshold: false,
         status: 'EXCLUDED_PRICE_TOO_LOW',
         lowest_official_price: lowestOfficialPrice,
         highest_official_price: highestOfficialPrice,
-        reason: `Lowest official ticket tier (Rp ${lowestOfficialPrice.toLocaleString('id-ID')}) is below minimum Rp ${minThreshold.toLocaleString('id-ID')}`
+        reason: `Lowest official ticket tier (${currency} ${lowestOfficialPrice.toLocaleString('id-ID')}) is below minimum ${currency} ${threshold.toLocaleString('id-ID')}`
       };
     }
 

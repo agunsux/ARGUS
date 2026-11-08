@@ -169,7 +169,7 @@ async function runSuite() {
   await testAsync('4. Official promoter IG observation creates CanonicalEvent as PRIMARY_SOURCE_VERIFIED without second source', async () => {
     const postPayload = {
       event_name: 'Sheila on 7 — Tunggu Aku Di Bandung',
-      start_date: '2026-10-18',
+      start_date: '2026-12-18',
       venue_name: 'Stadion Siliwangi',
       city: 'Bandung',
       artists: ['Sheila on 7'],
@@ -194,7 +194,7 @@ async function runSuite() {
     const prov = res.canonical_event.field_provenance;
     assert.ok(prov, 'field_provenance must exist');
     assert.strictEqual(prov.event_name.value, 'Sheila on 7 — Tunggu Aku Di Bandung');
-    assert.strictEqual(prov.start_date.value, '2026-10-18');
+    assert.strictEqual(prov.start_date.value, '2026-12-18');
     assert.strictEqual(prov.venue_name.value, 'Stadion Siliwangi');
     assert.strictEqual(prov.ticket_price.value, 'UNKNOWN');
     assert.strictEqual(prov.ticket_price.confidence, 'UNKNOWN');
@@ -210,7 +210,7 @@ async function runSuite() {
   await testAsync('5. Official promoter IG observation updates event lineup and appends LINEUP_CHANGED to history', async () => {
     const updatePost = {
       event_name: 'Sheila on 7 — Tunggu Aku Di Bandung',
-      start_date: '2026-10-18',
+      start_date: '2026-12-18',
       venue_name: 'Stadion Siliwangi',
       city: 'Bandung',
       artists: ['Sheila on 7', 'Good Morning Everyone'],
@@ -234,7 +234,7 @@ async function runSuite() {
   await testAsync('6. Official promoter IG announces venue change; VENUE_CHANGED logged and old venue preserved in history', async () => {
     const venuePost = {
       event_name: 'Sheila on 7 — Tunggu Aku Di Bandung',
-      start_date: '2026-10-18',
+      start_date: '2026-12-18',
       venue_name: 'Stadion Gelora Bandung Lautan Api',
       city: 'Bandung',
       post_url: 'https://www.instagram.com/p/C9_sheila_venue_move/',
@@ -259,7 +259,7 @@ async function runSuite() {
   await testAsync('7. Official promoter IG announces date change; RESCHEDULED logged and old date preserved', async () => {
     const reschedulePost = {
       event_name: 'Sheila on 7 — Tunggu Aku Di Bandung',
-      start_date: '2026-10-25',
+      start_date: '2026-12-25',
       venue_name: 'Stadion Gelora Bandung Lautan Api',
       city: 'Bandung',
       status: 'RESCHEDULED',
@@ -271,13 +271,13 @@ async function runSuite() {
     assert.strictEqual(res.success, true);
 
     const event = canonicalRegistry.getEventById(sheilaEventId);
-    assert.strictEqual(event.start_date, '2026-10-25');
+    assert.strictEqual(event.start_date, '2026-12-25');
     assert.strictEqual(event.status, 'RESCHEDULED');
 
     const historyItem = event.event_history.find(h => h.change_type === 'RESCHEDULED');
     assert.ok(historyItem, 'RESCHEDULED must be recorded');
-    assert.strictEqual(historyItem.old_value, '2026-10-18');
-    assert.strictEqual(historyItem.new_value, '2026-10-25');
+    assert.strictEqual(historyItem.old_value, '2026-12-18');
+    assert.strictEqual(historyItem.new_value, '2026-12-25');
   });
 
   // ==========================================
@@ -287,7 +287,7 @@ async function runSuite() {
     // Ingest old announcement dated prior to reschedule (2026-08-20)
     const stalePost = {
       event_name: 'Sheila on 7 — Tunggu Aku Di Bandung',
-      start_date: '2026-10-10', // old conflicting date
+      start_date: '2026-12-10', // old conflicting date
       venue_name: 'Stadion Siliwangi', // old venue
       city: 'Bandung',
       post_url: 'https://www.instagram.com/p/C9_old_post/',
@@ -299,8 +299,8 @@ async function runSuite() {
     assert.strictEqual(res.success, true);
 
     const event = canonicalRegistry.getEventById(sheilaEventId);
-    // Date MUST still be 2026-10-25, not overwritten by stale 2026-10-10!
-    assert.strictEqual(event.start_date, '2026-10-25');
+    // Date MUST still be 2026-12-25, not overwritten by stale 2026-12-10!
+    assert.strictEqual(event.start_date, '2026-12-25');
     assert.strictEqual(event.venue_name, 'Stadion Gelora Bandung Lautan Api');
 
     // Both observations remain preserved in event.observations
@@ -315,7 +315,7 @@ async function runSuite() {
   await testAsync('9. Ticket URL change updates transaction destination while preserving promoter as event source', async () => {
     const ticketPost = {
       event_name: 'Sheila on 7 — Tunggu Aku Di Bandung',
-      start_date: '2026-10-25',
+      start_date: '2026-12-25',
       venue_name: 'Stadion Gelora Bandung Lautan Api',
       city: 'Bandung',
       official_ticket_url: 'https://loket.com/event/sheila-on-7-bandung-2026',
@@ -340,7 +340,7 @@ async function runSuite() {
     // Secondary source (e.g. tiket.com) reports conflicting date
     const secondaryPayload = {
       name: 'Sheila on 7 — Tunggu Aku Di Bandung',
-      start_date: '2026-11-05', // Conflicting date!
+      start_date: '2026-12-05', // Conflicting date!
       venue_name: 'Stadion Gelora Bandung Lautan Api',
       city: 'Bandung',
       official_ticket_url: 'https://www.tiket.com/to-do/sheila-on-7-bandung'
@@ -350,16 +350,16 @@ async function runSuite() {
     assert.strictEqual(ingestRes.success, true);
 
     const event = canonicalRegistry.getEventById(sheilaEventId);
-    // Promoter date (2026-10-25) must take primary precedence over secondary tiket.com date!
-    assert.strictEqual(event.start_date, '2026-10-25');
+    // Promoter date (2026-12-25) must take primary precedence over secondary tiket.com date!
+    assert.strictEqual(event.start_date, '2026-12-25');
     assert.strictEqual(event.verification_status, VERIFICATION_STATUS.PRIMARY_SOURCE_VERIFIED);
 
     // Conflict must be preserved
     assert.ok(event.conflicts.length > 0, 'Conflicts array must preserve conflicting observations');
     const dateConflict = event.conflicts.find(c => c.field === 'start_date');
     assert.ok(dateConflict, 'Conflict record for start_date must exist');
-    assert.ok(dateConflict.values.includes('2026-11-05'));
-    assert.ok(dateConflict.values.includes('2026-10-25'));
+    assert.ok(dateConflict.values.includes('2026-12-05'));
+    assert.ok(dateConflict.values.includes('2026-12-25'));
   });
 
   // ==========================================

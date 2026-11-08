@@ -113,15 +113,17 @@ async function runCanaryTests() {
     // =========================================================================
     console.log('[TEST 1] CANARY-01: LANY 2-Night Residency at Indonesia Arena, Senayan');
 
-    // 1. Night 1 (29 Oct 2026) Claims:
+    // 1. Night 1 (29 Dec 2026) Claims:
     // Promoter TEM Presents (Tier 1)
     const lanyNight1TEM = {
       title: 'LANY a beautiful blur: the world tour / soft world tour Jakarta',
       artist: 'LANY',
       venue_name: 'Indonesia Arena, Senayan',
       city: 'Jakarta',
-      start_date: '2026-10-29',
-      start_datetime: '2026-10-29T19:00:00+07:00',
+      start_date: '2026-12-29',
+      start_datetime: '2026-12-29T19:00:00+07:00',
+      min_price: 1000000,
+      price: 1000000,
       source_id: 'src-promoter-tem',
       source_url: 'https://temgmt.com/events/lany-jakarta-2026',
       official_ticket_url: 'https://www.tiket.com/to-do/lany-jakarta-2026-day1',
@@ -134,7 +136,9 @@ async function runCanaryTests() {
       artist: 'LANY',
       venue_name: 'Indonesia Arena Senayan',
       city: 'Jakarta',
-      start_date: '2026-10-29',
+      start_date: '2026-12-29',
+      min_price: 1000000,
+      price: 1000000,
       source_id: 'src-tiket-com',
       source_url: 'https://www.tiket.com/to-do/lany-jakarta-2026-day1',
       official_ticket_url: 'https://www.tiket.com/to-do/lany-jakarta-2026-day1',
@@ -147,7 +151,9 @@ async function runCanaryTests() {
       artist: 'LANY',
       venue_name: 'Indonesia Arena',
       city: 'Jakarta',
-      start_date: '2026-10-29',
+      start_date: '2026-12-29',
+      min_price: 1000000,
+      price: 1000000,
       source_id: 'src-livenation',
       source_url: 'https://www.livenation.asia/event/lany-soft-world-tour-jakarta-ticket-edp1660313',
       published_at: '2026-06-01T11:00:00Z'
@@ -158,14 +164,16 @@ async function runCanaryTests() {
     await pipeline.ingestEvent(lanyNight1Tiket, 'src-tiket-com');
     await pipeline.ingestEvent(lanyNight1LiveNation, 'src-livenation');
 
-    // 2. Night 2 (30 Oct 2026) Claims:
+    // 2. Night 2 (30 Dec 2026) Claims:
     const lanyNight2TEM = {
       title: 'LANY a beautiful blur: the world tour Jakarta (Day 2 Added Date)',
       artist: 'LANY',
       venue_name: 'Indonesia Arena, Senayan',
       city: 'Jakarta',
-      start_date: '2026-10-30',
-      start_datetime: '2026-10-30T19:00:00+07:00',
+      start_date: '2026-12-30',
+      start_datetime: '2026-12-30T19:00:00+07:00',
+      min_price: 1000000,
+      price: 1000000,
       source_id: 'src-promoter-tem',
       source_url: 'https://temgmt.com/events/lany-jakarta-2026-day2',
       official_ticket_url: 'https://www.tiket.com/to-do/lany-jakarta-2026-day2',
@@ -177,7 +185,9 @@ async function runCanaryTests() {
       artist: 'LANY',
       venue_name: 'Indonesia Arena Senayan',
       city: 'Jakarta',
-      start_date: '2026-10-30',
+      start_date: '2026-12-30',
+      min_price: 1000000,
+      price: 1000000,
       source_id: 'src-tiket-com',
       source_url: 'https://www.tiket.com/to-do/lany-jakarta-2026-day2',
       official_ticket_url: 'https://www.tiket.com/to-do/lany-jakarta-2026-day2',
@@ -192,13 +202,13 @@ async function runCanaryTests() {
     const allEvents = canonicalRegistry.getAllEvents();
     const lanyEvents = allEvents.filter(e => (e.title || '').toLowerCase().includes('lany') || (e.artists || []).some(a => a.toLowerCase() === 'lany'));
     
-    assert.strictEqual(lanyEvents.length, 2, `CRITICAL ERROR: LANY must have exactly 2 distinct canonical events (29 Oct & 30 Oct), found ${lanyEvents.length}`);
+    assert.strictEqual(lanyEvents.length, 2, `CRITICAL ERROR: LANY must have exactly 2 distinct canonical events (29 Dec & 30 Dec), found ${lanyEvents.length}`);
 
-    const night1Event = lanyEvents.find(e => e.start_date === '2026-10-29');
-    const night2Event = lanyEvents.find(e => e.start_date === '2026-10-30');
+    const night1Event = lanyEvents.find(e => e.start_date === '2026-12-29');
+    const night2Event = lanyEvents.find(e => e.start_date === '2026-12-30');
 
-    assert.ok(night1Event, 'LANY Night 1 (2026-10-29) canonical event must exist');
-    assert.ok(night2Event, 'LANY Night 2 (2026-10-30) canonical event must exist');
+    assert.ok(night1Event, 'LANY Night 1 (2026-12-29) canonical event must exist');
+    assert.ok(night2Event, 'LANY Night 2 (2026-12-30) canonical event must exist');
     assert.notStrictEqual(night1Event.event_id, night2Event.event_id, 'Night 1 and Night 2 must have distinct canonical event IDs');
 
     // INVARIANT 2: Both venues must be normalized to Indonesia Arena, Senayan, Jakarta
@@ -223,7 +233,7 @@ async function runCanaryTests() {
       artist: 'LANY',
       venue_name: 'Beach City International Stadium, Ancol',
       city: 'Jakarta',
-      start_date: '2026-10-29',
+      start_date: '2026-12-29',
       source_id: 'src-argus-community', // Tier 3 community submission
       source_url: 'https://tikum.app/community/lany-rumor',
       published_at: '2026-06-05T10:00:00Z'
@@ -285,8 +295,11 @@ async function runCanaryTests() {
       artists: ['Reality Club', 'Hindia'],
       venue_name: 'Eldorado Dome, Bandung',
       city: 'Bandung',
-      start_date: '2026-10-17',
+      start_date: '2026-12-17',
       time: '16:00',
+      min_price: 750000,
+      price: 750000,
+      official_ticket_url: 'https://antarasuara.com/ticket',
       source_id: 'src-promoter-antarasuara',
       source_url: 'https://antarasuara.com/event/bandung-indie-fest-2026',
       raw_evidence_hash: 'sha256-antarasuara-bandung-indie-fest-2026'
@@ -316,7 +329,7 @@ async function runCanaryTests() {
       artist: 'Burgerkill',
       venue_name: 'Grand City Convention & Exhibition Hall',
       city: 'Surabaya',
-      start_date: '2026-10-24',
+      start_date: '2026-12-24',
       time: '19:00',
       source_id: 'src-dewatiket',
       source_url: 'https://dewatiket.id/event/surabaya-rock-2026'
@@ -341,7 +354,7 @@ async function runCanaryTests() {
       venue_name: 'Peninsula Island Nusa Dua',
       city: 'Badung',
       province: 'Bali',
-      start_date: '2026-11-06',
+      start_date: '2026-12-06',
       time: '15:00',
       source_id: 'src-yesplis',
       source_url: 'https://yesplis.com/event/joyland-bali-2026'

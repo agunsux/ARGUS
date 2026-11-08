@@ -130,7 +130,7 @@ const THREAT_SCENARIOS = [
         await ingestionPipeline.ingestEvent(variation, sourceId);
       }
 
-      const allEvents = canonicalRegistry.getAllEvents();
+      const allEvents = Array.from(canonicalRegistry.events.values());
       // Must merge into 1 canonical event (not 10)
       assert.ok(allEvents.length <= 2, `Expected 1-2 canonical events, got ${allEvents.length}`);
       // Must have multiple observations
@@ -167,7 +167,7 @@ const THREAT_SCENARIOS = [
         category: 'KONSER'
       }, 'src-rt-ticketing');
 
-      const allEvents = canonicalRegistry.getAllEvents();
+      const allEvents = Array.from(canonicalRegistry.events.values());
       // Normalization should handle venue alias and similar date+city 
       assert.ok(allEvents.length <= 2, 'Linguistic variations should converge or be flagged, not proliferate');
     }
@@ -201,7 +201,7 @@ const THREAT_SCENARIOS = [
         category: 'CONCERT'
       }, 'src-rt-promoter');
 
-      const allEvents = canonicalRegistry.getAllEvents();
+      const allEvents = Array.from(canonicalRegistry.events.values());
       const ev = allEvents[0];
       // Venue move: either recorded in history or the venue was updated
       const venueChange = ev.event_history.find(h => h.change_type === 'VENUE_CHANGED');
@@ -223,7 +223,7 @@ const THREAT_SCENARIOS = [
       // Original date
       await ingestionPipeline.ingestEvent({
         name: 'Ed Sheeran Mathematics Tour Jakarta',
-        start_date: '2026-10-15',
+        start_date: '2026-11-15',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT'
@@ -232,18 +232,18 @@ const THREAT_SCENARIOS = [
       // Reschedule announced
       await ingestionPipeline.ingestEvent({
         name: 'Ed Sheeran Mathematics Tour Jakarta',
-        start_date: '2026-11-15',
+        start_date: '2026-12-15',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT',
         status: 'RESCHEDULED'
       }, 'src-rt-promoter');
 
-      const allEvents = canonicalRegistry.getAllEvents();
+      const allEvents = Array.from(canonicalRegistry.events.values());
       const ev = allEvents[0];
       assert.ok(ev, 'Event must exist');
       const dateChange = ev.event_history.find(h => h.change_type === 'RESCHEDULED' || h.change_type === 'DATE_CHANGED');
-      assert.ok(dateChange || ev.start_date === '2026-11-15', 'Reschedule must be recorded');
+      assert.ok(dateChange || ev.start_date === '2026-12-15', 'Reschedule must be recorded');
     }
   },
 
@@ -259,7 +259,7 @@ const THREAT_SCENARIOS = [
 
       await ingestionPipeline.ingestEvent({
         name: 'Cancelled Tour Test',
-        start_date: '2026-11-01',
+        start_date: '2026-11-20',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT'
@@ -268,14 +268,14 @@ const THREAT_SCENARIOS = [
       // Cancellation announced
       await ingestionPipeline.ingestEvent({
         name: 'Cancelled Tour Test',
-        start_date: '2026-11-01',
+        start_date: '2026-11-20',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT',
         status: 'CANCELLED'
       }, 'src-rt-promoter');
 
-      const allEvents = canonicalRegistry.getAllEvents();
+      const allEvents = Array.from(canonicalRegistry.events.values());
       const ev = allEvents[0];
       assert.strictEqual(ev.status, 'CANCELLED');
       assert.strictEqual(ev.verification_status, VERIFICATION_STATUS.CANCELLED);
@@ -298,8 +298,7 @@ const THREAT_SCENARIOS = [
 
       await ingestionPipeline.ingestEvent({
         name: 'Postponed Festival Test',
-        start_date: '2026-09-20',
-        start_date: '2026-10-20',
+        start_date: '2026-11-25',
         venue_name: 'ICE BSD',
         city: 'Tangerang',
         category: 'FESTIVAL'
@@ -307,15 +306,14 @@ const THREAT_SCENARIOS = [
 
       await ingestionPipeline.ingestEvent({
         name: 'Postponed Festival Test',
-        start_date: '2026-09-20',
-        start_date: '2026-10-20',
+        start_date: '2026-11-25',
         venue_name: 'ICE BSD',
         city: 'Tangerang',
         category: 'FESTIVAL',
         status: 'POSTPONED'
       }, 'src-rt-promoter');
 
-      const ev = canonicalRegistry.getAllEvents()[0];
+      const ev = Array.from(canonicalRegistry.events.values())[0];
       assert.strictEqual(ev.status, 'POSTPONED');
       assert.strictEqual(ev.verification_status, VERIFICATION_STATUS.POSTPONED);
 
@@ -354,7 +352,7 @@ const THREAT_SCENARIOS = [
       const r3 = await ingestionPipeline.ingestEvent(payload, 'src-rt-promoter');
       assert.ok(r3.is_idempotent_duplicate === true);
 
-      const allEvents = canonicalRegistry.getAllEvents();
+      const allEvents = Array.from(canonicalRegistry.events.values());
       assert.strictEqual(allEvents.length, 1, 'Must remain exactly 1 canonical event after repeated ingestion');
     }
   },
@@ -633,7 +631,7 @@ const THREAT_SCENARIOS = [
       // Create and cancel event
       await ingestionPipeline.ingestEvent({
         name: 'Reanimation Test Concert',
-        start_date: '2026-11-01',
+        start_date: '2026-11-20',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT'
@@ -641,14 +639,14 @@ const THREAT_SCENARIOS = [
 
       await ingestionPipeline.ingestEvent({
         name: 'Reanimation Test Concert',
-        start_date: '2026-11-01',
+        start_date: '2026-11-20',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT',
         status: 'CANCELLED'
       }, 'src-rt-promoter');
 
-      const ev = canonicalRegistry.getAllEvents()[0];
+      const ev = Array.from(canonicalRegistry.events.values())[0];
       assert.strictEqual(ev.status, 'CANCELLED');
 
       // Reanimation: event re-announced with new date
@@ -738,7 +736,7 @@ const THREAT_SCENARIOS = [
         category: 'CONCERT'
       }, 'src-rt-promoter');
 
-      const allEvents = canonicalRegistry.getAllEvents();
+      const allEvents = Array.from(canonicalRegistry.events.values());
       assert.strictEqual(allEvents.length, 2, 'Same artist in different cities must be separate events');
     }
   },
@@ -773,7 +771,7 @@ const THREAT_SCENARIOS = [
         category: 'CONCERT'
       }, 'src-rt-promoter');
 
-      const allEvents = canonicalRegistry.getAllEvents();
+      const allEvents = Array.from(canonicalRegistry.events.values());
       assert.strictEqual(allEvents.length, 2, 'Different concerts in different halls must be separate events');
     }
   },

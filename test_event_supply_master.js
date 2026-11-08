@@ -280,7 +280,7 @@ async function runSupplyMasterTests() {
   const megaConcert = {
     event_id: 'ev-test-mega',
     title: 'Ed Sheeran + - = ÷ x Tour Jakarta',
-    start_date: '2026-12-01',
+    start_date: '2027-01-15',
     venue_capacity_tier: 'MEGA',
     verification_status: 'VERIFIED'
   };

@@ -469,7 +469,9 @@ async function runFeeTestSuite() {
       assert.strictEqual(preview.data.fee_policy_version, 'TIKUM_FEE_POLICY_V1');
       assert.strictEqual(preview.data.buyer_fee, 60000);
       assert.strictEqual(preview.data.seller_fee, 60000);
-      assert.strictEqual(preview.data.seller_payout, 940000);
+      // Post-1 Nov 2026, PMK 37/2025 PPh 22 withholding applies unless exempt; verify net payout equals gross minus fee and tax withholding
+      const expectedPayout = 1000000 - preview.data.seller_fee - (preview.data.seller_tax_withholding || 0);
+      assert.strictEqual(preview.data.seller_payout, expectedPayout);
       assert.strictEqual(preview.data.buyer_subtotal, 1060000);
     });
 

@@ -92,7 +92,7 @@ async function runSuite() {
       name: 'Festival Musik Indie Bandung 2026',
       venue_name: 'Lapangan Tegallega Bandung',
       venue_city: 'Bandung',
-      start_date: '2026-11-08',
+      start_date: '2026-11-28',
       category: 'FESTIVAL',
       artists: ['Efek Rumah Kaca', 'Mocca', 'The Sigit']
     };
@@ -122,7 +122,7 @@ async function runSuite() {
       name: 'Festival Musik Indie Bandung 2026',
       venue_name: 'Lapangan Tegallega Bandung',
       venue_city: 'Bandung',
-      start_date: '2026-11-08',
+      start_date: '2026-11-28',
       category: 'FESTIVAL'
     };
 

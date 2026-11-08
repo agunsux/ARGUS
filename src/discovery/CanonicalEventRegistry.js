@@ -986,7 +986,11 @@ class CanonicalEventRegistry {
     if (hash && !event.evidence_hash) {
       event.evidence_hash = hash;
     }
-    if (event.is_verified && !event.verified_at) {
+    if (isAuthoritative) {
+      event.verified_at = now;
+      event.last_verified_at = now;
+      event.source_last_checked_at = now;
+    } else if (event.is_verified && !event.verified_at) {
       event.verified_at = now;
     }
 
@@ -1053,6 +1057,20 @@ class CanonicalEventRegistry {
       event.verification_score = typeof reEval.verification_score === 'number' ? reEval.verification_score : event.verification_score;
       event.last_verified_at = reEval.last_verified_at || event.last_verified_at;
       event.next_verification_at = reEval.next_verification_at || event.next_verification_at;
+
+      if (event.is_verified && event.archive_status !== 'ARCHIVED' && event.status !== 'ARCHIVED') {
+        const isPastH2 = EventTemporalLifecycleEngine.isEventArchived(event);
+        if (!isPastH2) {
+          event.archive_status = 'ACTIVE';
+          if (event.status === 'PENDING') event.status = 'UPCOMING';
+          if (event.lifecycle_status === 'PENDING') event.lifecycle_status = LIFECYCLE_STATUS.UPCOMING;
+          if (event.meets_price_threshold !== false) {
+            event.public_visibility = true;
+            event.homepage_visibility = true;
+            event.public_upcoming = EventTemporalLifecycleEngine.isEventUpcoming(event);
+          }
+        }
+      }
     } else {
       event.verification_status = VERIFICATION_STATUS.CANCELLED;
       event.is_verified = false;
@@ -1843,8 +1861,11 @@ class CanonicalEventRegistry {
     return [btsHero, bigbangHero];
   }
 
-  getAllEvents() {
+  getAllEvents(options = {}) {
     const list = Array.from(this.events.values());
+    if ((this._isExplicitlyReset || this !== canonicalRegistryInstance) && !options.includeHeroes) {
+      return list;
+    }
     const heroes = this.getHeroEvents({ includePast: true });
     for (const hero of heroes) {
       if (!list.some(e => (e.id && (e.id === hero.id || e.id === hero.event_id)) || (e.event_id && (e.event_id === hero.id || e.event_id === hero.event_id)) || (e.slug && e.slug === hero.slug))) {
@@ -2069,10 +2090,16 @@ class CanonicalEventRegistry {
             if (!this.events.has(hero.id)) {
               this.events.set(hero.id, hero);
               if (hero.slug) this.slugMap.set(hero.slug, hero.id);
+            } else {
+              const existing = this.events.get(hero.id);
+              if (!existing.primary_ticket_status && hero.primary_ticket_status) {
+                existing.primary_ticket_status = hero.primary_ticket_status;
+              }
             }
           }
         }
         this._hydratedFromRepo = true;
+        this._isExplicitlyReset = false;
         return { hydrated: true, count: this.events.size, degraded: repo.isDegraded() };
       }
       return { hydrated: false, count: 0, degraded: repo.isDegraded() };
@@ -2103,6 +2130,7 @@ class CanonicalEventRegistry {
     this.events.clear();
     this.slugMap.clear();
     this._hydratedFromRepo = false;
+    this._isExplicitlyReset = true;
   }
 }
 

@@ -144,9 +144,9 @@ async function runSuite() {
     const heroEvents = registry.getHeroEvents();
     assert.strictEqual(heroEvents.length, 2);
 
-    const morganJay = heroEvents.find(e => e.id === 'ev-can-fd86cf7d');
-    assert.ok(morganJay, 'Morgan Jay must be active hero');
-    assert.strictEqual(morganJay.resale_inventory_count, 0);
+    const bigbang = heroEvents.find(e => e.id === 'bigbang-cosmos-tour-jakarta-2027');
+    assert.ok(bigbang, 'BIGBANG must be active hero');
+    assert.strictEqual(bigbang.resale_inventory_count, 0);
 
     const secondHero = heroEvents.find(e => e.id === 'bts-world-tour-arirang-jakarta-2026' || e.id === 'kanye-west-ye-tour-jakarta-2026');
     assert.ok(secondHero);

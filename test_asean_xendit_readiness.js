@@ -21,6 +21,11 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.XENDIT_XENPLATFORM_ENABLED = 'true';
+process.env.XENDIT_DISBURSEMENT_ENABLED = 'true';
+process.env.XENDIT_SPLIT_SETTLEMENT_ENABLED = 'true';
+process.env.XENDIT_SELLER_ACCOUNTS_ENABLED = 'true';
+process.env.XENDIT_SUBACCOUNTS_ENABLED = 'true';
 
 const assert = require('assert');
 const crypto = require('crypto');

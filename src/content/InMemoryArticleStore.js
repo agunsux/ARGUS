@@ -158,6 +158,31 @@ class InMemoryArticleStore {
     return { ...article };
   }
 
+  async failArticle(id, errorReason, auditInfo = {}) {
+    const article = this.articles.get(id);
+    if (!article) return null;
+    const fromStatus = article.status;
+    const nowIso = new Date().toISOString();
+
+    article.status = CONTENT_STATUS.FAILED;
+    article.publish_error = errorReason;
+    article.version = (article.version || 0) + 1;
+    article.updated_at = nowIso;
+
+    this.auditLogs.unshift({
+      id: this.auditLogs.length + 1,
+      article_id: article.id,
+      action: auditInfo.action || 'PUBLISH_FAILED',
+      performed_by: auditInfo.performed_by || 'scheduler',
+      from_status: fromStatus,
+      to_status: CONTENT_STATUS.FAILED,
+      changes: { error: errorReason },
+      created_at: nowIso
+    });
+
+    return { ...article };
+  }
+
   async acquireSchedulerLease(jobName, leaseOwner, ttlMs = 55000) {
     const now = Date.now();
     const state = this.schedulerState.get(jobName) || {

@@ -19,6 +19,7 @@ const bcrypt = require('bcryptjs');
 const { spawnSync } = require('child_process');
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 
 const {
   getUserRepository,

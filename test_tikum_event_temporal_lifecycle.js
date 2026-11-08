@@ -254,6 +254,7 @@ async function run() {
       category: 'CONCERT',
       official_event_url: 'https://www.coldplay.com/tour',
       official_ticket_url: 'https://www.loket.com/event/coldplay-jakarta-2026',
+      min_price: 1500000,
       image_url: 'https://assets.loket.com/coldplay-poster.jpg'
     };
 
@@ -320,6 +321,7 @@ async function run() {
       category: 'CONCERT',
       official_event_url: 'https://www.sheilaon7.com/tour',
       official_ticket_url: 'https://www.loket.com/so7-bandung',
+      min_price: 750000,
       image_url: 'https://assets.loket.com/so7.jpg'
     }, 'src-artist-sheilaon7', { post_url: 'https://www.sheilaon7.com/tour' });
 
@@ -331,6 +333,7 @@ async function run() {
       city: 'Bandung',
       official_event_url: 'https://www.sheilaon7.com/tour',
       official_ticket_url: 'https://www.loket.com/so7-bandung',
+      min_price: 750000,
       image_url: 'https://assets.loket.com/so7.jpg'
     }, 'src-loket', { post_url: 'https://www.loket.com/so7-bandung' });
 
@@ -503,6 +506,7 @@ async function run() {
     category: 'CONCERT',
     official_event_url: 'https://www.theweekndinjakarta.com',
     official_ticket_url: 'https://www.loket.com/event/theweeknd2026',
+    min_price: 1250000,
     image_url: 'https://assets.loket.com/theweeknd-poster.jpg'
   };
   await ingestionPipeline.ingestEvent(weekndPayload, 'src-artist-theweeknd', { post_url: 'https://www.theweekndinjakarta.com' });
@@ -525,6 +529,7 @@ async function run() {
     category: 'CONCERT',
     official_event_url: 'https://weverse.io/nct127/notice/37278',
     official_ticket_url: 'https://www.loket.com/event/nct127-jakarta',
+    min_price: 1500000,
     image_url: 'https://assets.loket.com/nct127-poster.jpg'
   };
   await ingestionPipeline.ingestEvent(nctPayload, 'src-weverse-official', { post_url: 'https://weverse.io/nct127/notice/37278' });
@@ -547,6 +552,7 @@ async function run() {
     category: 'CONCERT',
     official_event_url: 'https://weverse.io/babymonster/notice/35647',
     official_ticket_url: 'https://www.loket.com/event/babymonster-jakarta',
+    min_price: 1250000,
     image_url: 'https://assets.loket.com/babymonster-poster.jpg'
   };
   await ingestionPipeline.ingestEvent(bmPayload, 'src-weverse-official', { post_url: 'https://weverse.io/babymonster/notice/35647' });
@@ -569,6 +575,7 @@ async function run() {
     category: 'CONCERT',
     official_event_url: 'https://www.lanyinjakarta2026.com',
     official_ticket_url: 'https://www.loket.com/event/lany-jakarta',
+    min_price: 1000000,
     image_url: 'https://assets.loket.com/lany-poster.jpg'
   };
   await ingestionPipeline.ingestEvent(lanyPayload, 'src-artist-lany', { post_url: 'https://www.lanyinjakarta2026.com' });
@@ -662,6 +669,7 @@ async function run() {
       category: 'CONCERT',
       official_event_url: 'https://dewa19.com/tour',
       official_ticket_url: 'https://www.loket.com/event/dewa19-allstars-2026',
+      min_price: 850000,
       image_url: 'https://assets.loket.com/dewa19-poster.jpg'
     };
 

@@ -357,14 +357,14 @@ async function runAll() {
   });
 
   // Test 15: Hero cards use canonical records and their verified source fields
-  await runTest('15. Nassar and Ye hero cards use canonical records and their verified source fields', async () => {
+  await runTest('15. BIGBANG and BTS hero cards use canonical records and their verified source fields', async () => {
     const heroEvents = canonicalRegistry.getHeroEvents();
-    const morgan = heroEvents.find(e => e.id === 'ev-can-fd86cf7d' || (e.title && e.title.includes('Morgan Jay')));
-    assert.ok(morgan, 'Morgan Jay event must exist in active hero events');
-    assert.strictEqual(morgan.date, '2026-11-11');
-    assert.strictEqual(morgan.venue_name, 'Nafiri Convention Hall');
-    assert.strictEqual(morgan.organizer_name, 'Mad About Comedy');
-    assert.strictEqual(morgan.is_verified, true);
+    const bigbang = heroEvents.find(e => e.id === 'bigbang-cosmos-tour-jakarta-2027' || (e.title && e.title.includes('BIGBANG')));
+    assert.ok(bigbang, 'BIGBANG event must exist in active hero events');
+    assert.strictEqual(bigbang.date, '2027-01-16');
+    assert.strictEqual(bigbang.venue_name, 'Jakarta International Stadium (JIS)');
+    assert.strictEqual(bigbang.organizer_name, 'AEG Presents Asia, PK Entertainment & Sound Rhythm');
+    assert.strictEqual(bigbang.is_verified, true);
 
     const secondHero = heroEvents.find(e => e.id === 'bts-world-tour-arirang-jakarta-2026' || (e.title && e.title.includes('BTS')));
     assert.ok(secondHero, 'Second hero (BTS) event must exist in hero events');
@@ -383,11 +383,11 @@ async function runAll() {
   // Test 16: Unverified hero events cannot be represented as confirmed or available for purchase
   await runTest('16. Unverified hero events cannot be represented as confirmed or available for purchase', async () => {
     const heroEvents = canonicalRegistry.getHeroEvents();
-    const morgan = heroEvents.find(e => e.id === 'ev-can-fd86cf7d');
+    const bigbang = heroEvents.find(e => e.id === 'bigbang-cosmos-tour-jakarta-2027');
     const secondHero = heroEvents.find(e => e.id === 'bts-world-tour-arirang-jakarta-2026' || e.id === 'kanye-west-ye-tour-jakarta-2026');
 
-    assert.ok(morgan);
-    assert.strictEqual(morgan.resale_inventory_count, 0, 'Morgan Jay resale inventory must be 0 (no fake supply)');
+    assert.ok(bigbang);
+    assert.strictEqual(bigbang.resale_inventory_count, 0, 'BIGBANG resale inventory must be 0 (no fake supply)');
     assert.ok(secondHero);
     assert.strictEqual(secondHero.resale_inventory_count, 0, 'Second hero resale inventory must be 0 (no fake supply)');
   });

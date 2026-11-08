@@ -21,6 +21,7 @@
 process.env.NODE_ENV = 'test';
 process.env.DEFAULT_PAYMENT_PROVIDER = 'doku';
 process.env.ENABLE_DOKU_PRODUCTION = 'false';
+process.env.MARKETPLACE_MODE = 'LIVE';
 
 const assert = require('assert');
 const crypto = require('crypto');
@@ -228,11 +229,27 @@ async function runMatrix() {
       assert.strictEqual(relRes.success, true);
       assert.strictEqual(relRes.escrow.status, ESCROW_STATUS.RELEASED);
 
+      const { FinancialAuthorizationService, AUTHORIZATION_ACTION } = require('./src/settlement/FinancialAuthorizationService');
+      const authRes = await FinancialAuthorizationService.requestAuthorization({
+        orderId: qrisOrder.id,
+        actionType: AUTHORIZATION_ACTION.EXECUTE_PAYOUT,
+        makerId: 'maker-1',
+        amount: relRes.escrow.amount,
+        reason: 'Turnstile gate scan verified, authorized for payout',
+        metadata: { bankAccount: 'BCA 1234567890 a.n. Seller 1' }
+      });
+      await FinancialAuthorizationService.approveAuthorization({
+        authorizationId: authRes.authorization.id,
+        checkerId: 'checker-1',
+        notes: 'Approved payout for verified QRIS order'
+      });
+
       // Payout simulation succeeds
       const settleRes = await SettlementService.executeSettlement({
         orderId: qrisOrder.id,
         sellerId: qrisOrder.seller_id,
         officerId: 'admin-1',
+        authorizationId: authRes.authorization.id,
         idempotencyKey: `payout-qris-${qrisOrder.id}`
       });
       assert.strictEqual(settleRes.settlement?.status || settleRes.status, 'EXECUTED');

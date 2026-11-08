@@ -127,26 +127,31 @@ class EventDeduplicationService {
       const inUrl = incomingRecord.source_url || incomingRecord.official_ticket_url;
       if (inUrl) {
         const canUrl = canonical.official_ticket_url || canonical.source_url;
-        if (canUrl && normalizeUrl(canUrl) === normalizeUrl(inUrl)) {
-          return {
-            isMatch: true,
-            confidence: 100,
-            matchReason: 'EXACT_CANONICAL_URL',
-            canonicalEvent: canonical
-          };
-        }
-        if (canonical.sources && Array.isArray(canonical.sources)) {
-          const matchingUrl = canonical.sources.find(s => 
-            (s.source_url && normalizeUrl(s.source_url) === normalizeUrl(inUrl)) ||
-            (s.official_ticket_url && normalizeUrl(s.official_ticket_url) === normalizeUrl(inUrl))
-          );
-          if (matchingUrl) {
+        const isCanonicalTerminal = canonical.archive_status === 'ARCHIVED' || canonical.lifecycle_status === 'ARCHIVED' || canonical.lifecycle_status === 'COMPLETED';
+        const isPastTerminalConflict = isCanonicalTerminal && incomingDate && canonicalDate && incomingDate > canonicalDate;
+
+        if (!isPastTerminalConflict) {
+          if (canUrl && normalizeUrl(canUrl) === normalizeUrl(inUrl)) {
             return {
               isMatch: true,
               confidence: 100,
               matchReason: 'EXACT_CANONICAL_URL',
               canonicalEvent: canonical
             };
+          }
+          if (canonical.sources && Array.isArray(canonical.sources)) {
+            const matchingUrl = canonical.sources.find(s => 
+              (s.source_url && normalizeUrl(s.source_url) === normalizeUrl(inUrl)) ||
+              (s.official_ticket_url && normalizeUrl(s.official_ticket_url) === normalizeUrl(inUrl))
+            );
+            if (matchingUrl) {
+              return {
+                isMatch: true,
+                confidence: 100,
+                matchReason: 'EXACT_CANONICAL_URL',
+                canonicalEvent: canonical
+              };
+            }
           }
         }
       }

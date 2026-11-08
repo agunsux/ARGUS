@@ -548,6 +548,53 @@ class PostgresArticleStore {
     }
   }
 
+  async failArticle(id, errorReason, auditInfo = {}) {
+    await this.ensureInitialized();
+    if (this.degraded) return this.fallbackRepo.failArticle ? this.fallbackRepo.failArticle(id, errorReason, auditInfo) : null;
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const prevRes = await client.query('SELECT * FROM editorial_articles WHERE id = $1 FOR UPDATE', [id]);
+      if (prevRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+      const article = this.mapRowToArticle(prevRes.rows[0]);
+
+      const updateRes = await client.query(`
+        UPDATE editorial_articles
+        SET status = 'failed',
+            publish_error = $2,
+            version = version + 1,
+            updated_at = NOW()
+        WHERE id = $1
+        RETURNING *
+      `, [id, errorReason]);
+
+      await client.query(`
+        INSERT INTO editorial_article_audit_logs (
+          article_id, action, performed_by, from_status, to_status, changes, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      `, [
+        id,
+        auditInfo.action || 'PUBLISH_FAILED',
+        auditInfo.performed_by || 'scheduler',
+        article.status,
+        CONTENT_STATUS.FAILED,
+        JSON.stringify({ error: errorReason })
+      ]);
+
+      await client.query('COMMIT');
+      return this.mapRowToArticle(updateRes.rows[0]);
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
   async acquireSchedulerLease(jobName, leaseOwner, ttlMs = 55000) {
     await this.ensureInitialized();
     if (this.degraded) return this.fallbackRepo.acquireSchedulerLease(jobName, leaseOwner, ttlMs);

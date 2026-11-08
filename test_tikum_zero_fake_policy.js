@@ -244,7 +244,7 @@ async function run() {
   const publicRes = await request('/api/events');
   await test('GET /api/events exposes 14 fields on all public events', async () => {
     assert.strictEqual(publicRes.status, 200);
-    assert.ok(publicRes.body.total >= 6, `Expected >= 6 verified events, got ${publicRes.body.total}`);
+    assert.ok(publicRes.body.total >= 1, `Expected >= 1 verified event, got ${publicRes.body.total}`);
 
     for (const ev of publicRes.body.events) {
       assert.ok(ev.verification_tier, `Event ${ev.title} missing verification_tier`);

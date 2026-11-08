@@ -14,6 +14,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 process.env.ENABLE_DOKU_PRODUCTION = 'false';
 process.env.TIKUM_PRICING_POLICY = 'TIKUM_FEE_POLICY_V1';
 
@@ -134,6 +135,7 @@ async function runSuite() {
   }
 
   // Common LANY Pilot Event Fixture (Upcoming Sandbox Date)
+  const { canonicalRegistry } = require('./src/discovery/CanonicalEventRegistry');
   const lanyEventId = 'event-lany-jakarta-2026';
   let lanyEvent = state.events.find(e => e.id === lanyEventId);
   if (lanyEvent) {
@@ -142,6 +144,7 @@ async function runSuite() {
     lanyEvent.end_date = '2026-11-15';
     lanyEvent.status = 'UPCOMING';
     lanyEvent.lifecycle_status = 'UPCOMING';
+    lanyEvent.archive_status = 'ACTIVE';
   } else {
     lanyEvent = {
       id: lanyEventId,
@@ -153,9 +156,21 @@ async function runSuite() {
       venue_id: 'venue-indonesia-arena',
       status: 'UPCOMING',
       lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
       admission_protocol: { type: 'BARCODE_PLUS_ID' }
     };
     state.events.push(lanyEvent);
+  }
+  const canLany = canonicalRegistry.getEventById(lanyEventId);
+  if (canLany) {
+    canLany.date = '2026-11-15';
+    canLany.start_date = '2026-11-15';
+    canLany.end_date = '2026-11-15';
+    canLany.status = 'UPCOMING';
+    canLany.lifecycle_status = 'UPCOMING';
+    canLany.archive_status = 'ACTIVE';
+    canLany.public_visibility = true;
+    canLany.homepage_visibility = true;
   }
   // Ensure venue exists
   if (!state.venues.some(v => v.id === 'venue-indonesia-arena')) {
@@ -283,6 +298,15 @@ async function runSuite() {
       gate: 'Gate 2 Turnstile A',
       notes: 'Turnstile scanner green, admission confirmed',
       status: 'CONFIRMED'
+    });
+    // Buyer attestation recorded from authenticated buyer session
+    await TrustPolicyEngine.recordAttestation({
+      orderId: s1Order.id,
+      attestationType: ATTESTATION_TYPE.BUYER_ATTESTATION,
+      actorId: 'user-lany-buyer-1',
+      actorRole: 'buyer',
+      result: 'PASS',
+      metadata: { notes: 'Buyer confirmed entry through Gate 2 Turnstile A' }
     });
     assert.strictEqual(s1Order.status, ORDER_STATUS.ENTRY_CONFIRMED);
     assert.strictEqual(s1Escrow.status, ESCROW_STATUS.RELEASE_PENDING);

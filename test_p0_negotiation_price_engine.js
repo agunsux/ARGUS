@@ -15,6 +15,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 const assert = require('assert');
 const http = require('http');
 const { v4: uuidv4 } = require('uuid');
@@ -97,7 +98,7 @@ async function runAllTests() {
         id: listingId,
         seller_id: 'seller-1',
         ticket_id: 'ticket-demo-1',
-        event_id: 'event-synchronize-2026',
+        event_id: 'event-bts-2026',
         price: 1500000,
         status: 'ACTIVE',
         created_at: new Date().toISOString()
@@ -268,7 +269,7 @@ async function runAllTests() {
         id: listingId,
         seller_id: 'seller-1',
         ticket_id: 'ticket-demo-1',
-        event_id: 'event-synchronize-2026',
+        event_id: 'event-bts-2026',
         price: 2000000,
         status: 'ACTIVE',
         created_at: new Date().toISOString()
@@ -346,7 +347,7 @@ async function runAllTests() {
         id: listingId,
         seller_id: 'seller-1',
         ticket_id: 'ticket-demo-1',
-        event_id: 'event-synchronize-2026',
+        event_id: 'event-bts-2026',
         price: 1000000,
         status: 'ACTIVE',
         created_at: new Date().toISOString()
@@ -389,7 +390,7 @@ async function runAllTests() {
         id: listingId,
         seller_id: 'seller-1',
         ticket_id: 'ticket-demo-1',
-        event_id: 'event-synchronize-2026',
+        event_id: 'event-bts-2026',
         price: 1500000,
         status: 'ACTIVE',
         created_at: new Date().toISOString()
@@ -453,7 +454,7 @@ async function runAllTests() {
         id: listingId,
         seller_id: 'seller-1',
         ticket_id: 'ticket-demo-1',
-        event_id: 'event-synchronize-2026',
+        event_id: 'event-bts-2026',
         price: 2000000,
         status: 'ACTIVE',
         created_at: new Date().toISOString()

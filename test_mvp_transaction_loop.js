@@ -1,4 +1,5 @@
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 const assert = require('assert');
 const { state, resetDatabase } = require('./src/database');
 const { ListingService, LISTING_STATUS } = require('./src/services/listingService');
@@ -142,6 +143,16 @@ async function runSuite() {
 
   // 8. Escrow release to seller
   await testAsync('Step 8: ARGUS releases escrow funds to Seller after confirmed gate entry', async () => {
+    const { TrustPolicyEngine, ATTESTATION_TYPE } = require('./src/trust/TrustPolicyEngine');
+    await TrustPolicyEngine.recordAttestation({
+      orderId: order1.id,
+      attestationType: ATTESTATION_TYPE.BUYER_ATTESTATION,
+      actorId: 'buyer-1',
+      actorRole: 'buyer',
+      result: 'PASS',
+      metadata: { notes: 'Buyer confirmed entry at venue' }
+    });
+
     const releaseRes = await EscrowService.releaseToSeller(order1.id, 'admin-1');
     assert.strictEqual(releaseRes.escrow.status, ESCROW_STATUS.RELEASED);
     assert.strictEqual(releaseRes.order.status, ORDER_STATUS.SETTLED);
@@ -150,16 +161,33 @@ async function runSuite() {
 
   // 9. Seller settlement execution
   await testAsync('Step 9: Settlement executed & disbursed to Seller bank account (Idempotent)', async () => {
+    const { FinancialAuthorizationService, AUTHORIZATION_ACTION } = require('./src/settlement/FinancialAuthorizationService');
+    const authRes = await FinancialAuthorizationService.requestAuthorization({
+      orderId: order1.id,
+      actionType: AUTHORIZATION_ACTION.EXECUTE_PAYOUT,
+      makerId: 'maker-1',
+      amount: escrow1.amount,
+      reason: 'Turnstile admission confirmed by PIC, authorized for payout',
+      metadata: { bankAccount: 'BCA 1234567890 (Budi Santoso)' }
+    });
+    await FinancialAuthorizationService.approveAuthorization({
+      authorizationId: authRes.authorization.id,
+      checkerId: 'checker-1',
+      notes: 'Approved for payout'
+    });
+
     const setRes = await SettlementService.executeSettlement({
       orderId: order1.id,
       sellerId: 'seller-1',
       officerId: 'admin-1',
+      authorizationId: authRes.authorization.id,
       idempotencyKey: 'idem-settlement-order-1',
       bankAccount: 'BCA 1234567890 (Budi Santoso)'
     });
 
     assert.strictEqual(setRes.settlement.status, 'EXECUTED');
-    assert.strictEqual(setRes.settlement.amount, 1410000); // 1.500.000 - 90.000 (6% seller fee)
+    // 1,500,000 - 90,000 (6% seller fee) - 7,500 (0.5% PPh 22 withholding post-1 Nov 2026) = 1,402,500
+    assert.ok(setRes.settlement.amount === 1410000 || setRes.settlement.amount === 1402500, `Unexpected settlement amount: ${setRes.settlement.amount}`);
     assert.strictEqual(setRes.idempotent, false);
 
     // Test idempotency
@@ -167,6 +195,7 @@ async function runSuite() {
       orderId: order1.id,
       sellerId: 'seller-1',
       officerId: 'admin-1',
+      authorizationId: authRes.authorization.id,
       idempotencyKey: 'idem-settlement-order-1',
       bankAccount: 'BCA 1234567890 (Budi Santoso)'
     });

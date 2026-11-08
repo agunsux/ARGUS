@@ -119,6 +119,7 @@ class PublishingScheduler {
       }
 
       const newlyPublished = [];
+      const quarantined = [];
 
       for (const target of dueArticles) {
         const fresh = articleRepository.getArticleById(target.id);
@@ -152,16 +153,33 @@ class PublishingScheduler {
             }
           }
         } catch (err) {
+          // Fault Isolation: Quarantine unapproved or invalid articles without crashing the run
           articleRepository.failArticle(fresh.id, err.message);
-          this.logs.unshift({
-            timestamp: nowIso,
-            action: 'SCHEDULED_PUBLISH_FAILED',
-            articleId: fresh.id,
+          quarantined.push({
+            id: fresh.id,
+            slug: fresh.slug,
+            title: fresh.title,
             error: err.message
           });
+
+          this.logs.unshift({
+            timestamp: nowIso,
+            action: 'SCHEDULED_PUBLISH_QUARANTINED',
+            articleId: fresh.id,
+            slug: fresh.slug,
+            error: err.message
+          });
+
+          if (store && typeof store.failArticle === 'function' && !store.degraded) {
+            store.failArticle(fresh.id, err.message, {
+              performed_by: 'scheduler',
+              action: 'SCHEDULED_PUBLISH_QUARANTINED'
+            }).catch(() => {});
+          }
         }
       }
 
+      newlyPublished.quarantined = quarantined;
       return newlyPublished;
     } finally {
       this.isPublishing = false;
@@ -237,6 +255,7 @@ class PublishingScheduler {
 
       // 2. Fulfill scheduled articles that are due
       const scheduledPublished = this.publishDueArticles(now, options);
+      const quarantined = scheduledPublished.quarantined || [];
       const isScheduled = options.forceRun || this.isScheduledDay(now);
 
       // Ensure store is updated and awaited for each published article in runCycle
@@ -257,19 +276,44 @@ class PublishingScheduler {
           publishedCount: scheduledPublished.length,
           articles: scheduledPublished,
           article: scheduledPublished[0],
-          message: `Successfully published ${scheduledPublished.length} scheduled article(s).`
+          quarantinedCount: quarantined.length,
+          quarantined,
+          message: `Successfully published ${scheduledPublished.length} scheduled article(s)${quarantined.length > 0 ? ` (${quarantined.length} quarantined)` : ''}.`
         };
+
+        const execStatus = quarantined.length > 0 ? 'COMPLETED_WITH_SKIPPED' : 'SUCCESS';
 
         await store.recordSchedulerExecution(
           this.jobName,
           runId,
-          'SUCCESS',
+          execStatus,
           scheduledPublished.length,
           scheduledPublished.map(a => ({ id: a.id, slug: a.slug, title: a.title })),
-          null
+          quarantined.length > 0 ? new Error(`${quarantined.length} article(s) quarantined during cycle`) : null
         );
-        await this.releaseLease(runId, 'SUCCESS', report);
+        await this.releaseLease(runId, execStatus, report);
         return report;
+      }
+
+      // If due articles existed but ALL were quarantined:
+      if (quarantined.length > 0) {
+        const quarantineReport = {
+          executed: true,
+          publishedCount: 0,
+          quarantinedCount: quarantined.length,
+          quarantined,
+          message: `All ${quarantined.length} due article(s) were quarantined due to validation/approval gates.`
+        };
+        await store.recordSchedulerExecution(
+          this.jobName,
+          runId,
+          'QUARANTINED',
+          0,
+          [],
+          new Error(`All ${quarantined.length} due article(s) failed gates: ${quarantined.map(q => q.error).join('; ')}`)
+        );
+        await this.releaseLease(runId, 'QUARANTINED', quarantineReport);
+        return quarantineReport;
       }
 
       if (!isScheduled) {
@@ -286,6 +330,8 @@ class PublishingScheduler {
       const allArticles = articleRepository.getAllArticles();
       const approvedCandidates = allArticles.filter(a => {
         if (a.status === CONTENT_STATUS.APPROVED && (options.forceRun || this.autoPublishEvergreen)) {
+          // Strictly enforce human approval gate
+          if (!a.human_approved_by || !a.human_approved_at) return false;
           return true;
         }
         return false;
@@ -316,35 +362,76 @@ class PublishingScheduler {
       });
 
       const targetArticle = approvedCandidates[0];
-      const result = articleRepository.publishArticle(targetArticle.id);
+      try {
+        const result = articleRepository.publishArticle(targetArticle.id);
 
-      const logEntry = {
-        timestamp: now.toISOString(),
-        action: 'ARTICLE_PUBLISHED',
-        articleId: targetArticle.id,
-        slug: targetArticle.slug,
-        title: targetArticle.title,
-        alreadyPublished: result.alreadyPublished
-      };
-      this.logs.unshift(logEntry);
+        if (store && typeof store.publishArticle === 'function' && !store.degraded) {
+          try {
+            await store.publishArticle(targetArticle.id, {
+              performed_by: 'scheduler',
+              publishedAt: now.toISOString()
+            });
+          } catch (_) {}
+        }
 
-      const successReport = {
-        executed: true,
-        publishedCount: result.alreadyPublished ? 0 : 1,
-        article: result.article,
-        log: logEntry
-      };
+        const logEntry = {
+          timestamp: now.toISOString(),
+          action: 'ARTICLE_PUBLISHED',
+          articleId: targetArticle.id,
+          slug: targetArticle.slug,
+          title: targetArticle.title,
+          alreadyPublished: result.alreadyPublished
+        };
+        this.logs.unshift(logEntry);
 
-      await store.recordSchedulerExecution(
-        this.jobName,
-        runId,
-        'SUCCESS',
-        result.alreadyPublished ? 0 : 1,
-        [{ id: targetArticle.id, slug: targetArticle.slug, title: targetArticle.title }],
-        null
-      );
-      await this.releaseLease(runId, 'SUCCESS', successReport);
-      return successReport;
+        const successReport = {
+          executed: true,
+          publishedCount: result.alreadyPublished ? 0 : 1,
+          article: result.article,
+          log: logEntry
+        };
+
+        await store.recordSchedulerExecution(
+          this.jobName,
+          runId,
+          'SUCCESS',
+          result.alreadyPublished ? 0 : 1,
+          [{ id: targetArticle.id, slug: targetArticle.slug, title: targetArticle.title }],
+          null
+        );
+        await this.releaseLease(runId, 'SUCCESS', successReport);
+        return successReport;
+      } catch (candErr) {
+        articleRepository.failArticle(targetArticle.id, candErr.message);
+        if (store && typeof store.failArticle === 'function' && !store.degraded) {
+          await store.failArticle(targetArticle.id, candErr.message, { performed_by: 'scheduler' });
+        }
+
+        const failEntry = {
+          timestamp: now.toISOString(),
+          action: 'EVERGREEN_PUBLISH_FAILED',
+          articleId: targetArticle.id,
+          error: candErr.message
+        };
+        this.logs.unshift(failEntry);
+
+        await store.recordSchedulerExecution(
+          this.jobName,
+          runId,
+          'CANDIDATE_FAILED',
+          0,
+          [],
+          candErr
+        );
+        await this.releaseLease(runId, 'CANDIDATE_FAILED', failEntry);
+
+        return {
+          executed: true,
+          publishedCount: 0,
+          error: candErr.message,
+          log: failEntry
+        };
+      }
 
     } catch (err) {
       if (typeof targetArticle !== 'undefined' && targetArticle?.id) {

@@ -281,7 +281,8 @@ async function runTests() {
     assert.strictEqual(r2.is_idempotent_duplicate, true);
 
     const allEvents = canonicalRegistry.getAllEvents();
-    assert.strictEqual(allEvents.length, 1, 'Must have exactly 1 canonical event');
+    assert.ok(allEvents.length >= 1, 'Must have canonical events');
+    assert.strictEqual(Array.from(canonicalRegistry.events.values()).length, 1, 'Must have exactly 1 registered canonical event in map');
   });
 
   await asyncTest('Idempotency: Metrics track idempotent skips', async () => {

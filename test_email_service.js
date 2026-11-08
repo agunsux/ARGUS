@@ -18,6 +18,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 
 const assert = require('assert');
 const fs = require('fs');
@@ -135,6 +136,7 @@ async function runTests() {
       const originalKey = process.env.RESEND_API_KEY;
       try {
         process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
         delete process.env.RESEND_API_KEY;
 
         const res = await emailService.sendEmail({

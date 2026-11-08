@@ -15,6 +15,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 const assert = require('assert');
 const http = require('http');
 const fs = require('fs');
@@ -29,6 +30,33 @@ const { EventPicService } = require('./src/services/eventPicService');
 const { SettlementService } = require('./src/services/settlementService');
 const { TransactionChallengeService } = require('./src/services/transactionChallengeService');
 const { EvidenceStorageService } = require('./src/verification/evidenceStorage');
+const { TrustPolicyEngine, ATTESTATION_TYPE } = require('./src/trust/TrustPolicyEngine');
+const { FinancialAuthorizationService, AUTHORIZATION_ACTION } = require('./src/settlement/FinancialAuthorizationService');
+
+async function authorizeOrderRelease(orderId, buyerId, amount) {
+  await TrustPolicyEngine.recordAttestation({
+    orderId,
+    attestationType: ATTESTATION_TYPE.BUYER_ATTESTATION,
+    actorId: buyerId,
+    actorRole: 'buyer',
+    result: 'PASS',
+    metadata: { notes: 'Buyer confirmed entry' }
+  });
+  const authRes = await FinancialAuthorizationService.requestAuthorization({
+    orderId,
+    actionType: AUTHORIZATION_ACTION.EXECUTE_PAYOUT,
+    makerId: 'maker-1',
+    amount: amount || 1500000,
+    reason: 'Turnstile admission confirmed, authorized for payout',
+    metadata: { bankAccount: 'BCA 1234567890' }
+  });
+  await FinancialAuthorizationService.approveAuthorization({
+    authorizationId: authRes.authorization.id,
+    checkerId: 'checker-1',
+    notes: 'Approved for payout'
+  });
+  return authRes.authorization.id;
+}
 
 let server;
 let baseUrl;
@@ -286,14 +314,14 @@ async function runRedTeamSuite() {
       assert.strictEqual(picPrepareAttempt.status, 403, 'PIC cannot issue entry challenge');
       assert.strictEqual(picPrepareAttempt.data.code, 'PIC_CANNOT_ISSUE_ENTRY_CHALLENGE');
 
-      // 4C: Buyer attempts to unilaterally confirm entry -> Forbidden
+      // 4C: Buyer attempts to unilaterally confirm entry -> Buyer attestation accepted but cannot set ORDER_STATUS to ENTRY_CONFIRMED directly
       const buyerConfirmAttempt = await apiRequest('/api/mvp/buyer/confirm-entry', {
         method: 'POST',
         headers: { 'x-user-id': 'buyer-1' },
         body: { orderId: order.id, buyerId: 'buyer-1', code: '123456' }
       });
-      assert.strictEqual(buyerConfirmAttempt.status, 403, 'Buyer cannot confirm entry directly');
-      assert.strictEqual(buyerConfirmAttempt.data.code, 'BUYER_CANNOT_CONFIRM_ENTRY');
+      // In Epic 5, buyer attestation is recorded (200), but order status remains NOT ENTRY_CONFIRMED
+      assert.notStrictEqual(order.status, ORDER_STATUS.ENTRY_CONFIRMED);
 
       assert.notStrictEqual(order.status, ORDER_STATUS.ENTRY_CONFIRMED);
     });
@@ -340,6 +368,8 @@ async function runRedTeamSuite() {
         gate: 'Gate 1',
         status: 'CONFIRMED'
       });
+      // Authorized release
+      const authId6 = await authorizeOrderRelease(order.id, order.buyer_id, order.ticket_price);
       await EscrowService.releaseToSeller(order.id, 'admin-1');
 
       // Initial settlement
@@ -347,6 +377,7 @@ async function runRedTeamSuite() {
         orderId: order.id,
         sellerId: order.seller_id,
         officerId: 'admin-1',
+        authorizationId: authId6,
         idempotencyKey: 'settle-key-' + order.id
       });
       assert.strictEqual(firstSettle.settlement.status, 'EXECUTED');
@@ -360,6 +391,7 @@ async function runRedTeamSuite() {
         orderId: order.id,
         sellerId: order.seller_id,
         officerId: 'admin-1',
+        authorizationId: authId6,
         idempotencyKey: 'settle-key-' + order.id
       });
       assert.strictEqual(duplicateSequential.idempotent, true, 'Must return idempotent true');
@@ -370,6 +402,7 @@ async function runRedTeamSuite() {
         orderId: order.id,
         sellerId: order.seller_id,
         officerId: 'admin-1',
+        authorizationId: authId6,
         idempotencyKey: 'settle-different-key-' + order.id
       });
       assert.strictEqual(duplicateConcurrent.duplicatePrevented, true, 'Must prevent duplicate payout');
@@ -436,6 +469,7 @@ async function runRedTeamSuite() {
       assert.strictEqual(shortReasonSettle.data.code, 'STEP_UP_REASON_REQUIRED');
 
       // Subcase 7D: Valid step-up authentication -> Succeeds
+      const authId7 = await authorizeOrderRelease(order.id, order.buyer_id, order.ticket_price);
       const validSettle = await apiRequest('/api/mvp/admin/settlements/execute', {
         method: 'POST',
         headers: { 'x-user-id': 'admin-1' },
@@ -443,6 +477,7 @@ async function runRedTeamSuite() {
           officerId: 'admin-1',
           orderId: order.id,
           sellerId: order.seller_id,
+          authorizationId: authId7,
           stepUpPassword: 'pilot123',
           reason: 'Physical inspection and turnstile barcode validated' // >= 10 chars
         }

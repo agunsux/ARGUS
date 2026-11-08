@@ -26,6 +26,7 @@ const { inventoryReconciliationService } = require('./src/discovery/EventInvento
 const { AdminEventControlService } = require('./src/discovery/AdminEventControlService');
 const discoveryRouter = require('./src/discovery/discoveryRouter');
 
+process.env.NODE_ENV = 'test';
 process.env.ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'test-admin-key-argus-reconcile';
 
 let server;
@@ -163,7 +164,7 @@ async function runSuite() {
       title: 'Pestapora 2026',
       venue_name: 'Gambir Expo Kemayoran',
       city: 'Jakarta',
-      start_date: '2026-10-15',
+      start_date: '2026-12-15',
       category: 'FESTIVAL',
       min_price: 250000,
       max_price: 700000,
@@ -232,13 +233,13 @@ async function runSuite() {
   await test('Test 9: Ingesting duplicate event from Tiket.com merges into existing Loket canonical event', async () => {
     const initialCount = canonicalRegistry.getAllEvents().length;
 
-    // Same concert (Pestapora 2026, 2026-10-15, Gambir Expo Kemayoran, Jakarta) arriving from Tiket.com
+    // Same concert (Pestapora 2026, 2026-12-15, Gambir Expo Kemayoran, Jakarta) arriving from Tiket.com
     const res = await ingestionPipeline.ingestEvent({
       name: 'Pestapora 2026 Official',
       title: 'Pestapora 2026 Official',
       venue_name: 'Gambir Expo Kemayoran',
       city: 'Jakarta',
-      start_date: '2026-10-15',
+      start_date: '2026-12-15',
       category: 'FESTIVAL',
       min_price: 250000,
       max_price: 700000,
@@ -263,7 +264,7 @@ async function runSuite() {
       title: 'Pestapora 2026',
       venue_name: 'Gambir Expo Kemayoran',
       city: 'Jakarta',
-      start_date: '2026-10-15',
+      start_date: '2026-12-15',
       category: 'FESTIVAL',
       official_event_url: 'https://pk-ent.com/events/pestapora-2026'
     }, 'src-promoters-official');
@@ -327,7 +328,7 @@ async function runSuite() {
       title: 'Pestapora 2026',
       venue_name: 'Gambir Expo Kemayoran',
       city: 'Jakarta',
-      start_date: '2026-10-15',
+      start_date: '2026-12-15',
       category: 'FESTIVAL',
       official_ticket_url: 'https://www.loket.com/event/pestapora-2026'
     };
@@ -346,7 +347,7 @@ async function runSuite() {
       title: 'YE Live in Jakarta',
       name: 'YE Live in Jakarta',
       artists: ['Kanye West', 'YE'],
-      start_date: '2026-10-24',
+      start_date: '2026-12-24',
       venue_name: 'Stadion Madya Gelora Bung Karno',
       city: 'Jakarta',
       category: 'CONCERT',
@@ -368,7 +369,7 @@ async function runSuite() {
       artists: ['Kanye West', 'YE'],
       venue_name: 'Stadion Madya Gelora Bung Karno',
       city: 'Jakarta',
-      start_date: '2026-10-24',
+      start_date: '2026-12-24',
       category: 'CONCERT',
       official_ticket_url: 'https://www.loket.com/event/ye-live-jakarta'
     }, 'src-loket');
@@ -382,7 +383,7 @@ async function runSuite() {
       artists: ['Kanye West', 'YE'],
       venue_name: 'Stadion Madya Gelora Bung Karno',
       city: 'Jakarta',
-      start_date: '2026-10-24',
+      start_date: '2026-12-24',
       category: 'CONCERT',
       official_event_url: 'https://pk-ent.com/concerts/ye-live-jakarta',
       promoter_official_url: 'https://pk-ent.com/concerts/ye-live-jakarta',
@@ -610,7 +611,7 @@ async function runSuite() {
     const ev = canonicalRegistry.createEvent({
       event_id: 'ev-cancel-test',
       title: 'Cancelled Show',
-      start_date: '2026-10-30',
+      start_date: '2026-12-30',
       venue_name: 'Venue',
       city: 'Jakarta',
       source_id: 'src-loket',
@@ -664,8 +665,9 @@ async function runSuite() {
       artists: ['Kanye West', 'Ye'],
       venue_name: 'Gelora Bung Karno (Main Stadium)',
       city: 'Jakarta',
-      start_date: '2026-10-24',
+      start_date: '2026-12-24',
       category: 'CONCERT',
+      min_price: 1250000,
       official_event_url: 'https://yejakarta.com/',
       official_ticket_url: 'https://yejakarta.com/',
       artist_official_url: 'https://tour.yeezy.com/',

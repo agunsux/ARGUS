@@ -254,24 +254,24 @@ async function runSuite() {
     assert.ok(Array.isArray(heroes), 'getHeroEvents must return an array');
     assert.strictEqual(heroes.length, 2, 'getHeroEvents must return exactly 2 hero concerts');
 
-    const morgan = heroes.find(e => (e.slug && e.slug.includes('morgan-jay')) || (e.title && e.title.includes('Morgan Jay')));
-    assert.ok(morgan, 'Morgan Jay must be found in active getHeroEvents()');
-    assert.strictEqual(morgan.date, '2026-11-11');
-    assert.strictEqual(morgan.primary_ticket_status, 'SOLD_OUT');
-    assert.strictEqual(morgan.resale_inventory_count, 0);
+    const bigbang = heroes.find(e => (e.slug && e.slug.includes('bigbang')) || (e.title && e.title.includes('BIGBANG')));
+    assert.ok(bigbang, 'BIGBANG must be found in active getHeroEvents()');
+    assert.strictEqual(bigbang.date, '2027-01-16');
+    assert.strictEqual(bigbang.primary_ticket_status, 'AVAILABLE_ON_OFFICIAL_CHANNEL');
+    assert.strictEqual(bigbang.resale_inventory_count, 0);
 
     const allHeroes = canonicalRegistry.getHeroEvents({ includePast: true });
     const nassar = allHeroes.find(e => (e.slug && e.slug.includes('nassar')) || (e.title && e.title.includes('Nassar')));
     assert.ok(nassar, 'Nassar must be preserved in historical registry');
 
-    const ye = heroes.find(e => (e.slug && e.slug.includes('ye-live')) || (e.title && e.title.includes('YE')) || e.id === 'bts-world-tour-arirang-jakarta-2026' || (e.title && e.title.includes('BTS')));
-    assert.ok(ye, 'Second verified hero concert (BTS / Ye) must be found in getHeroEvents()');
-    assert.ok(ye.date, 'Must have a concert date');
-    assert.ok(ye.primary_ticket_status, 'Must have primary ticket status');
-    assert.strictEqual(ye.resale_inventory_count, 0);
+    const bts = heroes.find(e => (e.slug && e.slug.includes('bts')) || (e.title && e.title.includes('BTS')));
+    assert.ok(bts, 'Second verified hero concert (BTS) must be found in getHeroEvents()');
+    assert.ok(bts.date, 'Must have a concert date');
+    assert.ok(bts.primary_ticket_status, 'Must have primary ticket status');
+    assert.strictEqual(bts.resale_inventory_count, 0);
   });
 
-  // Test 9: GET /api/discovery/hero-concerts returns both Nassar and Ye with zero fake inventory
+  // Test 9: GET /api/discovery/hero-concerts returns both BIGBANG and BTS with zero fake inventory
   await runTest('9. GET /api/discovery/hero-concerts returns 2 verified hero concerts with zero fake inventory', async () => {
     const app = express();
     app.use(discoveryRouter);
@@ -286,16 +286,16 @@ async function runSuite() {
       assert.strictEqual(data.count, 2, 'API must return exactly 2 hero concerts');
       assert.strictEqual(data.concerts.length, 2);
 
-      const morganCard = data.concerts.find(c => c.title.includes('Morgan Jay'));
-      assert.ok(morganCard, 'Morgan Jay card must be present');
-      assert.strictEqual(morganCard.organizer_name, 'Mad About Comedy');
-      assert.strictEqual(morganCard.primary_ticket_status, 'SOLD_OUT');
-      assert.strictEqual(morganCard.resale_inventory_count, 0, 'Resale inventory must be 0');
-      assert.strictEqual(morganCard.resale_available, false);
-      assert.ok(morganCard.official_event_url, 'Must have official event URL');
+      const bigbangCard = data.concerts.find(c => c.title.includes('BIGBANG'));
+      assert.ok(bigbangCard, 'BIGBANG card must be present');
+      assert.ok(bigbangCard.organizer_name, 'Must have organizer name');
+      assert.strictEqual(bigbangCard.primary_ticket_status, 'AVAILABLE_ON_OFFICIAL_CHANNEL');
+      assert.strictEqual(bigbangCard.resale_inventory_count, 0, 'Resale inventory must be 0');
+      assert.strictEqual(bigbangCard.resale_available, false);
+      assert.ok(bigbangCard.official_event_url, 'Must have official event URL');
 
       const secondCard = data.concerts.find(c => c.title.includes('YE') || c.title.includes('BTS'));
-      assert.ok(secondCard, 'Second hero concert (BTS / Ye) card must be present');
+      assert.ok(secondCard, 'Second hero concert (BTS) card must be present');
       assert.ok(secondCard.organizer_name, 'Must have organizer name');
       assert.ok(secondCard.primary_ticket_status, 'Must have primary ticket status');
       assert.strictEqual(secondCard.resale_inventory_count, 0, 'Resale inventory must be 0');

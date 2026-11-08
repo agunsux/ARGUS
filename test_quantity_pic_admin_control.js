@@ -11,6 +11,7 @@
 
 process.env.NODE_ENV = 'test';
 process.env.ADMIN_PASSWORD = 'TestAdminPassword123!';
+process.env.MARKETPLACE_MODE = 'LIVE';
 
 const assert = require('assert');
 const { state, resetDatabase, bootstrapAdminUser } = require('./src/database');

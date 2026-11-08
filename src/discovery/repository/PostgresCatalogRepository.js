@@ -302,6 +302,7 @@ class PostgresCatalogRepository extends CatalogRepository {
     const metadataObj = {
       ...existingMeta,
       ...(eventData.metadata || {}),
+      primary_ticket_status: eventData.primary_ticket_status || (eventData.metadata && eventData.metadata.primary_ticket_status) || existingMeta.primary_ticket_status || null,
       artist: eventData.artist || (eventData.metadata && eventData.metadata.artist) || existingMeta.artist || null,
       artists: Array.isArray(eventData.artists) && eventData.artists.length > 0
         ? eventData.artists
@@ -880,6 +881,7 @@ class PostgresCatalogRepository extends CatalogRepository {
         category: row.category
       }).status),
       admin_lock_mask: Array.isArray(row.admin_lock_mask) ? row.admin_lock_mask : (Array.isArray(meta.admin_lock_mask) ? meta.admin_lock_mask : []),
+      primary_ticket_status: meta.primary_ticket_status || meta.official_ticket_availability || null,
       // S1 & S2 Tier, Seating & Map Standards (W5 Honesty: never fabricate fake tiers or guess seating types)
       price_tiers: Array.isArray(meta.price_tiers) && meta.price_tiers.length > 0 ? meta.price_tiers : [],
       tier_data_status: Array.isArray(meta.price_tiers) && meta.price_tiers.length > 0

@@ -293,9 +293,9 @@ async function runSuite() {
 
   let verifiedEventId;
   const realPostUrl = 'https://www.instagram.com/p/DB_sheila_official_announce/';
-  const realPublishedAt = '2026-09-20T10:00:00Z';
-  const realObservedAt = '2026-09-20T10:05:00Z';
-  const realRawBody = 'Antara Suara presents Sheila On 7 Tunggu Aku Di Bandung at Gelora Bandung Lautan Api on 2026-10-25';
+  const realPublishedAt = new Date(Date.now() - 3600000).toISOString();
+  const realObservedAt = new Date().toISOString();
+  const realRawBody = 'Antara Suara presents Sheila On 7 Tunggu Aku Di Bandung at Gelora Bandung Lautan Api on 2026-12-25';
   const realEvidenceHash = crypto.createHash('sha256').update(realRawBody).digest('hex');
 
   await testAsync('Official Tier 1 Promoter signal creates verified event with real evidence hash', async () => {
@@ -310,7 +310,7 @@ async function runSuite() {
     // 2. Process official social post from verified promoter
     const postPayload = {
       event_name: 'Sheila on 7 — Tunggu Aku Di Bandung (Official)',
-      start_date: '2026-10-25',
+      start_date: '2026-12-25',
       venue_name: 'Stadion Gelora Bandung Lautan Api',
       city: 'Bandung',
       artists: ['Sheila on 7'],
@@ -318,6 +318,9 @@ async function runSuite() {
       post_url: realPostUrl,
       published_at: realPublishedAt,
       observed_at: realObservedAt,
+      min_price: 750000,
+      price: 750000,
+      ticket_price: 750000,
       status: 'UPCOMING'
     };
 
@@ -338,6 +341,10 @@ async function runSuite() {
     canonical.source_last_checked_at = realObservedAt;
     canonical.evidence_hash = realEvidenceHash;
     canonical.verified_at = new Date().toISOString();
+    canonical.min_price = 750000;
+    canonical.price = 750000;
+    canonical.price_status = 'QUALIFIED';
+    canonical.meets_price_threshold = true;
 
     // Sync canonical event into state.events
     canonicalRegistry.syncToState(state.events);
@@ -349,7 +356,7 @@ async function runSuite() {
     const resMvp = await apiRequest('/api/mvp/events');
     assert.strictEqual(resMvp.status, 200);
     const mvpEvents = resMvp.data.data?.events || resMvp.data.events || [];
-    assert.strictEqual(mvpEvents.length, 1, 'Verified event must appear on /api/mvp/events');
+    assert.strictEqual(mvpEvents.length, 1, `Verified event must appear on /api/mvp/events (got ${mvpEvents.length})`);
     assert.strictEqual(mvpEvents[0].id, verifiedEventId);
     assert.strictEqual(mvpEvents[0].is_verified, true);
 
@@ -357,14 +364,14 @@ async function runSuite() {
     const resApi = await apiRequest('/api/events');
     assert.strictEqual(resApi.status, 200);
     const apiEvents = resApi.data.events || [];
-    assert.strictEqual(apiEvents.length, 1);
+    assert.strictEqual(apiEvents.length, 1, `Verified event must appear on /api/events (got ${apiEvents.length})`);
     assert.strictEqual(apiEvents[0].id, verifiedEventId);
 
     // 3. GET /api/events/home-feed
     const resFeed = await apiRequest('/api/events/home-feed');
     assert.strictEqual(resFeed.status, 200);
     const feed = resFeed.data.sections?.upcoming_nearest || resFeed.data.feed || [];
-    assert.strictEqual(feed.length, 1);
+    assert.strictEqual(feed.length, 1, `Verified event must appear on /api/events/home-feed (got ${feed.length})`);
   });
 
   await testAsync('Non-authoritative source cannot make an event VERIFIED', async () => {
@@ -412,13 +419,13 @@ async function runSuite() {
   await testAsync('Promoter announcement of CANCELLED immediately drops event from public routes', async () => {
     const cancelPost = {
       event_name: 'Sheila on 7 — Tunggu Aku Di Bandung (Official)',
-      start_date: '2026-10-25',
+      start_date: '2026-12-25',
       venue_name: 'Stadion Gelora Bandung Lautan Api',
       city: 'Bandung',
       artists: ['Sheila on 7'],
       status: 'CANCELLED',
       post_url: 'https://www.instagram.com/p/DB_cancelled_post/',
-      published_at: '2026-09-22T08:00:00Z'
+      published_at: new Date().toISOString()
     };
 
     const res = await discoverySignalService.processSocialPost(cancelPost, '@antara.suara');
@@ -442,7 +449,7 @@ async function runSuite() {
   await testAsync('Attempted re-ingestion claiming ON_SALE is rejected and does not revive CANCELLED event', async () => {
     const revivePost = {
       name: 'Sheila on 7 — Tunggu Aku Di Bandung (Official)',
-      start_date: '2026-10-25',
+      start_date: '2026-12-25',
       venue_name: 'Stadion Gelora Bandung Lautan Api',
       city: 'Bandung',
       status: 'UPCOMING'

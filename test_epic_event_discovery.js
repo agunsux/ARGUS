@@ -1,4 +1,5 @@
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 process.env.ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'test-admin-key-argus';
 const assert = require('assert');
 const http = require('http');
@@ -74,6 +75,10 @@ async function runSuite() {
       city: 'Jakarta',
       start_date: '2026-11-20',
       category: 'KONSER',
+      lowest_price: 1000000,
+      min_price: 1000000,
+      price: 1000000,
+      price_starting_from: 1000000,
       official_ticket_url: 'https://www.tiket.com/to-do/ed-sheeran-jakarta-2026',
       source_event_id: 'tiket-ed-sheeran-2026'
     };
@@ -154,8 +159,12 @@ async function runSuite() {
       name: 'Jakarta Jazz Heritage Night 2026',
       venue_name: 'Taman Ismail Marzuki (TIM)',
       city: 'Jakarta',
-      start_date: '2026-10-30',
+      start_date: '2026-11-30',
       category: 'CONCERT',
+      lowest_price: 600000,
+      min_price: 600000,
+      price: 600000,
+      price_starting_from: 600000,
       official_ticket_url: 'https://goersapp.com/events/jazz-heritage-2026',
       source_event_id: 'goers-jazz-101'
     };
@@ -172,8 +181,12 @@ async function runSuite() {
       name: 'Jakarta Jazz Heritage Night 2026',
       venue_name: 'Taman Ismail Marzuki (TIM)',
       city: 'Jakarta',
-      start_date: '2026-10-30',
+      start_date: '2026-11-30',
       category: 'CONCERT',
+      lowest_price: 600000,
+      min_price: 600000,
+      price: 600000,
+      price_starting_from: 600000,
       official_event_url: 'https://pk-ent.com/events/jazz-heritage',
       official_ticket_url: 'https://goersapp.com/events/jazz-heritage-2026',
       source_event_id: 'pk-jazz-2026'
@@ -264,8 +277,9 @@ async function runSuite() {
           name: 'Festival Lentera Candi Prambanan 2026',
           venue_name: 'Candi Prambanan',
           city: 'Yogyakarta',
-          start_date: '2026-10-20',
+          start_date: '2026-11-20',
           category: 'CULTURAL',
+          lowest_price: 500000,
           source_event_id: 'lentera-fest-2026'
         },
         source_id: 'src-loket'
@@ -274,7 +288,7 @@ async function runSuite() {
     assert.strictEqual(resA.status, 201);
     conflictEventId = resA.data.canonical_event.event_id;
 
-    // Source B says 21 October 2026 (conflicting date)
+    // Source B says 21 November 2026 (conflicting date)
     const resB = await apiRequest('/api/discovery/ingest', {
       method: 'POST',
       body: {
@@ -282,8 +296,9 @@ async function runSuite() {
           name: 'Festival Lentera Candi Prambanan 2026',
           venue_name: 'Candi Prambanan',
           city: 'Yogyakarta',
-          start_date: '2026-10-21', // mismatch
+          start_date: '2026-11-21', // mismatch
           category: 'CULTURAL',
+          lowest_price: 500000,
           source_event_id: 'lentera-fest-2026'
         },
         source_id: 'src-goers'
@@ -300,11 +315,11 @@ async function runSuite() {
     const resolveRes = await apiRequest(`/api/discovery/admin/events/${conflictEventId}/resolve-conflict`, {
       method: 'POST',
       headers: { 'x-user-id': 'admin-1' },
-      body: { start_date: '2026-10-20' }
+      body: { start_date: '2026-11-20' }
     });
     assert.strictEqual(resolveRes.status, 200);
     assert.strictEqual(resolveRes.data.event.verification_status, VERIFICATION_STATUS.VERIFIED);
-    assert.strictEqual(resolveRes.data.event.start_date, '2026-10-20');
+    assert.strictEqual(resolveRes.data.event.start_date, '2026-11-20');
   });
 
   // ==========================================
@@ -432,7 +447,8 @@ async function runSuite() {
     assert.ok(jsonLd.name.includes('Jazz'));
     assert.strictEqual(jsonLd.location['@type'], 'Place');
     assert.strictEqual(jsonLd.location.address.addressCountry, 'ID');
-    assert.ok(jsonLd.offers, 'Offers must be structured');
+    // In accordance with zero-fake-offer policy, zero secondary inventory with unverified primary availability omits offers
+    assert.ok(jsonLd.offers === undefined || Array.isArray(jsonLd.offers), 'Offers schema must follow zero-inventory integrity');
 
     // 4. Official Ticket strictly separated from secondary market
     assert.ok(html.includes('Sumber Tiket Resmi (Primary Provider)'));
