@@ -1,14 +1,26 @@
+# TIKUM Robots.txt — https://tikum.app
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /admin/*
+Disallow: /admin.html
+Disallow: /admin-login.html
 Disallow: /api/
-Disallow: /uploads/
+Disallow: /app
+Disallow: /app/*
+Disallow: /account
+Disallow: /buyer-dashboard.html
+Disallow: /seller-dashboard.html
 Disallow: /pay
 Disallow: /pay/*
+Disallow: /uploads/
 Disallow: /*?*q=
 Disallow: /*?*sort=
 Disallow: /*?*status=
+Disallow: /*?*filter=
 
+# Crawl Delay
 Crawl-delay: 1
 
+# Dynamic Sitemap Declaration
 Sitemap: https://tikum.app/sitemap.xml

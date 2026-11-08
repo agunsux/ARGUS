@@ -127,6 +127,42 @@ class InternalLinkingService {
       }
     }
 
+    // 4b. Artist Links if specified or matching
+    const artistSlugs = Array.isArray(article.related_artists)
+      ? article.related_artists
+      : (article.target_artist_slug ? [article.target_artist_slug] : []);
+    if (artistSlugs.length > 0) {
+      try {
+        const { ArtistRegistry } = require('../discovery/ArtistRegistry');
+        for (const aSlug of artistSlugs) {
+          const artist = ArtistRegistry.getArtistBySlug(aSlug);
+          if (artist) {
+            links.push({
+              anchor: `jadwal konser ${artist.name}`,
+              url: `/artists/${artist.slug}`,
+              title: `Jadwal Tur dan Konser ${artist.name} di Indonesia`
+            });
+          }
+        }
+      } catch (_) {}
+    } else {
+      const titleLower = (article.title || '').toLowerCase();
+      const contentLower = (article.content || '').toLowerCase();
+      if (titleLower.includes('bts') || contentLower.includes('bts world tour')) {
+        links.push({
+          anchor: 'jadwal konser BTS di Indonesia',
+          url: '/artists/bts',
+          title: 'Jadwal Tur Konser BTS di Indonesia'
+        });
+      } else if (titleLower.includes('bigbang') || contentLower.includes('bigbang')) {
+        links.push({
+          anchor: 'jadwal konser BIGBANG di Indonesia',
+          url: '/artists/bigbang',
+          title: 'Jadwal Tur Konser BIGBANG di Indonesia'
+        });
+      }
+    }
+
     // 5. Venue Links if specified
     if (article.target_venue_id) {
       const v = VenueRegistry.getVenueBySlug(article.target_venue_id);

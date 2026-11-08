@@ -1529,6 +1529,73 @@
             </table>
           </div>
         </div>
+
+        <!-- SEO & Technical Observability Dashboard Panel -->
+        <div class="panel" style="margin-top: 20px;">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-chart-line" style="color: #38bdf8;"></i> Technical SEO Observability &amp; Search Console</div>
+            <div id="seoHealthStatusBadge"><span class="tag tag-success">AUDIT: ACTIVE</span></div>
+          </div>
+          <div style="padding: 16px;">
+            <div class="kpi-grid" style="margin-bottom: 16px;">
+              <div class="kpi-card">
+                <div class="kpi-label">Canonical Domain</div>
+                <div id="seoCanonicalDomain" class="kpi-value" style="font-size: 14px; font-family: monospace; color: #38bdf8;">https://tikum.app</div>
+                <div class="kpi-sub">Self-referencing &amp; absolute</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Sitemap Indexable URLs</div>
+                <div id="seoSitemapCount" class="kpi-value">-</div>
+                <div id="seoSitemapBreakdown" class="kpi-sub">-</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Robots.txt Directives</div>
+                <div id="seoRobotsStatus" class="kpi-value" style="font-size: 14px; color: #4ade80;">DISALLOW PRIVATE</div>
+                <div class="kpi-sub">Admin, app, pay protected</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Google Search Console</div>
+                <div id="seoGscStatus" class="kpi-value" style="font-size: 14px; color: #94a3b8;">NOT_CONNECTED</div>
+                <div class="kpi-sub">Zero-Fabrication Invariant</div>
+              </div>
+            </div>
+
+            <!-- Event & Artist Indexation Monitor -->
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; border-radius: 6px; padding: 12px; margin-bottom: 8px;">
+              <div style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 8px;">
+                <i class="fa-solid fa-bullseye" style="color: #f59e0b;"></i> Event &amp; Artist Indexing Readiness (Tier-1)
+              </div>
+              <div id="seoEventStatusContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                <!-- Filled dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8-Week Strategic Editorial Roadmap Panel -->
+        <div class="panel" style="margin-top: 20px;">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-calendar-days" style="color: #a855f7;"></i> 8-Week Editorial SEO Strategic Roadmap (Cluster A-E)</div>
+            <div style="font-size: 11px; color: #94a3b8;">Cadence: 2 artikel / minggu (Selasa &amp; Jumat 10:00 WIB) &bull; Otoritas &amp; Edukasi Secondary Marketplace</div>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="ops-table">
+              <thead>
+                <tr>
+                  <th style="width: 70px;">Minggu</th>
+                  <th>Judul Rencana &amp; Target Slug</th>
+                  <th>Kluster</th>
+                  <th>Target Keyword &amp; Search Intent</th>
+                  <th>Target Tanggal (WIB)</th>
+                  <th>Status Konten</th>
+                </tr>
+              </thead>
+              <tbody id="seoRoadmapTableBody">
+                <tr><td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">Memuat roadmap editorial...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- DEDICATED VIEW: HUMAN INBOX (@tikum.app) -->
@@ -3696,48 +3763,116 @@
 
         if (articles.length === 0) {
           tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 30px;">Tidak ada artikel yang cocok dengan filter.</td></tr>';
-          return;
+        } else {
+          tbody.innerHTML = articles.map(art => {
+            let statusBadgeClass = 'tag-secondary';
+            if (art.status === 'published') statusBadgeClass = 'tag-success';
+            else if (art.status === 'scheduled') statusBadgeClass = 'tag-warning';
+            else if (art.status === 'approved') statusBadgeClass = 'tag-primary';
+            else if (art.status === 'draft') statusBadgeClass = 'tag-secondary';
+
+            const dateStr = art.published_at ? art.published_at.substring(0, 10) : (art.scheduled_at ? `Jadwal: ${art.scheduled_at.substring(0, 10)}` : 'Draf');
+
+            return `
+              <tr>
+                <td>
+                  <div style="font-weight: 700; color: #fff; margin-bottom: 2px;">${art.title}</div>
+                  <div class="mono" style="font-size: 11px; color: #38bdf8;">
+                    /blog/${art.slug}
+                    <a href="/blog/${art.slug}?preview=1" target="_blank" title="Pratinjau Artikel" style="color: #94a3b8; margin-left: 6px;"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                  </div>
+                </td>
+                <td><span class="tag tag-secondary">${(art.category || '').toUpperCase()}</span></td>
+                <td><span class="tag ${statusBadgeClass}">${(art.status || '').toUpperCase()}</span></td>
+                <td style="font-size: 11px; color: #94a3b8;">${dateStr}</td>
+                <td style="font-size: 11px;">
+                  <span style="color: ${art.seo_score >= 70 ? '#4ade80' : '#f59e0b'}; font-weight: 600;">SEO: ${art.seo_score || 0}%</span><br>
+                  <span style="color: ${art.trust_score >= 70 ? '#38bdf8' : '#94a3b8'};">Trust: ${art.trust_score || 0}%</span>
+                </td>
+                <td>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                    <button class="btn btn-secondary btn-xs" onclick="openArticleModal('${art.id}')" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn btn-secondary btn-xs" onclick="scoreArticle('${art.id}')" title="Cek Skor & Mutu"><i class="fa-solid fa-chart-simple"></i></button>
+                    ${(art.status === 'draft' || art.status === 'review') ? `<button class="btn btn-primary btn-xs" onclick="approveArticle('${art.id}')" title="Approve Human Editor"><i class="fa-solid fa-check"></i></button>` : ''}
+                    ${art.status === 'approved' ? `<button class="btn btn-secondary btn-xs" onclick="scheduleArticle('${art.id}')" title="Jadwalkan"><i class="fa-solid fa-calendar"></i></button>` : ''}
+                    ${(art.status === 'approved' || art.status === 'scheduled') ? `<button class="btn btn-success btn-xs" onclick="publishArticle('${art.id}')" title="Publikasikan"><i class="fa-solid fa-globe"></i></button>` : ''}
+                    ${art.status === 'published' ? `<button class="btn btn-secondary btn-xs" onclick="unpublishArticle('${art.id}')" title="Tarik ke Draf"><i class="fa-solid fa-eye-slash"></i></button>` : ''}
+                    ${art.status !== 'archived' ? `<button class="btn btn-secondary btn-xs" onclick="archiveArticle('${art.id}')" title="Arsipkan"><i class="fa-solid fa-box-archive"></i></button>` : ''}
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
         }
 
-        tbody.innerHTML = articles.map(art => {
-          let statusBadgeClass = 'tag-secondary';
-          if (art.status === 'published') statusBadgeClass = 'tag-success';
-          else if (art.status === 'scheduled') statusBadgeClass = 'tag-warning';
-          else if (art.status === 'approved') statusBadgeClass = 'tag-primary';
-          else if (art.status === 'draft') statusBadgeClass = 'tag-secondary';
+        // 3. Load SEO Dashboard & 8-Week Roadmap
+        try {
+          const seoRes = await adminFetch('/api/admin/content/seo-dashboard');
+          if (seoRes.ok) {
+            const seoData = await seoRes.json();
+            
+            // Populate Technical Health
+            const th = seoData.technical_health || {};
+            if (document.getElementById('seoCanonicalDomain')) {
+              document.getElementById('seoCanonicalDomain').innerText = th.canonical_domain || 'https://tikum.app';
+            }
+            if (document.getElementById('seoSitemapCount')) {
+              document.getElementById('seoSitemapCount').innerText = `${th.total_sitemap_urls || 0} URLs`;
+            }
+            if (document.getElementById('seoSitemapBreakdown')) {
+              document.getElementById('seoSitemapBreakdown').innerText = `Artis: ${th.artists_in_sitemap || 0} | Event: ${th.events_in_sitemap || 0} | Blog: ${th.published_articles_in_sitemap || 0}`;
+            }
+            if (document.getElementById('seoRobotsStatus')) {
+              document.getElementById('seoRobotsStatus').innerText = th.robots_txt_status || 'VALID_DISALLOWING_PRIVATE';
+            }
+            if (document.getElementById('seoGscStatus')) {
+              const sc = seoData.search_console || {};
+              document.getElementById('seoGscStatus').innerText = sc.status || 'NOT_CONNECTED';
+            }
 
-          const dateStr = art.published_at ? art.published_at.substring(0, 10) : (art.scheduled_at ? `Jadwal: ${art.scheduled_at.substring(0, 10)}` : 'Draf');
+            // Populate Event Indexation
+            const evContainer = document.getElementById('seoEventStatusContainer');
+            if (evContainer && seoData.event_seo_performance) {
+              evContainer.innerHTML = seoData.event_seo_performance.map(ev => `
+                <div style="background: #1e293b; padding: 10px; border-radius: 4px; border-left: 3px solid ${ev.canonical_self_referencing ? '#4ade80' : '#ef4444'};">
+                  <div style="font-weight: 700; color: #fff; font-size: 12px;">${ev.event_name}</div>
+                  <div class="mono" style="font-size: 11px; color: #38bdf8;">${ev.route}</div>
+                  <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+                    <span>JSON-LD: <strong style="color: #4ade80;">${ev.schema_valid ? 'VALID' : 'INVALID'}</strong></span> &bull;
+                    <span>Resale: <strong style="color: #cbd5e1;">${ev.secondary_inventory}</strong></span> &bull;
+                    <span>Primary Notice: <strong style="color: #4ade80;">ACTIVE</strong></span>
+                  </div>
+                  <div style="font-size: 10px; color: #64748b; margin-top: 2px;">
+                    Source: <a href="${ev.official_source}" target="_blank" style="color: #38bdf8; text-decoration: underline;">Verified Official Source</a>
+                  </div>
+                </div>
+              `).join('');
+            }
 
-          return `
-            <tr>
-              <td>
-                <div style="font-weight: 700; color: #fff; margin-bottom: 2px;">${art.title}</div>
-                <div class="mono" style="font-size: 11px; color: #38bdf8;">
-                  /blog/${art.slug}
-                  <a href="/blog/${art.slug}?preview=1" target="_blank" title="Pratinjau Artikel" style="color: #94a3b8; margin-left: 6px;"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
-                </div>
-              </td>
-              <td><span class="tag tag-secondary">${(art.category || '').toUpperCase()}</span></td>
-              <td><span class="tag ${statusBadgeClass}">${(art.status || '').toUpperCase()}</span></td>
-              <td style="font-size: 11px; color: #94a3b8;">${dateStr}</td>
-              <td style="font-size: 11px;">
-                <span style="color: ${art.seo_score >= 70 ? '#4ade80' : '#f59e0b'}; font-weight: 600;">SEO: ${art.seo_score || 0}%</span><br>
-                <span style="color: ${art.trust_score >= 70 ? '#38bdf8' : '#94a3b8'};">Trust: ${art.trust_score || 0}%</span>
-              </td>
-              <td>
-                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                  <button class="btn btn-secondary btn-xs" onclick="openArticleModal('${art.id}')" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                  <button class="btn btn-secondary btn-xs" onclick="scoreArticle('${art.id}')" title="Cek Skor & Mutu"><i class="fa-solid fa-chart-simple"></i></button>
-                  ${(art.status === 'draft' || art.status === 'review') ? `<button class="btn btn-primary btn-xs" onclick="approveArticle('${art.id}')" title="Approve Human Editor"><i class="fa-solid fa-check"></i></button>` : ''}
-                  ${art.status === 'approved' ? `<button class="btn btn-secondary btn-xs" onclick="scheduleArticle('${art.id}')" title="Jadwalkan"><i class="fa-solid fa-calendar"></i></button>` : ''}
-                  ${(art.status === 'approved' || art.status === 'scheduled') ? `<button class="btn btn-success btn-xs" onclick="publishArticle('${art.id}')" title="Publikasikan"><i class="fa-solid fa-globe"></i></button>` : ''}
-                  ${art.status === 'published' ? `<button class="btn btn-secondary btn-xs" onclick="unpublishArticle('${art.id}')" title="Tarik ke Draf"><i class="fa-solid fa-eye-slash"></i></button>` : ''}
-                  ${art.status !== 'archived' ? `<button class="btn btn-secondary btn-xs" onclick="archiveArticle('${art.id}')" title="Arsipkan"><i class="fa-solid fa-box-archive"></i></button>` : ''}
-                </div>
-              </td>
-            </tr>
-          `;
-        }).join('');
+            // Populate 8-Week Roadmap
+            const roadmapBody = document.getElementById('seoRoadmapTableBody');
+            if (roadmapBody && seoData.editorial_roadmap_8_weeks) {
+              roadmapBody.innerHTML = seoData.editorial_roadmap_8_weeks.map(item => `
+                <tr>
+                  <td><span class="tag tag-primary">M-${item.week}</span></td>
+                  <td>
+                    <div style="font-weight: 600; color: #fff; font-size: 12px;">${item.title}</div>
+                    <div class="mono" style="font-size: 11px; color: #38bdf8;">/blog/${item.slug}</div>
+                  </td>
+                  <td><span class="tag tag-secondary" style="font-size: 10px;">${item.cluster}</span></td>
+                  <td>
+                    <div style="font-size: 11px; color: #cbd5e1; font-weight: 600;">${item.target_keyword}</div>
+                    <div style="font-size: 10px; color: #94a3b8;">Intent: ${item.search_intent}</div>
+                  </td>
+                  <td style="font-size: 11px; color: #94a3b8;">${item.scheduled_target_date} 10:00 WIB</td>
+                  <td><span class="tag tag-secondary">${item.status.toUpperCase()}</span></td>
+                </tr>
+              `).join('');
+            }
+          }
+        } catch (seoErr) {
+          console.warn('[SEO Dashboard] Non-blocking load error:', seoErr.message);
+        }
 
       } catch (err) {
         showToast('Gagal memuat artikel: ' + err.message, 'danger');

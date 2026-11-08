@@ -178,6 +178,47 @@ class StructuredDataFactory {
   }
 
   /**
+   * MusicGroup or Person Schema for Grounded Artists
+   */
+  static createArtistSchema(artist, events = []) {
+    const origin = businessProfile.canonicalDomain || 'https://tikum.app';
+    const soloNames = new Set([
+      'RM', 'Jin', 'SUGA', 'j-hope', 'Jimin', 'V', 'Jung Kook',
+      'G-DRAGON', 'TAEYANG', 'DAESUNG', 'Morgan Jay', 'King Nassar',
+      'Raditya Dika', 'Pandji Pragiwaksono', 'Bruno Mars', 'Hindia', 'Tulus', 'Kanye West', 'Ye'
+    ]);
+    const schemaType = artist.is_solo || soloNames.has(artist.name) ? 'Person' : 'MusicGroup';
+
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': schemaType,
+      'name': artist.name,
+      'url': `${origin}/artists/${artist.slug}`,
+      'description': `Informasi jadwal tur konser dan pertunjukan resmi ${artist.name} di Indonesia. Akses tiket resmi dan transfer tiket sekunder terverifikasi di Tikum.`
+    };
+
+    if (events && events.length > 0) {
+      schema.event = events.map(ev => ({
+        '@type': 'Event',
+        'name': ev.canonical_name || ev.name,
+        'startDate': ev.start_datetime || (ev.start_date ? `${ev.start_date}T19:00:00+07:00` : undefined),
+        'url': `${origin}/events/${ev.slug}`,
+        'location': {
+          '@type': 'Place',
+          'name': ev.venue_name || 'Venue',
+          'address': {
+            '@type': 'PostalAddress',
+            'addressLocality': ev.city || 'Jakarta',
+            'addressCountry': 'ID'
+          }
+        }
+      }));
+    }
+
+    return schema;
+  }
+
+  /**
    * Place Schema for Venues
    */
   static createPlaceSchema(venue, events = []) {

@@ -590,7 +590,14 @@ class EventSEOService {
     <nav style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
       <a href="/" style="color: #94a3b8; text-decoration: none;" data-i18n="nav.home">${isEn ? 'Home' : 'Beranda'}</a> &rsaquo;
       <a href="/events" style="color: #94a3b8; text-decoration: none;" data-i18n="nav.events">${isEn ? 'Events' : 'Event'}</a> &rsaquo;
-      <a href="/events/city/${encodeURIComponent(city.toLowerCase())}" style="color: #94a3b8; text-decoration: none;">${city}</a> &rsaquo; 
+      ${(() => {
+        const primaryArtist = event.artist || (Array.isArray(event.artists) ? event.artists[0] : null);
+        if (primaryArtist) {
+          const aSlug = primaryArtist.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          return `<a href="/artists/${aSlug}" style="color: #94a3b8; text-decoration: none;">${primaryArtist}</a> &rsaquo; `;
+        }
+        return '';
+      })()}
       <span style="color: #f8fafc;">${event.canonical_name}</span>
     </nav>
 
@@ -624,6 +631,14 @@ class EventSEOService {
       <h1 style="font-size: 28px; font-weight: 800; margin: 12px 0;">${event.canonical_name}</h1>
       
       <div class="event-meta-strip">
+        ${(() => {
+          const primaryArtist = event.artist || (Array.isArray(event.artists) ? event.artists[0] : null);
+          if (primaryArtist) {
+            const aSlug = primaryArtist.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            return `<div class="event-meta-item"><i class="fa-solid fa-microphone-lines" style="color: #a855f7;"></i> <span>Artis: <a href="/artists/${aSlug}" style="color: #38bdf8; text-decoration: none; font-weight: 700;">${primaryArtist}</a></span></div>`;
+          }
+          return '';
+        })()}
         <div class="event-meta-item"><i class="fa-solid fa-calendar-day" style="color: #38bdf8;"></i> <span>${dateFormatted}</span></div>
         <div class="event-meta-item"><i class="fa-solid fa-location-dot" style="color: #f43f5e;"></i> <span>${venue}, ${city}</span></div>
         <div class="event-meta-item"><i class="fa-solid fa-user-group" style="color: #a855f7;"></i> <span>Penyelenggara: ${event.organizer_name}</span></div>

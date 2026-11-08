@@ -107,20 +107,29 @@ class ContentModel {
   static create(data) {
     const now = new Date().toISOString();
     const slug = data.slug || (data.title ? data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : `art-${Date.now()}`);
+    const excerpt = (data.excerpt || data.description || '').trim();
+    const keywordsList = Array.isArray(data.keywords) ? data.keywords : (Array.isArray(data.tags) ? data.tags : []);
 
     return {
       id: data.id || `art-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       title: (data.title || '').trim(),
       slug: slug,
-      description: (data.description || '').trim(),
+      excerpt: excerpt,
+      description: (data.description || excerpt).trim(),
       category: data.category || CONTENT_PILLARS.RESALE_EDUCATION,
-      keywords: Array.isArray(data.keywords) ? data.keywords : [],
-      primary_keyword: data.primary_keyword || (Array.isArray(data.keywords) ? data.keywords[0] : null) || null,
+      keywords: keywordsList,
+      tags: keywordsList,
+      primary_keyword: data.primary_keyword || keywordsList[0] || null,
       secondary_keywords: Array.isArray(data.secondary_keywords) ? data.secondary_keywords : [],
       seo_title: data.seo_title || null,
-      meta_description: data.meta_description || null,
+      meta_description: data.meta_description || excerpt || null,
+      og_title: data.og_title || data.seo_title || (data.title || '').trim(),
+      og_description: data.og_description || data.meta_description || excerpt || null,
+      og_image: data.og_image || data.image || null,
       image: data.image || null,
       image_alt: data.image_alt || null,
+      image_attribution: data.image_attribution || data.image_credit || null,
+      image_rights: data.image_rights || data.image_usage_rights || 'EDITORIAL_USAGE',
       search_intent: data.search_intent || SEARCH_INTENTS.INFORMATIONAL,
       content: data.content || '',
       author: data.author || 'Tim Editorial Tikum',
@@ -133,6 +142,9 @@ class ContentModel {
       target_event_id: data.target_event_id || null,
       target_venue_id: data.target_venue_id || null,
       target_city: data.target_city || null,
+      related_artists: Array.isArray(data.related_artists) ? data.related_artists : (data.target_artist_slug ? [data.target_artist_slug] : []),
+      related_events: Array.isArray(data.related_events) ? data.related_events : (data.target_event_id ? [data.target_event_id] : []),
+      related_articles: Array.isArray(data.related_articles) ? data.related_articles : [],
       seo_score: typeof data.seo_score === 'number' ? data.seo_score : 0,
       quality_score: typeof data.quality_score === 'number' ? data.quality_score : 0,
       trust_score: typeof data.trust_score === 'number' ? data.trust_score : 0,

@@ -9,12 +9,14 @@ const path = require('path');
 const { TechnicalSEOService } = require('../src/seo/TechnicalSEOService');
 const { VenueRegistry } = require('../src/discovery/VenueRegistry');
 const { CityRegistry } = require('../src/discovery/CityRegistry');
+const { ArtistRegistry } = require('../src/discovery/ArtistRegistry');
 const { articleRepository } = require('../src/content/ArticleRepository');
 
 function generate() {
   const xml = TechnicalSEOService.generateSitemapXml({
     getVenues: () => VenueRegistry.getAllVenues(),
     getCities: () => CityRegistry.getAllCities(),
+    getArtists: () => ArtistRegistry.getAllArtists(),
     getPublishedArticles: () => articleRepository.getPublishedArticles()
   });
 

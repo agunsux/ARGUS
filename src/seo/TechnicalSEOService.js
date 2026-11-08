@@ -17,13 +17,22 @@ class TechnicalSEOService {
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /admin/*
+Disallow: /admin.html
+Disallow: /admin-login.html
 Disallow: /api/
-Disallow: /uploads/
+Disallow: /app
+Disallow: /app/*
+Disallow: /account
+Disallow: /buyer-dashboard.html
+Disallow: /seller-dashboard.html
 Disallow: /pay
 Disallow: /pay/*
+Disallow: /uploads/
 Disallow: /*?*q=
 Disallow: /*?*sort=
 Disallow: /*?*status=
+Disallow: /*?*filter=
 
 # Crawl Delay
 Crawl-delay: 1
@@ -236,6 +245,27 @@ Sitemap: ${origin}/sitemap.xml
       changefreq: 'weekly',
       priority: '0.8'
     });
+
+    // 5a. Grounded Artists (Grounded in canonical events)
+    try {
+      let artists = [];
+      if (typeof providers.getArtists === 'function') {
+        artists = providers.getArtists();
+      } else {
+        const { ArtistRegistry } = require('../discovery/ArtistRegistry');
+        artists = ArtistRegistry.getAllArtists();
+      }
+      for (const a of (artists || [])) {
+        if (a.slug && (a.event_count > 0 || (Array.isArray(a.events) && a.events.length > 0))) {
+          urls.push({
+            loc: `${origin}/artists/${a.slug}`,
+            lastmod: nowIso,
+            changefreq: 'weekly',
+            priority: '0.8'
+          });
+        }
+      }
+    } catch (e) {}
 
     if (providers.getVenues) {
       try {

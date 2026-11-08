@@ -274,16 +274,17 @@ router.get('/artists/:slug', (req, res) => {
 
   const breadcrumbs = [
     { name: 'Beranda', url: '/' },
-    { name: 'Musisi', url: '/artists' },
+    { name: 'Musisi & Artis', url: '/artists' },
     { name: artist.name, url: `/artists/${artist.slug}` }
   ];
-  const jsonLd = StructuredDataFactory.createBreadcrumbSchema(breadcrumbs);
+  const breadcrumbJsonLd = StructuredDataFactory.createBreadcrumbSchema(breadcrumbs);
+  const artistJsonLd = StructuredDataFactory.createArtistSchema(artist, artist.events);
 
   const headMeta = TechnicalSEOService.renderHeadMeta({
     title: `Tiket Konser ${artist.name} Indonesia — Jadwal &amp; Info Harga | Tikum`,
     description: `Jadwal tur konser ${artist.name} di Indonesia. Cek informasi tanggal, lokasi venue, tiket resmi, dan perlindungan tiket resale terverifikasi di Tikum.`,
     canonicalPath: `/artists/${artist.slug}`,
-    jsonLd
+    jsonLd: [breadcrumbJsonLd, artistJsonLd]
   });
 
   const eventsHtml = artist.events.map(e => {

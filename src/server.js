@@ -84,10 +84,21 @@ app.use((req, res, next) => {
   next();
 });
 
+// Trailing slash normalization: 301 redirect non-root paths ending with / to stripped path
+app.use((req, res, next) => {
+  if (req.method === 'GET' && req.path.length > 1 && req.path.endsWith('/')) {
+    const query = req.url.slice(req.path.length);
+    const target = req.path.slice(0, -1) + query;
+    return res.redirect(301, target);
+  }
+  next();
+});
+
 // Dynamic SEO Endpoints (Robots.txt & Sitemap.xml)
 const { TechnicalSEOService } = require('./seo/TechnicalSEOService');
 const { VenueRegistry } = require('./discovery/VenueRegistry');
 const { CityRegistry } = require('./discovery/CityRegistry');
+const { ArtistRegistry } = require('./discovery/ArtistRegistry');
 const { articleRepository } = require('./content/ArticleRepository');
 
 app.get('/robots.txt', (req, res) => {
@@ -98,6 +109,7 @@ app.get('/sitemap.xml', (req, res) => {
   res.type('application/xml').send(TechnicalSEOService.generateSitemapXml({
     getVenues: () => VenueRegistry.getAllVenues(),
     getCities: () => CityRegistry.getAllCities(),
+    getArtists: () => ArtistRegistry.getAllArtists(),
     getPublishedArticles: () => articleRepository.getPublishedArticles()
   }));
 });

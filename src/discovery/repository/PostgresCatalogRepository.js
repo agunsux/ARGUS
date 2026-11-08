@@ -104,14 +104,18 @@ class PostgresCatalogRepository extends CatalogRepository {
 
   async runMigrations() {
     if (this.readOnly || this.skipMigrations) return;
-    const migrationPath = path.resolve(__dirname, '../../../migrations/001_catalog_schema.sql');
-    if (!fs.existsSync(migrationPath)) {
-      return;
-    }
-    const sql = fs.readFileSync(migrationPath, 'utf8');
+    const migrationFiles = [
+      path.resolve(__dirname, '../../../migrations/001_catalog_schema.sql'),
+      path.resolve(__dirname, '../../../migrations/007_event_intelligence_and_audit_history.sql')
+    ];
     const client = await this.pool.connect();
     try {
-      await client.query(sql);
+      for (const mPath of migrationFiles) {
+        if (fs.existsSync(mPath)) {
+          const sql = fs.readFileSync(mPath, 'utf8');
+          await client.query(sql);
+        }
+      }
     } finally {
       client.release();
     }

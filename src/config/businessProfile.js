@@ -130,16 +130,15 @@ function renderFooterHtml(lang = 'id') {
       </div>
 
       <div class="footer-col footer-trust-col">
-        <div style="font-weight: 700; color: #fff; margin-bottom: 12px; font-size: 14px;">${isEn ? 'Trust Infrastructure' : 'Infrastruktur Kepercayaan'}</div>
+        <div style="font-weight: 700; color: #fff; margin-bottom: 12px; font-size: 14px;">${isEn ? 'Discovery & Directory' : 'Jelajah & Direktori'}</div>
         <div class="footer-links" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-          <a href="/about" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-circle-info"></i> <span data-i18n="footer.aboutTikum">${isEn ? 'About TIKUM' : 'Tentang TIKUM'}</span></a>
-          <a href="/how-it-works" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-circle-nodes"></i> <span data-i18n="footer.how">${isEn ? 'How It Works' : 'Cara Kerja Transaksi'}</span></a>
-          <a href="/how-to-buy" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-basket-shopping"></i> <span data-i18n="footer.buyerProt">${isEn ? 'Buyer Guide' : 'Panduan Pembeli'}</span></a>
-          <a href="/how-to-sell" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-tags"></i> <span data-i18n="footer.sellerGuide">${isEn ? 'Seller Guide' : 'Panduan Penjual'}</span></a>
-          <a href="/ticket-verification" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-qrcode"></i> <span data-i18n="footer.ticketVerification">${isEn ? 'Ticket Verification' : 'Verifikasi Tiket'}</span></a>
-          <a href="/buyer-protection" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-shield-heart"></i> <span data-i18n="footer.buyerProt">${isEn ? 'Buyer Protection' : 'Perlindungan Pembeli'}</span></a>
-          <a href="/fees" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-receipt"></i> <span data-i18n="footer.feeStructure">${isEn ? 'Pricing & Fee Structure' : 'Struktur Biaya Platform'}</span></a>
-          <a href="/payment-flow" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-money-bill-transfer"></i> <span data-i18n="footer.fundsFlow">${isEn ? 'Funds Flow & Holding' : 'Alur Dana & Penahanan Transaksi'}</span></a>
+          <a href="/events" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-calendar-days"></i> <span>${isEn ? 'Concert & Event Catalog' : 'Katalog Event & Konser'}</span></a>
+          <a href="/artists" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-guitar"></i> <span>${isEn ? 'Artists & Musician Directory' : 'Musisi & Lineup Artis'}</span></a>
+          <a href="/venues" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-building"></i> <span>${isEn ? 'Stadium & Venue Guides' : 'Direktori Venue'}</span></a>
+          <a href="/cities" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-location-dot"></i> <span>${isEn ? 'Concert Cities' : 'Kota Penyelenggaraan'}</span></a>
+          <a href="/blog" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-newspaper"></i> <span>${isEn ? 'Editorial & Ticket Guides' : 'Blog & Panduan Tiket'}</span></a>
+          <a href="/promoters/apmi" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-handshake"></i> <span>${isEn ? 'APMI Promoter Directory' : 'Direktori Promotor APMI'}</span></a>
+          <a href="/events/archive" style="color: #94a3b8; text-decoration: none;"><i class="fa-solid fa-box-archive"></i> <span>${isEn ? 'Concluded Events Archive' : 'Arsip Event Selesai'}</span></a>
         </div>
       </div>
 

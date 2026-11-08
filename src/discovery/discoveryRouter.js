@@ -664,6 +664,8 @@ router.get('/events', (req, res) => {
     `;
   }).join('');
 
+  const indexDirectives = TechnicalSEOService.getIndexationDirectives(req);
+
   const html = `<!DOCTYPE html>
 <html lang="${locale}">
 <head>
@@ -671,7 +673,22 @@ router.get('/events', (req, res) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${isEn ? 'Indonesia Event Catalog — Discover Concert Schedules, Sports &amp; Verified Tickets | Tikum' : 'Katalog Event Indonesia — Temukan Jadwal Konser, Olahraga &amp; Tiket Terverifikasi | Tikum'}</title>
   <meta name="description" content="${isEn ? 'Explore all music concerts, festivals, sports, and live shows across Indonesia. Get official ticket information and verified ticket resale at Tikum.' : 'Eksplorasi seluruh event musik, festival, sepak bola, basket, dan pertunjukan di Jakarta, Bandung, Surabaya, dan Bali. Dapatkan informasi tiket resmi dan transfer tiket terverifikasi di Tikum.'}">
+  <meta name="robots" content="${indexDirectives.robotsMeta}">
   <link rel="canonical" href="https://tikum.app/events">
+
+  <!-- OpenGraph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="${isEn ? 'Indonesia Event Catalog — Discover Concert Schedules, Sports &amp; Verified Tickets | Tikum' : 'Katalog Event Indonesia — Temukan Jadwal Konser, Olahraga &amp; Tiket Terverifikasi | Tikum'}">
+  <meta property="og:description" content="${isEn ? 'Explore all music concerts, festivals, sports, and live shows across Indonesia. Get official ticket information and verified ticket resale at Tikum.' : 'Eksplorasi seluruh event musik, festival, sepak bola, basket, dan pertunjukan di Jakarta, Bandung, Surabaya, dan Bali. Dapatkan informasi tiket resmi dan transfer tiket terverifikasi di Tikum.'}">
+  <meta property="og:url" content="https://tikum.app/events">
+  <meta property="og:site_name" content="Tikum">
+  <meta property="og:image" content="https://tikum.app/icons/icon-512x512.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${isEn ? 'Indonesia Event Catalog — Discover Concert Schedules, Sports &amp; Verified Tickets | Tikum' : 'Katalog Event Indonesia — Temukan Jadwal Konser, Olahraga &amp; Tiket Terverifikasi | Tikum'}">
+  <meta name="twitter:description" content="${isEn ? 'Explore all music concerts, festivals, sports, and live shows across Indonesia. Get official ticket information and verified ticket resale at Tikum.' : 'Eksplorasi seluruh event musik, festival, sepak bola, basket, dan pertunjukan di Jakarta, Bandung, Surabaya, dan Bali. Dapatkan informasi tiket resmi dan transfer tiket terverifikasi di Tikum.'}">
+  <meta name="twitter:image" content="https://tikum.app/icons/icon-512x512.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -784,7 +801,8 @@ router.get('/events', (req, res) => {
  * City Landing Page
  */
 router.get('/events/city/:city', (req, res) => {
-  res.redirect(`/events?city=${encodeURIComponent(req.params.city)}`);
+  const citySlug = encodeURIComponent((req.params.city || '').toLowerCase());
+  res.redirect(301, `/cities/${citySlug}`);
 });
 
 /**
@@ -792,7 +810,8 @@ router.get('/events/city/:city', (req, res) => {
  * Category Landing Page
  */
 router.get('/events/category/:category', (req, res) => {
-  res.redirect(`/events?category=${encodeURIComponent(req.params.category)}`);
+  const catSlug = encodeURIComponent((req.params.category || '').toLowerCase());
+  res.redirect(301, `/categories/${catSlug}`);
 });
 
 /**
