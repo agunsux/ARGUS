@@ -404,8 +404,21 @@ router.get('/blog/category/:category', (req, res) => {
 // -------------------------------------------------------------
 // 4. /blog Index Page
 // -------------------------------------------------------------
-router.get(['/blog', '/guides'], (req, res) => {
+router.get(['/blog', '/guides'], async (req, res) => {
   const { category, q } = req.query;
+  const { DurableArticleStore } = require('./DurableArticleStore');
+  const store = DurableArticleStore.getStore();
+  if (store && typeof store.getPublishedArticles === 'function' && !store.degraded) {
+    try {
+      const dbPublished = await store.getPublishedArticles(new Date());
+      for (const a of dbPublished) {
+        if (!articleRepository.getArticleById(a.id)) {
+          articleRepository.saveArticleInternal(a, false);
+        }
+      }
+    } catch (_) { }
+  }
+
   let articles = articleRepository.getPublishedArticles();
 
   // Sort by published_at descending (newest first)
@@ -510,8 +523,21 @@ router.get(['/blog', '/guides'], (req, res) => {
 // -------------------------------------------------------------
 // 5. /blog/:slug Article Page
 // -------------------------------------------------------------
-router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
-  const article = articleRepository.getArticleBySlug(req.params.slug);
+router.get(['/blog/:slug', '/guides/:slug'], async (req, res) => {
+  let article = articleRepository.getArticleBySlug(req.params.slug);
+  if (!article) {
+    const { DurableArticleStore } = require('./DurableArticleStore');
+    const store = DurableArticleStore.getStore();
+    if (store && typeof store.getArticleBySlug === 'function' && !store.degraded) {
+      try {
+        const dbArt = await store.getArticleBySlug(req.params.slug);
+        if (dbArt) {
+          articleRepository.saveArticleInternal(dbArt, false);
+          article = dbArt;
+        }
+      } catch (_) { }
+    }
+  }
 
   // Check if article is due for publication (preview requires query param `preview=1` for testing)
   const isPreview = req.query.preview === '1' && process.env.NODE_ENV === 'test';

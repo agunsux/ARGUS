@@ -33,6 +33,20 @@ class InMemoryArticleStore {
     return Array.from(this.articles.values());
   }
 
+  async getPublishedArticles(now = new Date()) {
+    const nowIso = (now instanceof Date ? now : new Date(now)).toISOString();
+    return Array.from(this.articles.values()).filter(a => a.status === CONTENT_STATUS.PUBLISHED && a.published_at <= nowIso);
+  }
+
+  async deleteArticle(id) {
+    const art = this.articles.get(id);
+    if (!art) return false;
+    this.articles.delete(id);
+    if (art.slug) this.slugMap.delete(art.slug);
+    this.auditLogs = this.auditLogs.filter(l => l.article_id !== id);
+    return true;
+  }
+
   async getArticleById(id) {
     const art = this.articles.get(id);
     return art ? { ...art } : null;

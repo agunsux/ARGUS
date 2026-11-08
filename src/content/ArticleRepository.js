@@ -390,6 +390,15 @@ class ArticleRepository {
     return article;
   }
 
+  deleteArticle(id) {
+    const article = this.getArticleById(id);
+    if (!article) return false;
+    this.articles.delete(id);
+    if (article.slug) this.slugMap.delete(article.slug);
+    this.persistToStorage();
+    return true;
+  }
+
   reset() {
     this.articles.clear();
     this.slugMap.clear();

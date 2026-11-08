@@ -20,6 +20,7 @@ const { VenueRegistry } = require('../discovery/VenueRegistry');
 const { CityRegistry } = require('../discovery/CityRegistry');
 const { SessionStore } = require('../services/sessionStore');
 const { state } = require('../database');
+const { DurableArticleStore } = require('../content/DurableArticleStore');
 
 function resolveAdminActor(req) {
   if (req.user && req.user.id) {
@@ -52,6 +53,18 @@ function resolveAdminActor(req) {
     }
   }
 
+  // API Key authentication for programmatic administration
+  const adminKey = req.header ? (req.header('x-admin-key') || req.header('x-admin-api-key')) : null;
+  if (adminKey && process.env.ADMIN_API_KEY) {
+    try {
+      const expectedBuf = Buffer.from(process.env.ADMIN_API_KEY.trim());
+      const candidateBuf = Buffer.from(adminKey.trim());
+      if (expectedBuf.length === candidateBuf.length && crypto.timingSafeEqual(expectedBuf, candidateBuf)) {
+        return { id: 'admin-api-key', name: 'API Key Admin', role: 'admin' };
+      }
+    } catch (_) {}
+  }
+
   if (process.env.NODE_ENV === 'test') {
     const candidateId = (req.header ? req.header('x-user-id') : null) || req.body?.admin_id;
     if (candidateId) {
@@ -77,6 +90,103 @@ function requireContentAdmin(req, res, next) {
 }
 
 // -------------------------------------------------------------
+// 0. Protected Preview Database Diagnostic
+// -------------------------------------------------------------
+router.get('/api/admin/content/diagnostic', requireContentAdmin, async (req, res) => {
+  try {
+    const connUrl = process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL;
+    if (!connUrl) {
+      return res.json({
+        status: 'unconfigured',
+        is_postgres_store: false,
+        message: 'DATABASE_URL not configured in environment'
+      });
+    }
+
+    const clean = connUrl.trim().replace(/^['"]|['"]$/g, '');
+    let u;
+    try {
+      u = new URL(clean);
+    } catch (e) {
+      return res.status(500).json({ status: 'error', error: 'Invalid DATABASE_URL format' });
+    }
+
+    // Hard safety check: ensure NOT pointing to production
+    const isProd = u.hostname.includes('shiny-surf-22498418') ||
+                   u.hostname.includes('ep-wispy-salad') ||
+                   u.hostname.includes('ap-southeast-1');
+    if (isProd) {
+      return res.status(403).json({
+        status: 'error',
+        error: 'CRITICAL_SECURITY_ALERT: PRODUCTION_DATABASE_TARGET_DETECTED',
+        sanitized_host: u.hostname,
+        is_production_database: true
+      });
+    }
+
+    const store = DurableArticleStore.getStore();
+    await store.ensureInitialized?.();
+
+    if (!store.pool) {
+      return res.json({
+        status: 'degraded',
+        is_postgres_store: false,
+        sanitized_host: u.hostname,
+        database_name: u.pathname.replace(/^\//, ''),
+        message: 'Store degraded to in-memory fallback'
+      });
+    }
+
+    const client = await store.pool.connect();
+    try {
+      const verRes = await client.query('SELECT version(), current_database(), current_schema();');
+      const migRes = await client.query("SELECT * FROM schema_migrations WHERE version = '008';");
+      const tablesRes = await client.query(`
+        SELECT table_name FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name IN (
+          'editorial_articles', 'editorial_article_audit_logs',
+          'editorial_scheduler_state', 'editorial_scheduler_execution_logs'
+        )
+      `);
+      const tableSet = new Set(tablesRes.rows.map(r => r.table_name));
+      const statusRes = await client.query('SELECT status, COUNT(*) as count FROM editorial_articles GROUP BY status');
+      const counts = {};
+      for (const r of statusRes.rows) counts[r.status] = parseInt(r.count, 10);
+
+      const gnrRes = await client.query("SELECT id, status FROM editorial_articles WHERE id LIKE '%gnr%' OR slug LIKE '%gnr%'");
+
+      res.json({
+        status: 'ok',
+        database_provider: u.hostname.includes('neon.tech') ? 'NEON' : u.hostname.includes('supabase') ? 'SUPABASE' : 'POSTGRESQL',
+        sanitized_host: u.hostname,
+        region: u.hostname.includes('us-east-2') ? 'aws-us-east-2' : (u.hostname.split('.')[1] || 'unknown'),
+        database_name: verRes.rows[0].current_database,
+        postgres_version: verRes.rows[0].version.split(' (')[0],
+        is_production_database: false,
+        migration_008: migRes.rows.length > 0 ? {
+          recorded: true,
+          version: migRes.rows[0].version,
+          name: migRes.rows[0].name,
+          applied_at: migRes.rows[0].applied_at
+        } : { recorded: false },
+        editorial_tables: {
+          editorial_articles: tableSet.has('editorial_articles'),
+          editorial_article_audit_logs: tableSet.has('editorial_article_audit_logs'),
+          editorial_scheduler_state: tableSet.has('editorial_scheduler_state'),
+          editorial_scheduler_execution_logs: tableSet.has('editorial_scheduler_execution_logs')
+        },
+        article_counts: counts,
+        gnr_status: gnrRes.rows.length === 0 ? 'NOT_PRESENT' : gnrRes.rows[0].status
+      });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    res.status(500).json({ status: 'error', error: err.message });
+  }
+});
+
+// -------------------------------------------------------------
 // 1. Articles List & Detail
 // -------------------------------------------------------------
 router.get('/api/admin/content/articles', requireContentAdmin, (req, res) => {
@@ -89,8 +199,17 @@ router.get('/api/admin/content/articles', requireContentAdmin, (req, res) => {
   });
 });
 
-router.get('/api/admin/content/articles/:id', requireContentAdmin, (req, res) => {
-  const article = articleRepository.getArticleById(req.params.id);
+router.get('/api/admin/content/articles/:id', requireContentAdmin, async (req, res) => {
+  const store = DurableArticleStore.getStore();
+  let article = null;
+  if (store && typeof store.getArticleById === 'function' && !store.degraded) {
+    try {
+      article = await store.getArticleById(req.params.id);
+    } catch (_) {}
+  }
+  if (!article) {
+    article = articleRepository.getArticleById(req.params.id);
+  }
   if (!article) {
     return res.status(404).json({ error: 'Article not found', code: 'ARTICLE_NOT_FOUND' });
   }
@@ -101,44 +220,81 @@ router.get('/api/admin/content/articles/:id', requireContentAdmin, (req, res) =>
 });
 
 // -------------------------------------------------------------
-// 2. Draft Creation & Update
+// 2. Draft Creation, Update & Deletion
 // -------------------------------------------------------------
-router.post('/api/admin/content/articles', requireContentAdmin, (req, res) => {
+router.post('/api/admin/content/articles', requireContentAdmin, async (req, res) => {
   try {
-    const article = articleRepository.saveArticle({
-      ...req.body,
-      author: req.body.author || req.adminUser.name || 'Tim Editorial Tikum'
-    });
+    const author = req.body.author || req.adminUser.name || 'Tim Editorial Tikum';
+    const articleData = { ...req.body, author };
+    const localArt = articleRepository.saveArticle(articleData);
+
+    const store = DurableArticleStore.getStore();
+    let persistedArt = localArt;
+    if (store && typeof store.saveArticle === 'function' && !store.degraded) {
+      persistedArt = await store.saveArticle(localArt, {
+        performed_by: req.adminUser.name || req.adminUser.id || 'admin',
+        action: 'CREATED'
+      });
+      articleRepository.saveArticleInternal(persistedArt, false);
+    }
     res.status(201).json({
       success: true,
       message: 'Article draft created successfully',
-      article
+      article: persistedArt
     });
   } catch (err) {
     res.status(400).json({ error: err.message, code: 'VALIDATION_ERROR' });
   }
 });
 
-router.put('/api/admin/content/articles/:id', requireContentAdmin, (req, res) => {
+router.put('/api/admin/content/articles/:id', requireContentAdmin, async (req, res) => {
   try {
-    const existing = articleRepository.getArticleById(req.params.id);
+    const store = DurableArticleStore.getStore();
+    let existing = null;
+    if (store && typeof store.getArticleById === 'function' && !store.degraded) {
+      try {
+        existing = await store.getArticleById(req.params.id);
+      } catch (_) {}
+    }
+    if (!existing) {
+      existing = articleRepository.getArticleById(req.params.id);
+    }
     if (!existing) {
       return res.status(404).json({ error: 'Article not found', code: 'ARTICLE_NOT_FOUND' });
     }
 
-    const updated = articleRepository.saveArticle({
-      ...existing,
-      ...req.body,
-      id: existing.id
-    });
+    const merged = { ...existing, ...req.body, id: existing.id };
+    const localUpdated = articleRepository.saveArticle(merged);
+
+    let persistedUpdated = localUpdated;
+    if (store && typeof store.saveArticle === 'function' && !store.degraded) {
+      persistedUpdated = await store.saveArticle(localUpdated, {
+        performed_by: req.adminUser.name || req.adminUser.id || 'admin',
+        action: 'UPDATED'
+      });
+      articleRepository.saveArticleInternal(persistedUpdated, false);
+    }
 
     res.json({
       success: true,
       message: 'Article updated successfully',
-      article: updated
+      article: persistedUpdated
     });
   } catch (err) {
     res.status(400).json({ error: err.message, code: 'VALIDATION_ERROR' });
+  }
+});
+
+router.delete('/api/admin/content/articles/:id', requireContentAdmin, async (req, res) => {
+  try {
+    const store = DurableArticleStore.getStore();
+    if (store && typeof store.deleteArticle === 'function') {
+      await store.deleteArticle(req.params.id);
+    }
+    articleRepository.deleteArticle?.(req.params.id);
+    res.json({ success: true, message: 'Article permanently deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -162,13 +318,21 @@ router.post('/api/admin/content/articles/:id/score', requireContentAdmin, (req, 
 // -------------------------------------------------------------
 // 4. Human Approval Gate
 // -------------------------------------------------------------
-router.post('/api/admin/content/articles/:id/approve', requireContentAdmin, (req, res) => {
+router.post('/api/admin/content/articles/:id/approve', requireContentAdmin, async (req, res) => {
   try {
     const approved = articleRepository.approveArticle(req.params.id, req.adminUser.id);
+    const store = DurableArticleStore.getStore();
+    let persisted = approved;
+    if (store && typeof store.saveArticle === 'function' && !store.degraded) {
+      persisted = await store.saveArticle(approved, {
+        performed_by: req.adminUser.name || req.adminUser.id || 'admin',
+        action: 'APPROVED'
+      });
+    }
     res.json({
       success: true,
       message: 'Article approved by human editor. Ready for scheduling.',
-      article: approved
+      article: persisted
     });
   } catch (err) {
     res.status(400).json({ error: err.message, code: 'APPROVAL_FAILED' });
@@ -178,46 +342,74 @@ router.post('/api/admin/content/articles/:id/approve', requireContentAdmin, (req
 // -------------------------------------------------------------
 // 5. Scheduling & Publishing
 // -------------------------------------------------------------
-router.post('/api/admin/content/articles/:id/schedule', requireContentAdmin, (req, res) => {
+router.post('/api/admin/content/articles/:id/schedule', requireContentAdmin, async (req, res) => {
   try {
     const { targetDate } = req.body;
     if (!targetDate) {
       return res.status(400).json({ error: 'targetDate is required', code: 'MISSING_DATE' });
     }
     const scheduled = articleRepository.scheduleArticle(req.params.id, targetDate);
+    const store = DurableArticleStore.getStore();
+    let persisted = scheduled;
+    if (store && typeof store.saveArticle === 'function' && !store.degraded) {
+      persisted = await store.saveArticle(scheduled, {
+        performed_by: req.adminUser.name || req.adminUser.id || 'admin',
+        action: 'SCHEDULED'
+      });
+    }
     res.json({
       success: true,
       message: 'Article scheduled successfully',
-      article: scheduled
+      article: persisted
     });
   } catch (err) {
     res.status(400).json({ error: err.message, code: 'SCHEDULING_FAILED' });
   }
 });
 
-router.post('/api/admin/content/articles/:id/publish', requireContentAdmin, (req, res) => {
+router.post('/api/admin/content/articles/:id/publish', requireContentAdmin, async (req, res) => {
   try {
-    const result = articleRepository.publishArticle(req.params.id);
+    const store = DurableArticleStore.getStore();
+    let pubRes = null;
+    if (store && typeof store.publishArticle === 'function' && !store.degraded) {
+      pubRes = await store.publishArticle(req.params.id, {
+        performed_by: req.adminUser.name || req.adminUser.id || 'admin'
+      });
+    }
+    const repoRes = articleRepository.publishArticle(req.params.id);
+    const finalArt = pubRes ? pubRes.article : repoRes.article;
+    if (finalArt) articleRepository.saveArticleInternal(finalArt, false);
+
     res.json({
       success: true,
-      message: result.alreadyPublished ? 'Article was already published (idempotent)' : 'Article published successfully',
-      article: result.article
+      message: pubRes?.alreadyPublished ? 'Article was already published (idempotent)' : 'Article published successfully',
+      article: finalArt
     });
   } catch (err) {
     res.status(400).json({ error: err.message, code: 'PUBLISH_FAILED' });
   }
 });
 
-router.post('/api/admin/content/articles/:id/unpublish', requireContentAdmin, (req, res) => {
+router.post('/api/admin/content/articles/:id/unpublish', requireContentAdmin, async (req, res) => {
   try {
+    const store = DurableArticleStore.getStore();
+    let unpubRes = null;
+    if (store && typeof store.unpublishArticle === 'function' && !store.degraded) {
+      unpubRes = await store.unpublishArticle(req.params.id, {
+        performed_by: req.adminUser.name || req.adminUser.id || 'admin'
+      });
+    }
     const article = articleRepository.getArticleById(req.params.id);
-    if (!article) return res.status(404).json({ error: 'Article not found', code: 'NOT_FOUND' });
-    article.status = 'draft';
-    article.updated_at = new Date().toISOString();
+    if (!article && !unpubRes) return res.status(404).json({ error: 'Article not found', code: 'NOT_FOUND' });
+    if (article) {
+      article.status = 'draft';
+      article.updated_at = new Date().toISOString();
+      articleRepository.saveArticleInternal(article, false);
+    }
     res.json({
       success: true,
       message: 'Article unpublished and reverted to draft',
-      article
+      article: unpubRes || article
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -243,7 +435,8 @@ router.post('/api/admin/content/articles/:id/archive', requireContentAdmin, (req
 router.post('/api/admin/content/scheduler/run', requireContentAdmin, async (req, res) => {
   try {
     const force = Boolean(req.body?.forceRun);
-    const result = await publishingScheduler.runCycle({ forceRun: force });
+    const targetArticleId = req.body?.targetArticleId || null;
+    const result = await publishingScheduler.runCycle({ forceRun: force, targetArticleId });
     res.json({
       success: true,
       cycle_result: result
@@ -294,7 +487,6 @@ router.get('/api/admin/content/scheduler/history', requireContentAdmin, async (r
 
 router.get('/api/admin/content/articles/:id/audit-history', requireContentAdmin, async (req, res) => {
   try {
-    const { DurableArticleStore } = require('../content/DurableArticleStore');
     const store = DurableArticleStore.getStore();
     const history = await store.getArticleAuditHistory(req.params.id);
     res.json({ success: true, article_id: req.params.id, history });

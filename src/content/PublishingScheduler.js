@@ -88,56 +88,119 @@ class PublishingScheduler {
    * into PUBLISHED status.
    *
    * @param {Date|string} currentTime Reference timestamp (defaults to current system time)
-   * @returns {Array} List of newly published article objects
+   * @param {Object} options Execution overrides (targetArticleId)
+   * @returns {Promise<Array>} List of newly published article objects
    */
-  publishDueArticles(currentTime = new Date()) {
+  async publishDueArticles(currentTime = new Date(), options = {}) {
     if (this.isPublishing) return [];
     this.isPublishing = true;
 
     try {
       const now = (currentTime instanceof Date) ? currentTime : new Date(currentTime);
-      const allArticles = articleRepository.getAllArticles();
-      const dueArticles = allArticles.filter(a => {
-        if (a.status !== CONTENT_STATUS.SCHEDULED) return false;
-        if (!a.scheduled_at) return false;
-        return new Date(a.scheduled_at) <= now;
-      });
+      const nowIso = now.toISOString();
+      const store = DurableArticleStore.getStore();
 
-      // Sort by scheduled_at ascending (oldest due first)
-      dueArticles.sort((a, b) => (a.scheduled_at || '').localeCompare(b.scheduled_at || ''));
+      let dueArticles = [];
+
+      // If targeting a specific article ID (e.g. during certification tests)
+      if (options.targetArticleId) {
+        if (store && typeof store.getArticleById === 'function' && !store.degraded) {
+          try {
+            const art = await store.getArticleById(options.targetArticleId);
+            if (art && art.status === CONTENT_STATUS.SCHEDULED) {
+              dueArticles = [art];
+            }
+          } catch (_) {}
+        }
+        if (dueArticles.length === 0) {
+          const fresh = articleRepository.getArticleById(options.targetArticleId);
+          if (fresh && fresh.status === CONTENT_STATUS.SCHEDULED) {
+            dueArticles = [fresh];
+          }
+        }
+      } else {
+        // Query PostgreSQL store directly when available
+        if (store && typeof store.query === 'function' && !store.degraded) {
+          try {
+            const dueRes = await store.query(
+              `SELECT * FROM editorial_articles
+               WHERE status = 'scheduled' AND scheduled_at <= $1
+               ORDER BY scheduled_at ASC`,
+              [nowIso]
+            );
+            dueArticles = (dueRes.rows || []).map(r => store.mapRowToArticle(r));
+          } catch (_) {
+            dueArticles = [];
+          }
+        }
+
+        // Fallback to in-memory repository if DB had no rows or degraded
+        if (dueArticles.length === 0) {
+          const allArticles = articleRepository.getAllArticles();
+          dueArticles = allArticles.filter(a => {
+            if (a.status !== CONTENT_STATUS.SCHEDULED) return false;
+            if (!a.scheduled_at) return false;
+            return new Date(a.scheduled_at) <= now;
+          });
+          dueArticles.sort((a, b) => (a.scheduled_at || '').localeCompare(b.scheduled_at || ''));
+        }
+      }
 
       const newlyPublished = [];
 
       for (const target of dueArticles) {
-        const fresh = articleRepository.getArticleById(target.id);
-        if (!fresh || fresh.status !== CONTENT_STATUS.SCHEDULED) {
-          continue;
-        }
-
         try {
-          const pubResult = articleRepository.publishArticle(fresh.id, {
-            publishedAt: (now instanceof Date ? now : new Date(now)).toISOString()
-          });
+          let pubArticle = null;
+          if (store && typeof store.publishArticle === 'function' && !store.degraded) {
+            const res = await store.publishArticle(target.id, {
+              performed_by: 'scheduler',
+              publishedAt: nowIso
+            });
+            if (res && res.success && !res.alreadyPublished) {
+              pubArticle = res.article;
+            }
+          }
 
-          if (pubResult && pubResult.success && !pubResult.alreadyPublished) {
-            newlyPublished.push(pubResult.article);
+          // Local in-memory repository sync
+          const fresh = articleRepository.getArticleById(target.id);
+          let repoResult = null;
+          if (fresh) {
+            try {
+              repoResult = articleRepository.publishArticle(fresh.id, { publishedAt: nowIso });
+            } catch (_) {
+              if (pubArticle) {
+                fresh.status = CONTENT_STATUS.PUBLISHED;
+                fresh.published_at = nowIso;
+                fresh.version = pubArticle.version;
+                articleRepository.saveArticleInternal(fresh, false);
+                repoResult = { success: true, article: fresh };
+              }
+            }
+          } else if (pubArticle) {
+            articleRepository.saveArticleInternal(pubArticle, false);
+            repoResult = { success: true, article: pubArticle };
+          }
+
+          const publishedItem = pubArticle || (repoResult && repoResult.article);
+          if (publishedItem) {
+            newlyPublished.push(publishedItem);
             const logEntry = {
-              timestamp: now.toISOString(),
+              timestamp: nowIso,
               action: 'SCHEDULED_ARTICLE_PUBLISHED',
-              articleId: fresh.id,
-              slug: fresh.slug,
-              title: fresh.title,
-              scheduled_at: fresh.scheduled_at,
-              published_at: pubResult.article.published_at
+              articleId: publishedItem.id,
+              slug: publishedItem.slug,
+              title: publishedItem.title,
+              scheduled_at: publishedItem.scheduled_at,
+              published_at: publishedItem.published_at
             };
             this.logs.unshift(logEntry);
           }
         } catch (err) {
-          articleRepository.failArticle(fresh.id, err.message);
+          articleRepository.failArticle(target.id, err.message);
           this.logs.unshift({
-            timestamp: now.toISOString(),
+            timestamp: nowIso,
             action: 'SCHEDULED_PUBLISH_FAILED',
-            articleId: fresh.id,
+            articleId: target.id,
             error: err.message
           });
         }
@@ -153,7 +216,7 @@ class PublishingScheduler {
    * Main publication cycle execution with distributed locking, idempotency,
    * audit trail, and pause/resume controls.
    *
-   * @param {Object} options execution overrides (forceRun, now)
+   * @param {Object} options execution overrides (forceRun, now, targetArticleId)
    */
   async runCycle(options = {}) {
     const now = options.now ? new Date(options.now) : new Date();
@@ -192,7 +255,7 @@ class PublishingScheduler {
 
     try {
       // 2. Fulfill scheduled articles that are due
-      const scheduledPublished = this.publishDueArticles(now);
+      const scheduledPublished = await this.publishDueArticles(now, options);
       const isScheduled = options.forceRun || this.isScheduledDay(now);
 
       if (scheduledPublished.length > 0) {

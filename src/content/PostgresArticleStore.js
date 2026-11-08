@@ -300,6 +300,37 @@ class PostgresArticleStore {
     return res.rows.map(r => this.mapRowToArticle(r));
   }
 
+  async getPublishedArticles(now = new Date()) {
+    await this.ensureInitialized();
+    if (this.degraded) return this.fallbackRepo.getPublishedArticles ? this.fallbackRepo.getPublishedArticles(now) : [];
+
+    const nowIso = (now instanceof Date ? now : new Date(now)).toISOString();
+    const res = await this.pool.query(
+      `SELECT * FROM editorial_articles WHERE status = 'published' AND published_at <= $1 ORDER BY published_at DESC`,
+      [nowIso]
+    );
+    return res.rows.map(r => this.mapRowToArticle(r));
+  }
+
+  async deleteArticle(id) {
+    await this.ensureInitialized();
+    if (this.degraded) return this.fallbackRepo.deleteArticle ? this.fallbackRepo.deleteArticle(id) : false;
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM editorial_article_audit_logs WHERE article_id = $1', [id]);
+      const res = await client.query('DELETE FROM editorial_articles WHERE id = $1 RETURNING *', [id]);
+      await client.query('COMMIT');
+      return res.rows.length > 0;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
   async getArticleById(id) {
     await this.ensureInitialized();
     if (this.degraded) return this.fallbackRepo.getArticleById(id);
