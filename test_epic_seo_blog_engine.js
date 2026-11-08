@@ -138,7 +138,7 @@ async function runBlogEngineSuite() {
       const published = articleRepository.getPublishedArticles();
       const scheduled = articleRepository.getAllArticles({ status: CONTENT_STATUS.SCHEDULED });
 
-      assert.strictEqual(published.length, 2, 'Repository must have exactly 2 published articles (art-campaign-01 and art-curated-nassar-2026)');
+      assert.strictEqual(published.length, 3, 'Repository must have exactly 3 published articles (art-campaign-01, art-curated-nassar-2026, and art-security-explainer-2026)');
       assert.strictEqual(scheduled.length, 30, 'Repository must have exactly 30 scheduled articles (29 campaign + 1 curated)');
 
       const campaignPublished = EDITORIAL_ARTICLES.filter(a => a.status === CONTENT_STATUS.PUBLISHED);
@@ -161,6 +161,9 @@ async function runBlogEngineSuite() {
 
       const nassar = articleRepository.getArticleById('art-curated-nassar-2026');
       assert.strictEqual(nassar.status, CONTENT_STATUS.PUBLISHED);
+
+      const securityExplainer = articleRepository.getArticleById('art-security-explainer-2026');
+      assert.strictEqual(securityExplainer.status, CONTENT_STATUS.PUBLISHED);
 
       const kpop = articleRepository.getArticleById('art-curated-kpop-future-2026');
       assert.strictEqual(kpop.status, CONTENT_STATUS.SCHEDULED);

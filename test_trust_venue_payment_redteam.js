@@ -16,6 +16,8 @@
  * 12. Security Red Team (IDOR, Tamper, Forged Webhook, Imbalance)
  */
 
+process.env.MARKETPLACE_MODE = 'LIVE';
+
 const assert = require('assert');
 const crypto = require('crypto');
 const http = require('http');

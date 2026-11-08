@@ -207,6 +207,239 @@ const CURATED_ARTICLES = [
       <p>Untuk mengeksplorasi jadwal konser K-pop dan festival internasional yang akan datang, Anda dapat memantau <a href="https://tikum.app/events">katalog event terverifikasi Tikum</a>. Jika Anda membutuhkan tiket konser di pasar sekunder, pastikan transaksi dilakukan melalui platform dengan fasilitas rekening penampungan escrow, verifikasi keabsahan barcode e-ticket atau gelang wristband fisik, serta perlindungan garansi sengketa (dispute protection) yang menahan pembayaran ke penjual sampai tiket berhasil divalidasi di turnstile gate acara.</p>
       <p>K-pop mungkin akan mengalami pasang surut dalam kurun dekade ke depan, namun arsitektur industrinya yang canggih memastikan bahwa ia tidak akan punah begitu saja seperti era boyband terdahulu. Ia akan terus berevolusi, beradaptasi, dan meramaikan panggung-panggung konser dunia.</p>
     `
+  },
+
+  // -------------------------------------------------------------
+  // ARTICLE 3: TIKUM Ticket Security & Verification Explainer
+  // -------------------------------------------------------------
+  {
+    id: 'art-security-explainer-2026',
+    title: 'Bagaimana Sistem Keamanan Tiket TIKUM Bekerja? Mengenal Verifikasi Tiket, Perlindungan Transaksi, dan PIC di Venue',
+    slug: 'bagaimana-tikum-melindungi-pembeli-tiket',
+    description: 'Pelajari sistem keamanan tiket TIKUM: verifikasi dokumen, penahanan dana platform-held, batas anti-duplikasi, pendampingan PIC di venue, dan resolusi sengketa.',
+    category: CONTENT_PILLARS.TICKET_SAFETY,
+    search_intent: SEARCH_INTENTS.INFORMATIONAL,
+    keywords: ['sistem keamanan tiket TIKUM', 'verifikasi tiket konser', 'perlindungan pembeli tiket', 'penipuan tiket konser', 'PIC venue tiket'],
+    author: 'Tim Riset Keamanan Tikum',
+    status: CONTENT_STATUS.PUBLISHED,
+    scheduled_at: null,
+    published_at: '2026-10-26T10:00:00+07:00',
+    human_approved_by: 'editorial-lead',
+    human_approved_at: '2026-10-26T09:00:00+07:00',
+    canonical_url: 'https://tikum.app/blog/bagaimana-tikum-melindungi-pembeli-tiket',
+    faq: [
+      {
+        question: 'Bagaimana cara TIKUM memverifikasi keaslian tiket yang dijual?',
+        answer: 'TIKUM menerapkan prinsip baku tanpa kompromi: tiket tidak pernah diverifikasi hanya berdasarkan unggahan foto atau tangkapan layar (screenshot). Penjual wajib menyertakan bukti invoice resmi dari mitra loket primer promotor, nomor referensi pemesanan asli, dan nomor barcode yang di-hash menggunakan algoritma SHA-256 untuk mendeteksi potensi duplikasi pendaftaran di platform.'
+      },
+      {
+        question: 'Kapan penjual menerima uang hasil penjualan tiket?',
+        answer: 'Dana pembayaran pembeli disimpan aman dalam sistem penampungan internal (platform-held / escrow) dan baru dicairkan ke penjual setelah pembeli terkonfirmasi berhasil melewati turnstile gate (ENTRY_CONFIRMED) atau setelah acara selesai diselenggarakan tanpa adanya sengketa tiket yang diajukan oleh pembeli.'
+      },
+      {
+        question: 'Apakah TIKUM dapat menjamin 100% bahwa kode QR tiket tidak dijual ke orang lain di luar platform?',
+        answer: 'Secara teknis, tanpa integrasi API langsung ke basis data promotor tiket primer resmi, tidak ada platform tiket sekunder mana pun yang dapat memindai aktivitas penjual di media sosial eksternal. TIKUM tidak membuat klaim palsu 100% anti-duplikasi eksternal. Namun, TIKUM melindungi pembeli secara nyata dengan menahan dana penjual hingga pembeli berhasil masuk venue, menempatkan Event PIC di gerbang acara, dan menjamin hak refund 100% jika tiket ditolak scanner gerbang.'
+      },
+      {
+        question: 'Apa fungsi petugas Event PIC TIKUM di lokasi acara?',
+        answer: 'Event PIC (Person In Charge) adalah personel lapangan resmi TIKUM yang hadir di area gerbang masuk venue pada event-event terpilih yang terkonfirmasi. Petugas bertugas memandu titik temu penukaran fisik/wristband, memvalidasi serah terima melalui dual confirmation challenge code, dan mendampingi pembeli menyelesaikan kendala teknis scanner gerbang.'
+      },
+      {
+        question: 'Apa yang harus dilakukan pembeli jika tiket ditolak saat dipindai di pintu masuk?',
+        answer: 'Jika tiket ditolak di turnstile gate, segera laporkan kendala ke Event PIC TIKUM di venue atau buka halaman pelacakan pesanan di /track untuk mengajukan sengketa resmi (dispute). Lampirkan bukti penolakan berupa foto/video scanner gerbang atau minta berita acara dari PIC lapangan. Selama sengketa berlangsung, dana pembayaran ditahan dan pembeli berhak menerima pengembalian dana sesuai Kebijakan Refund.'
+      }
+    ],
+    source_references: [
+      'Undang-Undang Republik Indonesia No. 27 Tahun 2022 tentang Perlindungan Data Pribadi (UU PDP).',
+      'Standar Operasional Penyelenggaraan Konser Musik dan Regulasi Asosiasi Promotor Musik Indonesia (APMI).',
+      'Arsitektur Rekening Penampungan Transaksi Internal dan Standar Resolusi Sengketa TIKUM.'
+    ],
+    content: `
+      <h2>Realita Pasar Sekunder: Mengapa Membeli Tiket di Media Sosial Sangat Berisiko?</h2>
+      <p>Antusiasme masyarakat Indonesia terhadap konser musik internasional, festival lokal, hingga pertandingan olahraga akbar kerap memicu fenomena <em>ticket war</em> yang sengit. Ketika kuota penjualan tiket perdana (primary ticketing) dari promotor resmi habis dalam hitungan menit, ribuan penggemar yang kecewa mencari jalan alternatif melalui pasar sekunder (secondary market).</p>
+      <p>Sayangnya, sebagian besar transaksi tiket sekunder di Indonesia masih terjadi di kanal media sosial informal seperti Twitter/X, Instagram, Telegram, dan grup percakapan daring. Transaksi antarpengguna (peer-to-peer / P2P) anonim tanpa pihak penengah ini menyimpan risiko penipuan finansial yang sangat besar. Berdasarkan data investigasi tim keamanan TIKUM, transaksi berbasis transfer bank langsung tanpa rekening penampungan memiliki tingkat kerentanan penipuan tertinggi karena tidak ada mekanisme penahanan dana atau verifikasi identitas nyata.</p>
+
+      <h2>Modus Operandi Penipuan Tiket Konser Paling Umum</h2>
+      <p>Untuk melindungi diri dengan efektif, pembeli wajib memahami ragam taktik penipuan yang kerap digunakan oleh sindikat calo dan penipu online:</p>
+
+      <h3>1. E-Voucher Palsu dan Manipulasi Grafis (Photoshop Scams)</h3>
+      <p>Penipu memanfaatkan kecanggihan aplikasi pengolah grafis untuk mengubah nama pemesan, nomor baris, kursi, dan tanggal acara pada berkas PDF e-voucher resmi yang diperoleh dari internet. Secara visual, dokumen tersebut terlihat sangat meyakinkan, namun barcode di dalamnya fiktif atau tidak terdaftar pada sistem scanner promotor.</p>
+
+      <h3>2. Duplikasi Barcode dan Penjualan Ganda (Double-Selling / Multi-Buyer Scam)</h3>
+      <p>Ini adalah salah satu modus paling berbahaya. Penjual memang memiliki satu tiket asli dari promotor, namun berkas PDF atau tangkapan layar barcode yang sama dijual secara serentak ke 5 hingga 10 pembeli berbeda di media sosial. Pada hari H konser, hanya orang pertama yang memindai tiket di turnstile gate yang dapat masuk, sedangkan pembeli lainnya tertahan di luar dengan status tiket <em>"Already Scanned"</em>.</p>
+
+      <h3>3. Ketidaksesuaian Identitas dan Masalah Penukaran Gelang (Wristband Mismatch)</h3>
+      <p>Banyak konser besar mewajibkan penukaran e-voucher menjadi gelang fisik (wristband) dengan menunjukkan KTP asli pembeli awal dan Surat Kuasa bermaterai. Penipu nakal kerap menjual e-voucher tanpa menyediakan dokumen kuasa yang sah, sehingga pembeli tidak dapat menukarkan gelang di loket resmi promotor.</p>
+
+      <h3>4. Penjual Fiktif Menghilang (Ghosting & Seller No-Show)</h3>
+      <p>Setelah calon pembeli mentransfer uang muka atau melunasi pembayaran tiket ke rekening bank pribadi atau dompet digital, akun penjual langsung memblokir nomor kontak pembeli dan menghapus akun media sosialnya. Pembeli kehilangan uang tanpa ada pihak yang bisa dimintai pertanggungjawaban.</p>
+
+      <h2>Arsitektur Keamanan TIKUM: Bukan Marketplace P2P Biasa</h2>
+      <p>Menyadari kelemahan fatal dari transaksi informal di media sosial, TIKUM dibangun dengan satu diferensiasi fundamental:</p>
+      <blockquote style="border-left: 4px solid #0284c7; padding-left: 16px; margin: 20px 0; color: #cbd5e1; font-style: italic;">
+        Berbeda dengan marketplace tiket P2P anonim, TIKUM menggabungkan perlindungan transaksi platform-held, verifikasi tiket berbasis dokumen asli, penanganan sengketa berbasis bukti, dan pendampingan fisik petugas Person-In-Charge (PIC) langsung di venue acara.
+      </blockquote>
+      <p>TIKUM menerapkan prinsip <em>Zero Fabrication</em>: kami tidak pernah mengandalkan klaim lisan atau asumsi sepihak. Setiap transaksi dikawal oleh rantai bukti digital dan operasional lapangan yang terstruktur.</p>
+
+      <h2>Bagaimana TIKUM Memverifikasi Penjual dan Tiket?</h2>
+      <p>Setiap penawaran tiket di TIKUM melewati gerbang pengawasan ganda sebelum diizinkan tampil di katalog publik:</p>
+
+      <h3>1. Verifikasi Penjual Berdasarkan 4 Pilar Kepercayaan</h3>
+      <p>Kami menolak sistem skor mistis yang tidak jelas tolok ukurnya. Kepercayaan terhadap penjual dievaluasi secara transparan berdasarkan empat pilar:</p>
+      <ul>
+        <li><strong>Identity Trust:</strong> Status verifikasi identitas resmi (KYC KTP/Paspor), nomor telepon terverifikasi, alamat email, dan usia akun. Seluruh data identitas disimpan dan di-hash sesuai ketentuan Undang-Undang Perlindungan Data Pribadi (UU PDP No. 27/2022).</li>
+        <li><strong>Transaction Trust:</strong> Rekam jejak total pesanan yang diselesaikan dengan sukses tanpa pembatalan sepihak.</li>
+        <li><strong>Ticket Trust:</strong> Rasio kepemilikan bukti pembelian primer yang valid dibandingkan riwayat tiket yang pernah ditolak.</li>
+        <li><strong>Behavior Risk:</strong> Deteksi dini anomali kecepatan transaksi, riwayat sengketa, dan sinyal risiko kecurangan.</li>
+      </ul>
+      <p>Penjual yang terbukti mengunggah tiket palsu langsung dikenakan sanksi penangguhan (blacklist) permanen dan dilaporkan ke basis data risiko transaksi.</p>
+
+      <h3>2. Verifikasi Dokumen Tiket: Aturan Baku "No Image-Only Verification"</h3>
+      <p>Di TIKUM, tiket <strong>TIDAK PERNAH diverifikasi hanya karena penjual mengunggah foto atau screenshot</strong>. Tim Trust Officer kami mewajibkan bukti kepemilikan yang dapat diuji:</p>
+      <ol>
+        <li><strong>Bukti Pembelian Primer (Primary Purchase Confirmation):</strong> Invoice atau konfirmasi pemesanan resmi yang diterbitkan oleh mitra loket resmi promotor (misalnya tiket.com, LOKET, Loket.com, GOERS, dsb.).</li>
+        <li><strong>Kesesuaian Metadata Tiket:</strong> Keselarasan antara kategori tiket, seksi tempat duduk, nomor baris, dan tanggal konser dengan jadwal resmi di Canonical Event Registry.</li>
+        <li><strong>Hashing Kriptografi Barcode:</strong> String kode batang atau QR tiket dicatat dan di-hash menggunakan algoritma SHA-256 untuk memastikan nomor tiket tersebut belum pernah didaftarkan sebelumnya oleh pihak lain di TIKUM.</li>
+      </ol>
+
+      <h2>Memahami 4 Tingkatan Status Verifikasi Tiket di TIKUM</h2>
+      <p>Untuk menjaga transparansi penuh kepada seluruh pengguna, TIKUM membedakan status verifikasi tiket ke dalam empat kategori yang tegas:</p>
+      <table style="width:100%; border-collapse:collapse; margin:20px 0; font-size:14px; color:#cbd5e1;">
+        <thead>
+          <tr style="background:#1e293b; color:#f8fafc; text-align:left;">
+            <th style="padding:12px; border:1px solid #334155;">Status Verifikasi</th>
+            <th style="padding:12px; border:1px solid #334155;">Arti &amp; Metodologi Pemeriksaan</th>
+            <th style="padding:12px; border:1px solid #334155;">Lapis Perlindungan Pembeli</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:12px; border:1px solid #334155; font-weight:700; color:#38bdf8;">Terverifikasi Digital (Digitally Verified)</td>
+            <td style="padding:12px; border:1px solid #334155;">Bukti invoice resmi dan hash barcode tiket telah diverifikasi secara komputasional bebas duplikasi di basis data TIKUM.</td>
+            <td style="padding:12px; border:1px solid #334155;">Penahanan dana internal (platform-held) + jaminan garansi refund.</td>
+          </tr>
+          <tr>
+            <td style="padding:12px; border:1px solid #334155; font-weight:700; color:#10b981;">Terverifikasi Operasional (Operationally Verified)</td>
+            <td style="padding:12px; border:1px solid #334155;">Dokumen pembelian, nomor pemesanan promotor, dan identitas penjual telah ditinjau langsung secara manual oleh Trust Officer TIKUM.</td>
+            <td style="padding:12px; border:1px solid #334155;">Penahanan dana internal + audit trail identitas penjual lengkap.</td>
+          </tr>
+          <tr>
+            <td style="padding:12px; border:1px solid #334155; font-weight:700; color:#f59e0b;">Didampingi di Venue (Venue-Assisted)</td>
+            <td style="padding:12px; border:1px solid #334155;">Acara terpilih dengan kehadiran operasional petugas Event PIC fisik di pintu masuk untuk memandu penukaran fisik atau serah terima gelang.</td>
+            <td style="padding:12px; border:1px solid #334155;">Pendampingan turnstile gate langsung + verifikasi serah terima dua arah.</td>
+          </tr>
+          <tr>
+            <td style="padding:12px; border:1px solid #334155; font-weight:700; color:#94a3b8;">Tidak Dapat Diverifikasi Independen (Not Independently Verifiable)</td>
+            <td style="padding:12px; border:1px solid #334155;">Tiket tanpa integrasi API langsung ke sistem tiket promotor primer; validitas QR di scanner gate baru dapat diuji saat pemindaian pintu masuk.</td>
+            <td style="padding:12px; border:1px solid #334155;">Perlindungan 100% dialihkan ke penahanan dana escrow: penjual tidak dibayar sebelum pembeli berhasil masuk.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Alur Transaksi &amp; Perlindungan Pembayaran (Platform-Held / Escrow)</h2>
+      <p>Prinsip utama sistem finansial TIKUM adalah: <strong>uang pembeli tidak pernah langsung diteruskan ke rekening penjual</strong>. Dana diamankan dalam penampungan internal berlisensi payment gateway resmi Bank Indonesia.</p>
+      <p>Berikut adalah siklus hidup transaksi nyata yang dioperasikan pada sistem TIKUM:</p>
+      <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:20px; margin:20px 0; font-family:monospace; font-size:13px; line-height:1.8; color:#38bdf8;">
+        1. Pengajuan Tiket (Seller Submits Ticket &amp; Evidence)<br>
+        &nbsp;&nbsp;&darr;<br>
+        2. Verifikasi Dokumen &amp; Barcode Hashing (Trust Officer Review)<br>
+        &nbsp;&nbsp;&darr;<br>
+        3. Persetujuan Listing Publik (Listing Approval &amp; Active Catalog)<br>
+        &nbsp;&nbsp;&darr;<br>
+        4. Pembayaran Pembeli (Buyer Funds Order via Official Payment Rails)<br>
+        &nbsp;&nbsp;&darr;<br>
+        5. Penahanan Dana Platform-Held (Funds Locked in Escrow State Machine)<br>
+        &nbsp;&nbsp;&darr;<br>
+        6. Pengiriman E-Ticket / Penukaran Fisik di Venue (Handoff &amp; Dual Challenge)<br>
+        &nbsp;&nbsp;&darr;<br>
+        7. Pemindaian di Gerbang Masuk (Gate Entry Scan: ENTRY_CONFIRMED)<br>
+        &nbsp;&nbsp;&darr;<br>
+        8. Pencairan Dana ke Penjual (Final Settlement Execution)
+      </div>
+      <p>Jika pada tahap ke-7 pembeli mengalami kendala pemindaian di pintu masuk turnstile, alur secara otomatis berbelok menuju status <code>DISPUTED</code> atau <code>FROZEN</code>, mengunci pencairan dana penjual seketika untuk proses investigasi bukti.</p>
+
+      <h2>Pencegahan Penjualan Ganda (Double-Selling): Kontrol Nyata vs Batasan Teknologi</h2>
+      <p>Kejujuran intelektual adalah fondasi reputasi TIKUM. Kami menolak membuat klaim berlebihan yang menyesatkan pengguna. Berikut adalah fakta teknis mengenai bagaimana penjualan ganda ditangani:</p>
+      <ul>
+        <li><strong>Kontrol Internal TIKUM:</strong> Setiap nomor kode batang atau QR string tiket yang didaftarkan ke TIKUM akan diubah menjadi hash kriptografi SHA-256 yang unik. Apabila ada pengguna lain yang mencoba mendaftarkan tiket dengan kode yang sama, sistem TIKUM secara otomatis menolak listing tersebut dengan pesan kesalahan duplikasi.</li>
+        <li><strong>Batasan Tanpa Integrasi Primer:</strong> Sebagai platform pasar sekunder independen, TIKUM tidak memiliki akses langsung membaca basis data privat promotor atau aplikasi tiket primer. Karena itu, secara teknis tidak ada sistem di dunia yang dapat mencegah seorang oknum penjual mengirimkan screenshot tiket yang sama ke platform media sosial lain di luar TIKUM.</li>
+        <li><strong>Solusi Konkret TIKUM:</strong> Karena teknologi komputasi murni tidak bisa memantau perilaku off-platform penjual, perlindungan pembeli dijamin melalui mekanisme finansial dan operasional: <strong>penjual tidak akan menerima uangnya sebelum pembeli berhasil masuk venue</strong>. Jika penjual nekat melakukan double-selling, tiket akan tertolak di gerbang, pembeli mengajukan sengketa dan menerima refund, sedangkan penjual tidak mendapatkan uang sepeser pun serta kehilangan akun dan menghadapi konsekuensi hukum.</li>
+      </ul>
+
+      <h2>Peran Krusial Event PIC: Kehadiran Fisik Manusia di Venue Acara</h2>
+      <p>Teknologi perangkat lunak tercanggih sekali pun tidak berdaya ketika ribuan orang berdesak-desakan di depan pintu gerbang stadion di tengah sinyal internet yang melemah. Di sinilah letak keunggulan manusiawi TIKUM melalui kehadiran <strong>Event PIC (Person In Charge)</strong>.</p>
+      
+      <h3>Apa Tugas Petugas Event PIC?</h3>
+      <p>Event PIC adalah staf terlatih TIKUM yang ditempatkan secara fisik di area gerbang masuk venue selama jam operasional gerbang (gate hours) pada acara-acara terkonfirmasi. Peran utama PIC meliputi:</p>
+      <ul>
+        <li><strong>Titik Temu Resmi (Designated Meetup Point):</strong> Memandu pembeli dan penjual yang perlu melakukan serah terima tiket fisik atau penukaran gelang wristband secara aman di area publik venue.</li>
+        <li><strong>Verifikasi Dua Arah (Dual Confirmation Challenge):</strong> Memvalidasi kode unik 6-digit serah terima tiket antara penjual dan pembeli untuk mencegah klaim palsu.</li>
+        <li><strong>Asistensi Gerbang &amp; Turnstile:</strong> Menjadi kontak darurat pertama bagi pembeli apabila tiket mengalami kendala pembacaan scanner turnstile gate, dan segera menyusun Berita Acara Lapangan jika terjadi penolakan sistem promotor.</li>
+      </ul>
+
+      <h3>Bagaimana Cara Menghubungi Event PIC?</h3>
+      <p>Pada event-event dengan status operasional PIC aktif, pembeli dapat menemukan nama, nomor kontak darurat WhatsApp petugas lapangan, dan titik koordinat stan TIKUM langsung di halaman pelacakan pesanan (<a href="/track">/track</a>) setelah pesanan terbayar.</p>
+
+      <h2>Penukaran Tiket Fisik dan Gelang (Wristband): Cara Menghindari Penolakan</h2>
+      <p>Sebagian besar konser berskala besar di Indonesia (seperti di Stadion GBK, JIS, atau ICE BSD) mewajibkan penukaran e-voucher menjadi gelang RFID resmi beberapa hari sebelum atau pada hari pertunjukan. Berikut panduan praktis agar proses berjalan lancar:</p>
+      <ul>
+        <li><strong>Jika Penjual Menukarkan Gelang:</strong> Penjual wajib menyerahkan gelang fisik dalam kondisi utuh (tidak rusak, tidak terpotong, dan segel belum terkunci) di titik temu resmi TIKUM yang dipandu oleh Event PIC.</li>
+        <li><strong>Jika Pembeli Menukarkan Sendiri:</strong> Penjual wajib mengirimkan berkas resmi lengkap mencakup e-voucher PDF asli beresolusi tinggi, Surat Kuasa resmi bermaterai Rp10.000 sesuai format promotor, dan fotokopi kartu identitas pemilik awal yang jelas.</li>
+      </ul>
+
+      <h2>Prosedur Resolusi Sengketa (Dispute) &amp; Hak Pengembalian Dana (Refund)</h2>
+      <p>Bagaimana jika skenario terburuk terjadi dan tiket yang Anda beli tidak dapat digunakan di gerbang masuk? TIKUM menyediakan prosedur perlindungan sengketa berbasis bukti yang transparan:</p>
+      <ol>
+        <li><strong>Laporkan Seketika di Gerbang:</strong> Segera temui Event PIC TIKUM di gerbang atau buka halaman <a href="/track">/track</a> untuk menekan tombol "Ajukan Sengketa" (Dispute). Laporan sengketa gerbang wajib diajukan maksimal pada hari acara berlangsung.</li>
+        <li><strong>Lampirkan Bukti Lapangan:</strong> Dokumentasikan bukti penolakan scanner turnstile gate berupa foto atau video layar scanner yang menunjukkan keterangan error/invalid, atau minta formulir keterangan dari panitia loket gerbang promotor.</li>
+        <li><strong>Investigasi Cepat &amp; Pembekuan Dana:</strong> Sistem TIKUM secara otomatis membekukan penyelesaian dana ke penjual. Tim Trust &amp; Safety akan mengevaluasi bukti digital dan laporan lapangan petugas PIC.</li>
+        <li><strong>Pencairan Refund:</strong> Jika terbukti tiket tidak dapat digunakan akibat kesalahan penjual atau sistem promotor, pembeli berhak menerima pengembalian dana 100% sesuai dengan <a href="/refund-policy">Kebijakan Pengembalian Dana (Refund Policy) TIKUM</a>.</li>
+      </ol>
+
+      <h2>Batas Tanggung Jawab: Apa yang Dapat dan Tidak Dapat Dijamin TIKUM</h2>
+      <p>Sebagai bentuk komitmen terhadap kejujuran informasi publik, TIKUM secara transparan menyatakan batasan operasional platform:</p>
+      
+      <h3>Yang Dijamin oleh TIKUM:</h3>
+      <ul>
+        <li>Dana Anda 100% aman di rekening penampungan internal (platform-held) dan tidak diserahkan ke penjual sebelum acara sukses Anda masuki.</li>
+        <li>Pemeriksaan riwayat identitas penjual (KYC) dan dokumen bukti pembelian primer dari loket resmi.</li>
+        <li>Pengembalian dana (refund) penuh sesuai ketentuan jika tiket terbukti invalid atau ditolak sistem scanner gate.</li>
+        <li>Bantuan personel fisik Event PIC di venue pada event yang terdaftar dalam program asistensi operasional.</li>
+      </ul>
+
+      <h3>Yang Tidak Dapat Dijamin oleh TIKUM:</h3>
+      <ul>
+        <li>TIKUM tidak dapat menjamin keaslian mutlak barcode secara independen tanpa akses database promotor primer; validitas akhir barcode berada di bawah kendali sistem tiket resmi promotor.</li>
+        <li>TIKUM tidak dapat mengubah kebijakan sepihak promotor, seperti perubahan mendadak aturan masuk usia, tata tertib barang bawaan, atau pembatalan acara oleh pihak penyelenggara.</li>
+        <li>TIKUM tidak bertanggung jawab atas transaksi yang disepakati atau diselesaikan di luar platform resmi TIKUM (misalnya transfer langsung ke rekening pribadi penjual via DM media sosial).</li>
+      </ul>
+
+      <h2>Checklist Keamanan Pembeli Tiket Konser (Buyer Safety Checklist)</h2>
+      <p>Simpan dan gunakan panduan 7 langkah praktis ini setiap kali Anda hendak membeli tiket konser di pasar sekunder:</p>
+      <ol>
+        <li><strong>Hindari Transfer Langsung:</strong> Jangan pernah mentransfer uang langsung ke rekening pribadi penjual di media sosial tanpa rekening penampungan (escrow).</li>
+        <li><strong>Periksa Bukti Pembelian Primer:</strong> Pastikan penjual dapat menunjukkan bukti invoice dari loket resmi promotor dengan nomor pesanan yang jelas.</li>
+        <li><strong>Cek Kelengkapan Surat Kuasa:</strong> Jika tiket membutuhkan penukaran gelang, pastikan Surat Kuasa bermaterai dan fotokopi KTP pemilik awal tersedia lengkap.</li>
+        <li><strong>Verifikasi Kategori &amp; Nomor Kursi:</strong> Pastikan kategori, nomor baris, dan tempat duduk sesuai dengan denah (seat layout) resmi yang dirilis promotor.</li>
+        <li><strong>Gunakan Jalur Komunikasi Resmi:</strong> Lakukan seluruh komunikasi dan kesepakatan transaksi melalui platform TIKUM agar seluruh riwayat terekam dalam audit trail.</li>
+        <li><strong>Simpan Kontak Event PIC:</strong> Sebelum berangkat ke venue, catat nomor kontak Event PIC TIKUM yang tertera di menu pesanan Anda.</li>
+        <li><strong>Uji Tiket di Gerbang Masuk:</strong> Segera lakukan pemindaian tiket begitu gerbang (gate) dibuka, dan hubungi PIC jika scanner mengalami kendala.</li>
+      </ol>
+
+      <h2>Kesimpulan &amp; Eksplorasi Tiket Konser Terverifikasi</h2>
+      <p>Menonton musisi idola secara langsung di konser panggung adalah momen berharga yang pantas dinikmati tanpa rasa cemas menjadi korban penipuan tiket. TIKUM hadir bukan sekadar sebagai papan jual-beli tiket, melainkan sebagai infrastruktur kepercayaan yang mengawal keamanan transaksi Anda dari pemesanan hingga sukses melangkah melewati pintu gerbang konser.</p>
+      
+      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #0284c7; border-radius: 12px; padding: 28px; margin-top: 36px; text-align: center;">
+        <h3 style="font-size: 20px; font-weight: 800; color: #f8fafc; margin-bottom: 10px;">Siap Berburu Tiket Konser Idola dengan Aman?</h3>
+        <p style="color: #94a3b8; font-size: 14px; max-width: 600px; margin: 0 auto 20px; line-height: 1.6;">
+          Jelajahi deretan konser musik, festival akbar, dan pertandingan olahraga pilihan di Indonesia. Dapatkan tiket sekunder terverifikasi dengan perlindungan pembayaran platform-held dan pendampingan Event PIC resmi di lokasi acara.
+        </p>
+        <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+          <a href="/events" class="btn btn-primary" style="padding: 10px 22px; font-weight: 700; text-decoration: none;"><i class="fa-solid fa-calendar-days" style="margin-right: 8px;"></i>Lihat Katalog Event Tikum</a>
+          <a href="/how-it-works" class="btn btn-secondary" style="padding: 10px 22px; font-weight: 700; text-decoration: none;"><i class="fa-solid fa-shield-halved" style="margin-right: 8px;"></i>Pelajari Cara Kerja &amp; Proteksi</a>
+        </div>
+      </div>
+    `
   }
 ];
 

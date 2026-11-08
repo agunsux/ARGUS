@@ -804,6 +804,15 @@ router.get('/ticket-verification', (req, res) => {
           Event PIC Tikum bersiaga di titik kumpul sekitar gate venue untuk mendampingi pembeli dalam proses scanning turnstile resmi.
         </p>
       </div>
+
+      <div style="background:#0b1329; border:1px solid #1e3a5f; border-radius:12px; padding:20px; text-align:center; margin-top:20px;">
+        <h4 style="color:#f8fafc; font-size:16px; margin:0 0 6px;"><i class="fa-solid fa-book-open" style="color:#38bdf8;"></i> ${isEn ? 'Complete Security & Verification Guide' : 'Panduan Keamanan & Verifikasi Lengkap'}</h4>
+        <p style="color:#94a3b8; font-size:13px; margin:0 0 14px;">${isEn ? 'Want to learn more about how TIKUM verifies documents, protects payments, and assists buyers at venue gates?' : 'Ingin memahami lebih dalam bagaimana verifikasi dokumen, penahanan dana platform-held, batas anti-duplikasi, dan peran Event PIC bekerja?'}</p>
+        <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+          <a href="/blog/bagaimana-tikum-melindungi-pembeli-tiket" class="btn btn-sm btn-primary" style="text-decoration:none;"><i class="fa-solid fa-newspaper"></i> ${isEn ? 'Read Security Explainer' : 'Baca Artikel Keamanan'}</a>
+          <a href="/faq#ticket-security" class="btn btn-sm btn-secondary" style="text-decoration:none;"><i class="fa-solid fa-circle-question"></i> ${isEn ? 'View Security FAQ' : 'Lihat FAQ Keamanan'}</a>
+        </div>
+      </div>
     </div>
   `;
 
