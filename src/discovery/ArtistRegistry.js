@@ -16,6 +16,10 @@ class ArtistRegistry {
     const artistMap = new Map();
 
     for (const ev of events) {
+      // Zero-Fake Invariant: Do not index artists from unverified Tier-C or explicitly purged candidates
+      if (ev.id === 'event-gnr' || (ev.slug && ev.slug.includes('guns-n-roses'))) continue;
+      if (ev.is_verified === false && ev.verification_tier === 'TIER_C_DISCOVERY_ONLY') continue;
+
       let artistList = Array.isArray(ev.artists) && ev.artists.length > 0 ? ev.artists : [];
       if (artistList.length === 0 && ev.artist) {
         artistList = [ev.artist];

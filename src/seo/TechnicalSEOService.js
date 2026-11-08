@@ -256,7 +256,7 @@ Sitemap: ${origin}/sitemap.xml
         artists = ArtistRegistry.getAllArtists();
       }
       for (const a of (artists || [])) {
-        if (a.slug && (a.event_count > 0 || (Array.isArray(a.events) && a.events.length > 0))) {
+        if (a.slug && a.slug !== 'guns-n-roses' && (a.event_count > 0 || (Array.isArray(a.events) && a.events.length > 0))) {
           urls.push({
             loc: `${origin}/artists/${a.slug}`,
             lastmod: nowIso,
