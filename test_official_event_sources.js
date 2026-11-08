@@ -331,7 +331,8 @@ async function runOfficialEventSourcesSuite() {
     assert(bbRes.body.includes('"@type":"MusicEvent"') || bbRes.body.includes('"@type":"Event"'), 'Must include schema.org MusicEvent or Event');
     assert(bbRes.body.includes('Jakarta International Stadium'), 'Must include JIS venue');
     assert(!bbRes.body.includes('"availability":"https://schema.org/InStock"') && !bbRes.body.includes('"availability": "https://schema.org/InStock"'), 'Zero inventory BIGBANG event must not assert InStock');
-    assert(bbRes.body.includes('https://schema.org/OutOfStock'), 'BIGBANG schema must declare OutOfStock');
+    assert(bbRes.body.includes('https://bigbanginjakarta.com/'), 'BIGBANG official ticket link must remain visible and functional in HTML');
+    assert(bbRes.body.includes('Buka Halaman Tiket Resmi') || bbRes.body.includes('Cek Waiting List'), 'Official CTA button must be present in HTML');
 
     // Test GET /events/bts-world-tour-arirang-jakarta-2026
     const btsRes = await fetchRoute('/events/bts-world-tour-arirang-jakarta-2026');
@@ -340,7 +341,8 @@ async function runOfficialEventSourcesSuite() {
     assert(btsRes.body.includes('"@type":"MusicEvent"') || btsRes.body.includes('"@type":"Event"'), 'Must include schema.org MusicEvent or Event');
     assert(btsRes.body.includes('Gelora Bung Karno'), 'Must include GBK venue');
     assert(!btsRes.body.includes('"availability":"https://schema.org/InStock"') && !btsRes.body.includes('"availability": "https://schema.org/InStock"'), 'Zero inventory BTS event must not assert InStock');
-    assert(btsRes.body.includes('https://schema.org/OutOfStock'), 'BTS schema must declare OutOfStock');
+    assert(btsRes.body.includes('https://www.tiket.com/en-id/to-do/bts-jakarta-day1'), 'BTS official ticket link must remain visible and functional in HTML');
+    assert(btsRes.body.includes('Tiket.com'), 'Tiket.com provider name must be visible in HTML');
 
     // Test GET /artists/bigbang
     const artistBbRes = await fetchRoute('/artists/bigbang');

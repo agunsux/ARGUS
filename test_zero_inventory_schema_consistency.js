@@ -3,17 +3,20 @@
  * TIKUM — Zero-Inventory Schema & Structured Data Consistency Test Suite
  * 
  * Verifies Gate 2 Invariants:
- * 1. Zero-inventory events NEVER emit InStock offers in Schema.org JSON-LD.
- * 2. Secondary resale inventory with 0 listings strictly outputs OutOfStock.
- * 3. External primary ticket links are explicitly labeled as external and do not falsely claim InStock.
- * 4. Prelaunch listing mode prevents InStock assertions.
- * 5. Structured data strictly matches visible page text ("0 Tiket / Belum ada tiket resale").
+ * 1. Unknown external primary availability -> OMIT primary Offer from JSON-LD entirely.
+ * 2. Verified primary availability -> only represented when authoritative evidence supports it.
+ * 3. Verified sold-out primary status -> outputs SoldOut, no false availability claim.
+ * 4. Zero TIKUM secondary listings -> NEVER produce InStock Offer; no invented price or seller.
+ * 5. Verified secondary listing -> schema accurately reflects actual listing data (AggregateOffer).
+ * 6. External ticket link remains visible and functional on the rendered HTML page.
+ * 7. Primary and secondary inventory remain strictly separate.
  */
 
 const assert = require('assert');
 const { EventSEOService } = require('./src/discovery/EventSEOService');
 const { StructuredDataFactory } = require('./src/seo/StructuredDataFactory');
 const { canonicalRegistry } = require('./src/discovery/CanonicalEventRegistry');
+const { setMarketplaceModeForTesting, MARKETPLACE_MODES } = require('./src/config/marketplaceMode');
 
 let passed = 0;
 let total = 0;
@@ -36,87 +39,184 @@ async function runZeroInventorySchemaSuite() {
   console.log('  TIKUM — ZERO-INVENTORY STRUCTURED DATA & SCHEMA CONSISTENCY SUITE');
   console.log('===================================================================\n');
 
-  // --- 1. BTS Event Zero-Inventory Schema Checks ---
-  console.log('--- 1. BTS World Tour Arirang Zero-Inventory Schema ---');
+  // --- 1. BTS Event Grounding & Invariant Checks ---
+  console.log('--- 1. BTS World Tour Arirang Primary & Secondary Schema ---');
   const btsEvent = canonicalRegistry.getEventById('bts-world-tour-arirang-jakarta-2026');
   assert(btsEvent, 'BTS event must exist in canonical registry');
 
   check('BTS schema has NO InStock offers when activeListings is empty', () => {
     const schema = EventSEOService.buildStructuredData(btsEvent, []);
-    assert(schema.offers && schema.offers.length > 0, 'Offers must be present');
-    for (const offer of schema.offers) {
+    const offers = schema.offers || [];
+    for (const offer of offers) {
       assert.notStrictEqual(offer.availability, 'https://schema.org/InStock', `Offer ${offer.name} must not be InStock`);
     }
   });
 
-  check('BTS Tikum secondary resale offer declares OutOfStock', () => {
+  check('BTS unverified external primary ticket Offer is OMITTED from JSON-LD', () => {
+    // BTS has external ticket URL (Tiket.com) but no live stock sync proof
     const schema = EventSEOService.buildStructuredData(btsEvent, []);
-    const resaleOffer = schema.offers.find(o => o.name && o.name.includes('TIKUM'));
-    assert(resaleOffer, 'TIKUM secondary offer must be present');
-    assert.strictEqual(resaleOffer.availability, 'https://schema.org/OutOfStock', 'Resale availability must be OutOfStock');
+    const primaryOffer = (schema.offers || []).find(o => o.name && o.name.includes('Tiket Resmi Primer'));
+    assert.strictEqual(primaryOffer, undefined, 'Unverified external primary offer must be omitted from JSON-LD');
   });
 
-  check('BTS external primary offer does not claim InStock without active stock API', () => {
+  check('BTS zero secondary listings produces NO secondary InStock Offer', () => {
     const schema = EventSEOService.buildStructuredData(btsEvent, []);
-    const primaryOffer = schema.offers.find(o => o.name && o.name.includes('Tiket Resmi Primer'));
-    assert(primaryOffer, 'Primary offer must be present');
-    assert.notStrictEqual(primaryOffer.availability, 'https://schema.org/InStock', 'Primary offer must not claim InStock');
+    const secondaryInStock = (schema.offers || []).find(o => o.name && o.name.includes('TIKUM') && o.availability === 'https://schema.org/InStock');
+    assert.strictEqual(secondaryInStock, undefined, 'Zero listings must never produce a secondary InStock offer');
   });
 
-  check('BTS rendered HTML contains NO InStock string in JSON-LD', () => {
+  check('BTS rendered HTML keeps external primary ticket link VISIBLE and functional', () => {
     const html = EventSEOService.renderEventPageHtml(btsEvent, [], [], 'id');
-    const jsonLdMatch = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s);
-    assert(jsonLdMatch, 'JSON-LD script must exist');
-    const schema = JSON.parse(jsonLdMatch[1]);
-    for (const offer of schema.offers || []) {
-      assert.notStrictEqual(offer.availability, 'https://schema.org/InStock', 'Rendered offer must not be InStock');
-    }
-    assert(html.includes('0 Tiket') || html.includes('Belum ada pengguna yang mendaftarkan penjualan tiket'), 'Visible page must indicate 0 inventory');
+    assert(html.includes('https://www.tiket.com/en-id/to-do/bts-jakarta-day1'), 'Official ticket URL must be visible in HTML');
+    assert(html.includes('Tiket.com'), 'Ticketing provider name must be visible in HTML');
+    assert(html.includes('Buka Halaman Tiket Resmi') || html.includes('Cek Waiting List'), 'Action button must be present in HTML');
   });
 
-  // --- 2. BIGBANG Event Zero-Inventory Schema Checks ---
-  console.log('\n--- 2. BIGBANG Cosmos Tour Zero-Inventory Schema ---');
+  check('BTS rendered HTML visibly communicates zero resale inventory', () => {
+    const html = EventSEOService.renderEventPageHtml(btsEvent, [], [], 'id');
+    assert(html.includes('0 Tiket') || html.includes('Belum ada tiket resale sekunder terverifikasi di TIKUM') || html.includes('Belum ada pengguna yang mendaftarkan penjualan tiket'), 'Visible page must indicate 0 resale inventory');
+  });
+
+  // --- 2. BIGBANG Event Grounding & Invariant Checks ---
+  console.log('\n--- 2. BIGBANG Cosmos Tour Primary & Secondary Schema ---');
   const bbEvent = canonicalRegistry.getEventById('bigbang-cosmos-tour-jakarta-2027');
   assert(bbEvent, 'BIGBANG event must exist in canonical registry');
 
   check('BIGBANG schema has NO InStock offers when activeListings is empty', () => {
     const schema = EventSEOService.buildStructuredData(bbEvent, []);
-    assert(schema.offers && schema.offers.length > 0, 'Offers must be present');
-    for (const offer of schema.offers) {
+    const offers = schema.offers || [];
+    for (const offer of offers) {
       assert.notStrictEqual(offer.availability, 'https://schema.org/InStock', `Offer ${offer.name} must not be InStock`);
     }
   });
 
-  check('BIGBANG secondary offer declares OutOfStock', () => {
+  check('BIGBANG unverified primary ticket Offer is OMITTED from JSON-LD', () => {
     const schema = EventSEOService.buildStructuredData(bbEvent, []);
-    const resaleOffer = schema.offers.find(o => o.name && o.name.includes('TIKUM'));
-    assert(resaleOffer, 'TIKUM secondary offer must be present');
-    assert.strictEqual(resaleOffer.availability, 'https://schema.org/OutOfStock', 'Resale availability must be OutOfStock');
+    const primaryOffer = (schema.offers || []).find(o => o.name && o.name.includes('Tiket Resmi Primer'));
+    assert.strictEqual(primaryOffer, undefined, 'Unverified external primary offer must be omitted from JSON-LD');
+  });
+
+  check('BIGBANG rendered HTML keeps external primary link VISIBLE and functional', () => {
+    const html = EventSEOService.renderEventPageHtml(bbEvent, [], [], 'id');
+    assert(html.includes('https://bigbanginjakarta.com/'), 'Official BIGBANG ticket URL must be visible in HTML');
+    assert(html.includes('Buka Halaman Tiket Resmi') || html.includes('Cek Waiting List'), 'Action button must be present in HTML');
   });
 
   // --- 3. StructuredDataFactory Consistency Checks ---
   console.log('\n--- 3. StructuredDataFactory Offer Consistency ---');
-  check('StructuredDataFactory.createEventSchema mirrors zero-inventory OutOfStock rule', () => {
+  check('StructuredDataFactory omits unverified external primary offer', () => {
     const schema = StructuredDataFactory.createEventSchema(btsEvent, []);
-    assert(schema.offers && schema.offers.length > 0, 'Offers must exist');
-    for (const offer of schema.offers) {
+    const primaryOffer = (schema.offers || []).find(o => o.name && o.name.includes('Tiket Resmi Primer'));
+    assert.strictEqual(primaryOffer, undefined, 'StructuredDataFactory must omit unverified primary offer');
+  });
+
+  check('StructuredDataFactory emits NO InStock offers under zero inventory', () => {
+    const schema = StructuredDataFactory.createEventSchema(btsEvent, []);
+    for (const offer of schema.offers || []) {
       assert.notStrictEqual(offer.availability, 'https://schema.org/InStock', 'StructuredDataFactory offer must not be InStock');
     }
   });
 
-  // --- 4. Positive Control: InStock Allowed ONLY When Active Listings Exist (Post-Launch) ---
-  console.log('\n--- 4. Active Listings Positive Control ---');
-  check('Active verified listings output InStock AggregateOffer when not in prelaunch', () => {
+  // --- 4. Verified Primary Status Controls (SoldOut vs Verified InStock) ---
+  console.log('\n--- 4. Primary Ticketing Verification Controls ---');
+  check('Authoritatively SOLD_OUT primary ticket emits SoldOut Offer without false availability', () => {
+    const soldOutEvent = {
+      ...btsEvent,
+      official_ticket_url: 'https://example.com/tickets',
+      official_ticketing_provider: 'Loket.com',
+      official_ticket_availability: 'SOLD_OUT',
+      lowest_official_price: 1500000
+    };
+    const schema = EventSEOService.buildStructuredData(soldOutEvent, []);
+    assert(schema.offers && schema.offers.length === 1, 'Exactly one offer expected for verified sold-out primary');
+    const offer = schema.offers[0];
+    assert.strictEqual(offer.availability, 'https://schema.org/SoldOut', 'Must emit SoldOut');
+    assert.strictEqual(offer.price, 1500000, 'Must preserve official face value');
+    assert.strictEqual(offer.url, 'https://example.com/tickets', 'URL must match official channel');
+  });
+
+  check('Authoritatively VERIFIED_IN_STOCK primary ticket emits InStock Offer', () => {
+    const verifiedInStockEvent = {
+      ...btsEvent,
+      official_ticket_url: 'https://example.com/tickets',
+      official_ticketing_provider: 'Loket.com',
+      official_ticket_availability: 'VERIFIED_IN_STOCK',
+      lowest_official_price: 1500000
+    };
+    const schema = EventSEOService.buildStructuredData(verifiedInStockEvent, []);
+    assert(schema.offers && schema.offers.length === 1, 'Exactly one offer expected for verified in-stock primary');
+    const offer = schema.offers[0];
+    assert.strictEqual(offer.availability, 'https://schema.org/InStock', 'Must emit InStock when authoritatively verified');
+    assert.strictEqual(offer.price, 1500000, 'Must reflect verified price');
+  });
+
+  check('Unverified external primary ticket (default) produces NO primary Offer', () => {
+    const unverifiedEvent = {
+      ...btsEvent,
+      official_ticket_url: 'https://example.com/tickets',
+      official_ticketing_provider: 'Loket.com',
+      primary_ticket_status: 'AVAILABLE_ON_OFFICIAL_CHANNEL' // standard unverified external status
+    };
+    const schema = EventSEOService.buildStructuredData(unverifiedEvent, []);
+    assert.strictEqual(schema.offers, undefined, 'Offers must be omitted when primary is unverified and secondary is 0');
+  });
+
+  // --- 5. Verified Secondary Listing Controls ---
+  console.log('\n--- 5. Secondary Resale Verification Controls ---');
+  check('Verified secondary listings accurately reflect actual listing data', () => {
     const mockListings = [
-      { id: 'list-1', price: 2000000, status: 'VERIFIED' },
-      { id: 'list-2', price: 2500000, status: 'VERIFIED' }
+      { id: 'list-1', price: 2100000, status: 'VERIFIED' },
+      { id: 'list-2', price: 2800000, status: 'VERIFIED' },
+      { id: 'list-3', price: 3500000, status: 'VERIFIED' }
     ];
-    // In test environment, test buildStructuredData with simulated live mode
+    setMarketplaceModeForTesting(MARKETPLACE_MODES.LIVE);
+    try {
+      const schema = EventSEOService.buildStructuredData(btsEvent, mockListings);
+      assert(schema.offers && schema.offers.length === 1, 'Exactly one secondary aggregate offer expected');
+      const aggOffer = schema.offers[0];
+      assert.strictEqual(aggOffer['@type'], 'AggregateOffer', 'Type must be AggregateOffer');
+      assert.strictEqual(aggOffer.availability, 'https://schema.org/InStock', 'Must be InStock');
+      assert.strictEqual(aggOffer.lowPrice, 2100000, 'lowPrice must match min listing price');
+      assert.strictEqual(aggOffer.offerCount, 3, 'offerCount must match activeListings length');
+      assert(aggOffer.url.includes(btsEvent.slug), 'URL must point to canonical event page');
+    } finally {
+      setMarketplaceModeForTesting(null);
+    }
+  });
+
+  check('Prelaunch mode blocks secondary InStock offer even with mock listings', () => {
+    const mockListings = [
+      { id: 'list-1', price: 2100000, status: 'VERIFIED' }
+    ];
+    setMarketplaceModeForTesting(MARKETPLACE_MODES.PRELAUNCH_LISTING_ONLY);
     const schema = EventSEOService.buildStructuredData(btsEvent, mockListings);
-    const resaleOffer = schema.offers.find(o => o.name && o.name.includes('TIKUM'));
-    assert(resaleOffer, 'Resale offer must be present');
-    // Note: In prelaunch mode (default safety firewall), it stays OutOfStock
-    // If listings are active and prelaunch is off, it would be InStock
+    assert.strictEqual(schema.offers, undefined, 'Prelaunch mode must prevent secondary InStock offer');
+  });
+
+  check('Primary and secondary inventory remain strictly separate in schema and rendered page', () => {
+    const mockListings = [
+      { id: 'list-1', price: 2100000, status: 'VERIFIED' }
+    ];
+    const hybridEvent = {
+      ...btsEvent,
+      official_ticket_url: 'https://example.com/tickets',
+      official_ticketing_provider: 'Tiket.com',
+      official_ticket_availability: 'SOLD_OUT',
+      lowest_official_price: 1350000
+    };
+    setMarketplaceModeForTesting(MARKETPLACE_MODES.LIVE);
+    try {
+      const schema = EventSEOService.buildStructuredData(hybridEvent, mockListings);
+      assert.strictEqual(schema.offers.length, 2, 'Must have distinct primary and secondary offers');
+      const primary = schema.offers.find(o => o.name.includes('Tiket Resmi Primer'));
+      const secondary = schema.offers.find(o => o.name.includes('TIKUM'));
+      assert(primary && secondary, 'Both must be distinctly named');
+      assert.strictEqual(primary.availability, 'https://schema.org/SoldOut', 'Primary is SoldOut');
+      assert.strictEqual(secondary.availability, 'https://schema.org/InStock', 'Secondary is InStock');
+      assert.notStrictEqual(primary.url, secondary.url, 'URLs must never be conflated');
+    } finally {
+      setMarketplaceModeForTesting(null);
+    }
   });
 
   console.log('\n===================================================================');

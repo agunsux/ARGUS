@@ -146,10 +146,16 @@ class StructuredDataFactory {
     }
 
     // Offers: Accurately distinguish official primary ticket from secondary resale
-    // Strict Zero-Fake Inventory Invariant: Never assert InStock unless purchasable inventory actually exists on Tikum.
+    // Strict Zero-Fake Inventory Invariant:
+    // 1. Never assert InStock unless purchasable inventory actually exists.
+    // 2. External primary inventory: omit Offer entirely if availability cannot be verified.
+    //    Do not mark InStock (unverified) and do not mark OutOfStock (false sold-out claim).
+    //    Only emit SoldOut or InStock when backed by authoritative status.
+    // 3. TIKUM secondary inventory: only emit an Offer when underlying inventory genuinely supports it.
+    //    Zero verified active listings must never produce InStock and must not invent price or availability.
     const offers = [];
     if (event.official_ticket_url) {
-      const isOfficialSoldOut = (
+      const isOfficialSoldOut = Boolean(
         event.status === 'SOLD_OUT' ||
         event.official_ticket_availability === 'SOLD_OUT' ||
         event.primary_ticket_status === 'SOLD_OUT' ||
@@ -157,22 +163,41 @@ class StructuredDataFactory {
         (event.metadata && (event.metadata.official_ticket_availability === 'SOLD_OUT' || event.metadata.primary_ticket_status === 'SOLD_OUT'))
       );
 
-      const officialAvailability = isOfficialSoldOut ? 'https://schema.org/SoldOut' : 'https://schema.org/OutOfStock';
+      const isOfficialVerifiedAvailable = Boolean(
+        event.official_ticket_availability === 'VERIFIED_IN_STOCK' ||
+        event.official_ticket_availability === 'IN_STOCK' ||
+        event.primary_ticket_availability_verified === true ||
+        (event.metadata && (event.metadata.official_ticket_availability === 'VERIFIED_IN_STOCK' || event.metadata.primary_ticket_availability_verified === true))
+      );
 
-      const officialOffer = {
-        '@type': 'Offer',
-        'name': `Tiket Resmi Primer (${event.official_ticketing_provider || 'Mitra Penjualan Resmi'})`,
-        'url': event.official_ticket_url,
-        'availability': officialAvailability,
-        'priceCurrency': 'IDR',
-        'validFrom': event.created_at || '2026-01-01'
-      };
-
-      if (event.lowest_official_price && typeof event.lowest_official_price === 'number') {
-        officialOffer.price = event.lowest_official_price;
+      if (isOfficialSoldOut) {
+        const soldOutOffer = {
+          '@type': 'Offer',
+          'name': `Tiket Resmi Primer (${event.official_ticketing_provider || 'Mitra Penjualan Resmi'})`,
+          'url': event.official_ticket_url,
+          'availability': 'https://schema.org/SoldOut',
+          'priceCurrency': 'IDR',
+          'validFrom': event.created_at || '2026-01-01'
+        };
+        if (event.lowest_official_price && typeof event.lowest_official_price === 'number') {
+          soldOutOffer.price = event.lowest_official_price;
+        }
+        offers.push(soldOutOffer);
+      } else if (isOfficialVerifiedAvailable) {
+        const verifiedOffer = {
+          '@type': 'Offer',
+          'name': `Tiket Resmi Primer (${event.official_ticketing_provider || 'Mitra Penjualan Resmi'})`,
+          'url': event.official_ticket_url,
+          'availability': 'https://schema.org/InStock',
+          'priceCurrency': 'IDR',
+          'validFrom': event.created_at || '2026-01-01'
+        };
+        if (event.lowest_official_price && typeof event.lowest_official_price === 'number') {
+          verifiedOffer.price = event.lowest_official_price;
+        }
+        offers.push(verifiedOffer);
       }
-
-      offers.push(officialOffer);
+      // If availability cannot be verified, omit the external primary Offer from JSON-LD entirely!
     }
 
     const hasActiveListings = Array.isArray(activeListings) && activeListings.length > 0 && !isPrelaunchListingMode();
@@ -187,17 +212,9 @@ class StructuredDataFactory {
         'offerCount': activeListings.length,
         'availability': 'https://schema.org/InStock'
       });
-    } else {
-      // Zero Fake Inventory Invariant: Truthfully declare that TIKUM secondary inventory is OutOfStock
-      offers.push({
-        '@type': 'Offer',
-        'name': 'TIKUM Tiket Resale Sekunder Terverifikasi',
-        'url': `https://tikum.app/events/${event.slug}`,
-        'priceCurrency': 'IDR',
-        'availability': 'https://schema.org/OutOfStock',
-        'description': 'Belum ada tiket resale sekunder terverifikasi di TIKUM untuk event ini.'
-      });
     }
+    // Zero verified active listings: do NOT emit an InStock offer.
+    // Under zero secondary inventory, do not invent price, seller, or availability.
 
     if (offers.length > 0) {
       schema.offers = offers;
