@@ -9,6 +9,7 @@
  */
 
 const { businessProfile } = require('../config/businessProfile');
+const { isPrelaunchListingMode } = require('../config/marketplaceMode');
 
 class StructuredDataFactory {
   /**
@@ -144,29 +145,57 @@ class StructuredDataFactory {
       schema.image = [event.event_image || event.poster_url];
     }
 
-    // Offers
+    // Offers: Accurately distinguish official primary ticket from secondary resale
+    // Strict Zero-Fake Inventory Invariant: Never assert InStock unless purchasable inventory actually exists on Tikum.
     const offers = [];
     if (event.official_ticket_url) {
-      offers.push({
+      const isOfficialSoldOut = (
+        event.status === 'SOLD_OUT' ||
+        event.official_ticket_availability === 'SOLD_OUT' ||
+        event.primary_ticket_status === 'SOLD_OUT' ||
+        event.availability_status === 'SOLD_OUT' ||
+        (event.metadata && (event.metadata.official_ticket_availability === 'SOLD_OUT' || event.metadata.primary_ticket_status === 'SOLD_OUT'))
+      );
+
+      const officialAvailability = isOfficialSoldOut ? 'https://schema.org/SoldOut' : 'https://schema.org/OutOfStock';
+
+      const officialOffer = {
         '@type': 'Offer',
-        'name': `Tiket Resmi (${event.official_ticketing_provider || 'Primary Official Provider'})`,
+        'name': `Tiket Resmi Primer (${event.official_ticketing_provider || 'Mitra Penjualan Resmi'})`,
         'url': event.official_ticket_url,
-        'availability': event.status === 'SOLD_OUT' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+        'availability': officialAvailability,
         'priceCurrency': 'IDR',
         'validFrom': event.created_at || '2026-01-01'
-      });
+      };
+
+      if (event.lowest_official_price && typeof event.lowest_official_price === 'number') {
+        officialOffer.price = event.lowest_official_price;
+      }
+
+      offers.push(officialOffer);
     }
 
-    if (Array.isArray(activeListings) && activeListings.length > 0) {
+    const hasActiveListings = Array.isArray(activeListings) && activeListings.length > 0 && !isPrelaunchListingMode();
+    if (hasActiveListings) {
       const minPrice = Math.min(...activeListings.map(l => l.price));
       offers.push({
         '@type': 'AggregateOffer',
-        'name': 'Tikum Verified Resale Inventory',
+        'name': 'TIKUM Tiket Resale Sekunder Terverifikasi',
         'url': `https://tikum.app/events/${event.slug}`,
         'priceCurrency': 'IDR',
         'lowPrice': minPrice,
         'offerCount': activeListings.length,
         'availability': 'https://schema.org/InStock'
+      });
+    } else {
+      // Zero Fake Inventory Invariant: Truthfully declare that TIKUM secondary inventory is OutOfStock
+      offers.push({
+        '@type': 'Offer',
+        'name': 'TIKUM Tiket Resale Sekunder Terverifikasi',
+        'url': `https://tikum.app/events/${event.slug}`,
+        'priceCurrency': 'IDR',
+        'availability': 'https://schema.org/OutOfStock',
+        'description': 'Belum ada tiket resale sekunder terverifikasi di TIKUM untuk event ini.'
       });
     }
 
