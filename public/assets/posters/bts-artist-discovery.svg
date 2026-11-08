@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="btsBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#070312" />
+      <stop offset="45%" stop-color="#150a2b" />
+      <stop offset="80%" stop-color="#0f0720" />
+      <stop offset="100%" stop-color="#04020a" />
+    </linearGradient>
+    <radialGradient id="btsGlow" cx="50%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.35" />
+      <stop offset="45%" stop-color="#7c3aed" stop-opacity="0.18" />
+      <stop offset="75%" stop-color="#4c1d95" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="btsTextGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="40%" stop-color="#f3e8ff" />
+      <stop offset="75%" stop-color="#d8b4fe" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+    <linearGradient id="doorGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c084fc" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0.5" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="360" fill="url(#btsBg)" />
+  <circle cx="300" cy="130" r="280" fill="url(#btsGlow)" />
+
+  <!-- Stage Light Beams -->
+  <polygon points="100,0 220,0 330,360 40,360" fill="url(#btsGlow)" opacity="0.45" />
+  <polygon points="500,0 380,0 270,360 560,360" fill="url(#btsGlow)" opacity="0.45" />
+
+  <!-- Eyebrow Pill -->
+  <g transform="translate(300, 46)">
+    <rect x="-165" y="-14" width="330" height="28" rx="14" fill="rgba(19, 10, 40, 0.85)" stroke="rgba(192, 132, 252, 0.45)" stroke-width="1.2" />
+    <circle cx="-145" cy="0" r="4" fill="#c084fc" />
+    <text text-anchor="middle" y="4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10.5" font-weight="800" fill="#c084fc" letter-spacing="2.2">FEATURED ARTIST DISCOVERY • TIKUM</text>
+  </g>
+
+  <!-- Stylized BTS Trapezoid Doors Emblem -->
+  <g transform="translate(300, 88)" stroke="#e9d5ff" stroke-width="1.5" fill="none">
+    <path d="M -16,-12 L -6,-15 L -6,15 L -16,12 Z" fill="rgba(192, 132, 252, 0.25)" />
+    <path d="M 16,-12 L 6,-15 L 6,15 L 16,12 Z" fill="rgba(192, 132, 252, 0.25)" />
+  </g>
+
+  <!-- Main Artist Name -->
+  <text x="300" y="162" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="46" font-weight="900" fill="url(#btsTextGrad)" letter-spacing="8">BTS</text>
+
+  <!-- Subtitle Tagline -->
+  <text x="300" y="196" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="#e9d5ff" letter-spacing="3.5">GLOBAL LIVE EVENT RADAR &amp; DISCOVERY SPOTLIGHT</text>
+
+  <text x="300" y="222" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600" fill="#cbd5e1" letter-spacing="1.2">RM • JIN • SUGA • J-HOPE • JIMIN • V • JUNG KOOK</text>
+
+  <!-- Status Box -->
+  <g transform="translate(300, 272)">
+    <rect x="-185" y="-16" width="370" height="32" rx="6" fill="rgba(15, 8, 30, 0.9)" stroke="rgba(168, 85, 247, 0.4)" stroke-width="1" />
+    <text text-anchor="middle" y="4.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#f3e8ff" letter-spacing="1">STATUS: MENUNGGU JADWAL RESMI PROMOTOR</text>
+  </g>
+
+  <!-- Truth Footnote -->
+  <text x="300" y="324" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9.5" font-weight="500" fill="#94a3b8" letter-spacing="0.5">Zero Fake Inventory: Transaksi sekunder hanya dibuka setelah jadwal dan tiket resmi terverifikasi</text>
+</svg>

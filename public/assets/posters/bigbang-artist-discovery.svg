@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bbBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a0c" />
+      <stop offset="45%" stop-color="#181512" />
+      <stop offset="80%" stop-color="#110e0a" />
+      <stop offset="100%" stop-color="#050506" />
+    </linearGradient>
+    <radialGradient id="bbGoldGlow" cx="50%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.32" />
+      <stop offset="40%" stop-color="#b45309" stop-opacity="0.18" />
+      <stop offset="75%" stop-color="#78350f" stop-opacity="0.06" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="bbGoldText" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="35%" stop-color="#fef3c7" />
+      <stop offset="70%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="crownGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#d97706" stop-opacity="0.4" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="360" fill="url(#bbBg)" />
+  <circle cx="300" cy="130" r="280" fill="url(#bbGoldGlow)" />
+
+  <!-- Stage Light Beams -->
+  <polygon points="120,0 240,0 340,360 60,360" fill="url(#bbGoldGlow)" opacity="0.4" />
+  <polygon points="480,0 360,0 260,360 540,360" fill="url(#bbGoldGlow)" opacity="0.4" />
+
+  <!-- Eyebrow Pill -->
+  <g transform="translate(300, 46)">
+    <rect x="-165" y="-14" width="330" height="28" rx="14" fill="rgba(24, 21, 18, 0.85)" stroke="rgba(251, 191, 36, 0.45)" stroke-width="1.2" />
+    <circle cx="-145" cy="0" r="4" fill="#fbbf24" />
+    <text text-anchor="middle" y="4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10.5" font-weight="800" fill="#fbbf24" letter-spacing="2.2">FEATURED ARTIST DISCOVERY • TIKUM</text>
+  </g>
+
+  <!-- Crown Emblem / Stylized VIP Icon -->
+  <g transform="translate(300, 88)" fill="url(#crownGrad)">
+    <path d="M -24,10 L -32,-8 L -14, -1 L 0,-14 L 14,-1 L 32,-8 L 24,10 Z" />
+    <circle cx="-32" cy="-12" r="2.5" fill="#fef3c7" />
+    <circle cx="0" cy="-18" r="3" fill="#fef3c7" />
+    <circle cx="32" cy="-12" r="2.5" fill="#fef3c7" />
+  </g>
+
+  <!-- Main Artist Name -->
+  <text x="300" y="162" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="900" fill="url(#bbGoldText)" letter-spacing="6">BIGBANG</text>
+
+  <!-- Subtitle Tagline -->
+  <text x="300" y="196" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="#fde68a" letter-spacing="3.5">LIVE EVENT RADAR &amp; DISCOVERY SPOTLIGHT</text>
+
+  <text x="300" y="222" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11.5" font-weight="600" fill="#d1d5db" letter-spacing="1.5">G-DRAGON • TAEYANG • DAESUNG</text>
+
+  <!-- Status Box -->
+  <g transform="translate(300, 272)">
+    <rect x="-185" y="-16" width="370" height="32" rx="6" fill="rgba(15, 15, 18, 0.9)" stroke="rgba(245, 158, 11, 0.35)" stroke-width="1" />
+    <text text-anchor="middle" y="4.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#fef3c7" letter-spacing="1">STATUS: MENUNGGU JADWAL RESMI PROMOTOR</text>
+  </g>
+
+  <!-- Truth Footnote -->
+  <text x="300" y="324" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9.5" font-weight="500" fill="#9ca3af" letter-spacing="0.5">Zero Fake Inventory: Transaksi sekunder hanya dibuka setelah jadwal dan tiket resmi terverifikasi</text>
+</svg>
