@@ -19,6 +19,8 @@ const {
   MONEY_STATE,
   ProviderCapabilities
 } = require('./canonicalPaymentTypes');
+const { IPaymuEscrowPolicy } = require('./ipaymu/IPaymuEscrowPolicy');
+const { IPaymuSellerOnboardingService } = require('./ipaymu/IPaymuSellerOnboardingService');
 
 const IPAYMU_STATUS = {
   PENDING_VERIFICATION: 'PENDING_VERIFICATION',
@@ -132,7 +134,11 @@ class IPaymuProvider extends PaymentProvider {
       disputeHandling: false,
       chargebackHandling: false,
       notes: {
-        escrow_restriction: 'VIRTUAL_ACCOUNT_ONLY',
+        escrow_restriction: 'QUALIFYING_VA_AND_UNIQUE_CODE_ONLY',
+        confirmation_window: '7_DAYS_AUTO_RELEASE_MAX_10_DAYS_WITH_EXTENSION',
+        escrow_control_api: 'UNAVAILABLE_MANUAL_OR_TIMER_ONLY',
+        refund_api: 'UNAVAILABLE_MANUAL_BACKOFFICE_ONLY',
+        closed_api_single_register: 'BLOCKED_REQUIRES_PROVIDER_DOCS_AND_AGREEMENT',
         api_version: 'v2'
       }
     });
@@ -164,15 +170,16 @@ class IPaymuProvider extends PaymentProvider {
       { code: 'VA_BNI', name: 'BNI Virtual Account', type: 'VA', isEscrowSupported: true },
       { code: 'VA_BRI', name: 'BRI Virtual Account', type: 'VA', isEscrowSupported: true },
       { code: 'VA_PERMATA', name: 'Permata Virtual Account', type: 'VA', isEscrowSupported: true },
+      { code: 'BANK_TRANSFER_UNIQUE_CODE', name: 'Transfer Bank Manual Kode Unik', type: 'UNIQUE_CODE_TRANSFER', isEscrowSupported: true },
+      { code: 'DIRECT_BANK_TRANSFER_UNIQUE_CODE', name: 'Transfer Bank Manual Kode Unik', type: 'UNIQUE_CODE_TRANSFER', isEscrowSupported: true },
       { code: 'QRIS', name: 'QRIS Standar Nasional', type: 'QRIS', isEscrowSupported: false },
-      { code: 'DIRECT_BANK_TRANSFER', name: 'Transfer Bank Langsung', type: 'DIRECT_TRANSFER', isEscrowSupported: false },
+      { code: 'DIRECT_BANK_TRANSFER', name: 'Transfer Bank Langsung (Tanpa Kode Unik)', type: 'DIRECT_TRANSFER', isEscrowSupported: false },
       { code: 'CREDIT_CARD_INSTANT', name: 'Kartu Kredit Instan', type: 'CREDIT_CARD', isEscrowSupported: false }
     ];
   }
 
   isEscrowSupported(channel = '') {
-    const ch = (channel || '').toUpperCase();
-    return ch.endsWith('_VA') || ch.startsWith('VA_') || ch.includes('VIRTUAL_ACCOUNT');
+    return IPaymuEscrowPolicy.isChannelEligible(channel);
   }
 
   /**
@@ -268,24 +275,63 @@ class IPaymuProvider extends PaymentProvider {
     channel = 'BCA_VA',
     buyer = {},
     requiresEscrow = false,
+    seller = null,
+    sellerAmount = null,
+    platformFee = null,
+    eventTimestamp = null,
+    deliveryTimestamp = null,
+    isExtended = false,
     notifyUrl = null,
     returnUrl = null,
     cancelUrl = null
   }) {
-    // 1. Escrow channel capability validation: VA required for escrow
+    // 1. Escrow channel capability validation: VA & Qualifying Unique Code required for escrow
     if (requiresEscrow && !this.isEscrowSupported(channel)) {
       const err = new Error(
         `Metode pembayaran '${channel}' tidak mendukung penahanan escrow iPaymu. ` +
-        `Tikum mewajibkan Virtual Account untuk escrow iPaymu.`
+        `Escrow iPaymu hanya mendukung Virtual Account dan transfer bank berkode unik yang memenuhi syarat. ` +
+        `QRIS dan Kartu Kredit tidak didukung untuk escrow.`
       );
       err.code = 'ESCROW_CHANNEL_UNSUPPORTED';
       err.statusCode = 400;
       throw err;
     }
 
+    // 1b. Temporal eligibility evaluation if event timestamp provided
+    const targetEventTime = eventTimestamp || buyer.eventTimestamp;
+    let escrowEligibility = null;
+    if (requiresEscrow && targetEventTime) {
+      escrowEligibility = IPaymuEscrowPolicy.evaluateEventEligibility({
+        paymentTimestamp: Date.now(),
+        deliveryTimestamp: deliveryTimestamp || buyer.deliveryTimestamp,
+        eventTimestamp: targetEventTime,
+        isExtended
+      });
+      if (!escrowEligibility.eligible) {
+        const err = new Error(
+          `Transaksi tidak memenuhi syarat escrow iPaymu: ${escrowEligibility.reason}`
+        );
+        err.code = escrowEligibility.code;
+        err.statusCode = 400;
+        err.details = escrowEligibility;
+        throw err;
+      }
+    }
+
     const gross = parseInt(amount, 10);
     const channelUpper = (channel || 'BCA_VA').toUpperCase();
     const isEscrow = this.isEscrowSupported(channelUpper);
+
+    // 1c. Split payment configuration validation if seller is provided
+    let splitConfig = null;
+    if (seller) {
+      splitConfig = IPaymuSellerOnboardingService.validateSplitConfiguration({
+        seller,
+        grossAmount: gross,
+        sellerAmount: sellerAmount !== null && sellerAmount !== undefined ? sellerAmount : (gross - (platformFee || 0)),
+        platformFee: platformFee || 0
+      });
+    }
 
     // 2. Real HTTP execution if credentials configured and live connection enabled
     if (this.apiKey && this.virtualAccount && !this.allowSimulation) {
@@ -396,6 +442,17 @@ class IPaymuProvider extends PaymentProvider {
         requiresEscrow,
         isEscrowCapable: isEscrow,
         escrowHoldStatus: requiresEscrow ? 'ESCROW_HOLD_RESERVED' : 'DIRECT_DISBURSE',
+        escrowPolicy: requiresEscrow ? {
+          confirmationWindowHours: 168,
+          maxExtendedHours: 240,
+          deadlines: IPaymuEscrowPolicy.calculateDeadlines(Date.now(), isExtended),
+          temporalCheck: escrowEligibility
+        } : null,
+        splitDetails: splitConfig ? {
+          sellerVa: splitConfig.sellerVa,
+          sellerAmount: splitConfig.sellerAmount,
+          platformFee: splitConfig.platformFee
+        } : null,
         paymentUrl,
         paymentDetails: {
           vaNumber,
@@ -421,6 +478,17 @@ class IPaymuProvider extends PaymentProvider {
         requiresEscrow,
         isEscrowCapable: isEscrow,
         escrowHoldStatus: requiresEscrow ? 'ESCROW_HOLD_RESERVED' : 'DIRECT_DISBURSE',
+        escrowPolicy: requiresEscrow ? {
+          confirmationWindowHours: 168,
+          maxExtendedHours: 240,
+          deadlines: IPaymuEscrowPolicy.calculateDeadlines(Date.now(), isExtended),
+          temporalCheck: escrowEligibility
+        } : null,
+        splitDetails: splitConfig ? {
+          sellerVa: splitConfig.sellerVa,
+          sellerAmount: splitConfig.sellerAmount,
+          platformFee: splitConfig.platformFee
+        } : null,
         paymentUrl: `https://sandbox.ipaymu.com/payment/sim/${orderId}`,
         paymentDetails: {
           vaNumber,
@@ -489,19 +557,61 @@ class IPaymuProvider extends PaymentProvider {
   }
 
   async refund({ orderId, providerRef, amount, reason }) {
+    // Confirmed iPaymu limitation: iPaymu API v2 does not provide an automated remote refund endpoint.
+    // All refunds are initiated and recorded as manual pending operations via iPaymu backoffice / email.
     return {
       orderId,
       providerRef,
-      refunded: true,
+      refunded: false,
+      manualActionRequired: true,
+      status: 'MANUAL_REFUND_PENDING',
+      moneyState: MONEY_STATE.REFUND_PENDING,
       amount,
       reason,
-      status: 'CONFIRMED',
-      moneyState: MONEY_STATE.REFUNDED
+      provider: this.getName(),
+      instruction: 'Pengembalian dana iPaymu diproses manual melalui portal iPaymu atau korespondensi resmi ke accounting@ipaymu.com.'
     };
   }
 
   async requestRefund({ orderId, providerRef, amount, reason, idempotencyKey }) {
     return this.refund({ orderId, providerRef, amount, reason });
+  }
+
+  async hold() {
+    throw new CapabilityUnsupportedError(
+      this.getName(),
+      'hold',
+      'PROVIDER_ESCROW_API_UNAVAILABLE: iPaymu API v2 does not provide an API endpoint to control escrow holding. Holding is governed by payment checkout type and automated timers.'
+    );
+  }
+
+  async release() {
+    throw new CapabilityUnsupportedError(
+      this.getName(),
+      'release',
+      'PROVIDER_ESCROW_API_UNAVAILABLE: iPaymu API v2 does not provide an API endpoint to trigger escrow release. Release occurs via buyer confirmation or automated 7-day timer expiry.'
+    );
+  }
+
+  // Seller Onboarding & Escrow Policy Helper Facades
+  getClosedApiStatus() {
+    return IPaymuSellerOnboardingService.getClosedApiStatus();
+  }
+
+  linkSellerAccount(seller, details) {
+    return IPaymuSellerOnboardingService.linkIndividualSellerAccount(seller, details);
+  }
+
+  validateSplitConfiguration(params) {
+    return IPaymuSellerOnboardingService.validateSplitConfiguration(params);
+  }
+
+  evaluateEscrowEligibility(params) {
+    return IPaymuEscrowPolicy.evaluateEventEligibility(params);
+  }
+
+  calculateEscrowDeadlines(payTime, isExtended) {
+    return IPaymuEscrowPolicy.calculateDeadlines(payTime, isExtended);
   }
 
   async cancel({ orderId, providerRef, reason }) {
