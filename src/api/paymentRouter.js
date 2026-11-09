@@ -190,6 +190,95 @@ router.get('/v1/payments/active-config', (req, res) => {
 });
 
 /**
+ * GET /api/v1/payments/ipaymu/config
+ * Public status & supported channels for iPaymu payment integration (zero secrets exposed)
+ */
+router.get(['/v1/payments/ipaymu/config', '/payments/ipaymu/config'], (req, res) => {
+  try {
+    const ipaymu = paymentManager.getProvider('ipaymu');
+    const status = ipaymu.getStatus();
+    const hasVa = Boolean(process.env.IPAYMU_VA);
+    const maskedVa = hasVa
+      ? `${process.env.IPAYMU_VA.slice(0, 4)}***${process.env.IPAYMU_VA.slice(-4)}`
+      : null;
+
+    res.json({
+      success: true,
+      provider: 'ipaymu',
+      tier: 'TIER_1B',
+      is_available: true,
+      is_configured: Boolean(process.env.IPAYMU_API_KEY && process.env.IPAYMU_VA),
+      is_production: ipaymu.isProduction,
+      mode: ipaymu.mode,
+      status: status.status,
+      virtual_account_configured: hasVa,
+      virtual_account_masked: maskedVa,
+      webhook_url: process.env.IPAYMU_WEBHOOK_URL || 'https://tikum.app/api/v1/payments/webhook/ipaymu',
+      supported_channels: ipaymu.getSupportedChannels(),
+      default_channel: 'IPAYMU_REDIRECT'
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/v1/system/outbound-ip
+ * Diagnoses and returns authoritative public outbound (egress) IP address of the backend server.
+ * Required for iPaymu merchant verification (Website Outbound Server IP).
+ */
+router.get(['/v1/system/outbound-ip', '/system/outbound-ip', '/api/outbound-ip'], async (req, res) => {
+  try {
+    const https = require('https');
+    const probe = await new Promise((resolve, reject) => {
+      const start = Date.now();
+      const reqOut = https.get('https://api.ipify.org?format=json', { timeout: 6000 }, (resp) => {
+        let data = '';
+        resp.on('data', chunk => data += chunk);
+        resp.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            resolve({ ip: parsed.ip, latencyMs: Date.now() - start });
+          } catch (e) {
+            resolve({ ip: data.trim(), latencyMs: Date.now() - start });
+          }
+        });
+      });
+      reqOut.on('timeout', () => { reqOut.destroy(); reject(new Error('Outbound IP reflection request timed out')); });
+      reqOut.on('error', reject);
+    });
+
+    const isVercel = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+
+    res.json({
+      success: true,
+      outbound_ip: probe.ip,
+      latency_ms: probe.latencyMs,
+      hosting_environment: isVercel ? 'Vercel Serverless Functions (AWS Lambda)' : 'Standalone Node.js Server',
+      environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'development',
+      deployment_region: process.env.VERCEL_REGION || 'sin1 (Singapore) / iad1 (US-East)',
+      egress_ip_type: isVercel ? 'DYNAMIC_AWS_LAMBDA_NAT_POOL' : 'DIRECT_PUBLIC_IP',
+      is_static_egress: !isVercel,
+      ipaymu_verification_instructions: {
+        field_name: 'IP Website (IP Outbound Server Back-End)',
+        detected_outbound_ip: probe.ip,
+        architecture_note: isVercel
+          ? 'Production TIKUM di-host di Vercel Functions (AWS Lambda). Vercel mengarahkan egress melalui pool NAT Gateway AWS di region terkait. Masukkan IP yang terdeteksi ini ke kolom IP Website iPaymu. Untuk static egress permanen, forward proxy IPAYMU_EGRESS_PROXY dapat diaktifkan.'
+          : 'Masukkan IP ini pada kolom IP Website di dashboard integrasi iPaymu.'
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to probe backend outbound IP',
+      message: err.message
+    });
+  }
+});
+
+/**
  * POST /api/v1/payments/create
  * Creates a payment intent for an order through configured provider
  */
@@ -236,21 +325,24 @@ router.post('/v1/payments/create', async (req, res) => {
       return res.status(403).json({ error: 'Forbidden: You do not own this order', code: 'FORBIDDEN' });
     }
 
-    const targetProvider = (providerName || paymentManager.defaultProvider || 'doku').toLowerCase();
+    const targetProvider = (providerName || req.query.provider || paymentManager.defaultProvider || 'doku').toLowerCase();
     const providerInstance = paymentManager.getProvider(targetProvider);
     const providerSupportsHold = providerInstance ? Boolean(providerInstance.getCapabilities?.().hold) : false;
     const effectiveRequiresEscrow = (requiresEscrow !== undefined && requiresEscrow !== null)
       ? Boolean(requiresEscrow)
       : providerSupportsHold;
 
+    const defaultChannel = targetProvider === 'ipaymu' ? 'IPAYMU_REDIRECT' : 'QRIS';
+
     const paymentResult = await PaymentService.createPayment({
       orderId: order.id,
       amount: order.buyer_total || order.total_amount,
-      channel: channel || 'QRIS',
+      channel: channel || defaultChannel,
       buyer: {
         id: order.buyer_id,
         name: req.body?.buyer?.name || (order.buyer_id === 'buyer-1' ? 'Dewi Lestari' : 'Tikum Customer'),
-        email: req.body?.buyer?.email || (order.buyer_id === 'buyer-1' ? 'dewi.buyer@example.com' : 'customer@tikum.app')
+        email: req.body?.buyer?.email || (order.buyer_id === 'buyer-1' ? 'dewi.buyer@example.com' : 'customer@tikum.app'),
+        productName: order.metadata?.productName || order.metadata?.eventName || `Tiket Event Tikum (Order ${order.id})`
       },
       providerName: targetProvider,
       idempotencyKey: idempotencyKey || req.header('x-idempotency-key') || null,

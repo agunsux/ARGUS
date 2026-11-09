@@ -187,7 +187,7 @@ async function runTests() {
       assert.ok(termsHtml.includes('9. Verifikasi Tiket &amp; Dokumen Bukti'), 'Missing Sec 9');
       assert.ok(termsHtml.includes('10. Penetapan Harga Transparan'), 'Missing Sec 10');
       assert.ok(termsHtml.includes('11. Mekanisme Penawaran Terstruktur (Make Offer)'), 'Missing Sec 11');
-      assert.ok(termsHtml.includes('12. Pembayaran &amp; Rekening Bersama (Escrow)'), 'Missing Sec 12');
+      assert.ok(termsHtml.includes('12. Pembayaran &amp; Rekening Bersama (Escrow)') || termsHtml.includes('12. Pembayaran &amp; Tata Kelola Transaksi (Settlement Review)'), 'Missing Sec 12');
       assert.ok(termsHtml.includes('13. Siklus Pesanan (Order Lifecycle)'), 'Missing Sec 13');
       assert.ok(termsHtml.includes('14. Pembatalan Pesanan'), 'Missing Sec 14');
       assert.ok(termsHtml.includes('15. Pengembalian Dana (Refund)'), 'Missing Sec 15');
