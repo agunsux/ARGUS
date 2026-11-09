@@ -41,7 +41,7 @@ class IPaymuProvider extends PaymentProvider {
     this.controlledTransactionPassed = config.controlledTransactionPassed === true;
     this.allowSimulation = config.allowSimulation !== undefined
       ? Boolean(config.allowSimulation)
-      : (process.env.NODE_ENV === 'test' && !process.env.ENABLE_IPAYMU_PRODUCTION);
+      : (process.env.NODE_ENV === 'test' && process.env.ENABLE_IPAYMU_PRODUCTION !== 'true');
   }
 
   getName() {
@@ -153,6 +153,7 @@ class IPaymuProvider extends PaymentProvider {
 
   getSupportedChannels() {
     return [
+      { code: 'IPAYMU_REDIRECT', name: 'iPaymu Hosted Checkout (Semua Metode)', type: 'CHECKOUT', isEscrowSupported: false },
       { code: 'BCA_VA', name: 'BCA Virtual Account', type: 'VA', isEscrowSupported: true },
       { code: 'MANDIRI_VA', name: 'Mandiri Virtual Account', type: 'VA', isEscrowSupported: true },
       { code: 'BNI_VA', name: 'BNI Virtual Account', type: 'VA', isEscrowSupported: true },
@@ -293,34 +294,79 @@ class IPaymuProvider extends PaymentProvider {
         throw new Error('Live iPaymu production API client awaiting merchant production activation.');
       }
 
-      const paymentChannelCode = channelUpper.includes('BCA') ? 'bca'
-        : channelUpper.includes('MANDIRI') ? 'mandiri'
-        : channelUpper.includes('BNI') ? 'bni'
-        : channelUpper.includes('BRI') ? 'bri'
-        : channelUpper.includes('PERMATA') ? 'permata'
-        : 'bca';
+      const isDirectVA = channelUpper.includes('_VA') || channelUpper.startsWith('VA_') || channelUpper.includes('VIRTUAL_ACCOUNT');
+      const isDirectQRIS = channelUpper === 'QRIS';
 
-      const payload = {
-        name: buyer.name || 'Tikum Customer',
-        phone: buyer.phone || '081299927378',
-        email: buyer.email || 'support@tikum.app',
-        amount: gross,
-        notifyUrl: notifyUrl || process.env.IPAYMU_WEBHOOK_URL || 'https://tikum.app/api/v1/payments/webhook/ipaymu',
-        returnUrl: returnUrl || 'https://tikum.app/orders',
-        cancelUrl: cancelUrl || 'https://tikum.app/orders',
-        expired: 24,
-        expiredType: 'hours',
-        comments: `Order ${orderId}`,
-        referenceId: orderId,
-        paymentMethod: 'va',
-        paymentChannel: paymentChannelCode
-      };
+      let signed;
+      if (isDirectQRIS) {
+        const payload = {
+          name: buyer.name || 'Tikum Customer',
+          phone: buyer.phone || '081299927378',
+          email: buyer.email || 'support@tikum.app',
+          amount: gross,
+          notifyUrl: notifyUrl || process.env.IPAYMU_WEBHOOK_URL || 'https://tikum.app/api/v1/payments/webhook/ipaymu',
+          returnUrl: returnUrl || `https://tikum.app/track?id=${orderId}`,
+          cancelUrl: cancelUrl || `https://tikum.app/pay?id=${orderId}`,
+          expired: 24,
+          expiredType: 'hours',
+          comments: `Order ${orderId}`,
+          referenceId: orderId,
+          paymentMethod: 'qris',
+          paymentChannel: 'qris'
+        };
+        signed = this.buildSignedRequest({
+          endpoint: '/payment/direct',
+          method: 'POST',
+          body: payload
+        });
+      } else if (isDirectVA) {
+        const paymentChannelCode = channelUpper.includes('BCA') ? 'bca'
+          : channelUpper.includes('MANDIRI') ? 'mandiri'
+          : channelUpper.includes('BNI') ? 'bni'
+          : channelUpper.includes('BRI') ? 'bri'
+          : channelUpper.includes('PERMATA') ? 'permata'
+          : 'bca';
 
-      const signed = this.buildSignedRequest({
-        endpoint: '/payment/direct',
-        method: 'POST',
-        body: payload
-      });
+        const payload = {
+          name: buyer.name || 'Tikum Customer',
+          phone: buyer.phone || '081299927378',
+          email: buyer.email || 'support@tikum.app',
+          amount: gross,
+          notifyUrl: notifyUrl || process.env.IPAYMU_WEBHOOK_URL || 'https://tikum.app/api/v1/payments/webhook/ipaymu',
+          returnUrl: returnUrl || `https://tikum.app/track?id=${orderId}`,
+          cancelUrl: cancelUrl || `https://tikum.app/pay?id=${orderId}`,
+          expired: 24,
+          expiredType: 'hours',
+          comments: `Order ${orderId}`,
+          referenceId: orderId,
+          paymentMethod: 'va',
+          paymentChannel: paymentChannelCode
+        };
+        signed = this.buildSignedRequest({
+          endpoint: '/payment/direct',
+          method: 'POST',
+          body: payload
+        });
+      } else {
+        // Standard iPaymu Redirect Hosted Checkout (endpoint /payment)
+        const payload = {
+          product: [buyer.productName || `Tiket Event Tikum (Order ${orderId})`],
+          qty: [1],
+          price: [gross],
+          returnUrl: returnUrl || `https://tikum.app/track?id=${orderId}`,
+          cancelUrl: cancelUrl || `https://tikum.app/pay?id=${orderId}`,
+          notifyUrl: notifyUrl || process.env.IPAYMU_WEBHOOK_URL || 'https://tikum.app/api/v1/payments/webhook/ipaymu',
+          referenceId: orderId,
+          buyerName: buyer.name || 'Tikum Customer',
+          buyerEmail: buyer.email || 'support@tikum.app',
+          buyerPhone: buyer.phone || '081299927378'
+        };
+        signed = this.buildSignedRequest({
+          endpoint: '/payment',
+          method: 'POST',
+          body: payload
+        });
+      }
 
       const response = await this._httpRequest(signed);
 
@@ -477,39 +523,77 @@ class IPaymuProvider extends PaymentProvider {
 
   /**
    * Verifies signature of iPaymu webhook callback
+   * Official iPaymu API v2 specification uses the merchant's Virtual Account (VA)
+   * as the secret key for callback verification (with API Key as fallback).
    */
-  verifyWebhook(headers = {}, body = {}) {
+  verifyWebhook(headers = {}, body = {}, rawPayload = null) {
     const signature = headers['signature'] || headers['x-signature'];
     if (!signature) {
       return false;
     }
-    if (!this.apiKey) {
+    const secretKey = this.virtualAccount || this.apiKey;
+    if (!secretKey) {
       return false;
     }
-    const bodyStr = typeof body === 'string' ? body : JSON.stringify(body);
-    const expected = crypto.createHmac('sha256', this.apiKey)
-      .update(bodyStr)
-      .digest('hex');
-    const sigBuf = Buffer.from(signature);
-    const expBuf = Buffer.from(expected);
-    if (sigBuf.length !== expBuf.length) return false;
-    return crypto.timingSafeEqual(sigBuf, expBuf);
+
+    const bodyStr = (typeof rawPayload === 'string' && rawPayload)
+      ? rawPayload
+      : (Buffer.isBuffer(rawPayload) ? rawPayload.toString('utf8') : (typeof body === 'string' ? body : JSON.stringify(body)));
+
+    const cleanSig = String(signature).trim().toLowerCase();
+
+    // 1. Try with virtualAccount (official iPaymu v2 callback spec)
+    if (this.virtualAccount) {
+      const expectedVa = crypto.createHmac('sha256', this.virtualAccount)
+        .update(bodyStr, 'utf8')
+        .digest('hex')
+        .toLowerCase();
+      const sigBuf = Buffer.from(cleanSig);
+      const expBuf = Buffer.from(expectedVa);
+      if (sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
+        return true;
+      }
+    }
+
+    // 2. Fallback check with apiKey (for unit tests / custom signers)
+    if (this.apiKey) {
+      const expectedKey = crypto.createHmac('sha256', this.apiKey)
+        .update(bodyStr, 'utf8')
+        .digest('hex')
+        .toLowerCase();
+      const sigBuf = Buffer.from(cleanSig);
+      const expBuf = Buffer.from(expectedKey);
+      if (sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
-  parseWebhook(payload = {}) {
-    const rawStatus = (payload.status || payload.trx_status || '').toUpperCase();
-    const isPaid = rawStatus === 'BERHASIL' || rawStatus === 'PAID' || rawStatus === 'SUCCESS';
-    const channel = payload.channel || payload.payment_method || 'BCA_VA';
+  parseWebhook(payload = {}, headers = {}) {
+    const rawStatus = (payload.status || payload.trx_status || payload.transaction_status || '').toUpperCase();
+    const statusCode = parseInt(payload.status_code || payload.statusCode || 0, 10);
+    const isPaid = rawStatus === 'BERHASIL' || rawStatus === 'PAID' || rawStatus === 'SUCCESS' || statusCode === 1;
+    const isExpired = rawStatus === 'EXPIRED' || rawStatus === 'KEDALUWARSA';
+    const isFailed = rawStatus === 'BATAL' || rawStatus === 'FAILED';
+    const channel = payload.channel || payload.payment_method || payload.payment_channel || 'IPAYMU';
     const isEscrow = this.isEscrowSupported(channel);
 
+    let normalizedStatus = 'PENDING';
+    if (isPaid) normalizedStatus = 'SUCCESS';
+    else if (isExpired) normalizedStatus = 'EXPIRED';
+    else if (isFailed) normalizedStatus = 'FAILED';
+
     return {
-      orderId: payload.reference_id || payload.order_id,
-      providerRef: payload.trx_id || payload.transaction_id || `ipaymu-trx-${Date.now()}`,
+      orderId: payload.reference_id || payload.referenceId || payload.order_id,
+      providerRef: String(payload.trx_id || payload.transaction_id || payload.sid || `ipaymu-trx-${Date.now()}`),
       amount: parseInt(payload.amount || payload.total || 0, 10),
-      status: isPaid ? 'SUCCESS' : 'PENDING',
+      status: normalizedStatus,
+      rawStatus,
       isEscrowLocked: isPaid && isEscrow,
       channel,
-      paidAt: new Date().toISOString()
+      paidAt: payload.paid_at || new Date().toISOString()
     };
   }
 }

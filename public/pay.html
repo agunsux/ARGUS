@@ -311,10 +311,26 @@
           </select>
         </div>
 
+        <div class="form-group" style="margin-top: 14px; margin-bottom: 14px; background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2); padding: 12px 14px; border-radius: var(--radius-card);">
+          <label for="paymentMethodSelect" style="font-weight: 700; font-size: 13px; color: var(--ink-900); display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <i class="fa-solid fa-credit-card" style="color: var(--cyan);"></i> Pilih Kanal Pembayaran Resmi (iPaymu / DOKU):
+          </label>
+          <select id="paymentMethodSelect" class="form-control" style="font-weight: 600; font-size: 13.5px;">
+            <option value="ipaymu:IPAYMU_REDIRECT" selected>iPaymu Hosted Checkout (Semua Metode: VA BCA/Mandiri/BNI/BRI, QRIS, Indomaret/Alfamart)</option>
+            <option value="ipaymu:BCA_VA">iPaymu Direct — BCA Virtual Account</option>
+            <option value="ipaymu:MANDIRI_VA">iPaymu Direct — Mandiri Virtual Account</option>
+            <option value="ipaymu:BNI_VA">iPaymu Direct — BNI Virtual Account</option>
+            <option value="ipaymu:BRI_VA">iPaymu Direct — BRI Virtual Account</option>
+            <option value="ipaymu:PERMATA_VA">iPaymu Direct — Permata Virtual Account</option>
+            <option value="ipaymu:QRIS">iPaymu Direct — QRIS Nasional</option>
+            <option value="doku:DOKU_CHECKOUT">DOKU Hosted Checkout</option>
+          </select>
+        </div>
+
         <div class="notice-box notice-info" style="font-size: 12px;">
           <i class="fa-solid fa-circle-info"></i>
           <div>
-            <strong data-i18n="pay.gatewayNoticeTitle">Keterbukaan Integrasi Gateway:</strong> <span data-i18n="pay.gatewayNoticeDesc">Pada tahap pilot saat ini, transaksi diproses melalui simulasi rekening penampungan internal Tikum. Tidak ada penagihan riil ke gateway pembayaran eksternal.</span>
+            <strong data-i18n="pay.gatewayNoticeTitle">Keterbukaan Integrasi Gateway:</strong> <span data-i18n="pay.gatewayNoticeDesc">Pembayaran tiket diproses melalui payment gateway berizin resmi Bank Indonesia (iPaymu / DOKU). Dana pembelian ditampung dan dilindungi oleh sistem penampungan internal Tikum hingga serah terima tiket terverifikasi sah di gerbang venue.</span>
           </div>
         </div>
 
@@ -373,6 +389,23 @@
             <span data-i18n="pay.escrowStatusLabel">Status Perlindungan Dana:</span>
             <span id="resEscrowStatus" class="badge badge-info">HELD</span>
           </div>
+          <div id="resGatewayRow" class="price-row" style="display: none;">
+            <span>Payment Gateway:</span>
+            <span id="resGatewayName" class="badge" style="background:#06b6d4; color:#fff;">iPaymu</span>
+          </div>
+          <div id="resVaRow" class="price-row" style="display: none; background: rgba(245, 158, 11, 0.1); padding: 8px 12px; border-radius: 6px;">
+            <span style="font-weight: 700; color: #f59e0b;">Nomor Virtual Account:</span>
+            <strong id="resVaNumber" class="mono" style="color: #fbbf24; font-size: 16px;">-</strong>
+          </div>
+          <div id="resExpiryRow" class="price-row" style="display: none;">
+            <span>Batas Waktu Pembayaran:</span>
+            <span id="resExpiryTime" class="mono" style="color: var(--text-muted); font-size: 12px;">-</span>
+          </div>
+        </div>
+        <div id="resDirectPayContainer" style="display: none; margin-bottom: 14px;">
+          <a id="btnDirectPayUrl" href="#" target="_blank" class="btn" style="width: 100%; background: #06b6d4; color: #fff; font-weight: 700; padding: 12px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Halaman Pembayaran iPaymu
+          </a>
         </div>
 
         <div class="notice-box notice-info">
@@ -540,9 +573,9 @@
       if (pathParts.length >= 2 && pathParts[0] === 'pay') {
         return pathParts[1];
       }
-      // Check query param ?id=...
+      // Check query param ?id=... or ?listing_id=...
       const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('id');
+      return urlParams.get('id') || urlParams.get('listing_id');
     }
 
     async function loadListingData() {
@@ -747,7 +780,7 @@
         btn.innerText = `Listing Berstatus ${listing.status} — Tidak Dapat Dipesan`;
       } else {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-flask"></i> <span data-i18n="pay.simulateSubmit">Simulasikan Pemesanan &amp; Kunci Dana (Demo)</span>';
+        btn.innerHTML = '<i class="fa-solid fa-lock"></i> <span data-i18n="pay.realSubmit">Lanjutkan Pembayaran Resmi (iPaymu / DOKU)</span>';
         if (btnOffer) btnOffer.style.display = 'inline-flex';
       }
     }
@@ -875,8 +908,11 @@
 
         const createdOrder = orderData.order;
 
-        // Step 2: Initialize Payment via Server-Selected Gateway
+        // Step 2: Initialize Payment via Selected Gateway
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghubungkan ke Gateway Pembayaran...';
+
+        const methodChoice = document.getElementById('paymentMethodSelect')?.value || 'ipaymu:IPAYMU_REDIRECT';
+        const [selectedProvider, selectedChannel] = methodChoice.split(':');
 
         const resPay = await fetch('/api/v1/payments/create', {
           method: 'POST',
@@ -886,11 +922,13 @@
           },
           body: JSON.stringify({
             orderId: createdOrder.id,
-            // Server authoritatively selects the active approved payment provider
+            providerName: selectedProvider,
+            channel: selectedChannel,
             buyer: {
               id: buyerId,
               name: currentBuyer?.name || (buyerId === 'buyer-1' ? 'Dewi Lestari' : 'Tikum Customer'),
-              email: currentBuyer?.email || (buyerId === 'buyer-1' ? 'dewi.buyer@example.com' : 'customer@tikum.app')
+              email: currentBuyer?.email || (buyerId === 'buyer-1' ? 'dewi.buyer@example.com' : 'customer@tikum.app'),
+              productName: currentListing?.event?.name || currentListing?.event?.title || `Tiket Event Tikum (Order ${createdOrder.id})`
             }
           })
         });
@@ -938,18 +976,46 @@
           }
         }
 
-        // If gateway provided a hosted payment redirect URL (e.g. DOKU Checkout)
+        // If gateway provided a hosted payment redirect URL (e.g. iPaymu Checkout or DOKU Checkout)
         if (redirectUrl && !payment.simulated) {
           window.location.href = redirectUrl;
           return;
         }
 
-        // Display Success State (Simulation / Pending fallback)
+        // Display Success State (Simulation / Pending fallback / Direct VA)
         document.getElementById('orderActionCard').style.display = 'none';
         document.getElementById('resOrderId').innerText = createdOrder.id;
         document.getElementById('resOrderStatus').innerText = payment.status || 'PAYMENT_PENDING';
-        document.getElementById('resEscrowStatus').innerText = payment.moneyState || 'PLATFORM_HELD';
+        document.getElementById('resEscrowStatus').innerText = payment.escrowHoldStatus || payment.moneyState || 'PLATFORM_HELD';
         document.getElementById('btnGoTrack').href = `/track?id=${createdOrder.id}`;
+
+        const gatewayRow = document.getElementById('resGatewayRow');
+        const gatewayName = document.getElementById('resGatewayName');
+        if (gatewayRow && gatewayName) {
+          gatewayName.innerText = (payment.provider || selectedProvider).toUpperCase();
+          gatewayRow.style.display = 'flex';
+        }
+
+        const vaRow = document.getElementById('resVaRow');
+        const vaNum = document.getElementById('resVaNumber');
+        if (payment.paymentDetails?.vaNumber && vaRow && vaNum) {
+          vaNum.innerText = payment.paymentDetails.vaNumber;
+          vaRow.style.display = 'flex';
+        }
+
+        const expRow = document.getElementById('resExpiryRow');
+        const expTime = document.getElementById('resExpiryTime');
+        if (payment.paymentDetails?.expiredAt && expRow && expTime) {
+          expTime.innerText = new Date(payment.paymentDetails.expiredAt).toLocaleString('id-ID');
+          expRow.style.display = 'flex';
+        }
+
+        const directPayCont = document.getElementById('resDirectPayContainer');
+        const directPayBtn = document.getElementById('btnDirectPayUrl');
+        if (redirectUrl && directPayCont && directPayBtn) {
+          directPayBtn.href = redirectUrl;
+          directPayCont.style.display = 'block';
+        }
 
         const successCard = document.getElementById('orderSuccessCard');
         successCard.style.display = 'block';

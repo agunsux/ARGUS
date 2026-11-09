@@ -56,20 +56,98 @@ router.get('/v1/payments/methods', (req, res) => {
  * GET /api/v1/payments/midtrans/client-key
  * Returns safe public client key and Snap script URL for frontend integration (never leaks server key)
  * Fails-closed in production if Midtrans production merchant activation is pending
+ * In Preview: permitted only when verified as Vercel Preview with validated Sandbox credentials
  */
 router.get(['/v1/payments/midtrans/client-key', '/payments/midtrans/client-key'], (req, res) => {
   const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
-  if (isPrelaunchListingMode()) {
+  const {
+    getDeploymentEnv,
+    DEPLOYMENT_ENV,
+    isVercelPreview,
+    validateMidtransConfiguration
+  } = require('../config/deploymentEnv');
+
+  const depEnv = getDeploymentEnv();
+  const prelaunch = isPrelaunchListingMode();
+
+  // 1. In Production: prelaunch protection is absolute
+  if (depEnv === DEPLOYMENT_ENV.PRODUCTION && prelaunch) {
     return res.status(403).json({
       ...PRELAUNCH_ERROR_RESPONSE,
       isAvailable: false
     });
   }
 
-  const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL;
-  const isProductionActive = isProductionEnv && process.env.ENABLE_MIDTRANS_PRODUCTION === 'true' && process.env.MIDTRANS_IS_PRODUCTION === 'true';
+  // 2. In Unknown / Contradictory deployment: fail closed
+  if (depEnv === DEPLOYMENT_ENV.UNKNOWN) {
+    return res.status(503).json({
+      error: 'Midtrans client key unavailable in ambiguous deployment environment.',
+      code: 'UNKNOWN_ENVIRONMENT',
+      isAvailable: false
+    });
+  }
 
-  if (isProductionEnv && !isProductionActive) {
+  // 3. Narrowly scoped Vercel Preview exception:
+  // Permitted ONLY when:
+  // - Verified as Vercel Preview (isVercelPreview() === true)
+  // - Midtrans is explicitly configured for Sandbox
+  // - Sandbox credentials format validated
+  // - Production mode is strictly false
+  // - Production checkout remains disabled
+  if (isVercelPreview()) {
+    const validation = validateMidtransConfiguration({
+      clientKey: process.env.MIDTRANS_CLIENT_KEY,
+      serverKey: process.env.MIDTRANS_SERVER_KEY,
+      isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true'
+    });
+
+    if (!validation.allowed || !validation.isSandbox) {
+      return res.status(503).json({
+        error: validation.reason || 'Midtrans Sandbox is not properly configured for Preview.',
+        code: 'MIDTRANS_NOT_ACTIVATED',
+        isAvailable: false
+      });
+    }
+
+    const clientKey = (process.env.MIDTRANS_CLIENT_KEY || '').trim().replace(/^["']|["']$/g, '');
+    if (!clientKey) {
+      return res.status(503).json({
+        error: 'Midtrans client key is not configured in Preview.',
+        code: 'MIDTRANS_NOT_CONFIGURED',
+        isAvailable: false
+      });
+    }
+
+    if (!clientKey.startsWith('SB-Mid-client-') && process.env.NODE_ENV !== 'test') {
+      return res.status(503).json({
+        error: 'Invalid Midtrans client key format for Sandbox.',
+        code: 'INVALID_SANDBOX_CLIENT_KEY',
+        isAvailable: false
+      });
+    }
+
+    return res.json({
+      clientKey,
+      isProduction: false,
+      isSandbox: true,
+      isAvailable: true,
+      snapUrl: 'https://app.sandbox.midtrans.com/snap/snap.js'
+    });
+  }
+
+  // 4. Standard non-Preview environments (Development / Test)
+  if (prelaunch && process.env.NODE_ENV !== 'test') {
+    return res.status(403).json({
+      ...PRELAUNCH_ERROR_RESPONSE,
+      isAvailable: false
+    });
+  }
+
+  const isProductionActive = depEnv === DEPLOYMENT_ENV.PRODUCTION
+    && process.env.ENABLE_MIDTRANS_PRODUCTION === 'true'
+    && process.env.MIDTRANS_IS_PRODUCTION === 'true';
+
+  if (depEnv === DEPLOYMENT_ENV.PRODUCTION && !isProductionActive) {
     return res.status(503).json({
       error: 'Midtrans production payment provider is not yet activated for live marketplace checkout.',
       code: 'MIDTRANS_NOT_ACTIVATED',
@@ -94,7 +172,7 @@ router.get(['/v1/payments/midtrans/client-key', '/payments/midtrans/client-key']
  */
 router.get('/v1/payments/active-config', (req, res) => {
   const { isPrelaunchListingMode, getMarketplaceMode } = require('../config/marketplaceMode');
-  const isProductionEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+  const { isProductionDeployment } = require('../config/deploymentEnv');
   const defaultProvider = (paymentManager.defaultProvider || 'doku').toLowerCase();
   const provider = paymentManager.getProvider(defaultProvider);
   const status = provider ? provider.getStatus() : { isVerified: false, status: 'UNKNOWN' };
@@ -104,11 +182,100 @@ router.get('/v1/payments/active-config', (req, res) => {
     active_provider: defaultProvider,
     status: status.status,
     is_verified: status.isVerified,
-    is_production: Boolean(isProductionEnv),
+    is_production: isProductionDeployment(),
     marketplace_mode: getMarketplaceMode(),
     is_prelaunch: isPrelaunchListingMode(),
     requires_escrow: Boolean(capabilities?.hold)
   });
+});
+
+/**
+ * GET /api/v1/payments/ipaymu/config
+ * Public status & supported channels for iPaymu payment integration (zero secrets exposed)
+ */
+router.get(['/v1/payments/ipaymu/config', '/payments/ipaymu/config'], (req, res) => {
+  try {
+    const ipaymu = paymentManager.getProvider('ipaymu');
+    const status = ipaymu.getStatus();
+    const hasVa = Boolean(process.env.IPAYMU_VA);
+    const maskedVa = hasVa
+      ? `${process.env.IPAYMU_VA.slice(0, 4)}***${process.env.IPAYMU_VA.slice(-4)}`
+      : null;
+
+    res.json({
+      success: true,
+      provider: 'ipaymu',
+      tier: 'TIER_1B',
+      is_available: true,
+      is_configured: Boolean(process.env.IPAYMU_API_KEY && process.env.IPAYMU_VA),
+      is_production: ipaymu.isProduction,
+      mode: ipaymu.mode,
+      status: status.status,
+      virtual_account_configured: hasVa,
+      virtual_account_masked: maskedVa,
+      webhook_url: process.env.IPAYMU_WEBHOOK_URL || 'https://tikum.app/api/v1/payments/webhook/ipaymu',
+      supported_channels: ipaymu.getSupportedChannels(),
+      default_channel: 'IPAYMU_REDIRECT'
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/v1/system/outbound-ip
+ * Diagnoses and returns authoritative public outbound (egress) IP address of the backend server.
+ * Required for iPaymu merchant verification (Website Outbound Server IP).
+ */
+router.get(['/v1/system/outbound-ip', '/system/outbound-ip', '/api/outbound-ip'], async (req, res) => {
+  try {
+    const https = require('https');
+    const probe = await new Promise((resolve, reject) => {
+      const start = Date.now();
+      const reqOut = https.get('https://api.ipify.org?format=json', { timeout: 6000 }, (resp) => {
+        let data = '';
+        resp.on('data', chunk => data += chunk);
+        resp.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            resolve({ ip: parsed.ip, latencyMs: Date.now() - start });
+          } catch (e) {
+            resolve({ ip: data.trim(), latencyMs: Date.now() - start });
+          }
+        });
+      });
+      reqOut.on('timeout', () => { reqOut.destroy(); reject(new Error('Outbound IP reflection request timed out')); });
+      reqOut.on('error', reject);
+    });
+
+    const isVercel = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+
+    res.json({
+      success: true,
+      outbound_ip: probe.ip,
+      latency_ms: probe.latencyMs,
+      hosting_environment: isVercel ? 'Vercel Serverless Functions (AWS Lambda)' : 'Standalone Node.js Server',
+      environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'development',
+      deployment_region: process.env.VERCEL_REGION || 'sin1 (Singapore) / iad1 (US-East)',
+      egress_ip_type: isVercel ? 'DYNAMIC_AWS_LAMBDA_NAT_POOL' : 'DIRECT_PUBLIC_IP',
+      is_static_egress: !isVercel,
+      ipaymu_verification_instructions: {
+        field_name: 'IP Website (IP Outbound Server Back-End)',
+        detected_outbound_ip: probe.ip,
+        architecture_note: isVercel
+          ? 'Production TIKUM di-host di Vercel Functions (AWS Lambda). Vercel mengarahkan egress melalui pool NAT Gateway AWS di region terkait. Masukkan IP yang terdeteksi ini ke kolom IP Website iPaymu. Untuk static egress permanen, forward proxy IPAYMU_EGRESS_PROXY dapat diaktifkan.'
+          : 'Masukkan IP ini pada kolom IP Website di dashboard integrasi iPaymu.'
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to probe backend outbound IP',
+      message: err.message
+    });
+  }
 });
 
 /**
@@ -158,21 +325,24 @@ router.post('/v1/payments/create', async (req, res) => {
       return res.status(403).json({ error: 'Forbidden: You do not own this order', code: 'FORBIDDEN' });
     }
 
-    const targetProvider = (providerName || paymentManager.defaultProvider || 'doku').toLowerCase();
+    const targetProvider = (providerName || req.query.provider || paymentManager.defaultProvider || 'doku').toLowerCase();
     const providerInstance = paymentManager.getProvider(targetProvider);
     const providerSupportsHold = providerInstance ? Boolean(providerInstance.getCapabilities?.().hold) : false;
     const effectiveRequiresEscrow = (requiresEscrow !== undefined && requiresEscrow !== null)
       ? Boolean(requiresEscrow)
       : providerSupportsHold;
 
+    const defaultChannel = targetProvider === 'ipaymu' ? 'IPAYMU_REDIRECT' : 'QRIS';
+
     const paymentResult = await PaymentService.createPayment({
       orderId: order.id,
       amount: order.buyer_total || order.total_amount,
-      channel: channel || 'QRIS',
+      channel: channel || defaultChannel,
       buyer: {
         id: order.buyer_id,
         name: req.body?.buyer?.name || (order.buyer_id === 'buyer-1' ? 'Dewi Lestari' : 'Tikum Customer'),
-        email: req.body?.buyer?.email || (order.buyer_id === 'buyer-1' ? 'dewi.buyer@example.com' : 'customer@tikum.app')
+        email: req.body?.buyer?.email || (order.buyer_id === 'buyer-1' ? 'dewi.buyer@example.com' : 'customer@tikum.app'),
+        productName: order.metadata?.productName || order.metadata?.eventName || `Tiket Event Tikum (Order ${order.id})`
       },
       providerName: targetProvider,
       idempotencyKey: idempotencyKey || req.header('x-idempotency-key') || null,
