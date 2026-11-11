@@ -211,6 +211,18 @@ class EscrowService {
       throw err;
     }
 
+    // Check event lifecycle trading eligibility
+    const event = (state.events || []).find(e => e.id === listing.event_id || e.event_id === listing.event_id);
+    if (event) {
+      const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
+      const tradeCheck = EventTemporalLifecycleEngine.isEventEligibleForTrading(event);
+      if (!tradeCheck.eligible) {
+        const err = new Error(`Cannot purchase ticket: Event is ${tradeCheck.reason}`);
+        err.code = tradeCheck.reason;
+        throw err;
+      }
+    }
+
     const meta = (typeof listing.metadata === 'object' && listing.metadata) ? listing.metadata : {};
     const totalQty = parseInt(listing.total_quantity || meta.total_quantity || listing.quantity || 1, 10);
     const availQty = parseInt(listing.available_quantity !== undefined ? listing.available_quantity : (meta.available_quantity !== undefined ? meta.available_quantity : totalQty), 10);

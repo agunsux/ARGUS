@@ -145,15 +145,15 @@ class HeroSelectionService {
     if (titleLower.includes('bts') || artistLower.includes('bts') || titleLower.includes('arirang')) {
       score += 2000;
       rationales.push('BTS World Tour marquee stadium concert (First Choice candidate)');
+    } else if (titleLower.includes('bigbang') || artistLower.includes('bigbang')) {
+      score += 1800;
+      rationales.push('BIGBANG 2026–27 World Tour headline act (Second Choice candidate)');
     } else if (titleLower.includes('enhypen') || artistLower.includes('enhypen')) {
       score += 1500;
       rationales.push('ENHYPEN stadium tour headline act');
     } else if (titleLower.includes('nassar') || artistLower.includes('nassar')) {
       score += 1200;
       rationales.push('King Nassar verified national concert (Istora Senayan)');
-    } else if (titleLower.includes('bigbang') || artistLower.includes('bigbang')) {
-      score += 1000;
-      rationales.push('BIGBANG World Tour');
     } else if (titleLower.includes('dwp') || titleLower.includes('djakarta warehouse')) {
       score += 800;
       rationales.push('Major international festival (DWP)');

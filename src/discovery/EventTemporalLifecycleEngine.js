@@ -36,9 +36,12 @@ async function logAudit(...args) {
 const HOMEPAGE_EVENT_GRACE_DAYS = 2;
 
 const LIFECYCLE_STATUS = {
+  ANNOUNCED: 'ANNOUNCED',
   UPCOMING: 'UPCOMING',
+  ONGOING: 'ONGOING',
   LIVE: 'LIVE',
   IN_PROGRESS: 'IN_PROGRESS',
+  PAST: 'PAST',
   COMPLETED: 'COMPLETED',
   ARCHIVED: 'ARCHIVED',
   ARCHIVED_WITH_OPEN_OPERATIONS: 'ARCHIVED_WITH_OPEN_OPERATIONS',
@@ -465,7 +468,7 @@ class EventTemporalLifecycleEngine {
     if (!event) return false;
 
     const rawStatus = (event.status || event.lifecycle_status || '').toUpperCase();
-    if (rawStatus === 'CANCELLED' || rawStatus === 'DIBATALKAN' || rawStatus === 'POSTPONED' ||
+    if (rawStatus === 'PAST' || rawStatus === 'CANCELLED' || rawStatus === 'DIBATALKAN' || rawStatus === 'POSTPONED' ||
         rawStatus === 'SCHEDULE_PENDING' || rawStatus === 'UNVERIFIED_DATE' ||
         rawStatus === 'COMPLETED' || rawStatus === 'ARCHIVED' || rawStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS' || rawStatus === 'EXPIRED') {
       return false;
@@ -765,6 +768,25 @@ class EventTemporalLifecycleEngine {
           counts.transitioned++;
           transitions.push(res);
         }
+      }
+    }
+
+    // 4. Persist any state transitions to durable repository storage
+    if (transitions.length > 0) {
+      try {
+        const { getCatalogRepository } = require('./repository');
+        const repo = canonicalRegistry.repository || getCatalogRepository();
+        if (repo && typeof repo.init === 'function') {
+          await repo.init();
+          for (const t of transitions) {
+            const ev = canonicalRegistry.getEventById(t.event_id);
+            if (ev && typeof repo.upsertCanonicalEvent === 'function') {
+              await repo.upsertCanonicalEvent(ev);
+            }
+          }
+        }
+      } catch (err) {
+        // Silently handle in degraded / test mode
       }
     }
 

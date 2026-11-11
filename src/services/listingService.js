@@ -222,14 +222,21 @@ class ListingService {
       endMs = NaN;
     }
     const rawStatus = (event.status || event.lifecycle_status || '').toUpperCase();
+    if (rawStatus === 'POSTPONED' || rawStatus === 'DITUNDA') {
+      const err = new Error(`Cannot list ticket for postponed event '${eventId}' until new date is confirmed`);
+      err.code = 'EVENT_POSTPONED';
+      throw err;
+    }
     const isConcluded = isNaN(endMs) || endMs <= Date.now() || [
+      'PAST',
+      LIFECYCLE_STATUS.PAST,
       LIFECYCLE_STATUS.COMPLETED,
       LIFECYCLE_STATUS.ARCHIVED,
       LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS,
       LIFECYCLE_STATUS.CANCELLED,
       'EXPIRED',
       'DIBATALKAN'
-    ].includes(rawStatus);
+    ].includes(rawStatus) || EventTemporalLifecycleEngine.isEventArchived(event);
 
     if (isConcluded) {
       const err = new Error(`Cannot list ticket for concluded/expired event '${eventId}'`);

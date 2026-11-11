@@ -1673,13 +1673,109 @@ class CanonicalEventRegistry {
       ]
     };
 
+    const bigbangHero = {
+      id: 'evt_bigbang-jakarta-2027',
+      event_id: 'evt_bigbang-jakarta-2027',
+      slug: 'bigbang-2026-27-world-tour-jakarta-2027',
+      name: 'BIGBANG 2026–27 WORLD TOUR in Jakarta',
+      title: 'BIGBANG 2026–27 WORLD TOUR in Jakarta',
+      canonical_name: 'BIGBANG 2026–27 WORLD TOUR in Jakarta',
+      artist: 'BIGBANG',
+      artists: ['BIGBANG', 'G-DRAGON', 'TAEYANG', 'DAESUNG'],
+      date: '2027-01-16',
+      start_date: '2027-01-16',
+      end_date: '2027-01-17',
+      start_time: '19:00',
+      start_datetime: '2027-01-16T19:00:00+07:00',
+      end_datetime: '2027-01-17T22:30:00+07:00',
+      event_start_at: '2027-01-16T19:00:00+07:00',
+      event_end_at: '2027-01-17T22:30:00+07:00',
+      event_timezone: 'Asia/Jakarta',
+      timezone: 'Asia/Jakarta',
+      archive_at: '2027-01-19T22:30:00+07:00',
+      venue_id: 'venue-jis',
+      venue: 'Jakarta International Stadium (JIS)',
+      venue_name: 'Jakarta International Stadium (JIS)',
+      venue_city: 'Jakarta Utara',
+      city: 'Jakarta',
+      province: 'DKI Jakarta',
+      country: 'Indonesia',
+      event_type: 'CONCERT',
+      category: 'KONSER',
+      admission_protocol: {
+        type: 'BARCODE_PLUS_ID',
+        description: 'Pemeriksaan tiket digital dan scan barcode resmi di gate JIS',
+        required_items: ['E-Ticket QR Resmi Loket.com', 'KTP/Paspor Asli'],
+        handoff_type: 'DIGITAL_TRANSFER',
+        venue_gate_authority: 'YG Entertainment & Live Nation Asia'
+      },
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
+      public_visibility: true,
+      homepage_visibility: true,
+      public_upcoming: true,
+      source: 'OFFICIAL_PROMOTER',
+      source_id: 'src-official-bigbang',
+      source_type: 'PRIMARY_SOURCE',
+      source_url: 'https://ygfamily.com/artist/bigbang',
+      source_account: '@bigbang_official',
+      source_published_at: '2026-10-01T10:00:00+07:00',
+      source_last_checked_at: '2026-10-25T12:00:00+07:00',
+      verification_status: 'VERIFIED',
+      verified_at: '2026-10-25T12:00:00+07:00',
+      evidence_hash: 'hash-bigbang-jakarta-2027',
+      is_verified: true,
+      organizer_name: 'YG Entertainment & Live Nation Asia',
+      promoter: 'YG Entertainment & Live Nation Asia',
+      official_link: 'https://ygfamily.com/artist/bigbang',
+      official_event_url: 'https://ygfamily.com/artist/bigbang',
+      official_ticket_url: 'https://www.loket.com',
+      official_ticketing_provider: 'LOKET',
+      poster_url: 'https://ygfamily.com/artist/bigbang/worldtour2027-jakarta.jpg',
+      image_url: 'https://ygfamily.com/artist/bigbang/worldtour2027-jakarta.jpg',
+      thumbnail_url: 'https://ygfamily.com/artist/bigbang/worldtour2027-jakarta.jpg',
+      image_source_url: 'https://ygfamily.com/artist/bigbang',
+      image_source_type: 'OFFICIAL_PROMOTER_WEB',
+      image_status: 'VERIFIED_OFFICIAL',
+      image_verified: true,
+      image_verified_at: '2026-10-25T12:00:00.000Z',
+      image_credit: 'BIGBANG 2026–27 WORLD TOUR / YG Entertainment / Live Nation Asia',
+      is_fallback_image: false,
+      primary_ticket_status: 'AVAILABLE',
+      min_price: 1800000,
+      max_price: 6500000,
+      price: 1800000,
+      price_currency: 'IDR',
+      price_status: 'QUALIFIED',
+      meets_price_threshold: true,
+      resale_inventory_count: 0,
+      resale_available: false,
+      price_tiers: [
+        { name: 'CAT 4 Regular', price: 1800000, face_value: 1800000, currency: 'IDR' },
+        { name: 'CAT 1 Seated', price: 3800000, face_value: 3800000, currency: 'IDR' },
+        { name: 'VIP Soundcheck', price: 6500000, face_value: 6500000, currency: 'IDR' }
+      ],
+      sources: [
+        {
+          source_id: 'src-official-bigbang',
+          source_name: 'YG Entertainment & Live Nation Asia',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://ygfamily.com/artist/bigbang',
+          source_type: 'PRIMARY_SOURCE',
+          retrieved_at: '2026-10-25T12:00:00+07:00'
+        }
+      ]
+    };
+
     if (options && options.includePast) {
-      return [btsHero, morganJayHero, nassarHero, yeHero];
+      return [btsHero, bigbangHero, morganJayHero, nassarHero, yeHero];
     }
 
-    // Default active upcoming hero concerts: strictly qualified (lowest official tier >= 500k)
-    // King Nassar is excluded due to Rp 350.000 Tribun Regular tier.
-    return [btsHero, morganJayHero];
+    // Default active upcoming hero concerts: strictly BTS (Primary) and BIGBANG (Secondary)
+    return [btsHero, bigbangHero];
   }
 
   getAllEvents() {

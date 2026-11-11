@@ -583,7 +583,9 @@ router.get('/events', (req, res) => {
       if (!isVerified || !hasProvenance) return false;
 
       // STRICT RP 500.000 PRICE FILTER: Events with lowest price < 500k are EXCLUDED from public catalog
-      if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(e)) return false;
+      if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW') return false;
+    const priceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(e);
+    if (priceEval && priceEval.status === 'EXCLUDED_PRICE_TOO_LOW') return false;
       if (e.price_status === 'PENDING_VERIFICATION') return false;
 
       return true;
@@ -1145,7 +1147,9 @@ function handleGetEvents(req, res) {
 
       // STRICT RP 500.000 PRICE FILTER: Events with lowest price < 500k are EXCLUDED unless explicitly requested
       if (req.query.include_all_prices !== 'true') {
-        if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(e)) return false;
+        if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW') return false;
+    const priceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(e);
+    if (priceEval && priceEval.status === 'EXCLUDED_PRICE_TOO_LOW') return false;
         if (e.price_status === 'PENDING_VERIFICATION') return false;
       }
 
@@ -1282,23 +1286,101 @@ function handleGetArchivedEvents(req, res) {
     : new Date();
 
   const allEvents = canonicalRegistry.getAllEvents();
-  const archived = allEvents.filter(e => {
+  let archived = allEvents.filter(e => {
     return e.archive_status === 'ARCHIVED' ||
       e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS' ||
       (e.status || '').toUpperCase() === 'ARCHIVED' ||
       (e.lifecycle_status || '').toUpperCase() === 'ARCHIVED' ||
+      (e.lifecycle_status || '').toUpperCase() === 'PAST' ||
+      (e.lifecycle_status || '').toUpperCase() === 'CANCELLED' ||
+      (e.status || '').toUpperCase() === 'CANCELLED' ||
       EventTemporalLifecycleEngine.isEventArchived(e, now);
   });
 
+  const { q, artist, venue, city, category, status, year, from_date, to_date } = req.query;
+
+  if (q && q.trim()) {
+    const term = q.trim().toLowerCase();
+    archived = archived.filter(e => {
+      const haystack = [
+        e.title, e.canonical_name, e.name, e.venue_name, e.venue, e.city, e.venue_city,
+        Array.isArray(e.artists) ? e.artists.join(' ') : e.artist
+      ].filter(Boolean).join(' ').toLowerCase();
+      return haystack.includes(term);
+    });
+  }
+
+  if (artist && artist.trim()) {
+    const aTerm = artist.trim().toLowerCase();
+    archived = archived.filter(e => {
+      const artistsList = Array.isArray(e.artists) ? e.artists.join(' ') : (e.artist || '');
+      return artistsList.toLowerCase().includes(aTerm);
+    });
+  }
+
+  if (venue && venue.trim()) {
+    const vTerm = venue.trim().toLowerCase();
+    archived = archived.filter(e => (e.venue_name || e.venue || '').toLowerCase().includes(vTerm));
+  }
+
+  if (city && city.trim()) {
+    const cTerm = city.trim().toLowerCase();
+    archived = archived.filter(e => (e.city || e.venue_city || '').toLowerCase().includes(cTerm));
+  }
+
+  if (category && category.trim()) {
+    const catTerm = category.trim().toUpperCase();
+    archived = archived.filter(e => (e.category || e.category_group || e.event_type || '').toUpperCase().includes(catTerm));
+  }
+
+  if (status && status.trim()) {
+    const sTerm = status.trim().toUpperCase();
+    if (sTerm === 'CANCELLED') {
+      archived = archived.filter(e => (e.status || e.lifecycle_status || '').toUpperCase() === 'CANCELLED');
+    } else if (sTerm === 'PAST' || sTerm === 'COMPLETED' || sTerm === 'ARCHIVED') {
+      archived = archived.filter(e => (e.status || e.lifecycle_status || '').toUpperCase() !== 'CANCELLED');
+    }
+  }
+
+  if (year) {
+    archived = archived.filter(e => {
+      const d = e.start_date || e.date || '';
+      return d.startsWith(String(year));
+    });
+  }
+
+  if (from_date) {
+    archived = archived.filter(e => (e.start_date || e.date || '0000') >= from_date);
+  }
+
+  if (to_date) {
+    archived = archived.filter(e => (e.start_date || e.date || '9999') <= to_date);
+  }
+
+  // Sort chronological descending (most recent past event first)
+  archived.sort((a, b) => (b.start_date || b.date || '0000').localeCompare(a.start_date || a.date || '0000'));
+
+  // Ensure resale and buying are flagged as disabled for historical integrity
+  const enrichedArchived = archived.map(e => ({
+    ...e,
+    is_past: true,
+    resale_available: false,
+    resale_inventory_count: 0,
+    purchasing_enabled: false,
+    lifecycle_status: (e.status || e.lifecycle_status || '').toUpperCase() === 'CANCELLED' ? 'CANCELLED' : 'PAST'
+  }));
+
   res.json({
     success: true,
-    total: archived.length,
-    events: archived
+    total: enrichedArchived.length,
+    events: enrichedArchived
   });
 }
 
 router.get('/api/events/archived', handleGetArchivedEvents);
+router.get('/api/events/past', handleGetArchivedEvents);
 router.get('/api/discovery/events/archived', handleGetArchivedEvents);
+router.get('/api/discovery/events/past', handleGetArchivedEvents);
 
 /**
  * GET /api/events/home-feed
@@ -1340,7 +1422,9 @@ router.get('/api/events/home-feed', (req, res) => {
     if (e.archive_status === 'ARCHIVED' || e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
     if (EventTemporalLifecycleEngine.isEventArchived(e, now)) return false;
     if (e.homepage_visibility === false) return false;
-    if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(e)) return false;
+    if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW') return false;
+    const priceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(e);
+    if (priceEval && priceEval.status === 'EXCLUDED_PRICE_TOO_LOW') return false;
 
     // Defense-in-depth: query-time H+2 check (now > event_end_at + 48h)
     const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(e);
@@ -1530,6 +1614,15 @@ router.get('/api/events/home-feed', (req, res) => {
   const sports = sportsEvents;
   const festivals = festivalEvents;
 
+  let heroConcerts = [];
+  try {
+    const { HeroSelectionService } = require('./HeroSelectionService');
+    const heroSelection = HeroSelectionService.selectHeroConcerts(now);
+    heroConcerts = heroSelection.heroes || [];
+  } catch (_) {
+    heroConcerts = [];
+  }
+
   res.json({
     success: true,
     generated_at: now.toISOString(),
@@ -1539,6 +1632,8 @@ router.get('/api/events/home-feed', (req, res) => {
       today: todayPool.length,
       recent: recentPool.length
     },
+    hero_events: heroConcerts,
+    hero_concerts: heroConcerts,
     events: upcomingPool,
     feed: upcomingPool,
     meta: {
@@ -1548,6 +1643,8 @@ router.get('/api/events/home-feed', (req, res) => {
       countries: cityRegistry.getAllCountries ? cityRegistry.getAllCountries() : []
     },
     sections: {
+      hero_concerts: heroConcerts,
+      heroes: heroConcerts,
       upcoming: upcomingPool,
       today: todayPool,
       recent: recentPool,

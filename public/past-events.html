@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arsip Event Selesai | TIKUM — Pasar Tiket Event Terverifikasi</title>
+  <meta name="description" content="Arsip resmi event konser, musik, dan hiburan yang telah selesai atau dibatalkan di Indonesia. Riwayat faktual sumber promotor terverifikasi PT SHINERVA PRAJNA TEJAS.">
+  <link rel="canonical" href="https://tikum.app/past-events">
+  <link rel="icon" type="image/svg+xml" href="/assets/tikum-favicon.svg">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #0A0D14;
+      --card-bg: #121824;
+      --card-border: #1F2937;
+      --text-main: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --primary: #E05A3A;
+      --accent: #38BDF8;
+      --completed: #6B7280;
+      --cancelled: #EF4444;
+    }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .archive-header {
+      padding: 40px 24px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .archive-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(156, 163, 175, 0.15);
+      color: #9CA3AF;
+      border: 1px solid #374151;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .archive-title {
+      font-size: 32px;
+      font-weight: 800;
+      margin: 0 0 10px;
+      color: #FFF;
+      letter-spacing: -0.02em;
+    }
+    .archive-subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 0 24px;
+    }
+    .archive-controls {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+    .search-input-wrap {
+      flex: 1 1 280px;
+      position: relative;
+    }
+    .search-input-wrap i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+    .search-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px 14px 12px 40px;
+      background: #0D111A;
+      border: 1px solid #2D3748;
+      border-radius: 8px;
+      color: #FFF;
+      font-size: 14px;
+      outline: none;
+    }
+    .search-input:focus {
+      border-color: var(--accent);
+    }
+    .filter-select {
+      flex: 0 1 180px;
+      padding: 12px;
+      background: #0D111A;
+      border: 1px solid #2D3748;
+      border-radius: 8px;
+      color: #FFF;
+      font-size: 13.5px;
+      outline: none;
+    }
+    .archive-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+      width: 100%;
+      box-sizing: border-box;
+      flex: 1;
+    }
+    .archive-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s;
+      position: relative;
+    }
+    .archive-card:hover {
+      transform: translateY(-2px);
+      border-color: #374151;
+    }
+    .card-thumb {
+      height: 160px;
+      background: #1A202C;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.65;
+      filter: grayscale(40%);
+    }
+    .status-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      z-index: 2;
+    }
+    .status-badge.past {
+      background: rgba(31, 41, 55, 0.9);
+      color: #9CA3AF;
+      border: 1px solid #4B5563;
+    }
+    .status-badge.cancelled {
+      background: rgba(239, 68, 68, 0.2);
+      color: #F87171;
+      border: 1px solid #EF4444;
+    }
+    .card-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .event-date-row {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .event-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #FFF;
+      margin: 0 0 8px;
+      line-height: 1.4;
+    }
+    .event-venue {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .archive-notice {
+      background: rgba(31, 41, 55, 0.5);
+      border-left: 3px solid #6B7280;
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-size: 11.5px;
+      color: #9CA3AF;
+      line-height: 1.4;
+      margin-top: auto;
+      margin-bottom: 14px;
+    }
+    .card-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-detail {
+      flex: 1;
+      padding: 9px;
+      text-align: center;
+      background: #1E293B;
+      color: #E2E8F0;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid #334155;
+    }
+    .btn-detail:hover {
+      background: #334155;
+    }
+    .btn-closed {
+      flex: 1;
+      padding: 9px;
+      text-align: center;
+      background: #111827;
+      color: #6B7280;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid #1F2937;
+      cursor: not-allowed;
+    }
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state i {
+      font-size: 36px;
+      margin-bottom: 12px;
+      color: #4B5563;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="ln-header" style="background:#0D111A; border-bottom:1px solid #1F2937; padding:12px 24px; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:20px;">
+      <a href="/" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
+        <img src="/assets/tikum-logo.svg" alt="TIKUM Logo" width="32" height="32" onerror="this.src='/assets/placeholder-event.svg';">
+        <span style="font-weight:900; font-size:20px; color:#FFF; letter-spacing:-0.03em;">TIKUM</span>
+      </a>
+      <span style="color:#6B7280; font-size:13px; border-left:1px solid #374151; padding-left:14px;">Arsip Event Resmi</span>
+    </div>
+    <nav style="display:flex; align-items:center; gap:16px;">
+      <a href="/" style="color:#9CA3AF; text-decoration:none; font-size:13.5px; font-weight:600;"><i class="fa-solid fa-arrow-left"></i> Kembali ke Beranda</a>
+      <a href="/events" style="color:#9CA3AF; text-decoration:none; font-size:13.5px; font-weight:600;">Jelajah Konser Aktif</a>
+      <a href="/panduan-pembeli" style="color:#38BDF8; text-decoration:none; font-size:13.5px; font-weight:600;">Panduan Pembeli</a>
+    </nav>
+  </header>
+
+  <!-- Main Archive Header -->
+  <div class="archive-header">
+    <div class="archive-badge"><i class="fa-solid fa-box-archive"></i> Arsip Historis Terverifikasi</div>
+    <h1 class="archive-title">Arsip Event Selesai &amp; Dibatalkan</h1>
+    <p class="archive-subtitle">
+      Koleksi permanen event resmi di Indonesia yang tanggal pelaksanaannya telah berlalu atau mengalami pembatalan resmi. Seluruh data faktual, atribusi sumber, dan dokumentasi turnstile venue tetap dilindungi dan dapat diakses publik. Transaksi resale baru dan pembelian tiket ditutup secara otomatis demi perlindungan konsumen.
+    </p>
+
+    <!-- Filters & Search -->
+    <div class="archive-controls">
+      <div class="search-input-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchPastInput" class="search-input" placeholder="Cari artis, nama event, venue, atau promotor..." oninput="debounceSearch()">
+      </div>
+      <select id="categoryFilter" class="filter-select" onchange="loadArchivedEvents()">
+        <option value="">Semua Kategori</option>
+        <option value="CONCERT">Konser &amp; Musik</option>
+        <option value="COMEDY">Stand Up Comedy</option>
+        <option value="FESTIVAL">Festival Musik</option>
+        <option value="SPORTS">Olahraga</option>
+      </select>
+      <select id="cityFilter" class="filter-select" onchange="loadArchivedEvents()">
+        <option value="">Semua Kota</option>
+        <option value="Jakarta">Jakarta</option>
+        <option value="Bandung">Bandung</option>
+        <option value="Surabaya">Surabaya</option>
+        <option value="Tangerang">Tangerang</option>
+        <option value="Bali">Bali</option>
+      </select>
+      <select id="yearFilter" class="filter-select" onchange="loadArchivedEvents()">
+        <option value="">Semua Tahun</option>
+        <option value="2026">2026</option>
+        <option value="2025">2025</option>
+        <option value="2024">2024</option>
+        <option value="2023">2023</option>
+      </select>
+      <select id="statusFilter" class="filter-select" onchange="loadArchivedEvents()">
+        <option value="">Semua Status</option>
+        <option value="PAST">Selesai (Completed)</option>
+        <option value="CANCELLED">Dibatalkan (Cancelled)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Event Grid -->
+  <main class="archive-grid" id="archivedGrid">
+    <div class="empty-state">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <p>Memuat arsip event resmi...</p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer style="background:#080B11; border-top:1px solid #1F2937; padding:30px 24px; margin-top:auto; color:#9CA3AF; font-size:13px; line-height:1.6;">
+    <div style="max-width:1200px; margin:0 auto; display:flex; flex-wrap:wrap; justify-content:space-between; gap:20px;">
+      <div>
+        <strong style="color:#FFF;">TIKUM — by PT SHINERVA PRAJNA TEJAS</strong><br>
+        Jalan Pasirluyu No. 79, Bandung 40254, Indonesia<br>
+        Email: <a href="mailto:support@tikum.app" style="color:#38BDF8; text-decoration:none;">support@tikum.app</a> · WhatsApp: +62 812-9992-7378
+      </div>
+      <div>
+        <em>Kebijakan Arsip &amp; Zero Fake Inventory:</em><br>
+        Event yang telah selesai tidak menerima pembuatan listing resale baru atau pembelian tiket.<br>
+        Seluruh data audit historis dilindungi secara permanen.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let searchTimer = null;
+
+    function debounceSearch() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(loadArchivedEvents, 300);
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      }[m]));
+    }
+
+    async function loadArchivedEvents() {
+      const grid = document.getElementById('archivedGrid');
+      const q = (document.getElementById('searchPastInput').value || '').trim();
+      const category = document.getElementById('categoryFilter').value;
+      const city = document.getElementById('cityFilter').value;
+      const year = document.getElementById('yearFilter').value;
+      const status = document.getElementById('statusFilter').value;
+
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      if (category) params.set('category', category);
+      if (city) params.set('city', city);
+      if (year) params.set('year', year);
+      if (status) params.set('status', status);
+
+      try {
+        const res = await fetch(`/api/events/archived?${params.toString()}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const events = data.events || [];
+
+        if (!events.length) {
+          grid.innerHTML = `
+            <div class="empty-state">
+              <i class="fa-solid fa-box-open"></i>
+              <h3>Tidak ada event arsip yang cocok</h3>
+              <p>Coba gunakan kata kunci pencarian yang lebih umum atau sesuaikan filter Anda.</p>
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = events.map(e => {
+          const isCancelled = (e.status || e.lifecycle_status || '').toUpperCase() === 'CANCELLED';
+          const badgeClass = isCancelled ? 'status-badge cancelled' : 'status-badge past';
+          const badgeText = isCancelled ? 'DIBATALKAN' : 'SELESAI';
+          const title = escapeHtml(e.title || e.canonical_name || e.name || 'Event');
+          const venue = escapeHtml(e.venue_name || e.venue || 'Venue');
+          const cityStr = escapeHtml(e.city || e.venue_city || '');
+          const loc = [venue, cityStr].filter(Boolean).join(' · ');
+          const dateStr = formatDate(e.start_date || e.date);
+          const slug = e.slug || e.id || e.event_id;
+          const img = e.image_url || e.poster_url || '/assets/placeholder-event.svg';
+          const promoter = escapeHtml(e.promoter || e.organizer_name || 'Promotor Resmi');
+
+          return `
+            <article class="archive-card">
+              <div class="card-thumb">
+                <img src="${img}" alt="${title}" loading="lazy" onerror="this.onerror=null; this.src='/assets/placeholder-event.svg';">
+                <span class="${badgeClass}">${badgeText}</span>
+              </div>
+              <div class="card-body">
+                <div class="event-date-row"><i class="fa-regular fa-calendar"></i> ${dateStr}</div>
+                <h3 class="event-title">${title}</h3>
+                <div class="event-venue"><i class="fa-solid fa-location-dot"></i> ${loc}</div>
+                <div class="archive-notice">
+                  <i class="fa-solid fa-lock"></i> <strong>Event ${badgeText.toLowerCase()}:</strong> Penjualan &amp; transaksi resale ditutup permanen.
+                </div>
+                <div class="card-actions">
+                  <a href="/events/${slug}" class="btn-detail">Detail Histori →</a>
+                  <button type="button" class="btn-closed" disabled>Pembelian Ditutup</button>
+                </div>
+              </div>
+            </article>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Failed loading archived events:', err);
+        grid.innerHTML = `
+          <div class="empty-state">
+            <i class="fa-solid fa-triangle-exclamation" style="color:#EF4444;"></i>
+            <h3>Gagal memuat arsip event</h3>
+            <p>Terjadi kesalahan saat menghubungi server. Silakan coba beberapa saat lagi.</p>
+          </div>
+        `;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadArchivedEvents);
+  </script>
+</body>
+</html>

@@ -87,6 +87,7 @@ Sitemap: ${origin}/sitemap.xml
     const staticPages = [
       { loc: '/', priority: '1.0', changefreq: 'daily' },
       { loc: '/events', priority: '0.9', changefreq: 'hourly' },
+      { loc: '/past-events', priority: '0.7', changefreq: 'weekly' },
       { loc: '/offers', priority: '0.8', changefreq: 'daily' },
       { loc: '/create', priority: '0.7', changefreq: 'monthly' },
       { loc: '/track', priority: '0.6', changefreq: 'daily' },
