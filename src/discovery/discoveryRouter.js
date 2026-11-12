@@ -47,6 +47,7 @@ function resolveRequestLocale(req) {
 }
 const { PopularityEngine } = require('./PopularityEngine');
 const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS, HOMEPAGE_EVENT_GRACE_DAYS } = require('./EventTemporalLifecycleEngine');
+const { EventDateForensicsEngine, AUDIT_WINDOW, PUBLICATION_STATES } = require('./EventDateForensicsEngine');
 const { inventoryReconciliationService } = require('./EventInventoryReconciliationService');
 const { EventVisualProvenanceService } = require('./EventVisualProvenanceService');
 const crypto = require('crypto');
@@ -2380,6 +2381,177 @@ router.get('/api/discovery/conflicts', (req, res) => {
       primary_source: (e.sources || []).find(s => s.trust_level === 'TIER_S' || s.source_type === 'PROMOTER_OFFICIAL_SOCIAL')
     }))
   });
+});
+
+/**
+ * GET /api/discovery/source-audit
+ * Audits primary and ticketing sources (@love_gbk, tiket.com, loket.com, goersapp.com)
+ * Returns per-source event count, verified count, review required count, and last audit timestamp.
+ */
+router.get('/api/discovery/source-audit', (req, res) => {
+  try {
+    const allEvents = canonicalRegistry.getAllEvents();
+    
+    // Evaluate per-source statistics
+    const sources = {
+      'src-venue-love-gbk-instagram': {
+        source_id: 'src-venue-love-gbk-instagram',
+        source_name: '@love_gbk (Gelora Bung Karno Complex Official Instagram)',
+        source_url: 'https://www.instagram.com/love_gbk/',
+        tier: 1,
+        source_type: 'OFFICIAL_VENUE_WEB',
+        total_discovered: 0,
+        verified_count: 0,
+        review_required_count: 0,
+        last_audit_at: new Date().toISOString(),
+        health_status: 'HEALTHY'
+      },
+      'src-tiket': {
+        source_id: 'src-tiket',
+        source_name: 'tiket.com (Official Primary Ticketing Partner)',
+        source_url: 'https://www.tiket.com',
+        tier: 2,
+        source_type: 'TICKETING_PLATFORM_API',
+        total_discovered: 0,
+        verified_count: 0,
+        review_required_count: 0,
+        last_audit_at: new Date().toISOString(),
+        health_status: 'HEALTHY'
+      },
+      'src-loket': {
+        source_id: 'src-loket',
+        source_name: 'Loket.com (Official Ticketing Partner)',
+        source_url: 'https://www.loket.com',
+        tier: 2,
+        source_type: 'TICKETING_PLATFORM_API',
+        total_discovered: 0,
+        verified_count: 0,
+        review_required_count: 0,
+        last_audit_at: new Date().toISOString(),
+        health_status: 'HEALTHY'
+      },
+      'src-goers': {
+        source_id: 'src-goers',
+        source_name: 'Goers (goersapp.com Ticketing Partner)',
+        source_url: 'https://goersapp.com',
+        tier: 2,
+        source_type: 'TICKETING_PLATFORM_API',
+        total_discovered: 0,
+        verified_count: 0,
+        review_required_count: 0,
+        last_audit_at: new Date().toISOString(),
+        health_status: 'HEALTHY'
+      }
+    };
+
+    for (const ev of allEvents) {
+      const srcUrl = ev.official_event_url || ev.official_ticket_url || ev.source_url || '';
+      const srcId = ev.source_id || '';
+      const provider = (ev.official_ticketing_provider || '').toUpperCase();
+
+      let matchedKey = null;
+      if (srcId === 'src-venue-love-gbk-instagram' || srcUrl.includes('instagram.com/love_gbk') || (ev.venue_name && ev.venue_name.includes('GBK') && srcId.includes('gbk'))) {
+        matchedKey = 'src-venue-love-gbk-instagram';
+      } else if (srcId === 'src-tiket' || srcUrl.includes('tiket.com') || provider === 'TIKET_COM') {
+        matchedKey = 'src-tiket';
+      } else if (srcId === 'src-loket' || srcUrl.includes('loket.com') || provider === 'LOKET') {
+        matchedKey = 'src-loket';
+      } else if (srcId === 'src-goers' || srcUrl.includes('goersapp.com') || provider === 'GOERS') {
+        matchedKey = 'src-goers';
+      }
+
+      if (matchedKey && sources[matchedKey]) {
+        sources[matchedKey].total_discovered++;
+        if (ev.is_verified && ev.archive_status !== 'ARCHIVED' && ev.verification_status !== 'REJECTED') {
+          sources[matchedKey].verified_count++;
+        } else {
+          sources[matchedKey].review_required_count++;
+        }
+      }
+    }
+
+    const sourceList = Object.values(sources);
+    const totalDiscovered = sourceList.reduce((acc, s) => acc + s.total_discovered, 0);
+    const totalVerified = sourceList.reduce((acc, s) => acc + s.verified_count, 0);
+    const totalReview = sourceList.reduce((acc, s) => acc + s.review_required_count, 0);
+
+    res.json({
+      success: true,
+      audit_window: {
+        start: AUDIT_WINDOW.START,
+        end: AUDIT_WINDOW.END,
+        timezone: AUDIT_WINDOW.TIMEZONE
+      },
+      audit_timestamp: new Date().toISOString(),
+      policy: 'TIKUM_ZERO_WRONG_DATE_EVENT_INTELLIGENCE',
+      primary_sources: sources,
+      summary: {
+        total_sources_audited: sourceList.length,
+        total_discovered: totalDiscovered,
+        total_verified: totalVerified,
+        total_review_required: totalReview,
+        zero_wrong_date_enforcement: 'ACTIVE'
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/discovery/audit-trail/:eventId
+ * Returns the 6-stage Zero-Wrong-Date forensic audit trail for an event.
+ */
+router.get('/api/discovery/audit-trail/:eventId', (req, res) => {
+  try {
+    const eventId = req.params.eventId;
+    const event = canonicalRegistry.getEventById(eventId) || 
+                  canonicalRegistry.getEventBySlug(eventId) ||
+                  (canonicalRegistry.getAllEvents() || []).find(e => e.id === eventId || e.event_id === eventId || e.slug === eventId);
+
+    if (!event) {
+      return res.status(404).json({ success: false, error: `Event not found: ${eventId}` });
+    }
+
+    const sourceRecord = {
+      source_id: event.source_id || 'src-unknown',
+      source_name: event.official_ticketing_provider || event.organizer_name || 'Primary Authority',
+      source_type: event.source_type || 'OFFICIAL_VENUE_WEB',
+      source_url: event.official_event_url || event.official_ticket_url || event.source_url || null,
+      evidence_snapshot: event.metadata?.evidence_snapshot || null
+    };
+
+    const contract = EventDateForensicsEngine.evaluateAndBuildContract(
+      {
+        canonical_event_id: event.id || event.event_id,
+        event_name: event.canonical_name || event.title || event.name,
+        artist_or_performer: event.artist || (event.artists ? event.artists[0] : null),
+        event_date: event.start_date,
+        event_start_time: event.start_datetime ? event.start_datetime.substring(11, 16) : null,
+        timezone: event.timezone || 'Asia/Jakarta',
+        venue_name: event.venue_name,
+        city: event.city,
+        organizer_or_promoter: event.organizer_name,
+        source_url: sourceRecord.source_url,
+        source_type: sourceRecord.source_type
+      },
+      sourceRecord
+    );
+
+    const auditTrail = EventDateForensicsEngine.generateAuditTrail(contract);
+
+    res.json({
+      success: true,
+      canonical_event_id: contract.canonical_event_id,
+      event_name: contract.event_name,
+      publication_verdict: auditTrail.stage_6_publication.publication_verdict,
+      is_published_to_upcoming: contract.is_upcoming_eligible,
+      audit_trail: auditTrail,
+      contract_record: contract
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 /**

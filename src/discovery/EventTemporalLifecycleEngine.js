@@ -15,6 +15,7 @@
  */
 
 const { EventNormalizationService } = require('./EventNormalizationService');
+const { EventDateForensicsEngine } = require('./EventDateForensicsEngine');
 
 function getState() {
   try {
@@ -467,6 +468,12 @@ class EventTemporalLifecycleEngine {
   static isEventUpcoming(event, now = new Date()) {
     if (!event) return false;
 
+    // Zero-Wrong-Date Invariant: Historical tour conflicts can NEVER be upcoming
+    const histConflict = EventDateForensicsEngine.checkHistoricalTourConflict(event);
+    if (histConflict.is_historical_conflict) {
+      return false;
+    }
+
     const rawStatus = (event.status || event.lifecycle_status || '').toUpperCase();
     if (rawStatus === 'PAST' || rawStatus === 'CANCELLED' || rawStatus === 'DIBATALKAN' || rawStatus === 'POSTPONED' ||
         rawStatus === 'SCHEDULE_PENDING' || rawStatus === 'UNVERIFIED_DATE' ||
@@ -530,6 +537,13 @@ class EventTemporalLifecycleEngine {
    */
   static isEventHomepageEligible(event, now = new Date()) {
     if (!event) return false;
+
+    // Zero-Wrong-Date Invariant: Historical tour conflicts can NEVER be on homepage
+    const histConflict = EventDateForensicsEngine.checkHistoricalTourConflict(event);
+    if (histConflict.is_historical_conflict) {
+      return false;
+    }
+
     const isVerified = Boolean(
       event.is_verified ||
       event.verification_status === 'VERIFIED' ||
@@ -583,6 +597,9 @@ class EventTemporalLifecycleEngine {
     event.start_datetime = temporal.event_start_at;
     event.end_datetime = temporal.event_end_at;
 
+    const histConflict = EventDateForensicsEngine.checkHistoricalTourConflict(event);
+    const isHistoricalConflict = histConflict.is_historical_conflict;
+
     const previousStatus = event.lifecycle_status || event.status || LIFECYCLE_STATUS.UPCOMING;
     const newStatus = this.resolveLifecycleStatus(event, now);
 
@@ -595,17 +612,17 @@ class EventTemporalLifecycleEngine {
       event.status = newStatus;
     } else if (newStatus === LIFECYCLE_STATUS.LIVE) {
       event.status = 'LIVE';
-    } else if (newStatus === LIFECYCLE_STATUS.UPCOMING && (event.status === 'ARCHIVED' || event.status === 'COMPLETED' || event.status === 'EXPIRED')) {
-      event.status = 'UPCOMING';
+    } else if (newStatus === LIFECYCLE_STATUS.UPCOMING) {
+      if (!isHistoricalConflict) {
+        event.status = 'UPCOMING';
+      }
     }
 
     // Expiry rule: H+2 grace period past end_at hides from public homepage and marks archive_status
     const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
     const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
     const endMs = new Date(temporal.event_end_at).getTime();
-    const isHistoricalTourColdplay = ((event.title || event.canonical_name || '').toLowerCase().includes('coldplay') && (event.title || event.canonical_name || '').toLowerCase().includes('spheres'));
-    const isTargetArchived = isHistoricalTourColdplay || event.id === 'ev-can-fd86cf7d' || event.id === 'event-nassar-lost-in-the-jungle-2026';
-    const isArchived = this.isEventArchived(event, now) || (nowMs > endMs + graceMs) || isTargetArchived;
+    const isArchived = this.isEventArchived(event, now) || (nowMs > endMs + graceMs) || isHistoricalConflict;
     if (isArchived) {
       event.public_visibility = false;
       event.homepage_visibility = false;

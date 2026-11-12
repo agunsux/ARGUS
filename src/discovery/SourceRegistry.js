@@ -1215,6 +1215,28 @@ class SourceRegistry {
         notes: 'Official management body for Gelora Bung Karno sports complex'
       },
       {
+        source_id: 'src-venue-love-gbk-instagram',
+        source_name: 'Pusat Pengelolaan Komplek GBK / @love_gbk (Official Instagram)',
+        source_type: SOURCE_TYPES.OFFICIAL_VENUE_WEB,
+        tier: 1,
+        authority_level: 'HIGH',
+        base_url: 'https://www.instagram.com/love_gbk/',
+        account_handle: '@love_gbk',
+        canonical_account: '@love_gbk',
+        country: 'Indonesia',
+        language: 'id',
+        coverage: 'JAKARTA',
+        category: 'VENUE',
+        adapter: 'VenueAdapter',
+        access_method: ACCESS_METHODS.FEED,
+        permission_status: PERMISSION_STATUS.PUBLIC_TERMS,
+        terms_reference: 'GBK Official Management Instagram',
+        robots_policy: 'HONOR_ROBOTS_TXT',
+        trust_level: TRUST_LEVELS.TIER_1,
+        active_status: SOURCE_STATUS.ACTIVE,
+        notes: 'Primary source for events taking place at GBK complex and its associated venues (Main Stadium, Istora, Tennis Indoor, Basket Hall, Stadion Madya, GBK City Park).'
+      },
+      {
         source_id: 'src-league-ibl',
         source_name: 'IBL Indonesia (Official League)',
         source_type: SOURCE_TYPES.SPORTS_ORGANIZATION,
@@ -3675,6 +3697,8 @@ class SourceRegistry {
 }
 
 const TRUSTED_PRIMARY_SOURCES = [
+  'src-venue-love-gbk-instagram',
+  'src-venue-gbk',
   'src-loket',
   'src-tiket-com',
   'src-goers',
@@ -3684,6 +3708,9 @@ const TRUSTED_PRIMARY_SOURCES = [
 ];
 
 const TRUSTED_SOURCE_PRIORITY = {
+  'src-venue-love-gbk-instagram': 1,
+  'love_gbk': 1,
+  'src-venue-gbk': 1,
   'src-loket': 1,
   'loket': 1,
   'src-tiket-com': 2,
