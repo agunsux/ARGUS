@@ -554,9 +554,9 @@ class EscrowService {
     } catch (e) {}
 
     // Non-blocking secondary effect: Order created email
-    const event = state.events.find(e => e.id === order.event_id);
+    const emailEvent = state.events.find(e => e.id === order.event_id);
     const ticket = state.tickets.find(t => t.id === order.ticket_id);
-    emailService.sendOrderCreatedEmail({ order, buyer, ticket, event, pricing }).catch(err => {
+    emailService.sendOrderCreatedEmail({ order, buyer, ticket, event: emailEvent, pricing }).catch(err => {
       console.warn('[EscrowService:OrderCreatedEmail] Secondary effect error:', err.message);
     });
 
