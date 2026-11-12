@@ -15,6 +15,7 @@ const router = express.Router();
 const { articleRepository } = require('../content/ArticleRepository');
 const { publishingScheduler } = require('../content/PublishingScheduler');
 const { ContentQualityEngine } = require('../content/ContentQualityEngine');
+const { EventBlogDraftService } = require('../content/EventBlogDraftService');
 const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
 const { VenueRegistry } = require('../discovery/VenueRegistry');
 const { CityRegistry } = require('../discovery/CityRegistry');
@@ -139,6 +140,30 @@ router.put('/api/admin/content/articles/:id', requireContentAdmin, (req, res) =>
     });
   } catch (err) {
     res.status(400).json({ error: err.message, code: 'VALIDATION_ERROR' });
+  }
+});
+
+router.post('/api/admin/content/generate-draft/:eventId', requireContentAdmin, (req, res) => {
+  try {
+    const result = EventBlogDraftService.generateDraftFromEvent(req.params.eventId, {
+      author: req.adminUser.name || 'Tim Editorial Tikum',
+      status: req.body?.status
+    });
+    res.status(result.created ? 201 : 200).json(result);
+  } catch (err) {
+    const status = err.code === 'EVENT_NOT_FOUND' ? 404 : 400;
+    res.status(status).json({ success: false, error: err.message, code: err.code || 'GENERATION_FAILED' });
+  }
+});
+
+router.post('/api/admin/content/generate-drafts-batch', requireContentAdmin, (req, res) => {
+  try {
+    const summary = EventBlogDraftService.generateDraftsForUpcomingEvents({
+      author: req.adminUser.name || 'Tim Editorial Tikum'
+    });
+    res.json({ success: true, summary });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

@@ -29,6 +29,7 @@ const { getUserRepository, getMarketplaceRepository, getMoneyRepository, isProdu
 const { sourceGapDiagnosticService } = require('../discovery/SourceGapDiagnosticService');
 const { AdminEventControlService } = require('../discovery/AdminEventControlService');
 const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
+const { ingestionScheduler } = require('../discovery/EventIngestionScheduler');
 
 const DEMO_SEED_LISTING_IDS = new Set(['list-demo-1', 'list-demo-pestapora']);
 const DEMO_SEED_TICKET_IDS = new Set(['ticket-demo-1', 'ticket-demo-pestapora']);
@@ -3514,6 +3515,138 @@ router.post('/settlements/:id/confirm-disbursement', requireFinance, async (req,
       error: err.message,
       code: err.code || 'CONFIRM_DISBURSEMENT_FAILED'
     });
+  }
+});
+
+// -------------------------------------------------------------
+// Automation Center Endpoints (Phase P1)
+// -------------------------------------------------------------
+
+router.get('/automation/jobs', requireAdmin, (req, res) => {
+  try {
+    const jobs = ingestionScheduler.getAllJobs();
+    res.json({
+      success: true,
+      total: jobs.length,
+      jobs
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/automation/jobs/:id/run', requireAdmin, async (req, res) => {
+  try {
+    const jobId = req.params.id;
+    const result = await ingestionScheduler.runJob(jobId, req.body || {});
+    res.json({
+      success: true,
+      job: jobId,
+      result,
+      status: ingestionScheduler.getJobStatus(jobId)
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, code: 'JOB_EXECUTION_FAILED' });
+  }
+});
+
+router.post('/automation/jobs/:id/toggle', requireAdmin, (req, res) => {
+  try {
+    const jobId = req.params.id;
+    const enabled = req.body && typeof req.body.enabled === 'boolean' ? req.body.enabled : null;
+    const updated = ingestionScheduler.toggleJob(jobId, enabled);
+    res.json({
+      success: true,
+      job: jobId,
+      enabled: updated.enabled,
+      status: updated
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message, code: 'JOB_TOGGLE_FAILED' });
+  }
+});
+
+router.post('/automation/jobs/:id/retry', requireAdmin, async (req, res) => {
+  try {
+    const jobId = req.params.id;
+    const result = await ingestionScheduler.runJob(jobId, req.body || {});
+    res.json({
+      success: true,
+      job: jobId,
+      retried: true,
+      result,
+      status: ingestionScheduler.getJobStatus(jobId)
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, code: 'JOB_RETRY_FAILED' });
+  }
+});
+
+router.get('/automation/history', requireAdmin, (req, res) => {
+  try {
+    const limit = Math.max(1, Math.min(100, Number(req.query.limit || 50)));
+    const history = ingestionScheduler.getJobHistory(limit);
+    res.json({
+      success: true,
+      total: history.length,
+      history
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -------------------------------------------------------------
+// System Settings Endpoint (Phase P1)
+// -------------------------------------------------------------
+
+router.get('/system-settings', requireAdmin, (req, res) => {
+  try {
+    res.json({
+      success: true,
+      legal_entity: {
+        company_name: 'PT Shinerva Prajna Tejas',
+        brand_name: 'TIKUM',
+        address: 'Jl. Pasirluyu No. 79, Bandung 40254, Indonesia',
+        entity_type: 'Perseroan Terbatas (PT)',
+        kemenkumham_status: 'Tersedia (AHU Terdaftar)',
+        tax_compliance: 'PMK 37/2025 (PPh 22 & PPN Terintegrasi)'
+      },
+      operational_contacts: {
+        operations_pic: 'Tim Operasional TIKUM',
+        support_email: 'support@tikum.app',
+        emergency_hotline: '+62 812-3456-7890 (Venue Coordination)',
+        business_hours: 'Senin - Minggu: 08:00 - 22:00 WIB (Siaga Venue H-1 s/d H+1)'
+      },
+      payment_gateways: {
+        primary: {
+          provider: 'iPaymu',
+          role: 'PRIMARY_PAYMENT_GATEWAY',
+          status: 'ACTIVE_READY',
+          escrow_model: 'Escrow & Hold with Turnstile Release Gate',
+          supported_channels: ['Virtual Account (BCA, Mandiri, BNI, BRI, Permata)', 'QRIS (All E-Wallets)', 'Retail (Indomaret, Alfamart)'],
+          verification_status: 'MERCHANT_VERIFICATION_IN_PROGRESS'
+        },
+        backup: {
+          provider: 'DOKU',
+          role: 'BACKUP_FAILOVER_GATEWAY',
+          status: 'STANDBY_FAILOVER_ONLY',
+          escrow_model: 'Contractual Hold & Platform Held Escrow',
+          policy: 'Strict single-active-attempt invariant. Failover only if iPaymu unreachable and prior attempt not ambiguous.'
+        }
+      },
+      system_runtime: {
+        version: '2.1.0-mvp',
+        platform: 'ARGUS Trust & Control Plane',
+        timezone: 'Asia/Jakarta (WIB)',
+        operational_mode: 'Autonomous MVP Control Plane',
+        database_status: 'HEALTHY',
+        persistence: 'Durable Storage Hybrid',
+        environment: process.env.NODE_ENV || 'production'
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

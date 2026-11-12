@@ -61,7 +61,10 @@ async function runContracts() {
 
   for (const name of providerNames) {
     console.log(`── Testing Provider Contract: [${name.toUpperCase()}] ──`);
-    const provider = paymentManager.getProvider(name);
+    // Capability rejection must be tested without the explicit simulator bypass.
+    const Provider = { doku: DokuPaymentProvider, ipaymu: IPaymuProvider,
+      midtrans: MidtransPaymentProvider, xendit: XenditPaymentProvider }[name];
+    const provider = new Provider({ allowSimulation: false });
 
     check(`${name}: Implements metadata & market methods`, () => {
       assert.strictEqual(typeof provider.getName(), 'string');

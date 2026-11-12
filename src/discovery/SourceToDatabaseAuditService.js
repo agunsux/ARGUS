@@ -16,11 +16,12 @@ class SourceToDatabaseAuditService {
   /**
    * Runs the full 12-dimension source-to-database audit.
    * @param {object} options
-   * @param {Date} [options.asOfDate] Simulated current date (defaults to current time or 2026-10-10)
+   * @param {Date} [options.asOfDate] Explicit audit reference time (defaults to current time)
    * @returns {object} Comprehensive machine-readable audit report
    */
   static runAudit(options = {}) {
-    const asOfDate = options.asOfDate ? new Date(options.asOfDate) : new Date('2026-10-10T00:00:00+07:00');
+    const asOfDate = options.asOfDate !== undefined ? new Date(options.asOfDate) : new Date();
+    if (!Number.isFinite(asOfDate.getTime())) throw new Error('INVALID_AUDIT_REFERENCE_TIME');
     const startedAt = new Date().toISOString();
 
     // 1. Raw Source Inventory

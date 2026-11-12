@@ -55,6 +55,18 @@ const { getCatalogRepository } = require('./repository');
 const { SourceToDatabaseAuditService } = require('./SourceToDatabaseAuditService');
 const { requireAdminApiKey } = require('../middleware/adminApiKeyAuth');
 const { CuratedCatalogPolicy, OFFICIAL_MIN_TICKET_PRICE } = require('./CuratedCatalogPolicy');
+const { requireCronBearer, requireOperationalClock } = require('../middleware/cronAuthorization');
+
+// Apply before every route: aliases must have the same fail-closed boundary.
+const protectedCronPaths = [
+  '/api/discovery/lifecycle/cron', '/api/cron/lifecycle',
+  '/api/cron/discovery-sync', '/api/discovery/cron/sync',
+  '/api/discovery/jobs/chunked-sync', '/api/cron/discovery-chunked-sync',
+  '/api/discovery/jobs/targeted-sync', '/api/cron/targeted-imminent-sync',
+  '/api/discovery/cron/catalog-refresh', '/api/cron/catalog-refresh'
+];
+router.use(protectedCronPaths, requireCronBearer, requireOperationalClock);
+router.use('/api/discovery/admin/run-sync', requireDiscoveryAdmin, requireOperationalClock);
 
 // ==========================================
 // PROMOTER IMPORT ADMIN GUARD & CSV UPLOAD
@@ -3246,24 +3258,8 @@ router.get('/api/discovery/admin/sync-status', (req, res) => {
  * Trigger daily catalog refresh and temporal reconciliation immediately.
  */
 async function handleDailyRefreshTrigger(req, res) {
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = req.headers ? (req.headers.authorization || req.header?.('authorization')) : null;
-  const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
-  const querySecret = req.query?.secret;
-  const candidate = bearerToken || querySecret;
-
-  if (cronSecret && typeof cronSecret === 'string' && cronSecret.trim().length > 0) {
-    if (!candidate && !resolveDiscoveryActor(req)) {
-      return res.status(401).json({ success: false, error: 'Unauthorized: Missing cron secret or admin credentials', code: 'AUTH_REQUIRED' });
-    }
-    if (candidate) {
-      const secretBuf = Buffer.from(cronSecret);
-      const candBuf = Buffer.from(candidate);
-      if (secretBuf.length !== candBuf.length || !crypto.timingSafeEqual(secretBuf, candBuf)) {
-        return res.status(401).json({ success: false, error: 'Unauthorized: Invalid cron secret', code: 'INVALID_CRON_SECRET' });
-      }
-    }
-  }
+  // Authentication is enforced by the route-level guards above. Admin session
+  // tokens are deliberately not interpreted as cron credentials here.
 
   try {
     const { dailyCatalogRefreshService } = require('./DailyCatalogRefreshService');

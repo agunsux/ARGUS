@@ -606,6 +606,19 @@ class TransactionControlCenterService {
       throw err;
     }
 
+    const timeline = await this.getTransactionTimeline(orderId);
+    const evalResult = timeline.currentEvaluation;
+
+    if (evalResult.colorStatus !== COLOR_STATUS.GREEN) {
+      const err = new Error(`Cannot execute payout: transaction is in ${evalResult.colorStatus} status (${evalResult.badgeLabel})`);
+      err.code = 'PAYOUT_NOT_ELIGIBLE';
+      err.colorStatus = evalResult.colorStatus;
+      err.blockingIssues = evalResult.blockingIssues;
+      err.evaluationReasons = evalResult.evaluationReasons;
+      err.status = 400;
+      throw err;
+    }
+
     if (!authorizationId) {
       const err = new Error('Dual authorization required: seller payout cannot be executed without an approved financial authorization.');
       err.code = 'AUTHORIZATION_REQUIRED';
@@ -644,9 +657,6 @@ class TransactionControlCenterService {
       throw err;
     }
 
-    const timeline = await this.getTransactionTimeline(orderId);
-    const evalResult = timeline.currentEvaluation;
-
     // Strict Amount and Currency Binding
     const expectedAmount = evalResult.netSellerPayout !== undefined ? evalResult.netSellerPayout : evalResult.grossAmount;
     if (authorization.amount && authorization.amount !== expectedAmount) {
@@ -661,15 +671,6 @@ class TransactionControlCenterService {
       const err = new Error(`Payout destination mismatch: authorized '${authorization.payout_destination}' does not match requested '${effectiveBankAccount}'`);
       err.code = 'AUTHORIZATION_DESTINATION_MISMATCH';
       err.status = 400;
-      throw err;
-    }
-
-    if (evalResult.colorStatus !== COLOR_STATUS.GREEN) {
-      const err = new Error(`Cannot execute payout: transaction is in ${evalResult.colorStatus} status (${evalResult.badgeLabel})`);
-      err.code = 'PAYOUT_NOT_ELIGIBLE';
-      err.colorStatus = evalResult.colorStatus;
-      err.blockingIssues = evalResult.blockingIssues;
-      err.evaluationReasons = evalResult.evaluationReasons;
       throw err;
     }
 

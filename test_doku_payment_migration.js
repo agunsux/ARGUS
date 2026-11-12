@@ -32,6 +32,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 process.env.DEFAULT_PAYMENT_PROVIDER = 'doku';
 
 const assert = require('assert');
@@ -316,6 +317,9 @@ async function runSuite() {
     dokuProvider.secretKey = 'test-doku-secret-key-321';
     dokuProvider.webhookSecret = 'test-doku-secret-key-321';
     dokuProvider.clientId = 'client-doku-tikum-001';
+    dokuProvider.holdReleaseEnabled = true;
+    dokuProvider.contractVerified = true;
+    process.env.DOKU_HOLD_RELEASE_ENABLED = 'true';
 
     await check('4.1 Webhook with forged/invalid HMAC signature is rejected (401)', async () => {
       const res = await request({

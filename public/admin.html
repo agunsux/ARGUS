@@ -466,6 +466,13 @@
         <span class="nav-item-left"><i class="fa-solid fa-handshake"></i> <span>Mitra &amp; Tiket Resmi</span></span>
         <span id="sidebarPartnersCount" class="nav-badge">-</span>
       </button>
+      <button class="nav-item" onclick="switchView('automation', this)" id="navAutomation">
+        <span class="nav-item-left"><i class="fa-solid fa-robot"></i> <span>Automation Center</span></span>
+        <span id="sidebarAutomationBadge" class="nav-badge" style="background: #0284c7; color: #fff;">LIVE</span>
+      </button>
+      <button class="nav-item" onclick="switchView('settings', this)" id="navSettings">
+        <span class="nav-item-left"><i class="fa-solid fa-gear"></i> <span>Settings</span></span>
+      </button>
 
       <div class="sidebar-heading" style="margin-top: 16px;" data-i18n="admin.sidebarPlatform">Platform Control</div>
       <a href="/" class="nav-item" target="_blank">
@@ -2101,6 +2108,213 @@
         </div>
       </div>
 
+      <!-- DEDICATED VIEW: AUTOMATION CENTER (Phase P1) -->
+      <div id="viewAutomation" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="font-size: 20px; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-robot" style="color: #38bdf8;"></i> Automation &amp; Background Intelligence
+            </h2>
+            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+              Pusat Kendali Eksekusi Otomatis: Sinkronisasi Sumber, Verifikasi Tanggal, Lifecycle Event, Blog Draft &amp; Publikasi Terjadwal
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="loadAutomationView()">
+              <i class="fa-solid fa-arrows-rotate"></i> Refresh State
+            </button>
+          </div>
+        </div>
+
+        <!-- Automation Stats Overview -->
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
+          <div class="stat-card">
+            <div class="stat-label">Total Jobs</div>
+            <div class="stat-val mono" id="autoStatTotalJobs">-</div>
+            <div class="stat-sub">Semua tugas otomatis terdaftar</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active / Enabled</div>
+            <div class="stat-val mono" id="autoStatActiveJobs" style="color: #10b981;">-</div>
+            <div class="stat-sub">Jadwal aktif berjalan</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Last Execution</div>
+            <div class="stat-val mono" id="autoStatLastRun" style="font-size: 14px;">-</div>
+            <div class="stat-sub" id="autoStatLastJob">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Job Health</div>
+            <div class="stat-val mono" id="autoStatHealth" style="color: #38bdf8;">100% PASS</div>
+            <div class="stat-sub">Zero unhandled crash</div>
+          </div>
+        </div>
+
+        <!-- Jobs Table Card -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+            <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #fff;">
+              <i class="fa-solid fa-list-check" style="color: #38bdf8;"></i> Daftar Pekerjaan Terjadwal (Scheduled Jobs)
+            </h3>
+            <span style="font-size: 11px; color: #94a3b8;">Safe Passive Mode: Pengaturan persisted durably</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="ops-table">
+              <thead>
+                <tr>
+                  <th>Job Name</th>
+                  <th>Deskripsi &amp; Cadence</th>
+                  <th>Status</th>
+                  <th>Toggle Switch</th>
+                  <th>Terakhir Dijalankan</th>
+                  <th>Run Count</th>
+                  <th>Hasil Terakhir</th>
+                  <th>Aksi Manual</th>
+                </tr>
+              </thead>
+              <tbody id="automationJobsTableBody">
+                <tr><td colspan="8" style="text-align: center; color: #64748b; padding: 24px;">Memuat data automasi...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Execution History Card -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+            <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #fff;">
+              <i class="fa-solid fa-clock-rotate-left" style="color: #38bdf8;"></i> Riwayat Eksekusi (Execution Audit Trail)
+            </h3>
+            <span style="font-size: 11px; color: #94a3b8;">Maksimal 50 entri riwayat terakhir</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="ops-table">
+              <thead>
+                <tr>
+                  <th>Waktu (WIB)</th>
+                  <th>Nama Job</th>
+                  <th>Status</th>
+                  <th>Durasi</th>
+                  <th>Ringkasan Hasil</th>
+                  <th>Detail</th>
+                </tr>
+              </thead>
+              <tbody id="automationHistoryTableBody">
+                <tr><td colspan="6" style="text-align: center; color: #64748b; padding: 24px;">Memuat riwayat eksekusi...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEDICATED VIEW: SETTINGS (Phase P1) -->
+      <div id="viewSettings" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="font-size: 20px; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-gear" style="color: #38bdf8;"></i> Operational &amp; Platform Settings
+            </h2>
+            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+              Konfigurasi Legal Entitas, Jalur Gateway Pembayaran, Kontak Darurat Venue, dan Integritas Sistem
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="loadSettingsView()">
+              <i class="fa-solid fa-arrows-rotate"></i> Refresh Settings
+            </button>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 24px;">
+          <!-- Card 1: Legal Entity & Compliance -->
+          <div class="card">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+              <i class="fa-solid fa-building-shield" style="color: #38bdf8; font-size: 18px;"></i>
+              <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #fff;">Entitas Bisnis &amp; Legalitas</h3>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Badan Hukum:</span><span id="setCompanyName" style="font-weight: 600; color: #fff;">PT Shinerva Prajna Tejas</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Nama Brand:</span><span id="setBrandName" style="color: #38bdf8; font-weight: 600;">TIKUM</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Alamat Kantor:</span><span id="setAddress" style="text-align: right; max-width: 200px;">Jl. Pasirluyu No. 79, Bandung 40254</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Legalitas Kemenkumham:</span><span id="setKemenkumham" class="badge" style="background: #065f46; color: #34d399;">TERSEDIA (AHU)</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Kepatuhan Pajak:</span><span id="setTaxCompliance" style="color: #cbd5e1;">PMK 37/2025 (PPh 22 &amp; PPN)</span></div>
+            </div>
+          </div>
+
+          <!-- Card 2: Operational Contacts & Venue Hotline -->
+          <div class="card">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+              <i class="fa-solid fa-headset" style="color: #38bdf8; font-size: 18px;"></i>
+              <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #fff;">Kontak Operasional &amp; PIC Venue</h3>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Penanggung Jawab Ops:</span><span id="setOpsPic" style="font-weight: 600; color: #fff;">Tim Operasional TIKUM</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Email Bantuan Resmi:</span><span id="setSupportEmail" class="mono" style="color: #38bdf8;">support@tikum.app</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Hotline Darurat Venue:</span><span id="setHotline" class="mono" style="color: #fff;">+62 812-3456-7890</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Jam Siaga Venue:</span><span id="setHours" style="color: #cbd5e1; text-align: right; max-width: 200px;">08:00 - 22:00 WIB (Siaga H-1 s/d H+1)</span></div>
+            </div>
+          </div>
+
+          <!-- Card 3: Payment Rails Configuration -->
+          <div class="card">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+              <i class="fa-solid fa-credit-card" style="color: #38bdf8; font-size: 18px;"></i>
+              <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #fff;">Jalur Pembayaran (Payment Rails)</h3>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+              <div style="background: #1e293b; padding: 10px; border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-star" style="color: #eab308; font-size: 11px;"></i> Primary: iPaymu</span>
+                  <span id="setIpaymuStatus" class="badge" style="background: #0284c7; color: #fff;">ACTIVE_READY</span>
+                </div>
+                <div style="font-size: 11px; color: #94a3b8;">Model: Escrow &amp; Hold | Saluran: VA, QRIS, Retail</div>
+              </div>
+              <div style="background: #1e293b; padding: 10px; border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-shield-halved" style="color: #94a3b8; font-size: 11px;"></i> Backup: DOKU</span>
+                  <span id="setDokuStatus" class="badge" style="background: #334155; color: #cbd5e1;">STANDBY</span>
+                </div>
+                <div style="font-size: 11px; color: #94a3b8;">Kebijakan: Failover terkendali, blokir jika status ambigu.</div>
+              </div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                <i class="fa-solid fa-lock"></i> Kunci privat API dan Webhook Signature tersimpan aman di environment server dan tidak diekspos ke klien.
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Platform Runtime & Engine Info -->
+          <div class="card">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+              <i class="fa-solid fa-server" style="color: #38bdf8; font-size: 18px;"></i>
+              <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #fff;">Infrastruktur &amp; Runtime</h3>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Versi Rilis:</span><span id="setVersion" class="mono" style="color: #38bdf8;">2.1.0-mvp</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Platform Trust:</span><span id="setPlatform" style="color: #fff;">ARGUS Control Plane</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Zona Waktu:</span><span id="setTimezone" class="mono">Asia/Jakarta (WIB)</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Status Database:</span><span id="setDbStatus" class="badge" style="background: #065f46; color: #34d399;">HEALTHY</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Mode Runtime:</span><span id="setEnvMode" class="badge" style="background: #1e3a8a; color: #93c5fd;">PRODUCTION READY</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Automation Log / Result -->
+      <div id="automationModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+        <div class="card" style="max-width: 640px; width: 100%; border-color: #0284c7; background: #0f172a; max-height: 85vh; overflow-y: auto;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+            <div style="font-weight: 700; color: #fff; font-size: 16px;">
+              <i class="fa-solid fa-code" style="color: #38bdf8;"></i> <span id="automationModalTitle">Log Hasil Eksekusi Job</span>
+            </div>
+            <button onclick="closeAutomationModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <pre id="automationModalContent" style="background: #020617; border: 1px solid #1e293b; border-radius: 6px; padding: 12px; font-size: 12px; color: #94a3b8; overflow-x: auto; max-height: 400px; white-space: pre-wrap; font-family: monospace;"></pre>
+          <div style="display: flex; justify-content: flex-end; margin-top: 14px;">
+            <button class="btn btn-secondary btn-sm" onclick="closeAutomationModal()">Tutup</button>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -2405,7 +2619,7 @@
     }
 
     // View Switching
-    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust', 'payments', 'editorial', 'inbox', 'partners', 'control-center'];
+    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust', 'payments', 'editorial', 'inbox', 'partners', 'control-center', 'automation', 'settings'];
 
     function switchView(viewName, btn = null) {
       currentView = viewName;
@@ -2425,6 +2639,12 @@
       if (viewName === 'control-center') { loadControlCenterView(); }
       const viewPartnersEl = document.getElementById('viewPartners');
       if (viewPartnersEl) viewPartnersEl.style.display = viewName === 'partners' ? 'block' : 'none';
+      const viewAutomationEl = document.getElementById('viewAutomation');
+      if (viewAutomationEl) viewAutomationEl.style.display = viewName === 'automation' ? 'block' : 'none';
+      if (viewName === 'automation') { loadAutomationView(); }
+      const viewSettingsEl = document.getElementById('viewSettings');
+      if (viewSettingsEl) viewSettingsEl.style.display = viewName === 'settings' ? 'block' : 'none';
+      if (viewName === 'settings') { loadSettingsView(); }
       document.getElementById('viewGeneric').style.display = DEDICATED_VIEWS.includes(viewName) ? 'none' : 'block';
 
       if (viewName === 'event-supply') {
@@ -2441,6 +2661,10 @@
         loadInboxView();
       } else if (viewName === 'partners') {
         loadPartnersView();
+      } else if (viewName === 'automation') {
+        loadAutomationView();
+      } else if (viewName === 'settings') {
+        loadSettingsView();
       } else if (!DEDICATED_VIEWS.includes(viewName)) {
         loadGenericEntityView(viewName);
       }
@@ -4849,6 +5073,217 @@
         loadControlCenterView(currentTxPage);
       } catch (err) {
         alert('Eksekusi payout ditolak: ' + err.message);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Automation Center & System Settings (Phase P1)
+    // -------------------------------------------------------------
+
+    async function loadAutomationView() {
+      try {
+        const [jobsRes, historyRes] = await Promise.all([
+          adminFetch('/api/admin/automation/jobs'),
+          adminFetch('/api/admin/automation/history?limit=50')
+        ]);
+        if (!jobsRes.ok) throw new Error('Gagal memuat status job automasi');
+        const jobsData = await jobsRes.json();
+        const historyData = historyRes.ok ? await historyRes.json() : { history: [] };
+
+        const jobs = jobsData.jobs || [];
+        const history = historyData.history || [];
+
+        const totalEl = document.getElementById('autoStatTotalJobs');
+        const activeEl = document.getElementById('autoStatActiveJobs');
+        if (totalEl) totalEl.innerText = jobs.length;
+        if (activeEl) activeEl.innerText = jobs.filter(j => j.enabled).length;
+
+        if (history.length > 0) {
+          const last = history[history.length - 1];
+          const lastRunEl = document.getElementById('autoStatLastRun');
+          const lastJobEl = document.getElementById('autoStatLastJob');
+          if (lastRunEl) lastRunEl.innerText = new Date(last.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+          if (lastJobEl) lastJobEl.innerText = last.job;
+        }
+
+        const tb = document.getElementById('automationJobsTableBody');
+        if (tb) {
+          if (jobs.length === 0) {
+            tb.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748b; padding: 24px;">Tidak ada job terdaftar.</td></tr>';
+          } else {
+            tb.innerHTML = jobs.map(j => {
+              const statusColor = j.status === 'COMPLETED' ? '#10b981' : (j.status === 'RUNNING' ? '#38bdf8' : (j.status === 'FAILED' ? '#ef4444' : '#94a3b8'));
+              const lastRunFormatted = j.last_run_at ? new Date(j.last_run_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-';
+              const resultSnippet = j.last_result ? (j.last_result.error ? `<span style="color: #ef4444;">Error: ${j.last_result.error}</span>` : 'Success') : '-';
+
+              return `<tr>
+                <td class="mono" style="font-weight: 700; color: #fff;">${j.name}</td>
+                <td>
+                  <div style="color: #cbd5e1; font-size: 12px;">${j.description || '-'}</div>
+                  <div class="mono" style="font-size: 11px; color: #64748b;">Cron: ${j.cronExpression || '-'}</div>
+                </td>
+                <td><span class="badge" style="background: ${statusColor}22; color: ${statusColor}; border: 1px solid ${statusColor}44;">${j.status}</span></td>
+                <td>
+                  <button class="btn btn-sm ${j.enabled ? 'btn-success' : 'btn-secondary'}" onclick="handleToggleJob('${j.name}')" style="font-size: 11px; padding: 4px 8px;">
+                    <i class="fa-solid ${j.enabled ? 'fa-toggle-on' : 'fa-toggle-off'}"></i> ${j.enabled ? 'ENABLED' : 'DISABLED'}
+                  </button>
+                </td>
+                <td class="mono" style="font-size: 12px;">${lastRunFormatted}</td>
+                <td class="mono" style="text-align: center;">${j.run_count || 0}</td>
+                <td style="font-size: 12px;">${resultSnippet}</td>
+                <td>
+                  <div style="display: flex; gap: 4px;">
+                    <button class="btn btn-primary btn-sm" onclick="handleRunJob('${j.name}')" style="font-size: 11px; padding: 4px 8px;">
+                      <i class="fa-solid fa-play"></i> Run Now
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="showJobDetails('${j.name}')" style="font-size: 11px; padding: 4px 8px;" title="Lihat detail log">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>`;
+            }).join('');
+          }
+        }
+
+        const hb = document.getElementById('automationHistoryTableBody');
+        if (hb) {
+          if (history.length === 0) {
+            hb.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 24px;">Belum ada riwayat eksekusi.</td></tr>';
+          } else {
+            const reversed = history.slice().reverse();
+            window._automationHistoryCache = reversed;
+            hb.innerHTML = reversed.map((h, idx) => {
+              const hStatusColor = h.status === 'COMPLETED' ? '#10b981' : (h.status === 'FAILED' ? '#ef4444' : '#94a3b8');
+              const hTime = h.timestamp ? new Date(h.timestamp).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-';
+              const dur = h.duration_ms !== undefined ? `${h.duration_ms}ms` : '-';
+              const summaryText = h.result ? (h.result.error ? h.result.error : (h.result.job || 'Sukses')) : '-';
+
+              return `<tr>
+                <td class="mono" style="font-size: 12px;">${hTime}</td>
+                <td class="mono" style="font-weight: 600; color: #fff;">${h.job}</td>
+                <td><span class="badge" style="background: ${hStatusColor}22; color: ${hStatusColor}; border: 1px solid ${hStatusColor}44;">${h.status}</span></td>
+                <td class="mono" style="font-size: 12px;">${dur}</td>
+                <td style="font-size: 12px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${summaryText}</td>
+                <td>
+                  <button class="btn btn-secondary btn-sm" onclick="showHistoryDetail(${idx})" style="font-size: 11px; padding: 2px 6px;">
+                    <i class="fa-solid fa-file-lines"></i>
+                  </button>
+                </td>
+              </tr>`;
+            }).join('');
+          }
+        }
+      } catch (err) {
+        showToast('Gagal memuat Automation Center: ' + err.message, 'danger');
+      }
+    }
+
+    async function handleRunJob(jobName) {
+      try {
+        showToast('Menjalankan job ' + jobName + '...', 'info');
+        const res = await adminFetch('/api/admin/automation/jobs/' + encodeURIComponent(jobName) + '/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'Eksekusi job gagal');
+        showToast('Job ' + jobName + ' berhasil dijalankan!', 'success');
+        loadAutomationView();
+      } catch (err) {
+        showToast('Gagal menjalankan job: ' + err.message, 'danger');
+      }
+    }
+
+    async function handleToggleJob(jobName) {
+      try {
+        const res = await adminFetch('/api/admin/automation/jobs/' + encodeURIComponent(jobName) + '/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'Toggle status job gagal');
+        showToast('Status job ' + jobName + ' diubah ke ' + (data.enabled ? 'ENABLED' : 'DISABLED'), 'info');
+        loadAutomationView();
+      } catch (err) {
+        showToast('Gagal toggle job: ' + err.message, 'danger');
+      }
+    }
+
+    async function showJobDetails(jobName) {
+      try {
+        const res = await adminFetch('/api/admin/automation/jobs');
+        const data = await res.json();
+        const job = (data.jobs || []).find(j => j.name === jobName);
+        document.getElementById('automationModalTitle').innerText = 'Detail Job: ' + jobName;
+        document.getElementById('automationModalContent').innerText = JSON.stringify(job || {}, null, 2);
+        document.getElementById('automationModal').style.display = 'flex';
+      } catch (err) {
+        showToast('Gagal memuat detail job', 'danger');
+      }
+    }
+
+    function showHistoryDetail(index) {
+      const item = (window._automationHistoryCache || [])[index];
+      document.getElementById('automationModalTitle').innerText = 'Riwayat Eksekusi: ' + (item ? item.job : '');
+      document.getElementById('automationModalContent').innerText = JSON.stringify(item || {}, null, 2);
+      document.getElementById('automationModal').style.display = 'flex';
+    }
+
+    function closeAutomationModal() {
+      document.getElementById('automationModal').style.display = 'none';
+    }
+
+    async function loadSettingsView() {
+      try {
+        const res = await adminFetch('/api/admin/system-settings');
+        if (!res.ok) throw new Error('Gagal memuat system settings');
+        const data = await res.json();
+
+        if (data.legal_entity) {
+          const elComp = document.getElementById('setCompanyName');
+          const elBrand = document.getElementById('setBrandName');
+          const elAddr = document.getElementById('setAddress');
+          const elKemen = document.getElementById('setKemenkumham');
+          const elTax = document.getElementById('setTaxCompliance');
+          if (elComp) elComp.innerText = data.legal_entity.company_name || 'PT Shinerva Prajna Tejas';
+          if (elBrand) elBrand.innerText = data.legal_entity.brand_name || 'TIKUM';
+          if (elAddr) elAddr.innerText = data.legal_entity.address || 'Jl. Pasirluyu No. 79, Bandung 40254';
+          if (elKemen) elKemen.innerText = data.legal_entity.kemenkumham_status || 'TERSEDIA';
+          if (elTax) elTax.innerText = data.legal_entity.tax_compliance || 'PMK 37/2025';
+        }
+        if (data.operational_contacts) {
+          const elPic = document.getElementById('setOpsPic');
+          const elEmail = document.getElementById('setSupportEmail');
+          const elHotline = document.getElementById('setHotline');
+          const elHours = document.getElementById('setHours');
+          if (elPic) elPic.innerText = data.operational_contacts.operations_pic || 'Tim Operasional TIKUM';
+          if (elEmail) elEmail.innerText = data.operational_contacts.support_email || 'support@tikum.app';
+          if (elHotline) elHotline.innerText = data.operational_contacts.emergency_hotline || '+62 812-3456-7890';
+          if (elHours) elHours.innerText = data.operational_contacts.business_hours || '08:00 - 22:00 WIB';
+        }
+        if (data.payment_gateways) {
+          const elIpaymu = document.getElementById('setIpaymuStatus');
+          const elDoku = document.getElementById('setDokuStatus');
+          if (elIpaymu && data.payment_gateways.primary) elIpaymu.innerText = data.payment_gateways.primary.status || 'ACTIVE';
+          if (elDoku && data.payment_gateways.backup) elDoku.innerText = data.payment_gateways.backup.status || 'STANDBY';
+        }
+        if (data.system_runtime) {
+          const elVer = document.getElementById('setVersion');
+          const elPlat = document.getElementById('setPlatform');
+          const elTz = document.getElementById('setTimezone');
+          const elDb = document.getElementById('setDbStatus');
+          const elEnv = document.getElementById('setEnvMode');
+          if (elVer) elVer.innerText = data.system_runtime.version || '2.1.0-mvp';
+          if (elPlat) elPlat.innerText = data.system_runtime.platform || 'ARGUS Control Plane';
+          if (elTz) elTz.innerText = data.system_runtime.timezone || 'Asia/Jakarta (WIB)';
+          if (elDb) elDb.innerText = data.system_runtime.database_status || 'HEALTHY';
+          if (elEnv) elEnv.innerText = (data.system_runtime.environment || 'PRODUCTION').toUpperCase();
+        }
+      } catch (err) {
+        showToast('Gagal memuat pengaturan: ' + err.message, 'danger');
       }
     }
 

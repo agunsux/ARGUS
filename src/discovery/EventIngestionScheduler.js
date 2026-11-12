@@ -16,9 +16,16 @@
  * inventory, or marketplace transactions.
  */
 
+const fs = require('fs');
+const path = require('path');
 const { canonicalRegistry } = require('./CanonicalEventRegistry');
 const { sourceRegistry } = require('./SourceRegistry');
 const { EventVerificationService, VERIFICATION_STATUS } = require('./EventVerificationService');
+
+const DATA_DIR = process.env.VERCEL
+  ? '/tmp/argus_data'
+  : (process.env.ARGUS_DATA_DIR || path.resolve(__dirname, '../../data'));
+const AUTOMATION_STATE_FILE = path.join(DATA_DIR, 'automation_scheduler_state.json');
 
 const JOB_TYPES = {
   EVENT_DISCOVERY_DAILY: 'EVENT_DISCOVERY_DAILY',
@@ -27,7 +34,9 @@ const JOB_TYPES = {
   SOURCE_HEALTH_CHECK: 'SOURCE_HEALTH_CHECK',
   EXPIRATION_SWEEP: 'EXPIRATION_SWEEP',
   EVENT_LIFECYCLE_SWEEP: 'EVENT_LIFECYCLE_SWEEP',
-  IMAGE_HEALTH_CHECK: 'IMAGE_HEALTH_CHECK'
+  IMAGE_HEALTH_CHECK: 'IMAGE_HEALTH_CHECK',
+  BLOG_DRAFT_GENERATION: 'BLOG_DRAFT_GENERATION',
+  SCHEDULED_PUBLISHING: 'SCHEDULED_PUBLISHING'
 };
 
 const JOB_STATUS = {
@@ -55,6 +64,7 @@ class EventIngestionScheduler {
 
     // Register default job definitions (but do NOT auto-start)
     this._registerDefaultJobs();
+    this._loadState();
   }
 
   _registerDefaultJobs() {
@@ -134,6 +144,28 @@ class EventIngestionScheduler {
       run_count: 0,
       enabled: false
     });
+
+    this.jobs.set(JOB_TYPES.BLOG_DRAFT_GENERATION, {
+      name: JOB_TYPES.BLOG_DRAFT_GENERATION,
+      description: 'Generate SEO blog guide drafts (DRAFT / PENDING_REVIEW) for verified upcoming events',
+      cronExpression: '0 11 * * *', // 11 AM daily
+      status: JOB_STATUS.IDLE,
+      last_run_at: null,
+      last_result: null,
+      run_count: 0,
+      enabled: false
+    });
+
+    this.jobs.set(JOB_TYPES.SCHEDULED_PUBLISHING, {
+      name: JOB_TYPES.SCHEDULED_PUBLISHING,
+      description: 'Publish due scheduled editorial articles (Tuesday & Friday 09:00 WIB cadence)',
+      cronExpression: '0 9 * * 2,5', // 9 AM Tue, Fri
+      status: JOB_STATUS.IDLE,
+      last_run_at: null,
+      last_result: null,
+      run_count: 0,
+      enabled: false
+    });
   }
 
   /**
@@ -182,6 +214,14 @@ class EventIngestionScheduler {
 
         case JOB_TYPES.IMAGE_HEALTH_CHECK:
           result = await this.runImageHealthCheckChunk(options);
+          break;
+
+        case JOB_TYPES.BLOG_DRAFT_GENERATION:
+          result = this._runBlogDraftGeneration(options);
+          break;
+
+        case JOB_TYPES.SCHEDULED_PUBLISHING:
+          result = await this._runScheduledPublishing(options);
           break;
 
         default:
@@ -380,6 +420,94 @@ class EventIngestionScheduler {
     if (this.jobHistory.length > this.maxHistorySize) {
       this.jobHistory.shift();
     }
+    this._persistState();
+  }
+
+  _runBlogDraftGeneration(options = {}) {
+    const { EventBlogDraftService } = require('../content/EventBlogDraftService');
+    return EventBlogDraftService.generateDraftsForUpcomingEvents(options);
+  }
+
+  async _runScheduledPublishing(options = {}) {
+    const { publishingScheduler } = require('../content/PublishingScheduler');
+    const now = options.now ? new Date(options.now) : new Date();
+    const newlyPublished = publishingScheduler.publishDueArticles(now);
+    const cycle = await publishingScheduler.runCycle({ now, forceRun: Boolean(options.force) });
+    return {
+      published_due_count: newlyPublished.length,
+      published_articles: newlyPublished.map(a => ({ id: a.id, slug: a.slug, title: a.title })),
+      cycle
+    };
+  }
+
+  _loadState() {
+    try {
+      if (fs.existsSync(AUTOMATION_STATE_FILE)) {
+        const raw = fs.readFileSync(AUTOMATION_STATE_FILE, 'utf8');
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.jobs && typeof parsed.jobs === 'object') {
+            for (const [name, stateData] of Object.entries(parsed.jobs)) {
+              const job = this.jobs.get(name);
+              if (job) {
+                if (typeof stateData.enabled === 'boolean') job.enabled = stateData.enabled;
+                if (stateData.last_run_at) job.last_run_at = stateData.last_run_at;
+                if (stateData.status && stateData.status !== JOB_STATUS.RUNNING) job.status = stateData.status;
+                if (typeof stateData.run_count === 'number') job.run_count = stateData.run_count;
+                if (stateData.last_result !== undefined) job.last_result = stateData.last_result;
+              }
+            }
+          }
+          if (Array.isArray(parsed.jobHistory)) {
+            this.jobHistory = parsed.jobHistory.slice(-this.maxHistorySize);
+          }
+          if (parsed.last_source_sync_at) {
+            this.last_source_sync_at = parsed.last_source_sync_at;
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  _persistState() {
+    try {
+      if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+      }
+      const jobsObj = {};
+      for (const [name, job] of this.jobs) {
+        jobsObj[name] = {
+          enabled: job.enabled,
+          status: job.status === JOB_STATUS.RUNNING ? JOB_STATUS.IDLE : job.status,
+          last_run_at: job.last_run_at,
+          run_count: job.run_count,
+          last_result: job.last_result
+        };
+      }
+      const payload = {
+        jobs: jobsObj,
+        jobHistory: this.jobHistory.slice(-this.maxHistorySize),
+        last_source_sync_at: this.last_source_sync_at,
+        updated_at: new Date().toISOString()
+      };
+      const tmpPath = `${AUTOMATION_STATE_FILE}.tmp.${Date.now()}`;
+      fs.writeFileSync(tmpPath, JSON.stringify(payload, null, 2), 'utf8');
+      fs.renameSync(tmpPath, AUTOMATION_STATE_FILE);
+    } catch (_) {}
+  }
+
+  toggleJob(jobName, enabled = null) {
+    const job = this.jobs.get(jobName);
+    if (!job) {
+      throw new Error(`Unknown job: ${jobName}`);
+    }
+    job.enabled = enabled === null ? !job.enabled : Boolean(enabled);
+    this._persistState();
+    return job;
+  }
+
+  getAllJobs() {
+    return Array.from(this.jobs.values()).map(j => ({ ...j }));
   }
 
   getJobStatus(jobName) {
@@ -816,6 +944,9 @@ class EventIngestionScheduler {
     const { EventVisualProvenanceService } = require('./EventVisualProvenanceService');
 
     const repo = options.repository || getCatalogRepository();
+    if (options.persist === true && (repo.readOnly || typeof repo.upsertCanonicalEvent !== 'function')) {
+      throw new Error('IMAGE_HEALTH_PERSISTENCE_UNAVAILABLE');
+    }
     const batchSize = Math.max(1, Math.min(25, Number(options.batchSize || 10)));
     const timeBudgetMs = Number(options.timeBudgetMs || 15000);
     const timeoutMs = Number(options.timeoutMs || 4000);
@@ -864,7 +995,7 @@ class EventIngestionScheduler {
       }
 
       if (options.persist === true && !repo.readOnly && typeof repo.upsertCanonicalEvent === 'function') {
-        await repo.upsertCanonicalEvent(updated).catch(() => {});
+        await repo.upsertCanonicalEvent(updated);
       }
 
       summary.results.push({

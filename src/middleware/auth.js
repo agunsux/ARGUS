@@ -18,8 +18,20 @@ const { state } = require('../database');
 
 /**
  * Canonical admin role set for the TIKUM Operations Control Center.
+ * Supports Simple RBAC: SUPER_ADMIN, ADMIN, EDITOR/EVENT_OPERATIONS, SUPPORT, FINANCE_READ_ONLY, FINANCE.
  */
-const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN', 'OPS', 'TRUST_OFFICER'];
+const ADMIN_ROLES = [
+  'ADMIN',
+  'SUPER_ADMIN',
+  'OPS',
+  'TRUST_OFFICER',
+  'EDITOR',
+  'EVENT_OPERATIONS',
+  'SUPPORT',
+  'FINANCE_READ_ONLY',
+  'FINANCE',
+  'FINANCE_OPERATOR'
+];
 
 function isAdminRole(role) {
   if (!role || typeof role !== 'string') return false;

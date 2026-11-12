@@ -19,6 +19,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 process.env.DEFAULT_PAYMENT_PROVIDER = 'doku';
 process.env.ENABLE_DOKU_PRODUCTION = 'false';
 
@@ -228,11 +229,31 @@ async function runMatrix() {
       assert.strictEqual(relRes.success, true);
       assert.strictEqual(relRes.escrow.status, ESCROW_STATUS.RELEASED);
 
-      // Payout simulation succeeds
+      // Payout simulation succeeds with dual authorization
+      if (!state.users.some(u => u.id === 'admin-2')) {
+        state.users.push({ id: 'admin-2', name: 'Finance Supervisor', role: 'finance' });
+      }
+      const { FinancialAuthorizationService, AUTHORIZATION_ACTION } = require('./src/settlement/FinancialAuthorizationService');
+      const authReq = await FinancialAuthorizationService.requestAuthorization({
+        orderId: qrisOrder.id,
+        actionType: AUTHORIZATION_ACTION.EXECUTE_PAYOUT,
+        makerId: 'admin-1',
+        amount: qrisOrder.seller_payout || 900000,
+        currency: 'IDR',
+        payoutDestination: 'BCA 1234567890 (Seller)',
+        reason: 'Authorized settlement payout after PIC turnstile entry'
+      });
+      await FinancialAuthorizationService.approveAuthorization({
+        authorizationId: authReq.authorization.id,
+        checkerId: 'admin-2',
+        notes: 'Approved settlement payout'
+      });
+
       const settleRes = await SettlementService.executeSettlement({
         orderId: qrisOrder.id,
         sellerId: qrisOrder.seller_id,
-        officerId: 'admin-1',
+        officerId: 'admin-2',
+        authorizationId: authReq.authorization.id,
         idempotencyKey: `payout-qris-${qrisOrder.id}`
       });
       assert.strictEqual(settleRes.settlement?.status || settleRes.status, 'EXECUTED');

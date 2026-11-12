@@ -675,11 +675,14 @@ async function runSuite() {
   });
 
   await asyncTest('4.4 Refund transaction: Reverses seller allocation, fee revenue, and tax payable liabilities', async () => {
+    // Refund accounting does not depend on the historical Pestapora seed schedule.
+    state.events.push({ id: 'event-refund-ledger-fixture', title: 'Synthetic refund ledger fixture',
+      status: 'PUBLISHED', ...require('./test/helpers/financialEventFixture').futureEventSchedule() });
     state.listings.push({
       id: 'list-refund-demo',
       ticket_id: 'ticket-demo-2',
       seller_id: 'seller-1',
-      event_id: 'event-pestapora-2026',
+      event_id: 'event-refund-ledger-fixture',
       face_value: 1000000,
       price: 1000000,
       status: LISTING_STATUS.ACTIVE,
@@ -835,7 +838,8 @@ async function runSuite() {
     const res = await apiPost('/api/mvp/pricing/calculate', {
       ticketPrice: 2000000,
       policyVersion: '2026.1-ID-DEFAULT',
-      taxPolicyVersion: '2026.1-ID-TAX'
+      taxPolicyVersion: '2026.1-ID-TAX',
+      transactionDate: '2026-09-19T14:00:00Z'
     });
 
     assert.strictEqual(res.statusCode, 200);

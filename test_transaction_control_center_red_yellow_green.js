@@ -4,6 +4,8 @@
  * H-7 / H-14 Listing Window & Admin Transaction Control Center
  */
 
+process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 const assert = require('assert');
 const { state } = require('./src/database');
 const { ListingWindowPolicy, WINDOW_TYPE, OPERATIONAL_DISCLAIMER } = require('./src/policy/ListingWindowPolicy');
@@ -476,9 +478,26 @@ async function main() {
   });
 
   await runAsyncTest('TCC Service: Payout execution succeeds on GREEN and prevents double payout', async () => {
+    const { FinancialAuthorizationService, AUTHORIZATION_ACTION } = require('./src/settlement/FinancialAuthorizationService');
+    const authReq = await FinancialAuthorizationService.requestAuthorization({
+      orderId: 'tcc-ord-3',
+      actionType: AUTHORIZATION_ACTION.EXECUTE_PAYOUT,
+      makerId: 'finance-officer-1',
+      amount: 1350000,
+      currency: 'IDR',
+      payoutDestination: 'BCA 9876543210 (a.n Seller Tiga)',
+      reason: 'Dual authorization for verified green order payout'
+    });
+    await FinancialAuthorizationService.approveAuthorization({
+      authorizationId: authReq.authorization.id,
+      checkerId: 'finance-supervisor-2',
+      notes: 'Approved seller payout for green transaction'
+    });
+
     const payoutRes = await TransactionControlCenterService.executePayout({
       orderId: 'tcc-ord-3', // ord-3 is GREEN
       operatorId: 'finance-officer-1',
+      authorizationId: authReq.authorization.id,
       idempotencyKey: 'idemp-tcc-ord-3-test-1',
       bankAccount: 'BCA 9876543210 (a.n Seller Tiga)'
     });

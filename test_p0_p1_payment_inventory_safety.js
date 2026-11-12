@@ -15,6 +15,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 process.env.DEFAULT_PAYMENT_PROVIDER = 'doku';
 process.env.ENABLE_DOKU_PRODUCTION = 'false';
 process.env.ENABLE_MIDTRANS_PRODUCTION = 'false';
@@ -119,6 +120,7 @@ async function runTests() {
     state.events.push({
       id: 'event-test-safety',
       title: 'Safety Test Concert 2026',
+      ...require('./test/helpers/financialEventFixture').futureEventSchedule(),
       status: 'PUBLISHED',
       is_active: true
     });
