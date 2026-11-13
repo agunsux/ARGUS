@@ -23,6 +23,7 @@ const { SessionStore } = require('../services/sessionStore');
 const { authenticate, requireAuth, resolveUser, parseCookies } = require('../middleware/auth');
 const { recordAuditLog, state, hashPassword, verifyPassword } = require('../database');
 const { emailService } = require('../services/emailService');
+const { ADMIN_EMAIL, normalizeEmail, isAdminRole } = require('../config/adminIdentity');
 
 /**
  * POST /api/auth/signup
@@ -41,6 +42,9 @@ router.post('/signup', async (req, res) => {
   }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const normalizedEmail = email.trim().toLowerCase();
+  if (normalizedEmail === ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Registration unavailable for this identity.', code: 'FORBIDDEN' });
+  }
   if (!emailRegex.test(normalizedEmail)) {
     return res.status(400).json({ error: 'Invalid email address format', code: 'INVALID_EMAIL' });
   }
@@ -149,6 +153,9 @@ router.post('/login', async (req, res) => {
   }
 
   const storedHash = user?.password_hash || user?.password;
+  if (normalizeEmail(email) === ADMIN_EMAIL || isAdminRole(user?.role)) {
+    return res.status(401).json({ error: 'Invalid email or password', code: 'INVALID_CREDENTIALS' });
+  }
   let isValid = false;
 
   if (user && storedHash) {
@@ -569,6 +576,17 @@ router.get('/session', authenticate, (req, res) => {
  * Terminates active session in durable database & local store, clears cookie.
  */
 router.post('/logout', async (req, res) => {
+  if (req.adminAuthenticated || parseCookies(req.headers.cookie).session_token?.startsWith('adm-')) {
+    return require('../middleware/adminSecurity').adminOrigin(req, res, async () => {
+      try {
+        const token = req.session?.session_token || parseCookies(req.headers.cookie).session_token;
+        await require('../storage/AdminSecurityStore').adminSecurityStore.revoke(token);
+        const secure = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+        res.setHeader('Set-Cookie', `session_token=; HttpOnly; Path=/; SameSite=Strict; Max-Age=0${secure ? '; Secure' : ''}`);
+        return res.json({ success: true });
+      } catch (_) { return res.status(503).json({ code: 'ADMIN_AUTH_UNAVAILABLE' }); }
+    });
+  }
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   const user = req.user || resolveUser(req);
   let token = req.session?.session_token;

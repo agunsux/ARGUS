@@ -22,75 +22,8 @@ const { CityRegistry } = require('../discovery/CityRegistry');
 const { SessionStore } = require('../services/sessionStore');
 const { state } = require('../database');
 
-function resolveAdminActor(req) {
-  if (req.user && req.user.id) {
-    if (req.user.status && req.user.status.toUpperCase() === 'SUSPENDED') {
-      return null;
-    }
-    return req.user;
-  }
+const requireContentAdmin = require('../middleware/adminSecurity').requireAdminIdentity;
 
-  const authHeader = req.header ? (req.header('authorization') || req.header('x-session-token')) : null;
-  let token = null;
-  if (authHeader) {
-    token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader.trim();
-  }
-
-  if (!token && req.headers && req.headers.cookie) {
-    const { parseCookies } = require('../middleware/auth');
-    const cookies = parseCookies(req.headers.cookie);
-    if (cookies.session_token) {
-      token = cookies.session_token.trim();
-    }
-  }
-
-  if (token) {
-    const session = SessionStore.findSession(token) ||
-      (state.sessions || []).find(s => s.session_token === token && new Date(s.expires_at) > new Date() && !s.revoked);
-    if (session) {
-      const user = (state.users || []).find(u => u.id === session.user_id);
-      if (user && (!user.status || user.status.toUpperCase() !== 'SUSPENDED')) return user;
-    }
-  }
-
-  if (process.env.NODE_ENV === 'test') {
-    const candidateId = (req.header ? req.header('x-user-id') : null) || req.body?.admin_id;
-    if (candidateId) {
-      const user = (state.users || []).find(u => u.id === candidateId);
-      if (user && (!user.status || user.status.toUpperCase() !== 'SUSPENDED')) return user;
-    }
-  }
-
-  return null;
-}
-
-const { resolveUserAsync } = require('../middleware/auth');
-
-async function requireContentAdmin(req, res, next) {
-  let user = req.user;
-  if (!user) {
-    try {
-      user = await resolveUserAsync(req);
-    } catch (_) {}
-  }
-  if (!user) {
-    user = resolveAdminActor(req);
-  }
-  if (!user) {
-    return res.status(401).json({ error: 'Authentication required for content management', code: 'AUTH_REQUIRED' });
-  }
-  const roleLower = (user.role || '').toLowerCase();
-  const allowedRoles = ['admin', 'ops', 'super_admin', 'editor', 'event_operations'];
-  if (!allowedRoles.includes(roleLower)) {
-    return res.status(403).json({ error: `Forbidden: role '${user.role}' cannot manage editorial content`, code: 'ADMIN_FORBIDDEN' });
-  }
-  req.adminUser = user;
-  next();
-}
-
-// -------------------------------------------------------------
-// 1. Articles List & Detail
-// -------------------------------------------------------------
 router.get('/api/admin/content/articles', requireContentAdmin, (req, res) => {
   const { status, category } = req.query;
   const articles = articleRepository.getAllArticles({ status, category });

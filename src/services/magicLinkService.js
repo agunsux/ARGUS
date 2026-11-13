@@ -289,6 +289,11 @@ class MagicLinkService {
     }
 
     const normEmail = email.toLowerCase().trim();
+    const { ADMIN_EMAIL, isAdminRole } = require('../config/adminIdentity');
+    const existingIdentity = await getUserRepository().getUserByEmail(normEmail);
+    if (normEmail === ADMIN_EMAIL || isAdminRole(existingIdentity?.role)) {
+      return { success: true, message: 'Jika identitas diizinkan, permintaan diproses.', email: normEmail };
+    }
 
     // Check rate limits
     const rateCheck = this.checkRateLimit(ip, normEmail);
@@ -524,6 +529,10 @@ class MagicLinkService {
 
     // Resolve existing user or provision new user in both UserRepository and state.users
     const user = await this.ensureUserRecord(record.email, nowIso);
+    const { ADMIN_EMAIL, normalizeEmail, isAdminRole } = require('../config/adminIdentity');
+    if (normalizeEmail(user.email) === ADMIN_EMAIL || isAdminRole(user.role)) {
+      throw Object.assign(new Error('Use administrator authentication'), { code: 'ADMIN_AUTH_REQUIRED', status: 403 });
+    }
 
     // Check account suspension before creating a session
     if (user.status && user.status.toUpperCase() === 'SUSPENDED') {

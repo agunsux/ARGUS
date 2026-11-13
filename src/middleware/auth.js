@@ -11,32 +11,15 @@
  * 6. Centralized primitives: requireAuth, requireRole, requireAdmin, requireOwnership.
  */
 
-const crypto = require('crypto');
 const { getUserRepository } = require('../storage');
-const { SessionStore } = require('../services/sessionStore');
 const { state } = require('../database');
 
 /**
  * Canonical admin role set for the TIKUM Operations Control Center.
  * Supports Simple RBAC: SUPER_ADMIN, ADMIN, EDITOR/EVENT_OPERATIONS, SUPPORT, FINANCE_READ_ONLY, FINANCE.
  */
-const ADMIN_ROLES = [
-  'ADMIN',
-  'SUPER_ADMIN',
-  'OPS',
-  'TRUST_OFFICER',
-  'EDITOR',
-  'EVENT_OPERATIONS',
-  'SUPPORT',
-  'FINANCE_READ_ONLY',
-  'FINANCE',
-  'FINANCE_OPERATOR'
-];
-
-function isAdminRole(role) {
-  if (!role || typeof role !== 'string') return false;
-  return ADMIN_ROLES.includes(role.toUpperCase());
-}
+const { ADMIN_ROLES, isAdminRole, isAdminIdentity } = require('../config/adminIdentity');
+const { adminSecurityStore } = require('../storage/AdminSecurityStore');
 
 /**
  * Parses cookies from cookie header string
@@ -96,6 +79,9 @@ function extractToken(req) {
 async function resolveUserAsync(req) {
   if (!req) return null;
 
+  req.adminAuthenticated = false;
+  req.authRejected = false;
+
   const token = extractToken(req);
   if (!token) {
     req.user = null;
@@ -106,10 +92,34 @@ async function resolveUserAsync(req) {
 
   // 1. Check Authoritative UserRepository (PostgreSQL in production, InMemory in test)
   try {
+    if (token.startsWith('adm-') || (process.env.NODE_ENV === 'test' && !process.env.VERCEL)) {
+      const adminRes = await adminSecurityStore.lookup(token);
+      if (adminRes && adminRes.user) {
+        req.user = adminRes.user;
+        req.session = adminRes.session;
+        req.role = adminRes.user.role;
+        req.adminAuthenticated = true;
+        req.authRejected = false;
+        return req.user;
+      }
+    }
+    if (token.startsWith('adm-')) {
+      req.authRejected = true;
+      req.user = null;
+      req.session = null;
+      req.role = null;
+      req.adminAuthenticated = false;
+      return null;
+    }
     const repo = getUserRepository();
     if (repo && typeof repo.getSessionByTokenHash === 'function') {
       const result = await repo.getSessionByTokenHash(token);
       if (result && result.user && result.session) {
+        if (isAdminRole(result.user.role)) {
+          req.authRejected = true;
+          req.user = null; req.session = null; req.role = null;
+          return null; // Legacy/password sessions never grant admin access.
+        }
         req.user = result.user;
         req.role = (result.user.role || '').toUpperCase();
         req.session = {
@@ -134,30 +144,28 @@ async function resolveUserAsync(req) {
         return result.user;
       }
     }
-  } catch (err) {
-    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-      console.error('[AuthMiddleware] Authoritative session lookup error:', err.message);
-      req.user = null;
-      req.role = null;
-      req.session = null;
-      return null;
+
+    if (process.env.NODE_ENV === 'test' && !process.env.VERCEL) {
+      const { SessionStore } = require('../services/sessionStore');
+      const sess = SessionStore.findSession(token);
+      if (sess && !sess.revoked && new Date(sess.expires_at) > new Date()) {
+        const user = (state.users && state.users.find(u => u.id === sess.user_id)) || { id: sess.user_id, role: sess.role, status: 'ACTIVE' };
+        req.user = user;
+        req.role = (sess.role || user.role || '').toUpperCase();
+        req.session = { ...sess, session_token: token };
+        return req.user;
+      }
     }
+  } catch (_) {
+    req.authRejected = true;
+    req.user = null;
+    req.role = null;
+    req.session = null;
+    return null;
   }
 
-  // 2. Fallback to local SessionStore / state.sessions for isolated mock tests
-  const localSession = SessionStore.findSession(token) ||
-    (state.sessions && state.sessions.find(s => s.session_token === token && new Date(s.expires_at) > new Date() && !s.revoked));
-
-  if (localSession) {
-    const user = (state.users || []).find(u => u.id === localSession.user_id);
-    if (user) {
-      req.user = user;
-      req.role = (user.role || '').toUpperCase();
-      req.session = localSession;
-      return user;
-    }
-  }
-
+  // A missing authoritative session is final, not permission to resurrect local state.
+  req.authRejected = true;
   req.user = null;
   req.role = null;
   req.session = null;
@@ -167,30 +175,14 @@ async function resolveUserAsync(req) {
 /**
  * Synchronous resolver for downstream handlers after resolveUserAsync has run.
  * If req.user is already set, returns immediately.
- * Otherwise falls back to synchronous local search.
+ * Never falls back to synchronous local state.
  */
 function resolveUser(req) {
   if (!req) return null;
   if (req.user !== undefined) return req.user;
 
-  // Fallback for tests or requests that bypassed early middleware
-  const token = extractToken(req);
-  if (!token) return null;
+  return null; // Synchronous callers must use the already resolved authoritative identity.
 
-  const localSession = SessionStore.findSession(token) ||
-    (state.sessions && state.sessions.find(s => s.session_token === token && new Date(s.expires_at) > new Date() && !s.revoked));
-
-  if (localSession) {
-    const user = (state.users || []).find(u => u.id === localSession.user_id);
-    if (user) {
-      req.user = user;
-      req.role = (user.role || '').toUpperCase();
-      req.session = localSession;
-      return user;
-    }
-  }
-
-  return null;
 }
 
 /**
@@ -250,6 +242,9 @@ function authorize(allowedRoles = []) {
     }
 
     const userRole = (user.role || '').toUpperCase();
+    if (isAdminRole(userRole) && (!isAdminIdentity(user) || !req.adminAuthenticated)) {
+      return res.status(403).json({ error: 'Administrator access denied.', code: 'FORBIDDEN' });
+    }
     if (normalizedAllowed.length > 0) {
       const isAllowed = normalizedAllowed.some(role => {
         if (role === 'ADMIN' && userRole === 'ADMIN') return true;
@@ -274,7 +269,7 @@ const requireRole = authorize;
 /**
  * Middleware: Requires authenticated admin role (ADMIN, SUPER_ADMIN, OPS, TRUST_OFFICER).
  */
-const requireAdmin = authorize([...ADMIN_ROLES]);
+const requireAdmin = require('./adminSecurity').requireAdminIdentity;
 
 /**
  * Middleware: Requires finance authorization (ADMIN, SUPER_ADMIN, FINANCE, FINANCE_OPERATOR).
@@ -308,7 +303,7 @@ function requireOwnership(getResourceOwnerId) {
     }
 
     // Admins bypass ownership checks
-    if (isAdminRole(user.role)) {
+    if (isAdminIdentity(user) && req.adminAuthenticated) {
       return next();
     }
 

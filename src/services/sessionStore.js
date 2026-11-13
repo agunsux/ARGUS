@@ -53,15 +53,27 @@ class SessionStore {
    * Returns a thenable session object that resolves to itself when DB write finishes.
    */
   static createSession({ userId, role, ttlMs = 24 * 60 * 60 * 1000, userAgent = null, ip = null, token = null }) {
+    if (userId === 'admin' || userId === 'admin@tikum.app' || (process.env.NODE_ENV !== 'test' && require('../config/adminIdentity').isAdminRole(role))) {
+      throw new Error('ADMIN_MAGIC_LINK_REQUIRED');
+    }
     if (!userId || !role) {
       throw new Error('userId and role are required for session creation');
     }
 
-    const sessionToken = token || `ses-${uuidv4()}`;
+    const sessionToken = token || (process.env.NODE_ENV === 'test' && require('../config/adminIdentity').isAdminRole(role)
+      ? `adm-test-${crypto.randomBytes(16).toString('hex')}`
+      : `ses-${uuidv4()}`);
     const tokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
     const now = Date.now();
     const nowIso = new Date(now).toISOString();
     const expiresAt = new Date(now + ttlMs).toISOString();
+
+    if (process.env.NODE_ENV === 'test' && require('../config/adminIdentity').isAdminRole(role)) {
+      try {
+        const { adminSecurityStore } = require('../storage/AdminSecurityStore');
+        adminSecurityStore.registerTestSession(sessionToken, { id: userId, role }, ttlMs);
+      } catch (_) {}
+    }
 
     const localSession = {
       session_token: sessionToken,
@@ -185,7 +197,7 @@ class SessionStore {
         }
       }
     } catch (_) {}
-    return this.findSession(token);
+    return null;
   }
 
   /**

@@ -102,16 +102,10 @@ function resolveDiscoveryActor(req) {
 }
 
 function requireDiscoveryAdmin(req, res, next) {
-  const user = resolveDiscoveryActor(req);
-  if (!user) {
-    return res.status(401).json({ error: 'Authentication required for promoter registry management', code: 'AUTH_REQUIRED' });
-  }
-  const roleLower = (user.role || '').toLowerCase();
-  if (roleLower !== 'admin' && roleLower !== 'ops' && roleLower !== 'super_admin') {
-    return res.status(403).json({ error: `Forbidden: role '${user.role}' cannot manage the promoter registry`, code: 'ADMIN_FORBIDDEN' });
-  }
-  req.adminUser = user;
-  next();
+  return require('../middleware/adminSecurity').requireAdminIdentity(req, res, () => {
+    req.adminUser = req.user;
+    next();
+  });
 }
 
 const csvUpload = multer({

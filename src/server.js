@@ -50,6 +50,8 @@ app.use(async (req, res, next) => {
 });
 
 const { resolveUser, resolveUserAsync, isAdminRole } = require('./middleware/auth');
+const { isAdminIdentity } = require('./config/adminIdentity');
+const { requireAdminIdentity, adminOrigin } = require('./middleware/adminSecurity');
 
 // Early durable authentication resolution: pre-populate req.user, req.session, req.role
 app.use(async (req, res, next) => {
@@ -60,6 +62,25 @@ app.use(async (req, res, next) => {
   }
   next();
 });
+
+// Mount the only administrator authentication entry points before all legacy routers.
+app.use('/api/admin', require('./api/adminAuthRouter'));
+app.use((req, res, next) => {
+  // Stop legacy routers from re-resolving a rejected credential from local caches.
+  if (req.authRejected && req.path.startsWith('/api/') && !req.path.startsWith('/api/auth/')) {
+    return res.status(401).json({ code: 'AUTH_REQUIRED', error: 'Authentication required.' });
+  }
+  next();
+});
+app.use(['/api/admin', '/api/mvp/admin'], requireAdminIdentity);
+app.post('/api/mvp/auth/login', (req, res, next) => {
+  const { state } = require('./database');
+  const candidate = state.users.find(u => u.id === req.body?.usernameOrId || u.email === req.body?.usernameOrId);
+  if (isAdminRole(candidate?.role)) return res.status(401).json({ code: 'AUTH_FAILED', error: 'Invalid user credentials' });
+  next();
+});
+// Cookie-authenticated admin mutations outside the /api/admin namespace also need CSRF protection.
+app.use((req, res, next) => req.adminAuthenticated ? adminOrigin(req, res, next) : next());
 
 // Serve uploads folder statically for evidence check debugging
 const uploadsDir = process.env.VERCEL
@@ -199,8 +220,10 @@ app.get(['/app/seller', '/seller-dashboard.html'], (req, res) => {
 
 // Dedicated admin login surface (public)
 app.get('/admin/login', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Referrer-Policy', 'no-referrer');
   const user = resolveUser(req);
-  if (user && isAdminRole(user.role) && (user.status || 'ACTIVE').toUpperCase() !== 'SUSPENDED') {
+  if (isAdminIdentity(user) && req.adminAuthenticated) {
     return res.redirect(302, '/admin');
   }
   return res.sendFile(path.join(publicDir, 'admin-login.html'), sendFileOpts);
@@ -228,7 +251,7 @@ app.get(['/admin', '/admin.html'], (req, res) => {
     });
   }
 
-  if (!isAdminRole(user.role)) {
+  if (!isAdminIdentity(user) || !req.adminAuthenticated) {
     if (wantsHtml(req)) return res.redirect(302, '/admin/login?error=ADMIN_ACCESS_REQUIRED');
     return res.status(403).json({
       error: `Forbidden: role '${user.role}' not permitted for this action`,

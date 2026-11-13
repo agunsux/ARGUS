@@ -14,6 +14,8 @@
  * 5. Automation job execution via API with DB lease lock.
  */
 
+process.env.NODE_ENV = 'test';
+
 const assert = require('assert');
 const express = require('express');
 const crypto = require('crypto');

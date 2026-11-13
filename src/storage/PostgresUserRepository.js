@@ -468,6 +468,9 @@ class PostgresUserRepository extends UserRepository {
   // --- SESSION OPERATIONS ---
 
   async createSession({ userId, role, ip = null, userAgent = null, ttlMs = 24 * 60 * 60 * 1000, token = null }) {
+    if (userId === 'admin' || userId === 'admin@tikum.app' || (process.env.NODE_ENV !== 'test' && require('../config/adminIdentity').isAdminRole(role))) {
+      throw new Error('ADMIN_MAGIC_LINK_REQUIRED');
+    }
     await this.ensureInitialized();
     if (this.degraded) {
       return this.fallbackRepo.createSession({ userId, role, ip, userAgent, ttlMs, token });

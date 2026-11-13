@@ -137,16 +137,13 @@
       <label for="email" data-i18n="auth.emailLabel">Email</label>
       <input type="email" id="email" name="email" required autocomplete="username" placeholder="nama@tikum.app" data-i18n-placeholder="auth.emailPlaceholder">
 
-      <label for="password" data-i18n="auth.passwordLabel">Password</label>
-      <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••" data-i18n-placeholder="auth.passwordPlaceholder">
-
-      <button type="submit" id="loginButton" data-i18n="auth.signInBtn">Masuk</button>
+      <button type="submit" id="loginButton">Kirim tautan masuk</button>
     </form>
 
     <div id="loginError" class="error" role="alert"></div>
 
     <div class="footnote">
-      <span data-i18n="auth.adminAccessFootnote">Akses terbatas untuk ADMIN / OPS / TRUST_OFFICER / SUPER_ADMIN.</span><br>
+      <span>Akses administrator hanya melalui tautan email sekali pakai.</span><br>
       <a href="/" data-i18n="auth.returnToHomepage">Kembali ke halaman utama</a>
     </div>
   </main>
@@ -157,6 +154,29 @@
       var form = document.getElementById('adminLoginForm');
       var button = document.getElementById('loginButton');
       var errorBox = document.getElementById('loginError');
+      var token = new URLSearchParams(window.location.hash.slice(1)).get('token');
+      history.replaceState(null, '', '/admin/login');
+      if (token) {
+        form.style.display = 'none';
+        var confirm = document.createElement('button');
+        confirm.textContent = 'Konfirmasi masuk administrator';
+        form.after(confirm);
+        confirm.addEventListener('click', async function () {
+          confirm.disabled = true;
+          try {
+            var result = await fetch('/api/admin/verify', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: token })
+            });
+            token = null;
+            if (result.ok) { window.location.replace('/admin'); return; }
+            showError('Tautan tidak dapat digunakan. Minta tautan baru.');
+          } catch (_) { showError('Verifikasi belum berhasil. Minta tautan baru.'); }
+          token = null;
+          confirm.remove();
+          form.style.display = '';
+        });
+      }
 
       var params = new URLSearchParams(window.location.search);
       var queryError = params.get('error');
@@ -178,12 +198,11 @@
         button.textContent = window.TikumI18n ? window.TikumI18n.t('auth.verifying', 'Memverifikasi...') : 'Memverifikasi...';
 
         try {
-          var res = await fetch('/api/admin/login', {
+          var res = await fetch('/api/admin/magic-link', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({
-              email: document.getElementById('email').value.trim(),
-              password: document.getElementById('password').value
+              email: document.getElementById('email').value.trim()
             })
           });
 
@@ -191,8 +210,7 @@
           try { data = await res.json(); } catch (e) {}
 
           if (res.ok) {
-            var next = params.get('next');
-            window.location.href = (next && next.charAt(0) === '/') ? next : '/admin';
+            showError(data.message);
             return;
           }
 
@@ -207,7 +225,7 @@
           showError(window.TikumI18n ? window.TikumI18n.translateError('NETWORK_ERROR') : 'Tidak dapat menghubungi server. Coba lagi.');
         } finally {
           button.disabled = false;
-          button.textContent = window.TikumI18n ? window.TikumI18n.t('auth.signInBtn', 'Masuk') : 'Masuk';
+          button.textContent = 'Kirim tautan masuk';
         }
       });
     })();
