@@ -978,6 +978,41 @@ class EscrowService {
         }
       }
 
+      // 6b. Provider Hold & Release execution if payment was held on provider rail
+      let providerReleaseResult = null;
+      const canonical = (state.canonical_payments || []).find(p => p.order_id === orderId);
+      const effProvider = (canonical?.provider || order.provider || 'doku').toLowerCase();
+      try {
+        const { paymentManager } = require('./payment/index');
+        const prov = paymentManager.getProvider(effProvider);
+        if (prov && typeof prov.executeRelease === 'function') {
+          const invoiceNumber = canonical?.metadata?.invoiceNumber || canonical?.provider_reference || `INV-DOKU-${orderId}`;
+          const originalRequestId = canonical?.metadata?.originalRequestId || canonical?.metadata?.dokuRequestId || canonical?.idempotency_key || `req-${orderId}`;
+          providerReleaseResult = await prov.executeRelease({
+            invoiceNumber,
+            amount: canonical?.gross_amount || escrow.amount,
+            currency: canonical?.currency || 'IDR',
+            originalRequestId,
+            orderId
+          });
+          if (canonical) {
+            canonical.money_state = 'RELEASE_CONFIRMED';
+            canonical.status = 'RELEASE_CONFIRMED';
+            canonical.settlement_status = 'RELEASE_CONFIRMED';
+            canonical.released_at = new Date().toISOString();
+          }
+        }
+      } catch (provRelErr) {
+        if (provRelErr.code === 'RELEASE_TIMEOUT_PENDING_RECONCILIATION' || provRelErr.code === 'RELEASE_NETWORK_ERROR') {
+          if (canonical) {
+            canonical.money_state = 'PENDING_RECONCILIATION';
+            canonical.status = 'PENDING_RECONCILIATION';
+            canonical.settlement_status = 'PENDING_RECONCILIATION';
+          }
+          throw provRelErr;
+        }
+      }
+
       // 7. Double-Entry Financial Ledger
       const { FinancialLedger } = require('../settlement/FinancialLedger');
       let ledgerTx = null;

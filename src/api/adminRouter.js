@@ -3628,20 +3628,34 @@ router.get('/system-settings', requireAdmin, (req, res) => {
         business_hours: 'Senin - Minggu: 08:00 - 22:00 WIB (Siaga Venue H-1 s/d H+1)'
       },
       payment_gateways: {
+        architecture: 'DOKU Primary (Direct API) -> iPaymu Secondary',
+        target_entity: 'PT Shinerva Prajna Tejas',
+        settlement_mechanism: 'Hold & Release Settlement',
+        release_authority: 'ARGUS Trust Engine',
         primary: {
-          provider: 'iPaymu',
+          provider: 'DOKU',
           role: 'PRIMARY_PAYMENT_GATEWAY',
+          integration: 'Direct API',
+          target_entity: 'PT Shinerva Prajna Tejas',
           status: 'ACTIVE_READY',
+          escrow_model: 'Hold & Release Settlement (POST /finance/v1/release)',
+          release_authority: 'ARGUS Trust Engine',
+          supported_channels: ['Virtual Account (BCA, Mandiri, BRI, BNI, Permata, DOKU)', 'QRIS (All E-Wallets)', 'Direct Debit'],
+          verification_status: 'SANDBOX_ACTIVE_PRODUCTION_GATED'
+        },
+        secondary: {
+          provider: 'iPaymu',
+          role: 'SECONDARY_FALLBACK_GATEWAY',
+          status: 'STANDBY_FAILOVER_READY',
           escrow_model: 'Escrow & Hold with Turnstile Release Gate',
-          supported_channels: ['Virtual Account (BCA, Mandiri, BNI, BRI, Permata)', 'QRIS (All E-Wallets)', 'Retail (Indomaret, Alfamart)'],
-          verification_status: 'MERCHANT_VERIFICATION_IN_PROGRESS'
+          policy: 'Strict single-active-attempt invariant. Failover only if DOKU unreachable and prior attempt not ambiguous.'
         },
         backup: {
-          provider: 'DOKU',
+          provider: 'iPaymu',
           role: 'BACKUP_FAILOVER_GATEWAY',
-          status: 'STANDBY_FAILOVER_ONLY',
-          escrow_model: 'Contractual Hold & Platform Held Escrow',
-          policy: 'Strict single-active-attempt invariant. Failover only if iPaymu unreachable and prior attempt not ambiguous.'
+          status: 'STANDBY_FAILOVER_READY',
+          escrow_model: 'Escrow & Hold with Turnstile Release Gate',
+          policy: 'Strict single-active-attempt invariant. Failover only if DOKU unreachable and prior attempt not ambiguous.'
         }
       },
       system_runtime: {
