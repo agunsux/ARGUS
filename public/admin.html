@@ -346,9 +346,86 @@
       .ops-sidebar { width: 180px; }
     }
     @media (max-width: 768px) {
-      .ops-shell { flex-direction: column; }
-      .ops-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #1e293b; }
-      .ops-search-box { width: 200px; }
+      html, body {
+        overflow-x: hidden;
+        max-width: 100vw;
+      }
+      .ops-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 8px 12px;
+        box-sizing: border-box;
+        max-width: 100vw;
+      }
+      .ops-header > div:first-child {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+      }
+      .ops-search-box {
+        display: none;
+      }
+      .ops-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+      }
+      .ops-badge-clock, #operatorIdentity {
+        font-size: 10px;
+      }
+      .ops-shell {
+        flex-direction: column;
+        width: 100%;
+        max-width: 100vw;
+        box-sizing: border-box;
+        overflow-x: hidden;
+      }
+      .ops-sidebar {
+        width: 100%;
+        box-sizing: border-box;
+        border-right: none;
+        border-bottom: 1px solid #1e293b;
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        white-space: nowrap;
+        gap: 4px;
+        padding: 8px;
+        max-width: 100vw;
+      }
+      .ops-sidebar .sidebar-heading {
+        display: none;
+      }
+      .ops-sidebar .nav-item {
+        flex: 0 0 auto;
+        width: auto;
+      }
+      .ops-workspace {
+        padding: 12px 8px;
+        width: 100%;
+        max-width: 100vw;
+        box-sizing: border-box;
+        overflow-x: hidden;
+      }
+      .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+      .panel-body {
+        padding: 10px;
+        overflow-x: auto;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .table-responsive, .panel {
+        overflow-x: auto;
+        max-width: 100%;
+      }
     }
 
     /* Mono Numbers & Codes */
@@ -2536,7 +2613,6 @@
 
       // 8. Canonical Supply / Marketplace / Source Health truth strip
       const ce = data.canonical_events || {};
-      const mk = data.marketplace || {};
       const sh = data.source_health || {};
       const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 
@@ -4381,6 +4457,8 @@
       } catch (err) {
         showToast('Gagal update status: ' + err.message, 'danger');
       }
+    }
+
     // ==========================================
     // PARTNER & OFFICIAL TICKETING CONTROL CENTER JS
     // ==========================================
