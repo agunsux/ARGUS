@@ -64,13 +64,24 @@ function resolveAdminActor(req) {
   return null;
 }
 
-function requireContentAdmin(req, res, next) {
-  const user = resolveAdminActor(req);
+const { resolveUserAsync } = require('../middleware/auth');
+
+async function requireContentAdmin(req, res, next) {
+  let user = req.user;
+  if (!user) {
+    try {
+      user = await resolveUserAsync(req);
+    } catch (_) {}
+  }
+  if (!user) {
+    user = resolveAdminActor(req);
+  }
   if (!user) {
     return res.status(401).json({ error: 'Authentication required for content management', code: 'AUTH_REQUIRED' });
   }
   const roleLower = (user.role || '').toLowerCase();
-  if (roleLower !== 'admin' && roleLower !== 'ops' && roleLower !== 'super_admin') {
+  const allowedRoles = ['admin', 'ops', 'super_admin', 'editor', 'event_operations'];
+  if (!allowedRoles.includes(roleLower)) {
     return res.status(403).json({ error: `Forbidden: role '${user.role}' cannot manage editorial content`, code: 'ADMIN_FORBIDDEN' });
   }
   req.adminUser = user;

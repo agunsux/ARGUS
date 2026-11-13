@@ -183,12 +183,11 @@ class EventInventoryReconciliationService {
 
       for (const event of allEvents) {
         const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
-        const endMs = new Date(temporal.event_end_at).getTime();
-        const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
+        const archiveMs = new Date(temporal.archive_at).getTime();
         const nowMs = now.getTime();
-        const isPastH2 = nowMs > endMs + graceMs;
+        const isPastArchive = nowMs >= archiveMs;
 
-        if (isPastH2) {
+        if (isPastArchive) {
           event.public_visibility = false;
           event.homepage_visibility = false;
           event.public_upcoming = false;

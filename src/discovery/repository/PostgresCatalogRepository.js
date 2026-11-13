@@ -610,10 +610,39 @@ class PostgresCatalogRepository extends CatalogRepository {
         lease_expires_at TIMESTAMPTZ,
         last_run_id TEXT,
         last_status TEXT,
+        enabled BOOLEAN DEFAULT FALSE,
+        last_run_at TIMESTAMPTZ,
+        run_count INTEGER DEFAULT 0,
+        last_result JSONB,
         updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      )
+      );
+      ALTER TABLE discovery_scheduler_state
+        ADD COLUMN IF NOT EXISTS enabled BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS last_run_at TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS run_count INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS last_result JSONB;
     `);
     this._schedulerTableEnsured = true;
+  }
+
+  _mapSchedulerRow(row) {
+    if (!row) return null;
+    return {
+      job_name: row.job_name,
+      source_cursor: Number(row.source_cursor || 0),
+      page_cursor: Number(row.page_cursor || 1),
+      last_source_id: row.last_source_id || null,
+      lease_owner: row.lease_owner || null,
+      lease_acquired_at: row.lease_acquired_at instanceof Date ? row.lease_acquired_at.toISOString() : (row.lease_acquired_at || null),
+      lease_expires_at: row.lease_expires_at instanceof Date ? row.lease_expires_at.toISOString() : (row.lease_expires_at || null),
+      last_run_id: row.last_run_id || null,
+      last_status: row.last_status || null,
+      enabled: Boolean(row.enabled),
+      last_run_at: row.last_run_at instanceof Date ? row.last_run_at.toISOString() : (row.last_run_at || null),
+      run_count: Number(row.run_count || 0),
+      last_result: typeof row.last_result === 'string' ? JSON.parse(row.last_result) : (row.last_result || null),
+      updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : (row.updated_at || null)
+    };
   }
 
   async acquireJobLease(jobName, leaseOwner, ttlMs = 55000) {
@@ -643,18 +672,7 @@ class PostgresCatalogRepository extends CatalogRepository {
       if (res.rows && res.rows.length > 0) {
         return {
           acquired: true,
-          state: {
-            job_name: res.rows[0].job_name,
-            source_cursor: Number(res.rows[0].source_cursor || 0),
-            page_cursor: Number(res.rows[0].page_cursor || 1),
-            last_source_id: res.rows[0].last_source_id || null,
-            lease_owner: res.rows[0].lease_owner,
-            lease_acquired_at: res.rows[0].lease_acquired_at instanceof Date ? res.rows[0].lease_acquired_at.toISOString() : res.rows[0].lease_acquired_at,
-            lease_expires_at: res.rows[0].lease_expires_at instanceof Date ? res.rows[0].lease_expires_at.toISOString() : res.rows[0].lease_expires_at,
-            last_run_id: res.rows[0].last_run_id || null,
-            last_status: res.rows[0].last_status || null,
-            updated_at: res.rows[0].updated_at instanceof Date ? res.rows[0].updated_at.toISOString() : res.rows[0].updated_at
-          }
+          state: this._mapSchedulerRow(res.rows[0])
         };
       }
       const existing = await this.getJobSchedulerState(jobName);
@@ -676,13 +694,21 @@ class PostgresCatalogRepository extends CatalogRepository {
         page_cursor: 1,
         last_source_id: null,
         last_run_id: null,
-        last_status: null
+        last_status: null,
+        enabled: false,
+        last_run_at: null,
+        run_count: 0,
+        last_result: null
       };
       const sourceCursor = statePatch.source_cursor !== undefined ? Number(statePatch.source_cursor) : Number(existing.source_cursor || 0);
       const pageCursor = statePatch.page_cursor !== undefined ? Number(statePatch.page_cursor) : Number(existing.page_cursor || 1);
       const lastSourceId = statePatch.last_source_id !== undefined ? statePatch.last_source_id : existing.last_source_id;
       const lastRunId = statePatch.last_run_id !== undefined ? statePatch.last_run_id : existing.last_run_id;
       const lastStatus = statePatch.last_status !== undefined ? statePatch.last_status : existing.last_status;
+      const lastRunAt = statePatch.last_run_at !== undefined ? statePatch.last_run_at : existing.last_run_at;
+      const runCount = statePatch.run_count !== undefined ? Number(statePatch.run_count) : existing.run_count;
+      const lastResult = statePatch.last_result !== undefined ? (typeof statePatch.last_result === 'object' ? JSON.stringify(statePatch.last_result) : statePatch.last_result) : null;
+      const enabled = typeof statePatch.enabled === 'boolean' ? statePatch.enabled : existing.enabled;
 
       const res = await this.query(
         `UPDATE discovery_scheduler_state
@@ -694,25 +720,18 @@ class PostgresCatalogRepository extends CatalogRepository {
              lease_owner = NULL,
              lease_acquired_at = NULL,
              lease_expires_at = NULL,
-             updated_at = $7
+             enabled = COALESCE($7, enabled),
+             last_run_at = COALESCE($8, last_run_at),
+             run_count = CASE WHEN $9::integer > 0 THEN $9::integer ELSE run_count END,
+             last_result = CASE WHEN $10::text IS NOT NULL THEN $10::jsonb ELSE last_result END,
+             updated_at = $11
          WHERE job_name = $1
-           AND (lease_owner = $8 OR lease_owner IS NULL)
+           AND (lease_owner = $12 OR lease_owner IS NULL)
          RETURNING *`,
-        [jobName, sourceCursor, pageCursor, lastSourceId, lastRunId, lastStatus, nowIso, leaseOwner]
+        [jobName, sourceCursor, pageCursor, lastSourceId, lastRunId, lastStatus, enabled, lastRunAt, runCount, lastResult, nowIso, leaseOwner]
       );
       if (res.rows && res.rows[0]) {
-        return {
-          job_name: res.rows[0].job_name,
-          source_cursor: Number(res.rows[0].source_cursor || 0),
-          page_cursor: Number(res.rows[0].page_cursor || 1),
-          last_source_id: res.rows[0].last_source_id || null,
-          lease_owner: res.rows[0].lease_owner || null,
-          lease_acquired_at: null,
-          lease_expires_at: null,
-          last_run_id: res.rows[0].last_run_id || null,
-          last_status: res.rows[0].last_status || null,
-          updated_at: res.rows[0].updated_at instanceof Date ? res.rows[0].updated_at.toISOString() : res.rows[0].updated_at
-        };
+        return this._mapSchedulerRow(res.rows[0]);
       }
       return this.getJobSchedulerState(jobName);
     } catch (_) {
@@ -728,21 +747,73 @@ class PostgresCatalogRepository extends CatalogRepository {
       await this._ensureSchedulerStateTable();
       const res = await this.query(`SELECT * FROM discovery_scheduler_state WHERE job_name = $1`, [jobName]);
       if (!res.rows || res.rows.length === 0) return null;
-      const row = res.rows[0];
-      return {
-        job_name: row.job_name,
-        source_cursor: Number(row.source_cursor || 0),
-        page_cursor: Number(row.page_cursor || 1),
-        last_source_id: row.last_source_id || null,
-        lease_owner: row.lease_owner || null,
-        lease_acquired_at: row.lease_acquired_at instanceof Date ? row.lease_acquired_at.toISOString() : (row.lease_acquired_at || null),
-        lease_expires_at: row.lease_expires_at instanceof Date ? row.lease_expires_at.toISOString() : (row.lease_expires_at || null),
-        last_run_id: row.last_run_id || null,
-        last_status: row.last_status || null,
-        updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : (row.updated_at || null)
-      };
+      return this._mapSchedulerRow(res.rows[0]);
     } catch (_) {
       return this.fallbackRepo.getJobSchedulerState(jobName);
+    }
+  }
+
+  async saveJobSchedulerState(jobName, statePatch = {}) {
+    if (this.degraded || !this.pool) {
+      return this.fallbackRepo.saveJobSchedulerState(jobName, statePatch);
+    }
+    try {
+      await this._ensureSchedulerStateTable();
+      const nowIso = new Date().toISOString();
+      const res = await this.query(
+        `INSERT INTO discovery_scheduler_state (
+           job_name, enabled, last_run_at, run_count, last_result, last_status, updated_at
+         )
+         VALUES ($1, COALESCE($2, false), $3, COALESCE($4, 0), $5, $6, $7)
+         ON CONFLICT (job_name) DO UPDATE SET
+           enabled = CASE WHEN $2 IS NOT NULL THEN EXCLUDED.enabled ELSE discovery_scheduler_state.enabled END,
+           last_run_at = CASE WHEN $3 IS NOT NULL THEN EXCLUDED.last_run_at ELSE discovery_scheduler_state.last_run_at END,
+           run_count = CASE WHEN EXCLUDED.run_count > 0 THEN EXCLUDED.run_count ELSE discovery_scheduler_state.run_count END,
+           last_result = CASE WHEN $5 IS NOT NULL THEN EXCLUDED.last_result ELSE discovery_scheduler_state.last_result END,
+           last_status = CASE WHEN $6 IS NOT NULL THEN EXCLUDED.last_status ELSE discovery_scheduler_state.last_status END,
+           updated_at = EXCLUDED.updated_at
+         RETURNING *`,
+        [
+          jobName,
+          typeof statePatch.enabled === 'boolean' ? statePatch.enabled : null,
+          statePatch.last_run_at || null,
+          statePatch.run_count !== undefined ? Number(statePatch.run_count) : 0,
+          statePatch.last_result !== undefined ? JSON.stringify(statePatch.last_result) : null,
+          statePatch.last_status || null,
+          nowIso
+        ]
+      );
+      return this._mapSchedulerRow(res.rows[0]);
+    } catch (_) {
+      return this.fallbackRepo.saveJobSchedulerState(jobName, statePatch);
+    }
+  }
+
+  async getAllJobSchedulerStates() {
+    if (this.degraded || !this.pool) {
+      return this.fallbackRepo.getAllJobSchedulerStates();
+    }
+    try {
+      await this._ensureSchedulerStateTable();
+      const res = await this.query(`SELECT * FROM discovery_scheduler_state ORDER BY job_name ASC`);
+      return (res.rows || []).map(r => this._mapSchedulerRow(r));
+    } catch (_) {
+      return this.fallbackRepo.getAllJobSchedulerStates();
+    }
+  }
+
+  async getRecentReconciliationRuns(limit = 50) {
+    if (this.degraded || !this.pool) {
+      return this.fallbackRepo.getRecentReconciliationRuns(limit);
+    }
+    try {
+      const res = await this.query(
+        `SELECT * FROM reconciliation_runs ORDER BY started_at DESC LIMIT $1`,
+        [limit]
+      );
+      return res.rows || [];
+    } catch (_) {
+      return this.fallbackRepo.getRecentReconciliationRuns(limit);
     }
   }
 

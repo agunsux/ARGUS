@@ -501,11 +501,10 @@ class EventAggregationEngine {
       if (status === 'EXPIRED' || lifecycle === 'EXPIRED') continue;
       if (status === 'ARCHIVED' || lifecycle === 'ARCHIVED' || event.archive_status === 'ARCHIVED') continue;
 
-      // H+2 archival boundary check
+      // Archive eligibility boundary check (actual end time + 1 hour)
       const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(event);
-      const endMs = new Date(temporal.event_end_at).getTime();
-      const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
-      if (now.getTime() > endMs + graceMs) {
+      const archiveMs = new Date(temporal.archive_at).getTime();
+      if (now.getTime() >= archiveMs) {
         continue;
       }
 

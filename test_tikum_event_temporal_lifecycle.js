@@ -172,11 +172,11 @@ async function run() {
     assert.strictEqual(EventTemporalLifecycleEngine.isEventHomepageEligible(todayEvent, now), true, 'Ongoing event is eligible for homepage');
   });
 
-  await test('Test C: H+1 Grace Period (NOW = end_at + 1 day) is RECENT and excluded from Upcoming Concert', async () => {
-    const now = new Date('2026-09-26T15:00:00+07:00'); // H+1
+  await test('Test C: Concluded Event within 1 hour grace (NOW = end_at + 30m) is RECENT and excluded from Upcoming Concert', async () => {
+    const now = new Date('2026-09-25T23:30:00+07:00'); // 30 mins after end_at
     const concludedEvent = {
-      event_id: 'ev-test-h1',
-      title: 'Concluded Concert Yesterday',
+      event_id: 'ev-test-recent-30m',
+      title: 'Concluded Concert Just Ended',
       start_date: '2026-09-25',
       event_start_at: '2026-09-25T19:00:00+07:00',
       event_end_at: '2026-09-25T23:00:00+07:00',
@@ -187,17 +187,17 @@ async function run() {
     };
 
     const window = EventTemporalLifecycleEngine.getHomepageTemporalWindow(concludedEvent, now);
-    assert.strictEqual(window, 'RECENT', 'H+1 event must be categorized as RECENT');
+    assert.strictEqual(window, 'RECENT', 'Concluded event within 1 hour must be categorized as RECENT');
     assert.strictEqual(EventTemporalLifecycleEngine.isEventUpcoming(concludedEvent, now), false, 'Concluded event must NOT be upcoming');
-    assert.strictEqual(EventTemporalLifecycleEngine.isEventHomepageEligible(concludedEvent, now), true, 'H+1 event is eligible under grace period');
+    assert.strictEqual(EventTemporalLifecycleEngine.isEventHomepageEligible(concludedEvent, now), true, 'Concluded event is eligible under 1h recent window');
+    assert.strictEqual(EventTemporalLifecycleEngine.isEventArchived(concludedEvent, now), false, 'Concluded event within 1h is not yet archived');
   });
 
-  await test('Test D: H+2 Boundary (NOW = end_at + 2 days) is RECENT and within grace cutoff', async () => {
-    assert.strictEqual(HOMEPAGE_EVENT_GRACE_DAYS, 2, 'Homepage grace days must equal 2');
-    const now = new Date('2026-09-27T22:00:00+07:00'); // H+2 evening
+  await test('Test D: Exact Archive Boundary (NOW = end_at + 1 hour) transitions to ARCHIVE eligibility', async () => {
+    const now = new Date('2026-09-26T00:00:00+07:00'); // exactly end_at + 1 hour
     const concludedEvent = {
-      event_id: 'ev-test-h2',
-      title: 'Concluded Concert Two Days Ago',
+      event_id: 'ev-test-boundary-1h',
+      title: 'Concluded Concert at 1h Boundary',
       start_date: '2026-09-25',
       event_start_at: '2026-09-25T19:00:00+07:00',
       event_end_at: '2026-09-25T23:00:00+07:00',
@@ -207,16 +207,17 @@ async function run() {
       public_visibility: true
     };
 
+    assert.strictEqual(EventTemporalLifecycleEngine.isEventArchived(concludedEvent, now), true, 'At end_at + 1h, event is strictly eligible for ARCHIVE');
     const window = EventTemporalLifecycleEngine.getHomepageTemporalWindow(concludedEvent, now);
-    assert.strictEqual(window, 'RECENT', 'H+2 event is in RECENT grace window');
-    assert.strictEqual(EventTemporalLifecycleEngine.isEventHomepageEligible(concludedEvent, now), true, 'H+2 event is still homepage eligible');
+    assert.strictEqual(window, 'EXPIRED', 'At end_at + 1h, window must be EXPIRED');
+    assert.strictEqual(EventTemporalLifecycleEngine.isEventHomepageEligible(concludedEvent, now), false, 'At end_at + 1h, event must NOT be homepage eligible');
   });
 
-  await test('Test E: H+3 Expiry (NOW > end_at + 2 days) is EXPIRED and PUBLIC_HOME = false', async () => {
-    const now = new Date('2026-09-28T08:00:00+07:00'); // H+3
+  await test('Test E: Post-1h Expiry (NOW > end_at + 1 hour) is ARCHIVED and PUBLIC_HOME = false', async () => {
+    const now = new Date('2026-09-26T08:00:00+07:00'); // morning after
     const expiredEvent = {
-      event_id: 'ev-test-h3',
-      title: 'Expired Concert',
+      event_id: 'ev-test-archived',
+      title: 'Concluded Concert Passed 1h',
       start_date: '2026-09-25',
       event_start_at: '2026-09-25T19:00:00+07:00',
       event_end_at: '2026-09-25T23:00:00+07:00',
@@ -227,16 +228,45 @@ async function run() {
     };
 
     const window = EventTemporalLifecycleEngine.getHomepageTemporalWindow(expiredEvent, now);
-    assert.strictEqual(window, 'EXPIRED', 'H+3 event must be EXPIRED');
+    assert.strictEqual(window, 'EXPIRED', 'Past 1h event must be EXPIRED');
     assert.strictEqual(EventTemporalLifecycleEngine.isEventHomepageEligible(expiredEvent, now), false, 'Expired event must NOT be homepage eligible');
 
     EventTemporalLifecycleEngine.reconcileEvent(expiredEvent, now);
     assert.strictEqual(expiredEvent.public_visibility, false, 'Expired event must have public_visibility = false');
-    assert.ok(
-      expiredEvent.lifecycle_status === LIFECYCLE_STATUS.EXPIRED || expiredEvent.lifecycle_status === LIFECYCLE_STATUS.ARCHIVED,
-      'Expired event lifecycle must be EXPIRED or ARCHIVED'
-    );
-    assert.ok(expiredEvent.expired_at, 'expired_at timestamp must be recorded');
+    assert.strictEqual(expiredEvent.lifecycle_status, LIFECYCLE_STATUS.ARCHIVED, 'Lifecycle must be ARCHIVED');
+    assert.strictEqual(expiredEvent.archive_status, LIFECYCLE_STATUS.ARCHIVED, 'Archive status must be ARCHIVED');
+  });
+
+  await test('Test E2: Multi-day festival respects last day verified end time + 1 hour', async () => {
+    const multiDayEvent = {
+      event_id: 'ev-multiday-fest',
+      title: 'Jakarta Summer Festival 2026',
+      start_date: '2026-09-25',
+      end_date: '2026-09-27',
+      event_start_at: '2026-09-25T14:00:00+07:00',
+      event_end_at: '2026-09-27T23:00:00+07:00',
+      timezone: 'Asia/Jakarta',
+      verification_status: 'VERIFIED',
+      is_verified: true,
+      public_visibility: true
+    };
+
+    // Day 2 (Saturday evening) -> should be TODAY / active
+    const day2 = new Date('2026-09-26T20:00:00+07:00');
+    assert.strictEqual(EventTemporalLifecycleEngine.isEventArchived(multiDayEvent, day2), false, 'Day 2 of 3-day festival is not archived');
+    assert.strictEqual(EventTemporalLifecycleEngine.getHomepageTemporalWindow(multiDayEvent, day2), 'TODAY');
+    assert.strictEqual(EventTemporalLifecycleEngine.isEventHomepageEligible(multiDayEvent, day2), true);
+
+    // 30 mins after festival ends on Sunday (23:30) -> RECENT
+    const postFest30m = new Date('2026-09-27T23:30:00+07:00');
+    assert.strictEqual(EventTemporalLifecycleEngine.getHomepageTemporalWindow(multiDayEvent, postFest30m), 'RECENT');
+    assert.strictEqual(EventTemporalLifecycleEngine.isEventArchived(multiDayEvent, postFest30m), false);
+
+    // Monday 00:05 (Sunday 23:00 + 1 hour 5 min) -> ARCHIVED & EXPIRED
+    const postFestArchive = new Date('2026-09-28T00:05:00+07:00');
+    assert.strictEqual(EventTemporalLifecycleEngine.isEventArchived(multiDayEvent, postFestArchive), true, 'Past last day end + 1h must be ARCHIVED');
+    assert.strictEqual(EventTemporalLifecycleEngine.getHomepageTemporalWindow(multiDayEvent, postFestArchive), 'EXPIRED');
+    assert.strictEqual(EventTemporalLifecycleEngine.isEventHomepageEligible(multiDayEvent, postFestArchive), false);
   });
 
   await test('Test F: New Verified Event appears in feed automatically without manual edits', async () => {

@@ -136,8 +136,9 @@ class SourceToDatabaseAuditService {
       const isPast = eventDate.getTime() < asOfDate.getTime();
       const diffDays = Math.floor((asOfDate.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Pestapora & H+3 check
-      if (isPast && diffDays > HOMEPAGE_EVENT_GRACE_DAYS && (ev.status === 'UPCOMING' || ev.lifecycle_status === 'UPCOMING')) {
+      // Archival check (actual event end time + 1 hour)
+      const isArchived = EventTemporalLifecycleEngine.isEventArchived(ev, asOfDate);
+      if (isArchived && (ev.status === 'UPCOMING' || ev.lifecycle_status === 'UPCOMING')) {
         expiredIncorrectlyActive++;
         discrepancies.push({
           dimension: 'EXPIRED_EVENT_INCORRECTLY_ACTIVE',

@@ -1439,11 +1439,10 @@ router.get('/api/events/home-feed', (req, res) => {
     const priceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(e);
     if (priceEval && priceEval.status === 'EXCLUDED_PRICE_TOO_LOW') return false;
 
-    // Defense-in-depth: query-time H+2 check (now > event_end_at + 48h)
+    // Defense-in-depth: query-time archive check (now >= event_end_at + 1 hour)
     const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(e);
-    const endMs = new Date(temporal.event_end_at).getTime();
-    const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
-    if (now.getTime() > endMs + graceMs) {
+    const archiveMs = new Date(temporal.archive_at).getTime();
+    if (now.getTime() >= archiveMs) {
       return false;
     }
 

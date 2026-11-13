@@ -16,16 +16,10 @@
  * inventory, or marketplace transactions.
  */
 
-const fs = require('fs');
-const path = require('path');
 const { canonicalRegistry } = require('./CanonicalEventRegistry');
 const { sourceRegistry } = require('./SourceRegistry');
 const { EventVerificationService, VERIFICATION_STATUS } = require('./EventVerificationService');
-
-const DATA_DIR = process.env.VERCEL
-  ? '/tmp/argus_data'
-  : (process.env.ARGUS_DATA_DIR || path.resolve(__dirname, '../../data'));
-const AUTOMATION_STATE_FILE = path.join(DATA_DIR, 'automation_scheduler_state.json');
+const { getCatalogRepository } = require('./repository');
 
 const JOB_TYPES = {
   EVENT_DISCOVERY_DAILY: 'EVENT_DISCOVERY_DAILY',
@@ -61,10 +55,15 @@ class EventIngestionScheduler {
     this.jobHistory = [];
     this.maxHistorySize = options.maxHistorySize || 100;
     this.last_source_sync_at = null;
+    this.repository = options.repository || null;
 
     // Register default job definitions (but do NOT auto-start)
     this._registerDefaultJobs();
-    this._loadState();
+  }
+
+  _getRepo() {
+    if (this.repository) return this.repository;
+    return getCatalogRepository();
   }
 
   _registerDefaultJobs() {
@@ -125,7 +124,7 @@ class EventIngestionScheduler {
 
     this.jobs.set(JOB_TYPES.EVENT_LIFECYCLE_SWEEP, {
       name: JOB_TYPES.EVENT_LIFECYCLE_SWEEP,
-      description: 'Hourly automated lifecycle transition: UPCOMING -> IN_PROGRESS -> COMPLETED -> ARCHIVED (H+3)',
+      description: 'Hourly automated lifecycle transition: UPCOMING -> IN_PROGRESS -> COMPLETED -> ARCHIVED (Actual End Time + 1 Hour)',
       cronExpression: '0 * * * *', // Hourly
       status: JOB_STATUS.IDLE,
       last_run_at: null,
@@ -170,6 +169,7 @@ class EventIngestionScheduler {
 
   /**
    * Programmatic job execution (safe controlled trigger).
+   * Enforces atomic DB-backed lease locking and durable audit recording in reconciliation_runs.
    * @param {string} jobName - One of JOB_TYPES
    * @returns {object} Job result
    */
@@ -179,10 +179,43 @@ class EventIngestionScheduler {
       throw new Error(`Unknown job: ${jobName}. Valid jobs: ${Object.keys(JOB_TYPES).join(', ')}`);
     }
 
+    const repo = this._getRepo();
+    const leaseOwner = options.leaseOwner || `argus-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const ttlMs = options.ttlMs || 60000;
+
+    let leaseAcquired = false;
+    if (repo && typeof repo.acquireJobLease === 'function') {
+      const leaseRes = await repo.acquireJobLease(jobName, leaseOwner, ttlMs);
+      if (!leaseRes.acquired) {
+        const err = new Error(`Job ${jobName} is currently locked by another worker (${leaseRes.state?.lease_owner || 'active lease'}). Concurrent execution prevented.`);
+        err.code = 'JOB_ALREADY_RUNNING';
+        err.lease = leaseRes.state;
+        throw err;
+      }
+      leaseAcquired = true;
+    }
+
     const startTime = Date.now();
     job.status = JOB_STATUS.RUNNING;
     job.last_run_at = new Date().toISOString();
     job.run_count++;
+
+    const runId = options.runId || `rec-job-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    if (repo && typeof repo.recordReconciliationRun === 'function') {
+      try {
+        await repo.recordReconciliationRun({
+          id: runId,
+          trigger_type: options.trigger_type || options.trigger || 'MANUAL',
+          status: 'RUNNING',
+          records_discovered: 0,
+          records_ingested: 0,
+          duplicates_merged: 0,
+          error_count: 0,
+          report: { jobName, options },
+          run_by: options.run_by || options.operator || 'SYSTEM'
+        });
+      } catch (_) {}
+    }
 
     try {
       let result;
@@ -231,13 +264,63 @@ class EventIngestionScheduler {
       job.status = JOB_STATUS.COMPLETED;
       job.last_result = result;
 
-      this._recordHistory(jobName, 'COMPLETED', Date.now() - startTime, result);
+      const durationMs = Date.now() - startTime;
+      this._recordHistory(jobName, 'COMPLETED', durationMs, result);
+
+      if (repo && typeof repo.updateReconciliationRun === 'function') {
+        try {
+          await repo.updateReconciliationRun(runId, {
+            status: 'COMPLETED',
+            records_discovered: result?.records_discovered || result?.events_discovered || 0,
+            records_ingested: result?.records_ingested || result?.events_ingested || 0,
+            report: result
+          });
+        } catch (_) {}
+      }
+
+      if (repo && typeof repo.updateJobCursorAndReleaseLease === 'function' && leaseAcquired) {
+        try {
+          await repo.updateJobCursorAndReleaseLease(jobName, leaseOwner, {
+            last_run_id: runId,
+            last_status: 'COMPLETED',
+            last_run_at: job.last_run_at,
+            run_count: job.run_count,
+            last_result: result
+          });
+        } catch (_) {}
+      }
+
       return result;
 
     } catch (err) {
       job.status = JOB_STATUS.FAILED;
       job.last_result = { error: err.message };
-      this._recordHistory(jobName, 'FAILED', Date.now() - startTime, { error: err.message });
+
+      const durationMs = Date.now() - startTime;
+      this._recordHistory(jobName, 'FAILED', durationMs, { error: err.message });
+
+      if (repo && typeof repo.updateReconciliationRun === 'function') {
+        try {
+          await repo.updateReconciliationRun(runId, {
+            status: 'FAILED',
+            error_count: 1,
+            report: { error: err.message }
+          });
+        } catch (_) {}
+      }
+
+      if (repo && typeof repo.updateJobCursorAndReleaseLease === 'function' && leaseAcquired) {
+        try {
+          await repo.updateJobCursorAndReleaseLease(jobName, leaseOwner, {
+            last_run_id: runId,
+            last_status: 'FAILED',
+            last_run_at: job.last_run_at,
+            run_count: job.run_count,
+            last_result: { error: err.message }
+          });
+        } catch (_) {}
+      }
+
       throw err;
     }
   }
@@ -420,7 +503,6 @@ class EventIngestionScheduler {
     if (this.jobHistory.length > this.maxHistorySize) {
       this.jobHistory.shift();
     }
-    this._persistState();
   }
 
   _runBlogDraftGeneration(options = {}) {
@@ -440,59 +522,41 @@ class EventIngestionScheduler {
     };
   }
 
-  _loadState() {
+  /**
+   * Syncs in-memory job configurations and history from durable database (discovery_scheduler_state & reconciliation_runs).
+   * Ensures scheduler state survives serverless restarts.
+   */
+  async syncStateFromDb() {
     try {
-      if (fs.existsSync(AUTOMATION_STATE_FILE)) {
-        const raw = fs.readFileSync(AUTOMATION_STATE_FILE, 'utf8');
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') {
-          if (parsed.jobs && typeof parsed.jobs === 'object') {
-            for (const [name, stateData] of Object.entries(parsed.jobs)) {
-              const job = this.jobs.get(name);
-              if (job) {
-                if (typeof stateData.enabled === 'boolean') job.enabled = stateData.enabled;
-                if (stateData.last_run_at) job.last_run_at = stateData.last_run_at;
-                if (stateData.status && stateData.status !== JOB_STATUS.RUNNING) job.status = stateData.status;
-                if (typeof stateData.run_count === 'number') job.run_count = stateData.run_count;
-                if (stateData.last_result !== undefined) job.last_result = stateData.last_result;
-              }
-            }
-          }
-          if (Array.isArray(parsed.jobHistory)) {
-            this.jobHistory = parsed.jobHistory.slice(-this.maxHistorySize);
-          }
-          if (parsed.last_source_sync_at) {
-            this.last_source_sync_at = parsed.last_source_sync_at;
+      const repo = this._getRepo();
+      if (!repo) return;
+      if (typeof repo.getAllJobSchedulerStates === 'function') {
+        const dbStates = await repo.getAllJobSchedulerStates();
+        for (const st of dbStates) {
+          if (!st || !st.job_name) continue;
+          const job = this.jobs.get(st.job_name);
+          if (job) {
+            if (typeof st.enabled === 'boolean') job.enabled = st.enabled;
+            if (st.last_run_at) job.last_run_at = st.last_run_at;
+            if (st.last_status && st.last_status !== JOB_STATUS.RUNNING) job.status = st.last_status;
+            if (typeof st.run_count === 'number') job.run_count = st.run_count;
+            if (st.last_result !== undefined) job.last_result = st.last_result;
           }
         }
       }
-    } catch (_) {}
-  }
-
-  _persistState() {
-    try {
-      if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
+      if (typeof repo.getRecentReconciliationRuns === 'function') {
+        const dbRuns = await repo.getRecentReconciliationRuns(this.maxHistorySize);
+        if (dbRuns && dbRuns.length > 0) {
+          this.jobHistory = dbRuns.map(r => ({
+            id: r.id,
+            job: r.report?.jobName || r.job_name || 'RECONCILIATION',
+            status: r.status,
+            duration_ms: r.report?.duration_ms || 0,
+            result: typeof r.report === 'string' ? JSON.parse(r.report) : (r.report || null),
+            timestamp: r.started_at instanceof Date ? r.started_at.toISOString() : (r.started_at || new Date().toISOString())
+          })).reverse();
+        }
       }
-      const jobsObj = {};
-      for (const [name, job] of this.jobs) {
-        jobsObj[name] = {
-          enabled: job.enabled,
-          status: job.status === JOB_STATUS.RUNNING ? JOB_STATUS.IDLE : job.status,
-          last_run_at: job.last_run_at,
-          run_count: job.run_count,
-          last_result: job.last_result
-        };
-      }
-      const payload = {
-        jobs: jobsObj,
-        jobHistory: this.jobHistory.slice(-this.maxHistorySize),
-        last_source_sync_at: this.last_source_sync_at,
-        updated_at: new Date().toISOString()
-      };
-      const tmpPath = `${AUTOMATION_STATE_FILE}.tmp.${Date.now()}`;
-      fs.writeFileSync(tmpPath, JSON.stringify(payload, null, 2), 'utf8');
-      fs.renameSync(tmpPath, AUTOMATION_STATE_FILE);
     } catch (_) {}
   }
 
@@ -502,7 +566,19 @@ class EventIngestionScheduler {
       throw new Error(`Unknown job: ${jobName}`);
     }
     job.enabled = enabled === null ? !job.enabled : Boolean(enabled);
-    this._persistState();
+    try {
+      const repo = this._getRepo();
+      if (repo && typeof repo.saveJobSchedulerState === 'function') {
+        const p = repo.saveJobSchedulerState(jobName, {
+          enabled: job.enabled,
+          last_status: job.status,
+          last_run_at: job.last_run_at,
+          run_count: job.run_count,
+          last_result: job.last_result
+        });
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      }
+    } catch (_) {}
     return job;
   }
 
@@ -529,6 +605,30 @@ class EventIngestionScheduler {
   }
 
   getJobHistory(limit = 20) {
+    return this.jobHistory.slice(-limit);
+  }
+
+  async getDurableJobHistory(limit = 20) {
+    try {
+      const repo = this._getRepo();
+      if (repo && typeof repo.getRecentReconciliationRuns === 'function') {
+        const dbRuns = await repo.getRecentReconciliationRuns(limit);
+        if (dbRuns && dbRuns.length > 0) {
+          return dbRuns.map(r => ({
+            id: r.id,
+            job: r.report?.jobName || r.job_name || 'RECONCILIATION',
+            status: r.status,
+            trigger_type: r.trigger_type,
+            run_by: r.run_by,
+            records_discovered: Number(r.records_discovered || 0),
+            records_ingested: Number(r.records_ingested || 0),
+            error_count: Number(r.error_count || 0),
+            result: typeof r.report === 'string' ? JSON.parse(r.report) : (r.report || null),
+            timestamp: r.started_at instanceof Date ? r.started_at.toISOString() : (r.started_at || new Date().toISOString())
+          }));
+        }
+      }
+    } catch (_) {}
     return this.jobHistory.slice(-limit);
   }
 

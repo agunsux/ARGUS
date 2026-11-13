@@ -262,6 +262,10 @@ class InMemoryCatalogRepository extends CatalogRepository {
       lease_expires_at: new Date(nowMs + ttlMs).toISOString(),
       last_run_id: existing ? existing.last_run_id : null,
       last_status: existing ? existing.last_status : null,
+      enabled: existing && typeof existing.enabled === 'boolean' ? existing.enabled : false,
+      last_run_at: existing ? existing.last_run_at : null,
+      run_count: existing ? (existing.run_count || 0) : 0,
+      last_result: existing ? existing.last_result : null,
       updated_at: new Date(nowMs).toISOString()
     };
     this.schedulerStates.set(jobName, nextState);
@@ -278,7 +282,11 @@ class InMemoryCatalogRepository extends CatalogRepository {
       lease_acquired_at: null,
       lease_expires_at: null,
       last_run_id: null,
-      last_status: null
+      last_status: null,
+      enabled: false,
+      last_run_at: null,
+      run_count: 0,
+      last_result: null
     };
     const release = statePatch.releaseLease !== false;
     const sourceCursor = statePatch.source_cursor !== undefined ? statePatch.source_cursor : statePatch.sourceCursor;
@@ -286,6 +294,10 @@ class InMemoryCatalogRepository extends CatalogRepository {
     const lastSourceId = statePatch.last_source_id !== undefined ? statePatch.last_source_id : statePatch.lastSourceId;
     const lastRunId = statePatch.last_run_id !== undefined ? statePatch.last_run_id : statePatch.lastRunId;
     const lastStatus = statePatch.last_status !== undefined ? statePatch.last_status : statePatch.lastStatus;
+    const lastRunAt = statePatch.last_run_at !== undefined ? statePatch.last_run_at : existing.last_run_at;
+    const runCount = statePatch.run_count !== undefined ? Number(statePatch.run_count) : existing.run_count;
+    const lastResult = statePatch.last_result !== undefined ? statePatch.last_result : existing.last_result;
+    const enabled = typeof statePatch.enabled === 'boolean' ? statePatch.enabled : existing.enabled;
 
     const updated = {
       ...existing,
@@ -294,6 +306,10 @@ class InMemoryCatalogRepository extends CatalogRepository {
       last_source_id: lastSourceId !== undefined ? lastSourceId : existing.last_source_id,
       last_run_id: lastRunId !== undefined ? lastRunId : existing.last_run_id,
       last_status: lastStatus !== undefined ? lastStatus : existing.last_status,
+      enabled,
+      last_run_at: lastRunAt,
+      run_count: runCount,
+      last_result: lastResult,
       lease_owner: release ? null : (leaseOwner || existing.lease_owner),
       lease_expires_at: release ? null : existing.lease_expires_at,
       updated_at: new Date().toISOString()
@@ -305,6 +321,46 @@ class InMemoryCatalogRepository extends CatalogRepository {
   async getJobSchedulerState(jobName) {
     const existing = this.schedulerStates.get(jobName);
     return existing ? { ...existing } : null;
+  }
+
+  async saveJobSchedulerState(jobName, statePatch = {}) {
+    const existing = this.schedulerStates.get(jobName) || {
+      job_name: jobName,
+      source_cursor: 0,
+      page_cursor: 1,
+      last_source_id: null,
+      lease_owner: null,
+      lease_acquired_at: null,
+      lease_expires_at: null,
+      last_run_id: null,
+      last_status: null,
+      enabled: false,
+      last_run_at: null,
+      run_count: 0,
+      last_result: null
+    };
+
+    const updated = {
+      ...existing,
+      enabled: typeof statePatch.enabled === 'boolean' ? statePatch.enabled : existing.enabled,
+      last_status: statePatch.last_status !== undefined ? statePatch.last_status : existing.last_status,
+      last_run_at: statePatch.last_run_at !== undefined ? statePatch.last_run_at : existing.last_run_at,
+      run_count: statePatch.run_count !== undefined ? Number(statePatch.run_count) : existing.run_count,
+      last_result: statePatch.last_result !== undefined ? statePatch.last_result : existing.last_result,
+      updated_at: new Date().toISOString()
+    };
+    this.schedulerStates.set(jobName, updated);
+    return { ...updated };
+  }
+
+  async getAllJobSchedulerStates() {
+    return Array.from(this.schedulerStates.values()).map(s => ({ ...s }));
+  }
+
+  async getRecentReconciliationRuns(limit = 50) {
+    const runs = Array.from(this.reconciliationRuns.values());
+    runs.sort((a, b) => new Date(b.started_at || 0).getTime() - new Date(a.started_at || 0).getTime());
+    return runs.slice(0, limit);
   }
 
   isDegraded() {

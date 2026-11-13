@@ -34,7 +34,8 @@ async function logAudit(...args) {
   } catch (_) {}
 }
 
-const HOMEPAGE_EVENT_GRACE_DAYS = 2;
+const EVENT_ARCHIVE_GRACE_MS = 1 * 60 * 60 * 1000; // Strictly 1 hour post verified actual event end time
+const HOMEPAGE_EVENT_GRACE_DAYS = 1 / 24; // 1 hour legacy compatibility
 
 const LIFECYCLE_STATUS = {
   ANNOUNCED: 'ANNOUNCED',
@@ -248,8 +249,8 @@ class EventTemporalLifecycleEngine {
       endAtIso = new Date(endMs).toISOString();
     }
 
-    // 3. Archive eligibility timestamp: event_end_at + 48 hours (H+2 rule)
-    const archiveMs = endMs + (48 * 60 * 60 * 1000);
+    // 3. Archive eligibility timestamp: verified actual event_end_at + 1 hour (H+1 rule)
+    const archiveMs = endMs + EVENT_ARCHIVE_GRACE_MS;
     const archiveAtIso = new Date(archiveMs).toISOString();
 
     return {
@@ -375,12 +376,12 @@ class EventTemporalLifecycleEngine {
       return LIFECYCLE_STATUS.LIVE;
     }
 
-    // Stage 3: Event has ended, but within H+48 / H+3 archive grace period
+    // Stage 3: Event has ended, but within verified actual end time + 1 hour archive grace period
     if (nowMs > endMs && nowMs < archiveMs && !this.isEventArchived(event, now)) {
       return LIFECYCLE_STATUS.COMPLETED;
     }
 
-    // Stage 4: Event has passed H+48 hours / H+3 (Archive Eligibility)
+    // Stage 4: Event has passed actual event end time + 1 hour (Archive Eligibility)
     const eventId = event.event_id || event.id;
     const hasOpenOps = this.hasOpenPostEventOperations(eventId);
 
@@ -430,35 +431,23 @@ class EventTemporalLifecycleEngine {
 
   /**
    * Deterministic predicate: is this event eligible for ARCHIVE?
-   * H+3 Archive Rule:
-   * Event day (H): Active, visible
-   * H+1: Still visible (grace period)
-   * H+2: Still visible (grace period)
-   * H+3: REMOVED from homepage, moved to ARCHIVE
-   * e.g., Event on 2026-09-29 -> at 2026-09-30 = not archived (H+1); at 2026-10-02 = ARCHIVED (H+3)
+   * Strict Rule: ARCHIVE ELIGIBILITY = VERIFIED ACTUAL EVENT END TIME + 1 HOUR.
+   * Concluded event remains COMPLETED for 1 hour post end time, then transitions to ARCHIVED.
+   * Eliminates inconsistent H+2 / 48-hour / H+3 / midnight fallbacks.
    */
   static isEventArchived(event, now = new Date()) {
     if (!event) return false;
+    const rawStatus = (event.lifecycle_status || event.status || '').toUpperCase();
+    if (rawStatus === 'ARCHIVED' || rawStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS') {
+      return true;
+    }
     const temporal = this.computeTemporalAttributes(event);
     if (temporal.is_invalid_date || !temporal.archive_at) {
       return false;
     }
     const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
     const archiveMs = new Date(temporal.archive_at).getTime();
-    if (nowMs >= archiveMs) return true;
-
-    // Check calendar day difference in Asia/Jakarta (>= 3 days difference = H+3)
-    const currentJakartaDate = this.getJakartaDateString(now);
-    const eventEndDate = temporal.end_date || temporal.start_date;
-    if (eventEndDate) {
-      const eDate = new Date(`${eventEndDate}T00:00:00+07:00`);
-      const nDate = new Date(`${currentJakartaDate}T00:00:00+07:00`);
-      const diffDays = Math.round((nDate - eDate) / (24 * 60 * 60 * 1000));
-      if (diffDays >= 3) {
-        return true;
-      }
-    }
-    return false;
+    return nowMs >= archiveMs;
   }
 
   /**
@@ -513,7 +502,7 @@ class EventTemporalLifecycleEngine {
     const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
     const startMs = new Date(temporal.event_start_at).getTime();
     const endMs = new Date(temporal.event_end_at).getTime();
-    const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
+    const archiveMs = new Date(temporal.archive_at).getTime();
 
     if (nowMs < startMs) {
       return 'UPCOMING';
@@ -521,7 +510,7 @@ class EventTemporalLifecycleEngine {
     if (nowMs >= startMs && nowMs <= endMs) {
       return 'TODAY';
     }
-    if (nowMs > endMs && nowMs <= endMs + graceMs) {
+    if (nowMs > endMs && nowMs < archiveMs) {
       return 'RECENT';
     }
     return 'EXPIRED';
@@ -533,7 +522,7 @@ class EventTemporalLifecycleEngine {
    * 1. Verified status (VERIFIED or PRIMARY_SOURCE_VERIFIED)
    * 2. public_visibility !== false
    * 3. Lifecycle not CANCELLED or EXPIRED
-   * 4. Temporal window is not EXPIRED (i.e. UPCOMING, TODAY, or RECENT within H+2 grace)
+   * 4. Temporal window is not EXPIRED (i.e. UPCOMING, TODAY, or RECENT within 1-hour archive window)
    */
   static isEventHomepageEligible(event, now = new Date()) {
     if (!event) return false;
@@ -566,12 +555,11 @@ class EventTemporalLifecycleEngine {
       return false;
     }
 
-    // Explicit Defense-in-depth H+2/H+3 check:
+    // Strict Defense-in-depth: verified actual event end time + 1 hour cutoff
     const temporal = this.computeTemporalAttributes(event);
     const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
-    const endMs = new Date(temporal.event_end_at).getTime();
-    const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
-    if (nowMs > endMs + graceMs) {
+    const archiveMs = new Date(temporal.archive_at).getTime();
+    if (nowMs >= archiveMs) {
       return false;
     }
 
@@ -618,11 +606,10 @@ class EventTemporalLifecycleEngine {
       }
     }
 
-    // Expiry rule: H+2 grace period past end_at hides from public homepage and marks archive_status
-    const graceMs = HOMEPAGE_EVENT_GRACE_DAYS * 24 * 60 * 60 * 1000;
+    // Expiry rule: verified actual end time + 1 hour hides from public homepage and marks archive_status
     const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
-    const endMs = new Date(temporal.event_end_at).getTime();
-    const isArchived = this.isEventArchived(event, now) || (nowMs > endMs + graceMs) || isHistoricalConflict;
+    const archiveMs = new Date(temporal.archive_at).getTime();
+    const isArchived = this.isEventArchived(event, now) || (nowMs >= archiveMs) || isHistoricalConflict;
     if (isArchived) {
       event.public_visibility = false;
       event.homepage_visibility = false;
@@ -928,6 +915,7 @@ class EventTemporalLifecycleEngine {
 module.exports = {
   EventTemporalLifecycleEngine,
   LIFECYCLE_STATUS,
+  EVENT_ARCHIVE_GRACE_MS,
   HOMEPAGE_EVENT_GRACE_DAYS,
   TERMINAL_ORDER_STATUSES,
   NON_TERMINAL_ORDER_STATUSES,

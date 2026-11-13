@@ -80,6 +80,18 @@ class CatalogRepository {
     throw new Error('getJobSchedulerState() must be implemented');
   }
 
+  async saveJobSchedulerState(jobName, statePatch = {}) {
+    throw new Error('saveJobSchedulerState() must be implemented');
+  }
+
+  async getAllJobSchedulerStates() {
+    throw new Error('getAllJobSchedulerStates() must be implemented');
+  }
+
+  async getRecentReconciliationRuns(limit = 50) {
+    throw new Error('getRecentReconciliationRuns() must be implemented');
+  }
+
   async recordEventChange(changeData) {
     throw new Error('recordEventChange() must be implemented');
   }

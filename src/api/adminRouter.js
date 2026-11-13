@@ -3522,8 +3522,11 @@ router.post('/settlements/:id/confirm-disbursement', requireFinance, async (req,
 // Automation Center Endpoints (Phase P1)
 // -------------------------------------------------------------
 
-router.get('/automation/jobs', requireAdmin, (req, res) => {
+router.get('/automation/jobs', requireAdmin, async (req, res) => {
   try {
+    if (typeof ingestionScheduler.syncStateFromDb === 'function') {
+      await ingestionScheduler.syncStateFromDb();
+    }
     const jobs = ingestionScheduler.getAllJobs();
     res.json({
       success: true,
@@ -3538,7 +3541,10 @@ router.get('/automation/jobs', requireAdmin, (req, res) => {
 router.post('/automation/jobs/:id/run', requireAdmin, async (req, res) => {
   try {
     const jobId = req.params.id;
-    const result = await ingestionScheduler.runJob(jobId, req.body || {});
+    const result = await ingestionScheduler.runJob(jobId, {
+      ...req.body,
+      operator: req.user?.username || req.user?.email || 'ADMIN'
+    });
     res.json({
       success: true,
       job: jobId,
@@ -3546,15 +3552,15 @@ router.post('/automation/jobs/:id/run', requireAdmin, async (req, res) => {
       status: ingestionScheduler.getJobStatus(jobId)
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message, code: 'JOB_EXECUTION_FAILED' });
+    res.status(500).json({ success: false, error: err.message, code: err.code || 'JOB_EXECUTION_FAILED' });
   }
 });
 
-router.post('/automation/jobs/:id/toggle', requireAdmin, (req, res) => {
+router.post('/automation/jobs/:id/toggle', requireAdmin, async (req, res) => {
   try {
     const jobId = req.params.id;
     const enabled = req.body && typeof req.body.enabled === 'boolean' ? req.body.enabled : null;
-    const updated = ingestionScheduler.toggleJob(jobId, enabled);
+    const updated = await ingestionScheduler.toggleJob(jobId, enabled);
     res.json({
       success: true,
       job: jobId,
@@ -3569,7 +3575,10 @@ router.post('/automation/jobs/:id/toggle', requireAdmin, (req, res) => {
 router.post('/automation/jobs/:id/retry', requireAdmin, async (req, res) => {
   try {
     const jobId = req.params.id;
-    const result = await ingestionScheduler.runJob(jobId, req.body || {});
+    const result = await ingestionScheduler.runJob(jobId, {
+      ...req.body,
+      operator: req.user?.username || req.user?.email || 'ADMIN'
+    });
     res.json({
       success: true,
       job: jobId,
@@ -3578,14 +3587,14 @@ router.post('/automation/jobs/:id/retry', requireAdmin, async (req, res) => {
       status: ingestionScheduler.getJobStatus(jobId)
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message, code: 'JOB_RETRY_FAILED' });
+    res.status(500).json({ success: false, error: err.message, code: err.code || 'JOB_RETRY_FAILED' });
   }
 });
 
-router.get('/automation/history', requireAdmin, (req, res) => {
+router.get('/automation/history', requireAdmin, async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(100, Number(req.query.limit || 50)));
-    const history = ingestionScheduler.getJobHistory(limit);
+    const history = await ingestionScheduler.getJobHistory(limit);
     res.json({
       success: true,
       total: history.length,
