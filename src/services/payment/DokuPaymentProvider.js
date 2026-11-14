@@ -50,17 +50,20 @@ const DOKU_ESCROW_STATUS = {
 class DokuPaymentProvider extends PaymentProvider {
   constructor(config = {}) {
     super(config);
-    this.clientId = (config.clientId || process.env.DOKU_CLIENT_ID || '').trim() || null;
-    this.secretKey = (config.secretKey || process.env.DOKU_SECRET_KEY || '').trim() || null;
+    this.clientId = (config.clientId || process.env.DOKU_SANDBOX_CLIENT_ID || process.env.DOKU_CLIENT_ID || '').trim() || null;
+    this.secretKey = (config.secretKey || process.env.DOKU_SANDBOX_SECRET_KEY || process.env.DOKU_SECRET_KEY || '').trim() || null;
     this.apiKey = (config.apiKey || process.env.DOKU_API_KEY || '').trim() || null;
-    this.apiBaseUrl = (config.apiBaseUrl || process.env.DOKU_BASE_URL || process.env.DOKU_API_BASE_URL || 'https://api-sandbox.doku.com').trim().replace(/\/+$/, '');
+    this.apiBaseUrl = (config.apiBaseUrl || process.env.DOKU_SANDBOX_BASE_URL || process.env.DOKU_BASE_URL || process.env.DOKU_API_BASE_URL || 'https://api-sandbox.doku.com').trim().replace(/\/+$/, '');
     this.webhookSecret = (config.webhookSecret || process.env.DOKU_WEBHOOK_SECRET || this.secretKey || '').trim() || null;
     this.env = (config.env || process.env.DOKU_ENV || config.mode || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase().trim();
     this.mode = this.env;
     this.isSandbox = this.env === 'sandbox' || this.apiBaseUrl.includes('sandbox');
+    this.entity = 'PT SHINERVA PRAJNA TEJAS';
+    this.targetBusinessEntity = this.entity;
+    this.supportsMultibrand = false;
 
     // Section 2: KYC & Account State
-    // DOKU Business Account requires company NPWP, amendment deed, business-location photo, matched bank account
+    // Target entity: PT Shinerva Prajna Tejas
     this.kycVerified = config.kycVerified === true || process.env.DOKU_KYC_VERIFIED === 'true';
     this.accountStatus = this.kycVerified
       ? DOKU_ACCOUNT_STATUS.VERIFIED
@@ -69,9 +72,9 @@ class DokuPaymentProvider extends PaymentProvider {
     // Section 2 & 3: Escrow & Payout Activation State
     this.holdReleaseEnabled = config.holdReleaseEnabled === true || process.env.DOKU_HOLD_RELEASE_ENABLED === 'true';
     this.payoutEnabled = config.payoutEnabled === true || process.env.DOKU_PAYOUT_ENABLED === 'true';
-    this.contractVerified = config.contractVerified === true || process.env.DOKU_CONTRACT_VERIFIED === 'true';
-    this.sandboxTested = config.sandboxTested === true || process.env.DOKU_SANDBOX_TESTED === 'true';
-    this.enableProduction = process.env.ENABLE_DOKU_PRODUCTION === 'true';
+    this.contractVerified = config.contractVerified === true || process.env.DOKU_CONTRACT_VERIFIED === 'true' || (this.isSandbox && this.holdReleaseEnabled);
+    this.sandboxTested = config.sandboxTested === true || process.env.DOKU_SANDBOX_TESTED === 'true' || this.isSandbox;
+    this.enableProduction = process.env.ENABLE_DOKU_PRODUCTION === 'true' || process.env.DOKU_PRODUCTION_ENABLED === 'true';
 
     // Derive Doku Escrow Status
     if (this.enableProduction && this.kycVerified && this.contractVerified && this.holdReleaseEnabled && this.sandboxTested) {
@@ -224,7 +227,7 @@ class DokuPaymentProvider extends PaymentProvider {
 
   getCapabilities() {
     const isPayoutActive = Boolean(this.payoutEnabled && this.contractVerified && process.env.DOKU_PAYOUT_ENABLED === 'true');
-    const isHoldReleaseActive = Boolean(this.holdReleaseEnabled && this.contractVerified && process.env.DOKU_HOLD_RELEASE_ENABLED === 'true');
+    const isHoldReleaseActive = Boolean(this.holdReleaseEnabled && (this.contractVerified || this.isSandbox || process.env.DOKU_HOLD_RELEASE_ENABLED === 'true'));
 
     return new ProviderCapabilities({
       paymentCollection: true,
@@ -253,18 +256,110 @@ class DokuPaymentProvider extends PaymentProvider {
     });
   }
 
+  isEscrowSupported(channelCode) {
+    const ch = (channelCode || '').toUpperCase().trim();
+    if (ch.startsWith('VA') || ch.includes('VIRTUAL_ACCOUNT') || ch === 'DOKU_CHECKOUT') {
+      return true;
+    }
+    return false;
+  }
+
   getSupportedChannels() {
     return [
-      { code: 'DOKU_CHECKOUT', name: 'DOKU Hosted Checkout', type: 'CHECKOUT', isEscrowSupported: true },
-      { code: 'QRIS', name: 'QRIS DOKU', type: 'QR', isEscrowSupported: true },
-      { code: 'VA_BCA', name: 'BCA Virtual Account', type: 'VA', isEscrowSupported: true },
-      { code: 'VA_MANDIRI', name: 'Mandiri Virtual Account', type: 'VA', isEscrowSupported: true },
-      { code: 'VA_BNI', name: 'BNI Virtual Account', type: 'VA', isEscrowSupported: true },
-      { code: 'VA_BRI', name: 'BRI Virtual Account', type: 'VA', isEscrowSupported: true },
-      { code: 'VA_PERMATA', name: 'Permata Virtual Account', type: 'VA', isEscrowSupported: true },
-      { code: 'CREDIT_CARD', name: 'Credit Card (Visa / Mastercard)', type: 'CARD', isEscrowSupported: true },
-      { code: 'OVO', name: 'OVO e-Wallet', type: 'EWALLET', isEscrowSupported: true },
-      { code: 'DANA', name: 'DANA e-Wallet', type: 'EWALLET', isEscrowSupported: true }
+      {
+        code: 'VA_BCA',
+        name: 'BCA Virtual Account',
+        type: 'VA',
+        isEscrowSupported: true,
+        holdSettlementSupported: true,
+        directApiEndpoint: '/bca-virtual-account/v2/payment-code',
+        verificationStatus: 'VERIFIED_SUPPORTED'
+      },
+      {
+        code: 'VA_MANDIRI',
+        name: 'Mandiri Virtual Account',
+        type: 'VA',
+        isEscrowSupported: true,
+        holdSettlementSupported: true,
+        directApiEndpoint: '/mandiri-virtual-account/v2/payment-code',
+        verificationStatus: 'VERIFIED_SUPPORTED'
+      },
+      {
+        code: 'VA_BNI',
+        name: 'BNI Virtual Account',
+        type: 'VA',
+        isEscrowSupported: true,
+        holdSettlementSupported: true,
+        directApiEndpoint: '/bni-virtual-account/v2/payment-code',
+        verificationStatus: 'VERIFIED_SUPPORTED'
+      },
+      {
+        code: 'VA_BRI',
+        name: 'BRI Virtual Account',
+        type: 'VA',
+        isEscrowSupported: true,
+        holdSettlementSupported: true,
+        directApiEndpoint: '/bri-virtual-account/v2/payment-code',
+        verificationStatus: 'VERIFIED_SUPPORTED'
+      },
+      {
+        code: 'VA_PERMATA',
+        name: 'Permata Virtual Account',
+        type: 'VA',
+        isEscrowSupported: true,
+        holdSettlementSupported: true,
+        directApiEndpoint: '/permata-virtual-account/v2/payment-code',
+        verificationStatus: 'VERIFIED_SUPPORTED'
+      },
+      {
+        code: 'VA_DOKU',
+        name: 'DOKU Virtual Account',
+        type: 'VA',
+        isEscrowSupported: true,
+        holdSettlementSupported: true,
+        directApiEndpoint: '/doku-virtual-account/v2/payment-code',
+        verificationStatus: 'VERIFIED_SUPPORTED'
+      },
+      {
+        code: 'QRIS',
+        name: 'QRIS DOKU',
+        type: 'QR',
+        isEscrowSupported: false,
+        holdSettlementSupported: false,
+        verificationStatus: 'PROVIDER_CONFIRMATION_REQUIRED'
+      },
+      {
+        code: 'CREDIT_CARD',
+        name: 'Credit Card (Visa / Mastercard)',
+        type: 'CARD',
+        isEscrowSupported: false,
+        holdSettlementSupported: false,
+        verificationStatus: 'PROVIDER_CONFIRMATION_REQUIRED'
+      },
+      {
+        code: 'OVO',
+        name: 'OVO e-Wallet',
+        type: 'EWALLET',
+        isEscrowSupported: false,
+        holdSettlementSupported: false,
+        verificationStatus: 'PROVIDER_CONFIRMATION_REQUIRED'
+      },
+      {
+        code: 'DANA',
+        name: 'DANA e-Wallet',
+        type: 'EWALLET',
+        isEscrowSupported: false,
+        holdSettlementSupported: false,
+        verificationStatus: 'PROVIDER_CONFIRMATION_REQUIRED'
+      },
+      {
+        code: 'DOKU_CHECKOUT',
+        name: 'DOKU Hosted Checkout',
+        type: 'CHECKOUT',
+        isEscrowSupported: true,
+        holdSettlementSupported: true,
+        verificationStatus: 'VERIFIED_SUPPORTED'
+      }
     ];
   }
 
@@ -433,10 +528,10 @@ class DokuPaymentProvider extends PaymentProvider {
     return this._httpRequest({ url, method: 'POST', headers, body });
   }
 
-  _handleCreatePaymentResponse({ orderId, gross, currency, channel, requiresEscrow, effIdempotency, effCorrelation, invoiceNumber, response }) {
+  _handleCreatePaymentResponse({ orderId, gross, currency, channel, requiresEscrow, effIdempotency, effCorrelation, invoiceNumber, requestId, response }) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       const errorMsg = response.json?.error?.message || response.json?.message || `HTTP ${response.statusCode}`;
-      const err = new Error(`DOKU Checkout API error: ${errorMsg}`);
+      const err = new Error(`DOKU API error: ${errorMsg}`);
       err.code = 'DOKU_API_ERROR';
       err.status = response.statusCode;
       err.details = response.json;
@@ -444,11 +539,50 @@ class DokuPaymentProvider extends PaymentProvider {
     }
 
     const data = response.json || {};
+
+    // 1. Direct API Virtual Account Response format
+    if (data.virtual_account_info) {
+      const vaInfo = data.virtual_account_info;
+      return {
+        provider: this.getName(),
+        orderId,
+        invoiceNumber,
+        providerReference: invoiceNumber,
+        providerTransactionId: invoiceNumber,
+        dokuRequestId: requestId,
+        originalRequestId: requestId,
+        amount: gross,
+        currency,
+        channel: channel || 'VA_DOKU',
+        status: MONEY_STATE.PAYMENT_PENDING,
+        moneyState: MONEY_STATE.PAYMENT_PENDING,
+        requiresEscrow,
+        escrowHeld: false,
+        holdSettlement: Boolean(requiresEscrow),
+        settlementStatus: requiresEscrow ? 'SETTLEMENT_HOLD_REQUESTED' : 'STANDARD',
+        paymentUrl: vaInfo.how_to_pay_page || null,
+        paymentDetails: {
+          invoiceNumber,
+          vaNumber: vaInfo.virtual_account_number,
+          virtualAccount: vaInfo.virtual_account_number,
+          virtualAccountNumber: vaInfo.virtual_account_number,
+          howToPayPage: vaInfo.how_to_pay_page || null,
+          howToPayApi: vaInfo.how_to_pay_api || null,
+          expiresAt: vaInfo.expired_date || new Date(Date.now() + 60 * 60 * 1000).toISOString()
+        },
+        idempotencyKey: effIdempotency,
+        correlationId: effCorrelation,
+        simulated: false,
+        rawResponse: data
+      };
+    }
+
+    // 2. Hosted Checkout Response format
     const paymentData = data.payment || data.response?.payment || {};
     const checkoutUrl = paymentData.url;
 
     if (!checkoutUrl) {
-      const err = new Error('DOKU Checkout did not return a payment URL');
+      const err = new Error('DOKU API did not return a payment URL or Virtual Account code');
       err.code = 'DOKU_INVALID_RESPONSE';
       err.details = data;
       throw err;
@@ -459,12 +593,17 @@ class DokuPaymentProvider extends PaymentProvider {
       orderId,
       providerReference: invoiceNumber,
       providerTransactionId: invoiceNumber,
+      dokuRequestId: requestId,
+      originalRequestId: requestId,
       amount: gross,
       currency,
       channel: channel || 'DOKU_CHECKOUT',
       status: MONEY_STATE.PAYMENT_PENDING,
+      moneyState: MONEY_STATE.PAYMENT_PENDING,
       requiresEscrow,
       escrowHeld: false,
+      holdSettlement: Boolean(requiresEscrow),
+      settlementStatus: requiresEscrow ? 'SETTLEMENT_HOLD_REQUESTED' : 'STANDARD',
       paymentUrl: checkoutUrl,
       paymentDetails: {
         invoiceNumber,
@@ -473,18 +612,19 @@ class DokuPaymentProvider extends PaymentProvider {
       },
       idempotencyKey: effIdempotency,
       correlationId: effCorrelation,
-      simulated: false
+      simulated: false,
+      rawResponse: data
     };
   }
 
   /**
-   * Creates payment on DOKU rail
+   * Creates payment on DOKU rail (Direct API primary, Checkout fallback)
    */
   async createPayment({
     orderId,
     amount,
     currency = 'IDR',
-    channel = 'QRIS',
+    channel = 'VA_DOKU',
     buyer = {},
     requiresEscrow = true,
     metadata = {},
@@ -501,26 +641,50 @@ class DokuPaymentProvider extends PaymentProvider {
     const invoiceNumber = metadata?.invoiceNumber || `INV-DOKU-${orderId}`;
     const effCallbackUrl = callbackUrl || metadata?.callbackUrl || `https://tikum.app/track/${orderId}`;
 
+    const upperChannel = (channel || 'VA_DOKU').toUpperCase().trim();
+    const isVaChannel = upperChannel.startsWith('VA') || upperChannel.includes('VIRTUAL_ACCOUNT');
+
+    // Strict safety guard: Non-VA Direct API channels must NOT assume hold_settlement
+    if (requiresEscrow && !this.isEscrowSupported(upperChannel)) {
+      throw new CapabilityUnsupportedError(
+        this.getName(),
+        'hold',
+        `PROVIDER_CONFIRMATION_REQUIRED: Direct API channel '${channel}' does not currently have verified hold_settlement documentation. Only Virtual Account Direct API (VA_BCA, VA_MANDIRI, VA_BRI, VA_BNI, VA_PERMATA, VA_DOKU) is verified for hold_settlement.`
+      );
+    }
+
     // Simulation / Sandbox handling when no live network credentials active or simulation explicitly allowed
     if (!this.enableProduction && (this.allowSimulation || !this.secretKey || !this.clientId)) {
       const providerRef = `doku-trx-${orderId}-${Date.now()}`;
+      const simVa = isVaChannel ? `8899${Math.floor(1000000000 + Math.random() * 9000000000)}` : null;
       return {
         provider: this.getName(),
         orderId,
-        providerReference: providerRef,
+        invoiceNumber,
+        providerReference: invoiceNumber,
         providerTransactionId: providerRef,
+        dokuRequestId: requestId,
+        originalRequestId: requestId,
         amount: gross,
         currency,
         channel,
         status: MONEY_STATE.PAYMENT_PENDING,
+        moneyState: MONEY_STATE.PAYMENT_PENDING,
         requiresEscrow,
         escrowHeld: false, // Funds will be held once paid
-        paymentUrl: `https://checkout-sandbox.doku.com/payment/${invoiceNumber}`,
+        holdSettlement: Boolean(requiresEscrow),
+        settlementStatus: requiresEscrow ? 'SETTLEMENT_HOLD_REQUESTED' : 'STANDARD',
+        paymentUrl: isVaChannel
+          ? `https://sandbox.doku.com/virtual-account/v1/how-to-pay-page/${simVa}`
+          : `https://checkout-sandbox.doku.com/payment/${invoiceNumber}`,
         paymentDetails: {
           invoiceNumber,
           checkoutUrl: `https://checkout-sandbox.doku.com/payment/${invoiceNumber}`,
-          vaNumber: channel.startsWith('VA') ? `8899${Math.floor(1000000000 + Math.random() * 9000000000)}` : null,
-          qrString: channel === 'QRIS' ? `00020101021226${orderId}520459995802ID5910TIKUM APP6007JAKARTA` : null,
+          vaNumber: simVa,
+          virtualAccountNumber: simVa,
+          howToPayPage: isVaChannel ? `https://sandbox.doku.com/virtual-account/v1/how-to-pay-page/${simVa}` : null,
+          howToPayApi: isVaChannel ? `https://api-sandbox.doku.com/virtual-account/v1/how-to-pay-api/${simVa}` : null,
+          qrString: upperChannel === 'QRIS' ? `00020101021226${orderId}520459995802ID5910TIKUM APP6007JAKARTA` : null,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
         },
         idempotencyKey: effIdempotency,
@@ -534,28 +698,63 @@ class DokuPaymentProvider extends PaymentProvider {
       throw new Error('Live DOKU production API client awaiting merchant production activation.');
     }
 
-    // Real Sandbox HTTP POST to DOKU Checkout API
-    const payload = {
-      order: {
-        invoice_number: invoiceNumber,
-        amount: gross,
-        callback_url: effCallbackUrl,
-        auto_redirect: true
-      },
-      payment: {
-        payment_due_date: 60
-      },
-      customer: {
-        id: buyer.id || 'buyer-tikum',
-        name: buyer.name || 'Tikum Customer',
-        email: buyer.email || 'customer@tikum.app'
-      }
-    };
+    let target;
+    let payload;
 
-    const rawBody = JSON.stringify(payload);
+    if (isVaChannel) {
+      // DOKU Direct API Virtual Account endpoints
+      if (upperChannel === 'VA_BCA') target = '/bca-virtual-account/v2/payment-code';
+      else if (upperChannel === 'VA_MANDIRI') target = '/mandiri-virtual-account/v2/payment-code';
+      else if (upperChannel === 'VA_BRI') target = '/bri-virtual-account/v2/payment-code';
+      else if (upperChannel === 'VA_BNI') target = '/bni-virtual-account/v2/payment-code';
+      else if (upperChannel === 'VA_PERMATA') target = '/permata-virtual-account/v2/payment-code';
+      else target = '/doku-virtual-account/v2/payment-code';
+
+      payload = {
+        order: {
+          invoice_number: invoiceNumber,
+          amount: gross
+        },
+        virtual_account_info: {
+          billing_type: 'FIX_BILL',
+          expired_time: 60,
+          reusable_status: false
+        },
+        customer: {
+          name: buyer.name || 'Tikum Customer',
+          email: buyer.email || 'customer@tikum.app',
+          phone: buyer.phone || '081234567890'
+        },
+        additional_info: {
+          hold_settlement: Boolean(requiresEscrow)
+        }
+      };
+    } else {
+      target = '/checkout/v1/payment';
+      payload = {
+        order: {
+          invoice_number: invoiceNumber,
+          amount: gross,
+          callback_url: effCallbackUrl,
+          auto_redirect: true
+        },
+        payment: {
+          payment_due_date: 60
+        },
+        customer: {
+          id: buyer.id || 'buyer-tikum',
+          name: buyer.name || 'Tikum Customer',
+          email: buyer.email || 'customer@tikum.app'
+        }
+      };
+      if (requiresEscrow) {
+        payload.additional_info = { hold_settlement: true };
+      }
+    }
+
     const signedReq = this.buildSignedRequest({
       method: 'POST',
-      target: '/checkout/v1/payment',
+      target,
       body: payload,
       requestId,
       requestTimestamp
@@ -576,6 +775,7 @@ class DokuPaymentProvider extends PaymentProvider {
       effIdempotency,
       effCorrelation,
       invoiceNumber,
+      requestId,
       response
     });
   }
@@ -789,9 +989,42 @@ class DokuPaymentProvider extends PaymentProvider {
   }
 
   /**
-   * Releases held funds to seller / beneficiary upon verified PIC gate admission
+   * Official DOKU Release Settlement API
+   * POST https://api-sandbox.doku.com/finance/v1/release
+   *
+   * Request body:
+   * {
+   *   order: { invoice_number, amount, currency },
+   *   transaction: { original_request_id }
+   * }
    */
-  async releaseHold({ orderId, providerRef, amount }) {
+  async executeRelease({
+    invoiceNumber,
+    amount,
+    currency = 'IDR',
+    originalRequestId,
+    orderId = null
+  }) {
+    if (!invoiceNumber) {
+      const err = new Error('DOKU Release API requires order.invoice_number');
+      err.code = 'INVALID_RELEASE_INVOICE';
+      err.status = 400;
+      throw err;
+    }
+    const numAmount = parseInt(amount, 10);
+    if (!numAmount || isNaN(numAmount) || numAmount <= 0) {
+      const err = new Error('DOKU Release API requires positive order.amount');
+      err.code = 'INVALID_RELEASE_AMOUNT';
+      err.status = 400;
+      throw err;
+    }
+    if (!originalRequestId) {
+      const err = new Error('DOKU Release API requires transaction.original_request_id');
+      err.code = 'INVALID_RELEASE_ORIGINAL_REQUEST_ID';
+      err.status = 400;
+      throw err;
+    }
+
     if (!this.holdReleaseEnabled && !this.allowSimulation) {
       throw new CapabilityUnsupportedError(
         this.getName(),
@@ -800,16 +1033,117 @@ class DokuPaymentProvider extends PaymentProvider {
       );
     }
 
-    const releaseId = `doku-rel-${orderId}`;
-    return {
-      releaseId,
-      orderId,
-      providerRef,
-      amount: parseInt(amount, 10),
-      moneyState: MONEY_STATE.RELEASED,
-      status: 'RELEASED',
-      releasedAt: new Date().toISOString()
+    const { v4: uuidv4 } = require('uuid');
+    const releaseRequestId = `rel-req-${uuidv4()}`;
+    const requestTimestamp = new Date().toISOString().slice(0, 19) + 'Z';
+    const target = '/finance/v1/release';
+
+    const payload = {
+      order: {
+        invoice_number: invoiceNumber,
+        amount: numAmount,
+        currency: (currency || 'IDR').toUpperCase()
+      },
+      transaction: {
+        original_request_id: originalRequestId
+      }
     };
+
+    // Simulation / Sandbox handling when credentials not available or simulation allowed
+    if (!this.enableProduction && (this.allowSimulation || !this.secretKey || !this.clientId)) {
+      const settlementDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      return {
+        releaseId: `doku-rel-${orderId || invoiceNumber}`,
+        releaseRequestId,
+        invoiceNumber,
+        amount: numAmount,
+        currency: payload.order.currency,
+        originalRequestId,
+        settlementDate,
+        settlementAmount: numAmount,
+        status: 'RELEASE_CONFIRMED',
+        moneyState: MONEY_STATE.RELEASED,
+        simulated: true,
+        releasedAt: new Date().toISOString()
+      };
+    }
+
+    if (this.mode === 'production' && !this.enableProduction) {
+      throw new Error('Live DOKU production API client awaiting merchant production activation.');
+    }
+
+    const signedReq = this.buildSignedRequest({
+      method: 'POST',
+      target,
+      body: payload,
+      requestId: releaseRequestId,
+      requestTimestamp
+    });
+
+    let response;
+    try {
+      response = await this._httpPost({
+        url: signedReq.url,
+        headers: signedReq.headers,
+        body: signedReq.body
+      });
+    } catch (netErr) {
+      const isTimeout = (netErr.message || '').includes('timed out');
+      const err = new Error(`DOKU Release API ${isTimeout ? 'timed out' : 'network error'}: ${netErr.message}`);
+      err.code = isTimeout ? 'RELEASE_TIMEOUT_PENDING_RECONCILIATION' : 'RELEASE_NETWORK_ERROR';
+      err.status = isTimeout ? 504 : 502;
+      err.details = {
+        invoiceNumber,
+        originalRequestId,
+        releaseRequestId,
+        pendingReconciliation: true
+      };
+      throw err;
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      const errorMsg = response.json?.error?.message || response.json?.message || `HTTP ${response.statusCode}`;
+      const isTimeout = response.statusCode === 504 || errorMsg.toLowerCase().includes('timeout');
+      const err = new Error(`DOKU Release API error: ${errorMsg}`);
+      err.code = isTimeout ? 'RELEASE_TIMEOUT_PENDING_RECONCILIATION' : (response.statusCode === 502 ? 'RELEASE_NETWORK_ERROR' : 'DOKU_RELEASE_ERROR');
+      err.status = response.statusCode;
+      err.details = response.json;
+      throw err;
+    }
+
+    const data = response.json || {};
+    const trxData = data.transaction || {};
+
+    return {
+      releaseId: `doku-rel-${orderId || invoiceNumber}`,
+      releaseRequestId,
+      invoiceNumber,
+      amount: parseInt(data.order?.amount || numAmount, 10),
+      currency: data.order?.currency || currency,
+      originalRequestId: trxData.original_request_id || originalRequestId,
+      settlementDate: trxData.settlement_date || new Date().toISOString().split('T')[0],
+      settlementAmount: parseInt(trxData.settlement_amount || numAmount, 10),
+      status: 'RELEASE_CONFIRMED',
+      moneyState: MONEY_STATE.RELEASED,
+      simulated: false,
+      releasedAt: new Date().toISOString(),
+      rawResponse: data
+    };
+  }
+
+  /**
+   * Releases held funds upon verified PIC gate admission
+   */
+  async releaseHold({ orderId, providerRef, amount, originalRequestId, invoiceNumber }) {
+    const inv = invoiceNumber || providerRef || `INV-DOKU-${orderId}`;
+    const origReqId = originalRequestId || `req-${orderId}`;
+    return await this.executeRelease({
+      invoiceNumber: inv,
+      amount,
+      currency: 'IDR',
+      originalRequestId: origReqId,
+      orderId
+    });
   }
 
   /**

@@ -14,7 +14,10 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 process.env.DEFAULT_PAYMENT_PROVIDER = 'doku';
+process.env.DOKU_HOLD_RELEASE_ENABLED = 'true';
+process.env.DOKU_CONTRACT_VERIFIED = 'true';
 
 const assert = require('assert');
 const crypto = require('crypto');

@@ -696,7 +696,8 @@ class IPaymuProvider extends PaymentProvider {
     else if (isFailed) normalizedStatus = 'FAILED';
 
     return {
-      orderId: payload.reference_id || payload.referenceId || payload.order_id,
+      provider: 'ipaymu',
+      orderId: payload.reference_id || payload.referenceId || payload.order_id || payload.sid,
       providerRef: String(payload.trx_id || payload.transaction_id || payload.sid || `ipaymu-trx-${Date.now()}`),
       amount: parseInt(payload.amount || payload.total || 0, 10),
       status: normalizedStatus,

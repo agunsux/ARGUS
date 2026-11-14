@@ -74,10 +74,19 @@ class PaymentService {
 
     return {
       safety_gates: PRODUCTION_SAFETY_GATES,
+      architecture: 'DOKU Primary (Direct API) -> iPaymu Secondary',
+      target_business_entity: 'PT SHINERVA PRAJNA TEJAS',
       default_provider: defaultName,
+      primary_provider_name: 'doku',
+      secondary_provider_name: 'ipaymu',
+      settlement_mechanism: 'Hold & Release Settlement',
+      release_authority: 'ARGUS Trust Engine',
       active_providers: paymentManager.getAvailablePaymentMethods(),
       primary_provider: {
         name: 'doku',
+        integration: 'Direct API',
+        entity: 'PT SHINERVA PRAJNA TEJAS',
+        hold_release_mechanism: 'POST /finance/v1/release',
         status: primaryStatus.status,
         account_status: primaryStatus.account_status || 'PENDING_KYC',
         escrow_status: primaryStatus.escrow_status || 'NOT_ENABLED',
@@ -90,6 +99,13 @@ class PaymentService {
         readiness: primaryStatus.readiness,
         escrow_verification_matrix: primaryStatus.escrow_verification_matrix,
         contract_dependent_items: primaryStatus.contract_dependent_items
+      },
+      secondary_provider: {
+        name: 'ipaymu',
+        role: 'SECONDARY_FALLBACK',
+        status: ipaymuStatus.status,
+        is_verified: ipaymuStatus.isVerified,
+        message: ipaymuStatus.message
       },
       backup_providers: {
         backup_1: {
@@ -265,8 +281,15 @@ class PaymentService {
       status: CANONICAL_PAYMENT_STATUS.PAYMENT_PENDING,
       paymentMethod: channel || providerResult.channel || 'QRIS',
       idempotencyKey: effectiveIdempotencyKey,
-      metadata: providerResult
+      metadata: {
+        ...providerResult,
+        originalRequestId: providerResult.originalRequestId || providerResult.dokuRequestId || null,
+        invoiceNumber: providerResult.paymentDetails?.invoiceNumber || providerRef
+      }
     });
+
+    canonicalRecord.settlement_status = effectiveRequiresEscrow ? 'SETTLEMENT_HOLD_REQUESTED' : 'STANDARD';
+    canonicalRecord.original_request_id = providerResult.originalRequestId || providerResult.dokuRequestId || null;
 
     state.canonical_payments.push(canonicalRecord);
     DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
@@ -323,6 +346,7 @@ class PaymentService {
       idempotent: false,
       paymentId: internalPaymentId,
       orderId,
+      invoiceNumber: providerResult.invoiceNumber || providerResult.providerReference || providerRef,
       provider: targetProviderName,
       providerRef,
       providerTransactionId: providerTxId,
@@ -480,10 +504,12 @@ class PaymentService {
             canonical.money_state = MONEY_STATE.ESCROW_HELD;
             canonical.status = MONEY_STATE.ESCROW_HELD;
             canonical.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
+            canonical.settlement_status = 'SETTLEMENT_HELD';
           } else {
             canonical.money_state = MONEY_STATE.CAPTURED_PLATFORM_SETTLEMENT;
             canonical.status = MONEY_STATE.PAID;
             canonical.escrow_type = 'NONE_PLATFORM_CAPTURED';
+            canonical.settlement_status = 'CAPTURED_UNHELD';
           }
 
           canonical.paid_at = event.paidAt || new Date().toISOString();
@@ -707,6 +733,206 @@ class PaymentService {
     return {
       idempotent: false,
       event
+    };
+  }
+
+  /**
+   * Authoritative Release Execution for Settlement Hold (Section 6 & ARGUS)
+   * Enforces:
+   * 1. ARGUS Trust Engine release authorization
+   * 2. Venue PIC entry verification / valid attestation
+   * 3. Hold & Release API invocation on DOKU rail (POST /finance/v1/release)
+   * 4. Idempotency & duplicate release protection
+   * 5. Double-entry Financial Ledger balancing
+   */
+  static async executeRelease({ orderId, actorId = 'SYSTEM' }) {
+    if (!orderId) throw new Error('orderId is required for release');
+
+    // 1. Resolve Order & Escrow
+    let order = state.orders ? state.orders.find(o => o.id === orderId) : null;
+    let escrow = state.escrows ? state.escrows.find(e => e.order_id === orderId) : null;
+    if (!order) {
+      try {
+        const { getMoneyRepository } = require('../../storage');
+        const moneyRepo = getMoneyRepository();
+        if (moneyRepo) {
+          order = await moneyRepo.getOrderById(orderId);
+          if (order) {
+            if (!state.orders) state.orders = [];
+            state.orders.push(order);
+          }
+        }
+      } catch (_) {}
+    }
+    if (!escrow) {
+      try {
+        const { getMoneyRepository } = require('../../storage');
+        const moneyRepo = getMoneyRepository();
+        if (moneyRepo) {
+          escrow = await moneyRepo.getEscrowByOrderId(orderId);
+          if (escrow) {
+            if (!state.escrows) state.escrows = [];
+            state.escrows.push(escrow);
+          }
+        }
+      } catch (_) {}
+    }
+    if (!order || !escrow) {
+      const err = new Error(`Order or Escrow record not found for order '${orderId}'`);
+      err.code = 'ORDER_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
+
+    // 2. Idempotency Check: if already released, return success without duplicating release
+    if (escrow.status === 'RELEASED' || order.status === 'SETTLED') {
+      return {
+        success: true,
+        alreadyReleased: true,
+        idempotent: true,
+        orderId,
+        message: 'Settlement already released'
+      };
+    }
+
+    // 3. Operational Invariants: Disputed, Frozen, or Refund-Pending states strictly block release
+    if (escrow.status === 'DISPUTED' || order.status === 'DISPUTED') {
+      const err = new Error('Cannot release settlement: transaction is in DISPUTED state');
+      err.code = 'TRANSACTION_IN_DISPUTED_STATE';
+      err.status = 400;
+      throw err;
+    }
+    if (escrow.status === 'FROZEN' || order.status === 'FROZEN') {
+      const err = new Error('Cannot release settlement: transaction is in FROZEN state');
+      err.code = 'TRANSACTION_IN_FROZEN_STATE';
+      err.status = 400;
+      throw err;
+    }
+    if (escrow.status === 'REFUND_PENDING' || order.status === 'REFUND_PENDING') {
+      const err = new Error('Cannot release settlement: transaction is in REFUND_PENDING state');
+      err.code = 'TRANSACTION_IN_REFUND_PENDING_STATE';
+      err.status = 400;
+      throw err;
+    }
+
+    // 4. Operational Invariant: Confirmed PIC venue entry required (or favorable dispute)
+    const verification = (state.entry_verifications || []).find(
+      ev => ev.order_id === orderId && ev.status === 'CONFIRMED'
+    );
+    const disputeFavorable = (state.disputes || []).some(
+      d => d.order_id === orderId &&
+           (d.status === 'RESOLVED' || d.status === 'CLOSED_FINAL') &&
+           (d.outcome === 'SELLER_FAVORED' || d.outcome === 'RELEASE_SELLER')
+    );
+    if (!verification && !disputeFavorable) {
+      const err = new Error('Security violation: Cannot release escrow without confirmed venue entry by Event PIC or authoritative dispute resolution in seller favor');
+      err.code = 'ENTRY_NOT_CONFIRMED';
+      err.status = 403;
+      throw err;
+    }
+
+    // 5. ARGUS Trust Engine Release Authorization Gate
+    const { TrustPolicyEngine, AUTHORIZATION_OUTCOME } = require('../../trust/TrustPolicyEngine');
+    const authDecision = await TrustPolicyEngine.evaluateAuthorization(orderId);
+
+    if (!authDecision.financial_release_authorized || authDecision.outcome !== AUTHORIZATION_OUTCOME.PASS) {
+      const allReasons = (authDecision.blocking_reasons || []).concat(authDecision.exception_reasons || []);
+      const err = new Error(
+        `Security violation: Financial release denied by ARGUS Trust Policy Engine [${authDecision.outcome}]. ${allReasons.join(', ') || 'Required trust attestations not satisfied'}`
+      );
+      err.code = 'FINANCIAL_RELEASE_NOT_AUTHORIZED';
+      err.outcome = authDecision.outcome;
+      err.status = 403;
+      err.details = authDecision;
+      throw err;
+    }
+
+    // 6. Provider-level release execution
+    const canonical = (state.canonical_payments || []).find(p => p.order_id === orderId);
+    const providerName = (canonical?.provider || order.provider || paymentManager.defaultProvider || 'doku').toLowerCase();
+    const provider = paymentManager.getProvider(providerName);
+
+    let providerReleaseResult = null;
+    if (providerName === 'doku' && typeof provider.executeRelease === 'function') {
+      const invoiceNumber = canonical?.metadata?.invoiceNumber || canonical?.provider_reference || `INV-DOKU-${orderId}`;
+      const originalRequestId = canonical?.metadata?.originalRequestId || canonical?.metadata?.dokuRequestId || canonical?.original_request_id || canonical?.idempotency_key || `req-${orderId}`;
+      const releaseAmount = canonical?.gross_amount || escrow.amount;
+
+      if (canonical) {
+        canonical.money_state = MONEY_STATE.RELEASE_REQUESTED;
+        canonical.status = MONEY_STATE.RELEASE_REQUESTED;
+        canonical.settlement_status = 'RELEASE_REQUESTED';
+      }
+
+      try {
+        providerReleaseResult = await provider.executeRelease({
+          invoiceNumber,
+          amount: releaseAmount,
+          currency: canonical?.currency || 'IDR',
+          originalRequestId,
+          orderId
+        });
+      } catch (relErr) {
+        if (relErr.code === 'RELEASE_TIMEOUT_PENDING_RECONCILIATION' || relErr.code === 'RELEASE_NETWORK_ERROR' || relErr.status === 504) {
+          if (canonical) {
+            canonical.money_state = MONEY_STATE.PENDING_RECONCILIATION;
+            canonical.status = MONEY_STATE.PENDING_RECONCILIATION;
+            canonical.settlement_status = 'PENDING_RECONCILIATION';
+          }
+          await recordAuditLog('RELEASE', orderId, 'RELEASE_TIMEOUT_FLAGGED_FOR_RECONCILIATION', actorId, {
+            invoiceNumber,
+            originalRequestId,
+            error: relErr.message
+          });
+        }
+        throw relErr;
+      }
+    }
+
+    // 7. Transition to RELEASE_CONFIRMED & update states
+    if (canonical) {
+      canonical.money_state = MONEY_STATE.RELEASE_CONFIRMED;
+      canonical.status = MONEY_STATE.RELEASE_CONFIRMED;
+      canonical.settlement_status = 'RELEASE_CONFIRMED';
+      canonical.released_at = new Date().toISOString();
+      DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
+    }
+
+    escrow.status = 'RELEASED';
+    escrow.released_at = new Date().toISOString();
+    order.status = 'SETTLED';
+
+    // 8. Double-Entry Financial Ledger
+    const { FinancialLedger } = require('../../settlement/FinancialLedger');
+    let ledgerTx = null;
+    try {
+      ledgerTx = await FinancialLedger.recordDisbursementRelease({
+        orderId,
+        quoteId: order.quote_id || escrow.quote_id || null,
+        sellerAmount: escrow.amount,
+        actorId
+      });
+    } catch (_) {}
+
+    await recordAuditLog('ESCROW', escrow.id, 'SETTLEMENT_RELEASED_CONFIRMED', actorId, {
+      order_id: orderId,
+      provider: providerName,
+      provider_release: providerReleaseResult,
+      authorization_id: authDecision.authorization_id,
+      ledger_transaction_id: ledgerTx?.transaction_id || null,
+      released_at: escrow.released_at
+    });
+
+    return {
+      success: true,
+      alreadyReleased: false,
+      idempotent: false,
+      orderId,
+      escrow,
+      order,
+      authorization: authDecision,
+      providerRelease: providerReleaseResult,
+      ledgerTransaction: ledgerTx
     };
   }
 

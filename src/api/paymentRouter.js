@@ -223,6 +223,46 @@ router.get(['/v1/payments/ipaymu/config', '/payments/ipaymu/config'], (req, res)
 });
 
 /**
+ * GET /api/v1/payments/doku/config
+ * Public status & supported channels for DOKU Direct API payment integration (zero secrets exposed)
+ */
+router.get(['/v1/payments/doku/config', '/payments/doku/config'], (req, res) => {
+  try {
+    const doku = paymentManager.getProvider('doku');
+    const status = doku ? doku.getStatus() : { isVerified: false, status: 'UNKNOWN' };
+    const clientId = process.env.DOKU_CLIENT_ID;
+    const maskedClientId = clientId
+      ? `${clientId.slice(0, 4)}***${clientId.slice(-4)}`
+      : null;
+
+    res.json({
+      success: true,
+      provider: 'doku',
+      integration: 'Direct API',
+      target_entity: 'PT SHINERVA PRAJNA TEJAS',
+      settlement_mechanism: 'Hold & Release Settlement',
+      release_endpoint: 'POST /finance/v1/release',
+      is_available: true,
+      is_configured: Boolean(clientId && process.env.DOKU_SECRET_KEY),
+      masked_client_id: maskedClientId,
+      environment: status.environment,
+      status: status.status,
+      is_sandbox: status.is_sandbox,
+      production_gated: status.production_gated,
+      supported_channels: [
+        'VA_BCA', 'VA_MANDIRI', 'VA_BRI', 'VA_BNI', 'VA_PERMATA', 'VA_DOKU',
+        'QRIS'
+      ],
+      hold_release_supported_channels: [
+        'VA_BCA', 'VA_MANDIRI', 'VA_BRI', 'VA_BNI', 'VA_PERMATA', 'VA_DOKU'
+      ]
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * GET /api/v1/system/outbound-ip
  * Diagnoses and returns authoritative public outbound (egress) IP address of the backend server.
  * Required for iPaymu merchant verification (Website Outbound Server IP).
@@ -727,6 +767,33 @@ router.get('/admin/payments/reconciliation', requireAdmin, (req, res) => {
     total_records: logs.length,
     records: logs.slice(-100).reverse()
   });
+});
+
+/**
+ * POST /api/admin/payments/release
+ * ARGUS Authorized release of held escrow funds via DOKU Release API (Requires Admin)
+ */
+router.post(['/admin/payments/release', '/v1/payments/release'], requireAdmin, async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ success: false, error: 'orderId is required' });
+    }
+    const actorId = req.user?.id || req.body.actorId || 'admin-argus';
+    const result = await PaymentService.executeRelease({ orderId, actorId });
+    res.json({
+      success: true,
+      release: result
+    });
+  } catch (err) {
+    const statusCode = err.message && err.message.includes('ARGUS_RELEASE_BLOCKED') ? 422 : 500;
+    res.status(statusCode).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'RELEASE_EXECUTION_FAILED',
+      reason: err.reason || err.message
+    });
+  }
 });
 
 /**

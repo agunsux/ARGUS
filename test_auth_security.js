@@ -444,7 +444,7 @@ async function runSuite() {
       capturedMail = null;
       await makeRequest('/api/auth/magic-link', {
         method: 'POST',
-        body: { email: 'ops@argus.id' }
+        body: { email: 'audit.user@example.com' }
       });
       assert.ok(capturedMail !== null);
       const rawToken = capturedMail.rawToken;

@@ -232,7 +232,7 @@ async function runSuite() {
       assert.ok(dokuEntry, 'DOKU must be present in payment methods');
       assert.ok(midtransEntry, 'Midtrans must be present');
       assert.ok(xenditEntry, 'Xendit must be present');
-      assert.ok(dokuEntry.channels.some(c => c.code === 'QRIS' && c.isEscrowSupported === true));
+      assert.ok(dokuEntry.channels.some(c => (c.code === 'QRIS' || c.code.startsWith('VA')) && c.isEscrowSupported === true));
       assert.ok(midtransEntry.channels.some(c => c.isEscrowSupported === false));
     });
 

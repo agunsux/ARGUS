@@ -33,6 +33,8 @@ router.get('/summary', requireAdmin, (req, res) => {
   const incidents = state.incidents || [];
   const shifts = state.venue_shifts || [];
 
+  const doku = paymentManager.getProvider('doku');
+  const dokuStatus = doku ? doku.getStatus() : { status: 'UNKNOWN' };
   const ipaymu = paymentManager.getProvider('ipaymu');
   const ipaymuStatus = ipaymu ? ipaymu.getStatus() : { status: 'UNKNOWN' };
 
@@ -66,13 +68,30 @@ router.get('/summary', requireAdmin, (req, res) => {
       high_risk_sellers: (state.seller_profiles || []).filter(p => p.suspended || p.status === 'PROBATIONARY').length
     },
     payments: {
-      provider: 'ipaymu',
-      status: ipaymuStatus.status,
-      is_verified: ipaymuStatus.isVerified,
-      banner: 'PAYMENT PROVIDER: PENDING VERIFICATION',
+      provider: 'doku',
+      architecture: 'DOKU Primary (Direct API) -> iPaymu Secondary',
+      target_business_entity: 'PT SHINERVA PRAJNA TEJAS',
+      settlement_mechanism: 'Hold & Release Settlement',
+      release_authority: 'ARGUS Trust Engine',
+      status: dokuStatus.status,
+      is_verified: dokuStatus.isVerified,
+      banner: dokuStatus.isVerified ? 'DOKU DIRECT API: VERIFIED (SANDBOX)' : 'PAYMENT PROVIDER: PENDING VERIFICATION',
       real_money_active: false,
       settlement_active: false,
-      readiness_summary: ipaymu ? ipaymu.getReadinessChecklist() : null
+      readiness_summary: doku ? doku.getReadinessChecklist() : null,
+      primary_provider: {
+        name: 'doku',
+        integration: 'Direct API',
+        entity: 'PT SHINERVA PRAJNA TEJAS',
+        status: dokuStatus.status,
+        is_verified: dokuStatus.isVerified
+      },
+      secondary_provider: {
+        name: 'ipaymu',
+        role: 'SECONDARY_FALLBACK',
+        status: ipaymuStatus.status,
+        is_verified: ipaymuStatus.isVerified
+      }
     }
   });
 });
@@ -134,18 +153,29 @@ router.get('/venue-ops', requireAdmin, (req, res) => {
  * GET /api/admin/trust/payments
  */
 router.get('/payments', requireAdmin, (req, res) => {
+  const doku = paymentManager.getProvider('doku');
+  const dokuStatus = doku ? doku.getStatus() : { status: 'UNKNOWN' };
   const ipaymu = paymentManager.getProvider('ipaymu');
-  const status = ipaymu ? ipaymu.getStatus() : { status: 'UNKNOWN' };
+  const ipaymuStatus = ipaymu ? ipaymu.getStatus() : { status: 'UNKNOWN' };
 
   res.json({
-    provider: 'ipaymu',
-    status: status.status,
-    message: 'PAYMENT PROVIDER: PENDING VERIFICATION',
-    environment: status.environment,
-    is_verified: status.isVerified,
-    readiness: status.readiness,
+    provider: 'doku',
+    primary_provider: 'doku',
+    secondary_provider: 'ipaymu',
+    target_entity: 'PT SHINERVA PRAJNA TEJAS',
+    settlement_mechanism: 'Hold & Release Settlement',
+    release_authority: 'ARGUS Trust Engine',
+    status: dokuStatus.status,
+    message: dokuStatus.isVerified ? 'DOKU DIRECT API: VERIFIED (SANDBOX)' : 'PAYMENT PROVIDER: PENDING VERIFICATION',
+    environment: dokuStatus.environment,
+    is_verified: dokuStatus.isVerified,
+    readiness: dokuStatus.readiness,
+    doku: dokuStatus,
+    ipaymu: ipaymuStatus,
     webhook_status: {
-      registered_endpoint: process.env.IPAYMU_WEBHOOK_URL || 'https://tikum.app/api/mvp/payment/webhook',
+      doku_endpoint: '/api/v1/payments/webhook/doku',
+      ipaymu_endpoint: process.env.IPAYMU_WEBHOOK_URL || 'https://tikum.app/api/mvp/payment/webhook',
+      registered_endpoint: '/api/v1/payments/webhook/doku',
       signature_algorithm: 'HMAC-SHA256',
       duplicate_protection: 'ENABLED_IDEMPOTENT'
     },
@@ -154,7 +184,8 @@ router.get('/payments', requireAdmin, (req, res) => {
       NO_REAL_SETTLEMENT: true,
       NO_FAKE_PAYMENT_SUCCESS: true,
       NO_FAKE_ESCROW_BALANCE: true,
-      NO_FAKE_GMV: true
+      NO_FAKE_GMV: true,
+      PRODUCTION_ACTIVATION_BLOCKED: true
     }
   });
 });
