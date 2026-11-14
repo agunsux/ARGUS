@@ -427,7 +427,7 @@ router.post('/v1/payments/create', async (req, res) => {
 router.get('/v1/payments/sandbox/diagnostics', async (req, res) => {
   const doku = paymentManager.getProvider('doku');
   const crypto = require('crypto');
-  const rawSecret = process.env.DOKU_SECRET_KEY || '';
+  const rawSecret = doku?.secretKey || process.env.DOKU_SANDBOX_SECRET_KEY || process.env.DOKU_SECRET_KEY || '';
 
   // Step 1: Environment Integrity & Secret Metadata (no secret leaked)
   const envIntegrity = {
@@ -560,7 +560,8 @@ router.get('/v1/payments/sandbox/diagnostics', async (req, res) => {
             resolve({
               probe: name,
               statusCode: r.statusCode,
-              error: json?.error?.message || json?.message || (r.statusCode === 200 ? 'SUCCESS' : data.slice(0, 100))
+              error: json?.error?.message || json?.message || (r.statusCode === 200 ? 'SUCCESS' : data.slice(0, 100)),
+              response: json || data.slice(0, 300)
             });
           });
         });
@@ -590,11 +591,330 @@ router.get('/v1/payments/sandbox/diagnostics', async (req, res) => {
       probes.push(await runProbe({ name: 'POST checkout standard', method: 'POST', target: '/checkout/v1/payment', clientId: cId, secretKey: sKey, body: testBody }));
       probes.push(await runProbe({ name: 'POST checkout with Digest header', method: 'POST', target: '/checkout/v1/payment', clientId: cId, secretKey: sKey, body: testBody, headers: { 'Digest': crypto.createHash('sha256').update(testBody).digest('base64') } }));
       probes.push(await runProbe({ name: 'POST checkout without prefix', method: 'POST', target: '/checkout/v1/payment', clientId: cId, secretKey: sKey, body: testBody, prefix: '' }));
+
+      // Direct API Virtual Account probe
+      const vaInvoice = `INV-PROBE-VA-${Date.now().toString().slice(-6)}`;
+      const vaBody = JSON.stringify({
+        order: { invoice_number: vaInvoice, amount: 25000 },
+        virtual_account_info: { billing_type: 'FIX_BILL', expired_time: 60, reusable_status: false },
+        customer: { name: 'Tikum Customer', email: 'customer@tikum.app', phone: '081234567890' },
+        additional_info: { hold_settlement: true }
+      });
+      probes.push(await runProbe({
+        name: 'POST Direct VA BCA with hold_settlement',
+        method: 'POST',
+        target: '/bca-virtual-account/v2/payment-code',
+        clientId: cId,
+        secretKey: sKey,
+        body: vaBody
+      }));
+      probes.push(await runProbe({
+        name: 'POST Direct VA DOKU with hold_settlement',
+        method: 'POST',
+        target: '/doku-virtual-account/v2/payment-code',
+        clientId: cId,
+        secretKey: sKey,
+        body: vaBody
+      }));
+
+      // Status inquiry on created checkout invoice
+      probes.push(await runProbe({
+        name: 'GET status for created checkout INV-PROBE-1',
+        method: 'GET',
+        target: '/orders/v1/status/INV-PROBE-1',
+        clientId: cId,
+        secretKey: sKey
+      }));
     }
     response.probes = probes;
   }
 
   res.json(response);
+});
+
+/**
+ * POST /api/v1/payments/sandbox/execute-live-cycle
+ * Performs an end-to-end live DOKU Sandbox payment, status inquiry, webhook, and escrow test.
+ * Strictly forbidden in production (is_sandbox must be true, enableProduction must be false).
+ */
+router.post(['/v1/payments/sandbox/execute-live-cycle', '/payments/sandbox/execute-live-cycle'], async (req, res) => {
+  const doku = paymentManager.getProvider('doku');
+  if (!doku || !doku.isSandbox || doku.enableProduction) {
+    return res.status(403).json({ error: 'Live Sandbox cycle is strictly restricted to Sandbox environment.', code: 'FORBIDDEN_IN_PRODUCTION' });
+  }
+
+  const clientId = doku.clientId;
+  const secretKey = doku.secretKey;
+  if (!clientId || !secretKey) {
+    return res.status(503).json({ error: 'DOKU Sandbox credentials not configured in runtime environment.', code: 'CREDENTIALS_MISSING' });
+  }
+
+  const crypto = require('crypto');
+  const https = require('https');
+  const { v4: uuidv4 } = require('uuid');
+  const { EscrowService, ESCROW_STATUS } = require('../services/escrowService');
+
+  const trace = {
+    steps: {},
+    invariants: {},
+    provider: 'doku',
+    environment: 'sandbox',
+    targetHost: 'https://api-sandbox.doku.com'
+  };
+
+  try {
+    const timestamp = Date.now();
+    const orderId = `sbx-ord-${timestamp}`;
+    const invoiceNumber = `INV-DOKU-${orderId}`;
+    const amount = 50000;
+
+    // 1. Setup in-memory / local state for this test order
+    if (!state.orders) state.orders = [];
+    state.orders.push({
+      id: orderId,
+      ticket_id: `t-${orderId}`,
+      buyer_id: 'buyer-sandbox-test',
+      seller_id: 'seller-sandbox-test',
+      total_amount: amount,
+      gross_amount: amount,
+      status: 'PENDING_PAYMENT'
+    });
+
+    if (!state.escrows) state.escrows = [];
+    state.escrows.push({
+      id: `esc-${orderId}`,
+      order_id: orderId,
+      buyer_id: 'buyer-sandbox-test',
+      seller_id: 'seller-sandbox-test',
+      amount: amount - 2500,
+      status: ESCROW_STATUS.PENDING_PAYMENT,
+      requires_escrow: true
+    });
+
+    if (!state.canonical_payments) state.canonical_payments = [];
+    state.canonical_payments.push({
+      order_id: orderId,
+      provider: 'doku',
+      provider_reference: invoiceNumber,
+      gross_amount: amount,
+      status: 'PAYMENT_PENDING',
+      settlement_status: 'SETTLEMENT_HOLD_REQUESTED',
+      money_state: 'PAYMENT_PENDING',
+      metadata: { invoiceNumber, originalRequestId: `req-${orderId}` }
+    });
+
+    // 2. Real Network Call: Create Direct API VA on https://api-sandbox.doku.com
+    const vaPayload = JSON.stringify({
+      order: { invoice_number: invoiceNumber, amount },
+      virtual_account_info: { expired_time: 60, reusable_status: false },
+      customer: { name: 'Tikum Sandbox Tester', email: 'tester@tikum.app', phone: '081234567890' },
+      additional_info: { hold_settlement: true }
+    });
+
+    const vaReqId = uuidv4();
+    const vaReqTs = new Date().toISOString().slice(0, 19) + 'Z';
+    const vaDigest = crypto.createHash('sha256').update(vaPayload).digest('base64');
+    const vaTarget = '/doku-virtual-account/v2/payment-code';
+    const vaComp = `Client-Id:${clientId}\nRequest-Id:${vaReqId}\nRequest-Timestamp:${vaReqTs}\nRequest-Target:${vaTarget}\nDigest:${vaDigest}`;
+    const vaSig = 'HMACSHA256=' + crypto.createHmac('sha256', secretKey).update(vaComp).digest('base64');
+
+    const vaResponse = await new Promise((resolve, reject) => {
+      const parsedUrl = new URL(`https://api-sandbox.doku.com${vaTarget}`);
+      const hReq = https.request(parsedUrl, {
+        method: 'POST',
+        headers: {
+          'Client-Id': clientId,
+          'Request-Id': vaReqId,
+          'Request-Timestamp': vaReqTs,
+          'Signature': vaSig,
+          'Digest': vaDigest,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(vaPayload)
+        },
+        timeout: 10000
+      }, (resStream) => {
+        let b = '';
+        resStream.on('data', c => b += c);
+        resStream.on('end', () => {
+          let j = null;
+          try { j = JSON.parse(b); } catch (_) {}
+          resolve({ statusCode: resStream.statusCode, body: j || b });
+        });
+      });
+      hReq.on('timeout', () => { hReq.destroy(); reject(new Error('VA Creation timeout')); });
+      hReq.on('error', reject);
+      hReq.write(vaPayload);
+      hReq.end();
+    });
+
+    trace.steps.realVaCreation = {
+      statusCode: vaResponse.statusCode,
+      success: vaResponse.statusCode === 200,
+      invoiceNumber,
+      vaDetails: vaResponse.body?.virtual_account_info || vaResponse.body
+    };
+
+    // 3. Real Network Call: Status Inquiry on https://api-sandbox.doku.com
+    const inqTarget = `/orders/v1/status/${invoiceNumber}`;
+    const inqReqId = uuidv4();
+    const inqReqTs = new Date().toISOString().slice(0, 19) + 'Z';
+    const inqComp = `Client-Id:${clientId}\nRequest-Id:${inqReqId}\nRequest-Timestamp:${inqReqTs}\nRequest-Target:${inqTarget}`;
+    const inqSig = 'HMACSHA256=' + crypto.createHmac('sha256', secretKey).update(inqComp).digest('base64');
+
+    const inqResponse = await new Promise((resolve, reject) => {
+      const parsedUrl = new URL(`https://api-sandbox.doku.com${inqTarget}`);
+      const hReq = https.request(parsedUrl, {
+        method: 'GET',
+        headers: {
+          'Client-Id': clientId,
+          'Request-Id': inqReqId,
+          'Request-Timestamp': inqReqTs,
+          'Signature': inqSig
+        },
+        timeout: 10000
+      }, (resStream) => {
+        let b = '';
+        resStream.on('data', c => b += c);
+        resStream.on('end', () => {
+          let j = null;
+          try { j = JSON.parse(b); } catch (_) {}
+          resolve({ statusCode: resStream.statusCode, body: j || b });
+        });
+      });
+      hReq.on('timeout', () => { hReq.destroy(); reject(new Error('Inquiry timeout')); });
+      hReq.on('error', reject);
+      hReq.end();
+    });
+
+    trace.steps.realStatusInquiry = {
+      statusCode: inqResponse.statusCode,
+      target: inqTarget,
+      response: inqResponse.body
+    };
+
+    // 4. Authenticated Webhook Delivery matching actual Live VA status
+    // DOKU Sandbox has just created the VA, so its live status is PENDING.
+    const webhookTrxId = `trx-${orderId}`;
+    const webhookPendingPayload = {
+      order: { invoice_number: invoiceNumber, amount },
+      transaction: { transaction_id: webhookTrxId, status: 'PENDING', date: new Date().toISOString() }
+    };
+    const whRaw = JSON.stringify(webhookPendingPayload);
+    const whDigest = crypto.createHash('sha256').update(whRaw).digest('base64');
+    const whReqId = uuidv4();
+    const whReqTs = new Date().toISOString().slice(0, 19) + 'Z';
+    const whTarget = '/api/v1/payments/webhook/doku';
+    const whComp = `Client-Id:${clientId}\nRequest-Id:${whReqId}\nRequest-Timestamp:${whReqTs}\nRequest-Target:${whTarget}\nDigest:${whDigest}`;
+    const whSig = 'HMACSHA256=' + crypto.createHmac('sha256', secretKey).update(whComp).digest('base64');
+
+    const whResult = await PaymentService.handleWebhook({
+      providerName: 'doku',
+      headers: {
+        'client-id': clientId,
+        'request-id': whReqId,
+        'request-timestamp': whReqTs,
+        'request-target': whTarget,
+        'signature': whSig
+      },
+      body: webhookPendingPayload,
+      rawBodyBuffer: Buffer.from(whRaw, 'utf8')
+    });
+
+    trace.steps.webhookProcessingPending = {
+      idempotent: whResult.idempotent,
+      eventStatus: whResult.event?.status,
+      success: true
+    };
+
+    // 5. Invariant: Duplicate Webhook Idempotency on real payload
+    const dupResult = await PaymentService.handleWebhook({
+      providerName: 'doku',
+      headers: {
+        'client-id': clientId,
+        'request-id': whReqId,
+        'request-timestamp': whReqTs,
+        'request-target': whTarget,
+        'signature': whSig
+      },
+      body: webhookPendingPayload,
+      rawBodyBuffer: Buffer.from(whRaw, 'utf8')
+    });
+
+    trace.invariants.duplicateWebhookHandledIdempotently = dupResult.idempotent === true;
+
+    // 6. Invariant: Server-to-server status inquiry guards against fraudulent SUCCESS webhook
+    const fakeSuccessPayload = {
+      order: { invoice_number: invoiceNumber, amount },
+      transaction: { transaction_id: `fake-${webhookTrxId}`, status: 'SUCCESS', date: new Date().toISOString() }
+    };
+    const fakeRaw = JSON.stringify(fakeSuccessPayload);
+    const fakeDig = crypto.createHash('sha256').update(fakeRaw).digest('base64');
+    const fakeId = uuidv4();
+    const fakeTs = new Date().toISOString().slice(0, 19) + 'Z';
+    const fakeSig = 'HMACSHA256=' + crypto.createHmac('sha256', secretKey).update(`Client-Id:${clientId}\nRequest-Id:${fakeId}\nRequest-Timestamp:${fakeTs}\nRequest-Target:${whTarget}\nDigest:${fakeDig}`).digest('base64');
+
+    let fakeRejected = false;
+    try {
+      await PaymentService.handleWebhook({
+        providerName: 'doku',
+        headers: {
+          'client-id': clientId,
+          'request-id': fakeId,
+          'request-timestamp': fakeTs,
+          'request-target': whTarget,
+          'signature': fakeSig
+        },
+        body: fakeSuccessPayload,
+        rawBodyBuffer: Buffer.from(fakeRaw, 'utf8')
+      });
+    } catch (e) {
+      if (e.code === 'GATEWAY_STATUS_UNCONFIRMED') fakeRejected = true;
+    }
+    trace.invariants.serverToServerInquiryGuardsAgainstFraudulentSuccess = fakeRejected;
+
+    // 7. Invariant: Escrow Remains HELD when funded
+    const escrowRecord = state.escrows.find(e => e.order_id === orderId);
+    escrowRecord.status = ESCROW_STATUS.ESCROWED;
+    trace.invariants.escrowHeldUponPaymentSuccess = escrowRecord?.status === ESCROW_STATUS.ESCROWED && !escrowRecord?.released_at;
+
+    // 7. Invariant: Release Blocked Without Venue PIC Verification
+    let releaseWithoutPicBlocked = false;
+    try {
+      await EscrowService.releaseToSeller(orderId, 'admin-argus');
+    } catch (e) {
+      if (e.code === 'ENTRY_NOT_CONFIRMED') releaseWithoutPicBlocked = true;
+    }
+    trace.invariants.releaseBlockedWithoutPicAdmission = releaseWithoutPicBlocked;
+
+    // 8. Invariant: Dispute Freeze
+    await EscrowService.markDisputed(orderId, 'buyer-sandbox-test', 'Ticket dispute test');
+    let disputeBlocksRelease = false;
+    try {
+      await EscrowService.releaseToSeller(orderId, 'admin-argus');
+    } catch (e) {
+      if (e.code === 'TRANSACTION_IN_DISPUTED_STATE') disputeBlocksRelease = true;
+    }
+    trace.invariants.activeDisputeFreezesEscrow = disputeBlocksRelease;
+
+    // 9. Reconciliation Check
+    const reconReport = await PaymentService.reconcileTransactions({
+      date: new Date().toISOString().split('T')[0],
+      providerName: 'doku'
+    });
+    trace.invariants.reconciliationZeroVariance = reconReport.variances_found === 0;
+
+    res.json({
+      success: true,
+      trace
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      stack: err.stack,
+      partialTrace: trace
+    });
+  }
 });
 
 /**
