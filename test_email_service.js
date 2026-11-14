@@ -31,6 +31,8 @@ const { EscrowService, ESCROW_STATUS, ORDER_STATUS } = require('./src/services/e
 const { ListingService, LISTING_STATUS } = require('./src/services/listingService');
 const { DisputeService, DISPUTE_STATUS } = require('./src/services/disputeService');
 const { businessProfile } = require('./src/config/businessProfile');
+const { SessionStore } = require('./src/services/sessionStore');
+const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
 
 let server;
 let baseUrl;
@@ -40,7 +42,10 @@ function request(path, options = {}) {
     const url = new URL(path, baseUrl);
     const reqOpts = {
       method: options.method || 'GET',
-      headers: options.headers || {}
+      headers: {
+        Origin: baseUrl,
+        ...(options.headers || {})
+      }
     };
 
     const req = http.request(url, reqOpts, (res) => {
@@ -70,6 +75,9 @@ async function runTests() {
   console.log('====================================================');
   console.log('  TIKUM — 13-POINT TRANSACTIONAL EMAIL TEST SUITE');
   console.log('====================================================\n');
+
+  const prevMarketplaceMode = process.env.MARKETPLACE_MODE;
+  process.env.MARKETPLACE_MODE = 'LIVE';
 
   let passed = 0;
   let total = 0;
@@ -392,8 +400,12 @@ async function runTests() {
       assert.ok(!healthRes.body.includes('re_secret_test_token_123456789'));
 
       // 3. Check /admin/email-status
+      const adminUser = { id: 'admin-1', email: 'admin@tikum.app', role: 'ADMIN', name: 'Admin' };
+      const adminSession = SessionStore.createSession({ userId: 'admin-1', role: 'admin' });
+      adminSecurityStore.registerTestSession(adminSession.session_token, adminUser);
+
       const emailStatusRes = await request('/api/mvp/admin/email-status', {
-        headers: { 'x-user-id': 'admin-1' }
+        headers: { 'Authorization': `Bearer ${adminSession.session_token}` }
       });
       assert.strictEqual(emailStatusRes.statusCode, 200);
       assert.strictEqual(emailStatusRes.json.email.status, 'CONFIGURED');
@@ -429,6 +441,11 @@ async function runTests() {
     // 13. Admin Test Endpoint Security & Authorization
     // -------------------------------------------------------------
     await checkAsync('13. POST /api/mvp/admin/email-test enforces authentication, admin role, and rate limits', async () => {
+      const adminUser = { id: 'admin-1', email: 'admin@tikum.app', role: 'ADMIN', name: 'Admin' };
+      const adminSession = SessionStore.createSession({ userId: 'admin-1', role: 'admin' });
+      adminSecurityStore.registerTestSession(adminSession.session_token, adminUser);
+      const buyerSession = SessionStore.createSession({ userId: 'buyer-1', role: 'buyer' });
+
       // Case A: Unauthenticated request
       const unauth = await request('/api/mvp/admin/email-test', {
         method: 'POST',
@@ -440,7 +457,7 @@ async function runTests() {
       // Case B: Non-admin buyer request
       const forbidden = await request('/api/mvp/admin/email-test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': 'buyer-1' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${buyerSession.session_token}` },
         body: { officerId: 'buyer-1', recipient: 'support@tikum.app' }
       });
       assert.strictEqual(forbidden.statusCode, 403);
@@ -448,7 +465,7 @@ async function runTests() {
       // Case C: Arbitrary unverified recipient rejected
       const arbitrary = await request('/api/mvp/admin/email-test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': 'admin-1' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminSession.session_token}` },
         body: { officerId: 'admin-1', recipient: 'attacker@random-domain.com' }
       });
       assert.strictEqual(arbitrary.statusCode, 400);
@@ -457,7 +474,7 @@ async function runTests() {
       // Case D: Valid verified recipient succeeds
       const validTest = await request('/api/mvp/admin/email-test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': 'admin-1' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminSession.session_token}` },
         body: { officerId: 'admin-1', recipient: 'support@tikum.app' }
       });
       assert.strictEqual(validTest.statusCode, 200);
@@ -476,6 +493,8 @@ async function runTests() {
     console.log(`====================================================\n`);
 
   } finally {
+    if (prevMarketplaceMode !== undefined) process.env.MARKETPLACE_MODE = prevMarketplaceMode;
+    else delete process.env.MARKETPLACE_MODE;
     if (server) {
       server.close();
     }

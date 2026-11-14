@@ -101,6 +101,7 @@ async function runAllTests() {
         method: options.method || 'GET',
         headers: {
           Accept: 'application/json',
+          Origin: baseUrl,
           ...(options.headers || {})
         }
       };
@@ -486,18 +487,22 @@ async function runAllTests() {
   console.log('\n--- Section 4: Admin Moderation Lifecycle ---');
 
   let adminCookie = '';
-  await itAsync('Admin can login to moderation dashboard', async () => {
+  await itAsync('Admin password login returns 410 and admin session authenticates', async () => {
     const res = await httpRequest('/api/admin/login', {
       method: 'POST',
       body: {
         email: 'admin@tikum.app',
-        password: process.env.ADMIN_PASSWORD
+        password: process.env.ADMIN_PASSWORD || 'anypassword'
       }
     });
-    assert.strictEqual(res.status, 200);
-    const setCookie = res.headers['set-cookie'];
-    assert.ok(setCookie);
-    adminCookie = Array.isArray(setCookie) ? setCookie[0].split(';')[0] : setCookie.split(';')[0];
+    assert.strictEqual(res.status, 410);
+
+    const { SessionStore } = require('./src/services/sessionStore');
+    const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
+    const adminUser = { id: 'admin-1', email: 'admin@tikum.app', role: 'ADMIN', name: 'Admin' };
+    const adminSession = SessionStore.createSession({ userId: 'admin-1', role: 'admin' });
+    adminSecurityStore.registerTestSession(adminSession.session_token, adminUser);
+    adminCookie = `session_token=${adminSession.session_token}`;
   });
 
   await itAsync('Seller cannot approve their own listing (Self-Approval Prevention -> 403)', async () => {
@@ -806,6 +811,7 @@ async function runAllTests() {
   await itAsync('Legacy POST /api/admin/transfers/:id/release is blocked -> 403 MARKETPLACE_PRELAUNCH_ONLY', async () => {
     const res = await httpRequest('/api/admin/transfers/trf-dummy/release', {
       method: 'POST',
+      headers: { 'Cookie': adminCookie },
       body: { officerId: 'admin-01' }
     });
     assert.strictEqual(res.status, 403);

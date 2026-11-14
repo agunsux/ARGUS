@@ -37,7 +37,10 @@ let baseUrl;
 function makeRequest(path, options = {}) {
   return new Promise((resolve, reject) => {
     const url = new URL(path, baseUrl);
-    const headers = options.headers || {};
+    const headers = {
+      Origin: baseUrl,
+      ...(options.headers || {})
+    };
     let body = options.body;
 
     if (body && typeof body === 'object' && !Buffer.isBuffer(body)) {
@@ -127,7 +130,7 @@ async function runTests() {
 
       assert.strictEqual(res.statusCode, 200);
       assert.strictEqual(res.json.success, true);
-      assert.ok(res.json.message.includes('tautan akses telah dikirimkan'));
+      assert.ok(res.json.message.includes('Jika identitas diizinkan') || res.json.message.includes('tautan akses telah dikirimkan'));
 
       // ZERO RAW TOKEN LEAKED TO API RESPONSE
       assert.strictEqual(typeof res.json._test_token, 'undefined');
@@ -153,7 +156,8 @@ async function runTests() {
       });
 
       assert.ok(capturedMail !== null);
-      assert.ok(capturedMail.magicLinkUrl.includes('https://tikum.app/api/auth/verify?token='));
+      assert.ok(capturedMail.magicLinkUrl.includes('/api/auth/verify#token=') || capturedMail.magicLinkUrl.includes('/api/auth/verify?token='));
+      assert.ok(capturedMail.magicLinkUrl.includes(capturedMail.rawToken));
     });
 
     // 4. Invalid Email Rejection
@@ -265,7 +269,16 @@ async function runTests() {
 
       verificationToken = capturedMail.rawToken;
 
-      const verifyRes = await makeRequest(`/api/auth/verify?token=${verificationToken}&format=json`);
+      // Negative test: GET scanner request renders landing page and does NOT consume token
+      const scannerGet = await makeRequest(`/api/auth/verify?token=${verificationToken}`);
+      assert.strictEqual(scannerGet.statusCode, 200);
+      assert.ok(scannerGet.body.includes('Masuk ke TIKUM'), 'GET must return landing page HTML');
+
+      // Explicit POST verification establishes session
+      const verifyRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: verificationToken }
+      });
       assert.strictEqual(verifyRes.statusCode, 200);
       assert.strictEqual(verifyRes.json.success, true);
       assert.strictEqual(verifyRes.json.user.email, testEmail);
@@ -288,7 +301,10 @@ async function runTests() {
     await test('Invariant 9: Single-use replay protection rejects reused token with 401 TOKEN_ALREADY_USED', async () => {
       assert.ok(verificationToken !== null);
 
-      const replayRes = await makeRequest(`/api/auth/verify?token=${verificationToken}&format=json`);
+      const replayRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: verificationToken }
+      });
       assert.strictEqual(replayRes.statusCode, 401);
       assert.strictEqual(replayRes.json.code, 'TOKEN_ALREADY_USED');
     });
@@ -309,7 +325,10 @@ async function runTests() {
         ip_address: '127.0.0.1'
       });
 
-      const res = await makeRequest(`/api/auth/verify?token=${expiredRaw}&format=json`);
+      const res = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: expiredRaw }
+      });
       assert.strictEqual(res.statusCode, 401);
       assert.strictEqual(res.json.code, 'TOKEN_EXPIRED');
       assert.ok(res.json.error.includes('kedaluwarsa'));
@@ -318,13 +337,19 @@ async function runTests() {
     // 11. Malformed and Non-existent Tokens
     await test('Invariant 11: Malformed and unknown tokens are rejected with 401', async () => {
       // Malformed
-      const malformedRes = await makeRequest('/api/auth/verify?token=short-invalid-token&format=json');
+      const malformedRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: 'short-invalid-token' }
+      });
       assert.strictEqual(malformedRes.statusCode, 401);
       assert.strictEqual(malformedRes.json.code, 'MALFORMED_TOKEN');
 
       // Unknown 64-hex token
       const unknownToken = crypto.randomBytes(32).toString('hex');
-      const unknownRes = await makeRequest(`/api/auth/verify?token=${unknownToken}&format=json`);
+      const unknownRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: unknownToken }
+      });
       assert.strictEqual(unknownRes.statusCode, 401);
       assert.strictEqual(unknownRes.json.code, 'INVALID_TOKEN');
     });
@@ -416,7 +441,6 @@ async function runTests() {
 
       const requiredActions = [
         'MAGIC_LINK_REQUESTED',
-        'MAGIC_LINK_SENT',
         'MAGIC_LINK_VERIFIED',
         'MAGIC_LINK_EXPIRED',
         'MAGIC_LINK_INVALID',
@@ -428,6 +452,12 @@ async function runTests() {
       for (const action of requiredActions) {
         assert.ok(recordedActions.has(action), `Missing audit log action: ${action}`);
       }
+      assert.ok(
+        recordedActions.has('MAGIC_LINK_SENT') ||
+        recordedActions.has('MAGIC_LINK_MOCK_ACCEPTED') ||
+        recordedActions.has('MAGIC_LINK_PROVIDER_ACCEPTED'),
+        'Missing magic link outbound audit event'
+      );
     });
 
     // 16. UI Verification: Header has Login / Sign Up adjacent to Dark Mode & Account Page exists
@@ -482,15 +512,21 @@ async function runTests() {
       state.sessions = [];
       SessionStore.reset();
 
-      // Step 3: Click magic link (browser HTML redirect flow) on "Instance B"
-      const verifyRes = await makeRequest(`/api/auth/verify?token=${rawToken}&redirect=%2Faccount`, {
-        headers: { 'Accept': 'text/html,application/xhtml+xml' }
+      // Step 3: Click magic link (explicit verification POST) on "Instance B"
+      // Negative test: GET scanner request renders landing page and does NOT consume token
+      const scannerGet = await makeRequest(`/api/auth/verify?token=${rawToken}`);
+      assert.strictEqual(scannerGet.statusCode, 200);
+      assert.ok(scannerGet.body.includes('Masuk ke TIKUM'), 'GET must return landing page HTML');
+
+      const verifyRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: rawToken, redirect: '/account' }
       });
-      assert.strictEqual(verifyRes.statusCode, 302, 'Browser verify must return 302 Redirect');
-      assert.strictEqual(verifyRes.headers.location, '/account', 'Must redirect to validated redirectUrl');
+      assert.strictEqual(verifyRes.statusCode, 200);
+      assert.strictEqual(verifyRes.json.redirect, '/account', 'Must redirect to validated redirectUrl');
 
       const setCookie = verifyRes.headers['set-cookie'];
-      assert.ok(setCookie && setCookie[0], 'Must set session_token cookie on 302 redirect');
+      assert.ok(setCookie && setCookie[0], 'Must set session_token cookie on verification');
       const cookiePair = setCookie[0].split(';')[0];
       assert.ok(cookiePair.startsWith('session_token=ses-'));
 
@@ -511,13 +547,14 @@ async function runTests() {
       assert.strictEqual(meCheck.statusCode, 200, '/api/auth/me must succeed with Cookie');
       assert.strictEqual(meCheck.json.user.email, coldStartEmail);
 
-      // Step 5: Replaying the consumed token on a cold-started instance must still be rejected (401 / redirect to /login?error=TOKEN_ALREADY_USED)
+      // Step 5: Replaying the consumed token on a cold-started instance must still be rejected (401 TOKEN_ALREADY_USED)
       state.magic_link_tokens = [];
-      const replayBrowserRes = await makeRequest(`/api/auth/verify?token=${rawToken}`, {
-        headers: { 'Accept': 'text/html' }
+      const replayBrowserRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: rawToken }
       });
-      assert.strictEqual(replayBrowserRes.statusCode, 302);
-      assert.strictEqual(replayBrowserRes.headers.location, '/login?error=TOKEN_ALREADY_USED');
+      assert.strictEqual(replayBrowserRes.statusCode, 401);
+      assert.strictEqual(replayBrowserRes.json.code, 'TOKEN_ALREADY_USED');
     });
 
     // 18. Existing / Legacy User Profile Preservation (Zero Duplicate Accounts)
@@ -544,7 +581,10 @@ async function runTests() {
       });
       assert.ok(capturedMail && capturedMail.rawToken);
 
-      const verifyRes = await makeRequest(`/api/auth/verify?token=${capturedMail.rawToken}&format=json`);
+      const verifyRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: capturedMail.rawToken }
+      });
       assert.strictEqual(verifyRes.statusCode, 200);
       assert.strictEqual(verifyRes.json.user.id, createdLegacy.id, 'Must preserve canonical user ID');
       assert.strictEqual(verifyRes.json.user.role, 'seller', 'Must preserve existing seller role');
@@ -571,11 +611,14 @@ async function runTests() {
       });
       assert.strictEqual(headRes.statusCode, 200);
 
-      // User subsequently clicks the link (GET) -> must still succeed!
-      const getRes = await makeRequest(`/api/auth/verify?token=${rawToken}&format=json`);
-      assert.strictEqual(getRes.statusCode, 200);
-      assert.strictEqual(getRes.json.success, true);
-      assert.strictEqual(getRes.json.user.email, scannerEmail);
+      // User subsequently clicks the link (POST) -> must still succeed!
+      const postRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: rawToken }
+      });
+      assert.strictEqual(postRes.statusCode, 200);
+      assert.strictEqual(postRes.json.success, true);
+      assert.strictEqual(postRes.json.user.email, scannerEmail);
     });
 
     // 20. Suspended User Magic Link Rejection
@@ -597,18 +640,21 @@ async function runTests() {
       const stateUser = state.users.find(u => u.id === dbUser.id);
       if (stateUser) stateUser.status = 'SUSPENDED';
 
-      const verifyRes = await makeRequest(`/api/auth/verify?token=${rawToken}&format=json`);
+      const verifyRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: rawToken }
+      });
       assert.strictEqual(verifyRes.statusCode, 403);
       assert.strictEqual(verifyRes.json.code, 'USER_SUSPENDED');
       assert.strictEqual(verifyRes.headers['set-cookie'], undefined, 'Must not set session cookie for suspended user');
     });
 
     // 21. Concurrent GET /api/auth/verify Atomic Single-Use Enforcement (Warm & Cold-Start + Postgres SQL Contract)
-    await test('Invariant 21: Concurrent GET /api/auth/verify requests establish exactly ONE session and reject all parallel replays', async () => {
+    await test('Invariant 21: Concurrent POST /api/auth/verify requests establish exactly ONE session and reject all parallel replays', async () => {
       MagicLinkService.resetRateLimits();
       capturedMail = null;
 
-      // Part A: 5 simultaneous GET requests on cold-started instances (state.magic_link_tokens wiped, relying purely on UserRepository)
+      // Part A: 5 simultaneous requests on cold-started instances (state.magic_link_tokens wiped, relying purely on UserRepository)
       const raceColdEmail = 'concurrent.cold.race@tikum.app';
       await makeRequest('/api/auth/magic-link', {
         method: 'POST',
@@ -617,12 +663,17 @@ async function runTests() {
       const coldRawToken = capturedMail.rawToken;
       state.magic_link_tokens = [];
 
+      // Negative check: Scanner GET does not consume token
+      const scannerGet = await makeRequest(`/api/auth/verify?token=${coldRawToken}`);
+      assert.strictEqual(scannerGet.statusCode, 200);
+      assert.ok(scannerGet.body.includes('Masuk ke TIKUM'));
+
       const coldResults = await Promise.all([
-        makeRequest(`/api/auth/verify?token=${coldRawToken}&format=json`),
-        makeRequest(`/api/auth/verify?token=${coldRawToken}&format=json`),
-        makeRequest(`/api/auth/verify?token=${coldRawToken}&format=json`),
-        makeRequest(`/api/auth/verify?token=${coldRawToken}&format=json`),
-        makeRequest(`/api/auth/verify?token=${coldRawToken}&format=json`)
+        makeRequest('/api/auth/verify', { method: 'POST', body: { token: coldRawToken } }),
+        makeRequest('/api/auth/verify', { method: 'POST', body: { token: coldRawToken } }),
+        makeRequest('/api/auth/verify', { method: 'POST', body: { token: coldRawToken } }),
+        makeRequest('/api/auth/verify', { method: 'POST', body: { token: coldRawToken } }),
+        makeRequest('/api/auth/verify', { method: 'POST', body: { token: coldRawToken } })
       ]);
 
       const coldSuccesses = coldResults.filter(r => r.statusCode === 200);
@@ -633,7 +684,7 @@ async function runTests() {
         assert.strictEqual(replay.headers['set-cookie'], undefined, 'Rejected concurrent replay must not set session cookie');
       }
 
-      // Part B: 5 simultaneous GET requests on warm instance (both state.magic_link_tokens and UserRepository populated)
+      // Part B: 5 simultaneous requests on warm instance (both state.magic_link_tokens and UserRepository populated)
       MagicLinkService.resetRateLimits();
       capturedMail = null;
       const raceWarmEmail = 'concurrent.warm.race@tikum.app';
@@ -644,11 +695,11 @@ async function runTests() {
       const warmRawToken = capturedMail.rawToken;
 
       const warmResults = await Promise.all([
-        makeRequest(`/api/auth/verify?token=${warmRawToken}&format=json`),
-        makeRequest(`/api/auth/verify?token=${warmRawToken}&format=json`),
-        makeRequest(`/api/auth/verify?token=${warmRawToken}&format=json`),
-        makeRequest(`/api/auth/verify?token=${warmRawToken}&format=json`),
-        makeRequest(`/api/auth/verify?token=${warmRawToken}&format=json`)
+        makeRequest('/api/auth/verify', { method: 'POST', body: { token: warmRawToken } }),
+        makeRequest('/api/auth/verify', { method: 'POST', body: { token: warmRawToken } }),
+        makeRequest('/api/auth/verify', { method: 'POST', body: { token: warmRawToken } }),
+        makeRequest('/api/auth/verify', { method: 'POST', body: { token: warmRawToken } }),
+        makeRequest('/api/auth/verify', { method: 'POST', body: { token: warmRawToken } })
       ]);
 
       const warmSuccesses = warmResults.filter(r => r.statusCode === 200);

@@ -469,7 +469,8 @@ async function runFeeTestSuite() {
       assert.strictEqual(preview.data.fee_policy_version, 'TIKUM_FEE_POLICY_V1');
       assert.strictEqual(preview.data.buyer_fee, 60000);
       assert.strictEqual(preview.data.seller_fee, 60000);
-      assert.strictEqual(preview.data.seller_payout, 940000);
+      assert.strictEqual(preview.data.pricing_breakdown.seller_payout, 940000, 'Gross seller payout before tax withholding');
+      assert.strictEqual(preview.data.seller_payout, 940000 - (preview.data.seller_tax_withholding || 0), 'Net seller payout after PMK 37/2025 PPh 22 withholding');
       assert.strictEqual(preview.data.buyer_subtotal, 1060000);
     });
 

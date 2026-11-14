@@ -136,7 +136,7 @@ router.get(['/v1/payments/midtrans/client-key', '/payments/midtrans/client-key']
   }
 
   // 4. Standard non-Preview environments (Development / Test)
-  if (prelaunch && process.env.NODE_ENV !== 'test') {
+  if (prelaunch) {
     return res.status(403).json({
       ...PRELAUNCH_ERROR_RESPONSE,
       isAvailable: false

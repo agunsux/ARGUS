@@ -7,6 +7,7 @@ process.env.NODE_ENV = 'test';
 process.env.ADMIN_PASSWORD = 'TestAdminSecretPassword123!';
 
 const assert = require('assert');
+const crypto = require('crypto');
 const http = require('http');
 const app = require('./src/server');
 const { state, resetDatabase, hashPassword, verifyPassword } = require('./src/database');
@@ -22,7 +23,10 @@ function request(path, options = {}) {
     const url = new URL(path, baseUrl);
     const reqOpts = {
       method: options.method || 'GET',
-      headers: options.headers || {}
+      headers: {
+        Origin: baseUrl,
+        ...(options.headers || {})
+      }
     };
 
     const req = http.request(url, reqOpts, (res) => {
@@ -80,39 +84,42 @@ async function runTests() {
     })();
   }
 
-  // 1. Valid admin credentials authenticate successfully
+  // 1. Password login is permanently disabled for admin (410 PASSWORD_LOGIN_DISABLED)
   let adminSessionToken = null;
-  await test('1. Valid admin credentials authenticate successfully', async () => {
+  await test('1. Admin password login is rejected with 410 PASSWORD_LOGIN_DISABLED and admin session authenticates', async () => {
     const res = await request('/api/admin/login', {
       method: 'POST',
       body: { email: 'admin@tikum.app', password: 'TestAdminSecretPassword123!' }
     });
-    assert.strictEqual(res.status, 200, `Expected 200, got ${res.status}`);
-    assert.strictEqual(res.json.success, true);
-    assert.ok(res.json.session_token, 'Session token must be present');
-    assert.strictEqual(res.json.user.email, 'admin@tikum.app');
-    assert.ok(res.headers['set-cookie'], 'Set-Cookie header must be present');
-    adminSessionToken = res.json.session_token;
+    assert.strictEqual(res.status, 410, `Expected 410, got ${res.status}`);
+    assert.strictEqual(res.json.code, 'PASSWORD_LOGIN_DISABLED');
+
+    // Register valid admin test session
+    const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
+    const adminUser = { id: 'admin-1', email: 'admin@tikum.app', role: 'ADMIN', name: 'Admin' };
+    const adminSession = SessionStore.createSession({ userId: 'admin-1', role: 'admin' });
+    adminSessionToken = adminSession.session_token;
+    adminSecurityStore.registerTestSession(adminSessionToken, adminUser);
   });
 
-  // 2. Invalid password rejected (401)
-  await test('2. Invalid password is rejected (401)', async () => {
+  // 2. Invalid password rejected with 410 PASSWORD_LOGIN_DISABLED
+  await test('2. Invalid password is rejected (410)', async () => {
     const res = await request('/api/admin/login', {
       method: 'POST',
       body: { email: 'admin@tikum.app', password: 'wrongpassword' }
     });
-    assert.strictEqual(res.status, 401);
-    assert.strictEqual(res.json.code, 'INVALID_CREDENTIALS');
+    assert.strictEqual(res.status, 410);
+    assert.strictEqual(res.json.code, 'PASSWORD_LOGIN_DISABLED');
   });
 
-  // 3. Unknown email rejected (401)
-  await test('3. Unknown email is rejected (401)', async () => {
+  // 3. Unknown email rejected with 410 PASSWORD_LOGIN_DISABLED
+  await test('3. Unknown email is rejected (410)', async () => {
     const res = await request('/api/admin/login', {
       method: 'POST',
       body: { email: 'unknown@tikum.app', password: 'TestAdminSecretPassword123!' }
     });
-    assert.strictEqual(res.status, 401);
-    assert.strictEqual(res.json.code, 'INVALID_CREDENTIALS');
+    assert.strictEqual(res.status, 410);
+    assert.strictEqual(res.json.code, 'PASSWORD_LOGIN_DISABLED');
   });
 
   // 4. Anonymous access to protected admin APIs rejected (401)

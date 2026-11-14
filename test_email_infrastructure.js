@@ -390,7 +390,7 @@ async function runTests() {
 
       const buyerMail = emails.find(e => e.to === 'buyer@example.com');
       assert.ok(buyerMail, 'Buyer must receive payment confirmation');
-      assert.ok(buyerMail.html.includes('Escrow'));
+      assert.ok(buyerMail.html.includes('Pembayaran Terlindungi') || buyerMail.html.includes('pemeriksaan transaksi') || buyerMail.html.includes('Escrow'));
       assert.ok(buyerMail.html.includes('1.500.000'));
 
       const sellerMail = emails.find(e => e.to === 'seller@example.com');

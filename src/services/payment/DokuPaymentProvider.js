@@ -59,7 +59,13 @@ class DokuPaymentProvider extends PaymentProvider {
     this.deploymentEnvironment = process.env.VERCEL_ENV || (process.env.VERCEL ? 'unknown' : 'local');
     this.env = (config.env || process.env.DOKU_ENV || config.mode || 'sandbox').toLowerCase().trim();
     this.mode = this.env;
-    this.isSandbox = this.env === 'sandbox' && this.apiBaseUrl === 'https://api-sandbox.doku.com';
+    let isLoopbackBase = false;
+    try {
+      const parsedBase = new URL(this.apiBaseUrl);
+      isLoopbackBase = (this.nodeMode === 'test' || process.env.NODE_ENV === 'test') &&
+        (parsedBase.hostname === '127.0.0.1' || parsedBase.hostname === 'localhost');
+    } catch (_) {}
+    this.isSandbox = this.env === 'sandbox' && (this.apiBaseUrl === 'https://api-sandbox.doku.com' || isLoopbackBase);
     this.entity = 'PT SHINERVA PRAJNA TEJAS';
     this.targetBusinessEntity = this.entity;
     this.supportsMultibrand = false;
@@ -493,7 +499,16 @@ class DokuPaymentProvider extends PaymentProvider {
    */
   _httpRequest({ url, method = 'GET', headers = {}, body = null, timeout = 10000 }) {
     // No flag can unlock production transport in this sandbox-only implementation.
-    if (!this.isSandbox || new URL(url).origin !== 'https://api-sandbox.doku.com') {
+    let isAllowedLoopback = false;
+    let isAllowedSandbox = false;
+    try {
+      const parsedReq = new URL(url);
+      isAllowedLoopback = (this.nodeMode === 'test' || process.env.NODE_ENV === 'test') &&
+        (parsedReq.hostname === '127.0.0.1' || parsedReq.hostname === 'localhost');
+      isAllowedSandbox = parsedReq.origin === 'https://api-sandbox.doku.com';
+    } catch (_) {}
+
+    if (!this.isSandbox || (!isAllowedSandbox && !isAllowedLoopback)) {
       return Promise.reject(new Error('PRODUCTION_HOST_REJECTED: sandbox transport required'));
     }
     return new Promise((resolve, reject) => {

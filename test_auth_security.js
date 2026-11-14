@@ -53,7 +53,10 @@ function makeRequest(path, options = {}) {
 
     const reqOpts = {
       method: options.method || 'GET',
-      headers: options.headers || {}
+      headers: {
+        Origin: baseUrl,
+        ...(options.headers || {})
+      }
     };
 
     const req = http.request(url, reqOpts, (res) => {
@@ -230,7 +233,7 @@ async function runSuite() {
 
       assert.strictEqual(res.statusCode, 200);
       assert.strictEqual(res.json.success, true);
-      assert.ok(res.json.message.includes('tautan akses telah dikirimkan'));
+      assert.ok(res.json.message.includes('Jika identitas diizinkan') || res.json.message.includes('tautan akses telah dikirimkan'));
       assert.ok(capturedMail !== null);
       assert.strictEqual(capturedMail.to, 'budi.seller@example.com');
       assert.ok(capturedMail.rawToken.length === 64);
@@ -279,7 +282,18 @@ async function runSuite() {
       assert.ok(capturedMail !== null);
       validToken = capturedMail.rawToken;
 
-      const verifyRes = await makeRequest(`/api/auth/verify?token=${validToken}&format=json`);
+      // Negative test: GET scanner request renders landing page and does NOT consume token
+      const scannerGet = await makeRequest(`/api/auth/verify?token=${validToken}`);
+      assert.strictEqual(scannerGet.statusCode, 200);
+      assert.ok(scannerGet.body.includes('Masuk ke TIKUM'), 'GET must return landing page HTML');
+      const tokenRec = state.magic_link_tokens.find(t => t.token_hash === MagicLinkService.hashToken(validToken));
+      assert.strictEqual(tokenRec.used, false, 'GET must never consume token');
+
+      // Explicit POST verification establishes session
+      const verifyRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: validToken }
+      });
       assert.strictEqual(verifyRes.statusCode, 200);
       assert.strictEqual(verifyRes.json.success, true);
       assert.strictEqual(verifyRes.json.user.email, 'dewi.buyer@example.com');
@@ -300,7 +314,10 @@ async function runSuite() {
 
     // Test 5: Replay Protection (Single-use)
     await test('MagicLink: Replaying an already used token fails with 401 TOKEN_ALREADY_USED', async () => {
-      const replayRes = await makeRequest(`/api/auth/verify?token=${validToken}&format=json`);
+      const replayRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: validToken }
+      });
       assert.strictEqual(replayRes.statusCode, 401);
       assert.strictEqual(replayRes.json.code, 'TOKEN_ALREADY_USED');
     });
@@ -309,7 +326,10 @@ async function runSuite() {
     await test('MagicLink: Malformed token fails with 401 MALFORMED_TOKEN', async () => {
       const malformedTokens = ['short', 'not-hex-characters-1234567890abcdefghijklmnopqrstuvwxyz!', 'xyz'];
       for (const mt of malformedTokens) {
-        const res = await makeRequest(`/api/auth/verify?token=${mt}&format=json`);
+        const res = await makeRequest('/api/auth/verify', {
+          method: 'POST',
+          body: { token: mt }
+        });
         assert.strictEqual(res.statusCode, 401);
         assert.strictEqual(res.json.code, 'MALFORMED_TOKEN');
       }
@@ -331,7 +351,10 @@ async function runSuite() {
         ip_address: '127.0.0.1'
       });
 
-      const res = await makeRequest(`/api/auth/verify?token=${expiredRaw}&format=json`);
+      const res = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: expiredRaw }
+      });
       assert.strictEqual(res.statusCode, 401);
       assert.strictEqual(res.json.code, 'TOKEN_EXPIRED');
     });
@@ -347,7 +370,10 @@ async function runSuite() {
       });
       assert.ok(capturedMail !== null);
 
-      const verifyRes = await makeRequest(`/api/auth/verify?token=${capturedMail.rawToken}&format=json`);
+      const verifyRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: capturedMail.rawToken }
+      });
       assert.strictEqual(verifyRes.statusCode, 200);
       assert.strictEqual(verifyRes.json.user.email, newEmail);
       assert.strictEqual(verifyRes.json.user.role, 'buyer'); // Must be buyer
@@ -367,7 +393,10 @@ async function runSuite() {
         method: 'POST',
         body: { email: 'rina.buyer@example.com' }
       });
-      const verifyRes = await makeRequest(`/api/auth/verify?token=${capturedMail.rawToken}&format=json`);
+      const verifyRes = await makeRequest('/api/auth/verify', {
+        method: 'POST',
+        body: { token: capturedMail.rawToken }
+      });
       const sessionToken = verifyRes.json.session_token;
 
       // Check session

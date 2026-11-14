@@ -488,33 +488,40 @@ async function runAcceptanceTests() {
     });
 
     await test('24. Client-supplied identity spoofing blocked in marketplace routes', async () => {
-      // Authenticated as buyer-1, attempts to create listing for seller-1
-      const spoofListing = await request('/api/mvp/seller/listing', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${buyerToken}` },
-        body: {
-          sellerId: 'seller-1',
-          eventId: 'event-coldplay',
-          seatInfo: 'CAT 1',
-          faceValue: 500000,
-          price: 600000,
-          rawBarcode: 'BC-SPOOF-123'
-        }
-      });
-      assert.strictEqual(spoofListing.status, 403);
-      assert.strictEqual(spoofListing.data.code, 'FORBIDDEN');
+      const prevMode = process.env.MARKETPLACE_MODE;
+      process.env.MARKETPLACE_MODE = 'LIVE';
+      try {
+        // Authenticated as buyer-1, attempts to create listing for seller-1
+        const spoofListing = await request('/api/mvp/seller/listing', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${buyerToken}` },
+          body: {
+            sellerId: 'seller-1',
+            eventId: 'event-coldplay',
+            seatInfo: 'CAT 1',
+            faceValue: 500000,
+            price: 600000,
+            rawBarcode: 'BC-SPOOF-123'
+          }
+        });
+        assert.strictEqual(spoofListing.status, 403);
+        assert.strictEqual(spoofListing.data.code, 'FORBIDDEN');
 
-      // Authenticated as seller-1, attempts to place order for buyer-1
-      const spoofOrder = await request('/api/mvp/buyer/order', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${sellerToken}` },
-        body: {
-          buyerId: 'buyer-1',
-          listingId: 'list-123'
-        }
-      });
-      assert.strictEqual(spoofOrder.status, 403);
-      assert.strictEqual(spoofOrder.data.code, 'FORBIDDEN');
+        // Authenticated as seller-1, attempts to place order for buyer-1
+        const spoofOrder = await request('/api/mvp/buyer/order', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${sellerToken}` },
+          body: {
+            buyerId: 'buyer-1',
+            listingId: 'list-123'
+          }
+        });
+        assert.strictEqual(spoofOrder.status, 403);
+        assert.strictEqual(spoofOrder.data.code, 'FORBIDDEN');
+      } finally {
+        if (prevMode !== undefined) process.env.MARKETPLACE_MODE = prevMode;
+        else delete process.env.MARKETPLACE_MODE;
+      }
     });
 
     // -------------------------------------------------------------
