@@ -55,9 +55,11 @@ class DokuPaymentProvider extends PaymentProvider {
     this.apiKey = (config.apiKey || process.env.DOKU_API_KEY || '').trim() || null;
     this.apiBaseUrl = (config.apiBaseUrl || process.env.DOKU_SANDBOX_BASE_URL || process.env.DOKU_BASE_URL || process.env.DOKU_API_BASE_URL || 'https://api-sandbox.doku.com').trim().replace(/\/+$/, '');
     this.webhookSecret = (config.webhookSecret || process.env.DOKU_WEBHOOK_SECRET || this.secretKey || '').trim() || null;
-    this.env = (config.env || process.env.DOKU_ENV || config.mode || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase().trim();
+    this.nodeMode = process.env.NODE_ENV || 'development';
+    this.deploymentEnvironment = process.env.VERCEL_ENV || (process.env.VERCEL ? 'unknown' : 'local');
+    this.env = (config.env || process.env.DOKU_ENV || config.mode || 'sandbox').toLowerCase().trim();
     this.mode = this.env;
-    this.isSandbox = this.env === 'sandbox' || this.apiBaseUrl.includes('sandbox');
+    this.isSandbox = this.env === 'sandbox' && this.apiBaseUrl === 'https://api-sandbox.doku.com';
     this.entity = 'PT SHINERVA PRAJNA TEJAS';
     this.targetBusinessEntity = this.entity;
     this.supportsMultibrand = false;
@@ -72,13 +74,13 @@ class DokuPaymentProvider extends PaymentProvider {
     // Section 2 & 3: Escrow & Payout Activation State
     this.holdReleaseEnabled = config.holdReleaseEnabled === true || process.env.DOKU_HOLD_RELEASE_ENABLED === 'true';
     this.payoutEnabled = config.payoutEnabled === true || process.env.DOKU_PAYOUT_ENABLED === 'true';
-    this.contractVerified = config.contractVerified === true || process.env.DOKU_CONTRACT_VERIFIED === 'true' || (this.isSandbox && this.holdReleaseEnabled);
-    this.sandboxTested = config.sandboxTested === true || process.env.DOKU_SANDBOX_TESTED === 'true' || this.isSandbox;
+    this.contractVerified = config.contractVerified === true || process.env.DOKU_CONTRACT_VERIFIED === 'true';
+    this.sandboxTested = config.sandboxTested === true || process.env.DOKU_SANDBOX_TESTED === 'true';
     this.enableProduction = process.env.ENABLE_DOKU_PRODUCTION === 'true' || process.env.DOKU_PRODUCTION_ENABLED === 'true';
 
     // Strict Production Host Isolation: Reject live production host when production payments are disabled
     const isLiveProductionHost = this.apiBaseUrl === 'https://api.doku.com' || (this.apiBaseUrl.includes('doku.com') && !this.apiBaseUrl.includes('sandbox'));
-    this.productionHostRejected = Boolean(isLiveProductionHost && !this.enableProduction);
+    this.productionHostRejected = !this.isSandbox;
 
     // Derive Doku Escrow Status
     if (this.enableProduction && this.kycVerified && this.contractVerified && this.holdReleaseEnabled && this.sandboxTested) {
@@ -94,9 +96,9 @@ class DokuPaymentProvider extends PaymentProvider {
     }
 
     // Simulation / testing flags
-    this.allowSimulation = config.allowSimulation !== undefined
+    this.allowSimulation = !process.env.VERCEL && this.nodeMode !== 'production' && (config.allowSimulation !== undefined
       ? config.allowSimulation === true
-      : (process.env.NODE_ENV !== 'production' && !this.enableProduction);
+      : (process.env.NODE_ENV === 'test' && !this.enableProduction));
   }
 
   /**
@@ -161,12 +163,12 @@ class DokuPaymentProvider extends PaymentProvider {
       payout_behavior_validated: true,
       reconciliation_validated: true,
       timeout_and_retry_operational: true,
-      controlled_sandbox_transaction_passed: this.sandboxTested || process.env.NODE_ENV === 'test'
+       controlled_sandbox_transaction_passed: this.sandboxTested
     };
 
     const passedCount = Object.values(checklist).filter(Boolean).length;
     const totalCount = Object.keys(checklist).length;
-    const isReady = (this.isSandbox ? hasCredentials : (this.enableProduction && hasCredentials)) || (this.allowSimulation && hasCredentials);
+    const isReady = this.isSandbox && hasCredentials && this.sandboxTested && !this.allowSimulation;
 
     return {
       checklist,
@@ -214,9 +216,12 @@ class DokuPaymentProvider extends PaymentProvider {
       escrow_status: this.escrowStatus,
       isVerified: readiness.is_ready,
       environment: this.env || this.mode,
+      node_runtime_mode: this.nodeMode,
+      deployment_environment: this.deploymentEnvironment,
+      payment_environment: this.env,
       is_sandbox: this.isSandbox,
       api_base_url: this.apiBaseUrl,
-      production_gated: !this.enableProduction,
+      production_gated: true,
       production_host_rejected: this.productionHostRejected,
       target_business_entity: this.targetBusinessEntity,
       message: readiness.is_ready
@@ -487,6 +492,10 @@ class DokuPaymentProvider extends PaymentProvider {
    * General HTTP client for DOKU API (supports GET and POST)
    */
   _httpRequest({ url, method = 'GET', headers = {}, body = null, timeout = 10000 }) {
+    // No flag can unlock production transport in this sandbox-only implementation.
+    if (!this.isSandbox || new URL(url).origin !== 'https://api-sandbox.doku.com') {
+      return Promise.reject(new Error('PRODUCTION_HOST_REJECTED: sandbox transport required'));
+    }
     return new Promise((resolve, reject) => {
       const parsedUrl = new URL(url);
       const isHttps = parsedUrl.protocol === 'https:';
@@ -1006,6 +1015,9 @@ class DokuPaymentProvider extends PaymentProvider {
    * Note: Hold & Release Settlement requires enterprise contract enablement.
    */
   async createHold({ orderId, providerRef, amount }) {
+    if (!this.allowSimulation) {
+      throw new CapabilityUnsupportedError(this.getName(), 'hold', 'PROVIDER-CONTRACT-DEPENDENT: BLOCKED: no remote hold confirmation implemented');
+    }
     if (!this.holdReleaseEnabled && !this.allowSimulation) {
       throw new CapabilityUnsupportedError(
         this.getName(),
@@ -1022,6 +1034,7 @@ class DokuPaymentProvider extends PaymentProvider {
       amount: parseInt(amount, 10),
       moneyState: MONEY_STATE.ESCROW_HELD,
       status: 'HELD',
+      simulated: true,
       contractMode: this.holdReleaseEnabled ? 'ENTERPRISE_HOLD_RELEASE' : 'SIMULATED_TEST',
       heldAt: new Date().toISOString()
     };
@@ -1064,7 +1077,7 @@ class DokuPaymentProvider extends PaymentProvider {
       throw err;
     }
 
-    if (!this.holdReleaseEnabled && !this.allowSimulation) {
+    if ((!this.holdReleaseEnabled || !this.contractVerified) && !this.allowSimulation) {
       throw new CapabilityUnsupportedError(
         this.getName(),
         'release',

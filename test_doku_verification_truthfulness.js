@@ -1,0 +1,25 @@
+process.env.NODE_ENV = 'test';
+const assert = require('node:assert/strict');
+const { DokuPaymentProvider } = require('./src/services/payment/DokuPaymentProvider');
+(async () => {
+  let count = 0;
+  const check = (value, expected) => { assert.equal(value, expected); count++; };
+  const provider = new DokuPaymentProvider({ holdReleaseEnabled: true, clientId: 'fixture', secretKey: 'fixture' });
+  check(provider.contractVerified, false);
+  check(provider.sandboxTested, false);
+  check(provider.getReadinessChecklist().is_ready, false);
+  process.env.NODE_ENV = 'production';
+  process.env.VERCEL = '1';
+  process.env.VERCEL_ENV = 'preview';
+  process.env.ENABLE_DOKU_PRODUCTION = 'true';
+  const preview = new DokuPaymentProvider({ allowSimulation: true, env: 'production', apiBaseUrl: 'https://api.doku.com' });
+  check(preview.allowSimulation, false);
+  check(preview.productionHostRejected, true);
+  await assert.rejects(preview._httpRequest({ url: 'https://api.doku.com/orders' }), /PRODUCTION_HOST_REJECTED/); count++;
+  const deceptive = new DokuPaymentProvider({ apiBaseUrl: 'https://api-sandbox.doku.com.attacker.test' });
+  await assert.rejects(deceptive._httpRequest({ url: deceptive.apiBaseUrl }), /PRODUCTION_HOST_REJECTED/); count++;
+  const sandbox = new DokuPaymentProvider({ holdReleaseEnabled: true });
+  check(sandbox.env, 'sandbox');
+  await assert.rejects(sandbox.createHold({ orderId: 'fixture', amount: 100 }), /BLOCKED/); count++;
+  console.log(`DOKU TRUTHFULNESS: passed=${count} failed=0 skipped=0 (no network)`);
+})().catch(error => { console.error(error.message); process.exitCode = 1; });

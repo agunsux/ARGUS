@@ -63,6 +63,9 @@ class PaymentService {
 
     return {
       selected_environment: status.environment || process.env.DOKU_ENV || 'sandbox',
+      node_runtime_mode: process.env.NODE_ENV || 'development',
+      deployment_environment: process.env.VERCEL_ENV || (process.env.VERCEL ? 'unknown' : 'local'),
+      payment_environment: status.payment_environment || status.environment || 'sandbox',
       selected_provider: defaultName,
       api_hostname: status.api_base_url || 'https://api-sandbox.doku.com',
       credential_presence: {
