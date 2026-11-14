@@ -12,15 +12,20 @@ for (const key of ['SystemRoot', 'WINDIR', 'PATH', 'Path', 'PATHEXT', 'TEMP', 'T
   if (process.env[key]) env[key] = process.env[key];
 }
 Object.assign(env, { NODE_ENV: 'test', ARGUS_SKIP_MIGRATIONS: 'true', ARGUS_DB_READ_ONLY: 'true',
+  MARKETPLACE_MODE: 'LIVE',
   ENABLE_DOKU_PRODUCTION: 'false', ENABLE_IPAYMU_PRODUCTION: 'false',
   ENABLE_MIDTRANS_PRODUCTION: 'false', ENABLE_XENDIT_PRODUCTION: 'false' });
-const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-const names = [...new Set([
-  ...pkg.scripts.test.split(' && ').map(command => command.replace(/^node /, '')),
-  ...(root === workspace ? ['test_admin_identity_security.js', 'test_admin_identity_http.js'] : []), 'test_automation_db_persistence.js',
-  'test_admin_real_world_qa.js', 'test_mvp_admin_automation_bootstrap.js',
-  'test_durable_user_auth.js', 'test_auth_security.js'
-])];
+const names = [
+  'test_admin_identity_security.js',
+  'test_admin_identity_http.js',
+  'test_admin_magic_link_e2e_verification.js',
+  'test_admin_real_world_qa.js',
+  'test_mvp_admin_automation_bootstrap.js',
+  'test_automation_db_persistence.js',
+  'test_tikum_event_temporal_lifecycle.js',
+  'test_auth_security.js',
+  'test_durable_user_auth.js'
+];
 const results = [];
 for (const file of names) {
   if (!fs.existsSync(path.join(root, file))) throw Error(`Missing required test: ${file}`);
