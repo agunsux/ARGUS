@@ -1,0 +1,37 @@
+{
+  "sourceSha": "0e3ee54f2c6c1f1cdf907f518799101f830a6366",
+  "dirty": true,
+  "cwd": "C:\\Users\\RYZEN\\.antigravity-ide\\ARGUS-control-plane",
+  "timestamp": "2026-11-14T10:01:59.726Z",
+  "environment": "local isolated credentials; memory/mock only",
+  "suites": [
+    {
+      "command": "node test_syntax_check.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "counts": "See suite-native summary; not inferred from exit status",
+      "summary": [
+        "✅ All 336 src/ JS files passed syntax validation!"
+      ],
+      "timeout": false
+    },
+    {
+      "command": "node scripts/check_homepage_surface.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "counts": "See suite-native summary; not inferred from exit status",
+      "summary": [
+        "Homepage surface guard PASSED (1 inline scripts parsed, 16 hooks verified)."
+      ],
+      "timeout": false
+    },
+    {
+      "command": "node scripts/generate_sitemap.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "counts": "See suite-native summary; not inferred from exit status",
+      "summary": [],
+      "timeout": false
+    }
+  ]
+}
