@@ -76,6 +76,10 @@ class DokuPaymentProvider extends PaymentProvider {
     this.sandboxTested = config.sandboxTested === true || process.env.DOKU_SANDBOX_TESTED === 'true' || this.isSandbox;
     this.enableProduction = process.env.ENABLE_DOKU_PRODUCTION === 'true' || process.env.DOKU_PRODUCTION_ENABLED === 'true';
 
+    // Strict Production Host Isolation: Reject live production host when production payments are disabled
+    const isLiveProductionHost = this.apiBaseUrl === 'https://api.doku.com' || (this.apiBaseUrl.includes('doku.com') && !this.apiBaseUrl.includes('sandbox'));
+    this.productionHostRejected = Boolean(isLiveProductionHost && !this.enableProduction);
+
     // Derive Doku Escrow Status
     if (this.enableProduction && this.kycVerified && this.contractVerified && this.holdReleaseEnabled && this.sandboxTested) {
       this.escrowStatus = DOKU_ESCROW_STATUS.PRODUCTION_READY;
@@ -92,7 +96,7 @@ class DokuPaymentProvider extends PaymentProvider {
     // Simulation / testing flags
     this.allowSimulation = config.allowSimulation !== undefined
       ? config.allowSimulation === true
-      : (process.env.NODE_ENV === 'test' && !this.enableProduction);
+      : (process.env.NODE_ENV !== 'production' && !this.enableProduction);
   }
 
   /**
@@ -104,6 +108,9 @@ class DokuPaymentProvider extends PaymentProvider {
     if (!this.secretKey) issues.push('DOKU_SECRET_KEY is missing');
     if (!this.apiBaseUrl) issues.push('DOKU_BASE_URL is missing');
     if (!this.env) issues.push('DOKU_ENV is missing');
+    if (this.productionHostRejected) {
+      issues.push('PRODUCTION_HOST_REJECTED: https://api.doku.com cannot be selected while production payments are gated.');
+    }
 
     return {
       valid: issues.length === 0,
@@ -113,7 +120,8 @@ class DokuPaymentProvider extends PaymentProvider {
       apiBaseUrl: this.apiBaseUrl,
       hasClientId: Boolean(this.clientId),
       hasSecretKey: Boolean(this.secretKey),
-      hasWebhookSecret: Boolean(this.webhookSecret)
+      hasWebhookSecret: Boolean(this.webhookSecret),
+      productionHostRejected: this.productionHostRejected
     };
   }
 
@@ -209,6 +217,8 @@ class DokuPaymentProvider extends PaymentProvider {
       is_sandbox: this.isSandbox,
       api_base_url: this.apiBaseUrl,
       production_gated: !this.enableProduction,
+      production_host_rejected: this.productionHostRejected,
+      target_business_entity: this.targetBusinessEntity,
       message: readiness.is_ready
         ? (this.isSandbox ? 'DOKU Sandbox payment provider operational' : 'DOKU primary payment provider operational')
         : `PAYMENT PROVIDER DOKU: ${this.accountStatus} — Real-money activation requires business KYC and signed merchant contract`,
@@ -653,7 +663,25 @@ class DokuPaymentProvider extends PaymentProvider {
       );
     }
 
-    // Simulation / Sandbox handling when no live network credentials active or simulation explicitly allowed
+    // Strict Production Host Rejection
+    if (this.productionHostRejected || (this.apiBaseUrl === 'https://api.doku.com' || (this.apiBaseUrl.includes('doku.com') && !this.apiBaseUrl.includes('sandbox')))) {
+      if (!this.enableProduction) {
+        throw new Error('PRODUCTION_HOST_REJECTED: Selection of live DOKU production API host (https://api.doku.com) is strictly forbidden while production payments are gated. Live DOKU production API client awaiting merchant production activation.');
+      }
+    }
+
+    // Fail-Closed Guard: If not in simulation mode, missing credentials must throw error immediately
+    if (!this.allowSimulation && (!this.clientId || !this.secretKey)) {
+      const missing = [];
+      if (!this.clientId) missing.push('DOKU_CLIENT_ID');
+      if (!this.secretKey) missing.push('DOKU_SECRET_KEY');
+      const err = new Error(`MISSING_DOKU_CREDENTIALS: DOKU Sandbox credentials (${missing.join(', ')}) are missing. Application fails closed.`);
+      err.code = 'MISSING_DOKU_CREDENTIALS';
+      err.status = 503;
+      throw err;
+    }
+
+    // Simulation / Sandbox handling when simulation explicitly allowed
     if (!this.enableProduction && (this.allowSimulation || !this.secretKey || !this.clientId)) {
       const providerRef = `doku-trx-${orderId}-${Date.now()}`;
       const simVa = isVaChannel ? `8899${Math.floor(1000000000 + Math.random() * 9000000000)}` : null;
@@ -783,60 +811,71 @@ class DokuPaymentProvider extends PaymentProvider {
   /**
    * Queries payment status on DOKU rail
    */
-  async getPaymentStatus({ orderId, providerRef, invoiceNumber }) {
-    const inv = invoiceNumber || providerRef || `INV-DOKU-${orderId}`;
-    if (this.allowSimulation || !this.secretKey || !this.clientId) {
+  async getPaymentStatus(refOrObj = {}) {
+    const isObj = typeof refOrObj === 'object' && refOrObj !== null;
+    const inv = isObj
+      ? (refOrObj.invoiceNumber || refOrObj.providerRef || (refOrObj.orderId ? `INV-DOKU-${refOrObj.orderId}` : null))
+      : refOrObj;
+    const orderId = isObj ? refOrObj.orderId : (inv ? String(inv).replace(/^INV-DOKU-/, '') : null);
+
+    if (this.productionHostRejected || (this.apiBaseUrl === 'https://api.doku.com' || (this.apiBaseUrl.includes('doku.com') && !this.apiBaseUrl.includes('sandbox')))) {
+      if (!this.enableProduction) {
+        throw new Error('PRODUCTION_HOST_REJECTED: Selection of live DOKU production API host (https://api.doku.com) is strictly forbidden while production payments are gated. Live DOKU production API client awaiting merchant production activation.');
+      }
+    }
+
+    if (!this.allowSimulation && this.secretKey && this.clientId) {
+      const target = `/orders/v1/status/${inv}`;
+      const signedReq = this.buildSignedRequest({
+        method: 'GET',
+        target
+      });
+
+      const res = await this._httpRequest({
+        url: signedReq.url,
+        method: signedReq.method,
+        headers: signedReq.headers
+      });
+
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        const err = new Error(`DOKU Status Inquiry API error: HTTP ${res.statusCode}`);
+        err.code = 'DOKU_STATUS_ERROR';
+        err.status = res.statusCode;
+        err.details = res.json;
+        throw err;
+      }
+
+      const data = res.json || {};
+      const transaction = data.transaction || {};
+      const rawStatus = (transaction.status || data.status || '').toUpperCase();
+      let canonicalStatus = MONEY_STATE.PAYMENT_PENDING;
+      if (rawStatus === 'SUCCESS' || rawStatus === 'SETTLED' || rawStatus === 'PAID') {
+        canonicalStatus = MONEY_STATE.PAID;
+      } else if (rawStatus === 'FAILED') {
+        canonicalStatus = MONEY_STATE.PAYMENT_FAILED;
+      } else if (rawStatus === 'EXPIRED') {
+        canonicalStatus = MONEY_STATE.PAYMENT_EXPIRED;
+      }
+
       return {
         orderId,
         providerRef: inv,
-        status: MONEY_STATE.PAYMENT_PENDING,
-        amount: null,
+        status: canonicalStatus,
+        rawStatus,
+        amount: parseInt(data.order?.amount || transaction.amount || 0, 10),
+        currency: data.order?.currency || 'IDR',
         provider: this.getName(),
-        simulated: true
+        rawResponse: data
       };
-    }
-
-    const target = `/orders/v1/status/${inv}`;
-    const signedReq = this.buildSignedRequest({
-      method: 'GET',
-      target
-    });
-
-    const res = await this._httpRequest({
-      url: signedReq.url,
-      method: signedReq.method,
-      headers: signedReq.headers
-    });
-
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      const err = new Error(`DOKU Status Inquiry API error: HTTP ${res.statusCode}`);
-      err.code = 'DOKU_STATUS_ERROR';
-      err.status = res.statusCode;
-      err.details = res.json;
-      throw err;
-    }
-
-    const data = res.json || {};
-    const transaction = data.transaction || {};
-    const rawStatus = (transaction.status || data.status || '').toUpperCase();
-    let canonicalStatus = MONEY_STATE.PAYMENT_PENDING;
-    if (rawStatus === 'SUCCESS' || rawStatus === 'SETTLED' || rawStatus === 'PAID') {
-      canonicalStatus = MONEY_STATE.PAID;
-    } else if (rawStatus === 'FAILED') {
-      canonicalStatus = MONEY_STATE.PAYMENT_FAILED;
-    } else if (rawStatus === 'EXPIRED') {
-      canonicalStatus = MONEY_STATE.PAYMENT_EXPIRED;
     }
 
     return {
       orderId,
       providerRef: inv,
-      status: canonicalStatus,
-      rawStatus,
-      amount: parseInt(data.order?.amount || transaction.amount || 0, 10),
-      currency: data.order?.currency || 'IDR',
+      status: MONEY_STATE.PAYMENT_PENDING,
+      amount: null,
       provider: this.getName(),
-      rawResponse: data
+      simulated: true
     };
   }
 
@@ -1048,6 +1087,24 @@ class DokuPaymentProvider extends PaymentProvider {
         original_request_id: originalRequestId
       }
     };
+
+    // Strict Production Host Rejection
+    if (this.productionHostRejected || (this.apiBaseUrl === 'https://api.doku.com' || (this.apiBaseUrl.includes('doku.com') && !this.apiBaseUrl.includes('sandbox')))) {
+      if (!this.enableProduction) {
+        throw new Error('PRODUCTION_HOST_REJECTED: Selection of live DOKU production API host (https://api.doku.com) is strictly forbidden while production payments are gated. Live DOKU production API client awaiting merchant production activation.');
+      }
+    }
+
+    // Fail-Closed Guard
+    if (!this.allowSimulation && (!this.clientId || !this.secretKey)) {
+      const missing = [];
+      if (!this.clientId) missing.push('DOKU_CLIENT_ID');
+      if (!this.secretKey) missing.push('DOKU_SECRET_KEY');
+      const err = new Error(`MISSING_DOKU_CREDENTIALS: DOKU Sandbox credentials (${missing.join(', ')}) are missing for release. Application fails closed.`);
+      err.code = 'MISSING_DOKU_CREDENTIALS';
+      err.status = 503;
+      throw err;
+    }
 
     // Simulation / Sandbox handling when credentials not available or simulation allowed
     if (!this.enableProduction && (this.allowSimulation || !this.secretKey || !this.clientId)) {

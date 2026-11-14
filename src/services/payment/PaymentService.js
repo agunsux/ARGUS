@@ -43,6 +43,50 @@ const PRODUCTION_SAFETY_GATES = {
 
 class PaymentService {
   /**
+   * Environment & Sandbox Diagnostic (Safe, zero credential leakage)
+   */
+  static getEnvironmentDiagnostic() {
+    const defaultName = paymentManager.defaultProvider || 'doku';
+    let provider = null;
+    try {
+      provider = paymentManager.getProvider(defaultName);
+    } catch (e) {}
+
+    const status = provider && typeof provider.getStatus === 'function' ? provider.getStatus() : {};
+    const configValidation = provider && typeof provider.validateConfiguration === 'function'
+      ? provider.validateConfiguration()
+      : {};
+
+    const hasClientId = Boolean(provider?.clientId || process.env.DOKU_SANDBOX_CLIENT_ID || process.env.DOKU_CLIENT_ID);
+    const hasSecretKey = Boolean(provider?.secretKey || process.env.DOKU_SANDBOX_SECRET_KEY || process.env.DOKU_SECRET_KEY);
+    const hasWebhookSecret = Boolean(provider?.webhookSecret || process.env.DOKU_WEBHOOK_SECRET || hasSecretKey);
+
+    return {
+      selected_environment: status.environment || process.env.DOKU_ENV || 'sandbox',
+      selected_provider: defaultName,
+      api_hostname: status.api_base_url || 'https://api-sandbox.doku.com',
+      credential_presence: {
+        has_client_id: hasClientId,
+        has_secret_key: hasSecretKey,
+        has_webhook_secret: hasWebhookSecret
+      },
+      merchant_entity: 'PT SHINERVA PRAJNA TEJAS',
+      production_payment_lock: {
+        is_sandbox: Boolean(status.is_sandbox !== false),
+        production_gated: Boolean(status.production_gated !== false),
+        enable_production: Boolean(process.env.ENABLE_DOKU_PRODUCTION === 'true'),
+        marketplace_mode: process.env.MARKETPLACE_MODE || 'PRELAUNCH_LISTING_ONLY'
+      },
+      webhook_readiness: {
+        ready: Boolean(hasWebhookSecret),
+        endpoint: '/api/v1/payments/webhook/doku',
+        signature_algorithm: 'HMAC-SHA256',
+        replay_protection_window_seconds: 300
+      }
+    };
+  }
+
+  /**
    * Returns current payment subsystem status for admin/observability
    */
   static getSubsystemStatus() {

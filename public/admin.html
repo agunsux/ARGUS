@@ -2341,17 +2341,17 @@
             <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
               <div style="background: #1e293b; padding: 10px; border-radius: 6px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-star" style="color: #eab308; font-size: 11px;"></i> Primary: iPaymu</span>
-                  <span id="setIpaymuStatus" class="badge" style="background: #0284c7; color: #fff;">ACTIVE_READY</span>
+                  <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-star" style="color: #eab308; font-size: 11px;"></i> Primary: DOKU (Direct API)</span>
+                  <span id="setDokuStatus" class="badge" style="background: #0284c7; color: #fff;">SANDBOX_ACTIVE</span>
                 </div>
-                <div style="font-size: 11px; color: #94a3b8;">Model: Escrow &amp; Hold | Saluran: VA, QRIS, Retail</div>
+                <div style="font-size: 11px; color: #94a3b8;">Model: Escrow &amp; Hold | Saluran: VA (BCA, Mandiri, BRI, BNI, Permata, DOKU), QRIS</div>
               </div>
               <div style="background: #1e293b; padding: 10px; border-radius: 6px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-shield-halved" style="color: #94a3b8; font-size: 11px;"></i> Backup: DOKU</span>
-                  <span id="setDokuStatus" class="badge" style="background: #334155; color: #cbd5e1;">STANDBY</span>
+                  <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-shield-halved" style="color: #94a3b8; font-size: 11px;"></i> Secondary / Fallback: iPaymu</span>
+                  <span id="setIpaymuStatus" class="badge" style="background: #334155; color: #cbd5e1;">STANDBY</span>
                 </div>
-                <div style="font-size: 11px; color: #94a3b8;">Kebijakan: Failover terkendali, blokir jika status ambigu.</div>
+                <div style="font-size: 11px; color: #94a3b8;">Kebijakan: Failover aman terisolasi, transaksi historis tetap pinned.</div>
               </div>
               <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
                 <i class="fa-solid fa-lock"></i> Kunci privat API dan Webhook Signature tersimpan aman di environment server dan tidak diekspos ke klien.
@@ -5345,8 +5345,8 @@
         if (data.payment_gateways) {
           const elIpaymu = document.getElementById('setIpaymuStatus');
           const elDoku = document.getElementById('setDokuStatus');
-          if (elIpaymu && data.payment_gateways.primary) elIpaymu.innerText = data.payment_gateways.primary.status || 'ACTIVE';
-          if (elDoku && data.payment_gateways.backup) elDoku.innerText = data.payment_gateways.backup.status || 'STANDBY';
+          if (elDoku && data.payment_gateways.primary) elDoku.innerText = data.payment_gateways.primary.verification_status || data.payment_gateways.primary.status || 'SANDBOX_ACTIVE';
+          if (elIpaymu && data.payment_gateways.secondary) elIpaymu.innerText = data.payment_gateways.secondary.status || 'STANDBY';
         }
         if (data.system_runtime) {
           const elVer = document.getElementById('setVersion');

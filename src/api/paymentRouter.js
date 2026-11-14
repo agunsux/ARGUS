@@ -230,7 +230,8 @@ router.get(['/v1/payments/doku/config', '/payments/doku/config'], (req, res) => 
   try {
     const doku = paymentManager.getProvider('doku');
     const status = doku ? doku.getStatus() : { isVerified: false, status: 'UNKNOWN' };
-    const clientId = process.env.DOKU_CLIENT_ID;
+    const clientId = doku?.clientId || process.env.DOKU_SANDBOX_CLIENT_ID || process.env.DOKU_CLIENT_ID;
+    const hasSecretKey = Boolean(doku?.secretKey || process.env.DOKU_SANDBOX_SECRET_KEY || process.env.DOKU_SECRET_KEY);
     const maskedClientId = clientId
       ? `${clientId.slice(0, 4)}***${clientId.slice(-4)}`
       : null;
@@ -243,12 +244,13 @@ router.get(['/v1/payments/doku/config', '/payments/doku/config'], (req, res) => 
       settlement_mechanism: 'Hold & Release Settlement',
       release_endpoint: 'POST /finance/v1/release',
       is_available: true,
-      is_configured: Boolean(clientId && process.env.DOKU_SECRET_KEY),
+      is_configured: Boolean(clientId && hasSecretKey),
       masked_client_id: maskedClientId,
       environment: status.environment,
       status: status.status,
       is_sandbox: status.is_sandbox,
       production_gated: status.production_gated,
+      production_host_rejected: status.production_host_rejected,
       supported_channels: [
         'VA_BCA', 'VA_MANDIRI', 'VA_BRI', 'VA_BNI', 'VA_PERMATA', 'VA_DOKU',
         'QRIS'
@@ -256,6 +258,21 @@ router.get(['/v1/payments/doku/config', '/payments/doku/config'], (req, res) => 
       hold_release_supported_channels: [
         'VA_BCA', 'VA_MANDIRI', 'VA_BRI', 'VA_BNI', 'VA_PERMATA', 'VA_DOKU'
       ]
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/v1/payments/diagnostic
+ * Safe startup & environment diagnostic (zero secrets exposed)
+ */
+router.get(['/v1/payments/diagnostic', '/payments/diagnostic'], (req, res) => {
+  try {
+    res.json({
+      success: true,
+      diagnostic: PaymentService.getEnvironmentDiagnostic()
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
