@@ -258,6 +258,79 @@ async function runSuite() {
     assert.strictEqual(postLedgerCount, initialLedgerCount, 'No duplicate ledger entry on replayed webhook');
   });
 
+  await check('3.3 Delayed webhook with timestamp drift > 300s is rejected', async () => {
+    const expiredTs = new Date(Date.now() - 360 * 1000).toISOString().slice(0, 19) + 'Z';
+    const expComp = `Client-Id:${mockClientId}\nRequest-Id:exp-req-1\nRequest-Timestamp:${expiredTs}\nRequest-Target:/api/v1/payments/webhook/doku\nDigest:${digest}`;
+    const expSig = 'HMACSHA256=' + crypto.createHmac('sha256', mockSecretKey).update(expComp).digest('base64');
+
+    await assert.rejects(async () => {
+      await PaymentService.handleWebhook({
+        providerName: 'doku',
+        headers: {
+          'client-id': mockClientId,
+          'request-id': 'exp-req-1',
+          'request-timestamp': expiredTs,
+          'signature': expSig
+        },
+        body: webhookPayload,
+        rawBodyBuffer: Buffer.from(rawBody, 'utf8')
+      });
+    }, (err) => {
+      assert.strictEqual(err.code, 'INVALID_WEBHOOK_SIGNATURE');
+      return true;
+    });
+  });
+
+  await check('3.4 Payment status inquiry queries DOKU status without errors', async () => {
+    const doku = paymentManager.getProvider('doku');
+    const statusResult = await doku.getPaymentStatus({
+      orderId,
+      invoiceNumber: `INV-DOKU-${orderId}`,
+      providerRef
+    });
+    assert.ok(statusResult);
+    assert.strictEqual(statusResult.provider, 'doku');
+    assert.strictEqual(statusResult.orderId, orderId);
+    assert.ok(statusResult.status);
+  });
+
+  await check('3.5 Tampered webhook payload/signature is strictly rejected', async () => {
+    const forgedSig = 'HMACSHA256=' + crypto.createHmac('sha256', 'WRONG-SECRET-KEY').update(component).digest('base64');
+    await assert.rejects(async () => {
+      await PaymentService.handleWebhook({
+        providerName: 'doku',
+        headers: {
+          'client-id': mockClientId,
+          'request-id': requestId,
+          'request-timestamp': timestamp,
+          'signature': forgedSig
+        },
+        body: webhookPayload,
+        rawBodyBuffer: Buffer.from(rawBody, 'utf8')
+      });
+    }, (err) => {
+      assert.strictEqual(err.code, 'INVALID_WEBHOOK_SIGNATURE');
+      return true;
+    });
+  });
+
+  await check('3.6 Webhook verification accepts x-vercel-protection-bypass header and _vercel_share query without cryptographic degradation', async () => {
+    // Verifies that Vercel Deployment Protection bypass mechanisms do NOT alter HMAC computation or target
+    const bypassHeaders = {
+      'client-id': mockClientId,
+      'request-id': `req-bypass-${Date.now()}`,
+      'request-timestamp': timestamp,
+      'x-vercel-protection-bypass': 'automation-bypass-test-token',
+      'request-target': '/api/v1/payments/webhook/doku?_vercel_share=automation-bypass-test-token'
+    };
+    const compBypass = `Client-Id:${mockClientId}\nRequest-Id:${bypassHeaders['request-id']}\nRequest-Timestamp:${timestamp}\nRequest-Target:${bypassHeaders['request-target']}\nDigest:${digest}`;
+    bypassHeaders['signature'] = 'HMACSHA256=' + crypto.createHmac('sha256', mockSecretKey).update(compBypass).digest('base64');
+
+    const doku = paymentManager.getProvider('doku');
+    const isValid = doku.verifyWebhook(bypassHeaders, webhookPayload, Buffer.from(rawBody, 'utf8'));
+    assert.strictEqual(isValid, true, 'Cryptographic verification passes with bypass metadata');
+  });
+
   // ---------------------------------------------------------------------------
   // 4. CENTRALIZED ARGUS ESCROW RELEASE
   // ---------------------------------------------------------------------------
@@ -295,6 +368,38 @@ async function runSuite() {
     assert.strictEqual(releaseRes.success, true);
     assert.strictEqual(releaseRes.escrow.status, ESCROW_STATUS.RELEASED);
     assert.ok(releaseRes.escrow.released_at);
+  });
+
+  await check('4.4 Active dispute strictly freezes escrow and blocks release with TRANSACTION_IN_DISPUTED_STATE', async () => {
+    const dispOrd = 'ord-disp-001';
+    state.orders.push({
+      id: dispOrd,
+      ticket_id: 't-disp-01',
+      buyer_id: 'buyer-disp',
+      seller_id: 'seller-sbx-01',
+      total_amount: 500000,
+      status: 'PAID'
+    });
+    state.escrows.push({
+      id: `esc-${dispOrd}`,
+      order_id: dispOrd,
+      amount: 475000,
+      status: ESCROW_STATUS.ESCROWED
+    });
+    state.tickets.push({
+      id: 't-disp-01',
+      status: 'VERIFIED',
+      verification_status: 'VERIFIED'
+    });
+
+    await EscrowService.markDisputed(dispOrd, 'buyer-disp', 'Ticket counterfeit claim at venue');
+
+    await assert.rejects(async () => {
+      await EscrowService.releaseToSeller(dispOrd, 'admin-argus');
+    }, (err) => {
+      assert.strictEqual(err.code, 'TRANSACTION_IN_DISPUTED_STATE');
+      return true;
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -372,6 +477,88 @@ async function runSuite() {
 
     assert.ok(report);
     assert.strictEqual(report.variances_found, 0);
+  });
+
+  await check('6.2 Release timeout / network failure safely flags settlement as PENDING_RECONCILIATION', async () => {
+    const timeoutOrd = 'ord-tout-001';
+    state.orders.push({
+      id: timeoutOrd,
+      ticket_id: 't-tout-01',
+      buyer_id: 'buyer-tout',
+      seller_id: 'seller-sbx-01',
+      total_amount: 300000,
+      status: 'PAID'
+    });
+    state.tickets.push({ id: 't-tout-01', status: 'VERIFIED', verification_status: 'VERIFIED' });
+    state.escrows.push({
+      id: `esc-${timeoutOrd}`,
+      order_id: timeoutOrd,
+      amount: 285000,
+      status: ESCROW_STATUS.ESCROWED
+    });
+    state.canonical_payments.push({
+      order_id: timeoutOrd,
+      provider: 'doku',
+      provider_reference: `INV-DOKU-${timeoutOrd}`,
+      gross_amount: 300000,
+      status: MONEY_STATE.ESCROW_HELD,
+      settlement_status: 'SETTLEMENT_HELD',
+      money_state: MONEY_STATE.ESCROW_HELD
+    });
+    state.entry_verifications.push({
+      order_id: timeoutOrd,
+      status: 'CONFIRMED',
+      verified_by: 'pic-gate-01'
+    });
+
+    await TrustPolicyEngine.recordAttestation({ orderId: timeoutOrd, attestationType: 'PLATFORM_ATTESTATION', actorId: 'SYS', actorRole: 'SYSTEM', result: 'PASS' });
+    await TrustPolicyEngine.recordAttestation({ orderId: timeoutOrd, attestationType: 'TICKET_EVIDENCE_ATTESTATION', actorId: 'SYS', actorRole: 'SYSTEM', result: 'PASS' });
+    await TrustPolicyEngine.recordAttestation({ orderId: timeoutOrd, attestationType: 'PAYMENT_ATTESTATION', actorId: 'SYS', actorRole: 'SYSTEM', result: 'PASS' });
+    await TrustPolicyEngine.recordAttestation({ orderId: timeoutOrd, attestationType: 'BUYER_ATTESTATION', actorId: 'buyer-tout', actorRole: 'BUYER', result: 'PASS' });
+
+    // Mock release failure with timeout
+    const doku = paymentManager.getProvider('doku');
+    const origExecuteRelease = doku.executeRelease;
+    doku.executeRelease = async () => {
+      const e = new Error('Gateway network timeout during release call');
+      e.code = 'RELEASE_TIMEOUT_PENDING_RECONCILIATION';
+      e.status = 504;
+      throw e;
+    };
+
+    try {
+      await assert.rejects(async () => {
+        await PaymentService.executeRelease({ orderId: timeoutOrd, actorId: 'admin-argus' });
+      }, (err) => {
+        assert.strictEqual(err.code, 'RELEASE_TIMEOUT_PENDING_RECONCILIATION');
+        return true;
+      });
+
+      const payment = state.canonical_payments.find(p => p.order_id === timeoutOrd);
+      assert.strictEqual(payment.settlement_status, 'PENDING_RECONCILIATION');
+    } finally {
+      doku.executeRelease = origExecuteRelease;
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // 7. CIRCUIT BREAKER FAILURE AND RECOVERY
+  // ---------------------------------------------------------------------------
+  console.log('\n── Step 7: Circuit Breaker Failure & Recovery ──');
+
+  await check('7.1 Multi-provider circuit breaker trips after 5 consecutive failures and recovers on success', async () => {
+    const { PaymentRoutingService } = require('./src/services/payment/PaymentRoutingService');
+    PaymentRoutingService.recordProviderSuccess('doku_direct');
+
+    for (let i = 0; i < 5; i++) {
+      PaymentRoutingService.recordProviderFailure('doku_direct');
+    }
+    const status = PaymentRoutingService.getCircuitBreakerStatus();
+    assert.strictEqual(status.circuit_breakers.doku_direct.state, 'OPEN', 'Circuit breaker trips to OPEN after 5 failures');
+
+    PaymentRoutingService.recordProviderSuccess('doku_direct');
+    const recovered = PaymentRoutingService.getCircuitBreakerStatus();
+    assert.strictEqual(recovered.circuit_breakers.doku_direct.state, 'CLOSED', 'Circuit breaker recovers to CLOSED after successful transaction');
   });
 
   console.log('\n================================================================================');
