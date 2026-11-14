@@ -234,9 +234,30 @@ class PaymentService {
       };
     }
 
-    const provider = paymentManager.getProvider(targetProviderName);
+    let effectiveChannel = channel || 'VA_DOKU';
+    let effectiveProviderName = targetProviderName;
+    let fallbackInfo = null;
+
+    if (effectiveProviderName === 'doku') {
+      try {
+        const resolved = PaymentRoutingService.resolveResilientChannelOrFallback({
+          channel: effectiveChannel,
+          requiresEscrow: requiresEscrow !== undefined ? requiresEscrow : true,
+          orderId
+        });
+        if (resolved.fallbackApplied) {
+          fallbackInfo = resolved;
+          effectiveChannel = resolved.channel;
+          effectiveProviderName = resolved.provider;
+        }
+      } catch (routingErr) {
+        throw routingErr;
+      }
+    }
+
+    const provider = paymentManager.getProvider(effectiveProviderName);
     if (!provider) {
-      const err = new Error(`Payment provider '${targetProviderName}' not supported`);
+      const err = new Error(`Payment provider '${effectiveProviderName}' not supported`);
       err.code = 'UNKNOWN_PAYMENT_PROVIDER';
       throw err;
     }
@@ -247,14 +268,14 @@ class PaymentService {
       : providerSupportsHold;
 
     // 2. Assert failover is permissible
-    PaymentRoutingService.assertFailoverAllowed(orderId, effectiveRequiresEscrow, targetProviderName);
+    PaymentRoutingService.assertFailoverAllowed(orderId, effectiveRequiresEscrow, effectiveProviderName);
 
     // 2. Production Safety Gate & Verification Check
     const providerStatus = provider.getStatus();
     const isSimulationAllowed = provider.config?.allowTestSimulation || provider.config?.allowSimulation || process.env.NODE_ENV === 'test';
     if (!providerStatus.isVerified && !isSimulationAllowed) {
       const err = new Error(
-        `Payment provider '${targetProviderName}' is ${providerStatus.status}. Real-money marketplace activation is gated until verification and merchant KYC are complete.`
+        `Payment provider '${effectiveProviderName}' is ${providerStatus.status}. Real-money marketplace activation is gated until verification and merchant KYC are complete.`
       );
       err.code = 'PAYMENT_PROVIDER_PENDING_VERIFICATION';
       err.status = 503;
@@ -292,15 +313,22 @@ class PaymentService {
     const internalPaymentId = `pay-${uuidv4()}`;
 
     // 4. Delegate to provider adapter
-    const providerResult = await provider.createPayment({
-      orderId,
-      amount: parseInt(amount, 10),
-      currency,
-      channel: channel || 'QRIS',
-      buyer,
-      requiresEscrow: effectiveRequiresEscrow,
-      idempotencyKey: effectiveIdempotencyKey
-    });
+    let providerResult;
+    try {
+      providerResult = await provider.createPayment({
+        orderId,
+        amount: parseInt(amount, 10),
+        currency,
+        channel: effectiveChannel,
+        buyer,
+        requiresEscrow: effectiveRequiresEscrow,
+        idempotencyKey: effectiveIdempotencyKey
+      });
+      PaymentRoutingService.recordProviderSuccess(effectiveProviderName);
+    } catch (createErr) {
+      PaymentRoutingService.recordProviderFailure(effectiveProviderName);
+      throw createErr;
+    }
 
     const providerRef = providerResult.providerReference || providerResult.referenceId || providerResult.providerRef || `ref-${Date.now()}`;
     const providerTxId = providerResult.providerTransactionId || providerRef;
@@ -313,7 +341,7 @@ class PaymentService {
       sellerId: order?.seller_id || 'unknown-seller',
       eventId: order?.event_id || 'unknown-event',
       ticketId: order?.ticket_id || 'unknown-ticket',
-      provider: targetProviderName,
+      provider: effectiveProviderName,
       providerTransactionId: providerTxId,
       providerReference: providerRef,
       currency,
@@ -326,10 +354,11 @@ class PaymentService {
       moneyState: MONEY_STATE.PAYMENT_PENDING,
       businessState: TIKUM_BUSINESS_STATE.TICKET_RESERVED,
       status: CANONICAL_PAYMENT_STATUS.PAYMENT_PENDING,
-      paymentMethod: channel || providerResult.channel || 'QRIS',
+      paymentMethod: effectiveChannel || providerResult.channel || 'QRIS',
       idempotencyKey: effectiveIdempotencyKey,
       metadata: {
         ...providerResult,
+        fallback: fallbackInfo,
         originalRequestId: providerResult.originalRequestId || providerResult.dokuRequestId || null,
         invoiceNumber: providerResult.paymentDetails?.invoiceNumber || providerRef
       }
@@ -352,7 +381,7 @@ class PaymentService {
           order_id: orderId,
           buyer_id: canonicalRecord.buyer_id,
           seller_id: canonicalRecord.seller_id,
-          provider: targetProviderName,
+          provider: effectiveProviderName,
           provider_transaction_id: providerTxId,
           provider_reference: providerRef,
           currency,
@@ -375,7 +404,7 @@ class PaymentService {
     PaymentRoutingService.recordPaymentAttempt({
       paymentAttemptId: internalPaymentId,
       orderId,
-      provider: targetProviderName,
+      provider: effectiveProviderName,
       providerTransactionId: providerTxId,
       idempotencyKey: effectiveIdempotencyKey,
       status: PAYMENT_ATTEMPT_STATUS.PENDING
@@ -383,7 +412,7 @@ class PaymentService {
 
     await recordAuditLog('PAYMENT', internalPaymentId, 'INTENT_CREATED', buyer.id || 'SYSTEM', {
       order_id: orderId,
-      provider: targetProviderName,
+      provider: effectiveProviderName,
       channel: canonicalRecord.payment_method,
       gross_amount: canonicalRecord.gross_amount,
       provider_reference: providerRef

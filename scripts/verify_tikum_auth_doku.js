@@ -11,6 +11,7 @@ const suites = [
   'test_doku_verification_truthfulness.js', 'test_doku_sandbox_environment_isolation.js',
   'test_doku_signature_pure.js', 'test_doku_compliance.js', 'test_doku_direct_api_hold_release.js',
   'test_payment_provider_contracts.js', 'test_doku_sandbox_audit.js', 'test_doku_payment_migration.js',
+  'test_multi_provider_resilience.js', 'test_doku_direct_api_sandbox_e2e.js',
   'test_canonical_fee_engine_v1.js', 'test_pricing_tax_ledger_engine.js',
   'test_tikum_prelaunch_listing_mode.js', 'test_syntax_check.js'
 ];

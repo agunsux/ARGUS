@@ -347,6 +347,7 @@ class DokuPaymentProvider extends PaymentProvider {
         type: 'QR',
         isEscrowSupported: false,
         holdSettlementSupported: false,
+        directApiEndpoint: '/qris-mpm/v1/generate-qr',
         verificationStatus: 'PROVIDER_CONFIRMATION_REQUIRED'
       },
       {
@@ -611,6 +612,40 @@ class DokuPaymentProvider extends PaymentProvider {
       };
     }
 
+    // 1b. Direct API QRIS Response format
+    if (data.qris_info) {
+      const qrisInfo = data.qris_info;
+      return {
+        provider: this.getName(),
+        orderId,
+        invoiceNumber,
+        providerReference: invoiceNumber,
+        providerTransactionId: invoiceNumber,
+        dokuRequestId: requestId,
+        originalRequestId: requestId,
+        amount: gross,
+        currency,
+        channel: channel || 'QRIS',
+        status: MONEY_STATE.PAYMENT_PENDING,
+        moneyState: MONEY_STATE.PAYMENT_PENDING,
+        requiresEscrow,
+        escrowHeld: false,
+        holdSettlement: false,
+        settlementStatus: 'STANDARD',
+        paymentUrl: null,
+        paymentDetails: {
+          invoiceNumber,
+          qrString: qrisInfo.qr_string,
+          qrCode: qrisInfo.qr_string,
+          expiresAt: qrisInfo.expired_date || new Date(Date.now() + 60 * 60 * 1000).toISOString()
+        },
+        idempotencyKey: effIdempotency,
+        correlationId: effCorrelation,
+        simulated: false,
+        rawResponse: data
+      };
+    }
+
     // 2. Hosted Checkout Response format
     const paymentData = data.payment || data.response?.payment || {};
     const checkoutUrl = paymentData.url;
@@ -728,10 +763,10 @@ class DokuPaymentProvider extends PaymentProvider {
         settlementStatus: requiresEscrow ? 'SETTLEMENT_HOLD_REQUESTED' : 'STANDARD',
         paymentUrl: isVaChannel
           ? `https://sandbox.doku.com/virtual-account/v1/how-to-pay-page/${simVa}`
-          : `https://checkout-sandbox.doku.com/payment/${invoiceNumber}`,
+          : (upperChannel === 'QRIS' ? null : `https://checkout-sandbox.doku.com/payment/${invoiceNumber}`),
         paymentDetails: {
           invoiceNumber,
-          checkoutUrl: `https://checkout-sandbox.doku.com/payment/${invoiceNumber}`,
+          checkoutUrl: isVaChannel || upperChannel === 'QRIS' ? null : `https://checkout-sandbox.doku.com/payment/${invoiceNumber}`,
           vaNumber: simVa,
           virtualAccountNumber: simVa,
           howToPayPage: isVaChannel ? `https://sandbox.doku.com/virtual-account/v1/how-to-pay-page/${simVa}` : null,
@@ -779,6 +814,22 @@ class DokuPaymentProvider extends PaymentProvider {
         },
         additional_info: {
           hold_settlement: Boolean(requiresEscrow)
+        }
+      };
+    } else if (upperChannel === 'QRIS' || upperChannel === 'QRIS_DOKU') {
+      target = '/qris-mpm/v1/generate-qr';
+      payload = {
+        order: {
+          invoice_number: invoiceNumber,
+          amount: gross
+        },
+        qris_info: {
+          expired_time: 60,
+          reusable_status: false
+        },
+        customer: {
+          name: buyer.name || 'Tikum Customer',
+          email: buyer.email || 'customer@tikum.app'
         }
       };
     } else {

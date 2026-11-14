@@ -81,6 +81,8 @@ const ROUTING_CONFIG = {
 // Circuit Breakers state per provider
 const circuitBreakers = {
   doku: { failures: 0, state: 'CLOSED', nextProbe: 0 },
+  doku_direct: { failures: 0, state: 'CLOSED', nextProbe: 0 },
+  doku_checkout: { failures: 0, state: 'CLOSED', nextProbe: 0 },
   ipaymu: { failures: 0, state: 'CLOSED', nextProbe: 0 },
   midtrans: { failures: 0, state: 'CLOSED', nextProbe: 0 },
   xendit: { failures: 0, state: 'CLOSED', nextProbe: 0 }
@@ -89,6 +91,8 @@ const circuitBreakers = {
 // Ops kill-switches per provider (can be toggled at runtime or via environment)
 const opsKillSwitches = {
   doku: false,
+  doku_direct: false,
+  doku_checkout: false,
   ipaymu: false,
   midtrans: false,
   xendit: false
@@ -96,7 +100,7 @@ const opsKillSwitches = {
 
 class PaymentRoutingService {
   /**
-   * Toggles operational kill-switch for a specific provider
+   * Toggles operational kill-switch for a specific provider or sub-integration
    */
   static setKillSwitch(providerName, disabled = true) {
     const p = (providerName || '').toLowerCase();
@@ -108,9 +112,9 @@ class PaymentRoutingService {
   /**
    * Records a provider failure (5xx, timeout, network error) for circuit breaker
    */
-  static recordProviderFailure(providerName) {
-    const p = (providerName || '').toLowerCase();
-    const cb = circuitBreakers[p];
+  static recordProviderFailure(providerName, subType = null) {
+    const key = subType ? `${providerName}_${subType}`.toLowerCase() : (providerName || '').toLowerCase();
+    const cb = circuitBreakers[key] || circuitBreakers[(providerName || '').toLowerCase()];
     if (!cb) return;
 
     cb.failures += 1;
@@ -123,9 +127,9 @@ class PaymentRoutingService {
   /**
    * Records a provider success, resetting the circuit breaker
    */
-  static recordProviderSuccess(providerName) {
-    const p = (providerName || '').toLowerCase();
-    const cb = circuitBreakers[p];
+  static recordProviderSuccess(providerName, subType = null) {
+    const key = subType ? `${providerName}_${subType}`.toLowerCase() : (providerName || '').toLowerCase();
+    const cb = circuitBreakers[key] || circuitBreakers[(providerName || '').toLowerCase()];
     if (!cb) return;
 
     cb.failures = 0;
@@ -134,15 +138,24 @@ class PaymentRoutingService {
   }
 
   /**
-   * Checks whether a provider is operational and available
+   * Checks whether a provider or sub-integration is operational and available
    */
-  static isProviderAvailable(providerName) {
-    const p = (providerName || '').toLowerCase();
-    if (opsKillSwitches[p] || process.env[`KILL_SWITCH_${p.toUpperCase()}`] === 'true') {
+  static isProviderAvailable(providerName, subType = null) {
+    const key = subType ? `${providerName}_${subType}`.toLowerCase() : (providerName || '').toLowerCase();
+    const parentKey = (providerName || '').toLowerCase();
+
+    // Check parent kill-switch first
+    if (opsKillSwitches[parentKey] || process.env[`KILL_SWITCH_${parentKey.toUpperCase()}`] === 'true') {
       return false;
     }
 
-    const cb = circuitBreakers[p];
+    // Check specific sub-integration kill-switch
+    if (key !== parentKey && (opsKillSwitches[key] || process.env[`KILL_SWITCH_${key.toUpperCase()}`] === 'true')) {
+      return false;
+    }
+
+    // Check circuit breaker
+    const cb = circuitBreakers[key] || circuitBreakers[parentKey];
     if (!cb) return true;
 
     if (cb.state === 'OPEN') {
@@ -154,6 +167,72 @@ class PaymentRoutingService {
     }
 
     return true;
+  }
+
+  /**
+   * Resolves multi-provider fallback resilience within DOKU and to emergency alternatives:
+   * Rule A: Direct API healthy -> use DOKU Direct API.
+   * Rule B: Direct API unavailable before creation -> allow DOKU Checkout fallback.
+   * Rule C/D: Ambiguous timeout -> transaction inquiry first, never blind second charge.
+   * Rule F: Both DOKU integrations unavailable -> offer controlled emergency alternative (iPaymu).
+   */
+  static resolveResilientChannelOrFallback({ channel = 'VA_DOKU', requiresEscrow = true, orderId = null } = {}) {
+    const ch = (channel || 'VA_DOKU').toUpperCase();
+    const isDirectVA = ch.startsWith('VA') || ch.includes('VIRTUAL_ACCOUNT');
+    const isDirectQRIS = ch === 'QRIS' || ch === 'QRIS_DOKU';
+    const isDirect = isDirectVA || isDirectQRIS;
+
+    // Invariant: If order already has an active pinned attempt, check it
+    if (orderId && state.payment_attempts) {
+      const activeAttempt = state.payment_attempts.find(
+        a => a.orderId === orderId && (a.status === PAYMENT_ATTEMPT_STATUS.PENDING || a.status === PAYMENT_ATTEMPT_STATUS.UNKNOWN)
+      );
+      if (activeAttempt) {
+        return {
+          provider: activeAttempt.provider,
+          channel: ch,
+          integrationType: 'PINNED',
+          fallbackApplied: false,
+          isPinned: true
+        };
+      }
+    }
+
+    // Rule A: Direct API healthy -> use DOKU Direct API
+    if (isDirect && this.isProviderAvailable('doku_direct') && this.isProviderAvailable('doku')) {
+      return {
+        provider: 'doku',
+        channel: ch,
+        integrationType: 'DOKU_DIRECT_API',
+        fallbackApplied: false
+      };
+    }
+
+    // Rule B: Direct API unavailable before transaction creation -> allow DOKU Checkout fallback if eligible
+    if (this.isProviderAvailable('doku_checkout') && this.isProviderAvailable('doku')) {
+      return {
+        provider: 'doku',
+        channel: 'DOKU_CHECKOUT',
+        integrationType: 'DOKU_CHECKOUT_FALLBACK',
+        fallbackApplied: true,
+        originalChannel: ch,
+        reason: 'DOKU_DIRECT_UNAVAILABLE_FALLBACK_TO_CHECKOUT'
+      };
+    }
+
+    // Rule F: Both DOKU integrations unavailable -> emergency fallback to iPaymu (if eligible)
+    if (this.isProviderAvailable('ipaymu')) {
+      return {
+        provider: 'ipaymu',
+        channel: isDirectVA ? 'IPAYMU_VA' : 'IPAYMU_REDIRECT',
+        integrationType: 'EMERGENCY_ALTERNATIVE',
+        fallbackApplied: true,
+        originalChannel: ch,
+        reason: 'ALL_DOKU_INTEGRATIONS_UNAVAILABLE_EMERGENCY_IPAYMU'
+      };
+    }
+
+    throw new Error('All configured payment providers (DOKU Direct API, DOKU Checkout, iPaymu) are currently unavailable or circuit-broken.');
   }
 
   static getCircuitBreakerStatus() {
