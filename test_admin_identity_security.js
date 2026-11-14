@@ -117,7 +117,8 @@ test('admin security contracts', async t => {
   await t.test('provider rejection/network failure revokes pending token and returns safe failure', async () => {
     for (const send of [async () => ({ success: false }), async () => { throw Error('sensitive provider detail'); }]) {
       const f = fixture(); f.service.provider = { send };
-      await assert.rejects(f.service.request(ADMIN_EMAIL, 'a'), { code: 'ADMIN_EMAIL_UNAVAILABLE' });
+      const response = await f.service.request(ADMIN_EMAIL, 'a');
+      assert.deepEqual(response, await f.service.request('unknown@example.test', 'b'), 'Provider failure must not enumerate the privileged identity');
       assert.ok([...f.store.tokens.values()].every(row => row.used));
     }
   });

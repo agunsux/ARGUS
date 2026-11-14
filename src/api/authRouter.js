@@ -25,6 +25,12 @@ const { recordAuditLog, state, hashPassword, verifyPassword } = require('../data
 const { emailService } = require('../services/emailService');
 const { ADMIN_EMAIL, normalizeEmail, isAdminRole } = require('../config/adminIdentity');
 
+router.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  return require('../middleware/adminSecurity').adminOrigin(req, res, next);
+});
+
 /**
  * POST /api/auth/signup
  * Standard user registration.
@@ -318,10 +324,10 @@ router.post('/password-reset/request', async (req, res) => {
 
   const genericResponse = {
     success: true,
-    message: 'Jika email terdaftar, petunjuk reset password telah dikirimkan ke kotak masuk.'
+    message: 'Jika identitas diizinkan, permintaan diproses. Penerimaan email belum dikonfirmasi.'
   };
 
-  if (!user) {
+  if (!user || normalizedEmail === ADMIN_EMAIL || isAdminRole(user.role)) {
     return res.status(200).json(genericResponse);
   }
 
@@ -484,17 +490,21 @@ router.head('/verify', (req, res) => {
  * GET /api/auth/verify
  * Verifies single-use magic link token and establishes session.
  */
-router.get('/verify', async (req, res) => {
+router.get('/verify', (req, res) => {
+  res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
+  return res.type('html').send('<!doctype html><html lang="id"><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>Verifikasi TIKUM</title><h1>Masuk ke TIKUM</h1><p id="status">Klik tombol untuk menggunakan tautan sekali pakai.</p><button id="verify" type="button">Konfirmasi masuk</button><script src="/js/auth-verify.js" defer></script></html>');
+});
+router.post('/verify', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   if (req.method === 'HEAD') {
     return res.status(200).end();
   }
 
-  const token = req.query.token;
-  const redirectParam = req.query.redirect;
+  const token = req.body?.token;
+  const redirectParam = req.body?.redirect;
   const ip = req.ip || req.connection?.remoteAddress || '127.0.0.1';
   const userAgent = req.headers['user-agent'] || null;
-  const acceptsJson = (req.accepts('json') && !req.accepts('html')) || req.query.format === 'json';
+  const acceptsJson = true;
 
   try {
     const verification = await MagicLinkService.verifyMagicLink({

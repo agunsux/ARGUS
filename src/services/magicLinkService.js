@@ -59,16 +59,7 @@ class MagicLinkService {
    * Resolves canonical base URL for magic link callbacks across Production, Preview, and Local environments.
    */
   static resolveBaseUrl() {
-    if (process.env.APP_BASE_URL && typeof process.env.APP_BASE_URL === 'string') {
-      const cleaned = process.env.APP_BASE_URL.trim().replace(/\/+$/, '');
-      if (cleaned.startsWith('https://') || cleaned.startsWith('http://')) {
-        return cleaned;
-      }
-    }
-    if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL) {
-      return `https://${process.env.VERCEL_URL.trim().replace(/\/+$/, '')}`;
-    }
-    return 'https://tikum.app';
+    return require('../config/authOrigin').authOrigin();
   }
 
   /**
@@ -291,9 +282,6 @@ class MagicLinkService {
     const normEmail = email.toLowerCase().trim();
     const { ADMIN_EMAIL, isAdminRole } = require('../config/adminIdentity');
     const existingIdentity = await getUserRepository().getUserByEmail(normEmail);
-    if (normEmail === ADMIN_EMAIL || isAdminRole(existingIdentity?.role)) {
-      return { success: true, message: 'Jika identitas diizinkan, permintaan diproses.', email: normEmail };
-    }
 
     // Check rate limits
     const rateCheck = this.checkRateLimit(ip, normEmail);
@@ -303,6 +291,10 @@ class MagicLinkService {
       err.status = 429;
       err.retryAfter = rateCheck.retryAfter;
       throw err;
+    }
+
+    if (normEmail === ADMIN_EMAIL || isAdminRole(existingIdentity?.role)) {
+      return { success: true, message: 'Jika identitas diizinkan, permintaan diproses. Penerimaan email belum dikonfirmasi.', email: normEmail };
     }
 
     // Generate cryptographically secure random token (32 bytes = 256 bits of entropy)
@@ -350,7 +342,7 @@ class MagicLinkService {
 
     const safeRedirect = encodeURIComponent(tokenRecord.redirect_url);
     const baseUrl = this.resolveBaseUrl();
-    const magicLinkUrl = `${baseUrl}/api/auth/verify?token=${rawToken}&redirect=${safeRedirect}`;
+    const magicLinkUrl = `${baseUrl}/api/auth/verify#token=${rawToken}&redirect=${safeRedirect}`;
 
     // Delivery abstraction:
     // 1. If test sink is set, send to sink
@@ -364,7 +356,7 @@ class MagicLinkService {
 
     // 2. Outbound transactional email dispatch via EmailService
     try {
-      await emailService.sendEmail({
+      const delivery = await emailService.sendEmail({
         to: normEmail,
         subject: 'Your Tikum login link',
         html: `
@@ -392,20 +384,23 @@ class MagicLinkService {
         text: `Masuk ke akun Tikum Anda dengan tombol berikut.\n\nMASUK KE TIKUM: ${magicLinkUrl}\n\nLink ini hanya berlaku selama 15 menit dan hanya dapat digunakan sekali.\nJika Anda tidak meminta link ini, abaikan email ini.`
       });
 
-      // Audit log: MAGIC_LINK_SENT
-      await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_SENT', 'SYSTEM', {
+      // Provider acceptance is neither delivery nor mailbox receipt.
+      const event = delivery?.success
+        ? (delivery.isMock ? 'MAGIC_LINK_MOCK_ACCEPTED' : 'MAGIC_LINK_PROVIDER_ACCEPTED')
+        : 'MAGIC_LINK_PROVIDER_FAILED';
+      await recordAuditLog('AUTH', 'ANONYMOUS', event, 'SYSTEM', {
         email_hash: emailHash,
         ip: ip,
         token_id: tokenRecord.id
       }).catch(() => {});
     } catch (sendErr) {
-      // Non-blocking: failure to send does not break generic response
+      console.error('[UserAuth] provider acceptance failed');
     }
 
     // Generic response preventing email enumeration — NEVER leaks raw token
     return {
       success: true,
-      message: 'Jika email Anda terdaftar atau valid, tautan akses telah dikirimkan ke kotak masuk Anda.',
+      message: 'Jika identitas diizinkan, permintaan diproses. Penerimaan email belum dikonfirmasi.',
       email: normEmail
     };
   }
@@ -455,7 +450,7 @@ class MagicLinkService {
       }
     }
     const stateRecord = tokens.find(t => t.token_hash === candidateHash);
-    const record = repoRecord || stateRecord;
+    const record = (process.env.NODE_ENV === 'production' || process.env.VERCEL) ? repoRecord : (repoRecord || stateRecord);
 
     if (!record) {
       await recordAuditLog('AUTH', 'ANONYMOUS', 'MAGIC_LINK_INVALID', 'SYSTEM', {

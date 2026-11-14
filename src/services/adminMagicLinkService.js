@@ -20,12 +20,12 @@ class AdminMagicLinkService {
     // Account cooldown resets after one minute; never invalidates links already issued.
     if (!await this.store.limit(`request:account:${ADMIN_EMAIL}`, 1, 60)) return ACCEPTED;
     const user = await this.store.findAdmin();
-    if (!user) throw failure('ADMIN_AUTH_UNAVAILABLE', 503);
+    if (!user) return ACCEPTED;
     const token = crypto.randomBytes(32).toString('hex');
     const tokenHash = hash(token);
     await this.store.issue(user.id, tokenHash);
     // Fragment is not sent in HTTP request URLs, access logs, or Referer headers.
-    const link = `https://tikum.app/admin/login#token=${token}`;
+    const link = `${require('../config/authOrigin').authOrigin()}/admin/login#token=${token}`;
     try {
       const provider = this.provider || resolveEmailProvider();
       const result = await provider.send({ from: 'TIKUM <no-reply@tikum.app>', to: ADMIN_EMAIL,
@@ -40,7 +40,8 @@ class AdminMagicLinkService {
       return ACCEPTED;
     } catch (_) {
       await this.store.cancel(tokenHash).catch(() => {});
-      throw failure('ADMIN_EMAIL_UNAVAILABLE', 503);
+      console.error('[AdminAuth] provider acceptance failed; token cancelled');
+      return ACCEPTED;
     }
   }
   async verify(token, ip, oldToken) {

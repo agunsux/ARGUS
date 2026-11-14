@@ -98,6 +98,7 @@ function request(path, options = {}) {
       method: options.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
+        Origin: baseUrl,
         ...(options.headers || {})
       }
     };
@@ -133,8 +134,14 @@ async function runAcceptanceTests() {
 
   let passed = 0;
   let failed = 0;
+  let skipped = 0;
 
   async function test(name, fn) {
+    if (/^(28|29)\./.test(name) && !isPostgres) {
+      console.log(`[SKIPPED] ${name}: isolated PostgreSQL required`);
+      skipped++;
+      return;
+    }
     try {
       await fn();
       console.log(`[PASS] Gate ${passed + failed + 1}: ${name}`);
@@ -644,7 +651,7 @@ async function runAcceptanceTests() {
 
   console.log('\n================================================================');
   console.log(`TIKUM / ARGUS DURABLE USER & AUTH VERIFICATION COMPLETE`);
-  console.log(`PASSED: ${passed}/30 | FAILED: ${failed}/30`);
+  console.log(`PASSED: ${passed}/30 | FAILED: ${failed}/30 | SKIPPED: ${skipped}/30`);
   console.log('================================================================\n');
 
   if (failed > 0) {

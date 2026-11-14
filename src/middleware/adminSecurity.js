@@ -5,7 +5,11 @@ const { adminSecurityStore } = require('../storage/AdminSecurityStore');
 function adminOrigin(req, res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
   const origin = req.headers.origin;
-  const allowed = new Set(['https://tikum.app', 'https://www.tikum.app']);
+  let expected;
+  try { expected = require('../config/authOrigin').authOrigin(); }
+  catch (_) { return res.status(503).json({ code: 'AUTH_ORIGIN_UNAVAILABLE' }); }
+  const allowed = new Set([expected]);
+  if (expected === 'https://tikum.app') allowed.add('https://www.tikum.app');
   if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     allowed.add(`http://${req.headers.host}`);
   }
