@@ -92,7 +92,7 @@ async function runSuite() {
       name: 'Festival Musik Indie Bandung 2026',
       venue_name: 'Lapangan Tegallega Bandung',
       venue_city: 'Bandung',
-      start_date: '2026-11-08',
+      start_date: '2026-12-08',
       category: 'FESTIVAL',
       artists: ['Efek Rumah Kaca', 'Mocca', 'The Sigit']
     };
@@ -122,7 +122,7 @@ async function runSuite() {
       name: 'Festival Musik Indie Bandung 2026',
       venue_name: 'Lapangan Tegallega Bandung',
       venue_city: 'Bandung',
-      start_date: '2026-11-08',
+      start_date: '2026-12-08',
       category: 'FESTIVAL'
     };
 
@@ -210,9 +210,19 @@ async function runSuite() {
 
   // Test 7: Admin verifies user-created event
   await testAsync('Test 7: Admin toggles is_verified on user-created event', async () => {
+    const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
+    const adminToken = 'adm-test-epic36-token';
+    const adminUser = { id: 'admin-1', email: 'admin@tikum.app', role: 'ADMIN', name: 'Admin' };
+    adminSecurityStore.registerTestSession(adminToken, adminUser);
+    const adminHeaders = {
+      'Authorization': `Bearer ${adminToken}`,
+      'Origin': baseUrl,
+      'x-user-id': 'admin-1'
+    };
+
     const verifyRes = await apiRequest(`/api/mvp/admin/events/${userCreatedEventId}/verify`, {
       method: 'POST',
-      headers: { 'x-user-id': 'admin-1' },
+      headers: adminHeaders,
       body: { officerId: 'admin-1', is_verified: true, reason: 'Promotor flyer verified by Ops' }
     });
 
@@ -228,10 +238,20 @@ async function runSuite() {
 
   // Test 8: Admin edits and cancels an event
   await testAsync('Test 8: Admin edits event and cancels event (status=DIBATALKAN)', async () => {
+    const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
+    const adminToken = 'adm-test-epic36-token';
+    const adminUser = { id: 'admin-1', email: 'admin@tikum.app', role: 'ADMIN', name: 'Admin' };
+    adminSecurityStore.registerTestSession(adminToken, adminUser);
+    const adminHeaders = {
+      'Authorization': `Bearer ${adminToken}`,
+      'Origin': baseUrl,
+      'x-user-id': 'admin-1'
+    };
+
     // Edit
     const editRes = await apiRequest(`/api/mvp/admin/events/${userCreatedEventId}`, {
       method: 'PATCH',
-      headers: { 'x-user-id': 'admin-1' },
+      headers: adminHeaders,
       body: { officerId: 'admin-1', official_link: 'https://bandungindiefest.id' }
     });
     assert.strictEqual(editRes.status, 200);
@@ -240,7 +260,7 @@ async function runSuite() {
     // Cancel
     const cancelRes = await apiRequest(`/api/mvp/admin/events/${userCreatedEventId}/cancel`, {
       method: 'POST',
-      headers: { 'x-user-id': 'admin-1' },
+      headers: adminHeaders,
       body: { officerId: 'admin-1', reason: 'Penyelenggara membatalkan acara karena cuaca' }
     });
     assert.strictEqual(cancelRes.status, 200);

@@ -153,7 +153,8 @@ async function runSuite() {
     check('Simulated time-travel: All 30 articles automatically become due by 2027-01-25', () => {
       const farFuture = new Date('2027-01-25T00:00:00+07:00');
       const dueArticles = articleRepository.getPublishedArticles(farFuture);
-      assert.strictEqual(dueArticles.length, 30, 'All 30 articles must be due in late Jan 2027');
+      const dueCampaignArticles = dueArticles.filter(a => a.id.startsWith('art-campaign-'));
+      assert.strictEqual(dueCampaignArticles.length, 30, 'All 30 articles must be due in late Jan 2027');
     });
 
     await checkAsync('Public GET /blog returns 200 and displays only currently due articles', async () => {

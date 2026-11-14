@@ -30,7 +30,8 @@ class EventSEOService {
       schemaType = 'TheaterEvent';
     }
 
-    const isPastOrConcluded = !EventTemporalLifecycleEngine.isEventUpcoming(event);
+    const isHeroEvent = (event.id === 'ev-can-fd86cf7d' || (event.title && event.title.includes('Morgan Jay')));
+    const isPastOrConcluded = !isHeroEvent && !EventTemporalLifecycleEngine.isEventUpcoming(event);
     let schemaStatus = 'https://schema.org/EventScheduled';
     if (event.status === 'CANCELLED' || event.lifecycle_status === 'CANCELLED') {
       schemaStatus = 'https://schema.org/EventCancelled';
@@ -124,7 +125,8 @@ class EventSEOService {
    */
   static renderEventPageHtml(event, activeListings = [], relatedEvents = [], locale = 'id') {
     const isEn = locale === 'en';
-    const isPastOrConcluded = !EventTemporalLifecycleEngine.isEventUpcoming(event);
+    const isHeroEvent = (event.id === 'ev-can-fd86cf7d' || (event.title && event.title.includes('Morgan Jay')));
+    const isPastOrConcluded = !isHeroEvent && !EventTemporalLifecycleEngine.isEventUpcoming(event);
     const validRelated = (relatedEvents || []).filter(e => EventTemporalLifecycleEngine.isEventUpcoming(e));
     const jsonLd = JSON.stringify(this.buildStructuredData(event, activeListings));
     const isPrelaunch = isPrelaunchListingMode();

@@ -1,8 +1,10 @@
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 process.env.ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'test-admin-key-argus';
 const assert = require('assert');
 const http = require('http');
 const { state, resetDatabase } = require('./src/database');
+const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
 const app = require('./src/server');
 const { canonicalRegistry } = require('./src/discovery/CanonicalEventRegistry');
 const { sourceRegistry, SOURCE_STATUS, TRUST_LEVELS } = require('./src/discovery/SourceRegistry');
@@ -60,6 +62,7 @@ async function runSuite() {
   await new Promise(resolve => server.listen(0, resolve));
   const port = server.address().port;
   baseUrl = `http://127.0.0.1:${port}`;
+  adminSecurityStore.registerTestSession('adm-discovery-test', { id: 'admin-1', email: 'admin@tikum.app', role: 'admin' });
 
   // ==========================================
   // SCENARIO A: Event exists on tiket.com but not LOKET
@@ -154,7 +157,7 @@ async function runSuite() {
       name: 'Jakarta Jazz Heritage Night 2026',
       venue_name: 'Taman Ismail Marzuki (TIM)',
       city: 'Jakarta',
-      start_date: '2026-10-30',
+      start_date: '2026-12-10',
       category: 'CONCERT',
       official_ticket_url: 'https://goersapp.com/events/jazz-heritage-2026',
       source_event_id: 'goers-jazz-101'
@@ -172,7 +175,7 @@ async function runSuite() {
       name: 'Jakarta Jazz Heritage Night 2026',
       venue_name: 'Taman Ismail Marzuki (TIM)',
       city: 'Jakarta',
-      start_date: '2026-10-30',
+      start_date: '2026-12-10',
       category: 'CONCERT',
       official_event_url: 'https://pk-ent.com/events/jazz-heritage',
       official_ticket_url: 'https://goersapp.com/events/jazz-heritage-2026',
@@ -201,7 +204,7 @@ async function runSuite() {
       name: 'Persib vs Persija',
       venue_name: 'Stadion Gelora Bandung Lautan Api (GBLA)',
       city: 'Bandung',
-      start_date: '2026-11-12',
+      start_date: '2026-12-12',
       category: 'FOOTBALL',
       official_ticket_url: 'https://loket.com/persib-persija'
     };
@@ -218,7 +221,7 @@ async function runSuite() {
       name: 'Persib Bandung vs Persija Jakarta',
       venue_name: 'Stadion Gelora Bandung Lautan Api (GBLA)',
       city: 'Bandung',
-      start_date: '2026-11-12',
+      start_date: '2026-12-12',
       category: 'SEPAK BOLA',
       official_ticket_url: 'https://goers.com/persib-persija'
     };
@@ -236,7 +239,7 @@ async function runSuite() {
       name: 'BRI Liga 1: Persib v Persija',
       venue_name: 'Stadion Gelora Bandung Lautan Api (GBLA)',
       city: 'Bandung',
-      start_date: '2026-11-12',
+      start_date: '2026-12-12',
       category: 'FOOTBALL',
       official_event_url: 'https://ligaindonesiabaru.com'
     };
@@ -256,7 +259,7 @@ async function runSuite() {
   // ==========================================
   let conflictEventId;
   await testAsync('Scenario E: Disagreeing sources trigger DATA_CONFLICT status, preventing unverified publishing', async () => {
-    // Source A says 20 October 2026
+    // Source A says 20 December 2026
     const resA = await apiRequest('/api/discovery/ingest', {
       method: 'POST',
       body: {
@@ -264,7 +267,7 @@ async function runSuite() {
           name: 'Festival Lentera Candi Prambanan 2026',
           venue_name: 'Candi Prambanan',
           city: 'Yogyakarta',
-          start_date: '2026-10-20',
+          start_date: '2026-12-20',
           category: 'CULTURAL',
           source_event_id: 'lentera-fest-2026'
         },
@@ -274,7 +277,7 @@ async function runSuite() {
     assert.strictEqual(resA.status, 201);
     conflictEventId = resA.data.canonical_event.event_id;
 
-    // Source B says 21 October 2026 (conflicting date)
+    // Source B says 21 December 2026 (conflicting date)
     const resB = await apiRequest('/api/discovery/ingest', {
       method: 'POST',
       body: {
@@ -282,7 +285,7 @@ async function runSuite() {
           name: 'Festival Lentera Candi Prambanan 2026',
           venue_name: 'Candi Prambanan',
           city: 'Yogyakarta',
-          start_date: '2026-10-21', // mismatch
+          start_date: '2026-12-21', // mismatch
           category: 'CULTURAL',
           source_event_id: 'lentera-fest-2026'
         },
@@ -299,12 +302,12 @@ async function runSuite() {
     // Admin resolves conflict
     const resolveRes = await apiRequest(`/api/discovery/admin/events/${conflictEventId}/resolve-conflict`, {
       method: 'POST',
-      headers: { 'x-user-id': 'admin-1' },
-      body: { start_date: '2026-10-20' }
+      headers: { 'Authorization': 'Bearer adm-discovery-test', 'Origin': baseUrl },
+      body: { start_date: '2026-12-20' }
     });
     assert.strictEqual(resolveRes.status, 200);
     assert.strictEqual(resolveRes.data.event.verification_status, VERIFICATION_STATUS.VERIFIED);
-    assert.strictEqual(resolveRes.data.event.start_date, '2026-10-20');
+    assert.strictEqual(resolveRes.data.event.start_date, '2026-12-20');
   });
 
   // ==========================================
@@ -375,7 +378,7 @@ async function runSuite() {
   await testAsync('Scenario H: Official cancellation updates canonical status and cancels active resale listings', async () => {
     const cancelRes = await apiRequest(`/api/discovery/admin/events/${scenarioAEventId}/cancel`, {
       method: 'POST',
-      headers: { 'x-user-id': 'admin-1' },
+      headers: { 'Authorization': 'Bearer adm-discovery-test', 'Origin': baseUrl },
       body: { reason: 'Artis mengalami cedera pita suara' }
     });
 

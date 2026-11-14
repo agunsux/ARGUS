@@ -667,13 +667,15 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
     { q: 'Apakah pembayaran riil sudah aktif di halaman checkout (/pay)?', a: 'Saat ini halaman checkout beroperasi dalam mode demonstrasi transparan untuk keperluan pengujian alur dan proses verifikasi merchant bersama mitra payment gateway Xendit. Tidak ada pemotongan saldo nyata yang diproses dalam fase ini.' }
   ];
 
+  const canonicalPath = req.path === '/buyer-protection' ? '/buyer-protection' : '/panduan-pembeli';
+
   const html = renderTrustLayout({
     lang,
     title: isEn ? 'Buyer Guide & Platform Safeguards — Tikum | by PT SHINERVA PRAJNA TEJAS' : 'Panduan Pembeli & Perlindungan Transaksi — Tikum | by PT SHINERVA PRAJNA TEJAS',
     description: isEn ? 'Comprehensive Buyer Guide for Tikum secondary ticket marketplace by PT SHINERVA PRAJNA TEJAS: pricing, platform-held safeguards, checkout simulation, and refund terms.' : 'Panduan resmi pembeli tiket di Tikum (PT SHINERVA PRAJNA TEJAS): informasi produk, struktur biaya, simulasi checkout, perlindungan dana, dan kebijakan refund.',
-    canonicalPath: '/panduan-pembeli',
+    canonicalPath,
     h1: isEn ? 'Buyer Guide & Platform Protection' : 'Panduan Pembeli & Perlindungan Transaksi',
-    subtitle: isEn ? 'Learn how TIKUM protects secondary ticket buyers through platform-held payment custody, barcode hashing, and ticket verification.' : 'Panduan lengkap membeli tiket konser dan acara bertiket secara aman, adil, dan terlindungi di platform TIKUM.',
+    subtitle: isEn ? 'Learn how TIKUM protects secondary ticket buyers through platform-held payment custody, barcode hashing, and ticket verification.' : 'Perlindungan Menyeluruh untuk Pembeli Tiket: Panduan lengkap membeli tiket konser dan acara bertiket secara aman, adil, dan terlindungi di platform TIKUM.',
     breadcrumbs: [
       { name: isEn ? 'Home' : 'Beranda', url: '/' },
       { name: isEn ? 'Buyer Guide' : 'Panduan Pembeli', url: '/panduan-pembeli' }
@@ -885,8 +887,8 @@ router.get('/escrow', (req, res) => {
     title: isEn ? 'Tikum Platform-Held Governance — Transparent Fund Holding | Tikum' : 'Sistem Penahanan Transaksi Platform Tikum — Tata Kelola Dana Aman | Tikum',
     description: isEn ? 'Understand Tikum platform-held safeguards: transactions remain protected until ticket admission terms are verified.' : 'Pelajari tata kelola penahanan transaksi platform Tikum: perlindungan dana transaksi dan verifikasi tiket.',
     canonicalPath: '/escrow',
-    h1: isEn ? 'Platform-Held Custody: Secure Governance' : 'Penahanan Pembayaran Platform (Platform-Held)',
-    subtitle: isEn ? 'A platform-held protection model ensuring your transactions stay protected through ticket delivery.' : 'Model tata kelola transaksi terlindungi untuk menjamin keamanan serah terima tiket.',
+    h1: isEn ? 'Platform-Held Custody: Secure Governance' : 'Infrastruktur Escrow: Penahanan Dana Aman',
+    subtitle: isEn ? 'A platform-held protection model ensuring your transactions stay protected through ticket delivery.' : 'Infrastruktur Escrow: Penahanan Dana Aman — Model tata kelola transaksi terlindungi untuk menjamin keamanan serah terima tiket.',
     breadcrumbs: [
       { name: isEn ? 'Home' : 'Beranda', url: '/' },
       { name: isEn ? 'Platform Holding' : 'Penahanan Dana', url: '/escrow' }

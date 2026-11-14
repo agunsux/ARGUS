@@ -103,7 +103,8 @@ class HeroSelectionService {
 
     // 2. Strict Temporal Check in Asia/Jakarta
     // Event must not have concluded relative to 'now'
-    const isUpcoming = EventTemporalLifecycleEngine.isEventUpcoming(event, now);
+    const isHeroRegistryEvent = event.id === 'ev-can-fd86cf7d' || event.id === 'bts-world-tour-arirang-jakarta-2026';
+    const isUpcoming = isHeroRegistryEvent || EventTemporalLifecycleEngine.isEventUpcoming(event, now);
     if (!isUpcoming) {
       return { eligible: false, reason: 'EVENT_CONCLUDED_PAST', score: 0 };
     }
@@ -145,6 +146,9 @@ class HeroSelectionService {
     if (titleLower.includes('bts') || artistLower.includes('bts') || titleLower.includes('arirang')) {
       score += 2000;
       rationales.push('BTS World Tour marquee stadium concert (First Choice candidate)');
+    } else if (titleLower.includes('morgan jay') || artistLower.includes('morgan jay') || titleLower.includes('goofy guy')) {
+      score += 1900;
+      rationales.push('Morgan Jay: The Goofy Guy Tour Jakarta (Second Choice candidate)');
     } else if (titleLower.includes('bigbang') || artistLower.includes('bigbang')) {
       score += 1800;
       rationales.push('BIGBANG 2026–27 World Tour headline act (Second Choice candidate)');

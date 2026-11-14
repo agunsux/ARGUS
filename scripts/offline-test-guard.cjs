@@ -1,4 +1,6 @@
 // Preload for forensic tests: permit loopback HTTP only, never external money/DB calls.
+process.env.ARGUS_OFFLINE_TEST_GUARD = 'true';
+global.__ARGUS_OFFLINE_GUARD = true;
 const net = require('node:net');
 const http = require('node:http');
 const https = require('node:https');

@@ -1,0 +1,46 @@
+{
+  "startedAt": "2026-11-14T22:27:43.844Z",
+  "sourceSha": "6ff0e7101538b15b2d470f1d52ce6b2c2536986d",
+  "isolation": "credential-free; external network blocked; local fixtures are not integration acceptance",
+  "suites": [
+    {
+      "file": "test_epic35_redteam.js",
+      "command": "node test_epic35_redteam.js",
+      "previousStatus": "FAIL",
+      "status": "PASS",
+      "exitCode": 0,
+      "error": null,
+      "assertionCounts": null,
+      "counting": "Native summaries retained; no inferred assertion counts",
+      "output": "\n=== ARGUS EPIC 3.5: RED TEAM SECURITY & ATTACK SUITE ===\n\n  ✓ Attack 1: Replay of Handshake Challenge (Reuse same 6-digit code fails safely)\n  ✓ Attack 2: Cross-Action Challenge Reuse (HANDOFF_READY code cannot be used for ENTRY_CONFIRMED)\n  ✓ Attack 3A: IDOR — Buyer A attempts to generate entry challenge for Buyer B order\n  ✓ Attack 3B: IDOR — PIC A attempts to operate on Event B they are not assigned to\n  ✓ Attack 4: PIC Self-Confirms Entry & Direction Guards Enforced\n  ✓ Attack 5: Duplicate Entry Confirmation Rejected\n  ✓ Attack 6: Double-Settle Same Order (Idempotent payout, zero double disbursement)\n  ✓ Attack 7: Admin Irreversible Action Without Step-Up Auth\n  ✓ Attack 8: State Jump (Skip Ticket Verification Straight to Entry Rejected)\n  ✓ Attack 9: PII Evidence Access Under Indonesia UU PDP (No. 27/2022)\n  ✓ Attack 10: Retrying a Timed-Out Request (Network timeout recovery is strictly idempotent)\n  ✓ Attack 11: Production Mode Rejects x-user-id Spoofing Without Session\n  ✓ Attack 12: Production Mode Rejects pilot123 Default Password\n  ✓ Attack 13: Session Store Survives Server / Memory Restarts\n  ✓ Attack 14: Mandatory Gate Photo Enforced for Entry Confirmation\n  ✓ Attack 15: Production Evidence Encryption Key Required\n\n=======================\nResults: 16 passed, 0 failed, 16 total\n=======================\n\n\n"
+    },
+    {
+      "file": "test_epic51_auth_admin.js",
+      "command": "node test_epic51_auth_admin.js",
+      "previousStatus": "FAIL",
+      "status": "PASS",
+      "exitCode": 0,
+      "error": null,
+      "assertionCounts": null,
+      "counting": "Native summaries retained; no inferred assertion counts",
+      "output": "================================================================\n  TIKUM / ARGUS — EPIC 5.1: AUTH & ADMIN DASHBOARD TEST SUITE   \n================================================================\n\n── Part 1: Authentication Endpoints (Signup, Login, Me, Logout) ──\n  ✅ [PASS] 1. Signup works with valid data\n  ✅ [PASS] 2. Duplicate email is rejected (409)\n  ✅ [PASS] 3. Password stored as bcrypt hash, never plaintext\n  ✅ [PASS] 4. Password hash never appears in API response\n  ✅ [PASS] 5. Login works with valid credentials and sets session\n  ✅ [PASS] 6. Wrong password rejected (401)\n  ✅ [PASS] 7. Logout works (revokes session and clears cookie)\n  ✅ [PASS] 8. GET /api/auth/me returns current user\n\n── Part 2: Authorization Boundaries & Role Protections ──\n  ✅ [PASS] 9. Unauthenticated admin request rejected (401)\n  ✅ [PASS] 10. Normal USER cannot access admin API (403)\n  ✅ [PASS] 11. USER cannot self-promote to ADMIN (header or payload)\n  ✅ [PASS] 12. Signup cannot create ADMIN (forces USER)\n\n── Part 3: Admin Operations & Control Plane ──\n  ✅ [PASS] 13. Admin can access admin API\n  ✅ [PASS] 14. Admin bootstrap is idempotent\n  ✅ [PASS] 15. Admin password is never logged\n  ✅ [PASS] 16. Suspended user cannot authenticate or access requireAuth\n  ✅ [PASS] 17. Admin can suspend USER\n  ✅ [PASS] 18. Admin can reactivate USER\n  ✅ [PASS] BONUS: Admin cannot suspend own account (Self-lockout prevention)\n\n── Part 4: Data Realism & Zero Fabrication Invariants ──\n  ✅ [PASS] 19. Admin dashboard uses real data\n  ✅ [PASS] 20. Missing data displayed as \"Not available\", never fabricated\n\n================================================================\n  EPIC 5.1 TEST SUITE SUMMARY: 21 PASSED | 0 FAILED\n================================================================\n\n\n"
+    },
+    {
+      "file": "test_market_supply_expansion.js",
+      "command": "node test_market_supply_expansion.js",
+      "previousStatus": "FAIL",
+      "status": "PASS",
+      "exitCode": 0,
+      "error": null,
+      "assertionCounts": null,
+      "counting": "Native summaries retained; no inferred assertion counts",
+      "output": "\n===============================================================\n  TIKUM / ARGUS — MARKET SUPPLY EXPANSION ACCEPTANCE SUITE    \n===============================================================\n\n  ✓ [PASS] 1. Event Normalization: Clean title, venue and ISO dates\n  ✓ [PASS] 2. Price Threshold Qualification: >= IDR 300,000 qualifies as QUALIFIED\n  ✓ [PASS] 3. Tiered Pricing Qualification: Entry < 300k but VIP >= 300k marks PRICE_TIERED\n  ✓ [PASS] 4. Cheap Event Rejection: Ticket price strictly below IDR 300,000 is rejected\n  ✓ [PASS] 5. Unknown Price Handling: Event with unstated ticket price marks UNKNOWN\n  ✓ [PASS] 6. Multi-City Tour Disambiguation: Same artist in distinct cities remain separate canonical events\n  ✓ [PASS] 7. Multi-Night Tour Disambiguation: Distinct show dates for same tour remain separate\n  ✓ [PASS] 8. Multi-Source Corroboration: Official portal + Ticketing page match same canonical event\n  ✓ [PASS] 9. LALALA FEST Specific Verification: Olivia Dean and St. Vincent confirmed in official schema\n  ✓ [PASS] 10. Quality Scoring: Verified P0 festival achieves Grade A\n  ✓ [PASS] 11. Education/Training Filter: Bootcamps and seminars do NOT enter P0\n  ✓ [PASS] 12. Dry-Run Execution: Returns classified counts without database writes\n  ✓ [PASS] 13. Canonical Ingestion: Qualified events persist to repository with provenance\n  ✓ [PASS] 14. Idempotent Ingestion: Running ingestion twice produces ZERO duplicates\n  ✓ [PASS] 15. Anti-Resurrection Invariant: Concluded event cannot be resurrected to UPCOMING\n  ✓ [PASS] 16. GET /api/discovery/supply/scan: Returns dry-run scan results\n  ✓ [PASS] 17. GET /api/discovery/supply/review-queue: Exposes ambiguous & secondary candidates\n  ✓ [PASS] 18. POST /api/discovery/supply/ingest: Rejects unauthenticated non-admin caller\n  ✓ [PASS] 19. POST /api/discovery/supply/ingest: Authorized admin triggers ingestion\n  ✓ [PASS] 20. Red-Team: Fake price below 300k is blocked from canonical creation\n  ✓ [PASS] 21. Red-Team: Missing source URL / sourceless event defaults to unverified\n  ✓ [PASS] 22. Red-Team: Non-physical / Online webinars are routed to review, not created\n  ✓ [PASS] 23. Red-Team: Concurrent Advisory Lock prevents racing ingestion runs\n  ✓ [PASS] 24. Red-Team: Transactional integrity: Ingestion failure does not leave orphan records\n  ✓ [PASS] 25. Red-Team: Non-IDR currency is tracked accurately without false conversion\n\n===============================================================\n  RESULTS: 25 passed, 0 failed, 25 total\n===============================================================\n\n\n[LoketDiscoverySource] Live fetch failed: OFFLINE_TEST_EXTERNAL_NETWORK_BLOCKED. Using adapter fallback.\n[LoketDiscoverySource] Live fetch failed: OFFLINE_TEST_EXTERNAL_NETWORK_BLOCKED. Using adapter fallback.\n[LoketDiscoverySource] Live fetch failed: OFFLINE_TEST_EXTERNAL_NETWORK_BLOCKED. Using adapter fallback.\n[LoketDiscoverySource] Live fetch failed: OFFLINE_TEST_EXTERNAL_NETWORK_BLOCKED. Using adapter fallback.\n[LoketDiscoverySource] Live fetch failed: OFFLINE_TEST_EXTERNAL_NETWORK_BLOCKED. Using adapter fallback.\n[LoketDiscoverySource] Live fetch failed: OFFLINE_TEST_EXTERNAL_NETWORK_BLOCKED. Using adapter fallback.\n[LoketDiscoverySource] Live fetch failed: OFFLINE_TEST_EXTERNAL_NETWORK_BLOCKED. Using adapter fallback.\n"
+    }
+  ],
+  "finishedAt": "2026-11-14T22:27:49.627Z",
+  "counts": {
+    "PASS": 3,
+    "FAIL": 0,
+    "BLOCKED": 0
+  }
+}

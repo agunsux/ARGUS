@@ -388,8 +388,7 @@ class TrustPolicyEngine {
       (state.entry_verifications || []).some(ev => ev.order_id === orderId && ev.status === 'CONFIRMED') ||
       order?.status === 'ENTRY_CONFIRMED' ||
       order?.buyer_entry_confirmed ||
-      (receivedMap.get(ATTESTATION_TYPE.PIC_ATTESTATION)?.result === 'PASS') ||
-      (receivedMap.get(ATTESTATION_TYPE.TICKET_EVIDENCE_ATTESTATION)?.result === 'PASS')
+      (receivedMap.get(ATTESTATION_TYPE.PIC_ATTESTATION)?.result === 'PASS')
     );
 
     const isCoolingPeriodSettlementEligible = isEventEnded24h && !hasOpenDispute && !hasFraudOrAnomaly && hasEntryProof;
@@ -403,6 +402,10 @@ class TrustPolicyEngine {
         }
         if (isCoolingPeriodSettlementEligible) {
           // 24-hour post-event cooling period expired with verified entry, zero disputes, and zero fraud flags
+          continue;
+        }
+        if (hasEntryProof && (order?.status === 'ENTRY_CONFIRMED' || receivedMap.get(ATTESTATION_TYPE.PIC_ATTESTATION)?.result === 'PASS')) {
+          // Verified physical admission at gate confirmed by Event PIC supersedes absent manual buyer in-app tap
           continue;
         }
       }

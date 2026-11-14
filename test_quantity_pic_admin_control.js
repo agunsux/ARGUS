@@ -11,6 +11,7 @@
 
 process.env.NODE_ENV = 'test';
 process.env.ADMIN_PASSWORD = 'TestAdminPassword123!';
+process.env.MARKETPLACE_MODE = 'LIVE';
 
 const assert = require('assert');
 const { state, resetDatabase, bootstrapAdminUser } = require('./src/database');
@@ -99,12 +100,15 @@ async function runTests() {
       title: 'Jakarta Fest 2026',
       name: 'Jakarta Fest 2026',
       venue_id: 'venue-gbk',
-      date: '2026-11-20',
-      start_date: '2026-11-20',
-      status: 'SCHEDULED',
-      lifecycle_status: 'SCHEDULED',
+      date: '2026-12-20',
+      start_date: '2026-12-20',
+      end_date: '2026-12-20',
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
       is_verified: true,
-      verification_status: 'VERIFIED'
+      verification_status: 'VERIFIED',
+      verified_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     state.events.push(event);
 
@@ -348,6 +352,7 @@ async function runTests() {
           method: options.method || 'GET',
           headers: {
             Accept: 'application/json',
+            Origin: baseUrl,
             ...(options.headers || {})
           }
         };

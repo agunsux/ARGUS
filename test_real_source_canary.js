@@ -18,11 +18,13 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.SIMULATE_NOW = '2026-10-01T00:00:00Z';
 
 const assert = require('assert');
 const http = require('http');
 const app = require('./src/server');
 const { state, resetDatabase, bootstrapAdminUser, recordAuditLog } = require('./src/database');
+const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
 const { SessionStore } = require('./src/services/sessionStore');
 const { canonicalRegistry } = require('./src/discovery/CanonicalEventRegistry');
 const { sourceRegistry } = require('./src/discovery/SourceRegistry');
@@ -47,7 +49,10 @@ function makeRequest(path, options = {}) {
 
     const reqOpts = {
       method: options.method || 'GET',
-      headers: options.headers || {}
+      headers: {
+        'Origin': baseUrl,
+        ...(options.headers || {})
+      }
     };
 
     const req = http.request(url, reqOpts, (res) => {
@@ -100,7 +105,8 @@ async function runCanaryTests() {
   const adminRes = bootstrapAdminUser();
   const adminUser = adminRes.user || adminRes;
   const adminSession = SessionStore.createSession({ userId: adminUser.id, role: 'ADMIN' });
-  adminSessionToken = adminSession.session_token;
+  adminSessionToken = 'adm-canary-' + adminSession.session_token;
+  adminSecurityStore.registerTestSession(adminSessionToken, { id: adminUser.id, email: 'admin@tikum.app', role: 'admin' });
 
   const normalUser = { id: 'usr-buyer-canary', username: 'buyer_canary', email: 'canary@buyer.id', role: 'USER' };
   state.users.push(normalUser);

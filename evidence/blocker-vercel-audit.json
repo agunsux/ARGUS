@@ -1,0 +1,179 @@
+﻿{
+    "checkedAt":  "2026-11-14T19:25:23.6217516Z",
+    "project":  "argus",
+    "projectId":  "prj_X2hQwU5IqxSU3WpYKCNcRzslk47S",
+    "ssoProtection":  {
+                          "deploymentType":  "all_except_custom_domains"
+                      },
+    "passwordProtectionEnabled":  false,
+    "bypassEntries":  [
+                          {
+                              "entry":  "entry-1",
+                              "type":  "automation-bypass",
+                              "createdAt":  1791732568988,
+                              "expiresAt":  null,
+                              "lastUsedAt":  null,
+                              "classification":  "UNKNOWN",
+                              "reason":  "Listed in project configuration; ownership, ongoing use and revocation history not established"
+                          },
+                          {
+                              "entry":  "entry-2",
+                              "type":  "automation-bypass",
+                              "createdAt":  1794676351459,
+                              "expiresAt":  null,
+                              "lastUsedAt":  null,
+                              "classification":  "UNKNOWN",
+                              "reason":  "Listed in project configuration; ownership, ongoing use and revocation history not established"
+                          }
+                      ],
+    "environmentMetadata":  [
+                                {
+                                    "key":  "DOKU_SANDBOX_CLIENT_ID",
+                                    "target":  [
+                                                   "preview"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                },
+                                {
+                                    "key":  "DOKU_SANDBOX_SECRET_KEY",
+                                    "target":  [
+                                                   "preview"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                },
+                                {
+                                    "key":  "DOKU_BASE_URL",
+                                    "target":  [
+                                                   "preview"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                },
+                                {
+                                    "key":  "DOKU_ENV",
+                                    "target":  [
+                                                   "preview"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                },
+                                {
+                                    "key":  "TARGET_DATABASE_URL",
+                                    "target":  [
+                                                   "production"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                },
+                                {
+                                    "key":  "DATABASE_URL",
+                                    "target":  [
+                                                   "production"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                },
+                                {
+                                    "key":  "DATABASE_URL",
+                                    "target":  [
+                                                   "preview"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                },
+                                {
+                                    "key":  "DOKU_PUBLIC_KEY",
+                                    "target":  [
+                                                   "production"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                },
+                                {
+                                    "key":  "DOKU_API_KEY",
+                                    "target":  [
+                                                   "production"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                },
+                                {
+                                    "key":  "DOKU_SECRET_KEY",
+                                    "target":  [
+                                                   "production"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                },
+                                {
+                                    "key":  "DOKU_CLIENT_ID",
+                                    "target":  [
+                                                   "production"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                },
+                                {
+                                    "key":  "DOKU_BASE_URL",
+                                    "target":  [
+                                                   "production"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                },
+                                {
+                                    "key":  "DOKU_ENV",
+                                    "target":  [
+                                                   "production"
+                                               ],
+                                    "gitBranch":  null,
+                                    "type":  "sensitive"
+                                }
+                            ],
+    "deployments":  [
+                        {
+                            "id":  "dpl_3awcmuZJ4KtcZM25KYM1CMpTqYhD",
+                            "url":  "argus-cvn2c7nb6-shinerva.vercel.app",
+                            "target":  null,
+                            "state":  "READY",
+                            "sha":  null,
+                            "branch":  null
+                        },
+                        {
+                            "id":  "dpl_6RcKA1tQAVpEra1befgYhAfgR76S",
+                            "url":  "argus-33wfhszyd-shinerva.vercel.app",
+                            "target":  null,
+                            "state":  "READY",
+                            "sha":  null,
+                            "branch":  null
+                        },
+                        {
+                            "id":  "dpl_3nA4y5ePVegq2TZMuMvmiKcdzCSL",
+                            "url":  "argus-n8t439fti-shinerva.vercel.app",
+                            "target":  null,
+                            "state":  "READY",
+                            "sha":  null,
+                            "branch":  null
+                        },
+                        {
+                            "id":  "dpl_EfdZit475EnUHtCw88SNdETBBETb",
+                            "url":  "argus-5vurgme2b-shinerva.vercel.app",
+                            "target":  null,
+                            "state":  "READY",
+                            "sha":  null,
+                            "branch":  null
+                        },
+                        {
+                            "id":  "dpl_Ean4tMganU3er2P5qnEaeGeWdrSS",
+                            "url":  "argus-ez36nzwfx-shinerva.vercel.app",
+                            "target":  null,
+                            "state":  "READY",
+                            "sha":  null,
+                            "branch":  null
+                        }
+                    ],
+    "changes":  "None; read-only API GET requests",
+    "status":  "BLOCKED"
+}

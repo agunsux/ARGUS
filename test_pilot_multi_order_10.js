@@ -1,4 +1,6 @@
 process.env.NODE_ENV = 'test';
+// Paid-order fixtures require explicit transactional mode; production stays fail-closed.
+process.env.MARKETPLACE_MODE = 'LIVE';
 const assert = require('assert');
 const { state, resetDatabase } = require('./src/database');
 const { ListingService, LISTING_STATUS } = require('./src/services/listingService');
@@ -6,6 +8,25 @@ const { EscrowService, ESCROW_STATUS, ORDER_STATUS } = require('./src/services/e
 const { EventPicService } = require('./src/services/eventPicService');
 const { DisputeService } = require('./src/services/disputeService');
 const { SettlementService } = require('./src/services/settlementService');
+const { FinancialAuthorizationService, AUTHORIZATION_ACTION } = require('./src/settlement/FinancialAuthorizationService');
+
+let authOrder0Id = null;
+async function authorizePayout(orderId, amount = 1410000) {
+  const authRes = await FinancialAuthorizationService.requestAuthorization({
+    orderId,
+    actionType: AUTHORIZATION_ACTION.EXECUTE_PAYOUT,
+    makerId: 'maker-1',
+    amount,
+    reason: 'Turnstile admission confirmed by PIC, authorized for payout',
+    metadata: { bankAccount: 'BCA pilot' }
+  });
+  await FinancialAuthorizationService.approveAuthorization({
+    authorizationId: authRes.authorization.id,
+    checkerId: 'checker-1',
+    notes: 'Approved payout for verified pilot order'
+  });
+  return authRes.authorization.id;
+}
 
 let passed = 0;
 let failed = 0;
@@ -125,9 +146,11 @@ async function runPilot() {
     // Now release succeeds
     await EscrowService.releaseToSeller(testOrder.id, 'admin-1');
     assert.strictEqual(esc.status, ESCROW_STATUS.RELEASED);
+    authOrder0Id = await authorizePayout(testOrder.id, 1410000);
     const s = await SettlementService.executeSettlement({
       orderId: testOrder.id, sellerId: testOrder.seller_id, officerId: 'admin-1',
-      idempotencyKey: 'pilot-stl-0', bankAccount: 'BCA pilot'
+      idempotencyKey: 'pilot-stl-0', bankAccount: 'BCA pilot',
+      authorizationId: authOrder0Id
     });
     assert.strictEqual(s.settlement.status, 'EXECUTED');
   });
@@ -143,13 +166,15 @@ async function runPilot() {
       assert.ok(v.timestamp);
       assert.ok(v.next_action);
       await EscrowService.releaseToSeller(orders[i].id, 'admin-1');
+      const authId = await authorizePayout(orders[i].id, 1410000);
       const s = await SettlementService.executeSettlement({
         orderId: orders[i].id, sellerId: orders[i].seller_id, officerId: 'admin-1',
-        idempotencyKey: 'pilot-stl-' + i, bankAccount: 'BCA pilot'
+        idempotencyKey: 'pilot-stl-' + i, bankAccount: 'BCA pilot',
+        authorizationId: authId
       });
       assert.strictEqual(s.settlement.status, 'EXECUTED');
-      assert.strictEqual(s.settlement.amount, 1410000); // 1.500.000 - 90.000 seller fee
-      assert.ok(['SIMULATED', 'PROVIDER_RAIL_AUTOMATED'].includes(s.settlement.mode));
+      assert.strictEqual(s.settlement.amount, 1402500); // 1.500.000 - 90.000 seller fee - 7.500 PPh 22
+      assert.ok(['SIMULATED', 'PROVIDER_RAIL_AUTOMATED', 'MANUAL_BANK_TRANSFER'].includes(s.settlement.mode));
     }
     assert.strictEqual(state.orders.filter(o => o.status === 'SETTLED').length, 6);
   });
@@ -208,12 +233,14 @@ async function runPilot() {
     const target = orders[0];
     const r1 = await SettlementService.executeSettlement({
       orderId: target.id, sellerId: target.seller_id, officerId: 'admin-1',
-      idempotencyKey: 'pilot-stl-0', bankAccount: 'BCA pilot'
+      idempotencyKey: 'pilot-stl-0', bankAccount: 'BCA pilot',
+      authorizationId: authOrder0Id
     });
     assert.strictEqual(r1.idempotent, true);
     const r2 = await SettlementService.executeSettlement({
       orderId: target.id, sellerId: target.seller_id, officerId: 'admin-1',
-      idempotencyKey: 'pilot-stl-0-DIFFERENT', bankAccount: 'BCA pilot'
+      idempotencyKey: 'pilot-stl-0-DIFFERENT', bankAccount: 'BCA pilot',
+      authorizationId: authOrder0Id
     });
     assert.strictEqual(r2.idempotent, true);
     assert.strictEqual(state.settlements.filter(s => s.order_id === target.id).length, 1);
@@ -251,7 +278,7 @@ async function runPilot() {
 
   await testAsync('PIC cannot modify settlement amount (server-side only)', async () => {
     const s = state.settlements.find(x => x.order_id === orders[1].id);
-    assert.strictEqual(s.amount, 1410000);
+    assert.strictEqual(s.amount, 1402500);
   });
 
   test('Audit trail covers multi-order pilot', () => {

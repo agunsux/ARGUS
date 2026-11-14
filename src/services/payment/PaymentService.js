@@ -272,7 +272,7 @@ class PaymentService {
 
     // 2. Production Safety Gate & Verification Check
     const providerStatus = provider.getStatus();
-    const isSimulationAllowed = provider.config?.allowTestSimulation || provider.config?.allowSimulation || process.env.NODE_ENV === 'test';
+    const isSimulationAllowed = provider.config?.allowTestSimulation || provider.config?.allowSimulation || provider.allowSimulation;
     if (!providerStatus.isVerified && !isSimulationAllowed) {
       const err = new Error(
         `Payment provider '${effectiveProviderName}' is ${providerStatus.status}. Real-money marketplace activation is gated until verification and merchant KYC are complete.`
@@ -511,6 +511,37 @@ class PaymentService {
       };
     }
 
+    // Confirm live DOKU money before reserving an event or mutating financial state.
+    // A timeout must remain retryable, not become a processed payment.
+    if (targetProviderName === 'doku' && !provider.allowSimulation && event.status === MONEY_STATE.PAID) {
+      const rejectConfirmation = () => {
+        const error = new Error('DOKU gateway payment confirmation is incomplete or inconsistent');
+        error.code = 'GATEWAY_STATUS_UNCONFIRMED';
+        error.status = 409;
+        return error;
+      };
+      const { getMoneyRepository } = require('../../storage');
+      const order = await getMoneyRepository().getOrderById(event.orderId);
+      if (!order) throw rejectConfirmation();
+      const expectedAmount = Number(order.buyer_total ?? order.total_amount);
+      if (!Number.isSafeInteger(expectedAmount) || expectedAmount <= 0 ||
+          Number(event.amount) !== expectedAmount ||
+          event.currency !== (order.currency || 'IDR')) throw rejectConfirmation();
+      let verified;
+      try {
+        verified = await provider.getPaymentStatus({
+          orderId: event.orderId,
+          invoiceNumber: `INV-DOKU-${event.orderId}`
+        });
+      } catch (_) {
+        throw rejectConfirmation();
+      }
+      if (!verified || verified.simulated || verified.status !== MONEY_STATE.PAID ||
+          verified.rawResponse?.order?.invoice_number !== `INV-DOKU-${event.orderId}` ||
+          Number(verified.amount) !== expectedAmount ||
+          verified.currency !== (order.currency || 'IDR')) throw rejectConfirmation();
+    }
+
     try {
       const { getMoneyRepository } = require('../../storage');
       const moneyRepo = getMoneyRepository();
@@ -621,7 +652,7 @@ class PaymentService {
       }
 
       // Invariant I2: Server-to-server status inquiry re-query
-      if (typeof provider.getPaymentStatus === 'function') {
+      if (targetProviderName !== 'doku' && typeof provider.getPaymentStatus === 'function') {
         try {
           const verified = await provider.getPaymentStatus({
             orderId: event.orderId,

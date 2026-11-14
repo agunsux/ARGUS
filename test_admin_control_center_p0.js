@@ -26,7 +26,7 @@
  */
 
 process.env.NODE_ENV = 'test';
-process.env.ADMIN_EMAIL = 'admin.p0@tikum.app';
+process.env.ADMIN_EMAIL = 'admin@tikum.app';
 process.env.ADMIN_PASSWORD = 'P0-Control-Center-Secret!';
 
 const assert = require('assert');
@@ -47,7 +47,10 @@ function makeRequest(path, options = {}) {
     const url = new URL(path, baseUrl);
     const reqOpts = {
       method: options.method || 'GET',
-      headers: options.headers || {}
+      headers: {
+        'Origin': baseUrl,
+        ...(options.headers || {})
+      }
     };
 
     const req = http.request(url, reqOpts, (res) => {
@@ -150,7 +153,7 @@ async function runSuite() {
       assert.strictEqual(res.statusCode, 200);
       assert.ok(res.headers['content-type'].includes('text/html'));
       assert.ok(res.body.includes('Admin Sign In'));
-      assert.ok(res.body.includes('/api/admin/login'));
+      assert.ok(res.body.includes('/api/admin/magic-link'));
     });
 
     await test('4. Anonymous /api/admin/session rejected (401)', async () => {
@@ -159,27 +162,27 @@ async function runSuite() {
       assert.strictEqual(res.json.code, 'AUTH_REQUIRED');
     });
 
-    await test('5. Invalid admin credentials rejected (401)', async () => {
+    await test('5. Admin password login disabled (410 PASSWORD_LOGIN_DISABLED)', async () => {
       const res = await makeRequest('/api/admin/login', {
         method: 'POST',
         body: { email: adminEmail, password: 'wrong-password' }
       });
-      assert.strictEqual(res.statusCode, 401);
-      assert.strictEqual(res.json.code, 'INVALID_CREDENTIALS');
+      assert.strictEqual(res.statusCode, 410);
+      assert.strictEqual(res.json.code, 'PASSWORD_LOGIN_DISABLED');
     });
 
-    await test('6. Valid admin login issues session without leaking secrets', async () => {
+    await test('6. Admin password login disabled even with valid credentials (410)', async () => {
       const res = await makeRequest('/api/admin/login', {
         method: 'POST',
         body: { email: adminEmail, password: adminPassword }
       });
-      assert.strictEqual(res.statusCode, 200, `Expected 200, got ${res.statusCode}: ${res.body}`);
-      assert.ok(res.json.session_token, 'Session token required');
-      assert.strictEqual(res.json.user.role, 'ADMIN');
-      assert.ok(res.headers['set-cookie'][0].includes('HttpOnly'), 'Cookie must be HttpOnly');
-      assert.strictEqual(JSON.stringify(res.json).includes('password'), false, 'Response must not leak password fields');
+      assert.strictEqual(res.statusCode, 410);
+      assert.strictEqual(res.json.code, 'PASSWORD_LOGIN_DISABLED');
 
-      adminToken = res.json.session_token;
+      const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
+      adminToken = 'adm-test-control-center-session';
+      const adminUser = { id: 'admin-p0', email: adminEmail, role: 'ADMIN' };
+      adminSecurityStore.registerTestSession(adminToken, adminUser);
     });
 
     await test('7. Authenticated admin session resolves real identity + role', async () => {
@@ -195,13 +198,13 @@ async function runSuite() {
       assert.ok(res.json.admin_roles.includes('SUPER_ADMIN'));
     });
 
-    await test('8. Valid non-admin credentials rejected for admin login (403)', async () => {
+    await test('8. Non-admin credentials also rejected with 410 PASSWORD_LOGIN_DISABLED', async () => {
       const res = await makeRequest('/api/admin/login', {
         method: 'POST',
         body: { email: normalUser.email, password: buyerPassword }
       });
-      assert.strictEqual(res.statusCode, 403);
-      assert.strictEqual(res.json.code, 'ADMIN_ACCESS_REQUIRED');
+      assert.strictEqual(res.statusCode, 410);
+      assert.strictEqual(res.json.code, 'PASSWORD_LOGIN_DISABLED');
     });
 
     await test('9. Non-admin session rejected across admin APIs (403)', async () => {
@@ -226,13 +229,11 @@ async function runSuite() {
       assert.strictEqual(after.statusCode, 401, 'Revoked session must be rejected');
     });
 
-    // Re-login for the rest of the suite
-    const loginRes = await makeRequest('/api/admin/login', {
-      method: 'POST',
-      body: { email: adminEmail, password: adminPassword }
-    });
-    assert.strictEqual(loginRes.statusCode, 200);
-    adminToken = loginRes.json.session_token;
+    // Re-register admin session for the rest of the suite
+    const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
+    adminToken = 'adm-test-control-center-session-2';
+    const adminUser = { id: 'admin-p0', email: adminEmail, role: 'ADMIN' };
+    adminSecurityStore.registerTestSession(adminToken, adminUser);
 
     console.log('\n-- Part 2: Real Data Only (Zero Fabrication) --');
 

@@ -48,9 +48,22 @@ const SOURCE_CAPABILITIES = {
 
 const OFFICIAL_MIN_TICKET_PRICE = 500000;
 
+const CURRENCY_MIN_THRESHOLDS = {
+  IDR: 500000,
+  SGD: 40,
+  MYR: 150,
+  THB: 1000,
+  PHP: 1000,
+  VND: 100000
+};
+
 class CuratedCatalogPolicy {
   static get OFFICIAL_MIN_TICKET_PRICE() {
     return OFFICIAL_MIN_TICKET_PRICE;
+  }
+
+  static get CURRENCY_MIN_THRESHOLDS() {
+    return CURRENCY_MIN_THRESHOLDS;
   }
 
   /**
@@ -82,7 +95,10 @@ class CuratedCatalogPolicy {
       };
     }
 
-    const minThreshold = typeof options.minThreshold === 'number' ? options.minThreshold : OFFICIAL_MIN_TICKET_PRICE;
+    const currency = (eventData.currency || eventData.currency_code || (eventData.country === 'Singapore' ? 'SGD' : eventData.country === 'Malaysia' ? 'MYR' : eventData.country === 'Thailand' ? 'THB' : eventData.country === 'Philippines' ? 'PHP' : eventData.country === 'Vietnam' ? 'VND' : 'IDR')).toUpperCase();
+    const minThreshold = typeof options.minThreshold === 'number'
+      ? options.minThreshold
+      : (CURRENCY_MIN_THRESHOLDS[currency] || OFFICIAL_MIN_TICKET_PRICE);
 
     let lowestOfficialPrice = null;
     let highestOfficialPrice = null;
@@ -176,7 +192,7 @@ class CuratedCatalogPolicy {
         status: 'EXCLUDED_PRICE_TOO_LOW',
         lowest_official_price: lowestOfficialPrice,
         highest_official_price: highestOfficialPrice,
-        reason: `Lowest official ticket tier (Rp ${lowestOfficialPrice.toLocaleString('id-ID')}) is below minimum Rp ${minThreshold.toLocaleString('id-ID')}`
+        reason: `Lowest official ticket tier (${currency} ${lowestOfficialPrice.toLocaleString('id-ID')}) is below minimum ${currency} ${minThreshold.toLocaleString('id-ID')}`
       };
     }
 

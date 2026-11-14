@@ -11,6 +11,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 
 const assert = require('assert');
 const http = require('http');
@@ -32,7 +33,10 @@ function request(path, options = {}) {
     const url = new URL(path, baseUrl);
     const reqOpts = {
       method: options.method || 'GET',
-      headers: options.headers || {}
+      headers: {
+        'Origin': baseUrl,
+        ...(options.headers || {})
+      }
     };
 
     const req = http.request(url, reqOpts, (res) => {

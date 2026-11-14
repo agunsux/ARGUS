@@ -62,12 +62,17 @@ class AdminSecurityStore {
       throw error;
     } finally { client.release(); }
   }
-  registerTestSession(rawToken, user, ttlMs = 24 * 60 * 60 * 1000) {
+  registerTestSession(rawToken, user = {}, ttlMs = 24 * 60 * 60 * 1000) {
+    if (typeof rawToken === 'object' && rawToken !== null) {
+      user = rawToken.user || user;
+      ttlMs = rawToken.ttlMs || ttlMs;
+      rawToken = rawToken.token || rawToken.rawToken;
+    }
     const tokenHash = hash(rawToken);
     this.testSessions.set(tokenHash, {
       user: {
         id: user.id || 'admin-test',
-        email: ADMIN_EMAIL,
+        email: user.email || ADMIN_EMAIL,
         name: user.name || 'System Administrator',
         role: (user.role || 'ADMIN').toUpperCase(),
         status: 'ACTIVE'

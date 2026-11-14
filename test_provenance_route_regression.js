@@ -45,8 +45,9 @@ async function testAsync(name, fn) {
     console.log(`  \x1b[32m✓\x1b[0m ${name}`);
     passed++;
   } catch (e) {
-    console.error(`  \x1b[31m✗\x1b[0m ${name}`);
-    console.error(`    -> ${e.message}`);
+    console.log(`  \x1b[31m✗\x1b[0m ${name}`);
+    console.log(`    -> ${e.message}`);
+    console.log(e.stack);
     failed++;
   }
 }
@@ -293,9 +294,9 @@ async function runSuite() {
 
   let verifiedEventId;
   const realPostUrl = 'https://www.instagram.com/p/DB_sheila_official_announce/';
-  const realPublishedAt = '2026-09-20T10:00:00Z';
-  const realObservedAt = '2026-09-20T10:05:00Z';
-  const realRawBody = 'Antara Suara presents Sheila On 7 Tunggu Aku Di Bandung at Gelora Bandung Lautan Api on 2026-10-25';
+  const realPublishedAt = new Date().toISOString();
+  const realObservedAt = new Date().toISOString();
+  const realRawBody = 'Antara Suara presents Sheila On 7 Tunggu Aku Di Bandung at Gelora Bandung Lautan Api on 2026-12-25';
   const realEvidenceHash = crypto.createHash('sha256').update(realRawBody).digest('hex');
 
   await testAsync('Official Tier 1 Promoter signal creates verified event with real evidence hash', async () => {
@@ -304,13 +305,13 @@ async function runSuite() {
     PromoterImportService.importFromFile(csvPath);
 
     const promoter = promoterRegistry.getPromoterByHandle('@antara.suara');
-    assert.ok(promoter);
-    assert.strictEqual(promoter.verification_status, PROMOTER_STATUS.VERIFIED_OFFICIAL_PROMOTER_ACCOUNT);
+    assert.ok(promoter, 'promoter must exist');
+    assert.strictEqual(promoter.verification_status, PROMOTER_STATUS.VERIFIED_OFFICIAL_PROMOTER_ACCOUNT, 'promoter must be verified');
 
     // 2. Process official social post from verified promoter
     const postPayload = {
       event_name: 'Sheila on 7 — Tunggu Aku Di Bandung (Official)',
-      start_date: '2026-10-25',
+      start_date: '2026-12-25',
       venue_name: 'Stadion Gelora Bandung Lautan Api',
       city: 'Bandung',
       artists: ['Sheila on 7'],
@@ -322,10 +323,10 @@ async function runSuite() {
     };
 
     const res = await discoverySignalService.processSocialPost(postPayload, '@antara.suara');
-    assert.strictEqual(res.success, true);
-    assert.strictEqual(res.action, 'CANONICAL_EVENT_PROMOTED');
-    assert.strictEqual(res.canonical_event.is_verified, true);
-    assert.strictEqual(res.canonical_event.verification_status, 'PRIMARY_SOURCE_VERIFIED');
+    assert.strictEqual(res.success, true, 'res.success must be true');
+    assert.strictEqual(res.action, 'CANONICAL_EVENT_PROMOTED', 'action must be CANONICAL_EVENT_PROMOTED');
+    assert.strictEqual(res.canonical_event.is_verified, true, 'is_verified must be true');
+    assert.strictEqual(res.canonical_event.verification_status, 'PRIMARY_SOURCE_VERIFIED', 'verification_status must be PRIMARY_SOURCE_VERIFIED');
 
     verifiedEventId = res.canonical_event.event_id;
 
@@ -371,7 +372,7 @@ async function runSuite() {
     // Attempt ingestion from generic secondary aggregator
     const aggregatorPayload = {
       title: 'Fabricated Indie Fest 2026',
-      date: '2026-11-20',
+      date: '2026-12-20',
       venue: 'Parkir Timur Senayan',
       city: 'Jakarta',
       sources: [{
@@ -412,7 +413,7 @@ async function runSuite() {
   await testAsync('Promoter announcement of CANCELLED immediately drops event from public routes', async () => {
     const cancelPost = {
       event_name: 'Sheila on 7 — Tunggu Aku Di Bandung (Official)',
-      start_date: '2026-10-25',
+      start_date: '2026-12-25',
       venue_name: 'Stadion Gelora Bandung Lautan Api',
       city: 'Bandung',
       artists: ['Sheila on 7'],
@@ -442,7 +443,7 @@ async function runSuite() {
   await testAsync('Attempted re-ingestion claiming ON_SALE is rejected and does not revive CANCELLED event', async () => {
     const revivePost = {
       name: 'Sheila on 7 — Tunggu Aku Di Bandung (Official)',
-      start_date: '2026-10-25',
+      start_date: '2026-12-25',
       venue_name: 'Stadion Gelora Bandung Lautan Api',
       city: 'Bandung',
       status: 'UPCOMING'

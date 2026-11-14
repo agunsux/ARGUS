@@ -16,6 +16,8 @@
  * 12. Security Red Team (IDOR, Tamper, Forged Webhook, Imbalance)
  */
 
+process.env.NODE_ENV = 'test';
+process.env.MARKETPLACE_MODE = 'LIVE';
 const assert = require('assert');
 const crypto = require('crypto');
 const http = require('http');
@@ -289,16 +291,23 @@ async function runSuite() {
   });
 
   await asyncTest('PaymentService: Blocks real payment creation while provider is PENDING_VERIFICATION', async () => {
-    await assert.rejects(async () => {
-      await PaymentService.createPayment({
-        orderId: 'ord-test-real-blocked',
-        amount: 1500000,
-        channel: 'BCA_VA',
-        providerName: 'ipaymu'
+    const ipaymu = paymentManager.getProvider('ipaymu');
+    const origSim = ipaymu.allowSimulation;
+    ipaymu.allowSimulation = false;
+    try {
+      await assert.rejects(async () => {
+        await PaymentService.createPayment({
+          orderId: 'ord-test-real-blocked',
+          amount: 1500000,
+          channel: 'BCA_VA',
+          providerName: 'ipaymu'
+        });
+      }, (err) => {
+        return err.code === 'PAYMENT_PROVIDER_PENDING_VERIFICATION' && err.status === 503;
       });
-    }, (err) => {
-      return err.code === 'PAYMENT_PROVIDER_PENDING_VERIFICATION' && err.status === 503;
-    });
+    } finally {
+      ipaymu.allowSimulation = origSim;
+    }
   });
 
   await asyncTest('PaymentService: Rejects forged webhook HMAC signature', async () => {

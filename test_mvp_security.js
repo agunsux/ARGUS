@@ -1,4 +1,6 @@
 process.env.NODE_ENV = 'test';
+// This suite exercises transactional KYC/escrow, not prelaunch listing collection.
+process.env.MARKETPLACE_MODE = 'LIVE';
 const assert = require('assert');
 const { state, resetDatabase, run } = require('./src/database');
 const { ListingService } = require('./src/services/listingService');

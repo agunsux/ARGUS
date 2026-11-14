@@ -259,7 +259,7 @@ const THREAT_SCENARIOS = [
 
       await ingestionPipeline.ingestEvent({
         name: 'Cancelled Tour Test',
-        start_date: '2026-11-01',
+        start_date: '2026-12-15',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT'
@@ -268,7 +268,7 @@ const THREAT_SCENARIOS = [
       // Cancellation announced
       await ingestionPipeline.ingestEvent({
         name: 'Cancelled Tour Test',
-        start_date: '2026-11-01',
+        start_date: '2026-12-15',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT',
@@ -298,8 +298,7 @@ const THREAT_SCENARIOS = [
 
       await ingestionPipeline.ingestEvent({
         name: 'Postponed Festival Test',
-        start_date: '2026-09-20',
-        start_date: '2026-10-20',
+        start_date: '2026-12-20',
         venue_name: 'ICE BSD',
         city: 'Tangerang',
         category: 'FESTIVAL'
@@ -307,8 +306,7 @@ const THREAT_SCENARIOS = [
 
       await ingestionPipeline.ingestEvent({
         name: 'Postponed Festival Test',
-        start_date: '2026-09-20',
-        start_date: '2026-10-20',
+        start_date: '2026-12-20',
         venue_name: 'ICE BSD',
         city: 'Tangerang',
         category: 'FESTIVAL',
@@ -633,7 +631,7 @@ const THREAT_SCENARIOS = [
       // Create and cancel event
       await ingestionPipeline.ingestEvent({
         name: 'Reanimation Test Concert',
-        start_date: '2026-11-01',
+        start_date: '2026-12-15',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT'
@@ -641,7 +639,7 @@ const THREAT_SCENARIOS = [
 
       await ingestionPipeline.ingestEvent({
         name: 'Reanimation Test Concert',
-        start_date: '2026-11-01',
+        start_date: '2026-12-15',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT',
@@ -654,7 +652,7 @@ const THREAT_SCENARIOS = [
       // Reanimation: event re-announced with new date
       await ingestionPipeline.ingestEvent({
         name: 'Reanimation Test Concert',
-        start_date: '2026-12-01',
+        start_date: '2026-12-28',
         venue_name: 'GBK Stadium',
         city: 'Jakarta',
         category: 'CONCERT',

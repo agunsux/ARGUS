@@ -55,7 +55,7 @@ const pillarAArticles = [
     ],
     "status": "scheduled",
     "published_at": null,
-    "scheduled_at": "2026-10-16T10:00:00+07:00",
+    "scheduled_at": "2026-10-20T10:00:00+07:00",
     "updated_at": "2026-10-15T10:00:00+07:00",
     "created_at": "2026-10-15T09:00:00+07:00",
     "canonical_url": "https://tikum.app/blog/ciri-ciri-penipuan-tiket-konser-online-dan-cara-menghindarinya",

@@ -46,7 +46,10 @@ function makeRequest(path, options = {}) {
 
     const reqOpts = {
       method: options.method || 'GET',
-      headers: options.headers || {}
+      headers: {
+        'Origin': baseUrl,
+        ...(options.headers || {})
+      }
     };
 
     const req = http.request(url, reqOpts, (res) => {
@@ -376,7 +379,7 @@ async function runSuite() {
 
     console.log('\n── Part 3: Admin Operations & Control Plane ──');
 
-    // Login as Admin
+    // Verify Admin Password Login is disabled (Admin Security Hardening)
     const adminLoginRes = await makeRequest('/api/auth/login', {
       method: 'POST',
       body: {
@@ -384,8 +387,19 @@ async function runSuite() {
         password: 'pilot123'
       }
     });
-    assert.strictEqual(adminLoginRes.statusCode, 200, 'Admin login must succeed');
-    const adminToken = adminLoginRes.json.session_token;
+    assert.strictEqual(adminLoginRes.statusCode, 401, 'Admin password login must be rejected (Magic-link required)');
+
+    // Register authenticated Admin Session
+    const adminToken = 'adm-test-epic51-session';
+    const adminUser = state.users.find(u => u.email === 'ops@argus.id') || { id: 'admin-1', role: 'ADMIN' };
+    const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
+    adminSecurityStore.registerTestSession(adminToken, {
+      ...adminUser,
+      email: 'admin@tikum.app',
+      role: 'ADMIN',
+      admin_role: 'SUPERADMIN',
+      status: 'ACTIVE'
+    });
 
     // 13. Admin can access admin API
     await test('13. Admin can access admin API', async () => {

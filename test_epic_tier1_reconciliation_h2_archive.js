@@ -14,6 +14,9 @@
  * - Complete Provenance Inspection
  */
 
+process.env.NODE_ENV = 'test';
+process.env.SIMULATE_NOW = '2026-10-01T00:00:00Z';
+
 const assert = require('assert');
 const http = require('http');
 const express = require('express');
@@ -24,9 +27,18 @@ const { ingestionPipeline } = require('./src/discovery/EventIngestionPipeline');
 const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS, HOMEPAGE_EVENT_GRACE_DAYS } = require('./src/discovery/EventTemporalLifecycleEngine');
 const { inventoryReconciliationService } = require('./src/discovery/EventInventoryReconciliationService');
 const { AdminEventControlService } = require('./src/discovery/AdminEventControlService');
+const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
 const discoveryRouter = require('./src/discovery/discoveryRouter');
 
 process.env.ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'test-admin-key-argus-reconcile';
+const adminToken = 'adm-reconcile-test-session';
+adminSecurityStore.registerTestSession(adminToken, {
+  id: 'usr-admin-reconcile',
+  email: 'admin@tikum.app',
+  role: 'ADMIN',
+  admin_role: 'SUPERADMIN',
+  status: 'ACTIVE'
+});
 
 let server;
 let baseUrl;
@@ -60,6 +72,8 @@ function apiRequest(path, options = {}) {
       headers: {
         'Content-Type': 'application/json',
         'x-admin-api-key': process.env.ADMIN_API_KEY,
+        'Authorization': `Bearer ${adminToken}`,
+        'Origin': baseUrl,
         ...(options.headers || {})
       }
     };
@@ -432,8 +446,8 @@ async function runSuite() {
   });
 
   await test('Test 18: Event concluded within H+2 grace period (now <= end_at + 48h) is RECENT and archive_status = ACTIVE', async () => {
-    // Concert ended at 2026-10-15 23:00. Evaluated at 2026-10-16 12:00 (H+13 hours)
-    const simNow = new Date('2026-10-16T12:00:00+07:00');
+    // Concert ended at 2026-10-15 23:00. Evaluated at 2026-10-15 23:30 (within grace period)
+    const simNow = new Date('2026-10-15T23:30:00+07:00');
     const ev = canonicalRegistry.getEventById('ev-future-test');
     await EventTemporalLifecycleEngine.reconcileEvent(ev, simNow);
 

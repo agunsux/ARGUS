@@ -1,0 +1,829 @@
+{
+  "startedAt": "2026-11-14T22:32:02.690Z",
+  "sourceSha": "6ff0e7101538b15b2d470f1d52ce6b2c2536986d",
+  "isolation": "No inherited credentials; external Node network blocked; not gateway evidence",
+  "counting": "Suite process outcomes; native assertion counts are not inferred from exit code",
+  "suites": [
+    {
+      "file": "test_doku_refund_fail_closed.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": true,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_doku_confirmation_boundary.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": true,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_p0_6_image_rendering_and_performance.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_controlled_pilot_readiness.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "PAYMENT_FAILED"
+      ]
+    },
+    {
+      "file": "test_p0_production_remediation.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_p0_event_data_integrity.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_p0_trust_transaction_readiness.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "FAILED"
+      ]
+    },
+    {
+      "file": "test_doku_signature_pure.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_doku_compliance.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_payment_provider_contracts.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_payment_sandbox_e2e_matrix.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "AMOUNT_MISMATCH"
+      ]
+    },
+    {
+      "file": "test_doku_sandbox_audit.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "DOKU_API_ERROR",
+        "PAYMENT_FAILED"
+      ]
+    },
+    {
+      "file": "test_doku_payment_migration.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "BLOCKED",
+        "BLOCKS"
+      ]
+    },
+    {
+      "file": "test_canonical_fee_engine_v1.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "AMOUNT_MISMATCH"
+      ]
+    },
+    {
+      "file": "test_mvp_transaction_loop.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_mvp_dispute_loop.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_mvp_security.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_pilot_multi_order_10.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_flow.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_epic35_redteam.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": true,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_epic36_events.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_epic40_offers.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_marketplace_alignment.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_epic_event_discovery.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_apmi_promoters.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_promoter_registry.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_promoter_csv_import.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_ipaymu_compliance.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_brand_boundary.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_canonical_domain.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_email_service.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_email_infrastructure.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_contact_form_and_inbox.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_seo_domination.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_epic_seo_blog_engine.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_event_supply_intelligence.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_event_supply_redteam.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_real_event_supply.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_trust_venue_payment_redteam.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_auth_security.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_epic5_trust_policy.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "PIC_GATE_MISMATCH"
+      ]
+    },
+    {
+      "file": "test_epic51_auth_admin.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "FAILED"
+      ]
+    },
+    {
+      "file": "test_pricing_tax_ledger_engine.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "TAX_FAIL_CLOSED_POLICY_NOT_FOUND"
+      ]
+    },
+    {
+      "file": "test_admin_dashboard_v1.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "FAILED"
+      ]
+    },
+    {
+      "file": "test_admin_control_center_p0.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "FAILED"
+      ]
+    },
+    {
+      "file": "test_real_source_canary.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "PIPELINE_BLOCKED"
+      ]
+    },
+    {
+      "file": "test_event_supply_master.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_event_temporal_integrity.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_syntax_check.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_provenance_route_regression.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_epic_paid_ticketed_homepage.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "BLOCKED"
+      ]
+    },
+    {
+      "file": "test_p0_negotiation_price_engine.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_p0_magic_link_auth.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_real_source_upcoming_events.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_tikum_zero_fake_policy.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_tikum_event_temporal_lifecycle.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_epic_tier1_reconciliation_h2_archive.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_epic_image_verification_gate.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "BLOCKED"
+      ]
+    },
+    {
+      "file": "test_epic_discovery_coverage.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_infokonser_discovery_lifecycle.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_catalog_rescan_reconciliation.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_durable_catalog.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": true,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_durable_money_state.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_durable_user_auth.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": true,
+      "failureMarkers": [
+        "FAILED"
+      ]
+    },
+    {
+      "file": "test_test_database_isolation.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_four_provider_orchestration.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_market_supply_expansion.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": true,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "OFFLINE_TEST_EXTERNAL_NETWORK_BLOCKED"
+      ]
+    },
+    {
+      "file": "test_lany_pilot_sandbox_dry_run.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_pricing_config_and_caps.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_demand_capture_and_alerts.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_role_dashboards.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "FAILED"
+      ]
+    },
+    {
+      "file": "test_quantity_pic_admin_control.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_seller_listing_admin_approval_lifecycle.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_asean_xendit_readiness.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "FAILED"
+      ]
+    },
+    {
+      "file": "test_xendit_sandbox_smoke.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "AMOUNT_MISMATCH",
+        "CURRENCY_MISMATCH"
+      ]
+    },
+    {
+      "file": "test_affiliate_resale_hybrid.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "scripts/check_homepage_surface.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_admin_auth_regression.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "FAILED"
+      ]
+    },
+    {
+      "file": "test_event_intelligence_pipeline.test.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_doku_verification_truthfulness.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": true,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_doku_sandbox_environment_isolation.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    },
+    {
+      "file": "test_doku_direct_api_sandbox_e2e.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "FAILED"
+      ]
+    },
+    {
+      "file": "test_admin_identity_postgres.js",
+      "exitCode": 2,
+      "error": null,
+      "status": "BLOCKED",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "BLOCKED"
+      ]
+    },
+    {
+      "file": "test_refund_state_machine_and_provider_confirmation.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": [
+        "REFUND_FAILED",
+        "LEDGER_REVERSAL_FAILED"
+      ]
+    },
+    {
+      "file": "test_inventory_concurrency_race.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "externalNetworkBlocked": false,
+      "skipMentioned": false,
+      "failureMarkers": []
+    }
+  ],
+  "finishedAt": "2026-11-14T22:33:41.500Z",
+  "counts": {
+    "PASS": 84,
+    "FAIL": 0,
+    "BLOCKED": 1
+  }
+}

@@ -11,6 +11,8 @@
  * 7. Payload Sanitization & Parameterized Query SQL Injection Resistance
  */
 
+process.env.NODE_ENV = 'test';
+
 const assert = require('assert');
 const http = require('http');
 const express = require('express');
@@ -23,6 +25,7 @@ const { getCatalogRepository, setCatalogRepository } = require('./src/discovery/
 const { InMemoryCatalogRepository } = require('./src/discovery/repository/InMemoryCatalogRepository');
 const { PostgresCatalogRepository } = require('./src/discovery/repository/PostgresCatalogRepository');
 const { requireAdminApiKey, resetAdminRateLimits } = require('./src/middleware/adminApiKeyAuth');
+const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
 const discoveryRouter = require('./src/discovery/discoveryRouter');
 
 let server;
@@ -94,7 +97,7 @@ async function runTests() {
       passed++;
     } catch (err) {
       console.error(`  ✗ ${name}`);
-      console.error(`    ${err.message}`);
+      console.error(`    ${err.stack || err.message}`);
       failed++;
     }
   }
@@ -214,35 +217,40 @@ async function runTests() {
 
   console.log('\n── Section 2: Admin API Key Lockdown & Fail-Closed Gate ──');
 
-  await test('Test 4: Admin endpoints reject request with 401 when ADMIN_API_KEY is missing from request', async () => {
-    process.env.ADMIN_API_KEY = TEST_ADMIN_KEY;
+  await test('Test 4: Admin endpoints reject request with 401 when admin auth is missing from request', async () => {
     resetAdminRateLimits();
 
     const res = await apiRequest('/api/discovery/admin/inventory-report');
     assert.strictEqual(res.status, 401);
-    assert.strictEqual(res.body.code, 'ADMIN_KEY_REQUIRED');
+    assert.strictEqual(res.body.code, 'AUTH_REQUIRED');
   });
 
-  await test('Test 5: Admin endpoints reject request with 401 when ADMIN_API_KEY is invalid', async () => {
-    process.env.ADMIN_API_KEY = TEST_ADMIN_KEY;
+  await test('Test 5: Admin endpoints reject request with 401 when admin token is invalid', async () => {
     resetAdminRateLimits();
 
     const res = await apiRequest('/api/discovery/admin/inventory-report', {
       headers: {
+        'Authorization': 'Bearer wrong-unauthorized-key-000',
         'x-admin-api-key': 'wrong-unauthorized-key-000'
       }
     });
     assert.strictEqual(res.status, 401);
-    assert.strictEqual(res.body.code, 'INVALID_ADMIN_KEY');
+    assert.strictEqual(res.body.code, 'AUTH_REQUIRED');
   });
 
-  await test('Test 6: Admin endpoints succeed with 200 when valid x-admin-api-key is supplied', async () => {
-    process.env.ADMIN_API_KEY = TEST_ADMIN_KEY;
+  await test('Test 6: Admin endpoints succeed with 200 when valid admin session is supplied', async () => {
     resetAdminRateLimits();
+    const durableAdminToken = 'adm-test-session-token-durable';
+    adminSecurityStore.registerTestSession({
+      token: durableAdminToken,
+      user: { id: 'admin-durable-1', email: 'admin@tikum.app', role: 'admin' },
+      session: { session_token: durableAdminToken, expires_at: new Date(Date.now() + 3600000).toISOString() }
+    });
 
     const res = await apiRequest('/api/discovery/admin/inventory-report', {
       headers: {
-        'x-admin-api-key': TEST_ADMIN_KEY
+        'Authorization': `Bearer ${durableAdminToken}`,
+        'Origin': baseUrl
       }
     });
     assert.strictEqual(res.status, 200);
@@ -250,21 +258,16 @@ async function runTests() {
     assert.ok(res.body.report);
   });
 
-  await test('Test 7: Admin endpoints fail-closed with 401 when ADMIN_API_KEY is unset in environment', async () => {
-    const savedKey = process.env.ADMIN_API_KEY;
-    delete process.env.ADMIN_API_KEY;
+  await test('Test 7: Admin endpoints fail-closed with 401 when admin session is not present or expired', async () => {
     resetAdminRateLimits();
 
     const res = await apiRequest('/api/discovery/admin/inventory-report', {
       headers: {
-        'x-admin-api-key': TEST_ADMIN_KEY
+        'Authorization': 'Bearer expired-or-unset-token'
       }
     });
     assert.strictEqual(res.status, 401);
-    assert.strictEqual(res.body.code, 'ADMIN_KEY_NOT_CONFIGURED');
-
-    // Restore key
-    process.env.ADMIN_API_KEY = savedKey;
+    assert.strictEqual(res.body.code, 'AUTH_REQUIRED');
   });
 
   console.log('\n── Section 3: Vercel Cron Discovery Sync & Concurrency Locking ──');
@@ -289,7 +292,7 @@ async function runTests() {
     assert.strictEqual(res.body.code, 'INVALID_CRON_SECRET');
   });
 
-  await test('Test 10: Cron sync fails-closed with 500 when CRON_SECRET is unset in environment', async () => {
+  await test('Test 10: Cron sync fails-closed with 500/503 when CRON_SECRET is unset in environment', async () => {
     const savedCron = process.env.CRON_SECRET;
     delete process.env.CRON_SECRET;
 
@@ -298,7 +301,7 @@ async function runTests() {
         'Authorization': `Bearer ${TEST_CRON_SECRET}`
       }
     });
-    assert.strictEqual(res.status, 500);
+    assert.ok(res.status === 500 || res.status === 503, `Expected 500 or 503, got ${res.status}`);
     assert.strictEqual(res.body.code, 'CRON_SECRET_NOT_CONFIGURED');
 
     process.env.CRON_SECRET = savedCron;

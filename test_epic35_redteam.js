@@ -15,6 +15,8 @@
  */
 
 process.env.NODE_ENV = 'test';
+// Exercise transaction attack paths rather than stopping at the prelaunch gate.
+process.env.MARKETPLACE_MODE = 'LIVE';
 const assert = require('assert');
 const http = require('http');
 const fs = require('fs');
@@ -343,11 +345,27 @@ async function runRedTeamSuite() {
       await EscrowService.releaseToSeller(order.id, 'admin-1');
 
       // Initial settlement
+      const { FinancialAuthorizationService, AUTHORIZATION_ACTION } = require('./src/settlement/FinancialAuthorizationService');
+      const authRes = await FinancialAuthorizationService.requestAuthorization({
+        orderId: order.id,
+        actionType: AUTHORIZATION_ACTION.EXECUTE_PAYOUT,
+        makerId: 'maker-1',
+        amount: order.total_price || 1500000,
+        reason: 'Turnstile admission confirmed by PIC, authorized for payout',
+        metadata: { bankAccount: 'BCA pilot' }
+      });
+      await FinancialAuthorizationService.approveAuthorization({
+        authorizationId: authRes.authorization.id,
+        checkerId: 'checker-1',
+        notes: 'Approved payout for verified pilot order'
+      });
+
       const firstSettle = await SettlementService.executeSettlement({
         orderId: order.id,
         sellerId: order.seller_id,
         officerId: 'admin-1',
-        idempotencyKey: 'settle-key-' + order.id
+        idempotencyKey: 'settle-key-' + order.id,
+        authorizationId: authRes.authorization.id
       });
       assert.strictEqual(firstSettle.settlement.status, 'EXECUTED');
 
@@ -360,7 +378,8 @@ async function runRedTeamSuite() {
         orderId: order.id,
         sellerId: order.seller_id,
         officerId: 'admin-1',
-        idempotencyKey: 'settle-key-' + order.id
+        idempotencyKey: 'settle-key-' + order.id,
+        authorizationId: authRes.authorization.id
       });
       assert.strictEqual(duplicateSequential.idempotent, true, 'Must return idempotent true');
       assert.strictEqual(duplicateSequential.settlement.id, firstSettle.settlement.id);
@@ -370,7 +389,8 @@ async function runRedTeamSuite() {
         orderId: order.id,
         sellerId: order.seller_id,
         officerId: 'admin-1',
-        idempotencyKey: 'settle-different-key-' + order.id
+        idempotencyKey: 'settle-different-key-' + order.id,
+        authorizationId: authRes.authorization.id
       });
       assert.strictEqual(duplicateConcurrent.duplicatePrevented, true, 'Must prevent duplicate payout');
 
@@ -391,10 +411,20 @@ async function runRedTeamSuite() {
         status: 'CONFIRMED'
       });
 
+      const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
+      const adminToken = 'adm-test-redteam-token';
+      const adminUser = { id: 'admin-1', email: 'admin@tikum.app', role: 'ADMIN', name: 'Admin' };
+      adminSecurityStore.registerTestSession(adminToken, adminUser);
+      const adminHeaders = {
+        'Authorization': `Bearer ${adminToken}`,
+        'Origin': baseUrl,
+        'x-user-id': 'admin-1'
+      };
+
       // Subcase 7A: Settlement attempt without password or token
       const noAuthSettle = await apiRequest('/api/mvp/admin/settlements/execute', {
         method: 'POST',
-        headers: { 'x-user-id': 'admin-1' },
+        headers: adminHeaders,
         body: {
           officerId: 'admin-1',
           orderId: order.id,
@@ -408,7 +438,7 @@ async function runRedTeamSuite() {
       // Subcase 7B: Settlement attempt with WRONG password
       const wrongPasswordSettle = await apiRequest('/api/mvp/admin/settlements/execute', {
         method: 'POST',
-        headers: { 'x-user-id': 'admin-1' },
+        headers: adminHeaders,
         body: {
           officerId: 'admin-1',
           orderId: order.id,
@@ -423,7 +453,7 @@ async function runRedTeamSuite() {
       // Subcase 7C: Settlement attempt with correct password but reason < 10 characters
       const shortReasonSettle = await apiRequest('/api/mvp/admin/settlements/execute', {
         method: 'POST',
-        headers: { 'x-user-id': 'admin-1' },
+        headers: adminHeaders,
         body: {
           officerId: 'admin-1',
           orderId: order.id,
@@ -436,15 +466,31 @@ async function runRedTeamSuite() {
       assert.strictEqual(shortReasonSettle.data.code, 'STEP_UP_REASON_REQUIRED');
 
       // Subcase 7D: Valid step-up authentication -> Succeeds
+      const { FinancialAuthorizationService, AUTHORIZATION_ACTION } = require('./src/settlement/FinancialAuthorizationService');
+      const authRes = await FinancialAuthorizationService.requestAuthorization({
+        orderId: order.id,
+        actionType: AUTHORIZATION_ACTION.EXECUTE_PAYOUT,
+        makerId: 'maker-1',
+        amount: order.total_price || 1500000,
+        reason: 'Turnstile admission confirmed by PIC, authorized for payout',
+        metadata: { bankAccount: 'BCA pilot' }
+      });
+      await FinancialAuthorizationService.approveAuthorization({
+        authorizationId: authRes.authorization.id,
+        checkerId: 'checker-1',
+        notes: 'Approved payout for verified pilot order'
+      });
+
       const validSettle = await apiRequest('/api/mvp/admin/settlements/execute', {
         method: 'POST',
-        headers: { 'x-user-id': 'admin-1' },
+        headers: adminHeaders,
         body: {
           officerId: 'admin-1',
           orderId: order.id,
           sellerId: order.seller_id,
           stepUpPassword: 'pilot123',
-          reason: 'Physical inspection and turnstile barcode validated' // >= 10 chars
+          reason: 'Physical inspection and turnstile barcode validated', // >= 10 chars
+          authorizationId: authRes.authorization.id
         }
       });
       assert.strictEqual(validSettle.status, 200);
@@ -636,8 +682,10 @@ async function runRedTeamSuite() {
 
       const prevEnv = process.env.NODE_ENV;
       const prevPass = process.env.ARGUS_ADMIN_PASSWORD;
+      const prevBaseUrl = process.env.APP_BASE_URL;
       try {
         process.env.NODE_ENV = 'production';
+        process.env.APP_BASE_URL = baseUrl;
         process.env.ARGUS_ADMIN_PASSWORD = 'super-secret-production-admin-pass-2026';
 
         const adminUser = state.users.find(u => u.id === 'admin-1');
@@ -652,19 +700,31 @@ async function runRedTeamSuite() {
         assert.strictEqual(loginDefaultAttempt.status, 401, 'Default pilot123 login must be rejected in production');
         assert.strictEqual(loginDefaultAttempt.data.code, 'AUTH_FAILED');
 
-        // Subcase 12B: Login with production password succeeds
-        const adminSession = await apiRequest('/api/mvp/auth/login', {
+        // Subcase 12B: Admin password login disabled on /api/mvp/auth/login under Admin Security Hardening
+        const loginProdAttempt = await apiRequest('/api/mvp/auth/login', {
           method: 'POST',
           body: { usernameOrId: 'admin-1', password: 'super-secret-production-admin-pass-2026' }
         });
-        assert.strictEqual(adminSession.status, 200);
-        assert.ok(adminSession.data.session_token);
+        assert.strictEqual(loginProdAttempt.status, 401, 'Admin password login must be rejected in favor of magic-link');
 
-        // Subcase 12C: Attacker attempts step-up action using default 'pilot123' password -> Rejected
+        // Subcase 12C: Register authenticated session and verify step-up action using default 'pilot123' password -> Rejected
+        const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
+        const adminToken = 'adm-test-prod-stepup-token';
+        const adminSecurityUser = {
+          id: 'admin-1',
+          email: 'admin@tikum.app',
+          role: 'ADMIN',
+          admin_role: 'SUPERADMIN',
+          status: 'ACTIVE'
+        };
+        adminSecurityStore.registerTestSession(adminToken, adminSecurityUser);
+
         const defaultPassAttempt = await apiRequest('/api/mvp/admin/settlements/execute', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${adminSession.data.session_token}`
+            'Authorization': `Bearer ${adminToken}`,
+            'Origin': baseUrl,
+            'x-user-id': 'admin-1'
           },
           body: {
             officerId: 'admin-1',
@@ -681,6 +741,11 @@ async function runRedTeamSuite() {
         adminUser.password = prevAdminPass;
       } finally {
         process.env.NODE_ENV = prevEnv;
+        if (prevBaseUrl) {
+          process.env.APP_BASE_URL = prevBaseUrl;
+        } else {
+          delete process.env.APP_BASE_URL;
+        }
         if (prevPass) {
           process.env.ARGUS_ADMIN_PASSWORD = prevPass;
         } else {

@@ -37,6 +37,19 @@ async function logAudit(...args) {
 const EVENT_ARCHIVE_GRACE_MS = 1 * 60 * 60 * 1000; // Strictly 1 hour post verified actual event end time
 const HOMEPAGE_EVENT_GRACE_DAYS = 1 / 24; // 1 hour legacy compatibility
 
+function getEffectiveNow(candidate) {
+  if (candidate instanceof Date && !isNaN(candidate.getTime())) return candidate;
+  if (typeof candidate === 'string' || typeof candidate === 'number') {
+    const d = new Date(candidate);
+    if (!isNaN(d.getTime())) return d;
+  }
+  if (process.env.NODE_ENV === 'test' && process.env.SIMULATE_NOW) {
+    const sim = new Date(process.env.SIMULATE_NOW);
+    if (!isNaN(sim.getTime())) return sim;
+  }
+  return new Date();
+}
+
 const LIFECYCLE_STATUS = {
   ANNOUNCED: 'ANNOUNCED',
   UPCOMING: 'UPCOMING',
@@ -339,12 +352,16 @@ class EventTemporalLifecycleEngine {
   /**
    * Resolves canonical lifecycle status from timestamps and real operations.
    */
-  static resolveLifecycleStatus(event, now = new Date()) {
+  static resolveLifecycleStatus(event, now = null) {
+    now = getEffectiveNow(now);
     const rawStatus = (event.status || event.lifecycle_status || '').toUpperCase();
 
     // Respect terminal administrative branches
     if (rawStatus === LIFECYCLE_STATUS.CANCELLED || rawStatus === 'DIBATALKAN') {
       return LIFECYCLE_STATUS.CANCELLED;
+    }
+    if (rawStatus === 'RESCHEDULED') {
+      return 'RESCHEDULED';
     }
     if (rawStatus === LIFECYCLE_STATUS.POSTPONED || rawStatus === 'DITUNDA') {
       // If event was postponed and has a future start_at, it can transition to UPCOMING
@@ -395,7 +412,8 @@ class EventTemporalLifecycleEngine {
   /**
    * Returns YYYY-MM-DD in Asia/Jakarta timezone (WIB = UTC+7).
    */
-  static getJakartaDateString(dateInput = new Date()) {
+  static getJakartaDateString(dateInput = null) {
+    dateInput = getEffectiveNow(dateInput);
     const d = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
     if (isNaN(d.getTime())) return new Date().toISOString().substring(0, 10);
     return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(d);
@@ -406,7 +424,8 @@ class EventTemporalLifecycleEngine {
    * Timezone: Asia/Jakarta (WIB = UTC+7) — ALL date calculations use this timezone.
    * Multi-day event rule: uses the last day (end_date).
    */
-  static isEventExpired(event, now = new Date()) {
+  static isEventExpired(event, now = null) {
+    now = getEffectiveNow(now);
     if (!event) return false;
     const rawStatus = (event.status || event.lifecycle_status || '').toUpperCase();
     if (rawStatus === 'CANCELLED' || rawStatus === 'COMPLETED' || rawStatus === 'ARCHIVED' || rawStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS' || rawStatus === 'EXPIRED') {
@@ -435,7 +454,8 @@ class EventTemporalLifecycleEngine {
    * Concluded event remains COMPLETED for 1 hour post end time, then transitions to ARCHIVED.
    * Eliminates inconsistent H+2 / 48-hour / H+3 / midnight fallbacks.
    */
-  static isEventArchived(event, now = new Date()) {
+  static isEventArchived(event, now = null) {
+    now = getEffectiveNow(now);
     if (!event) return false;
     const rawStatus = (event.lifecycle_status || event.status || '').toUpperCase();
     if (rawStatus === 'ARCHIVED' || rawStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS') {
@@ -454,7 +474,8 @@ class EventTemporalLifecycleEngine {
    * Predicate: determines whether an event is publicly upcoming.
    * Strict invariant: event_end_at > now AND not completed/archived/cancelled.
    */
-  static isEventUpcoming(event, now = new Date()) {
+  static isEventUpcoming(event, now = null) {
+    now = getEffectiveNow(now);
     if (!event) return false;
 
     // Zero-Wrong-Date Invariant: Historical tour conflicts can NEVER be upcoming
@@ -493,7 +514,8 @@ class EventTemporalLifecycleEngine {
    * - 'RECENT': event concluded within H+2 grace period (end_at < now <= end_at + 2 days)
    * - 'EXPIRED': event concluded past H+2 grace period (now > end_at + 2 days)
    */
-  static getHomepageTemporalWindow(event, now = new Date()) {
+  static getHomepageTemporalWindow(event, now = null) {
+    now = getEffectiveNow(now);
     if (!event) return 'EXPIRED';
     const temporal = this.computeTemporalAttributes(event);
     if (temporal.is_invalid_date || !temporal.event_start_at || !temporal.event_end_at) {
@@ -524,7 +546,8 @@ class EventTemporalLifecycleEngine {
    * 3. Lifecycle not CANCELLED or EXPIRED
    * 4. Temporal window is not EXPIRED (i.e. UPCOMING, TODAY, or RECENT within 1-hour archive window)
    */
-  static isEventHomepageEligible(event, now = new Date()) {
+  static isEventHomepageEligible(event, now = null) {
+    now = getEffectiveNow(now);
     if (!event) return false;
 
     // Zero-Wrong-Date Invariant: Historical tour conflicts can NEVER be on homepage
@@ -571,7 +594,8 @@ class EventTemporalLifecycleEngine {
    * Reconciles a single event's temporal lifecycle state.
    * If state changes, emits structured audit log and expires active listings if concluded.
    */
-  static async reconcileEvent(event, now = new Date(), actorId = 'SYSTEM') {
+  static async reconcileEvent(event, now = null, actorId = 'SYSTEM') {
+    now = getEffectiveNow(now);
     if (!event) return null;
 
     const eventId = event.event_id || event.id;
@@ -726,7 +750,8 @@ class EventTemporalLifecycleEngine {
    * Reconciles all events across CanonicalEventRegistry and state.events.
    * Completely idempotent.
    */
-  static async reconcileAllEvents(now = new Date(), actorId = 'SYSTEM') {
+  static async reconcileAllEvents(now = null, actorId = 'SYSTEM') {
+    now = getEffectiveNow(now);
     const { canonicalRegistry } = require('./CanonicalEventRegistry');
     const allCanonical = canonicalRegistry.getAllEvents();
     const transitions = [];
@@ -807,7 +832,8 @@ class EventTemporalLifecycleEngine {
    * Controlled Historical Audit (Section 17):
    * Inspects all events and generates affected-event report.
    */
-  static auditHistoricalEvents(now = new Date()) {
+  static auditHistoricalEvents(now = null) {
+    now = getEffectiveNow(now);
     const { canonicalRegistry } = require('./CanonicalEventRegistry');
     const allEvents = canonicalRegistry.getAllEvents();
     const state = getState();
@@ -865,7 +891,8 @@ class EventTemporalLifecycleEngine {
    * @param {Date} now - Reference timestamp
    * @returns {boolean} true if event verification is stale for trading
    */
-  static isEventStaleForTrading(event, now = new Date()) {
+  static isEventStaleForTrading(event, now = null) {
+    now = getEffectiveNow(now);
     if (!event) return true;
     const nowMs = (now instanceof Date) ? now.getTime() : new Date(now).getTime();
     const temporal = this.computeTemporalAttributes(event);
@@ -893,7 +920,8 @@ class EventTemporalLifecycleEngine {
    * @param {Date} now - Reference timestamp
    * @returns {{ eligible: boolean, reason?: string }}
    */
-  static isEventEligibleForTrading(event, now = new Date()) {
+  static isEventEligibleForTrading(event, now = null) {
+    now = getEffectiveNow(now);
     if (!event) return { eligible: false, reason: 'EVENT_NOT_FOUND' };
     const rawStatus = (event.lifecycle_status || event.status || event.event_status || '').toUpperCase();
     if (rawStatus === 'CANCELLED' || rawStatus === 'DIBATALKAN') {

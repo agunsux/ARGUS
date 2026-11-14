@@ -142,12 +142,12 @@ async function main() {
     assert.strictEqual(upcoming, false, 'Live events are NOT upcoming in discovery feed');
   });
 
-  // Case 5: Concluded event in H+48 grace period (end_at < now < end_at + 48h), no open ops
-  runTest('Case 5: Concluded event in H+48 grace period (end_at < now < archive_at)', () => {
+  // Case 5: Concluded event in archive grace period (end_at < now < archive_at), no open ops
+  runTest('Case 5: Concluded event in archive grace period (end_at < now < archive_at)', () => {
     const event = {
       id: 'case-5',
-      event_start_at: '2026-09-21T18:00:00+07:00',
-      event_end_at: '2026-09-21T22:00:00+07:00', // Ended 14 hours ago relative to referenceNow
+      event_start_at: '2026-09-22T08:00:00+07:00',
+      event_end_at: '2026-09-22T11:30:00+07:00', // Ended 30 minutes ago relative to referenceNow (within 1h grace period)
       city: 'Jakarta'
     };
     const status = EventTemporalLifecycleEngine.resolveLifecycleStatus(event, referenceNow);

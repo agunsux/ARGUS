@@ -710,6 +710,13 @@ class DokuPaymentProvider extends PaymentProvider {
     const invoiceNumber = metadata?.invoiceNumber || `INV-DOKU-${orderId}`;
     const effCallbackUrl = callbackUrl || metadata?.callbackUrl || `https://tikum.app/track/${orderId}`;
 
+    // Strict Production Host Rejection: live production gate check runs FIRST
+    if (this.productionHostRejected || (this.apiBaseUrl === 'https://api.doku.com' || (this.apiBaseUrl.includes('doku.com') && !this.apiBaseUrl.includes('sandbox'))) || (this.mode === 'production' && !this.enableProduction)) {
+      if (!this.enableProduction) {
+        throw new Error('PRODUCTION_HOST_REJECTED: Selection of live DOKU production API host (https://api.doku.com) is strictly forbidden while production payments are gated. Live DOKU production API client awaiting merchant production activation.');
+      }
+    }
+
     const upperChannel = (channel || 'VA_DOKU').toUpperCase().trim();
     const isVaChannel = upperChannel.startsWith('VA') || upperChannel.includes('VIRTUAL_ACCOUNT');
 
@@ -720,13 +727,6 @@ class DokuPaymentProvider extends PaymentProvider {
         'hold',
         `PROVIDER_CONFIRMATION_REQUIRED: Direct API channel '${channel}' does not currently have verified hold_settlement documentation. Only Virtual Account Direct API (VA_BCA, VA_MANDIRI, VA_BRI, VA_BNI, VA_PERMATA, VA_DOKU) is verified for hold_settlement.`
       );
-    }
-
-    // Strict Production Host Rejection
-    if (this.productionHostRejected || (this.apiBaseUrl === 'https://api.doku.com' || (this.apiBaseUrl.includes('doku.com') && !this.apiBaseUrl.includes('sandbox')))) {
-      if (!this.enableProduction) {
-        throw new Error('PRODUCTION_HOST_REJECTED: Selection of live DOKU production API host (https://api.doku.com) is strictly forbidden while production payments are gated. Live DOKU production API client awaiting merchant production activation.');
-      }
     }
 
     // Fail-Closed Guard: If not in simulation mode, missing credentials must throw error immediately
@@ -1058,7 +1058,7 @@ class DokuPaymentProvider extends PaymentProvider {
     const refundId = `doku-ref-${orderId}-${Date.now()}`;
     const refundAmount = parseInt(amount, 10);
 
-    if (this.allowSimulation || !this.secretKey) {
+    if (this.allowSimulation) {
       return {
         refundId,
         orderId,

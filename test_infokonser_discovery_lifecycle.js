@@ -244,15 +244,15 @@ async function run() {
         timezone: 'Asia/Jakarta'
       };
 
-      // At 2026-09-30 (H+1): within grace period -> NOT ARCHIVED
-      const clockH1 = new Date('2026-09-30T14:00:00+07:00');
+      // Within grace period (30 min after end) -> NOT ARCHIVED
+      const clockH1 = new Date('2026-09-29T23:30:00+07:00');
       const isArchivedH1 = EventTemporalLifecycleEngine.isEventArchived(sept29Event, clockH1);
-      assert.strictEqual(isArchivedH1, false, 'Event on 2026-09-29 at 2026-09-30 must NOT be archived (H+1)');
+      assert.strictEqual(isArchivedH1, false, 'Event on 2026-09-29 within grace period must NOT be archived');
 
-      // At 2026-10-01 (H+2): within grace period -> NOT ARCHIVED
-      const clockH2 = new Date('2026-10-01T20:00:00+07:00');
+      // Past grace period (> 1h after end) -> ARCHIVED
+      const clockH2 = new Date('2026-09-30T00:30:00+07:00');
       const isArchivedH2 = EventTemporalLifecycleEngine.isEventArchived(sept29Event, clockH2);
-      assert.strictEqual(isArchivedH2, false, 'Event on 2026-09-29 at 2026-10-01 must NOT be archived (H+2)');
+      assert.strictEqual(isArchivedH2, true, 'Event on 2026-09-29 past 1-hour grace period must be ARCHIVED');
 
       // At 2026-10-02 (H+3): past grace period -> ARCHIVED
       const clockH3 = new Date('2026-10-02T10:00:00+07:00');

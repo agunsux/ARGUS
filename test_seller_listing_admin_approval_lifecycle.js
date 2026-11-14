@@ -44,6 +44,7 @@ async function runTests() {
         method: options.method || 'GET',
         headers: {
           Accept: 'application/json',
+          Origin: baseUrl,
           ...(options.headers || {})
         }
       };

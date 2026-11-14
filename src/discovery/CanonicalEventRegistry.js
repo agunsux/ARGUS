@@ -474,7 +474,15 @@ class CanonicalEventRegistry {
     canonicalEvent.is_verified = (evalResult.verification_status === VERIFICATION_STATUS.VERIFIED || evalResult.verification_status === 'PRIMARY_SOURCE_VERIFIED');
 
     // Temporal Lifecycle Status Override: An archived / concluded event cannot be VERIFIED/UPCOMING
-    if (temporal.is_invalid_date) {
+    if (canonicalEvent.status === 'CANCELLED' || eventData.status === 'CANCELLED' || canonicalEvent.status === 'DIBATALKAN') {
+      canonicalEvent.status = 'CANCELLED';
+      canonicalEvent.lifecycle_status = 'CANCELLED';
+      canonicalEvent.archive_status = 'CANCELLED';
+      canonicalEvent.is_verified = false;
+      canonicalEvent.public_visibility = false;
+      canonicalEvent.homepage_visibility = false;
+      canonicalEvent.public_upcoming = false;
+    } else if (temporal.is_invalid_date) {
       canonicalEvent.status = 'SCHEDULE_PENDING';
       canonicalEvent.lifecycle_status = 'SCHEDULE_PENDING';
       canonicalEvent.archive_status = 'PENDING';
@@ -1229,7 +1237,9 @@ class CanonicalEventRegistry {
 
     const resolvedLifecycle = EventTemporalLifecycleEngine.resolveLifecycleStatus(event);
     event.lifecycle_status = resolvedLifecycle;
-    if (resolvedLifecycle === LIFECYCLE_STATUS.COMPLETED ||
+    if (event.status === 'RESCHEDULED' || event.event_status === 'RESCHEDULED') {
+      // Preserve explicit RESCHEDULED status
+    } else if (resolvedLifecycle === LIFECYCLE_STATUS.COMPLETED ||
         resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED ||
         resolvedLifecycle === LIFECYCLE_STATUS.ARCHIVED_WITH_OPEN_OPERATIONS ||
         resolvedLifecycle === LIFECYCLE_STATUS.CANCELLED) {
@@ -1614,12 +1624,12 @@ class CanonicalEventRegistry {
       has_venue_assist: false,
       has_pic: false,
       venue_assist_status: 'NOT_SCHEDULED',
-      status: 'ARCHIVED',
-      lifecycle_status: 'ARCHIVED',
-      archive_status: 'ARCHIVED',
-      public_visibility: false,
-      homepage_visibility: false,
-      public_upcoming: false,
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
+      public_visibility: true,
+      homepage_visibility: true,
+      public_upcoming: true,
       source: 'OFFICIAL_TICKETING_PORTAL',
       source_id: 'src-official-comedy',
       source_type: 'PRIMARY_SOURCE',
@@ -1774,8 +1784,9 @@ class CanonicalEventRegistry {
       return [btsHero, bigbangHero, morganJayHero, nassarHero, yeHero];
     }
 
-    // Default active upcoming hero concerts: strictly BTS (Primary) and BIGBANG (Secondary)
-    return [btsHero, bigbangHero];
+    // Default active upcoming hero concerts: strictly qualified (lowest official tier >= 500k)
+    // King Nassar is excluded due to Rp 350.000 Tribun Regular tier.
+    return [btsHero, morganJayHero];
   }
 
   getAllEvents() {

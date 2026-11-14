@@ -402,7 +402,7 @@ router.get('/events/:slug', (req, res, next) => {
       event.archive_status === 'ARCHIVED';
 
     const isVerified = isPast
-      ? (event.verification_status !== 'REJECTED' && event.verification_status !== 'UNVERIFIED')
+      ? (event.is_verified === true && event.verification_status !== 'REJECTED' && event.verification_status !== 'UNVERIFIED')
       : (event.is_verified === true && ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status));
     const hasProvenance = isPast || Boolean(event.source_url || event.official_event_url || (event.sources && event.sources.length > 0) || (event.metadata && event.metadata.seeded_at));
 
@@ -417,7 +417,7 @@ router.get('/events/:slug', (req, res, next) => {
     }
 
     // STRICT RP 500.000 PRICE INVARIANT: Events with lowest price < 500k cannot be accessed via public direct URL
-    const isPriceDisqualified = event.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(event);
+    const isPriceDisqualified = event.price_status === 'EXCLUDED_PRICE_TOO_LOW' || (CuratedCatalogPolicy.evaluateOfficialPriceQualification(event).status === 'EXCLUDED_PRICE_TOO_LOW');
     if (isPriceDisqualified) {
       return res.status(404).send(`<!DOCTYPE html>
         <html><head><title>Event Tidak Memenuhi Kriteria — Tikum</title></head>
@@ -494,14 +494,20 @@ router.get('/events', (req, res) => {
 
   let allEvents = canonicalRegistry.getAllEvents();
   const showAllOrPast = include_past === 'true' || scope === 'all';
-  const now = new Date();
+  const now = (req.query?.now || req.headers?.['x-simulate-clock'] || (process.env.NODE_ENV === 'test' && process.env.SIMULATE_NOW))
+    ? new Date(req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
+    : new Date();
 
-  if (q && q.trim()) {
-    const term = q.toLowerCase().trim();
+  const searchTerm = (q || req.query.search || '').trim();
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
     allEvents = allEvents.filter(e => 
       (e.canonical_name || '').toLowerCase().includes(term) ||
+      (e.title || '').toLowerCase().includes(term) ||
+      (e.name || '').toLowerCase().includes(term) ||
       (e.venue_name || '').toLowerCase().includes(term) ||
-      (e.city || '').toLowerCase().includes(term)
+      (e.city || '').toLowerCase().includes(term) ||
+      (Array.isArray(e.artists) && e.artists.some(a => a.toLowerCase().includes(term)))
     );
   }
 
@@ -1040,8 +1046,10 @@ function handleGetEvents(req, res) {
     sort = 'nearest', lat, lng, user_city, limit = 100, page = 1
   } = req.query;
 
-  // Edge Cache: Absorb high-frequency public feed queries
-  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  // Cache Integrity: Prevent stale caching of event listings
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
 
   let allEvents = canonicalRegistry.getAllEvents();
   const showAllOrPast = include_past === 'true' || scope === 'all' || req.query.include_archived === 'true';
@@ -1155,9 +1163,8 @@ function handleGetEvents(req, res) {
       // STRICT RP 500.000 PRICE FILTER: Events with lowest price < 500k are EXCLUDED unless explicitly requested
       if (req.query.include_all_prices !== 'true') {
         if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW') return false;
-    const priceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(e);
-    if (priceEval && priceEval.status === 'EXCLUDED_PRICE_TOO_LOW') return false;
-        if (e.price_status === 'PENDING_VERIFICATION') return false;
+        const priceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(e);
+        if (priceEval && priceEval.status === 'EXCLUDED_PRICE_TOO_LOW') return false;
       }
 
       if (status && status.trim()) {
@@ -1707,7 +1714,7 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
       event.archive_status === 'ARCHIVED';
 
     const isVerified = isPast
-      ? (event.verification_status !== 'REJECTED' && event.verification_status !== 'UNVERIFIED')
+      ? (event.is_verified === true && event.verification_status !== 'REJECTED' && event.verification_status !== 'UNVERIFIED')
       : (event.is_verified === true && event.public_visibility !== false &&
          ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status));
     const hasProvenance = isPast || Boolean(event.source_url || event.official_event_url || (event.sources && event.sources.length > 0) || (event.metadata && event.metadata.seeded_at));
@@ -1717,7 +1724,7 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
     }
 
     // STRICT RP 500.000 PRICE INVARIANT: Events with lowest price < 500k cannot be accessed via public direct API
-    const isPriceDisqualified = event.price_status === 'EXCLUDED_PRICE_TOO_LOW' || !CuratedCatalogPolicy.isPriceQualified(event);
+    const isPriceDisqualified = event.price_status === 'EXCLUDED_PRICE_TOO_LOW' || (CuratedCatalogPolicy.evaluateOfficialPriceQualification(event).status === 'EXCLUDED_PRICE_TOO_LOW');
     if (isPriceDisqualified) {
       return res.status(404).json({ error: 'Event is not eligible for public discovery (minimum ticket price below Rp 500.000)', code: 'PRICE_DISQUALIFIED' });
     }

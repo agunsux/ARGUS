@@ -1,0 +1,68 @@
+{
+  "startedAt": "2026-11-14T18:37:27.020Z",
+  "isolation": "offline, credential-free",
+  "checks": [
+    {
+      "file": "test_syntax_check.js",
+      "exitCode": 0,
+      "error": null,
+      "summary": [
+        "✅ All 336 src/ JS files passed syntax validation!"
+      ]
+    },
+    {
+      "file": "scripts/check_homepage_surface.js",
+      "exitCode": 0,
+      "error": null,
+      "summary": [
+        "Homepage surface guard PASSED (1 inline scripts parsed, 16 hooks verified)."
+      ]
+    },
+    {
+      "file": "scripts/generate_sitemap.js",
+      "exitCode": 0,
+      "error": null,
+      "summary": [
+        "Generated public/sitemap.xml (9400 bytes)."
+      ]
+    },
+    {
+      "file": "release_verify.js",
+      "exitCode": 0,
+      "error": null,
+      "summary": [
+        "  ✔ test_decision_context.js PASSED",
+        "  ✔ test_decision_factory.js PASSED",
+        "  ✔ test_decision_validator.js PASSED",
+        "  ✔ test_decision_candidate.js PASSED",
+        "  ✔ test_decision_pipeline.js PASSED",
+        "  ✔ test_decision_orchestrator.js PASSED",
+        "  ✔ test_decision_snapshot.js PASSED",
+        "  ✔ test_policy_constraint.js PASSED",
+        "  ✔ test_policy_rule.js PASSED",
+        "  ✔ test_policy_compiler.js PASSED",
+        "  ✔ test_policy_registry.js PASSED",
+        "  ✔ test_policy_engine.js PASSED",
+        "  ✔ test_policy_evaluation.js PASSED",
+        "  ✔ test_policy_metrics.js PASSED",
+        "  ✔ test_phase18_replay.js PASSED",
+        "  ✔ test_phase19_explain.js PASSED",
+        "  ✔ test_phase20_observability.js PASSED",
+        "  ✔ test_phase21_performance.js PASSED",
+        "  ✔ test_phase22_security.js PASSED",
+        "  ✔ test_phase23_flutter.js PASSED",
+        "  ✔ test_phase24_dataset.js PASSED",
+        "  ✔ test_epic_h_recommendation.js PASSED",
+        "  ✔ test_epic_i_trust.js PASSED",
+        "  ✔ test_epic_omega_knowledge.js PASSED",
+        "  ✔ test_integration_end_to_end.js PASSED",
+        "  ✔ test_audit_replay_100.js PASSED",
+        "  ✔ test_audit_replay_10000.js PASSED",
+        "  ✔ test_olympus_learning.js PASSED",
+        "  ✔ test_olympus_registry.js PASSED",
+        "✅ ALL AUDITS PASSED. READY FOR RELEASE CANDIDATE FREEZE."
+      ]
+    }
+  ],
+  "finishedAt": "2026-11-14T18:38:26.045Z"
+}

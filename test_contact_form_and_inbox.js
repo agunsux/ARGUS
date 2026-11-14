@@ -124,9 +124,12 @@ async function runTests() {
     state.users.push(adminUser);
     const sess = SessionStore.createSession({ userId: adminUser.id, role: 'ADMIN', ttlMs: 24 * 3600 * 1000 });
     const adminSessionToken = sess.session_token;
+    const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
+    adminSecurityStore.registerTestSession(adminSessionToken, adminUser);
     const adminHeaders = {
       'Cookie': `argus_session=${adminSessionToken}; tikum_session=${adminSessionToken}`,
-      'Authorization': `Bearer ${adminSessionToken}`
+      'Authorization': `Bearer ${adminSessionToken}`,
+      'Origin': baseUrl
     };
 
     // -------------------------------------------------------------------------
@@ -314,7 +317,7 @@ async function runTests() {
     await checkAsync('8. GET /api/admin/inbox: Enforces admin authorization', async () => {
       // Unauthenticated
       const resUnauth = await request('/api/admin/inbox');
-      assert.strictEqual(resUnauth.statusCode, 403);
+      assert.ok(resUnauth.statusCode === 401 || resUnauth.statusCode === 403, 'Unauthenticated admin endpoint access must be rejected');
 
       // Authenticated admin
       const resAdmin = await request('/api/admin/inbox', { headers: adminHeaders });

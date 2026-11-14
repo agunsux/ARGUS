@@ -16,6 +16,7 @@ process.env.NODE_ENV = 'test';
 process.env.DEFAULT_PAYMENT_PROVIDER = 'doku'; // DOKU remains primary
 process.env.ENABLE_DOKU_PRODUCTION = 'false';
 process.env.ENABLE_XENDIT_PRODUCTION = 'false';
+process.env.MARKETPLACE_MODE = 'LIVE';
 
 const assert = require('assert');
 const crypto = require('crypto');

@@ -16,6 +16,7 @@
 process.env.NODE_ENV = 'test';
 process.env.ENABLE_DOKU_PRODUCTION = 'false';
 process.env.TIKUM_PRICING_POLICY = 'TIKUM_FEE_POLICY_V1';
+process.env.MARKETPLACE_MODE = 'LIVE';
 
 const assert = require('assert');
 const { v4: uuidv4 } = require('uuid');
@@ -134,25 +135,27 @@ async function runSuite() {
   }
 
   // Common LANY Pilot Event Fixture (Upcoming Sandbox Date)
-  const lanyEventId = 'event-lany-jakarta-2026';
+  const lanyEventId = 'event-lany-pilot-sandbox-2026';
   let lanyEvent = state.events.find(e => e.id === lanyEventId);
   if (lanyEvent) {
-    lanyEvent.date = '2026-11-15';
-    lanyEvent.start_date = '2026-11-15';
-    lanyEvent.end_date = '2026-11-15';
+    lanyEvent.date = '2026-12-15';
+    lanyEvent.start_date = '2026-12-15';
+    lanyEvent.end_date = '2026-12-15';
     lanyEvent.status = 'UPCOMING';
     lanyEvent.lifecycle_status = 'UPCOMING';
+    lanyEvent.verified_at = new Date().toISOString();
   } else {
     lanyEvent = {
       id: lanyEventId,
-      slug: 'lany-a-beautiful-blur-jakarta-2026',
+      slug: 'lany-pilot-sandbox-2026',
       title: "LANY: 'a beautiful blur' Tour Jakarta (Pilot Sandbox)",
-      date: '2026-11-15',
-      start_date: '2026-11-15',
-      end_date: '2026-11-15',
+      date: '2026-12-15',
+      start_date: '2026-12-15',
+      end_date: '2026-12-15',
       venue_id: 'venue-indonesia-arena',
       status: 'UPCOMING',
       lifecycle_status: 'UPCOMING',
+      verified_at: new Date().toISOString(),
       admission_protocol: { type: 'BARCODE_PLUS_ID' }
     };
     state.events.push(lanyEvent);
@@ -674,7 +677,9 @@ async function runSuite() {
       id: remoteEventId,
       slug: 'remote-concert-2026',
       title: 'Remote Tour Surabaya (No On-Site PIC)',
-      date: '2026-11-20',
+      date: '2026-12-20',
+      start_date: '2026-12-20',
+      verified_at: new Date().toISOString(),
       venue_id: 'venue-surabaya',
       status: 'UPCOMING'
     });

@@ -444,10 +444,19 @@ async function runSuite() {
   const port = server.address().port;
   const baseUrl = `http://127.0.0.1:${port}`;
 
+  const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
+  const { SessionStore } = require('./src/services/sessionStore');
+  const adminUser = { id: 'admin-1', email: 'admin@tikum.app', role: 'ADMIN', name: 'Admin' };
+  const adminSession = SessionStore.createSession({ userId: 'admin-1', role: 'ADMIN' });
+  const adminToken = adminSession.session_token;
+  adminSecurityStore.registerTestSession(adminToken, adminUser);
+
   const adminHeaders = {
     'Content-Type': 'application/json',
     'x-admin-api-key': process.env.ADMIN_API_KEY,
-    'x-user-id': 'admin-1'
+    'x-user-id': 'admin-1',
+    'Authorization': `Bearer ${adminToken}`,
+    'Origin': baseUrl
   };
 
   try {

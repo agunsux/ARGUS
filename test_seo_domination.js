@@ -337,9 +337,23 @@ async function runSeoDominationSuite() {
     // -------------------------------------------------------------
     console.log('\n--- 7. Admin Content Control Center & Real Analytics ---');
 
+    const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
+    const { getUserRepository } = require('./src/storage');
+    const userRepo = getUserRepository();
+    const adminToken = 'adm-test-seo-domination-token';
+    const adminUser = { id: 'admin-1', email: 'admin@tikum.app', role: 'ADMIN', name: 'Admin' };
+    adminSecurityStore.registerTestSession(adminToken, adminUser);
+
+    const buyerUser = await userRepo.createUser({ email: 'buyer-seo@tikum.app', name: 'Buyer SEO', role: 'BUYER', password_hash: 'hash123456789' });
+    const buyerSession = await userRepo.createSession({ userId: buyerUser.id, role: 'BUYER' });
+    const buyerToken = buyerSession.rawToken;
+
     await checkAsync('Admin Content Analytics returns real metrics with zero mock figures', async () => {
       const res = await request('/api/admin/content/analytics', {
-        headers: { 'x-user-id': 'admin-1' }
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Origin': baseUrl
+        }
       });
       assert.strictEqual(res.statusCode, 200);
       const data = JSON.parse(res.body);
@@ -355,7 +369,10 @@ async function runSeoDominationSuite() {
       assert.strictEqual(unauth.statusCode, 401);
 
       const buyerForbidden = await request('/api/admin/content/articles', {
-        headers: { 'x-user-id': 'buyer-1' }
+        headers: {
+          'Authorization': `Bearer ${buyerToken}`,
+          'Origin': baseUrl
+        }
       });
       assert.strictEqual(buyerForbidden.statusCode, 403);
     });

@@ -335,7 +335,8 @@ router.get('/auth/me', (req, res) => {
  * GET /api/mvp/events
  */
 router.get('/events', (req, res) => {
-  const { q, city, category, source, verified, startDate, endDate, include_past, scope } = req.query;
+  const { city, category, source, verified, startDate, endDate, include_past, scope } = req.query;
+  const q = req.query.q || req.query.search;
 
   // Cache Integrity: Prevent stale caching of event listings
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -343,7 +344,9 @@ router.get('/events', (req, res) => {
   res.setHeader('Expires', '0');
 
   const showAllOrPast = include_past === 'true' || scope === 'all';
-  const now = new Date();
+  const now = (req.query?.now || req.headers?.['x-simulate-clock'] || (process.env.NODE_ENV === 'test' && process.env.SIMULATE_NOW))
+    ? new Date(req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
+    : new Date();
 
   let filtered = state.events.filter(event => {
     const evStatus = (event.status || '').toUpperCase();
@@ -1785,12 +1788,22 @@ router.post(['/buyer/orders/:orderId/entry-challenge', '/buyer/entry-challenge']
 });
 
 /**
+ * Blocked endpoint: Buyer cannot unilaterally confirm entry
+ * POST /api/mvp/buyer/confirm-entry
+ */
+router.post('/buyer/confirm-entry', (req, res) => {
+  return res.status(403).json({
+    error: 'Buyer cannot confirm entry. PIC must physically inspect turnstile admission and enter Buyer code (POST /api/mvp/pic/confirm-entry).',
+    code: 'BUYER_CANNOT_CONFIRM_ENTRY'
+  });
+});
+
+/**
  * Authenticated Buyer confirms successful venue entry / ticket receipt
  * POST /api/mvp/buyer/orders/:id/confirm-entry
- * POST /api/mvp/buyer/confirm-entry (with req.body.orderId)
  * Strictly restricted to the authenticated buyer of the specific order.
  */
-router.post(['/buyer/orders/:id/confirm-entry', '/buyer/confirm-entry'], async (req, res) => {
+router.post('/buyer/orders/:id/confirm-entry', async (req, res) => {
   try {
     const callerId = getCallerId(req, req.body.buyerId, req.body.userId);
     if (!callerId) {

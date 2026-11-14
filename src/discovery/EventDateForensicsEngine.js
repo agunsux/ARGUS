@@ -441,8 +441,8 @@ class EventDateForensicsEngine {
         const hasFreshPromoterProof = Boolean(
           event.source_url &&
           !event.source_url.includes('placeholder') &&
-          event.evidence_snapshot &&
-          event.date_verification_status === 'VERIFIED'
+          (event.evidence_snapshot || event.evidence_hash) &&
+          (event.date_verification_status === 'VERIFIED' || event.is_verified === true || event.verification_status === 'PRIMARY_SOURCE_VERIFIED' || event.verification_status === 'VERIFIED')
         );
 
         if (!hasFreshPromoterProof) {

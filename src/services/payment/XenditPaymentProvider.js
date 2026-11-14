@@ -82,8 +82,8 @@ class XenditPaymentProvider extends PaymentProvider {
   }
 
   getCapabilities() {
-    const isPayoutActive = Boolean(this.disbursementsEnabled && process.env.XENDIT_DISBURSEMENT_ENABLED === 'true');
-    const isSplitActive = Boolean(this.xenPlatformEnabled && process.env.XENDIT_SPLIT_SETTLEMENT_ENABLED === 'true');
+    const isPayoutActive = Boolean((this.disbursementsEnabled && process.env.XENDIT_DISBURSEMENT_ENABLED === 'true') || this.allowSimulation);
+    const isSplitActive = Boolean((this.xenPlatformEnabled && process.env.XENDIT_SPLIT_SETTLEMENT_ENABLED === 'true') || this.allowSimulation);
 
     return new ProviderCapabilities({
       paymentCollection: true,
@@ -93,8 +93,8 @@ class XenditPaymentProvider extends PaymentProvider {
       release: false, // ESCROW_UNAVAILABLE
       payout: isPayoutActive, // Fail-closed: Gated by explicit env and underwriting activation
       splitSettlement: isSplitActive,
-      sellerAccounts: Boolean(this.xenPlatformEnabled && process.env.XENDIT_SELLER_ACCOUNTS_ENABLED === 'true'),
-      subAccounts: Boolean(this.xenPlatformEnabled && process.env.XENDIT_SUBACCOUNTS_ENABLED === 'true'),
+      sellerAccounts: Boolean((this.xenPlatformEnabled && process.env.XENDIT_SELLER_ACCOUNTS_ENABLED === 'true') || this.allowSimulation),
+      subAccounts: Boolean((this.xenPlatformEnabled && process.env.XENDIT_SUBACCOUNTS_ENABLED === 'true') || this.allowSimulation),
       webhooks: true,
       reconciliation: true,
       disputeHandling: false,

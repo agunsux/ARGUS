@@ -2,6 +2,7 @@ process.env.NODE_ENV = 'test';
 const assert = require('assert');
 const http = require('http');
 const { state, resetDatabase } = require('./src/database');
+const { adminSecurityStore } = require('./src/storage/AdminSecurityStore');
 const app = require('./src/server');
 const { promoterRegistry, PROMOTER_STATUS, PROMOTER_AUTHORITY } = require('./src/discovery/PromoterDiscoveryRegistry');
 const { PromoterImportService, MAX_CSV_BYTES } = require('./src/discovery/PromoterImportService');
@@ -53,7 +54,7 @@ async function apiRequest(endpoint, { method = 'GET', headers = {}, body = null 
 }
 
 function adminHeaders() {
-  return { 'Authorization': `Bearer ${adminToken}`, 'x-user-id': 'admin-1' };
+  return { 'Authorization': `Bearer ${adminToken}`, 'x-user-id': 'admin-1', 'Origin': baseUrl };
 }
 
 // --- CSV fixtures ---------------------------------------------------------
@@ -97,10 +98,10 @@ async function runSuite() {
   await new Promise(resolve => server.listen(0, resolve));
   baseUrl = `http://127.0.0.1:${server.address().port}`;
 
-  const adminLogin = await apiRequest('/api/mvp/auth/login', { method: 'POST', body: { usernameOrId: 'admin-1' } });
-  adminToken = adminLogin.data.session_token;
+  adminToken = 'adm-promoter-csv-test';
+  adminSecurityStore.registerTestSession(adminToken, { id: 'admin-1', email: 'admin@tikum.app', role: 'admin' });
   const sellerLogin = await apiRequest('/api/mvp/auth/login', { method: 'POST', body: { usernameOrId: 'seller-1' } });
-  sellerToken = sellerLogin.data.session_token;
+  sellerToken = sellerLogin.data?.session_token || sellerLogin.data?.token;
 
   const seeded = promoterRegistry.getAllPromoters().length;
 

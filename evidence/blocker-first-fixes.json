@@ -1,0 +1,57 @@
+{
+  "startedAt": "2026-11-14T19:26:46.584Z",
+  "sourceSha": "6ff0e7101538b15b2d470f1d52ce6b2c2536986d",
+  "isolation": "credential-free; external network blocked; local fixtures are not integration acceptance",
+  "suites": [
+    {
+      "file": "test_mvp_security.js",
+      "command": "node test_mvp_security.js",
+      "previousStatus": "FAIL",
+      "status": "PASS",
+      "exitCode": 0,
+      "error": null,
+      "assertionCounts": null,
+      "counting": "Native summaries retained; no inferred assertion counts",
+      "output": "\n=== ARGUS MVP: SECURITY & INVARIANTS TEST SUITE ===\n\n  ✓ Security 1: KYC Enforcement — Unverified seller rejected immediately\n  ✓ Security 2: Seller Limits — Seller cannot exceed active listing limit\n  ✓ Security 3: Duplicate Ticket Prevention — Same barcode cannot be listed twice\n  ✓ Security 4: Escrow Invariant — Cannot release funds before confirmed gate entry\n  ✓ Security 5: Payment Idempotency — Duplicate webhook/request returns existing state\n  ✓ Security 6: Immutable Audit Trail — UPDATE and DELETE on audit_logs are forbidden\n  ✓ Security 7: PIC Authorization — Unassigned user cannot record entry\n\n=======================\nResults: 7 passed, 0 failed, 7 total\n=======================\n\n\n"
+    },
+    {
+      "file": "test_pilot_multi_order_10.js",
+      "command": "node test_pilot_multi_order_10.js",
+      "previousStatus": "FAIL",
+      "status": "FAIL",
+      "exitCode": 1,
+      "error": null,
+      "assertionCounts": null,
+      "counting": "Native summaries retained; no inferred assertion counts",
+      "output": "\n=== ARGUS PILOT: 1 EVENT / 10 ORDERS / 5 SELLERS / 10 BUYERS / 1 PIC ===\n\n  ✓ Setup: 10 listings verified, 10 orders paid & escrowed\n  ✓ PIC dashboard: ONE EVENT -> MANY ORDERS -> ONE PIC with admission_protocol\n  ✓ 1x buyer no-show recorded with next_action\n  ✓ 1x seller no-show recorded with next_action\n  ✓ 1x gate rejection blocks settlement\n  ✓ 1x dispute -> REFUND_BUYER path\n  ✓ Duplicate entry confirmation rejected\n  ✓ Buyer cannot confirm own entry; seller cannot confirm entry\n  ✓ Audit trail covers multi-order pilot\n\n=======================\nResults: 9 passed, 4 failed, 13 total\n=======================\n\n\n  ✗ Mandatory rule: TICKET_VERIFIED != ENTRY_CONFIRMED (escrow locked until admission) -> Security violation: Financial release denied by Trust Policy Engine [PENDING]. Required trust attestations not satisfied\n  ✗ 5x remaining success: CONFIRMED -> release -> settlement SIMULATED -> Security violation: Financial release denied by Trust Policy Engine [PENDING]. Required trust attestations not satisfied\n  ✗ Duplicate settlement prevented (same key + different key) -> Dual authorization required: settlement payout cannot be executed without an approved financial authorization.\n  ✗ PIC cannot modify settlement amount (server-side only) -> Cannot read properties of undefined (reading 'amount')\n"
+    },
+    {
+      "file": "test_epic35_redteam.js",
+      "command": "node test_epic35_redteam.js",
+      "previousStatus": "FAIL",
+      "status": "FAIL",
+      "exitCode": 1,
+      "error": null,
+      "assertionCounts": null,
+      "counting": "Native summaries retained; no inferred assertion counts",
+      "output": "\n=== ARGUS EPIC 3.5: RED TEAM SECURITY & ATTACK SUITE ===\n\n  ✓ Attack 1: Replay of Handshake Challenge (Reuse same 6-digit code fails safely)\n  ✓ Attack 2: Cross-Action Challenge Reuse (HANDOFF_READY code cannot be used for ENTRY_CONFIRMED)\n  ✓ Attack 3A: IDOR — Buyer A attempts to generate entry challenge for Buyer B order\n  ✓ Attack 3B: IDOR — PIC A attempts to operate on Event B they are not assigned to\n  ✓ Attack 5: Duplicate Entry Confirmation Rejected\n  ✓ Attack 8: State Jump (Skip Ticket Verification Straight to Entry Rejected)\n  ✓ Attack 9: PII Evidence Access Under Indonesia UU PDP (No. 27/2022)\n  ✓ Attack 10: Retrying a Timed-Out Request (Network timeout recovery is strictly idempotent)\n  ✓ Attack 11: Production Mode Rejects x-user-id Spoofing Without Session\n  ✓ Attack 13: Session Store Survives Server / Memory Restarts\n  ✓ Attack 14: Mandatory Gate Photo Enforced for Entry Confirmation\n  ✓ Attack 15: Production Evidence Encryption Key Required\n\n=======================\nResults: 12 passed, 4 failed, 16 total\n=======================\n\n\n  ✗ Attack 4: PIC Self-Confirms Entry & Direction Guards Enforced -> Buyer cannot confirm entry directly\n\n200 !== 403\n\n  ✗ Attack 6: Double-Settle Same Order (Idempotent payout, zero double disbursement) -> Security violation: Financial release denied by Trust Policy Engine [PENDING]. Required trust attestations not satisfied\n  ✗ Attack 7: Admin Irreversible Action Without Step-Up Auth -> Expected values to be strictly equal:\n\n401 !== 403\n\n  ✗ Attack 12: Production Mode Rejects pilot123 Default Password -> Expected values to be strictly equal:\n\n401 !== 200\n\n"
+    },
+    {
+      "file": "test_doku_direct_api_sandbox_e2e.js",
+      "command": "node test_doku_direct_api_sandbox_e2e.js",
+      "previousStatus": "PASS",
+      "status": "PASS",
+      "exitCode": 0,
+      "error": null,
+      "assertionCounts": null,
+      "counting": "Native summaries retained; no inferred assertion counts",
+      "output": "================================================================================\n  TIKUM / ARGUS — DOKU DIRECT API SANDBOX E2E VERIFICATION SUITE              \n================================================================================\n\nMode: LOCAL_SIMULATION_ONLY — NOT OFFICIAL SANDBOX PAID EVIDENCE\n── Step 1: Create Virtual Account via Direct API ──\n  ✅ [PASS] 1.1 Direct API VA creation initiates Virtual Account with hold_settlement: true\n\n── Step 2: Direct API QRIS Channel Testing ──\n  ✅ [PASS] 2.1 QRIS Direct API strictly rejects milestone escrow (no hold support)\n  ✅ [PASS] 2.2 QRIS Direct API generates QR string for standard direct checkout\n\n── Step 3: DOKU Payment Notification & Webhook Processing ──\n  ✅ [PASS] 3.1 Valid signed webhook transitions order to PAID and escrow to ESCROWED\n  ✅ [PASS] 3.2 Replayed duplicate webhook returns idempotent: true without double-credit\n  ✅ [PASS] 3.3 Delayed webhook with timestamp drift > 300s is rejected\n  ✅ [PASS] 3.4 Payment status inquiry queries DOKU status without errors\n  ✅ [PASS] 3.5 Tampered webhook payload/signature is strictly rejected\n  ✅ [PASS] 3.6 Webhook verification accepts x-vercel-protection-bypass header and _vercel_share query without cryptographic degradation\n\n── Step 4: Centralized ARGUS Escrow Release Gating ──\n  ✅ [PASS] 4.1 Escrow remains HELD and seller remains UNPAID until ARGUS approval\n  ✅ [PASS] 4.2 Releasing escrow without PIC admission throws ENTRY_NOT_CONFIRMED\n  ✅ [PASS] 4.3 With PIC admission and Trust Policy pass, EscrowService executes release\n  ✅ [PASS] 4.4 Active dispute strictly freezes escrow and blocks release with TRANSACTION_IN_DISPUTED_STATE\n\n── Step 5: Failed & Expired Transactions ──\n  ✅ [PASS] 5.1 Failed payment webhook updates order to CANCELLED and unlocks ticket inventory\n\n── Step 6: Timeout Reconciliation ──\n  ✅ [PASS] 6.1 Automated reconciliation detects matched transactions without variance\n  ✅ [PASS] 6.2 Release timeout / network failure safely flags settlement as PENDING_RECONCILIATION\n\n── Step 7: Circuit Breaker Failure & Recovery ──\n  ✅ [PASS] 7.1 Multi-provider circuit breaker trips after 5 consecutive failures and recovers on success\n\n================================================================================\n  DOKU DIRECT API SANDBOX E2E SUMMARY: 17/17 PASSED | 0 FAILED\n================================================================================\n\n\n"
+    }
+  ],
+  "finishedAt": "2026-11-14T19:26:48.594Z",
+  "counts": {
+    "PASS": 2,
+    "FAIL": 2,
+    "BLOCKED": 0
+  }
+}

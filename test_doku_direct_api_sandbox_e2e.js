@@ -1,9 +1,8 @@
 /**
  * TIKUM / ARGUS — DOKU Direct API Sandbox End-to-End Test Suite
  *
- * Clearly distinguishes between:
- * 1. REAL SANDBOX NETWORK EXECUTION (requires DOKU_SANDBOX_CLIENT_ID & DOKU_SANDBOX_SECRET_KEY)
- * 2. COMPREHENSIVE SANDBOX SIMULATION E2E (verifies the complete lifecycle contracts without external network)
+ * Local simulation contract suite only. Self-signed notifications below are fixtures,
+ * never evidence of a payment received by the official DOKU Sandbox.
  *
  * Verifies:
  * - Order & VA creation via Direct API
@@ -17,6 +16,9 @@
  */
 
 process.env.NODE_ENV = 'test';
+// Do not accidentally use inherited live credentials in this fixture-only suite.
+delete process.env.DOKU_SANDBOX_CLIENT_ID;
+delete process.env.DOKU_SANDBOX_SECRET_KEY;
 process.env.MARKETPLACE_MODE = 'LIVE';
 process.env.PRIMARY_PROVIDER = 'doku';
 process.env.DEFAULT_PAYMENT_PROVIDER = 'doku';
@@ -67,15 +69,11 @@ async function runSuite() {
 
   resetDatabase();
 
-  const realClientId = process.env.DOKU_SANDBOX_CLIENT_ID || process.env.DOKU_CLIENT_ID;
-  const realSecretKey = process.env.DOKU_SANDBOX_SECRET_KEY || process.env.DOKU_SECRET_KEY;
-  const hasRealCredentials = Boolean(realClientId && realSecretKey && !realClientId.startsWith('fixture') && !realClientId.startsWith('MCH-TEST'));
-
-  console.log(`Mode: ${hasRealCredentials ? 'REAL_SANDBOX_NETWORK' : 'SANDBOX_SIMULATION_MOCK'}`);
-  console.log(`Target: https://api-sandbox.doku.com | Entity: PT SHINERVA PRAJNA TEJAS\n`);
-
-  const mockClientId = realClientId || 'MCH-SHINERVA-SANDBOX-001';
-  const mockSecretKey = realSecretKey || 'SK-SHINERVA-SANDBOX-KEY-999';
+  assert.strictEqual(paymentManager.getProvider('doku').allowSimulation, true,
+    'Fixture suite requires simulation; use a separate official gateway integration flow');
+  console.log('Mode: LOCAL_SIMULATION_ONLY — NOT OFFICIAL SANDBOX PAID EVIDENCE');
+  const mockClientId = process.env.DOKU_CLIENT_ID;
+  const mockSecretKey = process.env.DOKU_SECRET_KEY;
 
   const orderId = 'ord-sandbox-e2e-001';
   state.orders = [{

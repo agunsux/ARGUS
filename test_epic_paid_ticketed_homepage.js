@@ -17,6 +17,7 @@
  */
 
 process.env.NODE_ENV = 'test';
+process.env.SIMULATE_NOW = '2026-10-05T00:00:00Z';
 
 const assert = require('assert');
 const http = require('http');
