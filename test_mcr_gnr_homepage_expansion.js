@@ -83,7 +83,7 @@ async function main() {
         assert.strictEqual(mcr.verification_status, 'VERIFIED');
         assert.strictEqual(mcr.public_visibility, true);
         assert.strictEqual(mcr.official_event_url, 'https://mcrjakarta.com/');
-        assert.strictEqual(mcr.official_ticket_url, 'https://mcrjakarta.com/');
+        assert.strictEqual(mcr.official_ticket_url, 'https://www.tiket.com/id-id/to-do/my-chemical-romance-live-in-jakarta-2026');
         assert.strictEqual(mcr.venue_name, 'Jakarta International Stadium (JIS)');
         assert.strictEqual(mcr.city, 'Jakarta');
       });
@@ -186,7 +186,7 @@ async function main() {
 
     const mcrEvent = graph.find(item => item['@type'] === 'Event' && item.name === 'My Chemical Romance — Live in Jakarta');
     assert.ok(mcrEvent, 'MCR Schema.org Event must exist');
-    assert.strictEqual(mcrEvent.offers.url, 'https://mcrjakarta.com/');
+    assert.strictEqual(mcrEvent.offers.url, 'https://www.tiket.com/id-id/to-do/my-chemical-romance-live-in-jakarta-2026');
     assert.strictEqual(mcrEvent.location.name, 'Jakarta International Stadium (JIS)');
 
     const gnrEvent = graph.find(item => item['@type'] === 'Event' && item.name === "Guns N' Roses — Jakarta 2026");

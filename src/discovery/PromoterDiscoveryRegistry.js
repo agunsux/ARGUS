@@ -801,10 +801,17 @@ class PromoterDiscoveryRegistry {
   }
 
   getPromoterById(id) {
+    if (id === 'src-promoter-ravel' || id === 'ravel-entertainment' || id === 'ravel') {
+      return this.promoters.get('prm-ravel-entertainment') || this.promoters.get(id) || null;
+    }
     return this.promoters.get(id) || null;
   }
 
   getPromoterBySlug(slug) {
+    if (slug === 'ravel' || slug === 'ravelent') {
+      const target = this.getPromoterBySlug('ravel-entertainment');
+      if (target) return target;
+    }
     const id = this.slugMap.get(slug);
     if (id) return this.promoters.get(id) || null;
     return this.promoters.get(slug) || null;
@@ -899,6 +906,7 @@ const promoterRegistryInstance = new PromoterDiscoveryRegistry();
 module.exports = {
   PromoterDiscoveryRegistry,
   promoterRegistry: promoterRegistryInstance,
+  promoterDiscoveryRegistry: promoterRegistryInstance,
   PROMOTER_STATUS,
   PROMOTER_AUTHORITY
 };

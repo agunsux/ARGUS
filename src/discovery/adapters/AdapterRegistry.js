@@ -13,6 +13,7 @@ const { BandsintownAdapter } = require('./BandsintownAdapter');
 const { SongkickAdapter } = require('./SongkickAdapter');
 const { LiveNationAdapter } = require('./LiveNationAdapter');
 const { PromoterAdapter } = require('./PromoterAdapter');
+const { RavelPromoterAdapter } = require('./RavelPromoterAdapter');
 const { VenueAdapter } = require('./VenueAdapter');
 const { SocialDiscoveryAdapter } = require('./SocialDiscoveryAdapter');
 const { DewatiketAdapter } = require('./DewatiketAdapter');
@@ -34,7 +35,9 @@ class AdapterRegistry {
     const srcMeta = sourceRegistry.getSource(sourceId) || {};
     let adapterInstance;
 
-    if (sourceId === 'src-ticketmaster') {
+    if (sourceId === 'src-promoter-ravel' || sourceId === 'src-ravel-entertainment' || srcMeta.adapter === 'RavelPromoterAdapter') {
+      adapterInstance = new RavelPromoterAdapter(sourceId, options);
+    } else if (sourceId === 'src-ticketmaster') {
       adapterInstance = new TicketmasterAdapter(sourceId, options);
     } else if (sourceId === 'src-tiket-com' || sourceId === 'src-tiket') {
       adapterInstance = new TiketComAdapter(sourceId, options);

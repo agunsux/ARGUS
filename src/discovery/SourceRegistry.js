@@ -94,6 +94,7 @@ const AUTHORITY_RELATIONSHIPS = {
 
 const SOURCE_ROLES = {
   PRIMARY_EVENT_SOURCE: 'PRIMARY_EVENT_SOURCE',
+  PRIMARY_PROMOTER_SOURCE: 'PRIMARY_EVENT_SOURCE',
   CORROBORATING_SOURCE: 'CORROBORATING_SOURCE',
   TRANSACTION_SOURCE: 'TRANSACTION_SOURCE',
   DISCOVERY_SIGNAL: 'DISCOVERY_SIGNAL'
@@ -108,6 +109,7 @@ const AUTHORITY_SCOPES = {
 
 const TRUST_LEVELS = {
   TIER_S: 'TIER_S', // Official Promoter (APMI), Venue, Artist, League (Tier 1)
+  TRUSTED_PRIMARY: 'TIER_S', // Strategic alias for Trusted Primary Promoter / Venue
   TIER_1: 'TIER_1', // Tier 1 Authoritative
   TIER_A: 'TIER_A', // Licensed Discovery APIs (Tier 2)
   TIER_2: 'TIER_2', // Commercial Ticketing Platforms (Tier 2)
@@ -901,28 +903,32 @@ class SourceRegistry {
       },
       {
         source_id: 'src-promoter-ravel',
-        source_name: 'Ravel Entertainment (Official Promoter)',
+        source_name: 'Ravel Entertainment',
         source_owner: 'Ravel Entertainment',
         source_type: SOURCE_TYPES.OFFICIAL_PROMOTER_WEB,
         tier: 1,
         authority_level: 'HIGH',
-        base_url: 'https://ravelent.com',
+        base_url: 'https://www.ravelentertainment.com/',
+        source_url: 'https://www.ravelentertainment.com/',
         country: 'Indonesia',
         language: 'id',
         coverage: 'NATIONAL',
         category: 'MUSIC',
-        adapter: 'PromoterAdapter',
-        access_method: ACCESS_METHODS.FEED,
-        permission_status: PERMISSION_STATUS.AUTHORIZED_API,
+        adapter: 'RavelPromoterAdapter',
+        access_method: ACCESS_METHODS.PERMITTED_CRAWL,
+        permission_status: PERMISSION_STATUS.PERMITTED_CRAWL,
         terms_reference: 'Official Promoter Channel',
         robots_policy: 'HONOR_ROBOTS_TXT',
         rate_limit: '30 req/min',
         crawl_frequency: CRAWL_FREQUENCY.DAILY,
         priority: 1,
         reliability_score: 1.0,
-        trust_level: TRUST_LEVELS.TIER_1,
+        trust_level: TRUST_LEVELS.TIER_S,
+        verification_role: SOURCE_ROLES.PRIMARY_EVENT_SOURCE,
         active_status: SOURCE_STATUS.ACTIVE,
-        notes: 'Official promoter for Hammersonic, Green Day Jakarta, BMTH Jakarta, etc.'
+        enabled: true,
+        discovery_enabled: true,
+        notes: 'Trusted Primary Promoter: Ravel Entertainment (Hammersonic, My Chemical Romance Jakarta, Green Day, BMTH, etc.)'
       },
       {
         source_id: 'src-event-hammersonic',
@@ -3331,6 +3337,10 @@ class SourceRegistry {
     for (const src of defaults) {
       this.registerSource(src);
     }
+    const r = this.sources.get('src-promoter-ravel');
+    if (r) {
+      this.sources.set('src-ravel-entertainment', { ...r, source_id: 'src-ravel-entertainment' });
+    }
   }
 
   registerSource(sourceData) {
@@ -3697,6 +3707,8 @@ class SourceRegistry {
 }
 
 const TRUSTED_PRIMARY_SOURCES = [
+  'src-promoter-ravel',
+  'src-ravel-entertainment',
   'src-venue-love-gbk-instagram',
   'src-venue-gbk',
   'src-loket',
@@ -3708,6 +3720,11 @@ const TRUSTED_PRIMARY_SOURCES = [
 ];
 
 const TRUSTED_SOURCE_PRIORITY = {
+  'src-promoter-ravel': 1,
+  'src-ravel-entertainment': 1,
+  'ravel': 1,
+  'ravelent': 1,
+  'ravel-entertainment': 1,
   'src-venue-love-gbk-instagram': 1,
   'love_gbk': 1,
   'src-venue-gbk': 1,

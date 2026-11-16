@@ -228,6 +228,25 @@ const APMI_MEMBERS = [
     trust_tier: 'TIER_S',
     verified: true,
     bio: 'Promotor kreatif yang mengintegrasikan festival musik, eksibisi seni, dan aktivasi kolaborasi brand berskala nasional.'
+  },
+  {
+    slug: 'ravel-entertainment',
+    name: 'Ravel Entertainment',
+    legal_name: 'PT Ravel Jaya Nusantara',
+    source_id: 'src-promoter-ravel',
+    website: 'https://www.ravelentertainment.com/',
+    instagram: 'https://www.instagram.com/ravelentertainment/',
+    signature_events: [
+      'Hammersonic Festival',
+      'My Chemical Romance Live in Jakarta',
+      'Green Day Live in Jakarta',
+      'Bring Me The Horizon Live in Jakarta'
+    ],
+    event_keywords: ['ravel', 'hammersonic', 'my chemical romance', 'green day', 'bring me the horizon', 'bmth'],
+    primary_cities: ['Jakarta', 'Tangerang', 'Bali'],
+    trust_tier: 'TIER_S',
+    verified: true,
+    bio: 'Promotor festival musik rock, metal, dan konser stadium internasional premier di Indonesia (Hammersonic Festival, My Chemical Romance Live in Jakarta).'
   }
 ];
 
