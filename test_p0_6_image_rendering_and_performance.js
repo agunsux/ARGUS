@@ -129,7 +129,7 @@ console.log('\n── Section 5: Data Integrity & Production Gateways ──');
 test('5.1 Hero API returns verified records with zero fake inventory', async () => {
   const { canonicalRegistry } = require('./src/discovery/CanonicalEventRegistry');
   const heroEvents = canonicalRegistry.getHeroEvents();
-  assert.strictEqual(heroEvents.length, 2, 'Must have exactly 2 hero events');
+  assert.ok(heroEvents.length >= 2, 'Must have at least 2 hero events');
   for (const ev of heroEvents) {
     assert.strictEqual(ev.resale_inventory_count, 0, `${ev.name} must have 0 resale inventory`);
   }

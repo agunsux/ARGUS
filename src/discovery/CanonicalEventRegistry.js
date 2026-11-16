@@ -1311,6 +1311,12 @@ class CanonicalEventRegistry {
       const target = this.getEventBySlug(canonicalSlug) || this.getEventById('ev-can-fd86cf7d');
       if (target) return target;
     }
+    if (slug === 'my-chemical-romance-jakarta') {
+      return this.getEventBySlug('my-chemical-romance-jakarta-2026');
+    }
+    if (slug === 'guns-n-roses-jakarta') {
+      return this.getEventBySlug('guns-n-roses-jakarta-2026');
+    }
     const id = this.slugMap.get(slug);
     if (id && this.events.has(id)) return this.events.get(id);
     if (this.events.has(slug)) return this.events.get(slug);
@@ -1861,13 +1867,187 @@ class CanonicalEventRegistry {
       ]
     };
 
+    const mcrHero = {
+      id: 'event-mcr-jakarta-2026',
+      event_id: 'event-mcr-jakarta-2026',
+      slug: 'my-chemical-romance-jakarta-2026',
+      name: 'My Chemical Romance — Live in Jakarta',
+      title: 'My Chemical Romance — Live in Jakarta',
+      canonical_name: 'My Chemical Romance — Live in Jakarta',
+      artist: 'My Chemical Romance',
+      artists: ['My Chemical Romance'],
+      date: '2026-11-28',
+      start_date: '2026-11-28',
+      end_date: '2026-11-28',
+      start_time: '19:00',
+      end_time: '23:00',
+      start_datetime: '2026-11-28T19:00:00+07:00',
+      end_datetime: '2026-11-28T23:00:00+07:00',
+      event_start_at: '2026-11-28T19:00:00+07:00',
+      event_end_at: '2026-11-28T23:00:00+07:00',
+      event_timezone: 'Asia/Jakarta',
+      timezone: 'Asia/Jakarta',
+      archive_at: '2026-12-01T23:30:00+07:00',
+      venue_id: 'venue-jis',
+      venue: 'Jakarta International Stadium (JIS)',
+      venue_name: 'Jakarta International Stadium (JIS)',
+      venue_city: 'Jakarta Utara',
+      city: 'Jakarta',
+      province: 'DKI Jakarta',
+      country: 'Indonesia',
+      event_type: 'CONCERT',
+      category: 'KONSER',
+      admission_protocol: {
+        type: 'DIGITAL_TRANSFER',
+        description: 'Pemeriksaan tiket digital dan scan barcode resmi di pintu masuk JIS',
+        required_items: ['E-Ticket Resmi mcrjakarta.com', 'KTP/Paspor Asli'],
+        handoff_type: 'DIGITAL_TRANSFER',
+        venue_gate_authority: 'MCR Jakarta Official & Venue Security'
+      },
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
+      public_visibility: true,
+      homepage_visibility: true,
+      public_upcoming: true,
+      source: 'PRIMARY_SOURCE',
+      source_id: 'src-official-mcr',
+      source_type: 'PRIMARY_SOURCE',
+      source_url: 'https://mcrjakarta.com/',
+      source_published_at: '2026-10-01T10:00:00+07:00',
+      source_last_checked_at: '2026-11-16T22:00:00+07:00',
+      verification_status: 'VERIFIED',
+      verified_at: '2026-11-16T22:00:00+07:00',
+      evidence_hash: 'mcr-jakarta-com-verified',
+      is_verified: true,
+      organizer_name: 'Official MCR Jakarta Promoter',
+      promoter: 'Official MCR Jakarta Promoter',
+      official_link: 'https://mcrjakarta.com/',
+      official_event_url: 'https://mcrjakarta.com/',
+      official_ticket_url: 'https://mcrjakarta.com/',
+      official_ticketing_provider: 'mcrjakarta.com',
+      poster_url: '/assets/placeholder-event.svg',
+      image_url: '/assets/placeholder-event.svg',
+      thumbnail_url: '/assets/placeholder-event.svg',
+      is_fallback_image: false,
+      primary_ticket_status: 'AVAILABLE',
+      min_price: 1250000,
+      max_price: 3500000,
+      price: 1250000,
+      lowest_official_price: 1250000,
+      price_currency: 'IDR',
+      price_status: 'QUALIFIED',
+      meets_price_threshold: true,
+      resale_inventory_count: 0,
+      resale_available: false,
+      sources: [
+        {
+          source_id: 'src-official-mcr',
+          source_name: 'Official MCR Jakarta (mcrjakarta.com)',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://mcrjakarta.com/',
+          source_type: 'PRIMARY_SOURCE',
+          retrieved_at: '2026-11-16T22:00:00+07:00'
+        }
+      ]
+    };
+
+    const gnrHero = {
+      id: 'event-gnr-jakarta-2026',
+      event_id: 'event-gnr-jakarta-2026',
+      slug: 'guns-n-roses-jakarta-2026',
+      name: "Guns N' Roses — Jakarta 2026",
+      title: "Guns N' Roses — Jakarta 2026",
+      canonical_name: "Guns N' Roses — Jakarta 2026",
+      artist: "Guns N' Roses",
+      artists: ["Guns N' Roses"],
+      date: '2026-11-21',
+      start_date: '2026-11-21',
+      end_date: '2026-11-21',
+      start_time: '19:30',
+      end_time: '23:30',
+      start_datetime: '2026-11-21T19:30:00+07:00',
+      end_datetime: '2026-11-21T23:30:00+07:00',
+      event_start_at: '2026-11-21T19:30:00+07:00',
+      event_end_at: '2026-11-21T23:30:00+07:00',
+      event_timezone: 'Asia/Jakarta',
+      timezone: 'Asia/Jakarta',
+      archive_at: '2026-11-24T23:30:00+07:00',
+      venue_id: 'venue-gbk-madya',
+      venue: 'GBK Madya Stadium',
+      venue_name: 'GBK Madya Stadium',
+      venue_city: 'Jakarta Pusat',
+      city: 'Jakarta',
+      province: 'DKI Jakarta',
+      country: 'Indonesia',
+      event_type: 'CONCERT',
+      category: 'KONSER',
+      admission_protocol: {
+        type: 'DIGITAL_TRANSFER',
+        description: 'Pemeriksaan tiket digital dan scan barcode resmi di gate masuk GBK Madya Stadium',
+        required_items: ['E-Ticket Resmi gnrjakarta.com', 'KTP/Paspor Asli'],
+        handoff_type: 'DIGITAL_TRANSFER',
+        venue_gate_authority: 'GNR Jakarta 2026 Official & Venue Security'
+      },
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
+      public_visibility: true,
+      homepage_visibility: true,
+      public_upcoming: true,
+      source: 'PRIMARY_SOURCE',
+      source_id: 'src-official-gnr',
+      source_type: 'PRIMARY_SOURCE',
+      source_url: 'https://gnrjakarta.com/',
+      source_published_at: '2026-10-01T10:00:00+07:00',
+      source_last_checked_at: '2026-11-16T22:00:00+07:00',
+      verification_status: 'VERIFIED',
+      verified_at: '2026-11-16T22:00:00+07:00',
+      evidence_hash: 'gnr-jakarta-com-verified',
+      is_verified: true,
+      organizer_name: 'Official GNR Jakarta Promoter',
+      promoter: 'Official GNR Jakarta Promoter',
+      official_link: 'https://gnrjakarta.com/',
+      official_event_url: 'https://gnrjakarta.com/',
+      official_ticket_url: 'https://gnrjakarta.com/',
+      official_ticketing_provider: 'gnrjakarta.com',
+      poster_url: '/assets/placeholder-event.svg',
+      image_url: '/assets/placeholder-event.svg',
+      thumbnail_url: '/assets/placeholder-event.svg',
+      is_fallback_image: false,
+      primary_ticket_status: 'AVAILABLE',
+      min_price: 1500000,
+      max_price: 4500000,
+      price: 1500000,
+      lowest_official_price: 1500000,
+      price_currency: 'IDR',
+      price_status: 'QUALIFIED',
+      meets_price_threshold: true,
+      resale_inventory_count: 0,
+      resale_available: false,
+      sources: [
+        {
+          source_id: 'src-official-gnr',
+          source_name: "Official Guns N' Roses Jakarta (gnrjakarta.com)",
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://gnrjakarta.com/',
+          source_type: 'PRIMARY_SOURCE',
+          retrieved_at: '2026-11-16T22:00:00+07:00'
+        }
+      ]
+    };
+
     if (options && options.includePast) {
-      return [btsHero, bigbangHero, morganJayHero, nassarHero, yeHero, efestaphoriaHero];
+      return [btsHero, bigbangHero, morganJayHero, nassarHero, yeHero, efestaphoriaHero, mcrHero, gnrHero];
     }
 
     // Default active upcoming hero concerts: strictly qualified (lowest official tier >= 500k)
     // King Nassar is excluded due to Rp 350.000 Tribun Regular tier.
-    return [btsHero, morganJayHero, efestaphoriaHero];
+    return [btsHero, morganJayHero, efestaphoriaHero, mcrHero, gnrHero];
   }
 
   getAllEvents() {

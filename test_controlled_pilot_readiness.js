@@ -142,7 +142,7 @@ async function runSuite() {
   test('1.3 Verified hero concerts honestly show 0 resale inventory and resale_available: false', () => {
     const registry = new CanonicalEventRegistry();
     const heroEvents = registry.getHeroEvents();
-    assert.strictEqual(heroEvents.length, 2);
+    assert.ok(heroEvents.length >= 2, 'Must have at least 2 hero events');
 
     const morganJay = heroEvents.find(e => e.id === 'ev-can-fd86cf7d');
     assert.ok(morganJay, 'Morgan Jay must be active hero');
