@@ -57,7 +57,7 @@ function makeRequest(path, options = {}) {
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         let json = null;
-        try { json = JSON.parse(data); } catch (e) {}
+        try { json = JSON.parse(data); } catch (e) { }
         resolve({
           statusCode: res.statusCode,
           headers: res.headers,
@@ -106,7 +106,7 @@ async function runSuite() {
   const { getUserRepository } = require('./src/storage');
   const userRepo = getUserRepository();
   if (userRepo && typeof userRepo.query === 'function') {
-    await userRepo.query("DELETE FROM users WHERE email IN ('alice.pilot@example.com', 'bob.pilot@example.com', 'hacker@argus.id')").catch(() => {});
+    await userRepo.query("DELETE FROM users WHERE email IN ('alice.pilot@example.com', 'bob.pilot@example.com', 'hacker@argus.id')").catch(() => { });
   }
 
   server = app.listen(0);
@@ -433,7 +433,7 @@ async function runSuite() {
     // 14. Admin bootstrap is idempotent
     await test('14. Admin bootstrap is idempotent', async () => {
       const initialAdminCount = state.users.filter(u => (u.role || '').toUpperCase() === 'ADMIN' || u.email === 'ops@argus.id').length;
-      
+
       const res1 = bootstrapAdminUser();
       assert.strictEqual(res1.created, false, 'Should recognize existing admin');
 
@@ -501,7 +501,7 @@ async function runSuite() {
     // 17. Admin can suspend USER
     await test('17. Admin can suspend USER', async () => {
       const alice = state.users.find(u => u.email === 'alice.pilot@example.com');
-      
+
       const res = await makeRequest(`/api/admin/users/${alice.id}/status`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${adminToken}` },
@@ -520,7 +520,7 @@ async function runSuite() {
     // 18. Admin can reactivate USER
     await test('18. Admin can reactivate USER', async () => {
       const alice = state.users.find(u => u.email === 'alice.pilot@example.com');
-      
+
       const res = await makeRequest(`/api/admin/users/${alice.id}/status`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${adminToken}` },
@@ -601,7 +601,7 @@ async function runSuite() {
     const { getUserRepository } = require('./src/storage');
     const userRepo = getUserRepository();
     if (userRepo && typeof userRepo.query === 'function') {
-      await userRepo.query("DELETE FROM users WHERE email IN ('alice.pilot@example.com', 'bob.pilot@example.com', 'hacker@argus.id')").catch(() => {});
+      await userRepo.query("DELETE FROM users WHERE email IN ('alice.pilot@example.com', 'bob.pilot@example.com', 'hacker@argus.id')").catch(() => { });
     }
   }
 

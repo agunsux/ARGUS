@@ -491,8 +491,12 @@ router.get(['/buyer', '/buyer/summary'], requireAuth, async (req, res) => {
       recent_auth_events: formattedAuditEvents
     };
 
+    const { isPrelaunchListingMode } = require('../config/marketplaceMode');
+    const isPrelaunch = isPrelaunchListingMode();
+
     res.status(200).json({
       success: true,
+      is_prelaunch: isPrelaunch,
       user: safeUser,
       overview: overviewBlock,
       orders: {
@@ -1008,8 +1012,12 @@ router.get(['/seller', '/seller/summary'], requireAuth, async (req, res) => {
       items: settlementRecords
     };
 
+    const { isPrelaunchListingMode } = require('../config/marketplaceMode');
+    const isPrelaunch = isPrelaunchListingMode();
+
     res.status(200).json({
       success: true,
+      is_prelaunch: isPrelaunch,
       user: safeUser,
       overview: overviewBlock,
       listings: {

@@ -759,7 +759,7 @@ async function runRedTeamSuite() {
     // =========================================================================
     await testAsync('Attack 13: Session Store Survives Server / Memory Restarts', async () => {
       const { SessionStore } = require('./src/services/sessionStore');
-      
+
       // Create a persistent session
       const created = SessionStore.createSession({ userId: 'pic-1', role: 'pic' });
       assert.ok(created.session_token);

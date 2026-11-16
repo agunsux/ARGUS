@@ -465,6 +465,10 @@ class PostgresUserRepository extends UserRepository {
     return res.rows || [];
   }
 
+  async listAllUsers(filter = {}) {
+    return this.listUsers(filter);
+  }
+
   // --- SESSION OPERATIONS ---
 
   async createSession({ userId, role, ip = null, userAgent = null, ttlMs = 24 * 60 * 60 * 1000, token = null }) {

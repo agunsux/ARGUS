@@ -38,6 +38,79 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
+
+  <!-- Schema.org Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://tikum.app/#website",
+        "url": "https://tikum.app/",
+        "name": "TIKUM — Pasar Tiket Event Terverifikasi",
+        "description": "Platform penemuan event dan pasar sekunder tiket terverifikasi di Indonesia dengan jaminan Zero Fake Inventory.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://tikum.app/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://tikum.app/#organization",
+        "name": "PT SHINERVA PRAJNA TEJAS",
+        "alternateName": "TIKUM",
+        "url": "https://tikum.app/",
+        "logo": "https://tikum.app/assets/tikum-mark-2color.svg",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Jl. Pasirluyu No. 79",
+          "addressLocality": "Bandung",
+          "postalCode": "40254",
+          "addressCountry": "ID"
+        },
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+6281299927378",
+          "contactType": "customer service",
+          "email": "support@tikum.app",
+          "availableLanguage": ["Indonesian", "English"]
+        }
+      },
+      {
+        "@type": "Event",
+        "@id": "https://tikum.app/events/the-15th-efestaphoria-surabaya-2026",
+        "name": "The 15th Efestaphoria",
+        "startDate": "2026-12-06T13:00:00+07:00",
+        "endDate": "2026-12-06T21:00:00+07:00",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "location": {
+          "@type": "Place",
+          "name": "Surabaya Expo Center",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Surabaya",
+            "addressRegion": "Jawa Timur",
+            "addressCountry": "ID"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "BEM Fakultas Ekonomi dan Bisnis Universitas Airlangga"
+        },
+        "offers": {
+          "@type": "Offer",
+          "url": "https://www.celestix.id/event/the-15th-efestaphoria/539",
+          "priceCurrency": "IDR",
+          "availability": "https://schema.org/InStock",
+          "validFrom": "2026-11-01T10:00:00+07:00"
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 <body class="dark-mode">
 
@@ -102,6 +175,14 @@
       <p class="hero-subtitle" data-i18n="spotlight.subtitle">
         Data konser resmi dengan validasi tanggal, promotor otoritatif, dan visual provenance terkonfirmasi. TIKUM menerapkan <em>Zero Fake Inventory</em> — tidak ada stok palsu atau kuota buatan.
       </p>
+      <div class="hero-cta-group" style="display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap;">
+        <a href="#upcoming" class="ln-btn ln-btn-primary" style="padding: 12px 24px; font-size: 14px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="spotlight.ctaFind">Cari Tiket Konser</span>
+        </a>
+        <a href="/create" class="ln-btn ln-btn-ghost" style="padding: 12px 24px; font-size: 14px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--primary, #E05A3A); color: var(--primary, #E05A3A);">
+          <i class="fa-solid fa-plus-circle"></i> <span data-i18n="spotlight.ctaSell">Jual Tiket Anda</span>
+        </a>
+      </div>
     </div>
 
     <div class="main-grid" id="heroConcertGrid">
@@ -221,6 +302,61 @@
             </a>
             <a href="/panduan-pembeli" class="btn-secondary" data-i18n="spotlight.learnBuyerProtection">
               Pelajari Proteksi Pembeli TIKUM
+            </a>
+          </div>
+        </div>
+      </article>
+
+      <!-- 3. The 15th Efestaphoria (Celestix Reference) -->
+      <article class="concert-card" id="card-efestaphoria">
+        <div class="poster-wrap">
+          <div class="poster-img" style="width: 100%; height: 280px; background: linear-gradient(135deg, #1e1b4b, #312e81, #0f172a); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; padding: 20px; text-align: center;">
+            <i class="fa-solid fa-guitar" style="font-size: 42px; color: #a5b4fc; margin-bottom: 12px;"></i>
+            <div style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #c7d2fe; font-weight: 700;">EFESTAPHORIA 2026</div>
+            <div style="font-size: 22px; font-weight: 800; margin-top: 4px; color: #ffffff;">The 15th Efestaphoria</div>
+            <div style="font-size: 13px; color: #93c5fd; margin-top: 6px;"><i class="fa-solid fa-location-dot"></i> Surabaya Expo Center</div>
+          </div>
+          <div class="poster-overlay">
+            <span class="badge badge-verified">✓ ORGANIZER VERIFIED</span>
+            <span class="badge badge-soldout" style="background:#059669; color:#fff;">REFERENSI RESMI CELESTIX</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="promoter-tag">BEM Fakultas Ekonomi dan Bisnis Universitas Airlangga</div>
+          <h2 class="concert-title">The 15th Efestaphoria</h2>
+          <div class="meta-list">
+            <div class="meta-item">
+              <span>📅</span>
+              <div><strong>6 Desember 2026 • 13:00–21:00 WIB</strong></div>
+            </div>
+            <div class="meta-item">
+              <span>📍</span>
+              <div><strong>Surabaya Expo Center • Surabaya</strong></div>
+            </div>
+            <div class="meta-item">
+              <span>🎟️</span>
+              <div>Penjualan Tiket Resmi: <strong>Celestix</strong></div>
+            </div>
+          </div>
+
+          <div class="notice-box">
+            Tiket resmi festival disediakan oleh <strong>Celestix</strong> (celestix.id). TIKUM memfasilitasi penemuan event dan pasar sekunder terverifikasi dengan jaminan <em>Zero Fake Inventory</em>.
+          </div>
+
+          <div class="resale-status">
+            <span>Stok Resale Sekunder TIKUM:</span>
+            <span class="resale-zero">0 Tiket (Zero Fake Inventory)</span>
+          </div>
+
+          <div class="btn-group">
+            <a href="https://www.celestix.id/event/the-15th-efestaphoria/539" target="_blank" rel="noopener noreferrer" class="btn-primary" style="background:#2563EB;">
+              Beli Tiket Resmi di Celestix ↗
+            </a>
+            <a href="/events/the-15th-efestaphoria-surabaya-2026" class="btn-secondary">
+              Lihat Detail Event di TIKUM →
+            </a>
+            <a href="/create" class="btn-secondary" style="border-color:#D97706; color:#D97706;">
+              Jual Tiket Efestaphoria Anda →
             </a>
           </div>
         </div>

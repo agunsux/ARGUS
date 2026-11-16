@@ -5,6 +5,7 @@
  */
 
 const { MarketplaceRepository } = require('./MarketplaceRepository');
+const crypto = require('crypto');
 
 class InMemoryMarketplaceRepository extends MarketplaceRepository {
   constructor() {
@@ -697,6 +698,115 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
       ...l,
       metadata: typeof l.metadata === 'string' ? JSON.parse(l.metadata) : (l.metadata || {})
     }));
+  }
+
+  // Event PIC Assignments (Epic PIC-01)
+  async createPicAssignment(data) {
+    const id = data.id || `pic-assign-${crypto.randomUUID().substring(0, 8)}`;
+    const record = {
+      id,
+      event_id: data.event_id || data.eventId,
+      venue_id: data.venue_id || data.venueId,
+      pic_user_id: data.pic_user_id || data.picUserId,
+      event_date: data.event_date || data.eventDate || null,
+      status: (data.status || 'ACTIVE').toUpperCase(),
+      contact_phone: data.contact_phone || data.contactPhone || null,
+      notes: data.notes || null,
+      created_at: data.created_at || new Date().toISOString(),
+      updated_at: data.updated_at || new Date().toISOString()
+    };
+    if (!this.picAssignments) this.picAssignments = new Map();
+    this.picAssignments.set(id, record);
+    return { ...record };
+  }
+
+  async getPicAssignmentById(id) {
+    if (!this.picAssignments) return null;
+    const item = this.picAssignments.get(id);
+    return item ? { ...item } : null;
+  }
+
+  async listPicAssignments(filter = {}) {
+    if (!this.picAssignments) return [];
+    let list = Array.from(this.picAssignments.values());
+    if (filter.event_id || filter.eventId) {
+      const eid = filter.event_id || filter.eventId;
+      list = list.filter(a => a.event_id === eid);
+    }
+    if (filter.pic_user_id || filter.picUserId) {
+      const uid = filter.pic_user_id || filter.picUserId;
+      list = list.filter(a => a.pic_user_id === uid);
+    }
+    if (filter.status) {
+      list = list.filter(a => (a.status || '').toUpperCase() === filter.status.toUpperCase());
+    }
+    return list;
+  }
+
+  async updatePicAssignmentStatus(id, status) {
+    if (!this.picAssignments) return null;
+    const item = this.picAssignments.get(id);
+    if (!item) return null;
+    item.status = (status || 'INACTIVE').toUpperCase();
+    item.updated_at = new Date().toISOString();
+    return { ...item };
+  }
+
+  // Buyer Inquiries / Lead Capture (Phase 1 Manual Marketplace)
+  async createBuyerInquiry(inquiryData) {
+    const id = inquiryData.id || `inq-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const record = {
+      ...inquiryData,
+      id,
+      quantity: inquiryData.quantity || inquiryData.requested_quantity || 1,
+      follow_up_status: inquiryData.follow_up_status || 'PENDING_FOLLOWUP',
+      notification_status: inquiryData.notification_status || 'PENDING',
+      created_at: inquiryData.created_at || new Date().toISOString(),
+      updated_at: inquiryData.updated_at || new Date().toISOString()
+    };
+    if (!this.buyerInquiries) this.buyerInquiries = new Map();
+    this.buyerInquiries.set(id, record);
+    return { ...record };
+  }
+
+  async getBuyerInquiryById(inquiryId) {
+    if (!this.buyerInquiries) return null;
+    const item = this.buyerInquiries.get(inquiryId);
+    return item ? { ...item } : null;
+  }
+
+  async listBuyerInquiries(filter = {}) {
+    if (!this.buyerInquiries) return [];
+    let list = Array.from(this.buyerInquiries.values());
+    if (filter.listing_id || filter.listingId) {
+      const lid = filter.listing_id || filter.listingId;
+      list = list.filter(i => i.listing_id === lid);
+    }
+    if (filter.buyer_id || filter.buyerId) {
+      const bid = filter.buyer_id || filter.buyerId;
+      list = list.filter(i => i.buyer_id === bid);
+    }
+    if (filter.seller_id || filter.sellerId) {
+      const sid = filter.seller_id || filter.sellerId;
+      list = list.filter(i => i.seller_id === sid);
+    }
+    if (filter.status || filter.follow_up_status) {
+      const st = (filter.status || filter.follow_up_status).toUpperCase();
+      list = list.filter(i => (i.follow_up_status || i.status || '').toUpperCase() === st);
+    }
+    return list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+
+  async updateBuyerInquiryStatus(inquiryId, status, metadata = {}) {
+    if (!this.buyerInquiries) return null;
+    const item = this.buyerInquiries.get(inquiryId);
+    if (!item) return null;
+    item.follow_up_status = status;
+    item.updated_at = new Date().toISOString();
+    if (metadata.admin_notes) item.admin_notes = metadata.admin_notes;
+    if (metadata.notification_status) item.notification_status = metadata.notification_status;
+    if (metadata.notification_error !== undefined) item.notification_error = metadata.notification_error;
+    return { ...item };
   }
 }
 

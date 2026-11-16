@@ -42,6 +42,10 @@ class UserRepository {
     throw new Error('UserRepository.listUsers() not implemented');
   }
 
+  async listAllUsers(filter = {}) {
+    return this.listUsers(filter);
+  }
+
   // Sessions
   async createSession(sessionData) {
     throw new Error('UserRepository.createSession() not implemented');

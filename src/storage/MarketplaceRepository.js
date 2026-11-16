@@ -56,6 +56,18 @@ class MarketplaceRepository {
   async upsertNegotiation(negotiationData) { throw new Error('Not implemented'); }
   async recordOfferAuditLog(auditData) { throw new Error('Not implemented'); }
   async listOfferAuditLogs(offerId = null, limit = 200) { throw new Error('Not implemented'); }
+
+  // Event PIC Assignments (Epic PIC-01 Durable Persistence)
+  async createPicAssignment(data) { throw new Error('Not implemented'); }
+  async getPicAssignmentById(id) { throw new Error('Not implemented'); }
+  async listPicAssignments(filter = {}) { throw new Error('Not implemented'); }
+  async updatePicAssignmentStatus(id, status) { throw new Error('Not implemented'); }
+
+  // Buyer Inquiries / Lead Capture (Phase 1 Manual Marketplace)
+  async createBuyerInquiry(inquiryData) { throw new Error('Not implemented'); }
+  async getBuyerInquiryById(inquiryId) { throw new Error('Not implemented'); }
+  async listBuyerInquiries(filter = {}) { throw new Error('Not implemented'); }
+  async updateBuyerInquiryStatus(inquiryId, status, metadata = {}) { throw new Error('Not implemented'); }
 }
 
 module.exports = { MarketplaceRepository };

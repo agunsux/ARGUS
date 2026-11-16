@@ -73,9 +73,9 @@ class EventPicService {
   }
 
   /**
-   * Assign PIC to an event, venue, and date
+   * Assign PIC to an event, venue, and date with durable repository persistence
    */
-  static assignPic({ eventId, venueId, picUserId, contactPhone }) {
+  static assignPic({ eventId, venueId, picUserId, contactPhone, notes = null }) {
     const user = state.users.find(u => u.id === picUserId);
     const roleLower = (user?.role || '').toLowerCase();
     if (!user || (roleLower !== 'pic' && roleLower !== 'venue_pic')) {
@@ -91,6 +91,7 @@ class EventPicService {
     if (!venue) throw new Error('Venue not found');
 
     const id = `pic-assign-${uuidv4().substring(0, 8)}`;
+    const nowIso = new Date().toISOString();
     const assignment = {
       id,
       event_id: eventId,
@@ -98,10 +99,47 @@ class EventPicService {
       pic_user_id: picUserId,
       event_date: event.date,
       status: 'ACTIVE',
-      contact_phone: contactPhone || user.phone
+      contact_phone: contactPhone || user.phone,
+      notes: notes || null,
+      created_at: nowIso,
+      updated_at: nowIso
     };
     state.event_pics.push(assignment);
 
+    // Fire-and-forget or awaited durable persistence
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      if (marketplaceRepo && typeof marketplaceRepo.createPicAssignment === 'function') {
+        const p = marketplaceRepo.createPicAssignment(assignment);
+        if (p && typeof p.catch === 'function') {
+          p.catch(e => console.warn('[EventPicService] PIC DB persistence warning:', e.message));
+        }
+      }
+    } catch (_) {}
+
+    return assignment;
+  }
+
+  static async assignPicAsync(params) {
+    const { picUserId, eventId } = params || {};
+    // Hydrate user if missing from in-memory state
+    if (picUserId && !state.users.find(u => u.id === picUserId)) {
+      try {
+        const { getUserRepository } = require('../storage');
+        const userRepo = getUserRepository();
+        const dbUser = await userRepo.getUserById(picUserId);
+        if (dbUser) state.users.push(dbUser);
+      } catch (_) {}
+    }
+    const assignment = this.assignPic(params);
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      if (marketplaceRepo && typeof marketplaceRepo.createPicAssignment === 'function') {
+        await marketplaceRepo.createPicAssignment(assignment);
+      }
+    } catch (_) {}
     return assignment;
   }
 

@@ -192,6 +192,180 @@ router.get('/offers/:offerId/negotiation', requireAuth, async (req, res) => {
 });
 
 /**
+ * POST /listings/:listingId/inquiries
+ * Buyer submits purchase interest / inquiry for a listing ("Saya Berminat" / "Request Ticket")
+ */
+router.post(['/listings/:listingId/inquiries', '/listings/:id/inquiries'], requireAuth, async (req, res) => {
+  const listingId = req.params.listingId || req.params.id;
+  const buyerId = req.user.id;
+  const {
+    message,
+    proposed_price,
+    offer_amount,
+    contact_phone,
+    contact_whatsapp,
+    quantity,
+    requested_quantity
+  } = req.body || {};
+
+  try {
+    const listing = await OfferService._resolveListing(listingId);
+    if (!listing) {
+      return res.status(404).json({ error: 'Listing tidak ditemukan', code: 'LISTING_NOT_FOUND' });
+    }
+
+    // 2. Resolve buyer profile contact information
+    const buyerName = req.user.name || req.user.display_name || req.user.fullName || 'Pembeli';
+    const buyerEmail = req.user.email || null;
+    const buyerPhone = contact_phone || contact_whatsapp || req.user.phone || null;
+    const parsedQty = parseInt(quantity !== undefined ? quantity : (requested_quantity !== undefined ? requested_quantity : 1), 10) || 1;
+    const inquiryMessage = message || 'Tertarik dengan tiket ini';
+
+    // 1. Deduplication / debounce: prevent duplicate submissions of identical payload within 5 seconds
+    const clientKey = req.header ? (req.header('idempotency-key') || req.header('x-idempotency-key')) : null;
+    const recentDuplicate = (state.listing_inquiries || []).find(inq => {
+      if (clientKey && inq.idempotency_key === clientKey) return true;
+      const isSameBuyer = inq.buyer_id === buyerId;
+      const isSameListing = inq.listing_id === listingId;
+      const isSameContent = inq.message === inquiryMessage && (inq.quantity || 1) === parsedQty;
+      const isRecent = (Date.now() - new Date(inq.created_at).getTime()) < 5000;
+      return isSameBuyer && isSameListing && isSameContent && isRecent;
+    });
+
+    if (recentDuplicate) {
+      return res.status(200).json({
+        success: true,
+        message: 'Permintaan minat beli Anda telah tercatat sebelumnya dan sedang ditindaklanjuti oleh Admin.',
+        inquiry: recentDuplicate,
+        is_duplicate: true
+      });
+    }
+
+    // 3. Resolve seller info
+    let sellerUser = (state.users || []).find(u => u.id === listing.seller_id);
+    if (!sellerUser) {
+      try {
+        const { getUserRepository } = require('../storage');
+        sellerUser = await getUserRepository().getUserById(listing.seller_id);
+      } catch (_) {}
+    }
+
+    const { v4: uuidv4 } = require('uuid');
+    const inquiryId = `inq-${uuidv4()}`;
+    const inquiryRecord = {
+      id: inquiryId,
+      listing_id: listingId,
+      buyer_id: buyerId,
+      seller_id: listing.seller_id,
+      event_id: listing.event_id || listing.canonical_event_id,
+      ticket_id: listing.ticket_id,
+      quantity: parsedQty,
+      requested_quantity: parsedQty,
+      message: message || 'Tertarik dengan tiket ini',
+      proposed_price: proposed_price || offer_amount || listing.price,
+      buyer_name: buyerName,
+      buyer_email: buyerEmail,
+      contact_phone: buyerPhone,
+      follow_up_status: 'PENDING_FOLLOWUP',
+      notification_status: 'PENDING',
+      status: 'SUBMITTED',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    if (clientKey) {
+      inquiryRecord.idempotency_key = clientKey;
+    }
+
+    if (!state.listing_inquiries) {
+      state.listing_inquiries = [];
+    }
+    state.listing_inquiries.push(inquiryRecord);
+
+    // 4. Persist to repository storage
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      if (marketplaceRepo && typeof marketplaceRepo.createBuyerInquiry === 'function') {
+        await marketplaceRepo.createBuyerInquiry(inquiryRecord).catch(() => {});
+      }
+    } catch (_) {}
+
+    // 5. If proposed_price or offer_amount is provided, also create a structured negotiation offer
+    let linkedOffer = null;
+    const bidAmount = proposed_price || offer_amount;
+    if (bidAmount) {
+      try {
+        linkedOffer = await OfferService.createOffer({
+          buyerId,
+          listingId,
+          offerAmount: parseInt(bidAmount, 10),
+          ipAddress: req.ip || '127.0.0.1'
+        });
+        inquiryRecord.linked_offer_id = linkedOffer.id;
+      } catch (offerErr) {
+        inquiryRecord.offer_note = offerErr.message;
+      }
+    }
+
+    // 6. Record audit log
+    if (!state.audit_logs) state.audit_logs = [];
+    state.audit_logs.push({
+      id: `aud-${uuidv4()}`,
+      action: 'BUYER_INQUIRY_CREATED',
+      actor_id: buyerId,
+      entity_type: 'LISTING_INQUIRY',
+      entity_id: inquiryId,
+      metadata: {
+        listing_id: listingId,
+        seller_id: listing.seller_id,
+        quantity: parsedQty,
+        proposed_price: inquiryRecord.proposed_price,
+        linked_offer_id: inquiryRecord.linked_offer_id || null
+      },
+      created_at: inquiryRecord.created_at
+    });
+
+    // 7. Dispatch operational notification to admin@tikum.app (non-blocking)
+    try {
+      const { OperationalNotificationService } = require('../services/admin/OperationalNotificationService');
+      await OperationalNotificationService.notifyBuyerInquiryCreated({
+        inquiry: inquiryRecord,
+        buyer: req.user,
+        seller: sellerUser,
+        listing,
+        event: null
+      }).catch(err => console.warn('[offerRouter] Operational inquiry notification warning:', err.message));
+    } catch (_) {}
+
+    res.status(201).json({
+      success: true,
+      message: 'Permintaan minat beli berhasil diajukan. Tim Admin TIKUM akan segera menghubungi Anda melalui WhatsApp atau telepon untuk memfasilitasi transaksi aman.',
+      inquiry: inquiryRecord,
+      offer: linkedOffer
+    });
+  } catch (err) {
+    res.status(400).json({
+      error: err.message,
+      code: err.code || 'INQUIRY_SUBMISSION_FAILED'
+    });
+  }
+});
+
+/**
+ * GET /listings/:listingId/inquiries
+ * List inquiries for a listing
+ */
+router.get(['/listings/:listingId/inquiries', '/listings/:id/inquiries'], requireAuth, async (req, res) => {
+  const listingId = req.params.listingId || req.params.id;
+  const inquiries = (state.listing_inquiries || []).filter(i => i.listing_id === listingId);
+  res.json({
+    total: inquiries.length,
+    inquiries
+  });
+});
+
+/**
  * POST /listings/:listingId/offers
  * Buyer submits a structured price offer
  */
@@ -248,14 +422,9 @@ router.get('/offers/mine', requireAuth, async (req, res) => {
 
 /**
  * POST /offers/:offerId/accept
- * Seller accepts a structured offer
+ * Seller accepts a structured offer (creates matched order)
  */
-router.post('/offers/:offerId/accept', enforceNoTransactions, requireAuth, async (req, res) => {
-  const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
-  if (isPrelaunchListingMode()) {
-    return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
-  }
-
+router.post('/offers/:offerId/accept', requireAuth, async (req, res) => {
   const offerId = req.params.offerId;
   const sellerId = req.user.id;
 
@@ -266,9 +435,20 @@ router.post('/offers/:offerId/accept', enforceNoTransactions, requireAuth, async
       ipAddress: req.ip || '127.0.0.1'
     });
 
+    const { isPaymentGatewayFrozen } = require('../config/marketplaceMode');
+    const isFrozen = isPaymentGatewayFrozen();
+    if (isFrozen && result.order) {
+      if (!result.order.metadata) result.order.metadata = {};
+      result.order.metadata.coordination_mode = 'MANUAL_ESCROW';
+      result.order.metadata.gateway_frozen = true;
+    }
+
     res.status(200).json({
       success: true,
-      message: 'Tawaran diterima! Order berhasil dibuat.',
+      message: isFrozen
+        ? 'Tawaran diterima! Matching berhasil. Transaksi ini dikoordinasikan secara manual melalui rekening resmi TIKUM oleh Admin.'
+        : 'Tawaran diterima! Order berhasil dibuat.',
+      coordination_mode: isFrozen ? 'MANUAL_ESCROW' : 'ONLINE_GATEWAY',
       offer: result.offer,
       order: result.order,
       escrow: result.escrow,
@@ -409,14 +589,9 @@ router.post('/offers/:offerId/buyer-counter', requireAuth, checkNegotiationRateL
 
 /**
  * POST /offers/:offerId/accept-counter
- * Buyer accepts counter-offer -> creates order
+ * Buyer accepts counter-offer -> creates matched order
  */
-router.post('/offers/:offerId/accept-counter', enforceNoTransactions, requireAuth, async (req, res) => {
-  const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
-  if (isPrelaunchListingMode()) {
-    return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
-  }
-
+router.post('/offers/:offerId/accept-counter', requireAuth, async (req, res) => {
   const offerId = req.params.offerId;
   const buyerId = req.user.id;
 
@@ -427,9 +602,20 @@ router.post('/offers/:offerId/accept-counter', enforceNoTransactions, requireAut
       ipAddress: req.ip || '127.0.0.1'
     });
 
+    const { isPaymentGatewayFrozen } = require('../config/marketplaceMode');
+    const isFrozen = isPaymentGatewayFrozen();
+    if (isFrozen && result.order) {
+      if (!result.order.metadata) result.order.metadata = {};
+      result.order.metadata.coordination_mode = 'MANUAL_ESCROW';
+      result.order.metadata.gateway_frozen = true;
+    }
+
     res.status(200).json({
       success: true,
-      message: 'Tawaran balik disetujui! Silakan selesaikan pembayaran.',
+      message: isFrozen
+        ? 'Tawaran balik disetujui! Matching berhasil. Transaksi ini dikoordinasikan secara manual melalui rekening resmi TIKUM oleh Admin.'
+        : 'Tawaran balik disetujui! Silakan selesaikan pembayaran.',
+      coordination_mode: isFrozen ? 'MANUAL_ESCROW' : 'ONLINE_GATEWAY',
       ...result
     });
   } catch (err) {

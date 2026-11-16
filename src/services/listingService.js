@@ -189,7 +189,9 @@ class ListingService {
     }
 
     // 2. Validate Event
-    const event = state.events.find(e => e.id === eventId);
+    const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
+    const event = (state.events || []).find(e => e.id === eventId) ||
+      (canonicalRegistry && typeof canonicalRegistry.getEventById === 'function' ? canonicalRegistry.getEventById(eventId) : null);
     if (!event) {
       const err = new Error(`Event ${eventId} not found`);
       err.code = 'EVENT_NOT_FOUND';
@@ -458,6 +460,16 @@ class ListingService {
       barcode_hash: barcodeHash,
       canonical_delegation: true
     });
+
+    // 7. Operational Notification to admin@tikum.app (NEW_SELLER_LISTING & LISTING_MODERATION_REQUIRED)
+    try {
+      const { OperationalNotificationService } = require('./admin/OperationalNotificationService');
+      await OperationalNotificationService.notifySellerListingCreated({
+        listing,
+        seller: null,
+        event: null
+      }).catch(err => console.warn('[ListingService] Operational notification warning:', err.message));
+    } catch (_) {}
 
     return { ticket, listing };
   }
@@ -845,7 +857,9 @@ class ListingService {
           if (l.status !== LISTING_STATUS.ACTIVE) return false;
         }
         if (eventId && l.event_id !== eventId) return false;
-        const event = state.events.find(e => e.id === l.event_id);
+        const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
+        const event = (state.events || []).find(e => e.id === l.event_id) ||
+          (canonicalRegistry && typeof canonicalRegistry.getEventById === 'function' ? canonicalRegistry.getEventById(l.event_id) : null);
         if (!event) return false;
 
         const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS } = require('../discovery/EventTemporalLifecycleEngine');

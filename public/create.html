@@ -746,19 +746,35 @@
           submitBtn.disabled = false;
         } else if (kycStatus === 'PENDING_REVIEW') {
           inlineFormEl.style.display = 'none';
-          statusTextEl.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-              <div>
-                <div style="font-weight:700; color:#fff;">${fullName ? fullName + ' (' + emailOrId + ')' : emailOrId}</div>
-                <div style="font-size:12px; color:#fbbf24; margin-top:4px;">Pengajuan onboarding penjual Anda sedang ditinjau oleh tim Trust &amp; Safety Tikum (<code>PENDING_REVIEW</code>). Pembuatan listing akan terbuka otomatis setelah verifikasi KYC disetujui.</div>
+          if (data.is_prelaunch) {
+            statusTextEl.innerHTML = `
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div>
+                  <div style="font-weight:700; color:#fff;">${fullName ? fullName + ' (' + emailOrId + ')' : emailOrId}</div>
+                  <div style="font-size:12px; color:#38bdf8; margin-top:4px;"><i class="fa-solid fa-rocket"></i> <strong>Mode Prelaunch Aktif:</strong> Anda dapat membuat listing tiket koleksi prelaunch / draft. Listing akan disimpan dan baru dapat aktif diperjualbelikan setelah verifikasi KYC Anda disetujui (SLA: 24 jam).</div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <span class="badge badge-info"><i class="fa-solid fa-hourglass-half"></i> PRELAUNCH DRAFT</span>
+                  <a href="/app/seller" class="btn btn-secondary btn-sm" style="text-decoration:none;">Dashboard Penjual</a>
+                </div>
               </div>
-              <div style="display:flex; gap:8px; align-items:center;">
-                <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> PENDING REVIEW</span>
-                <a href="/app/seller" class="btn btn-secondary btn-sm" style="text-decoration:none;">Dashboard Penjual</a>
+            `;
+            submitBtn.disabled = false;
+          } else {
+            statusTextEl.innerHTML = `
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div>
+                  <div style="font-weight:700; color:#fff;">${fullName ? fullName + ' (' + emailOrId + ')' : emailOrId}</div>
+                  <div style="font-size:12px; color:#fbbf24; margin-top:4px;">Pengajuan onboarding penjual Anda sedang ditinjau oleh tim Trust &amp; Safety Tikum (<code>PENDING_REVIEW</code>). Estimasi peninjauan: <strong>24 jam (SLA)</strong>. Pembuatan listing live akan terbuka otomatis setelah verifikasi KYC disetujui.</div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> PENDING REVIEW</span>
+                  <a href="/app/seller" class="btn btn-secondary btn-sm" style="text-decoration:none;">Dashboard Penjual</a>
+                </div>
               </div>
-            </div>
-          `;
-          submitBtn.disabled = true;
+            `;
+            submitBtn.disabled = true;
+          }
         } else if (kycStatus === 'SUSPENDED') {
           inlineFormEl.style.display = 'none';
           statusTextEl.innerHTML = `

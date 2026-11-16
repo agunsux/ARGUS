@@ -275,6 +275,16 @@ const KNOWN_VENUES = [
 
   // Regional Venues — Jawa Timur
   {
+    id: 'venue-surabaya-expo-center',
+    canonical_name: 'Surabaya Expo Center',
+    city: 'Surabaya',
+    province: 'Jawa Timur',
+    lat: -7.2575,
+    lng: 112.7521,
+    capacity_tier: 'ARENA_LARGE',
+    aliases: ['surabaya expo center', 'sec', 'sec surabaya']
+  },
+  {
     id: 'venue-jatim-expo',
     canonical_name: 'Jatim Expo (JX International)',
     city: 'Surabaya',
@@ -282,7 +292,7 @@ const KNOWN_VENUES = [
     lat: -7.3142,
     lng: 112.7336,
     capacity_tier: 'ARENA_LARGE',
-    aliases: ['jatim expo', 'jx international', 'jatim expo surabaya', 'surabaya expo center']
+    aliases: ['jatim expo', 'jx international', 'jatim expo surabaya']
   },
   {
     id: 'venue-grand-city',

@@ -20,16 +20,27 @@ const MARKETPLACE_MODES = {
 };
 
 const PRELAUNCH_ERROR_CODE = 'MARKETPLACE_PRELAUNCH_ONLY';
-const PRELAUNCH_ERROR_MESSAGE = 'TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.';
+const PRELAUNCH_ERROR_MESSAGE = 'TIKUM belum membuka transaksi online otomatis. Anda dapat mengajukan listing dan menawar tiket, dikoordinasikan secara manual oleh Admin.';
 
 const PRELAUNCH_ERROR_RESPONSE = {
   error: PRELAUNCH_ERROR_MESSAGE,
   code: PRELAUNCH_ERROR_CODE
 };
 
+const PAYMENT_GATEWAY_FROZEN_CODE = 'PAYMENT_GATEWAY_FROZEN';
+const PAYMENT_GATEWAY_FROZEN_MESSAGE = 'Gerbang pembayaran online TIKUM saat ini ditangguhkan sementara. Transaksi tiket dikoordinasikan secara manual melalui rekening resmi TIKUM oleh Admin.';
+
+const PAYMENT_GATEWAY_FROZEN_RESPONSE = {
+  error: PAYMENT_GATEWAY_FROZEN_MESSAGE,
+  code: PAYMENT_GATEWAY_FROZEN_CODE,
+  coordination_mode: 'MANUAL_ESCROW',
+  isAvailable: false
+};
+
 const PRELAUNCH_NOTICE_TEXT = 'TIKUM sedang dalam tahap persiapan peluncuran. Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran belum tersedia. Pengajuan listing tidak menjamin tiket telah terverifikasi atau transaksi dapat dilakukan.';
 
 let testModeOverride = null;
+let testPaymentFrozenOverride = null;
 
 /**
  * Resolves current authoritative server-side marketplace mode.
@@ -72,11 +83,51 @@ function isPrelaunchListingMode() {
 }
 
 /**
+ * Checks if online payment gateway execution is frozen.
+ * Under Payment Gateway Freeze Directive, online checkout and new payment intent creation
+ * are suspended, while preserving all existing payment infrastructure, adapters, ledgers, and webhooks.
+ *
+ * @returns {boolean}
+ */
+function isPaymentGatewayFrozen() {
+  if (testPaymentFrozenOverride !== null) {
+    return Boolean(testPaymentFrozenOverride);
+  }
+
+  // If explicitly disabled via env:
+  if (process.env.PAYMENT_GATEWAY_FROZEN === 'false') {
+    return false;
+  }
+
+  // By default, payment gateway is frozen during prelaunch or when explicitly true or unset
+  if (process.env.PAYMENT_GATEWAY_FROZEN === 'true') {
+    return true;
+  }
+
+  // If in prelaunch mode, payment gateway is also frozen
+  if (isPrelaunchListingMode()) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Middleware that strictly blocks new transactions, checkouts, and payment initiations.
  */
 function enforceNoTransactions(req, res, next) {
   if (isPrelaunchListingMode()) {
     return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+  }
+  next();
+}
+
+/**
+ * Middleware that enforces payment gateway freeze on online checkout endpoints.
+ */
+function enforcePaymentGatewayActive(req, res, next) {
+  if (isPaymentGatewayFrozen()) {
+    return res.status(503).json(PAYMENT_GATEWAY_FROZEN_RESPONSE);
   }
   next();
 }
@@ -89,14 +140,28 @@ function setMarketplaceModeForTesting(mode) {
   testModeOverride = mode ? mode.trim().toUpperCase() : null;
 }
 
+/**
+ * Testing helper to temporarily override payment freeze in test runners.
+ * @param {boolean|null} frozen
+ */
+function setPaymentGatewayFrozenForTesting(frozen) {
+  testPaymentFrozenOverride = typeof frozen === 'boolean' ? frozen : null;
+}
+
 module.exports = {
   MARKETPLACE_MODES,
   PRELAUNCH_ERROR_CODE,
   PRELAUNCH_ERROR_MESSAGE,
   PRELAUNCH_ERROR_RESPONSE,
+  PAYMENT_GATEWAY_FROZEN_CODE,
+  PAYMENT_GATEWAY_FROZEN_MESSAGE,
+  PAYMENT_GATEWAY_FROZEN_RESPONSE,
   PRELAUNCH_NOTICE_TEXT,
   getMarketplaceMode,
   isPrelaunchListingMode,
+  isPaymentGatewayFrozen,
   enforceNoTransactions,
-  setMarketplaceModeForTesting
+  enforcePaymentGatewayActive,
+  setMarketplaceModeForTesting,
+  setPaymentGatewayFrozenForTesting
 };

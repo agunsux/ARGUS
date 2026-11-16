@@ -1,0 +1,719 @@
+{
+  "checkedAt": "2026-11-15T07:13:22.163Z",
+  "project": "argus",
+  "projectId": "prj_X2hQwU5IqxSU3WpYKCNcRzslk47S",
+  "ssoProtection": {
+    "deploymentType": "all_except_custom_domains"
+  },
+  "passwordProtectionEnabled": false,
+  "environmentMetadata": [
+    {
+      "key": "DOKU_SANDBOX_CLIENT_ID",
+      "target": [
+        "preview"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "DOKU_SANDBOX_SECRET_KEY",
+      "target": [
+        "preview"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "DOKU_BASE_URL",
+      "target": [
+        "preview"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "DOKU_ENV",
+      "target": [
+        "preview"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "MARKETPLACE_MODE",
+      "target": [
+        "preview"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "TARGET_DATABASE_URL",
+      "target": [
+        "production"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "DATABASE_URL",
+      "target": [
+        "production"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "DATABASE_URL",
+      "target": [
+        "preview"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "DOKU_PUBLIC_KEY",
+      "target": [
+        "production"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "DOKU_API_KEY",
+      "target": [
+        "production"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "DOKU_SECRET_KEY",
+      "target": [
+        "production"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "DOKU_CLIENT_ID",
+      "target": [
+        "production"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "DOKU_BASE_URL",
+      "target": [
+        "production"
+      ],
+      "type": "sensitive"
+    },
+    {
+      "key": "DOKU_ENV",
+      "target": [
+        "production"
+      ],
+      "type": "sensitive"
+    }
+  ],
+  "bypassEntries": [
+    {
+      "entry": "entry-1",
+      "scope": "automation-bypass",
+      "createdAt": 1791732568988,
+      "expiresAt": null,
+      "lastUsedAt": null,
+      "classification": "UNKNOWN",
+      "metadataFields": [
+        "scope",
+        "isEnvVar",
+        "createdAt",
+        "createdBy"
+      ],
+      "reason": "Present in configuration; consumer ownership and required ongoing use not established",
+      "probe": "ACCEPTED_FOR_PREVIEW_GET"
+    },
+    {
+      "entry": "entry-2",
+      "scope": "automation-bypass",
+      "createdAt": 1794676351459,
+      "expiresAt": null,
+      "lastUsedAt": null,
+      "classification": "UNKNOWN",
+      "metadataFields": [
+        "scope",
+        "isEnvVar",
+        "createdAt",
+        "createdBy"
+      ],
+      "reason": "Present in configuration; consumer ownership and required ongoing use not established",
+      "probe": "ACCEPTED_FOR_PREVIEW_GET"
+    }
+  ],
+  "deployments": [
+    {
+      "id": "dpl_J3ZC7qjSBFeCJqCqtABfpJo6Q3xd",
+      "url": "argus-72lgr2htn-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794695696722,
+      "sha": "3eb6e88cccf46089c6a9cdf905d1d60f9c849034",
+      "branch": "fix/tikum-auth-doku-verification",
+      "metaFields": [
+        "githubCommitAuthorName",
+        "githubCommitAuthorEmail",
+        "githubCommitMessage",
+        "githubCommitOrg",
+        "githubCommitRef",
+        "githubCommitRepo",
+        "githubCommitSha",
+        "githubDeployment",
+        "githubOrg",
+        "githubRepo",
+        "githubRepoOwnerType",
+        "githubCommitRepoId",
+        "githubRepoId",
+        "githubRepoVisibility",
+        "githubHost",
+        "githubCommitAuthorLogin",
+        "githubCommitVerification",
+        "repoPushedAt",
+        "branchAlias",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_3awcmuZJ4KtcZM25KYM1CMpTqYhD",
+      "url": "argus-cvn2c7nb6-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794678420451,
+      "sha": "6ff0e7101538b15b2d470f1d52ce6b2c2536986d",
+      "branch": "fix/tikum-auth-doku-verification",
+      "metaFields": [
+        "gitCommitAuthorName",
+        "gitCommitAuthorEmail",
+        "gitCommitMessage",
+        "gitCommitRef",
+        "gitCommitSha",
+        "gitRootDirectory",
+        "actor",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_6RcKA1tQAVpEra1befgYhAfgR76S",
+      "url": "argus-33wfhszyd-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794678234860,
+      "sha": "69b41e4af06bd5b03bdf2491b4c2edea6a2330f4",
+      "branch": "fix/tikum-auth-doku-verification",
+      "metaFields": [
+        "gitCommitAuthorName",
+        "gitCommitAuthorEmail",
+        "gitCommitMessage",
+        "gitCommitRef",
+        "gitCommitSha",
+        "gitDirty",
+        "gitRootDirectory",
+        "actor",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_3nA4y5ePVegq2TZMuMvmiKcdzCSL",
+      "url": "argus-n8t439fti-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794677614295,
+      "sha": "69b41e4af06bd5b03bdf2491b4c2edea6a2330f4",
+      "branch": "fix/tikum-auth-doku-verification",
+      "metaFields": [
+        "gitCommitAuthorName",
+        "gitCommitAuthorEmail",
+        "gitCommitMessage",
+        "gitCommitRef",
+        "gitCommitSha",
+        "gitDirty",
+        "gitRootDirectory",
+        "actor",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_EfdZit475EnUHtCw88SNdETBBETb",
+      "url": "argus-5vurgme2b-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794677367241,
+      "sha": "69b41e4af06bd5b03bdf2491b4c2edea6a2330f4",
+      "branch": "fix/tikum-auth-doku-verification",
+      "metaFields": [
+        "gitCommitAuthorName",
+        "gitCommitAuthorEmail",
+        "gitCommitMessage",
+        "gitCommitRef",
+        "gitCommitSha",
+        "gitDirty",
+        "gitRootDirectory",
+        "actor",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_Ean4tMganU3er2P5qnEaeGeWdrSS",
+      "url": "argus-ez36nzwfx-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794676933555,
+      "sha": "69b41e4af06bd5b03bdf2491b4c2edea6a2330f4",
+      "branch": "fix/tikum-auth-doku-verification",
+      "metaFields": [
+        "gitCommitAuthorName",
+        "gitCommitAuthorEmail",
+        "gitCommitMessage",
+        "gitCommitRef",
+        "gitCommitSha",
+        "gitRootDirectory",
+        "actor",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_4Khj7vScTV6DSzTyYcobQ8cAG68k",
+      "url": "argus-fn1h04nl5-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794676032286,
+      "sha": "97365950e98dad1010bb94004b77f5f287ff5675",
+      "branch": "main",
+      "metaFields": [
+        "gitCommitAuthorName",
+        "gitCommitAuthorEmail",
+        "gitCommitMessage",
+        "gitCommitRef",
+        "gitCommitSha",
+        "gitRootDirectory",
+        "actor",
+        "lambdaRuntimeStats",
+        "action",
+        "originalDeploymentId"
+      ]
+    },
+    {
+      "id": "dpl_GRPUG6DUN3ViHnhttqjb1mgoyYYB",
+      "url": "argus-pb6wfqqil-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794649552035,
+      "sha": "84477c44d025b4d563c26c455639e7dc97a0b08d",
+      "branch": "feat/argus-control-plane",
+      "metaFields": [
+        "githubCommitAuthorName",
+        "githubCommitAuthorEmail",
+        "githubCommitMessage",
+        "githubCommitOrg",
+        "githubCommitRef",
+        "githubCommitRepo",
+        "githubCommitSha",
+        "githubDeployment",
+        "githubOrg",
+        "githubRepo",
+        "githubRepoOwnerType",
+        "githubCommitRepoId",
+        "githubRepoId",
+        "githubRepoVisibility",
+        "githubHost",
+        "githubCommitAuthorLogin",
+        "githubCommitVerification",
+        "repoPushedAt",
+        "branchAlias",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_DBFuBNeJnnovPpNvhPoGt12YPK6k",
+      "url": "argus-cr5sy1if2-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794649382965,
+      "sha": "449bff2d9ecfac6b42d9679c1447da053ac83a46",
+      "branch": "feat/argus-control-plane",
+      "metaFields": [
+        "githubCommitAuthorName",
+        "githubCommitAuthorEmail",
+        "githubCommitMessage",
+        "githubCommitOrg",
+        "githubCommitRef",
+        "githubCommitRepo",
+        "githubCommitSha",
+        "githubDeployment",
+        "githubOrg",
+        "githubRepo",
+        "githubRepoOwnerType",
+        "githubCommitRepoId",
+        "githubRepoId",
+        "githubRepoVisibility",
+        "githubHost",
+        "githubCommitAuthorLogin",
+        "githubCommitVerification",
+        "repoPushedAt",
+        "branchAlias",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_5qMLNkGhjFACbqNa7ohwT8bZsEF7",
+      "url": "argus-q57mzb3pq-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794648512939,
+      "sha": "22662bfd9df4774b32cbdfb77b4c21274b8bbea4",
+      "branch": "feat/argus-control-plane",
+      "metaFields": [
+        "githubCommitAuthorName",
+        "githubCommitAuthorEmail",
+        "githubCommitMessage",
+        "githubCommitOrg",
+        "githubCommitRef",
+        "githubCommitRepo",
+        "githubCommitSha",
+        "githubDeployment",
+        "githubOrg",
+        "githubRepo",
+        "githubRepoOwnerType",
+        "githubCommitRepoId",
+        "githubRepoId",
+        "githubRepoVisibility",
+        "githubHost",
+        "githubCommitAuthorLogin",
+        "githubCommitVerification",
+        "repoPushedAt",
+        "branchAlias",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_GDMwrkaA8iCdaKFrZxxEoHjv8apg",
+      "url": "argus-co4n25x8d-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794648313466,
+      "sha": "e4a7c6e50dd684763da7e2f77c030f3a53e70d48",
+      "branch": "feat/argus-control-plane",
+      "metaFields": [
+        "githubCommitAuthorName",
+        "githubCommitAuthorEmail",
+        "githubCommitMessage",
+        "githubCommitOrg",
+        "githubCommitRef",
+        "githubCommitRepo",
+        "githubCommitSha",
+        "githubDeployment",
+        "githubOrg",
+        "githubRepo",
+        "githubRepoOwnerType",
+        "githubCommitRepoId",
+        "githubRepoId",
+        "githubRepoVisibility",
+        "githubHost",
+        "githubCommitAuthorLogin",
+        "githubCommitVerification",
+        "repoPushedAt",
+        "branchAlias",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_Htayoj1HCnpfaGX8DREBXDNwR5YA",
+      "url": "argus-4azj6mrx6-shinerva.vercel.app",
+      "target": "production",
+      "state": "READY",
+      "createdAt": 1794645291991,
+      "sha": "97365950e98dad1010bb94004b77f5f287ff5675",
+      "branch": "main",
+      "metaFields": [
+        "gitCommitAuthorName",
+        "gitCommitAuthorEmail",
+        "gitCommitMessage",
+        "gitCommitRef",
+        "gitCommitSha",
+        "gitRootDirectory",
+        "actor",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_CypqyprpY3PAmrVnBQjRJcnG6gwe",
+      "url": "argus-d4nd389hg-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794645211483,
+      "sha": "97365950e98dad1010bb94004b77f5f287ff5675",
+      "branch": "feat/argus-control-plane",
+      "metaFields": [
+        "githubCommitAuthorName",
+        "githubCommitAuthorEmail",
+        "githubCommitMessage",
+        "githubCommitOrg",
+        "githubCommitRef",
+        "githubCommitRepo",
+        "githubCommitSha",
+        "githubDeployment",
+        "githubOrg",
+        "githubRepo",
+        "githubRepoOwnerType",
+        "githubCommitRepoId",
+        "githubRepoId",
+        "githubRepoVisibility",
+        "githubHost",
+        "githubCommitAuthorLogin",
+        "githubCommitVerification",
+        "repoPushedAt",
+        "branchAlias",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_4KUcQCaops5SJU8HhRcMixy4zYUN",
+      "url": "argus-8p6nxlf16-shinerva.vercel.app",
+      "target": "production",
+      "state": "READY",
+      "createdAt": 1794598045201,
+      "sha": "5efd45b6a51a79ceb953fe2bc7eef01723589a69",
+      "branch": "main",
+      "metaFields": [
+        "gitCommitAuthorName",
+        "gitCommitAuthorEmail",
+        "gitCommitMessage",
+        "gitCommitRef",
+        "gitCommitSha",
+        "gitRootDirectory",
+        "actor",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_DQyzZSQ8BhZp29HLVChE1yHjDZKU",
+      "url": "argus-nq1x9csek-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794597679080,
+      "sha": "5efd45b6a51a79ceb953fe2bc7eef01723589a69",
+      "branch": "feat/argus-control-plane",
+      "metaFields": [
+        "githubCommitAuthorName",
+        "githubCommitAuthorEmail",
+        "githubCommitMessage",
+        "githubCommitOrg",
+        "githubCommitRef",
+        "githubCommitRepo",
+        "githubCommitSha",
+        "githubDeployment",
+        "githubOrg",
+        "githubRepo",
+        "githubRepoOwnerType",
+        "githubCommitRepoId",
+        "githubRepoId",
+        "githubRepoVisibility",
+        "githubHost",
+        "githubCommitAuthorLogin",
+        "githubCommitVerification",
+        "repoPushedAt",
+        "branchAlias",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_H1dmncmZoL17VoYurUPmjr7v2reU",
+      "url": "argus-o03ejb9so-shinerva.vercel.app",
+      "target": "production",
+      "state": "READY",
+      "createdAt": 1794570007921,
+      "sha": "b43784955c1386aa72b1f0ccb1c44ddbdb53991f",
+      "branch": "main",
+      "metaFields": [
+        "githubCommitAuthorName",
+        "githubCommitAuthorEmail",
+        "githubCommitMessage",
+        "githubCommitOrg",
+        "githubCommitRef",
+        "githubCommitRepo",
+        "githubCommitSha",
+        "githubDeployment",
+        "githubOrg",
+        "githubRepo",
+        "githubRepoOwnerType",
+        "githubCommitRepoId",
+        "githubRepoId",
+        "githubRepoVisibility",
+        "githubHost",
+        "githubCommitAuthorLogin",
+        "githubCommitVerification",
+        "repoPushedAt",
+        "branchAlias",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_BVpkUobUKDH4FuJKJBXFveijYRT5",
+      "url": "argus-6i7s3ywbk-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794569152811,
+      "sha": "b43784955c1386aa72b1f0ccb1c44ddbdb53991f",
+      "branch": "feat/argus-control-plane",
+      "metaFields": [
+        "githubCommitAuthorName",
+        "githubCommitAuthorEmail",
+        "githubCommitMessage",
+        "githubCommitOrg",
+        "githubCommitRef",
+        "githubCommitRepo",
+        "githubCommitSha",
+        "githubDeployment",
+        "githubOrg",
+        "githubRepo",
+        "githubRepoOwnerType",
+        "githubCommitRepoId",
+        "githubRepoId",
+        "githubRepoVisibility",
+        "githubHost",
+        "githubCommitAuthorLogin",
+        "githubCommitVerification",
+        "repoPushedAt",
+        "branchAlias",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_DUCuNcTQKXbSihRPevq1pZxdKLZs",
+      "url": "argus-b4phwe93t-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794530484476,
+      "sha": "ccb7001a03d89793fc2d83995bde88a8cb54a87d",
+      "branch": "feat/argus-control-plane",
+      "metaFields": [
+        "githubCommitAuthorName",
+        "githubCommitAuthorEmail",
+        "githubCommitMessage",
+        "githubCommitOrg",
+        "githubCommitRef",
+        "githubCommitRepo",
+        "githubCommitSha",
+        "githubDeployment",
+        "githubOrg",
+        "githubRepo",
+        "githubRepoOwnerType",
+        "githubCommitRepoId",
+        "githubRepoId",
+        "githubRepoVisibility",
+        "githubHost",
+        "githubCommitAuthorLogin",
+        "githubCommitVerification",
+        "repoPushedAt",
+        "branchAlias",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_H4dPQ4nTmHqLvsjgvJ3x8thh83YK",
+      "url": "argus-imv946c9t-shinerva.vercel.app",
+      "target": "production",
+      "state": "READY",
+      "createdAt": 1794525054717,
+      "sha": "46f121f156d8c3f3100afdad18d829c936eef343",
+      "branch": "feat/argus-control-plane",
+      "metaFields": [
+        "gitCommitAuthorName",
+        "gitCommitAuthorEmail",
+        "gitCommitMessage",
+        "gitCommitRef",
+        "gitCommitSha",
+        "gitRootDirectory",
+        "actor",
+        "lambdaRuntimeStats"
+      ]
+    },
+    {
+      "id": "dpl_5DV6oFKrmefAWPJS97wkwcnpyLiX",
+      "url": "argus-ofvnvdt4o-shinerva.vercel.app",
+      "target": null,
+      "state": "READY",
+      "createdAt": 1794524915207,
+      "sha": "46f121f156d8c3f3100afdad18d829c936eef343",
+      "branch": "feat/argus-control-plane",
+      "metaFields": [
+        "gitCommitAuthorName",
+        "gitCommitAuthorEmail",
+        "gitCommitMessage",
+        "gitCommitRef",
+        "gitCommitSha",
+        "gitRootDirectory",
+        "actor",
+        "lambdaRuntimeStats"
+      ]
+    }
+  ],
+  "runtime": [
+    {
+      "entry": "entry-1",
+      "route": "/api/v1/payments/doku/config",
+      "status": 200,
+      "config": {
+        "success": true,
+        "provider": "doku",
+        "environment": "sandbox",
+        "status": "PENDING_VERIFICATION",
+        "is_configured": true,
+        "is_sandbox": true,
+        "production_gated": true,
+        "production_host_rejected": false
+      }
+    },
+    {
+      "entry": "entry-2",
+      "route": "/api/v1/payments/doku/config",
+      "status": 200,
+      "config": {
+        "success": true,
+        "provider": "doku",
+        "environment": "sandbox",
+        "status": "PENDING_VERIFICATION",
+        "is_configured": true,
+        "is_sandbox": true,
+        "production_gated": true,
+        "production_host_rejected": false
+      }
+    }
+  ],
+  "changes": "No deployment, environment edits, token creation or revocation",
+  "deploymentDetail": {
+    "id": "dpl_J3ZC7qjSBFeCJqCqtABfpJo6Q3xd",
+    "url": "argus-72lgr2htn-shinerva.vercel.app",
+    "target": null,
+    "readyState": "READY",
+    "gitSource": {
+      "ref": "fix/tikum-auth-doku-verification",
+      "repoId": 1293234660,
+      "sha": "3eb6e88cccf46089c6a9cdf905d1d60f9c849034",
+      "type": "github",
+      "prId": null
+    },
+    "metaFields": [
+      "githubCommitAuthorName",
+      "githubCommitAuthorEmail",
+      "githubCommitMessage",
+      "githubCommitOrg",
+      "githubCommitRef",
+      "githubCommitRepo",
+      "githubCommitSha",
+      "githubDeployment",
+      "githubOrg",
+      "githubRepo",
+      "githubRepoOwnerType",
+      "githubCommitRepoId",
+      "githubRepoId",
+      "githubRepoVisibility",
+      "githubHost",
+      "githubCommitAuthorLogin",
+      "githubCommitVerification",
+      "repoPushedAt",
+      "branchAlias",
+      "lambdaRuntimeStats"
+    ],
+    "sha": "3eb6e88cccf46089c6a9cdf905d1d60f9c849034"
+  }
+}

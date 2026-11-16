@@ -1,0 +1,23 @@
+{
+  "startedAt": "2026-11-15T07:14:45.144Z",
+  "sourceSha": "3eb6e88cccf46089c6a9cdf905d1d60f9c849034",
+  "scope": "Local isolated contracts, not real gateway or database acceptance",
+  "suites": [
+    {
+      "file": "test_sandbox_deployed_safety.js",
+      "exitCode": 1,
+      "error": null,
+      "status": "FAIL",
+      "summary": [
+        "production, flag=\"false\"",
+        "400 !== 403"
+      ]
+    }
+  ],
+  "finishedAt": "2026-11-15T07:14:45.794Z",
+  "counts": {
+    "PASS": 0,
+    "FAIL": 1,
+    "BLOCKED": 0
+  }
+}

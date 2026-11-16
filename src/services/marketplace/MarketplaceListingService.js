@@ -147,7 +147,9 @@ class MarketplaceListingService {
 
     // 6. Validate canonical event exists and is not CANCELLED
     const eventId = ticket.event_id || ticket.canonical_event_id;
-    const event = state.events.find(e => e.id === eventId);
+    const { canonicalRegistry } = require('../../discovery/CanonicalEventRegistry');
+    const event = (state.events || []).find(e => e.id === eventId) ||
+      (canonicalRegistry && typeof canonicalRegistry.getEventById === 'function' ? canonicalRegistry.getEventById(eventId) : null);
     if (!event) {
       const err = new Error(`Event '${eventId}' not found for ticket '${ticketId}'`);
       err.code = 'EVENT_NOT_FOUND';

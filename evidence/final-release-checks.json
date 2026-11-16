@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-11-14T18:37:27.020Z",
+  "startedAt": "2026-11-15T14:07:24.109Z",
   "isolation": "offline, credential-free",
   "checks": [
     {
@@ -23,7 +23,7 @@
       "exitCode": 0,
       "error": null,
       "summary": [
-        "Generated public/sitemap.xml (9400 bytes)."
+        "Generated public/sitemap.xml (15953 bytes)."
       ]
     },
     {
@@ -64,5 +64,5 @@
       ]
     }
   ],
-  "finishedAt": "2026-11-14T18:38:26.045Z"
+  "finishedAt": "2026-11-15T14:08:21.962Z"
 }

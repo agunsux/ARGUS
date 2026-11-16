@@ -134,6 +134,270 @@ const TEMPLATES = {
     }
   },
 
+  // ===========================================================================
+  // SELLER ONBOARDING & KYC NOTIFICATIONS (Epic NOT-01)
+  // ===========================================================================
+  SELLER_ONBOARDING_RECEIVED: {
+    subject: (d) => (d && (d.locale === 'en' || d.lang === 'en'))
+      ? '[TIKUM] Seller Verification Application Received'
+      : '[TIKUM] Pengajuan Verifikasi Penjual Telah Diterima',
+    render: (d) => {
+      const isEn = Boolean(d && (d.locale === 'en' || d.lang === 'en'));
+      const title = isEn ? 'Seller Verification Under Review' : 'Pengajuan Verifikasi Penjual Sedang Ditinjau';
+      const statusUrl = `${CANONICAL_ORIGIN}/app/seller`;
+      const content = isEn ? `
+        <span class="badge badge-info">Application Received</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Hello, ${d.name || 'Seller'}!</h2>
+        <p>We have received your seller onboarding and KYC verification request. Our Trust & Safety team is currently reviewing your identity information.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Application Status:</span><span class="info-value" style="color: #fbbf24;">PENDING_REVIEW</span></div>
+          <div class="info-row"><span class="info-label">Review SLA:</span><span class="info-value">Within 24 Hours</span></div>
+        </div>
+        <p>You can track the progress of your application anytime on your Seller Dashboard.</p>
+      ` : `
+        <span class="badge badge-info">Pengajuan Diterima</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Halo, ${d.name || 'Penjual'}!</h2>
+        <p>Kami telah menerima pengajuan onboarding dan verifikasi KYC penjual Anda. Tim Trust & Safety Tikum sedang meninjau dokumen identitas Anda.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Status Pengajuan:</span><span class="info-value" style="color: #fbbf24;">PENDING_REVIEW</span></div>
+          <div class="info-row"><span class="info-label">Estimasi Waktu Review:</span><span class="info-value">Maksimal 24 Jam (SLA)</span></div>
+        </div>
+        <p>Anda dapat memantau status pengajuan verifikasi ini kapan saja melalui Dashboard Penjual.</p>
+      `;
+      const textContent = isEn
+        ? `Hello ${d.name || 'Seller'},\n\nYour seller verification application has been received and is under review (SLA: 24 hours).\nTrack status: ${statusUrl}`
+        : `Halo ${d.name || 'Penjual'},\n\nPengajuan verifikasi penjual Anda telah diterima dan sedang ditinjau oleh tim Trust & Safety (SLA: 24 jam).\nPantau status: ${statusUrl}`;
+      return {
+        html: wrapHtml({ title, preheader: isEn ? 'Seller verification application received (SLA: 24 hours)' : 'Pengajuan verifikasi penjual diterima (SLA: 24 jam)', content, actionButton: { text: isEn ? 'View Status' : 'Lihat Status', url: statusUrl }, locale: isEn ? 'en' : 'id' }),
+        text: wrapText({ title, content: textContent, actionUrl: statusUrl, locale: isEn ? 'en' : 'id' })
+      };
+    }
+  },
+
+  SELLER_KYC_APPROVED: {
+    subject: (d) => (d && (d.locale === 'en' || d.lang === 'en'))
+      ? '[TIKUM] Congratulations! Your Seller Verification is Approved'
+      : '[TIKUM] Selamat! Verifikasi Penjual Anda Telah Disetujui',
+    render: (d) => {
+      const isEn = Boolean(d && (d.locale === 'en' || d.lang === 'en'));
+      const title = isEn ? 'Seller Verification Approved' : 'Verifikasi Penjual Disetujui';
+      const createUrl = `${CANONICAL_ORIGIN}/create`;
+      const limit = d.activeListingLimit || d.active_listing_limit || 10;
+      const content = isEn ? `
+        <span class="badge badge-success">KYC Verified</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Congratulations, ${d.name || 'Seller'}!</h2>
+        <p>Your seller verification has been reviewed and APPROVED by our Trust & Safety team. You are now an authorized seller on TIKUM.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">KYC Status:</span><span class="info-value" style="color: #34d399;">VERIFIED</span></div>
+          <div class="info-row"><span class="info-label">Active Listing Limit:</span><span class="info-value">${limit} Active Tickets</span></div>
+        </div>
+        <p>You can now create and manage ticket listings on the marketplace.</p>
+      ` : `
+        <span class="badge badge-success">KYC Terverifikasi</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Selamat, ${d.name || 'Penjual'}!</h2>
+        <p>Pengajuan verifikasi identitas (KYC) Anda telah disetujui oleh tim Trust & Safety. Anda kini resmi menjadi penjual terverifikasi di TIKUM.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Status KYC:</span><span class="info-value" style="color: #34d399;">VERIFIED</span></div>
+          <div class="info-row"><span class="info-label">Batas Kuota Listing:</span><span class="info-value">${limit} Tiket Aktif</span></div>
+        </div>
+        <p>Anda sudah dapat mulai mendaftarkan listing tiket konser dan festival Anda di marketplace.</p>
+      `;
+      const textContent = isEn
+        ? `Congratulations ${d.name || 'Seller'}!\n\nYour seller verification is approved (Limit: ${limit} listings).\nStart listing: ${createUrl}`
+        : `Selamat ${d.name || 'Penjual'}!\n\nVerifikasi penjual Anda telah disetujui (Batas: ${limit} tiket aktif).\nMulai buat listing: ${createUrl}`;
+      return {
+        html: wrapHtml({ title, preheader: isEn ? 'Your seller verification has been approved' : 'Verifikasi penjual Anda telah disetujui', content, actionButton: { text: isEn ? 'Create Listing' : 'Buat Listing Baru', url: createUrl }, locale: isEn ? 'en' : 'id' }),
+        text: wrapText({ title, content: textContent, actionUrl: createUrl, locale: isEn ? 'en' : 'id' })
+      };
+    }
+  },
+
+  SELLER_KYC_REJECTED: {
+    subject: (d) => (d && (d.locale === 'en' || d.lang === 'en'))
+      ? '[TIKUM] Update on Your Seller Verification Application'
+      : '[TIKUM] Informasi Status Verifikasi Penjual',
+    render: (d) => {
+      const isEn = Boolean(d && (d.locale === 'en' || d.lang === 'en'));
+      const title = isEn ? 'Seller Verification Needs Attention' : 'Verifikasi Penjual Perlu Diperbaiki';
+      const retryUrl = `${CANONICAL_ORIGIN}/app/seller`;
+      const reason = d.reason || d.rejectionReason || (isEn ? 'Identity documents did not meet verification criteria' : 'Dokumen identitas tidak memenuhi kriteria verifikasi');
+      const content = isEn ? `
+        <span class="badge badge-warning">Action Required</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Hello, ${d.name || 'Applicant'}</h2>
+        <p>Thank you for submitting your seller onboarding application. After reviewing your submission, our team was unable to approve it at this time.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Reason:</span><span class="info-value" style="color: #f87171;">${escapeHtml(reason)}</span></div>
+        </div>
+        <p>Please review the reason above and re-submit your valid documents via your Seller Dashboard.</p>
+      ` : `
+        <span class="badge badge-warning">Perlu Perbaikan</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Halo, ${d.name || 'Pemohon'}</h2>
+        <p>Terima kasih telah mengajukan verifikasi penjual. Setelah pemeriksaan dokumen, tim Trust & Safety belum dapat menyetujui pengajuan Anda saat ini.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Alasan Penolakan:</span><span class="info-value" style="color: #f87171;">${escapeHtml(reason)}</span></div>
+        </div>
+        <p>Silakan periksa alasan di atas dan ajukan kembali dokumen identitas yang valid melalui Dashboard Penjual Anda.</p>
+      `;
+      const textContent = isEn
+        ? `Hello ${d.name || 'Applicant'},\n\nYour seller verification application requires revision.\nReason: ${reason}\nRe-apply: ${retryUrl}`
+        : `Halo ${d.name || 'Pemohon'},\n\nPengajuan verifikasi penjual Anda perlu diperbaiki.\nAlasan: ${reason}\nAjukan ulang: ${retryUrl}`;
+      return {
+        html: wrapHtml({ title, preheader: isEn ? 'Your seller verification application requires revision' : 'Pengajuan verifikasi penjual perlu diperbaiki', content, actionButton: { text: isEn ? 'Update Application' : 'Perbarui Pengajuan', url: retryUrl }, locale: isEn ? 'en' : 'id' }),
+        text: wrapText({ title, content: textContent, actionUrl: retryUrl, locale: isEn ? 'en' : 'id' })
+      };
+    }
+  },
+
+  // ===========================================================================
+  // OPERATIONAL LEADS & ADMIN NOTIFICATIONS (admin@tikum.app)
+  // ===========================================================================
+  NEW_SELLER_LISTING: {
+    subject: (d) => `[TIKUM LEAD] Listing Penjual Baru: ${d.eventName || 'Event'} - ${d.sellerName || 'Penjual'} (#${(d.listingId || '').slice(-6)})`,
+    render: (d) => {
+      const title = 'Listing Penjual Baru Diajukan';
+      const adminUrl = d.adminUrl || `${CANONICAL_ORIGIN}/admin?tab=listings&id=${d.listingId || ''}`;
+      const askingPriceFormatted = typeof d.askingPrice === 'number'
+        ? `Rp ${d.askingPrice.toLocaleString('id-ID')}`
+        : (d.askingPrice || 'Rp 0');
+      const content = `
+        <span class="badge badge-warning">Listing Baru Menunggu Moderasi</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Listing Baru Diajukan Penjual</h2>
+        <p>Penjual terdaftar telah mengajukan listing tiket baru ke marketplace TIKUM. Harap lakukan verifikasi tiket sebelum menerbitkan ke pembeli.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">ID Listing:</span><span class="info-value mono">${escapeHtml(d.listingId || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Nama Penjual:</span><span class="info-value"><strong>${escapeHtml(d.sellerName || '-')}</strong> (${escapeHtml(d.sellerEmail || '-')})</span></div>
+          <div class="info-row"><span class="info-label">Kontak Penjual:</span><span class="info-value">${escapeHtml(d.sellerPhone || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Event:</span><span class="info-value"><strong>${escapeHtml(d.eventName || '-')}</strong></span></div>
+          <div class="info-row"><span class="info-label">Tanggal &amp; Venue:</span><span class="info-value">${escapeHtml(d.eventDate || '-')} @ ${escapeHtml(d.venueName || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Kategori / Kursi:</span><span class="info-value">${escapeHtml(d.ticketCategory || d.seatInfo || 'General Admission')}</span></div>
+          <div class="info-row"><span class="info-label">Jumlah Tiket:</span><span class="info-value">${escapeHtml(d.quantity || 1)} tiket</span></div>
+          <div class="info-row"><span class="info-label">Harga Penjual:</span><span class="info-value" style="color: #38bdf8; font-weight: 700;">${escapeHtml(askingPriceFormatted)}</span></div>
+        </div>
+      `;
+      const textContent = `[TIKUM LEAD] Listing Penjual Baru\n` +
+        `ID Listing: ${d.listingId || '-'}\n` +
+        `Penjual: ${d.sellerName || '-'} (${d.sellerEmail || '-'} | Telp/WA: ${d.sellerPhone || '-'})\n` +
+        `Event: ${d.eventName || '-'} (${d.eventDate || '-'} @ ${d.venueName || '-'})\n` +
+        `Kategori: ${d.ticketCategory || d.seatInfo || 'General'}\n` +
+        `Jumlah: ${d.quantity || 1} tiket\n` +
+        `Harga: ${askingPriceFormatted}\n` +
+        `Moderasi Admin: ${adminUrl}`;
+      return {
+        html: wrapHtml({ title, preheader: `Listing baru dari ${d.sellerName || 'Penjual'} untuk ${d.eventName || 'Event'}`, content, actionButton: { text: 'Buka Admin Dashboard', url: adminUrl }, locale: 'id' }),
+        text: wrapText({ title, content: textContent, actionUrl: adminUrl, locale: 'id' })
+      };
+    }
+  },
+
+  NEW_BUYER_INQUIRY: {
+    subject: (d) => `[TIKUM LEAD] Minat Beli Baru: ${d.eventName || 'Event'} dari ${d.buyerName || 'Pembeli'} (#${(d.inquiryId || '').slice(-6)})`,
+    render: (d) => {
+      const title = 'Permintaan Pembelian Tiket Baru (Saya Berminat)';
+      const adminUrl = d.adminUrl || `${CANONICAL_ORIGIN}/admin?tab=inquiries&id=${d.inquiryId || ''}`;
+      const priceFormatted = typeof d.askingPrice === 'number'
+        ? `Rp ${d.askingPrice.toLocaleString('id-ID')}`
+        : (typeof d.proposedPrice === 'number' ? `Rp ${d.proposedPrice.toLocaleString('id-ID')}` : (d.askingPrice || d.proposedPrice || 'Rp 0'));
+      const content = `
+        <span class="badge badge-success">Follow-up Manual Diperlukan</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Permintaan Tiket dari Pembeli</h2>
+        <p>Calon pembeli telah menyatakan minat pembelian untuk listing tiket di TIKUM. Silakan lakukan follow-up manual melalui WhatsApp atau telepon untuk memfasilitasi transaksi.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">ID Permintaan (Inquiry):</span><span class="info-value mono">${escapeHtml(d.inquiryId || '-')}</span></div>
+          <div class="info-row"><span class="info-label">ID Listing Terkait:</span><span class="info-value mono">${escapeHtml(d.listingId || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Calon Pembeli:</span><span class="info-value"><strong>${escapeHtml(d.buyerName || '-')}</strong> (${escapeHtml(d.buyerEmail || '-')})</span></div>
+          <div class="info-row"><span class="info-label">Kontak Pembeli (WA/Telp):</span><span class="info-value" style="color: #4ade80; font-weight: 700;">${escapeHtml(d.buyerPhone || d.contactPhone || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Event:</span><span class="info-value"><strong>${escapeHtml(d.eventName || '-')}</strong></span></div>
+          <div class="info-row"><span class="info-label">Tanggal &amp; Venue:</span><span class="info-value">${escapeHtml(d.eventDate || '-')} @ ${escapeHtml(d.venueName || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Kategori / Kursi:</span><span class="info-value">${escapeHtml(d.ticketCategory || d.seatInfo || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Jumlah Diminta:</span><span class="info-value">${escapeHtml(d.requestedQuantity || d.quantity || 1)} tiket</span></div>
+          <div class="info-row"><span class="info-label">Tawaran / Harga:</span><span class="info-value" style="color: #38bdf8; font-weight: 700;">${escapeHtml(priceFormatted)}</span></div>
+          <div class="info-row"><span class="info-label">Penjual Terkait:</span><span class="info-value">${escapeHtml(d.sellerName || '-')} (${escapeHtml(d.sellerEmail || '-')} | Telp: ${escapeHtml(d.sellerPhone || '-')})</span></div>
+          ${d.message ? `<div class="info-row"><span class="info-label">Catatan Pembeli:</span><span class="info-value" style="font-style: italic;">"${escapeHtml(d.message)}"</span></div>` : ''}
+        </div>
+      `;
+      const textContent = `[TIKUM LEAD] Minat Beli Tiket Baru\n` +
+        `ID Inquiry: ${d.inquiryId || '-'}\n` +
+        `Listing ID: ${d.listingId || '-'}\n` +
+        `Pembeli: ${d.buyerName || '-'} (${d.buyerEmail || '-'} | Telp/WA: ${d.buyerPhone || d.contactPhone || '-'})\n` +
+        `Penjual: ${d.sellerName || '-'} (${d.sellerEmail || '-'} | Telp/WA: ${d.sellerPhone || '-'})\n` +
+        `Event: ${d.eventName || '-'} (${d.eventDate || '-'} @ ${d.venueName || '-'})\n` +
+        `Kategori: ${d.ticketCategory || d.seatInfo || '-'}\n` +
+        `Jumlah: ${d.requestedQuantity || d.quantity || 1} tiket\n` +
+        `Harga: ${priceFormatted}\n` +
+        (d.message ? `Catatan: "${d.message}"\n` : '') +
+        `Follow-up Admin: ${adminUrl}`;
+      return {
+        html: wrapHtml({ title, preheader: `Minat beli baru dari ${d.buyerName || 'Pembeli'} untuk ${d.eventName || 'Event'}`, content, actionButton: { text: 'Buka Follow-up Admin', url: adminUrl }, locale: 'id' }),
+        text: wrapText({ title, content: textContent, actionUrl: adminUrl, locale: 'id' })
+      };
+    }
+  },
+
+  SELLER_KYC_SUBMITTED: {
+    subject: (d) => `[TIKUM LEAD] Pengajuan KYC Penjual Baru: ${d.sellerName || 'Penjual'} (#${(d.applicationId || d.userId || '').slice(-6)})`,
+    render: (d) => {
+      const title = 'Pengajuan KYC Penjual Baru';
+      const adminUrl = d.adminUrl || `${CANONICAL_ORIGIN}/admin?tab=sellers&id=${d.userId || d.applicationId || ''}`;
+      const content = `
+        <span class="badge badge-warning">Peninjauan KYC Diperlukan (SLA 24 Jam)</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Pengajuan KYC Baru Masuk</h2>
+        <p>Calon penjual telah mengirimkan dokumen verifikasi identitas (KYC). Harap tinjau pengajuan sesuai standar Trust &amp; Safety TIKUM.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">Application ID:</span><span class="info-value mono">${escapeHtml(d.applicationId || d.userId || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Nama Penjual:</span><span class="info-value"><strong>${escapeHtml(d.sellerName || '-')}</strong></span></div>
+          <div class="info-row"><span class="info-label">Email:</span><span class="info-value">${escapeHtml(d.sellerEmail || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Nomor Telepon:</span><span class="info-value">${escapeHtml(d.sellerPhone || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Bank Pencairan:</span><span class="info-value">${escapeHtml(d.payoutBank || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Waktu Pengajuan:</span><span class="info-value">${escapeHtml(d.submissionTimestamp || new Date().toISOString())}</span></div>
+        </div>
+      `;
+      const textContent = `[TIKUM LEAD] Pengajuan KYC Penjual Baru\n` +
+        `Application ID: ${d.applicationId || d.userId || '-'}\n` +
+        `Penjual: ${d.sellerName || '-'} (${d.sellerEmail || '-'} | Telp/WA: ${d.sellerPhone || '-'})\n` +
+        `Bank: ${d.payoutBank || '-'}\n` +
+        `Waktu: ${d.submissionTimestamp || new Date().toISOString()}\n` +
+        `Review Admin: ${adminUrl}`;
+      return {
+        html: wrapHtml({ title, preheader: `Pengajuan KYC baru dari ${d.sellerName || 'Penjual'}`, content, actionButton: { text: 'Tinjau Profil Penjual', url: adminUrl }, locale: 'id' }),
+        text: wrapText({ title, content: textContent, actionUrl: adminUrl, locale: 'id' })
+      };
+    }
+  },
+
+  LISTING_MODERATION_REQUIRED: {
+    subject: (d) => `[TIKUM ACTION] Moderasi Listing Diperlukan: ${d.eventName || 'Event'} (#${(d.listingId || '').slice(-6)})`,
+    render: (d) => {
+      const title = 'Moderasi Listing Tiket Diperlukan';
+      const moderationUrl = d.moderationUrl || `${CANONICAL_ORIGIN}/admin?tab=listings&id=${d.listingId || ''}`;
+      const priceFormatted = typeof d.price === 'number'
+        ? `Rp ${d.price.toLocaleString('id-ID')}`
+        : (d.price || 'Rp 0');
+      const content = `
+        <span class="badge badge-warning">Antrean Moderasi Listing</span>
+        <h2 style="color: #ffffff; font-size: 18px; margin-top: 8px;">Pemeriksaan Keabsahan Tiket</h2>
+        <p>Listing tiket baru telah diajukan dan membutuhkan pemeriksaan bukti keabsahan (barcode hash, kepemilikan, invoice asli) sebelum dipublikasikan.</p>
+        <div class="info-card">
+          <div class="info-row"><span class="info-label">ID Listing:</span><span class="info-value mono">${escapeHtml(d.listingId || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Penjual:</span><span class="info-value"><strong>${escapeHtml(d.sellerName || '-')}</strong> (${escapeHtml(d.sellerEmail || '-')})</span></div>
+          <div class="info-row"><span class="info-label">Event:</span><span class="info-value"><strong>${escapeHtml(d.eventName || '-')}</strong> @ ${escapeHtml(d.venueName || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Kategori / Kursi:</span><span class="info-value">${escapeHtml(d.seatInfo || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Harga Listing:</span><span class="info-value" style="color: #38bdf8; font-weight: 700;">${escapeHtml(priceFormatted)}</span></div>
+        </div>
+      `;
+      const textContent = `[TIKUM ACTION] Moderasi Listing Diperlukan\n` +
+        `ID Listing: ${d.listingId || '-'}\n` +
+        `Penjual: ${d.sellerName || '-'} (${d.sellerEmail || '-'})\n` +
+        `Event: ${d.eventName || '-'} @ ${d.venueName || '-'}\n` +
+        `Kursi: ${d.seatInfo || '-'}\n` +
+        `Harga: ${priceFormatted}\n` +
+        `Moderasi: ${moderationUrl}`;
+      return {
+        html: wrapHtml({ title, preheader: `Moderasi tiket diperlukan untuk ${d.eventName || 'Event'}`, content, actionButton: { text: 'Tinjau & Moderasi Listing', url: moderationUrl }, locale: 'id' }),
+        text: wrapText({ title, content: textContent, actionUrl: moderationUrl, locale: 'id' })
+      };
+    }
+  },
+
   ACCOUNT_VERIFICATION: {
     subject: (d) => (d && (d.locale === 'en' || d.lang === 'en')) ? 'TIKUM Account Verification Code' : 'Kode Verifikasi Akun TIKUM',
     render: (d) => {

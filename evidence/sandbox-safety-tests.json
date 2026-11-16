@@ -1,0 +1,204 @@
+{
+  "startedAt": "2026-11-15T14:09:36.885Z",
+  "sourceSha": "3eb6e88cccf46089c6a9cdf905d1d60f9c849034",
+  "scope": "Local isolated contracts, not real gateway or database acceptance",
+  "suites": [
+    {
+      "file": "test_sandbox_deployed_safety.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "DEPLOYED SANDBOX SAFETY: 8 PASS; no gateway requests or financial mutations"
+      ]
+    },
+    {
+      "file": "test_doku_refund_fail_closed.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "Refund fail-closed: PASS=4 FAIL=0 SKIPPED=0; local fixture only"
+      ]
+    },
+    {
+      "file": "test_doku_confirmation_boundary.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "DOKU confirmation boundary: PASS=8 FAIL=0 SKIPPED=0; fixture, not gateway evidence"
+      ]
+    },
+    {
+      "file": "test_doku_signature_pure.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "  [PASS] 1. Digest is computed as standard base64(SHA-256(raw_bytes))",
+        "  [PASS] 2. POST Signature has exactly 5 components separated by single \\n without \\r",
+        "  [PASS] 3. GET Signature has exactly 4 components (no Digest line and no Digest header)",
+        "  [PASS] 4. buildSignedRequest wire body matches the exact byte sequence that was digested",
+        "  [PASS] 5. Request-Timestamp strictly conforms to ISO-8601 UTC format without milliseconds",
+        "  [PASS] 6. Webhook verification succeeds with genuine signature and fails with tampered components",
+        "  ALL 6/6 PURE DOKU SIGNATURE TESTS PASSED!"
+      ]
+    },
+    {
+      "file": "test_doku_sandbox_environment_isolation.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "  TIKUM — DOKU SANDBOX ENVIRONMENT ISOLATION & FAIL-CLOSED SUITE",
+        "  [PASS] 1.1 Rejects https://api.doku.com production host on createPayment",
+        "  [PASS] 1.2 Rejects https://api.doku.com production host on executeRelease",
+        "  [PASS] 1.3 Rejects https://api.doku.com production host on getPaymentStatus",
+        "  [PASS] 2.1 Fails closed on createPayment when credentials missing and allowSimulation=false",
+        "  [PASS] 2.2 Fails closed on executeRelease when credentials missing and allowSimulation=false",
+        "  [PASS] 3.1 DOKU configuration validates sandbox mode, entity, and gates",
+        "  [PASS] 4.1 GET /api/v1/payments/diagnostic returns posture without secret leakage",
+        "  [PASS] 5.1 Forged webhook signature is rejected with HTTP 401",
+        "  [PASS] 5.2 Webhook older than 300 seconds is rejected for replay protection",
+        "  ALL 9/9 DOKU SANDBOX ISOLATION TESTS PASSED!"
+      ]
+    },
+    {
+      "file": "test_doku_verification_truthfulness.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "DOKU TRUTHFULNESS: passed=9 failed=0 skipped=0 (no network)"
+      ]
+    },
+    {
+      "file": "test_doku_direct_api_sandbox_e2e.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "  ✅ [PASS] 1.1 Direct API VA creation initiates Virtual Account with hold_settlement: true",
+        "  ✅ [PASS] 2.1 QRIS Direct API strictly rejects milestone escrow (no hold support)",
+        "  ✅ [PASS] 2.2 QRIS Direct API generates QR string for standard direct checkout",
+        "  ✅ [PASS] 3.1 Valid signed webhook transitions order to PAID and escrow to ESCROWED",
+        "  ✅ [PASS] 3.2 Replayed duplicate webhook returns idempotent: true without double-credit",
+        "  ✅ [PASS] 3.3 Delayed webhook with timestamp drift > 300s is rejected",
+        "  ✅ [PASS] 3.4 Payment status inquiry queries DOKU status without errors",
+        "  ✅ [PASS] 3.5 Tampered webhook payload/signature is strictly rejected",
+        "  ✅ [PASS] 3.6 Webhook verification accepts x-vercel-protection-bypass header and _vercel_share query without cryptographic degradation",
+        "  ✅ [PASS] 4.1 Escrow remains HELD and seller remains UNPAID until ARGUS approval",
+        "  ✅ [PASS] 4.2 Releasing escrow without PIC admission throws ENTRY_NOT_CONFIRMED",
+        "  ✅ [PASS] 4.3 With PIC admission and Trust Policy pass, EscrowService executes release",
+        "  ✅ [PASS] 4.4 Active dispute strictly freezes escrow and blocks release with TRANSACTION_IN_DISPUTED_STATE",
+        "  ✅ [PASS] 5.1 Failed payment webhook updates order to CANCELLED and unlocks ticket inventory",
+        "  ✅ [PASS] 6.1 Automated reconciliation detects matched transactions without variance",
+        "  ✅ [PASS] 6.2 Release timeout / network failure safely flags settlement as PENDING_RECONCILIATION",
+        "  ✅ [PASS] 7.1 Multi-provider circuit breaker trips after 5 consecutive failures and recovers on success",
+        "  DOKU DIRECT API SANDBOX E2E SUMMARY: 17/17 PASSED | 0 FAILED"
+      ]
+    },
+    {
+      "file": "test_refund_state_machine_and_provider_confirmation.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "  [PASS] 1. Provider reports pending refund -> order/escrow in REFUND_PENDING, ledger NOT posted",
+        "  [PASS] 2. Provider confirms refund synchronously -> status is REFUNDED, ledger reversal IS posted",
+        "  [PASS] 3. Provider reports failure/rejection -> status is REFUND_FAILED, ledger NOT posted",
+        "  [PASS] 4. Provider timeout or network error -> status is MANUAL_REFUND_REQUIRED / REFUND_PENDING, ledger NOT posted",
+        "  [PASS] 5. Duplicate refund request while pending -> idempotent response, zero duplicate ledger",
+        "  [PASS] 6. Webhook arrives confirming pending refund -> transitions to REFUNDED, posts ledger reversal",
+        "  [PASS] 7. Duplicate webhook confirmation arrives -> idempotent, 200 OK, zero double reversal",
+        "  [PASS] 8. Webhook with forged signature -> rejected (401), state remains REFUND_PENDING",
+        "  [PASS] 9. Manual refund initiated -> status is MANUAL_REFUND_REQUIRED / REFUND_PENDING, no ledger reversal",
+        "  [PASS] 10. Operator marks manual refund as verified with bankReference -> REFUNDED, ledger reversal posted",
+        "  [PASS] 10b. confirmManualRefund strictly rejects unauthorized actors and empty bankReference",
+        "  [PASS] 10c. Ledger failure after provider confirmation flags LEDGER_REVERSAL_FAILED and is recoverable",
+        "  [PASS] 11. Duplicate manual reconciliation attempt -> idempotent, zero double reversal",
+        "  [PASS] 12. Process restart / reload with pending refund -> state correctly rehydrated as REFUND_PENDING",
+        "  [PASS] 13. Concurrent seller cancellation requests -> serialized via mutex, strikes not duplicated, single refund flow",
+        "  [PASS] 14. Production safety gates enforce zero real external money movement in non-production mode",
+        "  ALL 16 REFUND INTEGRITY TEST CASES PASSED SUCCESSFULLY",
+        "[EscrowService] Financial ledger reversal failed on refund confirmation for ord-1794751779847-70e2: Database connection failed while recording double-entry refund ledger"
+      ]
+    },
+    {
+      "file": "test_inventory_concurrency_race.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "  ✓ [PASS] 1.1 memRepo.atomicReserveInventory reserves available ticket atomically",
+        "  ✓ [PASS] 1.2 memRepo.atomicReserveInventory rejects reservation on exhausted listing",
+        "  ✓ [PASS] 1.3 memRepo.atomicReleaseInventory restores inventory and ACTIVE status",
+        "  ✓ [PASS] 2.1 Two simultaneous buyers competing for 1 ticket results in exactly 1 success (201) and 1 conflict (409)",
+        "  ✓ [PASS] 2.2 Winning buyer receives order object; losing buyer receives structured conflict (HTTP 409)",
+        "  ✓ [PASS] 2.3 Listing is accurately updated: available_quantity=0, reserved_quantity=1, status=RESERVED",
+        "  ✓ [PASS] 3.1 Order cancellation cleanly releases inventory: available=1, reserved=0, status=ACTIVE",
+        "  ✓ [PASS] 3.2 Released ticket can immediately be purchased by subsequent buyer (HTTP 201)",
+        "  ✓ [PASS] 4.1 Three simultaneous buyers for 2 available tickets yields exactly two 201 and one 409",
+        "  ✓ [PASS] 4.2 Multi-quantity inventory is exact: available=0, reserved=2, status=RESERVED",
+        "  ✓ [PASS] 5.1 Requesting quantity exceeding available inventory immediately fails with HTTP 409 INSUFFICIENT_INVENTORY",
+        "  ALL 11/11 INVENTORY CONCURRENCY TESTS PASSED!"
+      ]
+    },
+    {
+      "file": "test_admin_identity_http.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "ADMIN HTTP SECURITY: 119/119 PASS (anonymous route inventory and bypass probes; no production DB)"
+      ]
+    },
+    {
+      "file": "test_admin_identity_security.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "ℹ tests 18",
+        "ℹ skipped 0",
+        "[AdminAuth] provider acceptance failed; token cancelled",
+        "[AdminAuth] provider acceptance failed; token cancelled"
+      ]
+    },
+    {
+      "file": "test_admin_identity_postgres.js",
+      "exitCode": 2,
+      "error": null,
+      "status": "BLOCKED",
+      "summary": [
+        "BLOCKED: TEST_DATABASE_URL and fresh TEST_DATABASE_SCHEMA=admin_security_test_<unique> required. No SQL executed."
+      ]
+    },
+    {
+      "file": "test_tikum_prelaunch_listing_mode.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "  ✓ Direct API purchase cannot be bypassed with query params, headers, or body flags",
+        "TIKUM PRE-LAUNCH LISTING MODE: 44/44 TESTS PASSED!"
+      ]
+    },
+    {
+      "file": "test_syntax_check.js",
+      "exitCode": 0,
+      "error": null,
+      "status": "PASS",
+      "summary": [
+        "✅ All 336 src/ JS files passed syntax validation!"
+      ]
+    }
+  ],
+  "finishedAt": "2026-11-15T14:10:34.775Z",
+  "counts": {
+    "PASS": 13,
+    "FAIL": 0,
+    "BLOCKED": 1
+  }
+}

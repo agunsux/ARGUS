@@ -36,6 +36,17 @@ function main() {
   scripts.forEach((block, idx) => {
     const code = block.replace(/^<script[^>]*>/i, '').replace(/<\/script>$/i, '');
     if (!code.trim()) return;
+
+    // Check for JSON-LD scripts
+    if (/type=["']application\/ld\+json["']/i.test(block)) {
+      try {
+        JSON.parse(code);
+      } catch (err) {
+        failures.push(`JSON-LD script #${idx + 1} has a JSON syntax error: ${err.message}`);
+      }
+      return;
+    }
+
     try {
       // Parses only — never executed.
       // eslint-disable-next-line no-new-func

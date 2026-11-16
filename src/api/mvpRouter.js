@@ -1588,7 +1588,7 @@ router.post('/buyer/pay', async (req, res) => {
     }
 
     // Production Security Gate: Direct payment mutation without gateway confirmation is forbidden in production
-    if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_DIRECT_PAYMENT_SIMULATION) {
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
       return res.status(403).json({
         error: 'Direct client payment confirmation is forbidden in production. Payments must be processed through verified gateway webhooks.',
         code: 'DIRECT_PAYMENT_SIMULATION_FORBIDDEN'

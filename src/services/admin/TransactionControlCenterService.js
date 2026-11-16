@@ -53,15 +53,19 @@ class TransactionControlCenterService {
         repoOrders,
         repoEscrows,
         repoSettlements,
-        repoDisputes
+        repoDisputes,
+        repoSellerProfiles
       ] = await Promise.all([
-        userRepo && typeof userRepo.listAllUsers === 'function' ? userRepo.listAllUsers() : [],
+        userRepo && typeof userRepo.listAllUsers === 'function'
+          ? userRepo.listAllUsers()
+          : (userRepo && typeof userRepo.listUsers === 'function' ? userRepo.listUsers() : []),
         marketplaceRepo && typeof marketplaceRepo.listAllListings === 'function' ? marketplaceRepo.listAllListings(500) : [],
         marketplaceRepo && typeof marketplaceRepo.listAllTickets === 'function' ? marketplaceRepo.listAllTickets(500) : [],
         moneyRepo && typeof moneyRepo.listAllOrders === 'function' ? moneyRepo.listAllOrders(500) : [],
         moneyRepo && typeof moneyRepo.listAllEscrows === 'function' ? moneyRepo.listAllEscrows(500) : [],
         moneyRepo && typeof moneyRepo.listAllSettlements === 'function' ? moneyRepo.listAllSettlements(500) : [],
-        moneyRepo && typeof moneyRepo.listAllDisputes === 'function' ? moneyRepo.listAllDisputes(500) : []
+        moneyRepo && typeof moneyRepo.listAllDisputes === 'function' ? moneyRepo.listAllDisputes(500) : [],
+        userRepo && typeof userRepo.listSellerProfiles === 'function' ? userRepo.listSellerProfiles() : []
       ]);
     } catch (err) {
       if (isProd) throw err;
@@ -77,7 +81,14 @@ class TransactionControlCenterService {
     const allIncidents = state.incidents || [];
     const allVerifications = state.entry_verifications || [];
     const allEvents = state.events || [];
-    const allSellerProfiles = state.seller_profiles || [];
+    const profileMap = new Map();
+    for (const sp of (state.seller_profiles || [])) {
+      if (sp && sp.user_id) profileMap.set(sp.user_id, sp);
+    }
+    for (const rp of (repoSellerProfiles || [])) {
+      if (rp && rp.user_id) profileMap.set(rp.user_id, { ...(profileMap.get(rp.user_id) || {}), ...rp });
+    }
+    const allSellerProfiles = Array.from(profileMap.values());
     const allAdminHolds = state.admin_holds || [];
 
     return {

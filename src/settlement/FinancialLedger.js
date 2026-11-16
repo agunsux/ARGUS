@@ -288,6 +288,15 @@ class FinancialLedger {
    * Debits: SELLER_PAYABLE_PENDING (Liability cleared)
    * Credits: SETTLEMENT_CLEARING (Cash disbursal clearing)
    */
+  static async recordRelease({ orderId, quoteId = null, amount, sellerAmount, actorId }) {
+    return await this.recordDisbursementRelease({
+      orderId,
+      quoteId,
+      sellerAmount: sellerAmount || amount,
+      actorId
+    });
+  }
+
   static async recordDisbursementRelease({ orderId, quoteId = null, sellerAmount, actorId }) {
     const amount = parseInt(sellerAmount, 10);
     return await this.recordTransaction({

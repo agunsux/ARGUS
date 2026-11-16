@@ -38,7 +38,13 @@ function getCallerUserId(req) {
  * Public status of payment subsystem & safety gates
  */
 router.get('/v1/payments/status', (req, res) => {
-  res.json(PaymentService.getSubsystemStatus());
+  const { isPaymentGatewayFrozen } = require('../config/marketplaceMode');
+  const frozen = isPaymentGatewayFrozen();
+  res.json({
+    ...PaymentService.getSubsystemStatus(),
+    is_payment_gateway_frozen: frozen,
+    coordination_mode: frozen ? 'MANUAL_ESCROW' : 'ONLINE_GATEWAY'
+  });
 });
 
 /**
@@ -171,12 +177,13 @@ router.get(['/v1/payments/midtrans/client-key', '/payments/midtrans/client-key']
  * Authoritative server-selected active payment configuration for checkout UI
  */
 router.get('/v1/payments/active-config', (req, res) => {
-  const { isPrelaunchListingMode, getMarketplaceMode } = require('../config/marketplaceMode');
+  const { isPrelaunchListingMode, getMarketplaceMode, isPaymentGatewayFrozen } = require('../config/marketplaceMode');
   const { isProductionDeployment } = require('../config/deploymentEnv');
   const defaultProvider = (paymentManager.defaultProvider || 'doku').toLowerCase();
   const provider = paymentManager.getProvider(defaultProvider);
   const status = provider ? provider.getStatus() : { isVerified: false, status: 'UNKNOWN' };
   const capabilities = provider ? provider.getCapabilities() : null;
+  const isFrozen = isPaymentGatewayFrozen();
 
   res.json({
     active_provider: defaultProvider,
@@ -185,6 +192,8 @@ router.get('/v1/payments/active-config', (req, res) => {
     is_production: isProductionDeployment(),
     marketplace_mode: getMarketplaceMode(),
     is_prelaunch: isPrelaunchListingMode(),
+    is_payment_frozen: isFrozen,
+    coordination_mode: isFrozen ? 'MANUAL_ESCROW' : 'ONLINE_GATEWAY',
     requires_escrow: Boolean(capabilities?.hold)
   });
 });
@@ -341,7 +350,17 @@ router.get(['/v1/system/outbound-ip', '/system/outbound-ip', '/api/outbound-ip']
  */
 router.post('/v1/payments/create', async (req, res) => {
   try {
-    const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+    const {
+      isPrelaunchListingMode,
+      PRELAUNCH_ERROR_RESPONSE,
+      isPaymentGatewayFrozen,
+      PAYMENT_GATEWAY_FROZEN_RESPONSE
+    } = require('../config/marketplaceMode');
+
+    if (isPaymentGatewayFrozen()) {
+      return res.status(503).json(PAYMENT_GATEWAY_FROZEN_RESPONSE);
+    }
+
     if (isPrelaunchListingMode()) {
       return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
     }
@@ -424,7 +443,7 @@ router.post('/v1/payments/create', async (req, res) => {
  * GET /api/v1/payments/sandbox/diagnostics
  * Safe masked diagnostic metadata for Sandbox debugging (zero secrets leaked)
  */
-router.get('/v1/payments/sandbox/diagnostics', async (req, res) => {
+router.get('/v1/payments/sandbox/diagnostics', requireAdmin, async (req, res) => {
   const doku = paymentManager.getProvider('doku');
   const crypto = require('crypto');
   const rawSecret = doku?.secretKey || process.env.DOKU_SANDBOX_SECRET_KEY || process.env.DOKU_SECRET_KEY || '';

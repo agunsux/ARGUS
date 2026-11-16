@@ -181,7 +181,8 @@ function resetDatabase() {
     { id: 'venue-grand-city', name: 'Grand City Convention Center', city: 'Surabaya', gate_info: 'Exhibition Hall Lt. 3' },
     { id: 'venue-gbt', name: 'Stadion Gelora Bung Tomo (GBT)', city: 'Surabaya', gate_info: 'Gate 1-4 Gate Utama' },
     { id: 'venue-peninsula', name: 'Peninsula Island Nusa Dua', city: 'Bali', gate_info: 'Main Entrance Nusa Dua Gate' },
-    { id: 'venue-istora-senayan', name: 'Istora Senayan Jakarta', city: 'Jakarta', gate_info: 'Pintu Masuk Utama Istora Senayan' }
+    { id: 'venue-istora-senayan', name: 'Istora Senayan Jakarta', city: 'Jakarta', gate_info: 'Pintu Masuk Utama Istora Senayan' },
+    { id: 'venue-surabaya-expo-center', name: 'Surabaya Expo Center', city: 'Surabaya', gate_info: 'Pintu Masuk Utama Surabaya Expo Center' }
   ];
 
   state.events = [

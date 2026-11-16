@@ -274,6 +274,34 @@ class SellerTrustService {
       requested_at: savedProfile.requested_at
     });
 
+    // Send transactional notification email (Epic NOT-01)
+    try {
+      const applicant = await userRepo.getUserById(userId) || (state.users || []).find(u => u.id === userId);
+      if (applicant && applicant.email) {
+        const { emailService } = require('../services/emailService');
+        if (emailService && typeof emailService.sendEmail === 'function') {
+          const applicantName = applicant.name || applicant.displayName || displayName || 'Penjual';
+          await emailService.sendEmail({
+            to: applicant.email,
+            template: 'SELLER_ONBOARDING_RECEIVED',
+            idempotencyKey: `seller:onboard:received:${userId}:${savedProfile.requested_at || Date.now()}`,
+            data: {
+              name: applicantName,
+              userId
+            }
+          }).catch(e => console.warn('[SellerTrustService] Onboarding email dispatch warning:', e.message));
+        }
+      }
+
+      // Notify admin@tikum.app of new seller KYC submission
+      const { OperationalNotificationService } = require('../services/admin/OperationalNotificationService');
+      await OperationalNotificationService.notifySellerKycSubmitted({
+        profile: savedProfile,
+        user: applicant,
+        userId
+      }).catch(e => console.warn('[SellerTrustService] Admin KYC notification warning:', e.message));
+    } catch (_) {}
+
     return {
       ...savedProfile,
       profile: savedProfile,
@@ -384,6 +412,39 @@ class SellerTrustService {
       active_listing_limit: parsedLimit,
       reason: reason || null
     });
+
+    // Send transactional notification email (Epic NOT-01)
+    try {
+      if (user && user.email) {
+        const { emailService } = require('../services/emailService');
+        if (emailService && typeof emailService.sendEmail === 'function') {
+          const sellerName = user.name || user.displayName || 'Penjual';
+          if (normStatus === 'VERIFIED') {
+            await emailService.sendEmail({
+              to: user.email,
+              template: 'SELLER_KYC_APPROVED',
+              idempotencyKey: `seller:kyc:approved:${sellerId}:${nowIso}`,
+              data: {
+                name: sellerName,
+                sellerId,
+                activeListingLimit: parsedLimit
+              }
+            }).catch(e => console.warn('[SellerTrustService] KYC approved email dispatch warning:', e.message));
+          } else if (normStatus === 'REJECTED') {
+            await emailService.sendEmail({
+              to: user.email,
+              template: 'SELLER_KYC_REJECTED',
+              idempotencyKey: `seller:kyc:rejected:${sellerId}:${nowIso}`,
+              data: {
+                name: sellerName,
+                sellerId,
+                reason: reason || 'Dokumen belum memenuhi kriteria'
+              }
+            }).catch(e => console.warn('[SellerTrustService] KYC rejected email dispatch warning:', e.message));
+          }
+        }
+      }
+    } catch (_) {}
 
     return {
       ...savedProfile,

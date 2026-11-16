@@ -198,6 +198,10 @@ class InMemoryUserRepository extends UserRepository {
     return list;
   }
 
+  async listAllUsers(filter = {}) {
+    return this.listUsers(filter);
+  }
+
   async createSession({ userId, role, ip = null, userAgent = null, ttlMs = 24 * 60 * 60 * 1000, token = null }) {
     if (userId === 'admin' || userId === 'admin@tikum.app' || (process.env.NODE_ENV !== 'test' && require('../config/adminIdentity').isAdminRole(role))) {
       throw new Error('ADMIN_MAGIC_LINK_REQUIRED');

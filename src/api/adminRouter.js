@@ -68,7 +68,9 @@ async function hydrateAdminDatasets() {
       repoSettlements,
       repoDisputes
     ] = await Promise.all([
-      userRepo && typeof userRepo.listAllUsers === 'function' ? userRepo.listAllUsers() : [],
+      userRepo && typeof userRepo.listAllUsers === 'function'
+        ? userRepo.listAllUsers()
+        : (userRepo && typeof userRepo.listUsers === 'function' ? userRepo.listUsers() : []),
       marketplaceRepo && typeof marketplaceRepo.listAllListings === 'function' ? marketplaceRepo.listAllListings(500) : [],
       marketplaceRepo && typeof marketplaceRepo.listAllTickets === 'function' ? marketplaceRepo.listAllTickets(500) : [],
       marketplaceRepo && typeof marketplaceRepo.listAllOffers === 'function' ? marketplaceRepo.listAllOffers(500) : [],
@@ -274,6 +276,180 @@ router.get('/session', (req, res) => {
   });
 });
 
+/**
+ * Assembles a unified, 360-degree chronological feed of marketplace and user activities.
+ * Merges authentication, KYC reviews, listing moderation, buyer inquiries, offer negotiations,
+ * matched orders, escrow events, event PIC assignments, and dispute resolution.
+ */
+async function buildUnifiedMarketplaceActivity(limit = 100) {
+  const events = [];
+
+  // 1. Auth events
+  try {
+    const userRepo = getUserRepository();
+    if (userRepo && typeof userRepo.listRecentAuthAuditEvents === 'function') {
+      const authEvents = await userRepo.listRecentAuthAuditEvents(limit);
+      for (const ae of (authEvents || [])) {
+        events.push({
+          id: ae.id || `auth-${ae.timestamp}-${Math.random()}`,
+          timestamp: ae.timestamp || ae.created_at || new Date().toISOString(),
+          category: 'AUTH',
+          action: ae.action || ae.event_type || 'AUTH_EVENT',
+          actor: {
+            id: ae.user_id || ae.actor_id || 'UNKNOWN',
+            role: ae.role || 'USER',
+            label: ae.email || ae.user_id || 'User'
+          },
+          target: {
+            type: 'SESSION',
+            id: ae.session_id || ae.user_id || null
+          },
+          summary: `Autentikasi: ${ae.action || 'Sesi pengguna'} (${ae.user_id || 'anon'})`,
+          metadata: ae.metadata || {}
+        });
+      }
+    }
+  } catch (_) {}
+
+  // 2. Admin & System Audit Logs (KYC reviews, manual approvals, listings)
+  const auditLogs = state.audit_logs || [];
+  for (const log of auditLogs) {
+    let cat = 'ADMIN';
+    if (log.entity_type === 'LISTING_INQUIRY') cat = 'INQUIRY';
+    else if (log.entity_type === 'SELLER_ONBOARDING' || log.entity_type === 'SELLER_KYC') cat = 'KYC';
+    else if (log.entity_type === 'PIC_ASSIGNMENT' || log.entity_type === 'EVENT_PIC') cat = 'PIC';
+    else if (log.entity_type === 'ORDER') cat = 'ORDER';
+    else if (log.entity_type === 'ESCROW') cat = 'ESCROW';
+    else if (log.entity_type === 'LISTING') cat = 'LISTING';
+
+    events.push({
+      id: log.id || `aud-${Date.now()}-${Math.random()}`,
+      timestamp: log.created_at || log.timestamp || new Date().toISOString(),
+      category: cat,
+      action: log.action || 'ADMIN_ACTION',
+      actor: {
+        id: log.performed_by || log.actor_id || 'ADMIN',
+        role: 'ADMIN',
+        label: log.performed_by || 'Admin'
+      },
+      target: {
+        type: log.entity_type || 'RESOURCE',
+        id: log.entity_id || log.target_id || null
+      },
+      summary: log.summary || `${log.action}: ${log.entity_type || ''} ${log.entity_id || ''}`,
+      metadata: log.metadata || {}
+    });
+  }
+
+  // 3. Buyer inquiries
+  const inquiries = state.listing_inquiries || [];
+  for (const inq of inquiries) {
+    events.push({
+      id: inq.id,
+      timestamp: inq.created_at || new Date().toISOString(),
+      category: 'INQUIRY',
+      action: 'BUYER_INQUIRY_SUBMITTED',
+      actor: {
+        id: inq.buyer_id,
+        role: 'BUYER',
+        label: inq.buyer_id
+      },
+      target: {
+        type: 'LISTING',
+        id: inq.listing_id
+      },
+      summary: `Minat Beli: Pembeli ${inq.buyer_id} mengajukan minat untuk listing ${inq.listing_id} (Rp ${Number(inq.proposed_price || 0).toLocaleString('id-ID')})`,
+      metadata: {
+        message: inq.message,
+        proposed_price: inq.proposed_price,
+        linked_offer_id: inq.linked_offer_id || null
+      }
+    });
+  }
+
+  // 4. Offer negotiation audit logs
+  try {
+    const marketRepo = getMarketplaceRepository();
+    const offerLogs = (marketRepo && typeof marketRepo.listOfferAuditLogs === 'function')
+      ? await marketRepo.listOfferAuditLogs(null, limit)
+      : (state.offer_audit_logs || []);
+
+    for (const ol of (offerLogs || [])) {
+      events.push({
+        id: ol.id || `offaud-${ol.created_at}`,
+        timestamp: ol.created_at || new Date().toISOString(),
+        category: 'OFFER',
+        action: `OFFER_${ol.to_status || ol.action || 'UPDATE'}`,
+        actor: {
+          id: ol.actor_id,
+          role: ol.actor_role || 'USER',
+          label: ol.actor_id
+        },
+        target: {
+          type: 'OFFER',
+          id: ol.offer_id
+        },
+        summary: `Negosiasi Tiket: ${ol.actor_role} ${ol.action || ol.to_status} pada penawaran #${(ol.offer_id || '').slice(-6)}`,
+        metadata: ol.metadata || {}
+      });
+    }
+  } catch (_) {}
+
+  // 5. Orders & Escrow transitions
+  const orders = state.orders || [];
+  for (const ord of orders) {
+    events.push({
+      id: `ord-evt-${ord.id}-${ord.status}`,
+      timestamp: ord.updated_at || ord.created_at || new Date().toISOString(),
+      category: 'ORDER',
+      action: `ORDER_${ord.status}`,
+      actor: {
+        id: ord.buyer_id,
+        role: 'BUYER',
+        label: ord.buyer_id
+      },
+      target: {
+        type: 'ORDER',
+        id: ord.id
+      },
+      summary: `Order #${ord.id.slice(-6)} status: ${ord.status} (Buyer: ${ord.buyer_id}, Seller: ${ord.seller_id}, Total: Rp ${Number(ord.buyer_total || ord.total_amount || 0).toLocaleString('id-ID')})`,
+      metadata: {
+        seller_id: ord.seller_id,
+        listing_id: ord.listing_id,
+        ticket_id: ord.ticket_id,
+        coordination_mode: ord.metadata?.coordination_mode || 'STANDARD'
+      }
+    });
+  }
+
+  // 6. Event PIC assignments
+  const picAssignments = state.event_pics || [];
+  for (const pic of picAssignments) {
+    events.push({
+      id: `pic-evt-${pic.id || pic.assignment_id}`,
+      timestamp: pic.created_at || pic.assigned_at || new Date().toISOString(),
+      category: 'PIC',
+      action: `PIC_${pic.status || 'ASSIGNED'}`,
+      actor: {
+        id: pic.assigned_by || 'ADMIN',
+        role: 'ADMIN',
+        label: pic.assigned_by || 'Admin'
+      },
+      target: {
+        type: 'EVENT_PIC',
+        id: pic.id || pic.assignment_id
+      },
+      summary: `Penugasan PIC: ${pic.pic_name || pic.user_id} ditugaskan pada event ${pic.event_name || pic.event_id} (Status: ${pic.status})`,
+      metadata: pic
+    });
+  }
+
+  // Sort descending by timestamp
+  events.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+  return events.slice(0, limit);
+}
+
 
 /**
  * GET /api/admin/overview
@@ -294,7 +470,20 @@ router.get('/overview', requireAdmin, async (req, res) => {
     const eventPics = state.event_pics || [];
     const venueShifts = state.venue_shifts || [];
     const payments = state.payments || [];
-    const sellerProfiles = state.seller_profiles || [];
+    const { getUserRepository } = require('../storage');
+    const userRepo = getUserRepository();
+    let dbProfiles = [];
+    try {
+      dbProfiles = await userRepo.listSellerProfiles();
+    } catch (_) {}
+    const profileMap = new Map();
+    for (const sp of (state.seller_profiles || [])) {
+      if (sp && sp.user_id) profileMap.set(sp.user_id, sp);
+    }
+    for (const dp of (dbProfiles || [])) {
+      if (dp && dp.user_id) profileMap.set(dp.user_id, { ...(profileMap.get(dp.user_id) || {}), ...dp });
+    }
+    const sellerProfiles = Array.from(profileMap.values());
     const authRecords = state.authorization_records || [];
     const entryVerifications = state.entry_verifications || [];
 
@@ -420,17 +609,38 @@ router.get('/overview', requireAdmin, async (req, res) => {
 
     // Alert: Sellers with pending KYC
     for (const sp of sellerProfiles) {
-      if (sp.kyc_status === 'PENDING' || sp.status === 'PROBATIONARY') {
+      const kycStatus = (sp.kyc_status || '').toUpperCase();
+      if (['PENDING', 'PENDING_REVIEW', 'PROBATIONARY'].includes(kycStatus)) {
+        const requestedAt = sp.requested_at || sp.updated_at || sp.created_at || new Date().toISOString();
+        const ageMs = Date.now() - new Date(requestedAt).getTime();
+        const ageHours = Math.max(0, Math.round((ageMs / (1000 * 60 * 60)) * 10) / 10);
+
+        let slaStatus = 'NORMAL';
+        let severity = 'MEDIUM';
+        if (ageHours > 48) {
+          slaStatus = 'BREACH';
+          severity = 'CRITICAL';
+        } else if (ageHours >= 24) {
+          slaStatus = 'WARNING';
+          severity = 'HIGH';
+        }
+
         alerts.push({
           id: `alert-seller-${sp.user_id}`,
           type: 'SELLER_KYC_REVIEW',
-          severity: 'MEDIUM',
-          timestamp: sp.updated_at || new Date().toISOString(),
+          severity,
+          sla_status: slaStatus,
+          age_hours: ageHours,
+          timestamp: requestedAt,
           related_entity: 'SELLER',
           entity_id: sp.user_id,
-          current_status: sp.kyc_status || 'PENDING',
-          title: 'Penjual Menunggu Verifikasi KYC',
-          description: `Penjual ${sp.user_id} belum menyelesaikan verifikasi dokumen identitas.`,
+          current_status: sp.kyc_status || 'PENDING_REVIEW',
+          title: slaStatus === 'BREACH'
+            ? 'SLA BREACH: Penjual Menunggu Verifikasi KYC (>48 Jam)'
+            : (slaStatus === 'WARNING'
+                ? 'SLA WARNING: Penjual Menunggu Verifikasi KYC (>24 Jam)'
+                : 'Penjual Menunggu Verifikasi KYC'),
+          description: `Penjual ${sp.user_id} menunggu verifikasi dokumen KYC (${ageHours} jam sejak diajukan).`,
           action_label: 'Review Penjual',
           action_url: '#sellers'
         });
@@ -670,7 +880,6 @@ router.get('/overview', requireAdmin, async (req, res) => {
       never_fetched: allSources.filter(s => !s.last_successful_fetch && !(s.telemetry && s.telemetry.last_success)).length
     };
 
-    const userRepo = getUserRepository();
     const recentAuthEvents = (userRepo && typeof userRepo.listRecentAuthAuditEvents === 'function')
       ? await userRepo.listRecentAuthAuditEvents(25)
       : [];
@@ -712,6 +921,7 @@ router.get('/overview', requireAdmin, async (req, res) => {
       payment_finance_snapshot: paymentFinanceSnapshot,
       recent_activity: recentActivity,
       auth_audit_events: recentAuthEvents,
+      marketplace_activity: await buildUnifiedMarketplaceActivity(25),
       meta: {
         generatedAt: nowIso,
         dataState: 'OK',
@@ -1117,21 +1327,53 @@ router.get('/sellers', requireAdmin, async (req, res) => {
       const sellerOrders = orders.filter(o => o.seller_id === u.id);
       const completedOrders = sellerOrders.filter(o => o.status === 'SETTLED' || o.status === 'ENTRY_CONFIRMED');
 
+      const kycStatus = (profile.kyc_status || 'UNVERIFIED').toUpperCase();
+      const requestedAt = profile.requested_at || profile.onboarding_submitted_at || null;
+      let ageHours = null;
+      let slaStatus = null;
+      if (['PENDING', 'PENDING_REVIEW', 'PROBATIONARY'].includes(kycStatus) && requestedAt) {
+        const ageMs = Date.now() - new Date(requestedAt).getTime();
+        ageHours = Math.max(0, Math.round((ageMs / (1000 * 60 * 60)) * 10) / 10);
+        if (ageHours > 48) {
+          slaStatus = 'BREACH';
+        } else if (ageHours >= 24) {
+          slaStatus = 'WARNING';
+        } else {
+          slaStatus = 'NORMAL';
+        }
+      }
+
       return {
         id: u.id,
         name: u.name,
         email: u.email,
-        phone: u.phone || 'N/A',
+        phone: u.phone || profile.phone || 'N/A',
         role: u.role,
         status: u.status || 'ACTIVE',
         kyc_status: profile.kyc_status || 'UNVERIFIED',
         active_listing_limit: profile.active_listing_limit || 5,
-        onboarding_submitted_at: profile.onboarding_submitted_at || null,
+        requested_at: requestedAt,
+        onboarding_submitted_at: requestedAt,
         verified_at: profile.verified_at || null,
+        rejection_reason: profile.rejection_reason || null,
+        age_hours: ageHours,
+        sla_status: slaStatus,
         total_sales: sellerOrders.length,
         completed_sales: completedOrders.length,
         created_at: u.created_at || null
       };
+    });
+
+    // FIFO sort: pending items sorted oldest requested_at first, then the rest
+    data.sort((a, b) => {
+      const aPending = ['PENDING', 'PENDING_REVIEW', 'PROBATIONARY'].includes((a.kyc_status || '').toUpperCase());
+      const bPending = ['PENDING', 'PENDING_REVIEW', 'PROBATIONARY'].includes((b.kyc_status || '').toUpperCase());
+      if (aPending && !bPending) return -1;
+      if (!aPending && bPending) return 1;
+      if (aPending && bPending) {
+        return new Date(a.requested_at || 0) - new Date(b.requested_at || 0);
+      }
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
     });
 
     res.json({ total: data.length, sellers: data });
@@ -1436,7 +1678,23 @@ router.get('/pic-users', requireAdmin, async (req, res) => {
 router.get('/pic-assignments', requireAdmin, async (req, res) => {
   try {
     const hydrated = await hydrateAdminDatasets();
-    const eventPics = state.event_pics || [];
+    const { getMarketplaceRepository } = require('../storage');
+    const marketplaceRepo = getMarketplaceRepository();
+    let dbAssignments = [];
+    try {
+      if (marketplaceRepo && typeof marketplaceRepo.listPicAssignments === 'function') {
+        dbAssignments = await marketplaceRepo.listPicAssignments();
+      }
+    } catch (_) {}
+
+    const assignmentMap = new Map();
+    for (const a of (state.event_pics || [])) {
+      if (a && a.id) assignmentMap.set(a.id, a);
+    }
+    for (const da of dbAssignments) {
+      if (da && da.id) assignmentMap.set(da.id, { ...(assignmentMap.get(da.id) || {}), ...da });
+    }
+    const eventPics = Array.from(assignmentMap.values());
     const events = state.events || [];
     const venues = state.venues || [];
     const users = hydrated.users || [];
@@ -1500,14 +1758,14 @@ router.post('/pic-assignments', requireAdmin, async (req, res) => {
     const venueId = venue_id || event.venue_id || (state.venues?.[0]?.id || 'venue-gbk');
 
     const { EventPicService } = require('../services/eventPicService');
-    const assignment = EventPicService.assignPic({
+    const assignment = await EventPicService.assignPicAsync({
       eventId: event_id,
       venueId: venueId,
       picUserId: pic_user_id,
-      contactPhone: contact_phone || picUser.phone
+      contactPhone: contact_phone || picUser.phone,
+      notes: notes || null
     });
     if (notes) assignment.notes = notes;
-    assignment.created_at = new Date().toISOString();
 
     await recordAuditLog('PIC_ASSIGNMENT', assignment.id, 'ASSIGNED', req.user.id, {
       event_id,
@@ -1540,6 +1798,14 @@ router.delete('/pic-assignments/:id', requireAdmin, async (req, res) => {
 
     assignment.status = 'INACTIVE';
     assignment.deactivated_at = new Date().toISOString();
+
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      if (marketplaceRepo && typeof marketplaceRepo.updatePicAssignmentStatus === 'function') {
+        await marketplaceRepo.updatePicAssignmentStatus(assignmentId, 'INACTIVE');
+      }
+    } catch (_) {}
 
     await recordAuditLog('PIC_ASSIGNMENT', assignmentId, 'DEACTIVATED', req.user.id, {
       event_id: assignment.event_id,
@@ -2387,6 +2653,152 @@ router.get('/audit-logs', requireAdmin, async (req, res) => {
 });
 
 /**
+ * GET /api/admin/marketplace-activity
+ * Returns a 360-degree chronological audit trail across authentication,
+ * seller verification, listings, inquiries, negotiations, orders, escrows, and event PICs.
+ */
+router.get('/marketplace-activity', requireAdmin, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit || '100', 10), 200);
+    const category = req.query.category ? req.query.category.toUpperCase() : 'ALL';
+    let activity = await buildUnifiedMarketplaceActivity(limit);
+
+    if (category !== 'ALL') {
+      activity = activity.filter(e => e.category === category);
+    }
+
+    res.json({
+      total: activity.length,
+      events: activity,
+      meta: {
+        generatedAt: new Date().toISOString(),
+        category,
+        limit
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: 'MARKETPLACE_ACTIVITY_FAILED' });
+  }
+});
+
+/**
+ * GET /api/admin/inquiries
+ * Lists all buyer inquiries / purchase interest submissions across marketplace listings with enriched contact and operational details.
+ */
+router.get('/inquiries', requireAdmin, async (req, res) => {
+  try {
+    let rawInquiries = state.listing_inquiries || [];
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const marketplaceRepo = getMarketplaceRepository();
+      if (marketplaceRepo && typeof marketplaceRepo.listBuyerInquiries === 'function') {
+        const dbInquiries = await marketplaceRepo.listBuyerInquiries();
+        if (dbInquiries && dbInquiries.length > 0) {
+          const map = new Map();
+          for (const item of rawInquiries) map.set(item.id, item);
+          for (const item of dbInquiries) map.set(item.id, item);
+          rawInquiries = Array.from(map.values());
+        }
+      }
+    } catch (_) {}
+
+    const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
+    const enriched = rawInquiries.map(inq => {
+      const buyer = (state.users || []).find(u => u.id === inq.buyer_id) || {};
+      const seller = (state.users || []).find(u => u.id === inq.seller_id) || {};
+      const listing = (state.listings || []).find(l => l.id === inq.listing_id) || {};
+      const eventId = inq.event_id || listing.event_id || listing.canonical_event_id;
+      const event = (canonicalRegistry && typeof canonicalRegistry.getEventById === 'function' ? canonicalRegistry.getEventById(eventId) : null) ||
+        (state.events || []).find(e => e.id === eventId) || {};
+
+      return {
+        ...inq,
+        buyer_name: inq.buyer_name || buyer.name || buyer.display_name || 'Pembeli',
+        buyer_email: inq.buyer_email || buyer.email || 'N/A',
+        buyer_phone: inq.contact_phone || inq.contact_whatsapp || buyer.phone || 'N/A',
+        seller_name: seller.name || seller.display_name || 'Penjual',
+        seller_email: seller.email || 'N/A',
+        seller_phone: seller.phone || 'N/A',
+        event_name: event.name || event.title || event.canonical_name || 'Event',
+        venue_name: event.venue_name || event.venue || 'N/A',
+        event_date: event.date || event.start_date || 'N/A',
+        seat_info: inq.seat_info || listing.seat_info || 'General Admission',
+        quantity: inq.quantity || inq.requested_quantity || 1,
+        proposed_price: inq.proposed_price || listing.price || 0,
+        follow_up_status: inq.follow_up_status || inq.status || 'PENDING_FOLLOWUP',
+        notification_status: inq.notification_status || 'PENDING'
+      };
+    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    res.json({
+      total: enriched.length,
+      inquiries: enriched
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: 'ADMIN_INQUIRIES_FETCH_FAILED' });
+  }
+});
+
+/**
+ * PATCH /api/admin/inquiries/:id/status
+ * Admin updates manual follow-up status (e.g. CONTACTED_WHATSAPP, CALL_COMPLETED, CLOSED_DEAL)
+ */
+router.patch('/inquiries/:id/status', requireAdmin, async (req, res) => {
+  const inquiryId = req.params.id;
+  const { follow_up_status, status, admin_notes } = req.body || {};
+  const nextStatus = (follow_up_status || status || 'PENDING_FOLLOWUP').toUpperCase();
+
+  try {
+    let item = (state.listing_inquiries || []).find(i => i.id === inquiryId);
+    if (!item) {
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        const repo = getMarketplaceRepository();
+        item = await repo.getBuyerInquiryById(inquiryId);
+      } catch (_) {}
+    }
+
+    if (!item) {
+      return res.status(404).json({ error: 'Inquiry not found', code: 'INQUIRY_NOT_FOUND' });
+    }
+
+    item.follow_up_status = nextStatus;
+    item.status = nextStatus;
+    item.updated_at = new Date().toISOString();
+    if (admin_notes !== undefined) {
+      item.admin_notes = admin_notes;
+    }
+
+    try {
+      const { getMarketplaceRepository } = require('../storage');
+      const repo = getMarketplaceRepository();
+      if (repo && typeof repo.updateBuyerInquiryStatus === 'function') {
+        await repo.updateBuyerInquiryStatus(inquiryId, nextStatus, { admin_notes });
+      }
+    } catch (_) {}
+
+    if (!state.audit_logs) state.audit_logs = [];
+    state.audit_logs.push({
+      id: `aud-${Date.now()}`,
+      action: 'ADMIN_INQUIRY_STATUS_UPDATED',
+      actor_id: req.admin?.id || 'admin-1',
+      entity_type: 'LISTING_INQUIRY',
+      entity_id: inquiryId,
+      metadata: { follow_up_status: nextStatus, admin_notes },
+      created_at: new Date().toISOString()
+    });
+
+    res.json({
+      success: true,
+      message: 'Status follow-up inquiry berhasil diperbarui.',
+      inquiry: item
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: 'INQUIRY_UPDATE_FAILED' });
+  }
+});
+
+/**
  * GET /api/admin/venues
  * Real venue registry with event coverage, PIC assignment and open incidents.
  */
@@ -2436,8 +2848,24 @@ router.get('/verification', requireAdmin, async (req, res) => {
     hydrated = await hydrateAdminDatasets();
   } catch (_) {}
 
-  const sellers = (hydrated.users || []).filter(u => (u.role || '').toLowerCase() === 'seller');
-  const sellerProfiles = state.seller_profiles || [];
+  const { getUserRepository } = require('../storage');
+  const userRepo = getUserRepository();
+  let dbProfiles = [];
+  try {
+    dbProfiles = await userRepo.listSellerProfiles();
+  } catch (_) {}
+
+  const profileMap = new Map();
+  for (const sp of (state.seller_profiles || [])) {
+    if (sp && sp.user_id) profileMap.set(sp.user_id, sp);
+  }
+  for (const dp of (dbProfiles || [])) {
+    if (dp && dp.user_id) profileMap.set(dp.user_id, { ...(profileMap.get(dp.user_id) || {}), ...dp });
+  }
+
+  const sellers = (hydrated.users || []).filter(u =>
+    (u.role || '').toLowerCase() === 'seller' || profileMap.has(u.id)
+  );
   const tickets = hydrated.tickets || [];
   const authRecords = state.authorization_records || [];
   const incidents = state.incidents || [];
@@ -2445,13 +2873,15 @@ router.get('/verification', requireAdmin, async (req, res) => {
   const evidenceItems = state.evidence_items || [];
 
   const sellerVerificationRows = sellers.map(u => {
-    const profile = sellerProfiles.find(p => p.user_id === u.id) || {};
+    const profile = profileMap.get(u.id) || {};
     return {
       seller_id: u.id,
       name: u.name,
       email: u.email,
       kyc_status: profile.kyc_status || 'UNVERIFIED',
-      account_status: u.status || 'ACTIVE'
+      account_status: u.status || 'ACTIVE',
+      requested_at: profile.requested_at || profile.onboarding_submitted_at || null,
+      rejection_reason: profile.rejection_reason || null
     };
   });
 
@@ -3371,6 +3801,210 @@ router.get('/system-settings', requireAdmin, (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/orders/:id/manual-confirm-payment
+ * Admin manually confirms buyer payment transfer under manual escrow coordination.
+ */
+router.post('/orders/:id/manual-confirm-payment', requireAdmin, async (req, res) => {
+  const orderId = req.params.id;
+  const adminUser = resolveUser(req) || req.user || { id: 'admin-manual', role: 'ADMIN' };
+  const { bank_reference, payment_proof_url, notes } = req.body || {};
+
+  try {
+    let order = (state.orders || []).find(o => o.id === orderId);
+    let escrow = (state.escrows || []).find(e => e.order_id === orderId);
+
+    const moneyRepo = getMoneyRepository();
+    if (!order && moneyRepo && typeof moneyRepo.getOrderById === 'function') {
+      order = await moneyRepo.getOrderById(orderId);
+      if (order && !state.orders.some(o => o.id === order.id)) {
+        state.orders.push(order);
+      }
+    }
+
+    if (!order) {
+      return res.status(404).json({ error: `Order '${orderId}' not found`, code: 'ORDER_NOT_FOUND' });
+    }
+
+    if (!escrow && moneyRepo && typeof moneyRepo.getEscrowByOrderId === 'function') {
+      escrow = await moneyRepo.getEscrowByOrderId(orderId);
+      if (escrow && !state.escrows.some(e => e.id === escrow.id)) {
+        state.escrows.push(escrow);
+      }
+    }
+
+    if (order.status !== 'PENDING_PAYMENT' && order.status !== 'MANUAL_COORDINATION_PENDING') {
+      return res.status(400).json({
+        error: `Order status '${order.status}' cannot be transitioned to PAID. Must be PENDING_PAYMENT.`,
+        code: 'INVALID_ORDER_STATE'
+      });
+    }
+
+    const nowIso = new Date().toISOString();
+    order.status = 'PAID';
+    order.paid_at = nowIso;
+    if (!order.metadata) order.metadata = {};
+    order.metadata.manual_payment_confirmed = true;
+    order.metadata.manual_payment_confirmed_by = adminUser.id;
+    order.metadata.bank_reference = bank_reference || null;
+    order.metadata.payment_proof_url = payment_proof_url || null;
+    order.metadata.notes = notes || null;
+
+    if (escrow) {
+      escrow.status = 'ESCROWED';
+      escrow.locked_at = nowIso;
+      escrow.held_at = nowIso;
+    }
+
+    // Ledger record using standard capture template
+    try {
+      if (FinancialLedger && typeof FinancialLedger.recordCapture === 'function') {
+        await FinancialLedger.recordCapture({
+          orderId: order.id,
+          ticketPrice: order.ticket_price || order.price || 0,
+          actorId: adminUser.id,
+          buyerPlatformFee: order.buyer_fee || 0,
+          sellerPlatformFee: order.seller_fee || 0
+        });
+      }
+    } catch (_) {}
+
+    // Audit log
+    if (!state.audit_logs) state.audit_logs = [];
+    state.audit_logs.push({
+      id: `aud-${uuidv4()}`,
+      action: 'ADMIN_MANUAL_PAYMENT_CONFIRMED',
+      performed_by: adminUser.id,
+      entity_type: 'ORDER',
+      entity_id: order.id,
+      metadata: {
+        order_id: order.id,
+        buyer_id: order.buyer_id,
+        seller_id: order.seller_id,
+        amount: order.buyer_total || order.total_amount,
+        bank_reference: bank_reference || null,
+        notes: notes || null
+      },
+      created_at: nowIso
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Pembayaran manual berhasil dikonfirmasi. Dana kini terkunci dalam Escrow TIKUM.',
+      order,
+      escrow
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: 'MANUAL_PAYMENT_CONFIRM_FAILED' });
+  }
+});
+
+/**
+ * POST /api/admin/orders/:id/manual-release-escrow
+ * Admin manually confirms ticket handover / admission and releases escrow to seller.
+ */
+router.post('/orders/:id/manual-release-escrow', requireAdmin, async (req, res) => {
+  const orderId = req.params.id;
+  const adminUser = resolveUser(req) || req.user || { id: 'admin-manual', role: 'ADMIN' };
+  const { notes, payout_reference } = req.body || {};
+
+  try {
+    let order = (state.orders || []).find(o => o.id === orderId);
+    let escrow = (state.escrows || []).find(e => e.order_id === orderId);
+
+    const moneyRepo = getMoneyRepository();
+    if (!order && moneyRepo && typeof moneyRepo.getOrderById === 'function') {
+      order = await moneyRepo.getOrderById(orderId);
+      if (order && !state.orders.some(o => o.id === order.id)) {
+        state.orders.push(order);
+      }
+    }
+
+    if (!order) {
+      return res.status(404).json({ error: `Order '${orderId}' not found`, code: 'ORDER_NOT_FOUND' });
+    }
+
+    if (!escrow && moneyRepo && typeof moneyRepo.getEscrowByOrderId === 'function') {
+      escrow = await moneyRepo.getEscrowByOrderId(orderId);
+      if (escrow && !state.escrows.some(e => e.id === escrow.id)) {
+        state.escrows.push(escrow);
+      }
+    }
+
+    if (!escrow) {
+      return res.status(404).json({ error: `Escrow for order '${orderId}' not found`, code: 'ESCROW_NOT_FOUND' });
+    }
+
+    // Safety invariants: DISPUTED or FROZEN strictly blocks release
+    if (order.status === 'DISPUTED' || escrow.status === 'DISPUTED') {
+      return res.status(400).json({ error: 'Cannot release escrow: transaction is in disputed state', code: 'TRANSACTION_IN_DISPUTED_STATE' });
+    }
+    if (order.status === 'FROZEN' || escrow.status === 'FROZEN') {
+      return res.status(400).json({ error: 'Cannot release escrow: transaction is in frozen state', code: 'TRANSACTION_IN_FROZEN_STATE' });
+    }
+
+    const nowIso = new Date().toISOString();
+    escrow.status = 'RELEASED';
+    escrow.released_at = nowIso;
+
+    order.status = 'SETTLED';
+    order.settled_at = nowIso;
+    if (!order.metadata) order.metadata = {};
+    order.metadata.manual_escrow_released = true;
+    order.metadata.manual_escrow_released_by = adminUser.id;
+    order.metadata.payout_reference = payout_reference || null;
+    order.metadata.notes = notes || null;
+
+    // Update listing and ticket status
+    const listing = (state.listings || []).find(l => l.id === order.listing_id);
+    if (listing) {
+      listing.status = 'SETTLED';
+    }
+    const ticket = (state.tickets || []).find(t => t.id === order.ticket_id);
+    if (ticket) {
+      ticket.status = 'SETTLED';
+    }
+
+    // Ledger record using standard release template
+    try {
+      if (FinancialLedger && typeof FinancialLedger.recordRelease === 'function') {
+        await FinancialLedger.recordRelease({
+          orderId: order.id,
+          amount: escrow.seller_net_payout || escrow.amount || 0,
+          actorId: adminUser.id
+        });
+      }
+    } catch (_) {}
+
+    // Audit log
+    if (!state.audit_logs) state.audit_logs = [];
+    state.audit_logs.push({
+      id: `aud-${uuidv4()}`,
+      action: 'ADMIN_MANUAL_ESCROW_RELEASED',
+      performed_by: adminUser.id,
+      entity_type: 'ESCROW',
+      entity_id: escrow.id,
+      metadata: {
+        order_id: order.id,
+        seller_id: order.seller_id,
+        amount: escrow.seller_net_payout || escrow.amount,
+        payout_reference: payout_reference || null,
+        notes: notes || null
+      },
+      created_at: nowIso
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Escrow berhasil dirilis ke penjual secara manual.',
+      order,
+      escrow
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: 'MANUAL_ESCROW_RELEASE_FAILED' });
   }
 });
 

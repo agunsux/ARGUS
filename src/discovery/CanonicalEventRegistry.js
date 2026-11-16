@@ -1780,13 +1780,94 @@ class CanonicalEventRegistry {
       ]
     };
 
+    const efestaphoriaHero = {
+      id: 'event-efestaphoria-2026',
+      event_id: 'event-efestaphoria-2026',
+      slug: 'the-15th-efestaphoria-surabaya-2026',
+      name: 'The 15th Efestaphoria',
+      title: 'The 15th Efestaphoria',
+      canonical_name: 'The 15th Efestaphoria',
+      organizer: 'BEM Fakultas Ekonomi dan Bisnis Universitas Airlangga',
+      organizer_name: 'BEM Fakultas Ekonomi dan Bisnis Universitas Airlangga',
+      brand: 'EFESTAPHORIA 2026',
+      artists: [],
+      date: '2026-12-06',
+      start_date: '2026-12-06',
+      end_date: '2026-12-06',
+      start_time: '13:00',
+      end_time: '21:00',
+      start_datetime: '2026-12-06T13:00:00+07:00',
+      end_datetime: '2026-12-06T21:00:00+07:00',
+      event_start_at: '2026-12-06T13:00:00+07:00',
+      event_end_at: '2026-12-06T21:00:00+07:00',
+      event_timezone: 'Asia/Jakarta',
+      timezone: 'Asia/Jakarta',
+      archive_at: '2026-12-08T23:30:00+07:00',
+      venue_id: 'venue-surabaya-expo-center',
+      venue: 'Surabaya Expo Center',
+      venue_name: 'Surabaya Expo Center',
+      venue_city: 'Surabaya',
+      city: 'Surabaya',
+      province: 'Jawa Timur',
+      country: 'Indonesia',
+      event_type: 'FESTIVAL',
+      category: 'FESTIVAL',
+      admission_protocol: {
+        type: 'DIGITAL_TRANSFER',
+        description: 'Penukaran e-ticket resmi Celestix / scan barcode di gate masuk Surabaya Expo Center',
+        required_items: ['E-Ticket Resmi Celestix', 'Identitas Diri Asli (KTP / Kartu Pelajar)'],
+        handoff_type: 'DIGITAL_TRANSFER',
+        venue_gate_authority: 'BEM Fakultas Ekonomi dan Bisnis Universitas Airlangga & Celestix'
+      },
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
+      public_visibility: true,
+      homepage_visibility: true,
+      public_upcoming: true,
+      source: 'PRIMARY_SOURCE',
+      source_id: 'src-celestix-efestaphoria',
+      source_type: 'OFFICIAL_TICKETING_PARTNER',
+      source_url: 'https://www.celestix.id/event/the-15th-efestaphoria/539',
+      source_published_at: '2026-11-01T10:00:00+07:00',
+      source_last_checked_at: '2026-11-16T15:00:00+07:00',
+      verification_status: 'VERIFIED',
+      verified_at: '2026-11-16T15:00:00+07:00',
+      evidence_hash: 'celestix-efestaphoria-539-verified',
+      is_verified: true,
+      official_ticketing_provider: 'Celestix',
+      official_link: 'https://www.celestix.id/event/the-15th-efestaphoria/539',
+      official_event_url: 'https://www.celestix.id/event/the-15th-efestaphoria/539',
+      official_ticket_url: 'https://www.celestix.id/event/the-15th-efestaphoria/539',
+      primary_ticket_status: 'AVAILABLE',
+      min_price: 500000,
+      price: 500000,
+      price_currency: 'IDR',
+      price_status: 'QUALIFIED',
+      meets_price_threshold: true,
+      resale_inventory_count: 0,
+      resale_available: false,
+      sources: [
+        {
+          source_id: 'src-celestix-efestaphoria',
+          source_name: 'Celestix (Official Ticketing Partner)',
+          tier: 1,
+          authority_level: 'HIGH',
+          trust_level: TRUST_LEVELS.TIER_S,
+          source_url: 'https://www.celestix.id/event/the-15th-efestaphoria/539',
+          source_type: 'PRIMARY_SOURCE',
+          retrieved_at: '2026-11-16T15:00:00+07:00'
+        }
+      ]
+    };
+
     if (options && options.includePast) {
-      return [btsHero, bigbangHero, morganJayHero, nassarHero, yeHero];
+      return [btsHero, bigbangHero, morganJayHero, nassarHero, yeHero, efestaphoriaHero];
     }
 
     // Default active upcoming hero concerts: strictly qualified (lowest official tier >= 500k)
     // King Nassar is excluded due to Rp 350.000 Tribun Regular tier.
-    return [btsHero, morganJayHero];
+    return [btsHero, morganJayHero, efestaphoriaHero];
   }
 
   getAllEvents() {

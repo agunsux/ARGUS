@@ -71,7 +71,7 @@ function makeRequest(path, options = {}) {
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
         let json = null;
-        try { json = JSON.parse(data); } catch (_) {}
+        try { json = JSON.parse(data); } catch (_) { }
         resolve({
           statusCode: res.statusCode,
           headers: res.headers,
@@ -498,12 +498,12 @@ async function runTestSuite() {
   await test('24. Red-Team: Transactional integrity: Ingestion failure does not leave orphan records', async () => {
     const failingRepo = {
       ...testRepo,
-      init: async () => {},
+      init: async () => { },
       getAllEvents: async () => [],
       acquireAdvisoryLock: async () => true,
       releaseAdvisoryLock: async () => true,
       recordReconciliationRun: async () => ({ id: 'fail-run' }),
-      updateReconciliationRun: async () => {},
+      updateReconciliationRun: async () => { },
       upsertCanonicalEvent: async () => {
         throw new Error('SIMULATED_DB_WRITE_FAILURE');
       }

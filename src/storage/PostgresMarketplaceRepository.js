@@ -72,6 +72,65 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
 
         await this.pool.query('SELECT NOW()');
         await assertTestDatabaseIsolation(this.pool);
+
+        // Ensure Event PIC assignments table exists
+        await this.pool.query(`
+          CREATE TABLE IF NOT EXISTS event_pic_assignments (
+            id VARCHAR(100) PRIMARY KEY,
+            event_id VARCHAR(100) NOT NULL,
+            venue_id VARCHAR(100) NOT NULL,
+            pic_user_id VARCHAR(100) NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+            event_date DATE,
+            status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+            contact_phone VARCHAR(50),
+            notes TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_event_pic_assignments_event ON event_pic_assignments (event_id, status);
+          CREATE INDEX IF NOT EXISTS idx_event_pic_assignments_user ON event_pic_assignments (pic_user_id, status);
+
+          CREATE TABLE IF NOT EXISTS buyer_inquiries (
+            id VARCHAR(100) PRIMARY KEY,
+            listing_id VARCHAR(100) NOT NULL,
+            buyer_id VARCHAR(100) NOT NULL,
+            seller_id VARCHAR(100) NOT NULL,
+            event_id VARCHAR(120),
+            ticket_id VARCHAR(100),
+            quantity INTEGER DEFAULT 1,
+            proposed_price BIGINT,
+            message TEXT,
+            buyer_name VARCHAR(150),
+            buyer_email VARCHAR(255),
+            contact_phone VARCHAR(60),
+            follow_up_status VARCHAR(50) NOT NULL DEFAULT 'PENDING_FOLLOWUP',
+            admin_notes TEXT,
+            notification_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+            notification_error TEXT,
+            metadata JSONB,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_buyer_inquiries_listing ON buyer_inquiries (listing_id);
+          CREATE INDEX IF NOT EXISTS idx_buyer_inquiries_buyer ON buyer_inquiries (buyer_id);
+          CREATE INDEX IF NOT EXISTS idx_buyer_inquiries_status ON buyer_inquiries (follow_up_status);
+        `).catch(err => {
+          console.warn('[PostgresMarketplaceRepository] PIC/Inquiry assignments DDL notice:', err.message);
+        });
+
+        // Hydrate state.event_pics for synchronous lookup compatibility
+        try {
+          const picRes = await this.pool.query('SELECT * FROM event_pic_assignments WHERE status = $1', ['ACTIVE']);
+          if (picRes && picRes.rows && picRes.rows.length > 0) {
+            const { state } = require('../database');
+            if (state) {
+              const existingMap = new Map();
+              for (const p of (state.event_pics || [])) existingMap.set(p.id, p);
+              for (const r of picRes.rows) existingMap.set(r.id, r);
+              state.event_pics = Array.from(existingMap.values());
+            }
+          }
+        } catch (_) {}
         if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEMO_SEEDING === 'true') {
           await this.pool.query(`
             INSERT INTO marketplace_tickets (
@@ -1513,6 +1572,196 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       [safeLimit]
     );
     return res ? res.rows : [];
+  }
+
+  // --- EVENT PIC ASSIGNMENTS (Epic PIC-01) ---
+
+  async createPicAssignment(data) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.createPicAssignment(data);
+    }
+    const id = data.id || `pic-assign-${crypto.randomUUID().substring(0, 8)}`;
+    const sql = `
+      INSERT INTO event_pic_assignments (
+        id, event_id, venue_id, pic_user_id, event_date, status, contact_phone, notes, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        status = EXCLUDED.status,
+        contact_phone = EXCLUDED.contact_phone,
+        notes = EXCLUDED.notes,
+        updated_at = NOW()
+      RETURNING *;
+    `;
+    const res = await this.query(sql, [
+      id,
+      data.event_id || data.eventId,
+      data.venue_id || data.venueId,
+      data.pic_user_id || data.picUserId,
+      data.event_date || data.eventDate || null,
+      (data.status || 'ACTIVE').toUpperCase(),
+      data.contact_phone || data.contactPhone || null,
+      data.notes || null
+    ]);
+    return res && res.rows[0] ? res.rows[0] : null;
+  }
+
+  async getPicAssignmentById(id) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.getPicAssignmentById(id);
+    }
+    const res = await this.query('SELECT * FROM event_pic_assignments WHERE id = $1', [id]);
+    return res && res.rows[0] ? res.rows[0] : null;
+  }
+
+  async listPicAssignments(filter = {}) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.listPicAssignments(filter);
+    }
+    let sql = 'SELECT * FROM event_pic_assignments WHERE 1=1';
+    const params = [];
+    let idx = 1;
+    if (filter.event_id || filter.eventId) {
+      sql += ` AND event_id = $${idx++}`;
+      params.push(filter.event_id || filter.eventId);
+    }
+    if (filter.pic_user_id || filter.picUserId) {
+      sql += ` AND pic_user_id = $${idx++}`;
+      params.push(filter.pic_user_id || filter.picUserId);
+    }
+    if (filter.status) {
+      sql += ` AND status = $${idx++}`;
+      params.push(filter.status.toUpperCase());
+    }
+    sql += ' ORDER BY created_at DESC;';
+    const res = await this.query(sql, params);
+    return res ? res.rows : [];
+  }
+
+  async updatePicAssignmentStatus(id, status) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.updatePicAssignmentStatus(id, status);
+    }
+    const sql = `
+      UPDATE event_pic_assignments
+      SET status = $2, updated_at = NOW()
+      WHERE id = $1
+      RETURNING *;
+    `;
+    const res = await this.query(sql, [id, (status || 'INACTIVE').toUpperCase()]);
+    return res && res.rows[0] ? res.rows[0] : null;
+  }
+
+  // Buyer Inquiries / Lead Capture (Phase 1 Manual Marketplace)
+  async createBuyerInquiry(inquiryData) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.createBuyerInquiry(inquiryData);
+    }
+    const id = inquiryData.id || `inq-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const sql = `
+      INSERT INTO buyer_inquiries (
+        id, listing_id, buyer_id, seller_id, event_id, ticket_id,
+        quantity, proposed_price, message, buyer_name, buyer_email,
+        contact_phone, follow_up_status, notification_status, metadata,
+        created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
+      RETURNING *;
+    `;
+    const params = [
+      id,
+      inquiryData.listing_id,
+      inquiryData.buyer_id,
+      inquiryData.seller_id,
+      inquiryData.event_id || null,
+      inquiryData.ticket_id || null,
+      inquiryData.quantity || inquiryData.requested_quantity || 1,
+      inquiryData.proposed_price || inquiryData.offer_amount || null,
+      inquiryData.message || null,
+      inquiryData.buyer_name || null,
+      inquiryData.buyer_email || null,
+      inquiryData.contact_phone || inquiryData.contact_whatsapp || null,
+      inquiryData.follow_up_status || 'PENDING_FOLLOWUP',
+      inquiryData.notification_status || 'PENDING',
+      JSON.stringify(inquiryData.metadata || {})
+    ];
+    try {
+      const res = await this.query(sql, params);
+      return res && res.rows[0] ? res.rows[0] : inquiryData;
+    } catch (err) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw err;
+      }
+      return this.fallbackRepo.createBuyerInquiry(inquiryData);
+    }
+  }
+
+  async getBuyerInquiryById(inquiryId) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.getBuyerInquiryById(inquiryId);
+    }
+    const sql = 'SELECT * FROM buyer_inquiries WHERE id = $1;';
+    const res = await this.query(sql, [inquiryId]);
+    return res && res.rows[0] ? res.rows[0] : null;
+  }
+
+  async listBuyerInquiries(filter = {}) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.listBuyerInquiries(filter);
+    }
+    let sql = 'SELECT * FROM buyer_inquiries WHERE 1=1';
+    const params = [];
+    let idx = 1;
+    if (filter.listing_id || filter.listingId) {
+      sql += ` AND listing_id = $${idx++}`;
+      params.push(filter.listing_id || filter.listingId);
+    }
+    if (filter.buyer_id || filter.buyerId) {
+      sql += ` AND buyer_id = $${idx++}`;
+      params.push(filter.buyer_id || filter.buyerId);
+    }
+    if (filter.seller_id || filter.sellerId) {
+      sql += ` AND seller_id = $${idx++}`;
+      params.push(filter.seller_id || filter.sellerId);
+    }
+    if (filter.status || filter.follow_up_status) {
+      sql += ` AND follow_up_status = $${idx++}`;
+      params.push((filter.status || filter.follow_up_status).toUpperCase());
+    }
+    sql += ' ORDER BY created_at DESC;';
+    const res = await this.query(sql, params);
+    return res ? res.rows : [];
+  }
+
+  async updateBuyerInquiryStatus(inquiryId, status, metadata = {}) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      return this.fallbackRepo.updateBuyerInquiryStatus(inquiryId, status, metadata);
+    }
+    const sql = `
+      UPDATE buyer_inquiries
+      SET follow_up_status = $2,
+          admin_notes = COALESCE($3, admin_notes),
+          notification_status = COALESCE($4, notification_status),
+          notification_error = COALESCE($5, notification_error),
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING *;
+    `;
+    const params = [
+      inquiryId,
+      status,
+      metadata.admin_notes || null,
+      metadata.notification_status || null,
+      metadata.notification_error || null
+    ];
+    const res = await this.query(sql, params);
+    return res && res.rows[0] ? res.rows[0] : null;
   }
 }
 
