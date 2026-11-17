@@ -3211,9 +3211,36 @@
       }
     }
 
+    const _inFlightSellerReviews = new Set();
+
     async function adminReviewSellerKyc(sellerId, decision) {
-      const notes = prompt(`Catatan review KYC (${decision}) untuk seller ${sellerId}:`, decision === 'VERIFIED' ? 'KYC identity verified by Trust & Safety' : 'Dokumen identitas belum memenuhi syarat');
+      if (!sellerId) return;
+      if (_inFlightSellerReviews.has(sellerId)) {
+        showToast(`Review KYC untuk seller ${sellerId} sedang diproses. Mohon tunggu.`, 'warning');
+        return;
+      }
+
+      const defaultNote = decision === 'VERIFIED'
+        ? 'KYC identity verified by Trust & Safety'
+        : 'Dokumen identitas belum memenuhi syarat';
+      const notes = prompt(`Catatan review KYC (${decision}) untuk seller ${sellerId}:`, defaultNote);
       if (notes === null) return;
+
+      _inFlightSellerReviews.add(sellerId);
+
+      // Disable related action buttons to prevent double submissions
+      const relatedButtons = document.querySelectorAll(
+        `button[onclick*="adminReviewSellerKyc('${sellerId}'"], button[onclick*='adminReviewSellerKyc("${sellerId}"']`
+      );
+      relatedButtons.forEach(b => {
+        b.disabled = true;
+        b.dataset.prevHtml = b.innerHTML;
+        b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+      });
+
+      let mutationSucceeded = false;
+      let returnedStatus = decision;
+
       try {
         const res = await adminFetch(`/api/admin/sellers/${encodeURIComponent(sellerId)}/kyc`, {
           method: 'PATCH',
@@ -3221,12 +3248,49 @@
           body: JSON.stringify({ kyc_status: decision, notes })
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-        showToast(`Status KYC seller ${sellerId} diperbarui menjadi ${decision}.`, 'success');
-        loadEntityTable('sellers');
-        try { loadVerificationData(); } catch (_) {}
+        if (!res.ok) {
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+
+        mutationSucceeded = true;
+        returnedStatus = data.profile?.kyc_status || data.seller_profile?.kyc_status || data.kyc_status || decision;
+        showToast(`Status KYC seller ${sellerId} berhasil diperbarui menjadi ${returnedStatus}.`, 'success');
+
+        closeSellerKycModal();
       } catch (err) {
         showToast('Gagal memperbarui KYC seller: ' + err.message, 'danger');
+      } finally {
+        _inFlightSellerReviews.delete(sellerId);
+        relatedButtons.forEach(b => {
+          b.disabled = false;
+          if (b.dataset.prevHtml) {
+            b.innerHTML = b.dataset.prevHtml;
+          }
+        });
+      }
+
+      // Safe refresh lifecycle - completely isolated from backend mutation result
+      if (mutationSucceeded) {
+        try {
+          if (typeof currentView !== 'undefined' && currentView === 'sellers') {
+            await loadGenericEntityView('sellers');
+          } else if (typeof currentView !== 'undefined' && currentView === 'trust') {
+            await loadTrustView();
+          } else {
+            if (typeof loadGenericEntityView === 'function') {
+              loadGenericEntityView('sellers').catch(() => {});
+            }
+            if (typeof loadTrustView === 'function') {
+              loadTrustView().catch(() => {});
+            }
+          }
+          if (typeof fetchDashboardOverview === 'function') {
+            fetchDashboardOverview().catch(() => {});
+          }
+        } catch (refreshErr) {
+          console.warn('Gagal memuat ulang tabel secara otomatis:', refreshErr);
+          showToast('Status tersimpan di server. Muat ulang halaman jika tabel belum terbarui otomatis.', 'warning');
+        }
       }
     }
 
@@ -3291,8 +3355,8 @@
         `;
 
         actions.innerHTML = `
-          ${data.kyc_status !== 'VERIFIED' ? `<button class="btn btn-primary btn-sm" onclick="closeSellerKycModal(); adminReviewSellerKyc('${data.seller_id}', 'VERIFIED')"><i class="fa-solid fa-check"></i> Verifikasi / Setujui</button>` : ''}
-          ${data.kyc_status !== 'REJECTED' ? `<button class="btn btn-secondary btn-sm" onclick="closeSellerKycModal(); adminReviewSellerKyc('${data.seller_id}', 'REJECTED')"><i class="fa-solid fa-xmark"></i> Tolak</button>` : ''}
+          ${data.kyc_status !== 'VERIFIED' ? `<button class="btn btn-primary btn-sm" onclick="adminReviewSellerKyc('${data.seller_id}', 'VERIFIED')"><i class="fa-solid fa-check"></i> Verifikasi / Setujui</button>` : ''}
+          ${data.kyc_status !== 'REJECTED' ? `<button class="btn btn-secondary btn-sm" onclick="adminReviewSellerKyc('${data.seller_id}', 'REJECTED')"><i class="fa-solid fa-xmark"></i> Tolak</button>` : ''}
         `;
       } catch (err) {
         body.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444;"><i class="fa-solid fa-circle-exclamation"></i> Gagal memuat detail KYC: ${err.message}</div>`;

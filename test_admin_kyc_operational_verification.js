@@ -298,7 +298,81 @@ async function runTests() {
     pass('Unauthorized and non-admin requests are rejected with 401/403');
   }
 
-  // TEST 8: Verify Nadea account was NOT mutated
+  // TEST 10: Frontend admin.html audit: loadEntityTable does not exist & refresh architecture is valid
+  {
+    const fs = require('fs');
+    const adminHtml = fs.readFileSync('public/admin.html', 'utf8');
+    assert.strictEqual(adminHtml.includes('loadEntityTable'), false, 'loadEntityTable must NOT exist in public/admin.html');
+    assert.ok(adminHtml.includes('_inFlightSellerReviews'), 'Double-click protection guard _inFlightSellerReviews must be present');
+    assert.ok(adminHtml.includes("loadGenericEntityView('sellers')"), 'Table refresh must invoke loadGenericEntityView');
+    assert.ok(adminHtml.includes("closeSellerKycModal()"), 'closeSellerKycModal must be invoked upon successful review');
+    pass('Frontend admin.html audit: loadEntityTable eradicated, double-click prevention active, valid refresh architecture present');
+  }
+
+  // TEST 11: Backend PATCH /api/admin/sellers/:id/kyc updates mock test seller correctly
+  {
+    const testSeller = await mockRepo.createUser({
+      id: 'usr-test-seller-ops-1',
+      email: 'ops-test@seller.com',
+      name: 'Ops Test Seller',
+      role: 'BUYER',
+      status: 'ACTIVE',
+      metadata: {
+        seller_profile: {
+          display_name: 'Ops Test Seller',
+          kyc_status: 'PENDING_REVIEW',
+          requested_at: new Date().toISOString(),
+          active_listing_limit: 10
+        }
+      }
+    });
+
+    const patchRes = await fetch(`${baseUrl}/api/admin/sellers/${testSeller.id}/kyc`, {
+      method: 'PATCH',
+      headers: {
+        'Cookie': `session_token=${testAdminToken}`,
+        'Content-Type': 'application/json',
+        'Origin': baseUrl
+      },
+      body: JSON.stringify({
+        kyc_status: 'VERIFIED',
+        notes: 'Operational review test approval'
+      })
+    });
+    assert.strictEqual(patchRes.status, 200, `Expected 200, got ${patchRes.status}`);
+    const patchData = await patchRes.json();
+    assert.strictEqual(patchData.success, true);
+    assert.strictEqual(patchData.seller_id, testSeller.id);
+    assert.strictEqual(patchData.profile.kyc_status, 'VERIFIED');
+
+    const updated = await mockRepo.getUserById(testSeller.id);
+    assert.strictEqual(updated.role, 'SELLER');
+    assert.strictEqual(updated.metadata.seller_profile.kyc_status, 'VERIFIED');
+    assert.strictEqual(updated.metadata.seller_profile.verified_by, adminUser.id);
+    pass('Backend review endpoint (PATCH /api/admin/sellers/:id/kyc) executes approval and upgrades role to SELLER');
+  }
+
+  // TEST 12: Backend PATCH /api/admin/sellers/:id/kyc rejects invalid status
+  {
+    const badRes = await fetch(`${baseUrl}/api/admin/sellers/usr-test-seller-ops-1/kyc`, {
+      method: 'PATCH',
+      headers: {
+        'Cookie': `session_token=${testAdminToken}`,
+        'Content-Type': 'application/json',
+        'Origin': baseUrl
+      },
+      body: JSON.stringify({
+        kyc_status: 'TOTALLY_INVALID_STATUS',
+        notes: 'Testing validation'
+      })
+    });
+    assert.strictEqual(badRes.status, 400, `Expected 400 for invalid status, got ${badRes.status}`);
+    const badData = await badRes.json();
+    assert.strictEqual(badData.success, false);
+    pass('Backend review endpoint validates kyc_status enum and rejects invalid values with HTTP 400');
+  }
+
+  // TEST 13: Verify Nadea account was NOT mutated
   {
     const user = await mockRepo.getUserById('usr-a0858d95');
     assert.strictEqual(user.role, 'BUYER', 'Account role must remain BUYER');
@@ -308,7 +382,7 @@ async function runTests() {
     pass('STRICT RULE VERIFIED: Nadea account state, role, and KYC status remain 100% UNMUTATED');
   }
 
-  // TEST 9: Payment Gateway Freeze remains ACTIVE
+  // TEST 14: Payment Gateway Freeze remains ACTIVE
   {
     assert.strictEqual(process.env.PAYMENT_GATEWAY_FROZEN, 'true', 'Payment gateway must remain frozen');
     pass('PAYMENT_GATEWAY_FROZEN invariant preserved (real money checkout remains locked)');
