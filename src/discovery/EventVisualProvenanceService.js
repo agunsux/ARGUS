@@ -159,7 +159,8 @@ class EventVisualProvenanceService {
     }
 
     const trimmed = url.trim();
-    if (/^\/assets\/posters\/[a-z0-9._-]+\.(jpg|jpeg|png|webp|avif|svg)$/i.test(trimmed)) {
+    if (/^\/assets\/[a-z0-9._\/-]+\.(jpg|jpeg|png|webp|avif|svg)$/i.test(trimmed) ||
+        /^\/(api\/)?(discovery\/)?events\/[a-z0-9._\/-]+\/poster\.svg$/i.test(trimmed)) {
       return {
         valid: true,
         normalized_url: trimmed,
@@ -1214,39 +1215,48 @@ class EventVisualProvenanceService {
           is_fallback_image: true
         };
       }
-      const srcType = event.image_source_type || meta.image_source_type || (rawImgUrl.includes('loket.com') ? 'OFFICIAL_TICKETING' : 'OFFICIAL_EVENT_WEB');
+      const isLocalOrFallback = Boolean(
+        urlCheck.is_local_official_asset ||
+        rawImgUrl.includes('/poster.svg') ||
+        rawImgUrl.includes('placeholder-') ||
+        event.is_fallback_image === true ||
+        meta.is_fallback_image === true
+      );
+      const srcType = event.image_source_type || meta.image_source_type || (rawImgUrl.includes('loket.com') ? 'OFFICIAL_TICKETING' : (isLocalOrFallback ? 'TIKUM_UI_FALLBACK' : 'OFFICIAL_EVENT_WEB'));
       const isOfficialOrganizerOrVenue = ['OFFICIAL_ORGANIZER', 'OFFICIAL_EVENT_WEB', 'OFFICIAL_PROMOTER_WEB', 'OFFICIAL_VENUE', 'OFFICIAL_VENUE_WEB', 'OFFICIAL_ARTIST_WEB'].includes(srcType) &&
-        !rawImgUrl.includes('loket.com');
+        !rawImgUrl.includes('loket.com') && !isLocalOrFallback;
       const resolvedStatus = event.is_verified === false
         ? IMAGE_STATUS.NEEDS_REVIEW
-        : (isOfficialOrganizerOrVenue ? IMAGE_STATUS.VERIFIED_OFFICIAL : IMAGE_STATUS.VERIFIED_AUTHORIZED_SELLER);
+        : (isLocalOrFallback ? IMAGE_STATUS.BRANDED_FALLBACK : (isOfficialOrganizerOrVenue ? IMAGE_STATUS.VERIFIED_OFFICIAL : IMAGE_STATUS.VERIFIED_AUTHORIZED_SELLER));
 
       return {
         image_url: urlCheck.normalized_url,
         thumbnail_url: event.thumbnail_url || meta.thumbnail_url || urlCheck.normalized_url,
         image_source_url: event.image_source_url || meta.image_source_url || event.official_event_url || event.official_ticket_url || event.source_url || null,
         image_source_type: srcType,
-        image_verified: event.is_verified !== false,
+        image_verified: !isLocalOrFallback && event.is_verified !== false,
         image_verified_at: event.image_verified_at || meta.image_verified_at || event.verified_at || new Date().toISOString(),
         image_status: resolvedStatus,
-        image_credit: event.image_credit || meta.image_credit || event.image_attribution || 'Official Source',
-        image_attribution: event.image_attribution || meta.image_attribution || event.image_credit || meta.image_credit || 'Official Source',
+        image_credit: event.image_credit || meta.image_credit || event.image_attribution || (isLocalOrFallback ? 'TIKUM Event Brief' : 'Official Source'),
+        image_attribution: event.image_attribution || meta.image_attribution || event.image_credit || meta.image_credit || (isLocalOrFallback ? 'TIKUM Event Brief' : 'Official Source'),
         broken_image_url: null,
-        is_fallback_image: false
+        is_fallback_image: isLocalOrFallback
       };
     }
 
-    // 5. No image_url present -> classify as SOURCE_LINK_ONLY (if official/authorized link exists) or MISSING
+    // 5. No image_url present -> provide deterministic 3:4 branded SVG fallback poster
+    const fallbackSlug = event.slug || event.id || 'event';
+    const fallbackSvgUrl = `/api/events/${encodeURIComponent(fallbackSlug)}/poster.svg`;
     return {
-      image_url: null,
-      thumbnail_url: null,
+      image_url: fallbackSvgUrl,
+      thumbnail_url: fallbackSvgUrl,
       image_source_url: hasOfficialLink ? candidateUrls[0] : null,
-      image_source_type: 'NONE',
+      image_source_type: 'TIKUM_UI_FALLBACK',
       image_verified: false,
       image_verified_at: null,
       image_status: hasOfficialLink ? IMAGE_STATUS.SOURCE_LINK_ONLY : IMAGE_STATUS.MISSING,
-      image_credit: null,
-      image_attribution: null,
+      image_credit: 'TIKUM Event Brief',
+      image_attribution: 'TIKUM Event Brief',
       broken_image_url: null,
       is_fallback_image: true
     };

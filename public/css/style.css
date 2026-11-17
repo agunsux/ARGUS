@@ -1171,7 +1171,7 @@ a:hover {
 .poster-media {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 3 / 4;
   background-color: #0f172a;
   overflow: hidden;
   contain: paint;
@@ -1180,8 +1180,8 @@ a:hover {
 .poster-media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 25%;
+  object-fit: contain;
+  background-color: #0f172a;
   display: block;
 }
 
@@ -2088,7 +2088,7 @@ body.dark-mode .btn-waitlist:hover {
   margin: 1.5rem auto 0;
   padding: 0 1.5rem 2.75rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 2rem;
 }
 
@@ -2110,7 +2110,9 @@ body.dark-mode .btn-waitlist:hover {
 
 .hero-spotlight-section .poster-wrap {
   position: relative;
-  height: 280px;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  height: auto;
   background: #0f172a;
   overflow: hidden;
 }
@@ -2118,8 +2120,8 @@ body.dark-mode .btn-waitlist:hover {
 .hero-spotlight-section .poster-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 25%;
+  object-fit: contain;
+  background: #0f172a;
   display: block;
 }
 
@@ -2282,4 +2284,29 @@ body.dark-mode .btn-waitlist:hover {
 .hero-spotlight-section .btn-secondary:hover {
   color: #f9fafb;
   border-color: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 768px) {
+  .hero-spotlight-section .main-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    padding: 0 1rem 2rem;
+  }
+  .hero-spotlight-section .card-body {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-spotlight-section .main-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0 0.75rem 1.75rem;
+  }
+  .hero-spotlight-section .card-body {
+    padding: 1rem;
+  }
+  .hero-spotlight-section .concert-title {
+    font-size: 1.25rem;
+  }
 }

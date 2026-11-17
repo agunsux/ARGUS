@@ -53,8 +53,8 @@ class HeroSelectionService {
     // Sort by deterministic ranking score descending
     qualifiedCandidates.sort((a, b) => b.score - a.score);
 
-    // Extract top 2 heroes for spotlight grid
-    const selected = qualifiedCandidates.slice(0, 2).map((item, idx) => {
+    // Extract top heroes for spotlight grid (up to 8)
+    const selected = qualifiedCandidates.slice(0, 8).map((item, idx) => {
       const ev = item.event;
       return this.formatHeroCard(ev, {
         isPrimary: idx === 0,
@@ -103,8 +103,7 @@ class HeroSelectionService {
 
     // 2. Strict Temporal Check in Asia/Jakarta
     // Event must not have concluded relative to 'now'
-    const isHeroRegistryEvent = event.id === 'ev-can-fd86cf7d' || event.id === 'bts-world-tour-arirang-jakarta-2026';
-    const isUpcoming = isHeroRegistryEvent || EventTemporalLifecycleEngine.isEventUpcoming(event, now);
+    const isUpcoming = EventTemporalLifecycleEngine.isEventUpcoming(event, now);
     if (!isUpcoming) {
       return { eligible: false, reason: 'EVENT_CONCLUDED_PAST', score: 0 };
     }
@@ -133,8 +132,8 @@ class HeroSelectionService {
       return { eligible: false, reason: 'MISSING_IMAGE', score: 0 };
     }
 
-    // --- Scoring Calculation ---
-    let score = 100;
+    // --- Dynamic Scoring Calculation Driven by Proximity & Scale ---
+    let score = 1000;
     const rationales = [];
 
     const titleLower = (event.title || event.name || event.canonical_name || '').toLowerCase();
@@ -142,43 +141,40 @@ class HeroSelectionService {
       ? event.artists.join(' ').toLowerCase()
       : (event.artist || '').toLowerCase();
 
-    // Priority 1: High-demand Stadium K-Pop Tours (BTS marquee)
-    if (titleLower.includes('bts') || artistLower.includes('bts') || titleLower.includes('arirang')) {
-      score += 2000;
-      rationales.push('BTS World Tour marquee stadium concert (First Choice candidate)');
-    } else if (titleLower.includes('morgan jay') || artistLower.includes('morgan jay') || titleLower.includes('goofy guy')) {
-      score += 1900;
-      rationales.push('Morgan Jay: The Goofy Guy Tour Jakarta (Second Choice candidate)');
-    } else if (titleLower.includes('bigbang') || artistLower.includes('bigbang')) {
-      score += 1800;
-      rationales.push('BIGBANG 2026–27 World Tour headline act (Second Choice candidate)');
-    } else if (titleLower.includes('enhypen') || artistLower.includes('enhypen')) {
-      score += 1500;
-      rationales.push('ENHYPEN stadium tour headline act');
-    } else if (titleLower.includes('nassar') || artistLower.includes('nassar')) {
-      score += 1200;
-      rationales.push('King Nassar verified national concert (Istora Senayan)');
-    } else if (titleLower.includes('dwp') || titleLower.includes('djakarta warehouse')) {
-      score += 800;
-      rationales.push('Major international festival (DWP)');
-    } else {
-      score += 500;
-      rationales.push('Verified qualifying concert');
-    }
+    // Priority 1: Start Date Proximity (nearest upcoming gets up to +2000)
+    const eventDate = new Date(event.start_date || event.date || event.start_datetime || 0);
+    const diffMs = eventDate.getTime() - now.getTime();
+    const diffDays = Math.max(0, Math.round(diffMs / (24 * 60 * 60 * 1000)));
+    const proximityScore = Math.max(0, Math.round((200 - diffDays) * 10));
+    score += proximityScore;
+    rationales.push(`Proximity: ${diffDays} days away (+${proximityScore})`);
 
-    // Priority 2: Proximity within 90 days
-    const eventDate = new Date(event.start_date || event.date);
-    const diffDays = Math.max(0, Math.round((eventDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
-    if (diffDays <= 90) {
-      score += Math.max(0, 90 - diffDays); // Closer events get slight boost
-      rationales.push(`Scheduled within ${diffDays} days`);
-    }
-
-    // Priority 3: Stadium Venue Bonus
+    // Priority 2: Venue Scale & Capacity
     const venueLower = (event.venue_name || event.venue || '').toLowerCase();
-    if (venueLower.includes('bung karno') || venueLower.includes('gbk') || venueLower.includes('jis') || venueLower.includes('stadium')) {
+    if (venueLower.includes('bung karno') || venueLower.includes('gbk') || venueLower.includes('jis') || venueLower.includes('stadium') || venueLower.includes('stadion')) {
+      score += 300;
+      rationales.push('Major stadium venue (+300)');
+    } else if (venueLower.includes('arena') || venueLower.includes('expo') || venueLower.includes('hall') || venueLower.includes('senayan') || venueLower.includes('ice bsd')) {
+      score += 150;
+      rationales.push('Arena / Expo venue (+150)');
+    }
+
+    // Priority 3: Verification Tier
+    if (event.verification_status === 'PRIMARY_SOURCE_VERIFIED' || event.source_type === 'PRIMARY_SOURCE' || event.source_type === 'OFFICIAL_PROMOTER_WEB' || event.source_type === 'OFFICIAL_EVENT_WEB') {
+      score += 200;
+      rationales.push('Primary promoter source (+200)');
+    } else {
       score += 100;
-      rationales.push('Major stadium venue');
+      rationales.push('Verified channel (+100)');
+    }
+
+    // Priority 4: Marquee Headline Act
+    if (titleLower.includes('bts') || artistLower.includes('bts') || titleLower.includes('arirang') ||
+        titleLower.includes('bigbang') || artistLower.includes('bigbang') ||
+        titleLower.includes('guns n\' roses') || artistLower.includes('guns n\' roses') ||
+        titleLower.includes('chemical romance') || artistLower.includes('chemical romance')) {
+      score += 200;
+      rationales.push('International headline act (+200)');
     }
 
     return {
@@ -196,6 +192,10 @@ class HeroSelectionService {
     const eligibleMinPrice = (Array.isArray(ev.price_tiers) && ev.price_tiers.length > 0)
       ? Math.min(...ev.price_tiers.map(t => Number(t.price || t.face_value || 0)).filter(p => p >= MIN_QUALIFYING_PRICE))
       : (rawMinPrice >= MIN_QUALIFYING_PRICE ? rawMinPrice : MIN_QUALIFYING_PRICE);
+
+    const slug = ev.slug || ev.event_id || ev.id;
+    const fallbackSvg = `/api/events/${encodeURIComponent(slug)}/poster.svg`;
+    const resolvedPoster = (ev.poster_url && !ev.poster_url.includes('placeholder-event.svg')) ? ev.poster_url : (ev.image_url || fallbackSvg);
 
     return {
       id: ev.id || ev.event_id,
@@ -221,10 +221,10 @@ class HeroSelectionService {
       official_event_url: ev.official_event_url || ev.official_link || ev.source_url,
       official_ticket_url: ev.official_ticket_url || ev.official_event_url || ev.official_link,
       official_ticketing_provider: ev.official_ticketing_provider || 'Tiket.com',
-      poster_url: ev.poster_url || ev.image_url,
-      image_url: ev.image_url || ev.poster_url,
-      image_credit: ev.image_credit || `${ev.title} (Official Promoter)`,
-      primary_ticket_status: ev.primary_ticket_status || 'SOLD_OUT',
+      poster_url: resolvedPoster,
+      image_url: resolvedPoster,
+      image_credit: ev.image_credit || `${ev.title || 'Event'} (Official Promoter)`,
+      primary_ticket_status: ev.primary_ticket_status || 'AVAILABLE',
       min_price: eligibleMinPrice,
       max_price: Number(ev.max_price) || eligibleMinPrice,
       resale_inventory_count: 0,
@@ -233,7 +233,7 @@ class HeroSelectionService {
       buyer_protection_policy: 'TIKUM Buyer Protection: Transaksi dilindungi rekening escrow dan verifikasi turnstile venue.',
       observed_at: ev.source_last_checked_at || ev.source_published_at || ev.verified_at || '2026-10-25T12:00:00+07:00',
       evidence_hash: ev.evidence_hash || null,
-      selection_rationale: meta.selectionRationale || 'Verified high-demand stadium concert',
+      selection_rationale: meta.selectionRationale || 'Verified upcoming concert',
       selection_score: meta.selectionScore || 0,
       is_primary_hero: Boolean(meta.isPrimary)
     };

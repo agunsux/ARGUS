@@ -256,7 +256,7 @@
             alt="Event Brief BTS WORLD TOUR 'ARIRANG' 2026 IN JAKARTA - Tikum Event Radar"
             class="poster-img"
             width="540"
-            height="280"
+            height="720"
             loading="eager"
             fetchpriority="high"
             onerror="this.onerror=null; this.src='/assets/placeholder-event.svg';"
@@ -317,7 +317,7 @@
             alt="Event Brief BIGBANG 2026–27 WORLD TOUR in Jakarta di Jakarta International Stadium"
             class="poster-img"
             width="540"
-            height="280"
+            height="720"
             loading="eager"
             fetchpriority="high"
             onerror="this.onerror=null; this.src='/assets/placeholder-event.svg';"
@@ -371,12 +371,16 @@
       <!-- 3. The 15th Efestaphoria (Celestix Reference) -->
       <article class="concert-card" id="card-efestaphoria">
         <div class="poster-wrap">
-          <div class="poster-img" style="width: 100%; height: 280px; background: linear-gradient(135deg, #1e1b4b, #312e81, #0f172a); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; padding: 20px; text-align: center;">
-            <i class="fa-solid fa-guitar" style="font-size: 42px; color: #a5b4fc; margin-bottom: 12px;"></i>
-            <div style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #c7d2fe; font-weight: 700;">EFESTAPHORIA 2026</div>
-            <div style="font-size: 22px; font-weight: 800; margin-top: 4px; color: #ffffff;">The 15th Efestaphoria</div>
-            <div style="font-size: 13px; color: #93c5fd; margin-top: 6px;"><i class="fa-solid fa-location-dot"></i> Surabaya Expo Center</div>
-          </div>
+          <img
+            src="/api/events/the-15th-efestaphoria-surabaya-2026/poster.svg"
+            data-fallback-svg="/assets/placeholder-event.svg"
+            alt="Event Brief The 15th Efestaphoria di Surabaya Expo Center"
+            class="poster-img"
+            width="540"
+            height="720"
+            loading="lazy"
+            onerror="this.onerror=null; this.src='/assets/placeholder-event.svg';"
+          >
           <div class="poster-overlay">
             <span class="badge badge-verified">✓ ORGANIZER VERIFIED</span>
             <span class="badge badge-soldout" style="background:#059669; color:#fff;">REFERENSI RESMI CELESTIX</span>
@@ -426,12 +430,16 @@
       <!-- 4. My Chemical Romance — Live in Jakarta -->
       <article class="concert-card" id="card-mcr">
         <div class="poster-wrap">
-          <div class="poster-img" style="width: 100%; height: 280px; background: linear-gradient(135deg, #18181b, #27272a, #09090b); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; padding: 20px; text-align: center;">
-            <i class="fa-solid fa-skull" style="font-size: 42px; color: #f43f5e; margin-bottom: 12px;"></i>
-            <div style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #fda4af; font-weight: 700;">LIVE IN JAKARTA</div>
-            <div style="font-size: 22px; font-weight: 800; margin-top: 4px; color: #ffffff;">My Chemical Romance</div>
-            <div style="font-size: 13px; color: #fecdd3; margin-top: 6px;"><i class="fa-solid fa-location-dot"></i> Jakarta International Stadium (JIS)</div>
-          </div>
+          <img
+            src="/api/events/my-chemical-romance-jakarta-2026/poster.svg"
+            data-fallback-svg="/assets/placeholder-event.svg"
+            alt="Event Brief My Chemical Romance — Live in Jakarta di Jakarta International Stadium"
+            class="poster-img"
+            width="540"
+            height="720"
+            loading="lazy"
+            onerror="this.onerror=null; this.src='/assets/placeholder-event.svg';"
+          >
           <div class="poster-overlay">
             <span class="badge badge-verified">✓ PROMOTER VERIFIED</span>
             <span class="badge badge-soldout" style="background:#059669; color:#fff;">RAVEL ENTERTAINMENT</span>
@@ -495,12 +503,16 @@
       <!-- 5. Guns N' Roses — Jakarta 2026 -->
       <article class="concert-card" id="card-gnr">
         <div class="poster-wrap">
-          <div class="poster-img" style="width: 100%; height: 280px; background: linear-gradient(135deg, #1c1917, #292524, #0c0a09); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; padding: 20px; text-align: center;">
-            <i class="fa-solid fa-record-vinyl" style="font-size: 42px; color: #f59e0b; margin-bottom: 12px;"></i>
-            <div style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #fde68a; font-weight: 700;">JAKARTA 2026</div>
-            <div style="font-size: 22px; font-weight: 800; margin-top: 4px; color: #ffffff;">Guns N' Roses</div>
-            <div style="font-size: 13px; color: #fef3c7; margin-top: 6px;"><i class="fa-solid fa-location-dot"></i> GBK Madya Stadium • Jakarta</div>
-          </div>
+          <img
+            src="/api/events/guns-n-roses-jakarta-2026/poster.svg"
+            data-fallback-svg="/assets/placeholder-event.svg"
+            alt="Event Brief Guns N' Roses — Jakarta 2026 di GBK Madya Stadium"
+            class="poster-img"
+            width="540"
+            height="720"
+            loading="lazy"
+            onerror="this.onerror=null; this.src='/assets/placeholder-event.svg';"
+          >
           <div class="poster-overlay">
             <span class="badge badge-verified">✓ OFFICIAL CHANNEL</span>
             <span class="badge badge-soldout" style="background:#059669; color:#fff;">REFERENSI RESMI GNRJAKARTA.COM</span>
@@ -1440,53 +1452,25 @@
     }
 
     function renderPosterMedia(e, categoryLabel, statusText, radarBadge, isPriority = false) {
-      const img = e.image_url && e.is_fallback_image !== true && e.image_status !== 'FALLBACK' && e.image_status !== 'BROKEN' ? e.image_url : '';
-      const visual = getCategoryVisual(e.category || categoryLabel);
+      const slugOrId = e.slug || e.event_id || e.id;
+      const fallbackSvg = slugOrId ? `/api/events/${encodeURIComponent(slugOrId)}/poster.svg` : '/assets/placeholder-event.svg';
+      const imgSrc = (e.image_url && e.image_status !== 'BROKEN') ? e.image_url : fallbackSvg;
       const title = escapeHtml(e.title || e.canonical_name || 'Event');
       const venue = escapeHtml(e.venue_name || e.venue || '');
       const city = escapeHtml(e.city || e.venue_city || '');
       const altText = `${title} — ${[venue, city].filter(Boolean).join(', ')}`;
       const priorityAttr = isPriority ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
-      const imgStatus = escapeHtml(e.image_status || (img ? 'VERIFIED_AUTHORIZED_SELLER' : 'SOURCE_LINK_ONLY'));
+      const imgStatus = escapeHtml(e.image_status || (e.is_fallback_image ? 'BRANDED_FALLBACK' : 'VERIFIED_OFFICIAL'));
 
-      const placeholderInner = `
-        <div class="poster-fallback-art" style="background: ${visual.gradient};">
-          <div class="poster-fallback-badge">
-            <i class="fa-solid ${visual.icon}" style="color: ${visual.accent};"></i>
-          </div>
-          <div class="poster-fallback-title">${title}</div>
-          <div class="poster-fallback-meta">${escapeHtml(categoryLabel)}${venue ? ' · ' + venue : ''}</div>
-          <div class="poster-fallback-verified">
-            <i class="fa-solid fa-shield-check" style="color: #34D399; font-size: 10px;"></i> Poster Resmi Belum Tersedia · Sumber Terverifikasi
-          </div>
+      return `
+        <div class="poster-media" data-image-status="${imgStatus}">
+          <img src="${imgSrc}" alt="${altText}" width="300" height="400" ${priorityAttr} decoding="async" onerror="if(this.src!=='${fallbackSvg}') { this.src='${fallbackSvg}'; } else { this.onerror=null; this.src='/assets/placeholder-event.svg'; }" />
+          <div class="poster-scrim"></div>
+          <div class="card-category-pill">${categoryLabel}</div>
+          <div class="ln-badge ln-badge--status">${statusText}</div>
+          ${radarBadge}
         </div>
       `;
-
-      if (img) {
-        return `
-          <div class="poster-media" data-image-status="${imgStatus}">
-            <img src="${img}" alt="${altText}" width="250" height="312" ${priorityAttr} decoding="async" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
-            <div class="poster-fallback-wrap" style="display: none;">
-              ${placeholderInner}
-            </div>
-            <div class="poster-scrim"></div>
-            <div class="card-category-pill">${categoryLabel}</div>
-            <div class="ln-badge ln-badge--status">${statusText}</div>
-            ${radarBadge}
-          </div>
-        `;
-      } else {
-        return `
-          <div class="poster-media" data-image-status="${imgStatus}">
-            <div class="poster-fallback-wrap" style="display: flex;">
-              ${placeholderInner}
-            </div>
-            <div class="card-category-pill">${categoryLabel}</div>
-            <div class="ln-badge ln-badge--status">${statusText}</div>
-            ${radarBadge}
-          </div>
-        `;
-      }
     }
 
     function resolveCategoryLabel(e) {
@@ -1709,6 +1693,101 @@
       `;
     }
 
+    function renderHeroConcertGrid(heroes) {
+      const grid = document.getElementById('heroConcertGrid');
+      if (!grid || !Array.isArray(heroes) || heroes.length === 0) return;
+
+      const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
+
+      grid.innerHTML = heroes.map((h, idx) => {
+        const slug = h.slug || h.id || h.event_id;
+        const fallbackSvg = `/api/events/${encodeURIComponent(slug)}/poster.svg`;
+        const posterImg = h.poster_url || h.image_url || fallbackSvg;
+        const title = escapeHtml(h.title || h.name || 'Concert');
+        const venue = escapeHtml(h.venue_name || h.venue || 'Venue');
+        const city = escapeHtml(h.venue_city || h.city || 'Indonesia');
+        const dateStr = formatDate(h.date || h.start_date);
+        const timeStr = h.start_time ? ` • ${h.start_time} WIB` : (h.date ? ' • 19:00 WIB' : '');
+        const promoter = escapeHtml(h.promoter || h.organizer_name || 'Official Organizer');
+        const officialUrl = h.official_ticket_url || h.official_event_url || h.official_link || '#';
+        const rawId = (h.id || h.event_id || '').toLowerCase();
+        let cardId = `card-hero-${idx}`;
+        if (rawId.includes('bts')) cardId = 'card-bts';
+        else if (rawId.includes('bigbang')) cardId = 'card-bigbang';
+        else if (rawId.includes('mcr') || rawId.includes('chemical')) cardId = 'card-mcr';
+        else if (rawId.includes('gnr') || rawId.includes('roses')) cardId = 'card-gnr';
+        else if (rawId.includes('efestaphoria')) cardId = 'card-efestaphoria';
+
+        const isSoldOut = (h.primary_ticket_status || '').toUpperCase() === 'SOLD_OUT';
+        const statusBadge = isSoldOut
+          ? `<span class="badge badge-soldout">${t('spotlight.primarySoldOut', 'PRIMARY: SOLD OUT')}</span>`
+          : `<span class="badge badge-soldout" style="background:#2563eb; color:#fff;">${t('spotlight.officialTicketsAvailable', 'TIKET RESMI TERSEDIA')}</span>`;
+
+        return `
+          <article class="concert-card" id="${cardId}">
+            <div class="poster-wrap">
+              <img
+                src="${posterImg}"
+                data-fallback-svg="${fallbackSvg}"
+                alt="Event Brief ${title} di ${venue}"
+                class="poster-img"
+                width="540"
+                height="720"
+                loading="${idx < 2 ? 'eager' : 'lazy'}"
+                fetchpriority="${idx < 2 ? 'high' : 'auto'}"
+                onerror="this.onerror=null; this.src='${fallbackSvg}';"
+              >
+              <div class="poster-overlay">
+                <span class="badge badge-verified">✓ ${t('spotlight.scheduleConfirmed', 'JADWAL RESMI TERKONFIRMASI')}</span>
+                ${statusBadge}
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="promoter-tag">${promoter}</div>
+              <h2 class="concert-title">${title}</h2>
+              <div class="meta-list">
+                <div class="meta-item">
+                  <span>📅</span>
+                  <div><strong>${dateStr}${timeStr}</strong></div>
+                </div>
+                <div class="meta-item">
+                  <span>📍</span>
+                  <div><strong>${venue} • ${city}</strong></div>
+                </div>
+                ${Array.isArray(h.artists) && h.artists.length ? `
+                <div class="meta-item">
+                  <span>👥</span>
+                  <div><span>Artis:</span> <strong>${escapeHtml(h.artists.join(', '))}</strong></div>
+                </div>` : ''}
+              </div>
+
+              <div class="notice-box">
+                Informasi dan ketersediaan tiket resmi dipantau langsung dari kanal resmi promotor (${promoter}). TIKUM memfasilitasi penemuan event dan pasar sekunder terverifikasi dengan jaminan <em>Zero Fake Inventory</em>.
+              </div>
+
+              <div class="resale-status">
+                <span>Stok Resale Sekunder TIKUM:</span>
+                <span class="resale-zero">0 Tiket (Zero Fake Inventory)</span>
+              </div>
+
+              <div class="btn-group">
+                ${officialUrl !== '#' ? `
+                <a href="${officialUrl}" target="_blank" rel="noopener noreferrer" class="btn-primary">
+                  Lihat Sumber Resmi / Tiket ↗
+                </a>` : ''}
+                <a href="/events/${slug}" class="btn-secondary">
+                  Lihat Detail Event di TIKUM →
+                </a>
+                <a href="/panduan-pembeli" class="btn-secondary">
+                  Pelajari Proteksi Pembeli TIKUM
+                </a>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
     /**
      * Live discovery composition:
      *   hero feature -> "Baru Diumumkan" rail -> "Upcoming Shows" grid ->
@@ -1740,6 +1819,10 @@
       }
 
       const sections = (homeFeed && homeFeed.sections) || {};
+      const heroes = (homeFeed && (homeFeed.hero_concerts || sections.hero_concerts || sections.heroes)) || [];
+      if (heroes.length > 0) {
+        renderHeroConcertGrid(heroes);
+      }
       const upcoming = (sections.upcoming_nearest && sections.upcoming_nearest.length ? sections.upcoming_nearest : filtered);
       if (!upcoming.length) {
         renderHeroFeature(null);

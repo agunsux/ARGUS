@@ -504,7 +504,7 @@ class EventTemporalLifecycleEngine {
     }
 
     const currentStatus = this.resolveLifecycleStatus(event, now);
-    return currentStatus === LIFECYCLE_STATUS.UPCOMING;
+    return currentStatus === LIFECYCLE_STATUS.UPCOMING || currentStatus === LIFECYCLE_STATUS.LIVE || currentStatus === 'LIVE';
   }
 
   /**
