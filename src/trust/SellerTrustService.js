@@ -293,13 +293,24 @@ class SellerTrustService {
         }
       }
 
-      // Notify admin@tikum.app of new seller KYC submission
+      // Notify admin@tikum.app and support@tikum.app of new seller KYC & profile submission
       const { OperationalNotificationService } = require('../services/admin/OperationalNotificationService');
+      const { AdminActivityNotificationService } = require('../services/admin/AdminActivityNotificationService');
+
       await OperationalNotificationService.notifySellerKycSubmitted({
         profile: savedProfile,
         user: applicant,
         userId
       }).catch(e => console.warn('[SellerTrustService] Admin KYC notification warning:', e.message));
+
+      await AdminActivityNotificationService.notify('SELLER_PROFILE_SUBMITTED', {
+        userId,
+        userDisplayName: applicant?.name || displayName || 'Penjual',
+        userEmail: applicant?.email || 'N/A',
+        payoutBank: savedProfile.payout_bank,
+        description: `Profil penjual diajukan oleh ${applicant?.name || displayName || 'Penjual'}.`,
+        adminUrl: `https://tikum.app/admin?tab=sellers&id=${userId}`
+      }).catch(e => console.warn('[SellerTrustService] Admin profile notification warning:', e.message));
     } catch (_) {}
 
     return {
@@ -444,6 +455,52 @@ class SellerTrustService {
           }
         }
       }
+
+      // Operational Activity Alert to admin@tikum.app and support@tikum.app
+      const { AdminActivityNotificationService } = require('../services/admin/AdminActivityNotificationService');
+      const sellerDisplayName = user?.name || user?.display_name || savedProfile.display_name || 'Penjual';
+
+      if (normStatus === 'VERIFIED') {
+        await AdminActivityNotificationService.notify('SELLER_KYC_APPROVED', {
+          userId: sellerId,
+          userDisplayName: sellerDisplayName,
+          userEmail: user?.email || 'N/A',
+          activeListingLimit: parsedLimit,
+          reviewedBy: adminId,
+          description: `Verifikasi KYC untuk penjual ${sellerDisplayName} disetujui oleh admin ${adminId} (Batas listing: ${parsedLimit}).`,
+          adminUrl: `https://tikum.app/admin?tab=sellers&id=${sellerId}`
+        }).catch(() => {});
+
+        if (previousKycStatus !== 'VERIFIED') {
+          await AdminActivityNotificationService.notify('USER_ROLE_CHANGED', {
+            userId: sellerId,
+            userDisplayName: sellerDisplayName,
+            userEmail: user?.email || 'N/A',
+            oldRole: 'BUYER',
+            newRole: 'SELLER',
+            description: `Role pengguna ${sellerDisplayName} dinaikkan dari BUYER menjadi SELLER setelah verifikasi KYC disetujui.`
+          }).catch(() => {});
+        }
+      } else if (normStatus === 'REJECTED') {
+        await AdminActivityNotificationService.notify('SELLER_KYC_REJECTED', {
+          userId: sellerId,
+          userDisplayName: sellerDisplayName,
+          userEmail: user?.email || 'N/A',
+          reason: reason || 'Dokumen tidak valid',
+          reviewedBy: adminId,
+          description: `Verifikasi KYC untuk penjual ${sellerDisplayName} ditolak oleh admin ${adminId}. Alasan: ${reason || '-'}`,
+          adminUrl: `https://tikum.app/admin?tab=sellers&id=${sellerId}`
+        }).catch(() => {});
+      } else if (normStatus === 'SUSPENDED') {
+        await AdminActivityNotificationService.notify('USER_ACCOUNT_SUSPENDED', {
+          userId: sellerId,
+          userDisplayName: sellerDisplayName,
+          userEmail: user?.email || 'N/A',
+          reason: reason || 'Pelanggaran kebijakan seller',
+          suspendedBy: adminId,
+          description: `Akun seller ${sellerDisplayName} ditangguhkan (SUSPENDED) oleh admin ${adminId}. Alasan: ${reason || '-'}`
+        }).catch(() => {});
+      }
     } catch (_) {}
 
     return {
@@ -488,6 +545,27 @@ class SellerTrustService {
       new_status: status,
       reason
     });
+
+    try {
+      const { AdminActivityNotificationService } = require('../services/admin/AdminActivityNotificationService');
+      const sellerDisplayName = profile.display_name || sellerId;
+      if (status === 'SUSPENDED') {
+        AdminActivityNotificationService.notify('USER_ACCOUNT_SUSPENDED', {
+          userId: sellerId,
+          userDisplayName: sellerDisplayName,
+          reason: reason || 'Suspended by trust officer',
+          suspendedBy: officerId,
+          description: `Status akun seller ${sellerDisplayName} diubah menjadi SUSPENDED oleh officer ${officerId}. Alasan: ${reason || '-'}`
+        }).catch(() => {});
+      } else if (status === 'ACTIVE' && previousStatus === 'SUSPENDED') {
+        AdminActivityNotificationService.notify('USER_ACCOUNT_REACTIVATED', {
+          userId: sellerId,
+          userDisplayName: sellerDisplayName,
+          reactivatedBy: officerId,
+          description: `Status akun seller ${sellerDisplayName} diaktifkan kembali (ACTIVE) oleh officer ${officerId}.`
+        }).catch(() => {});
+      }
+    } catch (_) {}
 
     return profile;
   }

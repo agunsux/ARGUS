@@ -560,6 +560,23 @@ class EscrowService {
       console.warn('[EscrowService:OrderCreatedEmail] Secondary effect error:', err.message);
     });
 
+    try {
+      const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
+      AdminActivityNotificationService.notify('BUYER_ORDER_CREATED', {
+        orderId,
+        listingId,
+        userId: buyerId,
+        userDisplayName: buyer?.name || buyerId,
+        userEmail: buyer?.email || 'N/A',
+        sellerId: listing.seller_id,
+        eventName: emailEvent?.name || emailEvent?.title || 'Event',
+        amount: quote.buyer_total,
+        quantity: requestedQty,
+        description: `Pesanan baru #${orderId} dibuat oleh pembeli ${buyer?.name || buyerId} (${requestedQty} tiket, Total: Rp ${Number(quote.buyer_total).toLocaleString('id-ID')}).`,
+        adminUrl: `https://tikum.app/admin?tab=orders&id=${orderId}`
+      }).catch(() => {});
+    } catch (_) {}
+
     return { order, escrow, pricing };
   }
 
@@ -803,6 +820,35 @@ class EscrowService {
     const seller = state.users.find(u => u.id === order.seller_id);
     const event = state.events.find(e => e.id === order.event_id);
     emailService.sendPaymentSuccessfulEmail({ order, payment, buyer, seller, event });
+
+    try {
+      const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
+      const eventName = event?.name || event?.title || 'Event';
+      AdminActivityNotificationService.notify('BUYER_PURCHASE_CONFIRMED', {
+        orderId,
+        listingId: order.listing_id,
+        userId: order.buyer_id,
+        userDisplayName: buyer?.name || order.buyer_id,
+        userEmail: buyer?.email || 'N/A',
+        sellerId: order.seller_id,
+        eventName,
+        amount: payment.amount,
+        description: `Pembelian tiket untuk event ${eventName} telah dikonfirmasi (Dana Rp ${Number(payment.amount).toLocaleString('id-ID')} masuk ke Escrow TIKUM).`,
+        adminUrl: `https://tikum.app/admin?tab=orders&id=${orderId}`
+      }).catch(() => {});
+
+      AdminActivityNotificationService.notify('SELLER_LISTING_SOLD', {
+        orderId,
+        listingId: order.listing_id,
+        userId: order.seller_id,
+        userDisplayName: seller?.name || order.seller_id,
+        userEmail: seller?.email || 'N/A',
+        eventName,
+        amount: payment.amount,
+        description: `Listing tiket #${order.listing_id} untuk event ${eventName} telah berhasil terjual.`,
+        adminUrl: `https://tikum.app/admin?tab=orders&id=${orderId}`
+      }).catch(() => {});
+    } catch (_) {}
 
     return { payment, order, escrow, idempotent: false };
   }
@@ -1255,6 +1301,19 @@ class EscrowService {
         const { DurableFinancialStore } = require('../settlement/DurableFinancialStore');
         DurableFinancialStore.persist('escrows', state.escrows);
         DurableFinancialStore.persist('orders', state.orders);
+      } catch (_) {}
+
+      try {
+        const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
+        AdminActivityNotificationService.notify('BUYER_REFUND_REQUESTED', {
+          orderId,
+          userId: order?.buyer_id,
+          amount: escrow?.total_paid || escrow?.amount,
+          reason: reason || 'Pengembalian dana (refund) diproses',
+          actorId,
+          description: `Pengembalian dana (refund) sebesar Rp ${Number(escrow?.total_paid || escrow?.amount || 0).toLocaleString('id-ID')} untuk pesanan #${orderId} telah diproses. Alasan: ${reason || '-'}`,
+          adminUrl: `https://tikum.app/admin?tab=orders&id=${orderId}`
+        }).catch(() => {});
       } catch (_) {}
 
       return {
@@ -1792,6 +1851,18 @@ class EscrowService {
       if (state.orders) {
         DurableFinancialStore.persist('orders', state.orders);
       }
+    } catch (_) {}
+
+    try {
+      const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
+      AdminActivityNotificationService.notify('BUYER_ORDER_CANCELLED', {
+        orderId,
+        listingId: order.listing_id,
+        userId: order.buyer_id,
+        reason: reason || 'ORDER_CANCELLED',
+        description: `Pesanan tiket #${orderId} telah dibatalkan (${reason || 'Dibatalkan'}). Kuota ${ordQty} tiket dikembalikan ke inventaris listing.`,
+        adminUrl: `https://tikum.app/admin?tab=orders&id=${orderId}`
+      }).catch(() => {});
     } catch (_) {}
 
     return { listing, order, releasedQuantity: ordQty, idempotent: false };

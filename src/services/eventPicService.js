@@ -118,6 +118,20 @@ class EventPicService {
       }
     } catch (_) {}
 
+    try {
+      const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
+      AdminActivityNotificationService.notify('VENUE_PIC_ASSIGNED', {
+        assignmentId: id,
+        eventId,
+        venueId,
+        picUserId,
+        picName: user?.name || user?.display_name || picUserId,
+        eventName: event?.name || eventId,
+        description: `Penugasan PIC Lapangan: ${user?.name || picUserId} ditugaskan untuk Event "${event?.name || eventId}" di Venue "${venue?.name || venueId}".`,
+        adminUrl: `https://tikum.app/admin?tab=events&id=${eventId}`
+      }).catch(() => {});
+    } catch (_) {}
+
     return assignment;
   }
 

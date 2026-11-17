@@ -167,6 +167,34 @@ class DisputeService {
     const pic = picId ? state.users.find(u => u.id === picId) : null;
     emailService.sendDisputeOpenedEmail({ dispute, order, buyer, seller, pic });
 
+    try {
+      const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
+      AdminActivityNotificationService.notify('BUYER_DISPUTE_OPENED', {
+        disputeId,
+        orderId,
+        userId: buyerId,
+        userDisplayName: buyer?.name || buyerId,
+        userEmail: buyer?.email,
+        sellerId: order.seller_id,
+        sellerName: seller?.name || order.seller_id,
+        reason: dispute.reason,
+        description: `Sengketa #${disputeId} dibuka oleh pembeli untuk pesanan #${orderId}. Alasan: ${dispute.reason}.`,
+        adminUrl: `https://tikum.app/admin?tab=disputes&id=${disputeId}`
+      }).catch(() => {});
+
+      AdminActivityNotificationService.notify('DISPUTE_CREATED', {
+        disputeId,
+        orderId,
+        userId: buyerId,
+        userDisplayName: buyer?.name || buyerId,
+        userEmail: buyer?.email,
+        sellerId: order.seller_id,
+        reason: dispute.reason,
+        description: `Kasus sengketa baru dibuat dan eskalasi ke admin (Order #${orderId}, Dispute #${disputeId}).`,
+        adminUrl: `https://tikum.app/admin?tab=disputes&id=${disputeId}`
+      }).catch(() => {});
+    } catch (_) {}
+
     return { dispute, alreadyOpen: false };
   }
 

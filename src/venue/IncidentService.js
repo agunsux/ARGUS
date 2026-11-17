@@ -113,6 +113,35 @@ class IncidentService {
       event_id: eventId
     });
 
+    try {
+      const { AdminActivityNotificationService } = require('../services/admin/AdminActivityNotificationService');
+      AdminActivityNotificationService.notify('VENUE_INCIDENT_CREATED', {
+        incidentId,
+        eventId,
+        orderId,
+        ticketId,
+        type,
+        severity,
+        reporterId,
+        reporterRole,
+        description: `Insiden operasional baru dilaporkan: [${severity}] ${type} di Event #${eventId}. Deskripsi: "${description}".`,
+        adminUrl: `https://tikum.app/admin?tab=incidents&id=${incidentId}`
+      }).catch(() => {});
+
+      if (reporterRole === 'buyer' || reporterRole === 'user' || reporterRole === 'BUYER' || reporterRole === 'USER') {
+        AdminActivityNotificationService.notify('NEW_USER_REPORT', {
+          incidentId,
+          eventId,
+          orderId,
+          ticketId,
+          reporterId,
+          type,
+          description: `Laporan pengguna masuk terkait kendala tiket/lapangan (${type}): "${description}".`,
+          adminUrl: `https://tikum.app/admin?tab=incidents&id=${incidentId}`
+        }).catch(() => {});
+      }
+    } catch (_) {}
+
     return incident;
   }
 

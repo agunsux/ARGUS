@@ -418,6 +418,22 @@ class PaymentService {
       provider_reference: providerRef
     });
 
+    try {
+      const { AdminActivityNotificationService } = require('../admin/AdminActivityNotificationService');
+      AdminActivityNotificationService.notify('BUYER_PAYMENT_INITIATED', {
+        orderId,
+        paymentId: internalPaymentId,
+        userId: buyer?.id,
+        userDisplayName: buyer?.name || buyer?.id,
+        userEmail: buyer?.email || 'N/A',
+        amount: canonicalRecord.gross_amount,
+        paymentMethod: canonicalRecord.payment_method,
+        provider: effectiveProviderName,
+        description: `Pembayaran tiket dimulai untuk pesanan #${orderId} via ${effectiveProviderName} (${canonicalRecord.payment_method || 'Payment'}). Nominal: Rp ${Number(canonicalRecord.gross_amount).toLocaleString('id-ID')}.`,
+        adminUrl: `https://tikum.app/admin?tab=orders&id=${orderId}`
+      }).catch(() => {});
+    } catch (_) {}
+
     return {
       idempotent: false,
       paymentId: internalPaymentId,
@@ -738,6 +754,25 @@ class PaymentService {
           throw repoErr;
         }
       }
+
+      try {
+        const { AdminActivityNotificationService } = require('../admin/AdminActivityNotificationService');
+        AdminActivityNotificationService.notify('BUYER_PAYMENT_SUCCEEDED', {
+          orderId: event.orderId,
+          userId: order?.buyer_id || 'system',
+          userRole: 'BUYER',
+          provider: targetProviderName,
+          providerRef: event.providerRef,
+          amount: event.amount,
+          status: event.status,
+          description: `Pembayaran tiket pesanan #${event.orderId} terverifikasi BERHASIL via ${targetProviderName} (Ref: ${event.providerRef}). Nominal: Rp ${Number(event.amount).toLocaleString('id-ID')}.`,
+          adminUrl: `https://tikum.app/admin?tab=orders&id=${event.orderId}`
+        }, {
+          eventId: `evt-pay-success-${eventId}`
+        }).catch(err => {
+          console.warn('[PaymentService] Failed to notify BUYER_PAYMENT_SUCCEEDED:', err.message);
+        });
+      } catch (_) {}
     } else if (
       event.status === MONEY_STATE.PAYMENT_FAILED ||
       event.status === MONEY_STATE.PAYMENT_EXPIRED ||
@@ -786,6 +821,25 @@ class PaymentService {
       webhookRecord.processing_status = 'PROCESSED';
       webhookRecord.processed_at = new Date().toISOString();
       DurableFinancialStore.persist('provider_webhooks', state.provider_webhooks);
+
+      try {
+        const { AdminActivityNotificationService } = require('../admin/AdminActivityNotificationService');
+        AdminActivityNotificationService.notify('BUYER_PAYMENT_FAILED', {
+          orderId: event.orderId,
+          userId: order?.buyer_id || 'system',
+          userRole: 'BUYER',
+          provider: targetProviderName,
+          providerRef: event.providerRef,
+          status: event.status,
+          isExpired,
+          description: `Pembayaran untuk pesanan #${event.orderId} ${isExpired ? 'KEDALUWARSA' : 'GAGAL'} via ${targetProviderName} (Status: ${event.status}). Inventaris tiket telah dipulihkan.`,
+          adminUrl: `https://tikum.app/admin?tab=orders&id=${event.orderId}`
+        }, {
+          eventId: `evt-pay-failed-${eventId}`
+        }).catch(err => {
+          console.warn('[PaymentService] Failed to notify BUYER_PAYMENT_FAILED:', err.message);
+        });
+      } catch (_) {}
     } else if (isRefundEvent) {
       const { EscrowService } = require('../escrowService');
 

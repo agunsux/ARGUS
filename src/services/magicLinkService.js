@@ -259,6 +259,7 @@ class MagicLinkService {
       password: null, // Passwordless account
       password_hash: null,
       auth_provider: 'MAGIC_LINK',
+      isNewUser: true,
       created_at: (repoUser && repoUser.created_at) ? repoUser.created_at : nowIso,
       updated_at: (repoUser && repoUser.updated_at) ? repoUser.updated_at : nowIso
     };
@@ -573,10 +574,56 @@ class MagicLinkService {
     }
 
     // Update last_login_at in authoritative UserRepository
+    const wasFirstSignIn = !user.last_login_at;
+    const wasNewRegistration = Boolean(user.isNewUser || wasFirstSignIn);
+    delete user.isNewUser;
+
     if (userRepo && typeof userRepo.updateUser === 'function') {
       await userRepo.updateUser(user.id, { last_login_at: nowIso }).catch(() => {});
     }
     user.last_login_at = nowIso;
+
+    // Trigger Admin Activity Notifications
+    try {
+      const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
+
+      // 1. If brand new user registration
+      if (wasNewRegistration) {
+        AdminActivityNotificationService.notify('USER_REGISTERED', {
+          userId: user.id,
+          userDisplayName: user.name || 'Pengguna Baru',
+          userEmail: user.email,
+          userRole: user.role || 'BUYER',
+          description: `Pengguna baru berhasil mendaftar melalui verifikasi Magic Link: ${user.name || user.email} (${user.email}).`,
+          ip,
+          loginMethod: 'MAGIC_LINK'
+        }).catch(() => {});
+      }
+
+      // 2. If first successful sign in
+      if (wasFirstSignIn) {
+        AdminActivityNotificationService.notify('USER_FIRST_SIGN_IN', {
+          userId: user.id,
+          userDisplayName: user.name || 'Pengguna',
+          userEmail: user.email,
+          userRole: user.role || 'BUYER',
+          description: `Pengguna berhasil login pertama kali ke marketplace TIKUM: ${user.name || user.email} (${user.email}).`,
+          ip,
+          loginMethod: 'MAGIC_LINK'
+        }).catch(() => {});
+      }
+
+      // 3. For every successful sign-in
+      AdminActivityNotificationService.notify('USER_SIGNED_IN', {
+        userId: user.id,
+        userDisplayName: user.name || 'Pengguna',
+        userEmail: user.email,
+        userRole: user.role || 'BUYER',
+        description: `Pengguna berhasil masuk (login) ke marketplace TIKUM: ${user.name || user.email} (${user.email}).`,
+        ip,
+        loginMethod: 'MAGIC_LINK'
+      }).catch(() => {});
+    } catch (_) {}
 
     // Record durable auth audit event
     if (userRepo && typeof userRepo.recordAuthAudit === 'function') {

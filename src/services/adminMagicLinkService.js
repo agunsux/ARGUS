@@ -52,6 +52,20 @@ class AdminMagicLinkService {
     const sessionToken = `adm-${crypto.randomBytes(32).toString('hex')}`;
     const user = await this.store.consume(hash(token), hash(sessionToken), oldToken ? hash(oldToken) : null);
     if (!user) throw failure('INVALID_ADMIN_LINK', 401);
+
+    try {
+      const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
+      AdminActivityNotificationService.notify('USER_SIGNED_IN', {
+        userId: user.id,
+        userDisplayName: user.name || 'Administrator',
+        userEmail: user.email,
+        userRole: 'ADMIN',
+        description: `Administrator berhasil masuk (login) ke Admin Control Plane via Admin Magic Link.`,
+        ip,
+        loginMethod: 'ADMIN_MAGIC_LINK'
+      }).catch(() => {});
+    } catch (_) {}
+
     return { user, sessionToken };
   }
 }

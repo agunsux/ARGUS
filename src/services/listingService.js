@@ -595,6 +595,21 @@ class ListingService {
         demandCapture.enqueueListingActivatedAlert(listing);
       } catch (_) {}
 
+      try {
+        const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
+        AdminActivityNotificationService.notify('SELLER_LISTING_APPROVED', {
+          listingId,
+          sellerId: listing.seller_id,
+          eventId: listing.event_id,
+          seatInfo: listing.seat_info,
+          price: listing.price,
+          amount: listing.price,
+          reviewedBy: officerId,
+          description: `Listing tiket #${listingId} disetujui & diverifikasi oleh officer ${officerId}.`,
+          adminUrl: `https://tikum.app/admin?tab=listings&id=${listingId}`
+        }).catch(() => {});
+      } catch (_) {}
+
       return { success: true, status: targetStatus, listing };
     } else {
       if (!reason) {
@@ -623,6 +638,19 @@ class ListingService {
         ticket_id: listing.ticket_id,
         reason
       });
+
+      try {
+        const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
+        AdminActivityNotificationService.notify('SELLER_LISTING_REJECTED', {
+          listingId,
+          sellerId: listing.seller_id,
+          eventId: listing.event_id,
+          reason,
+          reviewedBy: officerId,
+          description: `Listing tiket #${listingId} ditolak oleh officer ${officerId}. Alasan: ${reason}`,
+          adminUrl: `https://tikum.app/admin?tab=listings&id=${listingId}`
+        }).catch(() => {});
+      } catch (_) {}
 
       return { success: true, status: LISTING_STATUS.REJECTED, listing };
     }
@@ -753,6 +781,19 @@ class ListingService {
     }
 
     await recordAuditLog('LISTING', listingId, 'WITHDRAWN', actorId, { reason });
+
+    try {
+      const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
+      AdminActivityNotificationService.notify('SELLER_LISTING_WITHDRAWN', {
+        listingId,
+        sellerId: listing.seller_id,
+        eventId: listing.event_id,
+        reason,
+        withdrawnBy: actorId,
+        description: `Listing tiket #${listingId} ditarik (WITHDRAWN) oleh ${actorId}. Alasan: ${reason || '-'}`
+      }).catch(() => {});
+    } catch (_) {}
+
     return { success: true, status: LISTING_STATUS.WITHDRAWN, listing };
   }
 
@@ -838,6 +879,19 @@ class ListingService {
       price: listing.price,
       quantity: listing.quantity
     });
+
+    try {
+      const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
+      AdminActivityNotificationService.notify('SELLER_LISTING_UPDATED', {
+        listingId,
+        sellerId,
+        eventId: listing.event_id,
+        price: listing.price,
+        quantity: listing.quantity,
+        status: listing.status,
+        description: `Listing tiket #${listingId} diperbarui oleh penjual ${sellerId} (Harga: Rp ${Number(listing.price || 0).toLocaleString('id-ID')}, Jumlah: ${listing.quantity || 1}).`
+      }).catch(() => {});
+    } catch (_) {}
 
     return { success: true, listing };
   }

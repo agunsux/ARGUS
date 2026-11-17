@@ -2029,6 +2029,23 @@ router.patch('/users/:id/status', requireAdmin, async (req, res) => {
     }).catch(() => {});
   }
 
+  try {
+    const { AdminActivityNotificationService } = require('../services/admin/AdminActivityNotificationService');
+    const eventType = status === 'SUSPENDED' ? 'USER_ACCOUNT_SUSPENDED' : 'USER_ACCOUNT_REACTIVATED';
+    AdminActivityNotificationService.notify(eventType, {
+      userId: user.id,
+      userDisplayName: user.name || user.email || user.id,
+      userEmail: user.email,
+      userRole: user.role,
+      status,
+      previousStatus: prevStatus,
+      description: status === 'SUSPENDED'
+        ? `Akun pengguna ${user.name || user.id} (${user.email || 'N/A'}) DITANGGUHKAN (SUSPENDED) oleh admin ${req.user.name || req.user.id}. Sesi aktif dicabut.`
+        : `Akun pengguna ${user.name || user.id} (${user.email || 'N/A'}) DIAKTIFKAN KEMBALI (ACTIVE) oleh admin ${req.user.name || req.user.id}.`,
+      adminUrl: `https://tikum.app/admin?tab=users&id=${user.id}`
+    }).catch(() => {});
+  } catch (_) {}
+
   res.status(200).json({
     success: true,
     message: `User status updated to ${status}`,
@@ -4069,6 +4086,38 @@ router.post('/orders/:id/manual-release-escrow', requireAdmin, async (req, res) 
     });
   } catch (err) {
     res.status(500).json({ error: err.message, code: 'MANUAL_ESCROW_RELEASE_FAILED' });
+  }
+});
+
+/**
+ * GET /api/admin/activity-notifications
+ * Returns recent admin activity notifications with optional filters.
+ * Protected by requireAdmin.
+ */
+router.get('/activity-notifications', requireAdmin, async (req, res) => {
+  try {
+    const { AdminActivityNotificationService } = require('../services/admin/AdminActivityNotificationService');
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const eventType = req.query.event_type || req.query.eventType || null;
+    const status = req.query.status || null;
+
+    const notifications = await AdminActivityNotificationService.listNotifications({
+      limit,
+      eventType,
+      status
+    });
+
+    res.status(200).json({
+      success: true,
+      count: notifications.length,
+      notifications
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      code: 'LIST_NOTIFICATIONS_FAILED'
+    });
   }
 });
 

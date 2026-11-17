@@ -19,7 +19,34 @@
 const https = require('https');
 const { URL } = require('url');
 const { v4: uuidv4 } = require('uuid');
-const { state, recordAuditLog } = require('../database');
+let _db = null;
+function getDb() {
+  if (!_db) {
+    try {
+      _db = require('../database');
+    } catch (_) {
+      return {};
+    }
+  }
+  return _db;
+}
+const state = new Proxy({}, {
+  get(target, prop) {
+    const db = getDb();
+    return db.state ? db.state[prop] : undefined;
+  },
+  set(target, prop, value) {
+    const db = getDb();
+    if (db.state) db.state[prop] = value;
+    return true;
+  }
+});
+async function recordAuditLog(...args) {
+  const db = getDb();
+  if (typeof db.recordAuditLog === 'function') {
+    return db.recordAuditLog(...args);
+  }
+}
 const { businessProfile } = require('../config/businessProfile');
 const {
   renderTemplate,

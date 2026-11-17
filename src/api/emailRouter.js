@@ -155,6 +155,20 @@ router.post('/contact', async (req, res) => {
       console.error('[EmailRouter:Contact] Support notification error:', err.message);
     });
 
+    try {
+      const { AdminActivityNotificationService } = require('../services/admin/AdminActivityNotificationService');
+      AdminActivityNotificationService.notify('NEW_SUPPORT_REQUEST', {
+        inquiryId,
+        userDisplayName: cleanName,
+        userEmail: cleanEmail,
+        subject: cleanSubject,
+        description: `Pesan baru dari formulir kontak web oleh ${cleanName} (${cleanEmail}). Perihal: "${cleanSubject}".`,
+        adminUrl: `https://tikum.app/admin?tab=inbox&id=${inquiryId}`
+      }).catch(err => {
+        console.error('[EmailRouter:Contact] Admin activity notification error:', err.message);
+      });
+    } catch (_) {}
+
     // 4. Dispatch confirmation receipt to visitor
     // (FROM: support@tikum.app, REPLY-TO: support@tikum.app)
     emailService.sendContactConfirmationEmail({
