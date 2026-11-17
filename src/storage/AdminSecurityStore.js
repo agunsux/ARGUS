@@ -8,6 +8,7 @@ class AdminSecurityStore {
   constructor(pool = null) {
     this.pool = pool;
     this.testSessions = new Map();
+    this._schemaChecked = false;
   }
   async database() {
     if (this.pool) return this.pool;
@@ -15,6 +16,31 @@ class AdminSecurityStore {
     if (typeof repo.ensureInitialized !== 'function') throw new Error('ADMIN_DATABASE_REQUIRED');
     await repo.ensureInitialized();
     if (!repo.pool || repo.degraded) throw new Error('ADMIN_DATABASE_UNAVAILABLE');
+    if (!this._schemaChecked) {
+      await repo.pool.query(`
+        CREATE TABLE IF NOT EXISTS admin_magic_tokens (
+          token_hash CHAR(64) PRIMARY KEY,
+          user_id VARCHAR(100) NOT NULL REFERENCES users(id),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '15 minutes'),
+          consumed_at TIMESTAMPTZ,
+          accepted BOOLEAN NOT NULL DEFAULT FALSE
+        );
+        CREATE TABLE IF NOT EXISTS admin_auth_sessions (
+          token_hash CHAR(64) PRIMARY KEY,
+          user_id VARCHAR(100) NOT NULL REFERENCES users(id),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '8 hours'),
+          revoked_at TIMESTAMPTZ
+        );
+        CREATE TABLE IF NOT EXISTS admin_auth_limits (
+          key_hash CHAR(64) PRIMARY KEY,
+          window_start TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          attempts INTEGER NOT NULL DEFAULT 1 CHECK (attempts > 0)
+        );
+      `).catch(() => {});
+      this._schemaChecked = true;
+    }
     return repo.pool;
   }
   async query(sql, values = []) { return (await this.database()).query(sql, values); }

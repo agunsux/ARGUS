@@ -1041,10 +1041,10 @@
             <div style="overflow-x: auto; max-height: 360px;">
               <table class="ops-table">
                 <thead>
-                  <tr><th>Seller ID</th><th>Nama</th><th>Email</th><th>KYC</th><th>Akun</th></tr>
+                  <tr><th>Seller ID</th><th>Nama</th><th>Email</th><th>KYC</th><th>Pengajuan</th><th>Akun</th><th>Aksi</th></tr>
                 </thead>
                 <tbody id="trustSellerTableBody">
-                  <tr><td colspan="5" style="text-align: center; color: #64748b;">Memuat...</td></tr>
+                  <tr><td colspan="7" style="text-align: center; color: #64748b;">Memuat...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1509,6 +1509,29 @@
           <div style="padding: 12px 20px; border-top: 1px solid #1e293b; background: #131d33; display: flex; justify-content: space-between; align-items: center;" id="txModalFooter">
             <button class="btn btn-secondary btn-sm" onclick="closeTimelineModal()">Tutup</button>
             <div id="txModalActions" style="display: flex; gap: 8px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SELLER KYC DETAIL MODAL -->
+      <div id="sellerKycDetailModal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: #0f172a; border: 1px solid #334155; border-radius: 10px; width: 100%; max-width: 650px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+          <div style="padding: 16px 20px; border-bottom: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; background: #1e293b;">
+            <div style="font-weight: 700; font-size: 14px; color: #fff;">
+              <i class="fa-solid fa-id-card" style="color: #38bdf8;"></i> Review Pengajuan KYC Penjual
+            </div>
+            <button onclick="closeSellerKycModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div style="padding: 20px; overflow-y: auto; flex: 1;" id="sellerKycModalBody">
+            <div style="text-align: center; padding: 40px; color: #64748b;">
+              <i class="fa-solid fa-spinner fa-spin"></i> Memuat detail KYC...
+            </div>
+          </div>
+          <div style="padding: 12px 20px; border-top: 1px solid #1e293b; background: #131d33; display: flex; justify-content: space-between; align-items: center;">
+            <button class="btn btn-secondary btn-sm" onclick="closeSellerKycModal()">Tutup</button>
+            <div id="sellerKycModalActions" style="display: flex; gap: 8px;"></div>
           </div>
         </div>
       </div>
@@ -2903,22 +2926,26 @@
           </tr>
         `).join('');
       } else if (name === 'sellers') {
-        th.innerHTML = `<tr><th>ID</th><th>Nama</th><th>Email</th><th>Phone</th><th>KYC Status</th><th>Total Penjualan</th><th>Status Akun</th><th>Tindakan KYC</th></tr>`;
-        tb.innerHTML = (data.sellers || []).map(s => `
+        th.innerHTML = `<tr><th>ID</th><th>Nama</th><th>Email</th><th>Phone</th><th>KYC Status</th><th>Pengajuan</th><th>Total Penjualan</th><th>Status Akun</th><th>Tindakan KYC</th></tr>`;
+        tb.innerHTML = (data.sellers || []).map(s => {
+          const reqDate = s.requested_at ? new Date(s.requested_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+          return `
           <tr>
             <td class="mono">${s.id}</td>
             <td style="font-weight: 600; color: #fff;">${s.name}</td>
             <td>${s.email}</td>
             <td class="mono">${s.phone}</td>
             <td>${renderTag(s.kyc_status)}</td>
+            <td class="mono" style="font-size: 11px;">${reqDate}</td>
             <td class="mono">${s.completed_sales} / ${s.total_sales}</td>
             <td>${renderTag(s.status)}</td>
             <td>
+              <button class="btn btn-secondary btn-sm" onclick="inspectSellerKyc('${s.id}')" style="margin-right:4px;"><i class="fa-solid fa-eye"></i> Detail</button>
               ${s.kyc_status !== 'VERIFIED' ? `<button class="btn btn-primary btn-sm" onclick="adminReviewSellerKyc('${s.id}', 'VERIFIED')"><i class="fa-solid fa-check"></i> Verify</button>` : ''}
               ${s.kyc_status !== 'REJECTED' ? `<button class="btn btn-secondary btn-sm" onclick="adminReviewSellerKyc('${s.id}', 'REJECTED')" style="margin-left:4px;"><i class="fa-solid fa-xmark"></i> Reject</button>` : ''}
             </td>
           </tr>
-        `).join('');
+        `; }).join('');
       } else if (name === 'buyers') {
         th.innerHTML = `<tr><th>ID</th><th>Nama</th><th>Email</th><th>Phone</th><th>Total Pembelian</th><th>Status Akun</th></tr>`;
         tb.innerHTML = (data.buyers || []).map(b => `
@@ -3197,8 +3224,78 @@
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
         showToast(`Status KYC seller ${sellerId} diperbarui menjadi ${decision}.`, 'success');
         loadEntityTable('sellers');
+        try { loadVerificationData(); } catch (_) {}
       } catch (err) {
         showToast('Gagal memperbarui KYC seller: ' + err.message, 'danger');
+      }
+    }
+
+    function closeSellerKycModal() {
+      const modal = document.getElementById('sellerKycDetailModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function inspectSellerKyc(sellerId) {
+      const modal = document.getElementById('sellerKycDetailModal');
+      const body = document.getElementById('sellerKycModalBody');
+      const actions = document.getElementById('sellerKycModalActions');
+      if (!modal || !body || !actions) return;
+      modal.style.display = 'flex';
+      body.innerHTML = '<div style="text-align: center; padding: 40px; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat detail KYC...</div>';
+      actions.innerHTML = '';
+
+      try {
+        const res = await adminFetch(`/api/admin/sellers/${encodeURIComponent(sellerId)}/kyc`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const reqDate = data.requested_at ? new Date(data.requested_at).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) : 'Tidak tercatat';
+
+        body.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 12px; border-radius: 6px;">
+              <div>
+                <div style="font-weight: 700; color: #fff; font-size: 15px;">${data.name || data.display_name}</div>
+                <div style="color: #94a3b8; font-size: 12px;">${data.email} | ID: <span class="mono">${data.seller_id}</span></div>
+              </div>
+              <div>${renderTag(data.kyc_status)}</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
+              <div style="background: #131d33; padding: 10px; border-radius: 6px;">
+                <span style="color: #64748b;">No. HP:</span>
+                <div style="color: #f1f5f9; font-weight: 500;" class="mono">${data.phone || '-'}</div>
+              </div>
+              <div style="background: #131d33; padding: 10px; border-radius: 6px;">
+                <span style="color: #64748b;">Status Akun:</span>
+                <div>${renderTag(data.account_status)}</div>
+              </div>
+              <div style="background: #131d33; padding: 10px; border-radius: 6px;">
+                <span style="color: #64748b;">Tanggal Pengajuan:</span>
+                <div style="color: #f1f5f9; font-weight: 500;">${reqDate}</div>
+              </div>
+              <div style="background: #131d33; padding: 10px; border-radius: 6px;">
+                <span style="color: #64748b;">Batas Listing Aktif:</span>
+                <div style="color: #38bdf8; font-weight: 600;" class="mono">${data.active_listing_limit || 10} tiket</div>
+              </div>
+              <div style="background: #131d33; padding: 10px; border-radius: 6px;">
+                <span style="color: #64748b;">Identitas Terproteksi (NIK):</span>
+                <div style="color: #f1f5f9; font-weight: 500;" class="mono">${data.nik_masked || 'Tersimpan aman'}</div>
+              </div>
+              <div style="background: #131d33; padding: 10px; border-radius: 6px;">
+                <span style="color: #64748b;">Rekening Payout:</span>
+                <div style="color: #f1f5f9; font-weight: 500;">${data.payout_bank || '-'} (${data.payout_account_masked || '-'})</div>
+              </div>
+            </div>
+            ${data.rejection_reason ? `<div style="background: #451a1a; border: 1px solid #7f1d1d; color: #fca5a5; padding: 10px; border-radius: 6px; font-size: 12px;"><strong>Catatan Penolakan:</strong> ${data.rejection_reason}</div>` : ''}
+            ${data.verified_at ? `<div style="background: #064e3b; border: 1px solid #047857; color: #6ee7b7; padding: 10px; border-radius: 6px; font-size: 12px;"><strong>Diverifikasi pada:</strong> ${new Date(data.verified_at).toLocaleString('id-ID')} (oleh: ${data.verified_by || 'Admin'})</div>` : ''}
+          </div>
+        `;
+
+        actions.innerHTML = `
+          ${data.kyc_status !== 'VERIFIED' ? `<button class="btn btn-primary btn-sm" onclick="closeSellerKycModal(); adminReviewSellerKyc('${data.seller_id}', 'VERIFIED')"><i class="fa-solid fa-check"></i> Verifikasi / Setujui</button>` : ''}
+          ${data.kyc_status !== 'REJECTED' ? `<button class="btn btn-secondary btn-sm" onclick="closeSellerKycModal(); adminReviewSellerKyc('${data.seller_id}', 'REJECTED')"><i class="fa-solid fa-xmark"></i> Tolak</button>` : ''}
+        `;
+      } catch (err) {
+        body.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444;"><i class="fa-solid fa-circle-exclamation"></i> Gagal memuat detail KYC: ${err.message}</div>`;
       }
     }
 
@@ -3371,15 +3468,24 @@
         const sellerRows = sv.sellers || [];
         document.getElementById('trustSellerBadge').innerText = `${sellerRows.length} Sellers`;
         document.getElementById('trustSellerTableBody').innerHTML = sellerRows.length === 0
-          ? `<tr><td colspan="5" style="text-align: center; color: #64748b;">Belum ada penjual terdaftar.</td></tr>`
-          : sellerRows.map(s => `
+          ? `<tr><td colspan="7" style="text-align: center; color: #64748b;">Belum ada penjual terdaftar.</td></tr>`
+          : sellerRows.map(s => {
+            const reqDate = s.requested_at ? new Date(s.requested_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+            return `
             <tr>
               <td class="mono" style="font-size: 11px;">${s.seller_id}</td>
-              <td>${s.name || '-'}</td>
+              <td style="font-weight: 600; color: #fff;">${s.name || '-'}</td>
               <td style="font-size: 11px;">${s.email || '-'}</td>
               <td>${renderTag(s.kyc_status)}</td>
+              <td class="mono" style="font-size: 11px;">${reqDate}</td>
               <td>${renderTag(s.account_status)}</td>
-            </tr>`).join('');
+              <td>
+                <button class="btn btn-secondary btn-sm" onclick="inspectSellerKyc('${s.seller_id}')" style="font-size: 10px; padding: 2px 6px;"><i class="fa-solid fa-eye"></i> Detail</button>
+                ${s.kyc_status !== 'VERIFIED' ? `<button class="btn btn-primary btn-sm" onclick="adminReviewSellerKyc('${s.seller_id}', 'VERIFIED')" style="font-size: 10px; padding: 2px 6px;"><i class="fa-solid fa-check"></i></button>` : ''}
+                ${s.kyc_status !== 'REJECTED' ? `<button class="btn btn-secondary btn-sm" onclick="adminReviewSellerKyc('${s.seller_id}', 'REJECTED')" style="font-size: 10px; padding: 2px 6px; margin-left:2px;"><i class="fa-solid fa-xmark"></i></button>` : ''}
+              </td>
+            </tr>`;
+          }).join('');
 
         const ticketRows = tv.tickets || [];
         document.getElementById('trustTicketBadge').innerText = `${ticketRows.length} Tickets`;

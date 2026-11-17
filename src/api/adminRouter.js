@@ -1324,11 +1324,12 @@ router.get('/sellers', requireAdmin, async (req, res) => {
 
     const data = users.map(u => {
       const profile = profileMap.get(u.id) || {};
+      const sp = profile.seller_profile || {};
       const sellerOrders = orders.filter(o => o.seller_id === u.id);
       const completedOrders = sellerOrders.filter(o => o.status === 'SETTLED' || o.status === 'ENTRY_CONFIRMED');
 
-      const kycStatus = (profile.kyc_status || 'UNVERIFIED').toUpperCase();
-      const requestedAt = profile.requested_at || profile.onboarding_submitted_at || null;
+      const kycStatus = (sp.kyc_status || profile.kyc_status || 'UNVERIFIED').toUpperCase();
+      const requestedAt = sp.requested_at || profile.requested_at || profile.onboarding_submitted_at || null;
       let ageHours = null;
       let slaStatus = null;
       if (['PENDING', 'PENDING_REVIEW', 'PROBATIONARY'].includes(kycStatus) && requestedAt) {
@@ -1345,17 +1346,17 @@ router.get('/sellers', requireAdmin, async (req, res) => {
 
       return {
         id: u.id,
-        name: u.name,
+        name: sp.display_name || profile.display_name || u.display_name || u.name,
         email: u.email,
-        phone: u.phone || profile.phone || 'N/A',
+        phone: u.phone || sp.phone || profile.phone || 'N/A',
         role: u.role,
         status: u.status || 'ACTIVE',
-        kyc_status: profile.kyc_status || 'UNVERIFIED',
-        active_listing_limit: profile.active_listing_limit || 5,
+        kyc_status: sp.kyc_status || profile.kyc_status || 'UNVERIFIED',
+        active_listing_limit: typeof sp.active_listing_limit === 'number' ? sp.active_listing_limit : (typeof profile.active_listing_limit === 'number' ? profile.active_listing_limit : 10),
         requested_at: requestedAt,
         onboarding_submitted_at: requestedAt,
-        verified_at: profile.verified_at || null,
-        rejection_reason: profile.rejection_reason || null,
+        verified_at: sp.verified_at || profile.verified_at || null,
+        rejection_reason: sp.rejection_reason || profile.rejection_reason || null,
         age_hours: ageHours,
         sla_status: slaStatus,
         total_sales: sellerOrders.length,
@@ -1384,6 +1385,68 @@ router.get('/sellers', requireAdmin, async (req, res) => {
       dataState: 'UNAVAILABLE',
       message: err.message
     });
+  }
+});
+
+/**
+ * GET /api/admin/sellers/:id/kyc
+ * Admin inspects seller KYC verification details securely (with masked identity info).
+ */
+router.get('/sellers/:id/kyc', requireAdmin, async (req, res) => {
+  try {
+    const sellerId = req.params.id;
+    const { getUserRepository } = require('../storage');
+    const userRepo = getUserRepository();
+    const user = (await userRepo.getUserById(sellerId)) || (state.users || []).find(u => u.id === sellerId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'Seller not found', code: 'USER_NOT_FOUND' });
+    }
+    const profile = (await userRepo.getSellerProfile(sellerId)) ||
+      ((state.seller_profiles || []).find(p => p.user_id === sellerId) || {});
+    const sp = profile.seller_profile || profile;
+
+    const requestedAt = sp.requested_at || profile.requested_at || user.metadata?.seller_profile?.requested_at || null;
+    let ageHours = null;
+    let slaStatus = 'NORMAL';
+    if (requestedAt) {
+      const ageMs = Date.now() - new Date(requestedAt).getTime();
+      ageHours = Math.max(0, Math.round((ageMs / (1000 * 60 * 60)) * 10) / 10);
+      if (ageHours > 48) slaStatus = 'BREACH';
+      else if (ageHours >= 24) slaStatus = 'WARNING';
+    }
+
+    const rawNik = sp.nik || user.metadata?.seller_profile?.nik || null;
+    const nikHash = sp.nik_hash || user.metadata?.seller_profile?.nik_hash || null;
+    let nikMasked = 'N/A';
+    if (rawNik && rawNik.length >= 8) {
+      nikMasked = rawNik.slice(0, 4) + '*'.repeat(rawNik.length - 8) + rawNik.slice(-4);
+    } else if (nikHash) {
+      nikMasked = `***-HASH-${nikHash.slice(-4)}`;
+    }
+
+    return res.json({
+      success: true,
+      seller_id: user.id,
+      name: sp.display_name || user.display_name || user.name,
+      display_name: sp.display_name || user.display_name || user.name,
+      email: user.email,
+      phone: user.phone || sp.phone || 'N/A',
+      role: user.role,
+      account_status: user.status || 'ACTIVE',
+      kyc_status: sp.kyc_status || user.metadata?.seller_profile?.kyc_status || 'UNVERIFIED',
+      active_listing_limit: typeof sp.active_listing_limit === 'number' ? sp.active_listing_limit : 10,
+      requested_at: requestedAt,
+      verified_at: sp.verified_at || null,
+      verified_by: sp.verified_by || null,
+      rejection_reason: sp.rejection_reason || null,
+      payout_bank: sp.payout_bank || 'Belum diatur',
+      payout_account_masked: sp.payout_account_masked || 'Belum diatur',
+      nik_masked: nikMasked,
+      age_hours: ageHours,
+      sla_status: slaStatus
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message, code: 'SELLER_KYC_FETCH_FAILED' });
   }
 });
 
@@ -2874,14 +2937,15 @@ router.get('/verification', requireAdmin, async (req, res) => {
 
   const sellerVerificationRows = sellers.map(u => {
     const profile = profileMap.get(u.id) || {};
+    const sp = profile.seller_profile || {};
     return {
       seller_id: u.id,
-      name: u.name,
+      name: sp.display_name || profile.display_name || u.display_name || u.name,
       email: u.email,
-      kyc_status: profile.kyc_status || 'UNVERIFIED',
+      kyc_status: sp.kyc_status || profile.kyc_status || 'UNVERIFIED',
       account_status: u.status || 'ACTIVE',
-      requested_at: profile.requested_at || profile.onboarding_submitted_at || null,
-      rejection_reason: profile.rejection_reason || null
+      requested_at: sp.requested_at || profile.requested_at || profile.onboarding_submitted_at || null,
+      rejection_reason: sp.rejection_reason || profile.rejection_reason || null
     };
   });
 
@@ -2912,7 +2976,7 @@ router.get('/verification', requireAdmin, async (req, res) => {
     risk_flags: {
       blocked_authorizations: authRecords.filter(r => r.outcome === 'BLOCK').length,
       pending_reviews: authRecords.filter(r => r.outcome === 'PENDING' || r.outcome === 'EXCEPTION').length,
-      high_risk_sellers: sellerProfiles.filter(p => p.suspended || p.status === 'PROBATIONARY').length
+      high_risk_sellers: dbProfiles.filter(p => p.suspended || p.status === 'PROBATIONARY' || p.seller_profile?.suspended).length
     },
     incidents: {
       total: incidents.length,

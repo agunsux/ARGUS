@@ -28,7 +28,8 @@ class AdminMagicLinkService {
     const link = `${require('../config/authOrigin').authOrigin()}/admin/login#token=${token}`;
     try {
       const provider = this.provider || resolveEmailProvider();
-      const result = await provider.send({ from: 'TIKUM <no-reply@tikum.app>', to: ADMIN_EMAIL,
+      const fromAddress = process.env.EMAIL_FROM || (process.env.NODE_ENV === 'test' ? 'TIKUM <no-reply@tikum.app>' : 'TIKUM Admin <admin@tikum.app>');
+      const result = await provider.send({ from: fromAddress, to: ADMIN_EMAIL,
         subject: 'TIKUM administrator sign-in',
         text: `Masuk ke TIKUM: ${link}\nTautan berlaku 15 menit dan hanya dapat digunakan sekali.`,
         html: `<p><a href="${link}">Masuk ke TIKUM</a></p><p>Berlaku 15 menit, sekali pakai.</p>` });

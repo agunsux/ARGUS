@@ -294,6 +294,13 @@ class MagicLinkService {
     }
 
     if (normEmail === ADMIN_EMAIL || isAdminRole(existingIdentity?.role)) {
+      try {
+        const { AdminMagicLinkService } = require('./adminMagicLinkService');
+        const adminAuthService = new AdminMagicLinkService();
+        await adminAuthService.request(normEmail, ip);
+      } catch (err) {
+        console.error('[MagicLinkService] admin magic link request failed:', err.message);
+      }
       return { success: true, message: 'Jika identitas diizinkan, permintaan diproses. Penerimaan email belum dikonfirmasi.', email: normEmail };
     }
 
