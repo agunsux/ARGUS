@@ -54,6 +54,15 @@ class AdminMagicLinkService {
     if (!user) throw failure('INVALID_ADMIN_LINK', 401);
 
     try {
+      const { recordAuditLog } = require('../database');
+      await recordAuditLog('ADMIN_SECURITY', user.id, 'ADMIN_LOGIN_SUCCESS', user.id, {
+        email: user.email,
+        ip,
+        loginMethod: 'ADMIN_MAGIC_LINK'
+      }).catch(() => {});
+    } catch (_) {}
+
+    try {
       const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
       await AdminActivityNotificationService.notify('USER_SIGNED_IN', {
         userId: user.id,

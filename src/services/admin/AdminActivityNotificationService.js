@@ -139,6 +139,21 @@ function maskSensitiveData(val) {
   return val;
 }
 
+/**
+ * Checks whether an event is an authenticated admin self-login notification.
+ * Exactly one business rule exception: Suppress only admin@tikum.app's own sign-in notification.
+ * All other admins, normal users, and operational events return false.
+ */
+function isAdminSelfLoginEvent(eventType, userEmail) {
+  if (eventType !== 'USER_SIGNED_IN' && eventType !== 'USER_FIRST_SIGN_IN') {
+    return false;
+  }
+  if (!userEmail || typeof userEmail !== 'string') {
+    return false;
+  }
+  return userEmail.trim().toLowerCase() === 'admin@tikum.app';
+}
+
 class AdminActivityNotificationService {
   /**
    * Main dispatch method for all administrative operational activity events.
@@ -319,7 +334,45 @@ Buka Admin Dashboard: ${adminUrl}
 TIKUM Operations Intelligence
     `.trim();
 
-    // 8. Dispatch via EmailService (Purelymail SMTP)
+    // 8. Admin Self-Login Notification Suppression (EPIC P0.8)
+    // Business Rule: When the authenticated actor is admin@tikum.app and signs in to the Admin Panel,
+    // suppress the email notification about their own login to prevent self-notification noise.
+    // Invariant: Suppress ONLY self-login for admin@tikum.app. Never suppress other admins, normal users,
+    // or operational/marketplace events. Recipients list is NEVER altered.
+    if (isAdminSelfLoginEvent(eventType, userEmail)) {
+      await adminActivityNotificationStore.updateDeliveryStatus(notifId, {
+        status: 'SUPPRESSED',
+        sentAt: null,
+        lastError: null,
+        retryCount: 0
+      });
+
+      try {
+        await recordAuditLog('ADMIN_NOTIFICATION', notifId, `ACTIVITY_${eventType}_SUPPRESSED`, userId || 'SYSTEM', {
+          event_id: eventId,
+          event_type: eventType,
+          priority,
+          recipients,
+          status: 'SUPPRESSED',
+          reason: 'ADMIN_SELF_LOGIN_SUPPRESSED'
+        });
+      } catch (_) {}
+
+      return {
+        success: true,
+        status: 'SUPPRESSED',
+        suppressed: true,
+        suppressionReason: 'ADMIN_SELF_LOGIN_SUPPRESSED',
+        notificationId: notifId,
+        eventId,
+        eventType,
+        priority,
+        recipients,
+        error: null
+      };
+    }
+
+    // 9. Dispatch via EmailService (Purelymail SMTP)
     let sendResult = null;
     let isSuccess = true;
     let lastError = null;
@@ -390,5 +443,6 @@ module.exports = {
   EVENT_PRIORITIES,
   EVENT_TITLES,
   formatWibTimestamp,
-  maskSensitiveData
+  maskSensitiveData,
+  isAdminSelfLoginEvent
 };
