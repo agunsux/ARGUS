@@ -25,6 +25,9 @@ process.env.MIDTRANS_CLIENT_KEY = 'SB-Mid-client-sandbox-test-key-argus';
 const assert = require('assert');
 const crypto = require('crypto');
 const http = require('http');
+const { DEPLOYMENT_ENV, setDeploymentEnvForTesting } = require('./src/config/deploymentEnv');
+const { setMarketplaceModeForTesting, setPaymentGatewayFrozenForTesting } = require('./src/config/marketplaceMode');
+setDeploymentEnvForTesting(DEPLOYMENT_ENV.PREVIEW);
 const app = require('./src/server');
 const { state, resetDatabase } = require('./src/database');
 const {
@@ -166,6 +169,8 @@ async function runTests() {
     state.events.push({
       id: 'event-midtrans-smoke',
       title: 'Pestapora 2026 Midtrans Smoke Test',
+      start_date: '2027-10-25T19:00:00+07:00',
+      event_date: '2027-10-25T19:00:00+07:00',
       status: 'PUBLISHED',
       is_active: true
     });
@@ -216,6 +221,8 @@ async function runTests() {
     pass('3.1 Isolated order created in PENDING_PAYMENT state');
 
     // Create Midtrans Payment intent via POST /api/v1/payments/create
+    setMarketplaceModeForTesting('LIVE');
+    setPaymentGatewayFrozenForTesting(false);
     const payRes = await request({
       method: 'POST',
       path: '/api/v1/payments/create',
