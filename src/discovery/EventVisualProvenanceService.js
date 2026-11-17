@@ -80,12 +80,14 @@ const IMAGE_STATUS = {
   VERIFIED_OFFICIAL: 'VERIFIED_OFFICIAL',
   VERIFIED_AUTHORIZED_SELLER: 'VERIFIED_AUTHORIZED_SELLER',
   SOURCE_LINK_ONLY: 'SOURCE_LINK_ONLY',
+  BRANDED_FALLBACK: 'BRANDED_FALLBACK',
   MISSING: 'MISSING',
   BROKEN: 'BROKEN',
   BLOCKED_BY_SOURCE: 'BLOCKED_BY_SOURCE',
   NEEDS_REVIEW: 'NEEDS_REVIEW',
   TRANSIENT_FAILURE: 'TRANSIENT_FAILURE',
   UNVERIFIED: 'UNVERIFIED',
+  REJECTED: 'REJECTED',
   STALE: 'STALE',
   INVALID: 'INVALID',
   FALLBACK: 'FALLBACK'
@@ -1137,18 +1139,22 @@ class EventVisualProvenanceService {
     }
 
     if (verifiedEntry && verifiedEntry.image_url) {
+      const isFallback = verifiedEntry.is_fallback_image === true ||
+        verifiedEntry.image_status === 'BRANDED_FALLBACK' ||
+        verifiedEntry.image_source_type === 'TIKUM_UI_FALLBACK';
+      const resolvedStatus = isFallback ? 'BRANDED_FALLBACK' : (verifiedEntry.image_status || 'VERIFIED_AUTHORIZED_SELLER');
       return {
         image_url: verifiedEntry.image_url,
         thumbnail_url: verifiedEntry.thumbnail_url || verifiedEntry.image_url,
         image_source_url: verifiedEntry.image_source_url || event.official_event_url || event.official_ticket_url || event.source_url || null,
-        image_source_type: verifiedEntry.image_source_type || 'OFFICIAL_TICKETING',
-        image_verified: true,
+        image_source_type: verifiedEntry.image_source_type || (isFallback ? 'TIKUM_UI_FALLBACK' : 'OFFICIAL_TICKETING'),
+        image_verified: !isFallback,
         image_verified_at: verifiedEntry.image_verified_at || event.verified_at || new Date().toISOString(),
-        image_status: verifiedEntry.image_status || 'VERIFIED_AUTHORIZED_SELLER',
-        image_credit: verifiedEntry.image_credit || 'Official Source',
-        image_attribution: verifiedEntry.image_credit || 'Official Source',
+        image_status: resolvedStatus,
+        image_credit: verifiedEntry.image_credit || (isFallback ? 'TIKUM Event Brief' : 'Official Source'),
+        image_attribution: verifiedEntry.image_credit || (isFallback ? 'TIKUM Event Brief' : 'Official Source'),
         broken_image_url: (rawImgUrl && rawImgUrl !== verifiedEntry.image_url && reg.known_broken_urls?.[rawImgUrl]) ? rawImgUrl : null,
-        is_fallback_image: false
+        is_fallback_image: isFallback
       };
     }
 

@@ -2,7 +2,7 @@
   <defs>
     <linearGradient id="bbBg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#09090b" />
-      <stop offset="40%" stop-color="#18181b" />
+      <stop offset="40%" stop-color="#180b33" />
       <stop offset="75%" stop-color="#0f0f12" />
       <stop offset="100%" stop-color="#050507" />
     </linearGradient>
@@ -40,18 +40,10 @@
     <circle cx="300" cy="270" r="150" stroke="#fef08a" stroke-width="1" stroke-opacity="0.4" fill="none" />
   </g>
 
-  <!-- Crown / VIP Emblem Motif -->
-  <g transform="translate(300, 110)">
-    <path d="M -40,20 L -25,-20 L 0,-5 L 25,-20 L 40,20 Z" fill="none" stroke="#facc15" stroke-width="2.5" stroke-linejoin="round" />
-    <circle cx="-25" cy="-22" r="3" fill="#fef08a" />
-    <circle cx="0" cy="-7" r="3" fill="#fef08a" />
-    <circle cx="25" cy="-22" r="3" fill="#fef08a" />
-  </g>
-
-  <!-- Top Promoter Tag -->
-  <g transform="translate(300, 170)">
+  <!-- Top Event Brief Tag -->
+  <g transform="translate(300, 150)">
     <rect x="-160" y="-14" width="320" height="28" rx="6" fill="rgba(24, 24, 27, 0.85)" stroke="rgba(234, 179, 8, 0.4)" stroke-width="1" />
-    <text text-anchor="middle" y="4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="800" fill="#facc15" letter-spacing="2">YG ENTERTAINMENT &amp; APPLEWOOD</text>
+    <text text-anchor="middle" y="4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="800" fill="#facc15" letter-spacing="2">TIKUM EVENT BRIEF · INFORMASI RESMI</text>
   </g>
 
   <!-- Concert Titles -->
@@ -79,14 +71,14 @@
       JAKARTA UTARA, INDONESIA
     </text>
     <text text-anchor="middle" y="92" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="800" fill="#38bdf8" letter-spacing="1.5">
-      OFFICIAL TICKETING PARTNER: LOKET.COM
+      MITRA TIKET RESMI: LOKET.COM
     </text>
   </g>
 
-  <!-- Bottom Verification Footer -->
+  <!-- Bottom Truthfulness Note -->
   <g transform="translate(300, 745)">
-    <text text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#71717a" letter-spacing="1.5">
-      TIKUM VERIFIED · TERVERIFIKASI SUMBER RESMI PROMOTOR
+    <text text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10.5" font-weight="700" fill="#71717a" letter-spacing="1">
+      POSTER RESMI BELUM DITERBITKAN · JADWAL TERKONFIRMASI DARI MITRA TIKET RESMI
     </text>
   </g>
 </svg>

@@ -318,6 +318,7 @@ class CanonicalEventRegistry {
       imageSourceUrl: visual.image_source_url || visual.image_url || null,
       image_source_url: visual.image_source_url || visual.image_url || null,
       imageConfidence: visual.image_confidence || 'HIGH',
+      metadata: eventData.metadata ? { ...eventData.metadata } : {},
       eventConfidence: 100,
       firstDiscoveredAt: eventData.firstDiscoveredAt || eventData.first_discovered_at || eventData.first_seen_at || now,
       first_discovered_at: eventData.firstDiscoveredAt || eventData.first_discovered_at || eventData.first_seen_at || now,
@@ -577,6 +578,11 @@ class CanonicalEventRegistry {
 
     this.events.set(eventId, canonicalEvent);
     this.slugMap.set(slug, eventId);
+    if (canonicalEvent.metadata?.alias_slugs && Array.isArray(canonicalEvent.metadata.alias_slugs)) {
+      for (const aSlug of canonicalEvent.metadata.alias_slugs) {
+        this.slugMap.set(aSlug, eventId);
+      }
+    }
 
     try {
       const { state } = require('../database');
@@ -1299,7 +1305,19 @@ class CanonicalEventRegistry {
   }
 
   getEventById(id) {
-    if (this.events.has(id)) return this.events.get(id);
+    if (this.events.has(id)) {
+      const ev = this.events.get(id);
+      if (ev.metadata?.canonical_event_id && ev.metadata.canonical_event_id !== id) {
+        const canonical = this.getEventById(ev.metadata.canonical_event_id);
+        if (canonical) return canonical;
+      }
+      return ev;
+    }
+    for (const ev of this.events.values()) {
+      if (ev.metadata?.alias_ids && Array.isArray(ev.metadata.alias_ids) && ev.metadata.alias_ids.includes(id)) {
+        return ev;
+      }
+    }
     const hero = this.getHeroEvents({ includePast: true }).find(e => e.id === id || e.event_id === id);
     if (hero) return hero;
     return null;
@@ -1317,9 +1335,34 @@ class CanonicalEventRegistry {
     if (slug === 'guns-n-roses-jakarta') {
       return this.getEventBySlug('guns-n-roses-jakarta-2026');
     }
+    if (slug === 'dwp-2026-jakarta' || slug === 'dwp-2026_wVb9') {
+      return this.getEventBySlug('djakarta-warehouse-project-dwp-2026') || this.getEventById('event-dwp-2026');
+    }
+    if (slug === 'evt_edp1690841') {
+      return this.getEventBySlug('maroon-5-asia-2027-in-jakarta') || this.getEventById('ev-can-30949569');
+    }
     const id = this.slugMap.get(slug);
-    if (id && this.events.has(id)) return this.events.get(id);
-    if (this.events.has(slug)) return this.events.get(slug);
+    if (id && this.events.has(id)) {
+      const ev = this.events.get(id);
+      if (ev.metadata?.canonical_event_id && ev.metadata.canonical_event_id !== id) {
+        const canonical = this.getEventById(ev.metadata.canonical_event_id);
+        if (canonical) return canonical;
+      }
+      return ev;
+    }
+    if (this.events.has(slug)) {
+      const ev = this.events.get(slug);
+      if (ev.metadata?.canonical_event_id && ev.metadata.canonical_event_id !== slug) {
+        const canonical = this.getEventById(ev.metadata.canonical_event_id);
+        if (canonical) return canonical;
+      }
+      return ev;
+    }
+    for (const ev of this.events.values()) {
+      if (ev.metadata?.alias_slugs && Array.isArray(ev.metadata.alias_slugs) && ev.metadata.alias_slugs.includes(slug)) {
+        return ev;
+      }
+    }
     const hero = this.getHeroEvents({ includePast: true }).find(e => e.slug === slug);
     if (hero) return hero;
     return null;
@@ -2286,6 +2329,11 @@ class CanonicalEventRegistry {
           this.events.set(id, ev);
           if (ev.slug) {
             this.slugMap.set(ev.slug, id);
+          }
+          if (ev.metadata?.alias_slugs && Array.isArray(ev.metadata.alias_slugs)) {
+            for (const aSlug of ev.metadata.alias_slugs) {
+              this.slugMap.set(aSlug, id);
+            }
           }
         }
         // Ensure verified hero concerts from getHeroEvents() are present in global catalog

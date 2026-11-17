@@ -37,10 +37,10 @@
     <circle cx="300" cy="140" r="120" stroke="#c084fc" stroke-width="1" stroke-opacity="0.5" fill="none" />
   </g>
 
-  <!-- Top Promoter Tag -->
+  <!-- Top Event Brief Badge -->
   <g transform="translate(300, 48)">
-    <rect x="-140" y="-14" width="280" height="28" rx="6" fill="rgba(15, 7, 32, 0.6)" stroke="rgba(192, 132, 252, 0.4)" stroke-width="1" />
-    <text text-anchor="middle" y="4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10.5" font-weight="800" fill="#c084fc" letter-spacing="2">BIGHIT MUSIC &amp; HYBE PRESENT</text>
+    <rect x="-150" y="-14" width="300" height="28" rx="6" fill="rgba(15, 7, 32, 0.85)" stroke="rgba(192, 132, 252, 0.4)" stroke-width="1" />
+    <text text-anchor="middle" y="4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="800" fill="#c084fc" letter-spacing="2">TIKUM EVENT BRIEF · INFORMASI RESMI</text>
   </g>
 
   <!-- Concert Titles -->
@@ -52,15 +52,18 @@
   <line x1="200" y1="225" x2="400" y2="225" stroke="url(#silverAccent)" stroke-width="1.5" stroke-opacity="0.8" />
 
   <!-- Concert Metadata Badge Strip -->
-  <g transform="translate(300, 260)">
+  <g transform="translate(300, 258)">
     <text text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600" fill="#e9d5ff">
       26 • 27 • 29 DESEMBER 2026
     </text>
-    <text text-anchor="middle" y="22" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="500" fill="#94a3b8">
+    <text text-anchor="middle" y="20" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="500" fill="#94a3b8">
       STADION UTAMA GELORA BUNG KARNO (GBK)
     </text>
-    <text text-anchor="middle" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="700" fill="#38bdf8" letter-spacing="1">
-      OFFICIAL TICKETING PARTNER: TIKET.COM
+    <text text-anchor="middle" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="700" fill="#38bdf8" letter-spacing="1">
+      MITRA TIKET RESMI: TIKET.COM
+    </text>
+    <text text-anchor="middle" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9" font-weight="600" fill="#64748b" letter-spacing="0.5">
+      POSTER RESMI BELUM DITERBITKAN · JADWAL TERKONFIRMASI
     </text>
   </g>
 </svg>
