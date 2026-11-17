@@ -589,7 +589,7 @@ class MagicLinkService {
 
       // 1. If brand new user registration
       if (wasNewRegistration) {
-        AdminActivityNotificationService.notify('USER_REGISTERED', {
+        await AdminActivityNotificationService.notify('USER_REGISTERED', {
           userId: user.id,
           userDisplayName: user.name || 'Pengguna Baru',
           userEmail: user.email,
@@ -602,7 +602,7 @@ class MagicLinkService {
 
       // 2. If first successful sign in
       if (wasFirstSignIn) {
-        AdminActivityNotificationService.notify('USER_FIRST_SIGN_IN', {
+        await AdminActivityNotificationService.notify('USER_FIRST_SIGN_IN', {
           userId: user.id,
           userDisplayName: user.name || 'Pengguna',
           userEmail: user.email,
@@ -614,7 +614,7 @@ class MagicLinkService {
       }
 
       // 3. For every successful sign-in
-      AdminActivityNotificationService.notify('USER_SIGNED_IN', {
+      await AdminActivityNotificationService.notify('USER_SIGNED_IN', {
         userId: user.id,
         userDisplayName: user.name || 'Pengguna',
         userEmail: user.email,

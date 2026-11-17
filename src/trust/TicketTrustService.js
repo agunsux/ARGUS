@@ -213,7 +213,7 @@ class TicketTrustService {
     if (riskStatus === RISK_STATUS.HIGH || riskStatus === RISK_STATUS.CRITICAL || status === TICKET_VERIFICATION_STATUS.REJECTED) {
       try {
         const { AdminActivityNotificationService } = require('../services/admin/AdminActivityNotificationService');
-        AdminActivityNotificationService.notify('FRAUD_RISK_DETECTED', {
+        await AdminActivityNotificationService.notify('FRAUD_RISK_DETECTED', {
           ticketId,
           sellerId: ticket.seller_id,
           riskStatus: riskStatus || ticket.risk_status,

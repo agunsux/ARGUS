@@ -157,7 +157,7 @@ router.post('/contact', async (req, res) => {
 
     try {
       const { AdminActivityNotificationService } = require('../services/admin/AdminActivityNotificationService');
-      AdminActivityNotificationService.notify('NEW_SUPPORT_REQUEST', {
+      await AdminActivityNotificationService.notify('NEW_SUPPORT_REQUEST', {
         inquiryId,
         userDisplayName: cleanName,
         userEmail: cleanEmail,

@@ -14,18 +14,19 @@ class AdminActivityNotificationStore {
   }
 
   getPool() {
-    if (!this._pool && process.env.DATABASE_URL) {
+    const connStr = process.env.DATABASE_URL || process.env.TARGET_DATABASE_URL || process.env.SUPABASE_DB_URL;
+    if (!this._pool && connStr) {
       try {
         const { getSharedPool } = require('./connectionPool');
         if (typeof getSharedPool === 'function') {
-          this._pool = getSharedPool(process.env.DATABASE_URL);
+          this._pool = getSharedPool(connStr);
         }
       } catch (_) {}
       if (!this._pool) {
         try {
           const { Pool } = require('pg');
           this._pool = new Pool({
-            connectionString: process.env.DATABASE_URL,
+            connectionString: connStr,
             ssl: { rejectUnauthorized: false }
           });
         } catch (_) {}

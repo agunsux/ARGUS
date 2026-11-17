@@ -115,7 +115,7 @@ class IncidentService {
 
     try {
       const { AdminActivityNotificationService } = require('../services/admin/AdminActivityNotificationService');
-      AdminActivityNotificationService.notify('VENUE_INCIDENT_CREATED', {
+      await AdminActivityNotificationService.notify('VENUE_INCIDENT_CREATED', {
         incidentId,
         eventId,
         orderId,
@@ -129,7 +129,7 @@ class IncidentService {
       }).catch(() => {});
 
       if (reporterRole === 'buyer' || reporterRole === 'user' || reporterRole === 'BUYER' || reporterRole === 'USER') {
-        AdminActivityNotificationService.notify('NEW_USER_REPORT', {
+        await AdminActivityNotificationService.notify('NEW_USER_REPORT', {
           incidentId,
           eventId,
           orderId,

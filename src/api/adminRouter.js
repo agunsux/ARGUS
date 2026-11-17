@@ -2032,7 +2032,7 @@ router.patch('/users/:id/status', requireAdmin, async (req, res) => {
   try {
     const { AdminActivityNotificationService } = require('../services/admin/AdminActivityNotificationService');
     const eventType = status === 'SUSPENDED' ? 'USER_ACCOUNT_SUSPENDED' : 'USER_ACCOUNT_REACTIVATED';
-    AdminActivityNotificationService.notify(eventType, {
+    await AdminActivityNotificationService.notify(eventType, {
       userId: user.id,
       userDisplayName: user.name || user.email || user.id,
       userEmail: user.email,

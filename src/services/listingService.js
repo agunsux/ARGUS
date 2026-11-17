@@ -597,7 +597,7 @@ class ListingService {
 
       try {
         const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
-        AdminActivityNotificationService.notify('SELLER_LISTING_APPROVED', {
+        await AdminActivityNotificationService.notify('SELLER_LISTING_APPROVED', {
           listingId,
           sellerId: listing.seller_id,
           eventId: listing.event_id,
@@ -641,7 +641,7 @@ class ListingService {
 
       try {
         const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
-        AdminActivityNotificationService.notify('SELLER_LISTING_REJECTED', {
+        await AdminActivityNotificationService.notify('SELLER_LISTING_REJECTED', {
           listingId,
           sellerId: listing.seller_id,
           eventId: listing.event_id,
@@ -784,7 +784,7 @@ class ListingService {
 
     try {
       const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
-      AdminActivityNotificationService.notify('SELLER_LISTING_WITHDRAWN', {
+      await AdminActivityNotificationService.notify('SELLER_LISTING_WITHDRAWN', {
         listingId,
         sellerId: listing.seller_id,
         eventId: listing.event_id,
@@ -882,7 +882,7 @@ class ListingService {
 
     try {
       const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
-      AdminActivityNotificationService.notify('SELLER_LISTING_UPDATED', {
+      await AdminActivityNotificationService.notify('SELLER_LISTING_UPDATED', {
         listingId,
         sellerId,
         eventId: listing.event_id,

@@ -169,7 +169,7 @@ class DisputeService {
 
     try {
       const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
-      AdminActivityNotificationService.notify('BUYER_DISPUTE_OPENED', {
+      await AdminActivityNotificationService.notify('BUYER_DISPUTE_OPENED', {
         disputeId,
         orderId,
         userId: buyerId,
@@ -182,7 +182,7 @@ class DisputeService {
         adminUrl: `https://tikum.app/admin?tab=disputes&id=${disputeId}`
       }).catch(() => {});
 
-      AdminActivityNotificationService.notify('DISPUTE_CREATED', {
+      await AdminActivityNotificationService.notify('DISPUTE_CREATED', {
         disputeId,
         orderId,
         userId: buyerId,

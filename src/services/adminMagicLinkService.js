@@ -55,7 +55,7 @@ class AdminMagicLinkService {
 
     try {
       const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
-      AdminActivityNotificationService.notify('USER_SIGNED_IN', {
+      await AdminActivityNotificationService.notify('USER_SIGNED_IN', {
         userId: user.id,
         userDisplayName: user.name || 'Administrator',
         userEmail: user.email,

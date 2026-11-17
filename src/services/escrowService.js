@@ -562,7 +562,7 @@ class EscrowService {
 
     try {
       const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
-      AdminActivityNotificationService.notify('BUYER_ORDER_CREATED', {
+      await AdminActivityNotificationService.notify('BUYER_ORDER_CREATED', {
         orderId,
         listingId,
         userId: buyerId,
@@ -824,7 +824,7 @@ class EscrowService {
     try {
       const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
       const eventName = event?.name || event?.title || 'Event';
-      AdminActivityNotificationService.notify('BUYER_PURCHASE_CONFIRMED', {
+      await AdminActivityNotificationService.notify('BUYER_PURCHASE_CONFIRMED', {
         orderId,
         listingId: order.listing_id,
         userId: order.buyer_id,
@@ -837,7 +837,7 @@ class EscrowService {
         adminUrl: `https://tikum.app/admin?tab=orders&id=${orderId}`
       }).catch(() => {});
 
-      AdminActivityNotificationService.notify('SELLER_LISTING_SOLD', {
+      await AdminActivityNotificationService.notify('SELLER_LISTING_SOLD', {
         orderId,
         listingId: order.listing_id,
         userId: order.seller_id,
@@ -1305,7 +1305,7 @@ class EscrowService {
 
       try {
         const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
-        AdminActivityNotificationService.notify('BUYER_REFUND_REQUESTED', {
+        await AdminActivityNotificationService.notify('BUYER_REFUND_REQUESTED', {
           orderId,
           userId: order?.buyer_id,
           amount: escrow?.total_paid || escrow?.amount,
@@ -1855,7 +1855,7 @@ class EscrowService {
 
     try {
       const { AdminActivityNotificationService } = require('./admin/AdminActivityNotificationService');
-      AdminActivityNotificationService.notify('BUYER_ORDER_CANCELLED', {
+      await AdminActivityNotificationService.notify('BUYER_ORDER_CANCELLED', {
         orderId,
         listingId: order.listing_id,
         userId: order.buyer_id,

@@ -420,7 +420,7 @@ class PaymentService {
 
     try {
       const { AdminActivityNotificationService } = require('../admin/AdminActivityNotificationService');
-      AdminActivityNotificationService.notify('BUYER_PAYMENT_INITIATED', {
+      await AdminActivityNotificationService.notify('BUYER_PAYMENT_INITIATED', {
         orderId,
         paymentId: internalPaymentId,
         userId: buyer?.id,
@@ -757,7 +757,7 @@ class PaymentService {
 
       try {
         const { AdminActivityNotificationService } = require('../admin/AdminActivityNotificationService');
-        AdminActivityNotificationService.notify('BUYER_PAYMENT_SUCCEEDED', {
+        await AdminActivityNotificationService.notify('BUYER_PAYMENT_SUCCEEDED', {
           orderId: event.orderId,
           userId: order?.buyer_id || 'system',
           userRole: 'BUYER',
@@ -824,7 +824,7 @@ class PaymentService {
 
       try {
         const { AdminActivityNotificationService } = require('../admin/AdminActivityNotificationService');
-        AdminActivityNotificationService.notify('BUYER_PAYMENT_FAILED', {
+        await AdminActivityNotificationService.notify('BUYER_PAYMENT_FAILED', {
           orderId: event.orderId,
           userId: order?.buyer_id || 'system',
           userRole: 'BUYER',
