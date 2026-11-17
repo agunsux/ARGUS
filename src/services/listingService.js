@@ -335,6 +335,7 @@ class ListingService {
         id: fallbackTicketId,
         ticket_id: fallbackTicketId,
         event_id: eventId,
+        canonical_event_id: eventId,
         current_owner_id: sellerId,
         seller_id: sellerId,
         status: 'PENDING_VERIFICATION',
@@ -345,6 +346,31 @@ class ListingService {
         quantity: qty
       };
       state.tickets.push(ticket);
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        const marketplaceRepo = getMarketplaceRepository();
+        if (marketplaceRepo && typeof marketplaceRepo.createTicket === 'function') {
+          await marketplaceRepo.createTicket({
+            id: fallbackTicketId,
+            canonical_event_id: eventId,
+            seller_id: sellerId,
+            original_owner_id: sellerId,
+            current_owner_id: sellerId,
+            ticket_type: normalizedSeatType,
+            section: sectionPart,
+            row: rowMatch ? rowMatch[1] : null,
+            seat: seatMatch ? seatMatch[1] : null,
+            face_value: parseInt(faceValue, 10),
+            currency: 'IDR',
+            status: 'PENDING_VERIFICATION',
+            verification_status: 'SUBMITTED',
+            transferability_status: 'NOT_CHECKED',
+            barcode_hash: barcodeHash,
+            raw_barcode_encrypted: null,
+            metadata: { quantity: qty, seat_info: seatInfo }
+          }).catch(() => null);
+        }
+      } catch (_) {}
     }
 
     const ticketId = ticket.ticket_id || ticket.id;
@@ -910,7 +936,41 @@ class ListingService {
         } else {
           if (l.status !== LISTING_STATUS.ACTIVE) return false;
         }
-        if (eventId && l.event_id !== eventId) return false;
+        if (eventId) {
+          const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
+          let matches = (l.event_id === eventId || l.canonical_event_id === eventId);
+          if (!matches && canonicalRegistry && typeof canonicalRegistry.getEventById === 'function') {
+            const queryEvent = canonicalRegistry.getEventById(eventId);
+            const queryId = queryEvent ? (queryEvent.id || queryEvent.event_id) : null;
+            const listingEvent = canonicalRegistry.getEventById(l.event_id || l.canonical_event_id);
+            const listingId = listingEvent ? (listingEvent.id || listingEvent.event_id) : null;
+            if (queryId && listingId && queryId === listingId) {
+              matches = true;
+            } else if (queryId && (l.event_id === queryId || l.canonical_event_id === queryId)) {
+              matches = true;
+            } else if (listingId && (eventId === listingId)) {
+              matches = true;
+            } else if (queryEvent && queryEvent.slug && (l.event_id === queryEvent.slug || l.slug === queryEvent.slug)) {
+              matches = true;
+            }
+          }
+          if (!matches) return false;
+        }
+
+        // Exclude suspended sellers
+        const sellerProfile = (state.seller_profiles || []).find(p => p.user_id === l.seller_id);
+        if (sellerProfile && (sellerProfile.suspended || sellerProfile.status === 'SUSPENDED')) {
+          return false;
+        }
+        const user = (state.users || []).find(u => u.id === l.seller_id);
+        if (user && (user.suspended || user.status === 'SUSPENDED' || user.is_suspended)) {
+          return false;
+        }
+
+        // Exclude listings with zero available quantity (fully sold, withdrawn or zero inventory)
+        const meta = (typeof l.metadata === 'object' && l.metadata) ? l.metadata : {};
+        const availQty = parseInt(l.available_quantity !== undefined ? l.available_quantity : (meta.available_quantity !== undefined ? meta.available_quantity : (l.quantity !== undefined ? l.quantity : 1)), 10);
+        if (isNaN(availQty) || availQty <= 0) return false;
         const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
         const event = (state.events || []).find(e => e.id === l.event_id) ||
           (canonicalRegistry && typeof canonicalRegistry.getEventById === 'function' ? canonicalRegistry.getEventById(l.event_id) : null);

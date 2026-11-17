@@ -179,6 +179,10 @@ class EventSEOService {
         </div>
       `;
     } else if (activeListings && activeListings.length > 0) {
+      const totalAvailableTickets = activeListings.reduce((sum, l) => {
+        const qty = parseInt(l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1), 10);
+        return sum + (isNaN(qty) || qty < 0 ? 0 : qty);
+      }, 0);
       const minPrice = Math.min(...activeListings.map(l => l.price));
       const hasEventPic = Boolean(event.has_venue_assist || event.has_pic || event.venue_assist_status === 'PIC_AVAILABLE' || event.venue_assist_status === 'PIC_ON_SITE');
       const gateVerificationText = hasEventPic
@@ -187,13 +191,14 @@ class EventSEOService {
       resaleHtml = `
         <div class="resale-card verified-active">
           <div class="badge-row">
-            <span class="badge badge-success"><i class="fa-solid fa-shield-check"></i> ${activeListings.length} Tiket Resale Terverifikasi</span>
+            <span class="badge badge-success"><i class="fa-solid fa-shield-check"></i> ${totalAvailableTickets} Tiket Resale Terverifikasi</span>
             <span class="badge badge-cyan">Mulai Rp ${minPrice.toLocaleString('id-ID')}</span>
           </div>
           <p class="resale-desc">Setiap tiket dilindungi anti-duplikasi barcode, dana tertahan di rekening escrow, dan ${gateVerificationText}.</p>
           <div class="resale-grid">
             ${activeListings.map(l => {
               const basePrice = Math.max(0, Math.round(l.price || 0));
+              const itemQty = parseInt(l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1), 10);
               let fee = 0;
               let totalPrice = basePrice;
               if (basePrice > 0) {
@@ -217,7 +222,7 @@ class EventSEOService {
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
                   <div>
                     <div style="font-size:15px; font-weight:800; color:var(--color-text-primary, #111827);">${section}</div>
-                    <div style="font-size:12.5px; color:var(--color-text-muted, #6B7280);"><i class="fa-solid fa-chair"></i> ${seat} &nbsp;·&nbsp; <i class="fa-solid fa-ticket"></i> Jumlah: 1 tiket</div>
+                    <div style="font-size:12.5px; color:var(--color-text-muted, #6B7280);"><i class="fa-solid fa-chair"></i> ${seat} &nbsp;·&nbsp; <i class="fa-solid fa-ticket"></i> Jumlah: ${itemQty} tiket</div>
                   </div>
                   <span class="badge badge-success" style="font-size:11px; font-weight:700;"><i class="fa-solid fa-user-check"></i> Penjual Terverifikasi</span>
                 </div>

@@ -146,8 +146,54 @@ function getActiveResaleListings(eventId) {
     return ListingService.getActiveListings(eventId) || [];
   } catch (err) {
     // Fallback directly to state.listings if ListingService throws
-    return (state.listings || []).filter(l => l.event_id === eventId && l.status === 'ACTIVE');
+    return (state.listings || []).filter(l => (l.event_id === eventId || l.canonical_event_id === eventId) && l.status === 'ACTIVE');
   }
+}
+
+let listingsHydrationPromise = null;
+async function hydrateMarketplaceListings() {
+  try {
+    const { getMarketplaceRepository } = require('../storage');
+    const marketplaceRepo = getMarketplaceRepository();
+    if (marketplaceRepo && typeof marketplaceRepo.listActiveListings === 'function') {
+      const dbListings = await marketplaceRepo.listActiveListings();
+      if (Array.isArray(dbListings)) {
+        if (!state.listings) state.listings = [];
+        for (const row of dbListings) {
+          const idx = state.listings.findIndex(l => l.id === row.id || l.listing_id === row.id);
+          const meta = (typeof row.metadata === 'object' && row.metadata) ? row.metadata : {};
+          const formatted = {
+            id: row.id,
+            listing_id: row.id,
+            ticket_id: row.ticket_id,
+            seller_id: row.seller_id,
+            event_id: row.canonical_event_id,
+            canonical_event_id: row.canonical_event_id,
+            price: Number(row.price),
+            face_value: Number(row.face_value || row.price),
+            seat_info: row.seat_info,
+            seat_type: row.seat_type || 'GENERAL_ADMISSION',
+            quantity: Number(row.quantity || 1),
+            total_quantity: Number(row.total_quantity || meta.total_quantity || row.quantity || 1),
+            available_quantity: Number(row.available_quantity !== undefined ? row.available_quantity : (meta.available_quantity !== undefined ? meta.available_quantity : row.quantity || 1)),
+            sold_quantity: Number(row.sold_quantity !== undefined ? row.sold_quantity : (meta.sold_quantity || 0)),
+            reserved_quantity: Number(row.reserved_quantity !== undefined ? row.reserved_quantity : (meta.reserved_quantity || 0)),
+            fulfillment_type: row.fulfillment_type || 'SELLER_MANAGED',
+            pic_assistance_status: row.pic_assistance_status || 'NONE',
+            status: row.status,
+            metadata: meta,
+            created_at: row.created_at
+          };
+          if (idx >= 0) {
+            state.listings[idx] = { ...state.listings[idx], ...formatted };
+          } else {
+            state.listings.push(formatted);
+          }
+        }
+        state._listingsHydratedFromRepo = true;
+      }
+    }
+  } catch (_) {}
 }
 
 // Ensure in-memory canonical registry is hydrated from repository (Postgres or fallback)
@@ -165,6 +211,19 @@ async function ensureRegistryHydrated(req, res, next) {
       await hydrationPromise;
     } catch (_) {}
   }
+
+  const needsListingsHydration = !state._listingsHydratedFromRepo && Boolean(process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL) && process.env.NODE_ENV !== 'test';
+  if (needsListingsHydration) {
+    if (!listingsHydrationPromise) {
+      listingsHydrationPromise = hydrateMarketplaceListings().finally(() => {
+        listingsHydrationPromise = null;
+      });
+    }
+    try {
+      await listingsHydrationPromise;
+    } catch (_) {}
+  }
+
   next();
 }
 
@@ -625,8 +684,12 @@ router.get('/events', (req, res) => {
   });
 
   const itemsHtml = allEvents.map(e => {
-    const activeListings = getActiveResaleListings(e.event_id);
-    const minPrice = activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null;
+    const activeListings = getActiveResaleListings(e.event_id || e.id);
+    const totalAvailableTickets = activeListings.reduce((sum, l) => {
+      const qty = parseInt(l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1), 10);
+      return sum + (isNaN(qty) || qty < 0 ? 0 : qty);
+    }, 0);
+    const minPrice = totalAvailableTickets > 0 ? Math.min(...activeListings.map(l => l.price)) : null;
     const hasVerifiedImg = Boolean(e.image_url && e.is_fallback_image !== true && e.image_status !== 'FALLBACK' && e.image_status !== 'BROKEN');
     const altText = `${e.canonical_name} — ${e.venue_name}, ${e.city}`.replace(/"/g, '&quot;');
     const officialUrl = e.official_ticket_url || e.official_event_url || e.source_url || null;
@@ -667,8 +730,8 @@ router.get('/events', (req, res) => {
         </div>
         <div style="border-top:1px solid #1e293b; padding-top:14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
           <div>
-            ${activeListings.length > 0 ? 
-              `<span style="color:#10b981; font-weight:700; font-size:12px;"><i class="fa-solid fa-ticket"></i> ${activeListings.length} Tiket Resale (Rp ${minPrice.toLocaleString('id-ID')})</span>` : 
+            ${totalAvailableTickets > 0 ? 
+              `<span style="color:#10b981; font-weight:700; font-size:12px;"><i class="fa-solid fa-ticket"></i> ${totalAvailableTickets} Tiket Resale (Rp ${minPrice.toLocaleString('id-ID')})</span>` : 
               `<span style="color:#64748b; font-size:12px;"><i class="fa-solid fa-ticket"></i> Belum ada tiket resale</span>`}
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
@@ -1212,19 +1275,24 @@ function handleGetEvents(req, res) {
         dist = CityRegistry.haversineDistanceKm(userLat, userLng, eLat, eLng);
       }
     }
-    const activeListings = getActiveResaleListings(e.event_id);
+    const activeListings = getActiveResaleListings(e.event_id || e.id);
+    const totalAvailableTickets = activeListings.reduce((sum, l) => {
+      const qty = parseInt(l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1), 10);
+      return sum + (isNaN(qty) || qty < 0 ? 0 : qty);
+    }, 0);
+    const hasResale = totalAvailableTickets > 0;
     return {
       ...e,
       distance_km: dist,
-      active_listings_count: activeListings.length,
-      resale_available: activeListings.length > 0,
-      resale_listings_count: activeListings.length,
-      resale_price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null,
-      resale_price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : null,
+      active_listings_count: totalAvailableTickets,
+      resale_available: hasResale,
+      resale_listings_count: totalAvailableTickets,
+      resale_price_min: hasResale ? Math.min(...activeListings.map(l => l.price)) : null,
+      resale_price_max: hasResale ? Math.max(...activeListings.map(l => l.price)) : null,
       primary_price_min: (e.min_price !== undefined && e.min_price !== null) ? Number(e.min_price) : null,
       primary_price_max: (e.max_price !== undefined && e.max_price !== null) ? Number(e.max_price) : null,
-      price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : (e.min_price || null),
-      price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : (e.max_price || null),
+      price_min: hasResale ? Math.min(...activeListings.map(l => l.price)) : (e.min_price || null),
+      price_max: hasResale ? Math.max(...activeListings.map(l => l.price)) : (e.max_price || null),
       demand_score: e.popularity_score || 0,
       ticketing_status: e.status === 'SOLD_OUT' ? 'SOLD_OUT' : (e.official_ticket_url ? 'ON_SALE' : 'UPCOMING'),
       official_ticket_status: e.status === 'SOLD_OUT' ? 'SOLD_OUT' : (e.official_ticket_url ? 'ON_SALE' : (e.ticket_status || 'UPCOMING')),
@@ -1486,6 +1554,11 @@ router.get('/api/events/home-feed', (req, res) => {
   function formatSection13(e) {
     const temporal = EventTemporalLifecycleEngine.computeTemporalAttributes(e);
     const activeListings = getActiveResaleListings(e.event_id || e.id);
+    const totalAvailableTickets = activeListings.reduce((sum, l) => {
+      const qty = parseInt(l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1), 10);
+      return sum + (isNaN(qty) || qty < 0 ? 0 : qty);
+    }, 0);
+    const hasResale = totalAvailableTickets > 0;
     const resolvedImg = EventVisualProvenanceService.resolveCatalogEventImageProvenance(e, e.metadata || {});
 
     // Image Verification Gate check for homepage display
@@ -1530,15 +1603,15 @@ router.get('/api/events/home-feed', (req, res) => {
       image_confidence: imgConf,
       last_verified_at: e.last_verified_at || e.verified_at || now.toISOString(),
       source_last_seen_at: e.source_last_checked_at || e.last_seen_at || e.updated_at || now.toISOString(),
-      active_listings_count: activeListings.length,
-      resale_available: activeListings.length > 0,
-      resale_listings_count: activeListings.length,
-      resale_price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null,
-      resale_price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : null,
+      active_listings_count: totalAvailableTickets,
+      resale_available: hasResale,
+      resale_listings_count: totalAvailableTickets,
+      resale_price_min: hasResale ? Math.min(...activeListings.map(l => l.price)) : null,
+      resale_price_max: hasResale ? Math.max(...activeListings.map(l => l.price)) : null,
       primary_price_min: (e.min_price !== undefined && e.min_price !== null) ? Number(e.min_price) : null,
       primary_price_max: (e.max_price !== undefined && e.max_price !== null) ? Number(e.max_price) : null,
-      price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : (e.min_price || null),
-      price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : (e.max_price || null),
+      price_min: hasResale ? Math.min(...activeListings.map(l => l.price)) : (e.min_price || null),
+      price_max: hasResale ? Math.max(...activeListings.map(l => l.price)) : (e.max_price || null),
       demand_score: e.popularity_score || 0,
       ticketing_status: e.status === 'SOLD_OUT' ? 'SOLD_OUT' : (e.official_ticket_url ? 'ON_SALE' : 'UPCOMING'),
       official_ticket_status: e.status === 'SOLD_OUT' ? 'SOLD_OUT' : (e.official_ticket_url ? 'ON_SALE' : (e.ticket_status || 'UPCOMING')),
@@ -1747,7 +1820,10 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
     success: true,
     event,
     resale_inventory: {
-      active_count: activeListings.length,
+      active_count: activeListings.reduce((sum, l) => {
+        const qty = parseInt(l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1), 10);
+        return sum + (isNaN(qty) || qty < 0 ? 0 : qty);
+      }, 0),
       listings: activeListings
     },
     demand_intelligence: {

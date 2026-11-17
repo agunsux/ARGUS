@@ -1765,10 +1765,17 @@
                 Informasi dan ketersediaan tiket resmi dipantau langsung dari kanal resmi promotor (${promoter}). TIKUM memfasilitasi penemuan event dan pasar sekunder terverifikasi dengan jaminan <em>Zero Fake Inventory</em>.
               </div>
 
-              <div class="resale-status">
-                <span>Stok Resale Sekunder TIKUM:</span>
-                <span class="resale-zero">0 Tiket (Zero Fake Inventory)</span>
-              </div>
+              ${(() => {
+                const resaleCount = parseInt(h.resale_inventory_count !== undefined ? h.resale_inventory_count : (h.resale_listings_count !== undefined ? h.resale_listings_count : (h.active_listings_count || 0)), 10);
+                const resaleBadge = (resaleCount > 0)
+                  ? `<span class="resale-available" style="color:#22c55e; font-weight:700;"><i class="fa-solid fa-ticket"></i> ${resaleCount} Tiket Tersedia</span>`
+                  : `<span class="resale-zero">0 Tiket (Zero Fake Inventory)</span>`;
+                return `
+                <div class="resale-status">
+                  <span>Stok Resale Sekunder TIKUM:</span>
+                  ${resaleBadge}
+                </div>`;
+              })()}
 
               <div class="btn-group">
                 ${officialUrl !== '#' ? `

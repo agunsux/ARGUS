@@ -121,7 +121,16 @@ class TicketInventoryService {
     rawBarcode = null
   }) {
     // 1. Validate seller exists and is ACTIVE
-    const seller = state.users.find(u => u.id === sellerId);
+    let seller = (state.users || []).find(u => u.id === sellerId);
+    if (!seller) {
+      try {
+        const { getUserRepository } = require('../../storage');
+        const userRepo = getUserRepository();
+        if (userRepo && typeof userRepo.getUserById === 'function') {
+          seller = await userRepo.getUserById(sellerId).catch(() => null);
+        }
+      } catch (_) {}
+    }
     if (!seller) {
       const err = new Error(`Seller '${sellerId}' not found`);
       err.code = 'SELLER_NOT_FOUND';
@@ -141,14 +150,22 @@ class TicketInventoryService {
     }
 
     // 2. Validate canonical event exists and is not CANCELLED
-    const event = state.events.find(e => e.id === canonicalEventId);
+    let event = (state.events || []).find(e => e.id === canonicalEventId || e.event_id === canonicalEventId);
+    if (!event) {
+      try {
+        const { canonicalRegistry } = require('../../discovery/CanonicalEventRegistry');
+        if (canonicalRegistry && typeof canonicalRegistry.getEventById === 'function') {
+          event = canonicalRegistry.getEventById(canonicalEventId);
+        }
+      } catch (_) {}
+    }
     if (!event) {
       const err = new Error(`Canonical event '${canonicalEventId}' not found`);
       err.code = 'EVENT_NOT_FOUND';
       throw err;
     }
 
-    if (event.status === 'CANCELLED') {
+    if (event.status === 'CANCELLED' || event.lifecycle_status === 'CANCELLED') {
       const err = new Error(`Cannot create ticket for CANCELLED event '${canonicalEventId}'`);
       err.code = 'EVENT_CANCELLED';
       throw err;
@@ -270,7 +287,7 @@ class TicketInventoryService {
    * @returns {Object} Updated ticket
    */
   static async submitForVerification(ticketId, sellerId, evidenceBundleId = null) {
-    const ticket = this.findTicket(ticketId);
+    const ticket = await this.getTicketById(ticketId);
     if (!ticket) {
       const err = new Error(`Ticket '${ticketId}' not found`);
       err.code = 'TICKET_NOT_FOUND';
@@ -326,7 +343,7 @@ class TicketInventoryService {
    * @returns {Object} Updated ticket
    */
   static async transitionStatus(ticketId, newStatus, actorId, reason = null) {
-    const ticket = this.findTicket(ticketId);
+    const ticket = await this.getTicketById(ticketId);
     if (!ticket) {
       const err = new Error(`Ticket '${ticketId}' not found`);
       err.code = 'TICKET_NOT_FOUND';

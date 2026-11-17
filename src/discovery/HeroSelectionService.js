@@ -197,6 +197,21 @@ class HeroSelectionService {
     const fallbackSvg = `/api/events/${encodeURIComponent(slug)}/poster.svg`;
     const resolvedPoster = (ev.poster_url && !ev.poster_url.includes('placeholder-event.svg')) ? ev.poster_url : (ev.image_url || fallbackSvg);
 
+    let activeListings = [];
+    try {
+      const { ListingService } = require('../services/listingService');
+      activeListings = ListingService.getActiveListings(ev.id || ev.event_id) || [];
+    } catch (_) {
+      activeListings = [];
+    }
+
+    const totalAvailableTickets = activeListings.reduce((sum, l) => {
+      const qty = parseInt(l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1), 10);
+      return sum + (isNaN(qty) || qty < 0 ? 0 : qty);
+    }, 0);
+
+    const hasResale = totalAvailableTickets > 0;
+
     return {
       id: ev.id || ev.event_id,
       slug: ev.slug,
@@ -227,9 +242,15 @@ class HeroSelectionService {
       primary_ticket_status: ev.primary_ticket_status || 'AVAILABLE',
       min_price: eligibleMinPrice,
       max_price: Number(ev.max_price) || eligibleMinPrice,
-      resale_inventory_count: 0,
-      resale_available: false,
-      resale_notice: 'Belum ada tiket resale sekunder terverifikasi di TIKUM untuk event ini. TIKUM menerapkan Zero Fake Inventory.',
+      resale_inventory_count: totalAvailableTickets,
+      active_listings_count: totalAvailableTickets,
+      resale_listings_count: totalAvailableTickets,
+      resale_available: hasResale,
+      resale_price_min: hasResale ? Math.min(...activeListings.map(l => l.price)) : null,
+      resale_price_max: hasResale ? Math.max(...activeListings.map(l => l.price)) : null,
+      resale_notice: hasResale
+        ? `Tersedia ${totalAvailableTickets} tiket resale sekunder terverifikasi di TIKUM.`
+        : 'Belum ada tiket resale sekunder terverifikasi di TIKUM untuk event ini. TIKUM menerapkan Zero Fake Inventory.',
       buyer_protection_policy: 'TIKUM Buyer Protection: Transaksi dilindungi rekening escrow dan verifikasi turnstile venue.',
       observed_at: ev.source_last_checked_at || ev.source_published_at || ev.verified_at || '2026-10-25T12:00:00+07:00',
       evidence_hash: ev.evidence_hash || null,
