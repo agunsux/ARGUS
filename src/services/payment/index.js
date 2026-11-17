@@ -1,10 +1,11 @@
 /**
- * ARGUS Payment Gateway Registry (Section 0, 3, 16, 23)
+ * ARGUS Payment Gateway Registry (EPIC P1.0: DOKU-Only Sandbox Readiness)
  *
  * Central registry managing regional payment providers:
- * - Primary Rail: DOKU (PT Nusa Satu Inti Artha) — Escrow & Hold & Release Settlement
- * - Backup #1: Midtrans (PT Midtrans / GoTo Financial) — Snap, Iris, Core API
- * - Backup #2: Xendit (PT Sinar Digital Terdepan) — xenPlatform, Invoices, Disbursements
+ * - Primary Rail: DOKU (PT Nusa Satu Inti Artha) — PRIMARY (Sole Active Sandbox Development Rail)
+ * - FROZEN: iPaymu (PT iPaymu Digital Solusindo) — Retained for history/config; no transactions/activations
+ * - REMOVED: Midtrans (PT Midtrans / GoTo Financial) — Removed from active operations; history preserved
+ * - REMOVED: Xendit (PT Sinar Digital Terdepan) — Removed from active operations; history preserved
  * - REMOVED: RCB (Completely deleted from production architecture)
  */
 
@@ -17,13 +18,18 @@ const { IPaymuProvider, IPAYMU_STATUS } = require('./IPaymuProvider');
 class PaymentManager {
   constructor() {
     this.providers = new Map();
-    this.defaultProvider = (process.env.DEFAULT_PAYMENT_PROVIDER || 'doku').toLowerCase();
+    this.historicalProviders = new Map();
+    this.defaultProvider = 'doku';
 
-    // Register primary and backup production providers
+    // 1. Primary Active Provider: DOKU (Sole Active Sandbox Gateway)
     this.registerProvider(new DokuPaymentProvider());
-    this.registerProvider(new MidtransPaymentProvider());
-    this.registerProvider(new XenditPaymentProvider());
-    this.registerProvider(new IPaymuProvider());
+
+    // 2. Frozen Provider: iPaymu (Retained for historical data and config; no checkout routing)
+    this.registerProvider(new IPaymuProvider({ frozen: true }));
+
+    // 3. Removed Providers: Midtrans and Xendit (Preserved on disk for historical audit & data retention)
+    this.historicalProviders.set('midtrans', new MidtransPaymentProvider());
+    this.historicalProviders.set('xendit', new XenditPaymentProvider());
 
     // Register DeterministicTestProvider in test environment if present
     if (process.env.NODE_ENV === 'test') {
@@ -44,8 +50,12 @@ class PaymentManager {
   }
 
   getProvider(name = this.defaultProvider) {
-    const provider = this.providers.get((name || this.defaultProvider).toLowerCase());
+    const key = (name || this.defaultProvider).toLowerCase();
+    const provider = this.providers.get(key);
     if (!provider) {
+      if (this.historicalProviders && this.historicalProviders.has(key)) {
+        return this.historicalProviders.get(key);
+      }
       throw new Error(`Payment provider '${name}' not supported or registered`);
     }
     return provider;
@@ -53,29 +63,38 @@ class PaymentManager {
 
   hasProvider(name) {
     if (!name) return false;
-    return this.providers.has(name.toLowerCase());
+    const key = name.toLowerCase();
+    // Only active, non-removed providers count as registered active providers
+    return this.providers.has(key);
   }
 
   setDefaultProvider(name) {
-    if (!this.hasProvider(name)) {
-      throw new Error(`Cannot set unknown provider '${name}' as default`);
+    const key = (name || '').toLowerCase();
+    if (key !== 'doku') {
+      throw new Error(`Cannot set provider '${name}' as default. DOKU is the sole primary payment gateway.`);
     }
-    this.defaultProvider = name.toLowerCase();
+    this.defaultProvider = 'doku';
   }
 
   /**
    * Get all active providers, their status, capabilities, and channels
+   * Only returns active checkout providers (excludes FROZEN and REMOVED providers)
    */
   getAvailablePaymentMethods() {
     const list = [];
     for (const [name, provider] of this.providers.entries()) {
+      const statusObj = provider.getStatus ? provider.getStatus() : { status: 'UNKNOWN' };
+      // Exclude FROZEN and REMOVED providers from active payment checkout methods
+      if (statusObj.status === 'FROZEN' || statusObj.status === 'REMOVED' || provider.isFrozen) {
+        continue;
+      }
       list.push({
         provider: name,
         country: provider.getCountry(),
         countries: provider.getSupportedCountries ? provider.getSupportedCountries() : [provider.getCountry()],
         currencies: provider.getSupportedCurrencies ? provider.getSupportedCurrencies() : ['IDR'],
-        status: provider.getStatus ? provider.getStatus().status : 'UNKNOWN',
-        is_verified: provider.getStatus ? provider.getStatus().isVerified : false,
+        status: statusObj.status,
+        is_verified: statusObj.isVerified,
         health: provider.getHealth ? provider.getHealth() : { status: 'ACTIVE' },
         capabilities: provider.getCapabilities ? provider.getCapabilities() : null,
         channels: provider.getSupportedChannels()

@@ -25,7 +25,8 @@ const XENDIT_STATUS = {
   ACTIVE: 'ACTIVE',
   PENDING_VERIFICATION: 'PENDING_VERIFICATION',
   DEGRADED: 'DEGRADED',
-  BLOCKED: 'BLOCKED'
+  BLOCKED: 'BLOCKED',
+  REMOVED: 'REMOVED'
 };
 
 class XenditPaymentProvider extends PaymentProvider {
@@ -61,18 +62,15 @@ class XenditPaymentProvider extends PaymentProvider {
   }
 
   getStatus() {
-    const hasKeys = Boolean(this.secretKey);
-    const isReady = hasKeys || this.allowSimulation;
     return {
       provider: this.getName(),
-      status: isReady ? XENDIT_STATUS.ACTIVE : XENDIT_STATUS.PENDING_VERIFICATION,
-      isVerified: isReady,
+      status: XENDIT_STATUS.REMOVED,
+      isVerified: false,
+      isAvailable: false,
       environment: this.mode,
-      hasSecretKey: hasKeys,
-      message: isReady
-        ? 'Xendit payment rail active (xenPlatform enabled; escrow unavailable; secondary ticketing requires partner underwriting approval; ID domestic disbursements only)'
-        : 'PAYMENT PROVIDER XENDIT: Awaiting XENDIT_SECRET_KEY configuration',
-      tier: 'TIER_2B',
+      hasSecretKey: Boolean(this.secretKey),
+      message: 'PAYMENT PROVIDER: REMOVED — Xendit is removed from active payment operations. Historical records preserved.',
+      tier: 'REMOVED',
       underwritingRequirements: {
         category: 'HIGH_RISK_SECONDARY_TICKETING',
         approvalRequired: true,
@@ -197,111 +195,10 @@ class XenditPaymentProvider extends PaymentProvider {
     idempotencyKey = null,
     correlationId = null
   }) {
-    if (requiresEscrow) {
-      throw new CapabilityUnsupportedError(
-        this.getName(),
-        'escrow',
-        'ESCROW_UNAVAILABLE: Xendit split payment is not third-party milestone escrow. Use DOKU for escrow-backed transactions.'
-      );
-    }
-
-    const gross = parseInt(amount, 10);
-
-    // Live HTTP execution if secretKey is present and not allowSimulation
-    if (this.secretKey && !this.allowSimulation) {
-      if ((this.mode === 'production' || process.env.NODE_ENV === 'production') && process.env.ENABLE_XENDIT_PRODUCTION !== 'true') {
-        throw new Error('Live Xendit production API client awaiting merchant production activation.');
-      }
-
-      const payload = {
-        external_id: orderId,
-        amount: gross,
-        payer_email: buyer.email || 'support@tikum.app',
-        description: `Tikum Order ${orderId}`,
-        invoice_duration: 86400,
-        customer: {
-          given_names: buyer.name || 'Tikum Customer',
-          email: buyer.email || 'support@tikum.app',
-          mobile_number: buyer.phone || '081299927378'
-        }
-      };
-
-      const basicAuth = Buffer.from(`${this.secretKey}:`).toString('base64');
-      const response = await this._httpRequest({
-        url: `${this.apiBaseUrl}/v2/invoices`,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Basic ${basicAuth}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        const errorMsg = response.json?.message || response.json?.error_code || `HTTP ${response.statusCode}`;
-        const err = new Error(`Xendit Invoice API error: ${errorMsg}`);
-        err.code = 'XENDIT_API_ERROR';
-        err.status = response.statusCode;
-        err.details = response.json;
-        throw err;
-      }
-
-      const invData = response.json || {};
-      const invoiceId = invData.id;
-      const invoiceUrl = invData.invoice_url;
-
-      return {
-        provider: this.getName(),
-        orderId,
-        providerReference: invoiceId,
-        providerTransactionId: invoiceId,
-        amount: gross,
-        currency,
-        channel,
-        status: MONEY_STATE.PAYMENT_PENDING,
-        requiresEscrow: false,
-        escrowHeld: false,
-        paymentUrl: invoiceUrl,
-        paymentDetails: {
-          invoiceId,
-          checkoutUrl: invoiceUrl,
-          expiryDate: invData.expiry_date
-        },
-        idempotencyKey,
-        correlationId,
-        simulated: false
-      };
-    }
-
-    // Simulation mode for testing / sandbox verification
-    if (this.allowSimulation || !this.secretKey) {
-      const invoiceId = `xen-inv-${orderId}-${Date.now()}`;
-      const invoiceUrl = `https://checkout.xendit.co/web/${invoiceId}`;
-      return {
-        provider: this.getName(),
-        orderId,
-        providerReference: invoiceId,
-        providerTransactionId: invoiceId,
-        amount: gross,
-        currency,
-        channel,
-        status: MONEY_STATE.PAYMENT_PENDING,
-        requiresEscrow: false,
-        escrowHeld: false,
-        paymentUrl: invoiceUrl,
-        paymentDetails: {
-          invoiceId,
-          checkoutUrl: invoiceUrl,
-          vaNumber: channel.startsWith('VA') ? `9900${Math.floor(1000000000 + Math.random() * 9000000000)}` : null
-        },
-        idempotencyKey,
-        correlationId,
-        simulated: true
-      };
-    }
-
-    throw new Error('Live Xendit production client awaiting credentials.');
+    const err = new Error('PROVIDER_REMOVED: Xendit has been removed from active payment operations. DOKU is the primary gateway.');
+    err.code = 'PROVIDER_REMOVED';
+    err.status = 410;
+    throw err;
   }
 
   async getPaymentStatus(refOrObj) {

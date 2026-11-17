@@ -155,19 +155,24 @@ async function runSuite() {
   // ---------------------------------------------------------------------------
   console.log('── Section 1: Multi-Provider Tiering & Initial Health Checks ──');
 
-  check('1.1 DOKU is Primary, iPaymu is Secondary/Emergency Alternative', () => {
+  check('1.1 DOKU is Primary, iPaymu is FROZEN, Midtrans and Xendit REMOVED', () => {
     assert.strictEqual(paymentManager.defaultProvider, 'doku');
     assert.ok(paymentManager.hasProvider('doku'));
     assert.ok(paymentManager.hasProvider('ipaymu'));
-    assert.ok(paymentManager.hasProvider('midtrans'));
-    assert.ok(paymentManager.hasProvider('xendit'));
+    assert.strictEqual(paymentManager.hasProvider('midtrans'), false);
+    assert.strictEqual(paymentManager.hasProvider('xendit'), false);
+    assert.strictEqual(paymentManager.getProvider('ipaymu').getStatus().status, 'FROZEN');
+    assert.strictEqual(paymentManager.getProvider('midtrans').getStatus().status, 'REMOVED');
+    assert.strictEqual(paymentManager.getProvider('xendit').getStatus().status, 'REMOVED');
   });
 
-  check('1.2 Initial state has all circuit breakers CLOSED and available', () => {
+  check('1.2 DOKU is active for routing; iPaymu, Midtrans, and Xendit unavailable', () => {
     assert.strictEqual(PaymentRoutingService.isProviderAvailable('doku'), true);
     assert.strictEqual(PaymentRoutingService.isProviderAvailable('doku', 'direct'), true);
     assert.strictEqual(PaymentRoutingService.isProviderAvailable('doku', 'checkout'), true);
-    assert.strictEqual(PaymentRoutingService.isProviderAvailable('ipaymu'), true);
+    assert.strictEqual(PaymentRoutingService.isProviderAvailable('ipaymu'), false);
+    assert.strictEqual(PaymentRoutingService.isProviderAvailable('midtrans'), false);
+    assert.strictEqual(PaymentRoutingService.isProviderAvailable('xendit'), false);
   });
 
   // ---------------------------------------------------------------------------
@@ -279,7 +284,7 @@ async function runSuite() {
     });
   });
 
-  await check('4.3 Attempting to create duplicate payment with different provider on same order is rejected', async () => {
+  await check('4.3 Attempting to create payment with frozen provider on same order is rejected', async () => {
     await assert.rejects(async () => {
       await PaymentService.createPayment({
         orderId,
@@ -290,17 +295,17 @@ async function runSuite() {
         requiresEscrow: false
       });
     }, (err) => {
-      assert.strictEqual(err.code, 'FAILOVER_UNCERTAIN_STATE_BLOCKED');
+      assert.ok(err.code === 'PROVIDER_FROZEN' || err.code === 'FAILOVER_UNCERTAIN_STATE_BLOCKED');
       return true;
     });
   });
 
   // ---------------------------------------------------------------------------
-  // SECTION 5: RULE F — EMERGENCY ALTERNATIVE (IPAYMU)
+  // SECTION 5: RULE F — FAIL-CLOSED WHEN ALL DOKU CHANNELS UNAVAILABLE
   // ---------------------------------------------------------------------------
-  console.log('\n── Section 5: Rule F — Emergency Fallback When All DOKU Integrations Unavailable ──');
+  console.log('\n── Section 5: Rule F — Fail-Closed When All DOKU Integrations Unavailable ──');
 
-  await check('5.1 When both DOKU Direct API and Checkout are down, routes to iPaymu emergency alternative', async () => {
+  await check('5.1 When both DOKU Direct API and Checkout are down, fail closed without external failover', async () => {
     // Trip doku_checkout as well
     for (let i = 0; i < 5; i++) {
       PaymentRoutingService.recordProviderFailure('doku', 'checkout');
@@ -308,7 +313,7 @@ async function runSuite() {
 
     assert.strictEqual(PaymentRoutingService.isProviderAvailable('doku', 'direct'), false);
     assert.strictEqual(PaymentRoutingService.isProviderAvailable('doku', 'checkout'), false);
-    assert.strictEqual(PaymentRoutingService.isProviderAvailable('ipaymu'), true);
+    assert.strictEqual(PaymentRoutingService.isProviderAvailable('ipaymu'), false);
 
     const emergencyOrderId = 'ord-emergency-001';
     state.orders.push({
@@ -323,28 +328,11 @@ async function runSuite() {
       status: 'PENDING_PAYMENT'
     });
 
-    const resolution = PaymentRoutingService.resolveResilientChannelOrFallback({
-      channel: 'VA_BCA',
-      requiresEscrow: true,
-      orderId: emergencyOrderId
-    });
-
-    assert.strictEqual(resolution.provider, 'ipaymu');
-    assert.strictEqual(resolution.integrationType, 'EMERGENCY_ALTERNATIVE');
-    assert.strictEqual(resolution.fallbackApplied, true);
-  });
-
-  await check('5.2 When all providers are circuit-broken, fail closed with explicit error', async () => {
-    // Trip ipaymu as well
-    for (let i = 0; i < 5; i++) {
-      PaymentRoutingService.recordProviderFailure('ipaymu');
-    }
-
     assert.throws(() => {
       PaymentRoutingService.resolveResilientChannelOrFallback({
         channel: 'VA_BCA',
         requiresEscrow: true,
-        orderId: 'ord-all-down-001'
+        orderId: emergencyOrderId
       });
     }, (err) => {
       assert.ok(err.message.includes('unavailable or circuit-broken'));

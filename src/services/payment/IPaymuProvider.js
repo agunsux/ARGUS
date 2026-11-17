@@ -25,7 +25,8 @@ const { IPaymuSellerOnboardingService } = require('./ipaymu/IPaymuSellerOnboardi
 const IPAYMU_STATUS = {
   PENDING_VERIFICATION: 'PENDING_VERIFICATION',
   ACTIVE: 'ACTIVE',
-  BLOCKED: 'BLOCKED'
+  BLOCKED: 'BLOCKED',
+  FROZEN: 'FROZEN'
 };
 
 class IPaymuProvider extends PaymentProvider {
@@ -39,6 +40,7 @@ class IPaymuProvider extends PaymentProvider {
       ? 'https://my.ipaymu.com/api/v2'
       : 'https://sandbox.ipaymu.com/api/v2');
 
+    this.isFrozen = config.frozen !== undefined ? Boolean(config.frozen) : true;
     this.merchantVerified = config.merchantVerified === true;
     this.controlledTransactionPassed = config.controlledTransactionPassed === true;
     this.allowSimulation = config.allowSimulation !== undefined
@@ -100,16 +102,14 @@ class IPaymuProvider extends PaymentProvider {
     const hasCreds = Boolean(this.apiKey && this.virtualAccount);
     return {
       provider: this.getName(),
-      status: readiness.status,
-      isVerified: readiness.is_ready,
+      status: IPAYMU_STATUS.FROZEN,
+      isVerified: false,
+      isAvailable: false,
+      frozen: true,
       environment: this.mode,
       hasCredentials: hasCreds,
-      message: readiness.is_ready
-        ? 'iPaymu provider fully verified and active'
-        : (hasCreds
-          ? 'PAYMENT PROVIDER: PENDING VERIFICATION — Sandbox credentials configured, merchant approval pending'
-          : 'PAYMENT PROVIDER: PENDING CONFIGURATION — Missing IPAYMU_API_KEY or IPAYMU_VA'),
-      tier: 'TIER_1B',
+      message: 'PAYMENT PROVIDER: FROZEN — Retained for history and configuration. No transactions or activations.',
+      tier: 'TIER_1B_FROZEN',
       readiness: readiness.checklist
     };
   }
@@ -285,6 +285,13 @@ class IPaymuProvider extends PaymentProvider {
     returnUrl = null,
     cancelUrl = null
   }) {
+    if (this.isFrozen || process.env.ENABLE_IPAYMU_TRANSACTIONS !== 'true') {
+      const err = new Error('PROVIDER_FROZEN: iPaymu is frozen and cannot process new payment transactions. DOKU is the primary gateway.');
+      err.code = 'PROVIDER_FROZEN';
+      err.status = 503;
+      throw err;
+    }
+
     // 1. Escrow channel capability validation: VA & Qualifying Unique Code required for escrow
     if (requiresEscrow && !this.isEscrowSupported(channel)) {
       const err = new Error(

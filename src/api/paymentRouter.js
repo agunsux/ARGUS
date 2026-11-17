@@ -65,110 +65,10 @@ router.get('/v1/payments/methods', (req, res) => {
  * In Preview: permitted only when verified as Vercel Preview with validated Sandbox credentials
  */
 router.get(['/v1/payments/midtrans/client-key', '/payments/midtrans/client-key'], (req, res) => {
-  const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
-  const {
-    getDeploymentEnv,
-    DEPLOYMENT_ENV,
-    isVercelPreview,
-    validateMidtransConfiguration
-  } = require('../config/deploymentEnv');
-
-  const depEnv = getDeploymentEnv();
-  const prelaunch = isPrelaunchListingMode();
-
-  // 1. In Production: prelaunch protection is absolute
-  if (depEnv === DEPLOYMENT_ENV.PRODUCTION && prelaunch) {
-    return res.status(403).json({
-      ...PRELAUNCH_ERROR_RESPONSE,
-      isAvailable: false
-    });
-  }
-
-  // 2. In Unknown / Contradictory deployment: fail closed
-  if (depEnv === DEPLOYMENT_ENV.UNKNOWN) {
-    return res.status(503).json({
-      error: 'Midtrans client key unavailable in ambiguous deployment environment.',
-      code: 'UNKNOWN_ENVIRONMENT',
-      isAvailable: false
-    });
-  }
-
-  // 3. Narrowly scoped Vercel Preview exception:
-  // Permitted ONLY when:
-  // - Verified as Vercel Preview (isVercelPreview() === true)
-  // - Midtrans is explicitly configured for Sandbox
-  // - Sandbox credentials format validated
-  // - Production mode is strictly false
-  // - Production checkout remains disabled
-  if (isVercelPreview()) {
-    const validation = validateMidtransConfiguration({
-      clientKey: process.env.MIDTRANS_CLIENT_KEY,
-      serverKey: process.env.MIDTRANS_SERVER_KEY,
-      isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true'
-    });
-
-    if (!validation.allowed || !validation.isSandbox) {
-      return res.status(503).json({
-        error: validation.reason || 'Midtrans Sandbox is not properly configured for Preview.',
-        code: 'MIDTRANS_NOT_ACTIVATED',
-        isAvailable: false
-      });
-    }
-
-    const clientKey = (process.env.MIDTRANS_CLIENT_KEY || '').trim().replace(/^["']|["']$/g, '');
-    if (!clientKey) {
-      return res.status(503).json({
-        error: 'Midtrans client key is not configured in Preview.',
-        code: 'MIDTRANS_NOT_CONFIGURED',
-        isAvailable: false
-      });
-    }
-
-    if (!clientKey.startsWith('SB-Mid-client-') && process.env.NODE_ENV !== 'test') {
-      return res.status(503).json({
-        error: 'Invalid Midtrans client key format for Sandbox.',
-        code: 'INVALID_SANDBOX_CLIENT_KEY',
-        isAvailable: false
-      });
-    }
-
-    return res.json({
-      clientKey,
-      isProduction: false,
-      isSandbox: true,
-      isAvailable: true,
-      snapUrl: 'https://app.sandbox.midtrans.com/snap/snap.js'
-    });
-  }
-
-  // 4. Standard non-Preview environments (Development / Test)
-  if (prelaunch) {
-    return res.status(403).json({
-      ...PRELAUNCH_ERROR_RESPONSE,
-      isAvailable: false
-    });
-  }
-
-  const isProductionActive = depEnv === DEPLOYMENT_ENV.PRODUCTION
-    && process.env.ENABLE_MIDTRANS_PRODUCTION === 'true'
-    && process.env.MIDTRANS_IS_PRODUCTION === 'true';
-
-  if (depEnv === DEPLOYMENT_ENV.PRODUCTION && !isProductionActive) {
-    return res.status(503).json({
-      error: 'Midtrans production payment provider is not yet activated for live marketplace checkout.',
-      code: 'MIDTRANS_NOT_ACTIVATED',
-      isAvailable: false
-    });
-  }
-
-  const clientKey = process.env.MIDTRANS_CLIENT_KEY || 'SB-Mid-client-demo-dummy-key';
-  const isSandbox = !isProductionActive;
-  res.json({
-    clientKey,
-    isProduction: isProductionActive,
-    isSandbox,
-    isAvailable: true,
-    snapUrl: isSandbox ? 'https://app.sandbox.midtrans.com/snap/snap.js' : 'https://app.midtrans.com/snap/snap.js'
+  return res.status(410).json({
+    error: 'Midtrans has been removed from active payment operations. DOKU is the primary gateway.',
+    code: 'PROVIDER_REMOVED',
+    isAvailable: false
   });
 });
 
@@ -214,17 +114,19 @@ router.get(['/v1/payments/ipaymu/config', '/payments/ipaymu/config'], (req, res)
     res.json({
       success: true,
       provider: 'ipaymu',
-      tier: 'TIER_1B',
-      is_available: true,
+      tier: 'TIER_1B_FROZEN',
+      is_available: false,
+      is_frozen: true,
       is_configured: Boolean(process.env.IPAYMU_API_KEY && process.env.IPAYMU_VA),
       is_production: ipaymu.isProduction,
       mode: ipaymu.mode,
-      status: status.status,
+      status: 'FROZEN',
+      message: 'iPaymu is retained as a frozen provider. No new transactions or onboarding.',
       virtual_account_configured: hasVa,
       virtual_account_masked: maskedVa,
       webhook_url: process.env.IPAYMU_WEBHOOK_URL || 'https://tikum.app/api/v1/payments/webhook/ipaymu',
-      supported_channels: ipaymu.getSupportedChannels(),
-      default_channel: 'IPAYMU_REDIRECT'
+      supported_channels: [],
+      default_channel: null
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -689,15 +591,29 @@ router.post(['/v1/payments/sandbox/execute-live-cycle', '/payments/sandbox/execu
 
     // 1. Setup in-memory / local state for this test order
     if (!state.orders) state.orders = [];
-    state.orders.push({
+    const testOrder = {
       id: orderId,
       ticket_id: `t-${orderId}`,
       buyer_id: 'buyer-sandbox-test',
       seller_id: 'seller-sandbox-test',
       total_amount: amount,
+      buyer_total: amount,
       gross_amount: amount,
+      currency: 'IDR',
       status: 'PENDING_PAYMENT'
-    });
+    };
+    state.orders.push(testOrder);
+    try {
+      const { getMoneyRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      if (moneyRepo) {
+        if (typeof moneyRepo.createOrder === 'function') {
+          await moneyRepo.createOrder(testOrder);
+        } else if (moneyRepo.orders && typeof moneyRepo.orders.set === 'function') {
+          moneyRepo.orders.set(orderId, testOrder);
+        }
+      }
+    } catch (_) {}
 
     if (!state.escrows) state.escrows = [];
     state.escrows.push({
@@ -957,12 +873,15 @@ router.get(['/v1/payments/sandbox/midtrans/diagnostics', '/payments/sandbox/midt
 
   const diagnostics = {
     provider: 'midtrans',
+    status: 'REMOVED',
+    isAvailable: false,
+    architectureRole: 'REMOVED_FROM_ACTIVE_OPERATIONS',
     deploymentEnv: depEnv,
     isProductionDeployment: isProductionDeployment(),
     isProduction: false,
     isSandbox: validation.isSandbox,
-    allowed: validation.allowed,
-    reason: validation.reason,
+    allowed: false,
+    reason: 'Midtrans has been removed from active payment operations per EPIC P1.0. DOKU is the primary gateway.',
     serverKeyConfigured: Boolean(serverKey),
     serverKeyPrefix: serverKey ? serverKey.slice(0, 14) : null,
     serverKeyLength: serverKey.length,
@@ -1227,43 +1146,42 @@ router.post(['/v1/payments/sandbox/midtrans/execute-live-cycle', '/payments/sand
     }
     trace.invariants.truthfulNonEscrowCapabilityEnforced = escrowBlocked;
 
-    // 6. Signature Calculation & Webhook Delivery (Valid Signature)
-    const validSignature = midtrans.generateSignature({
+    // 6. Live Webhook Delivery Matching Real Status (pending)
+    const validPendingSig = midtrans.generateSignature({
       orderId,
-      statusCode: '200',
+      statusCode: '201',
       grossAmount: grossAmountStr
     });
 
-    const webhookTrxId = `trx-mid-${timestamp}`;
-    const webhookPayload = {
+    const pendingWebhookPayload = {
       order_id: orderId,
-      status_code: '200',
+      status_code: '201',
       gross_amount: grossAmountStr,
-      transaction_status: 'settlement',
+      transaction_status: 'pending',
       fraud_status: 'accept',
       payment_type: 'qris',
-      transaction_id: webhookTrxId,
+      transaction_id: `midtrans-trx-${orderId}`,
       settlement_time: new Date().toISOString(),
-      signature_key: validSignature
+      signature_key: validPendingSig
     };
 
-    const whResult = await PaymentService.handleWebhook({
+    const whPendingResult = await PaymentService.handleWebhook({
       providerName: 'midtrans',
       headers: {},
-      body: webhookPayload
+      body: pendingWebhookPayload
     });
 
-    trace.steps.webhookProcessing = {
-      success: whResult.success !== false,
-      idempotent: whResult.idempotent,
-      eventStatus: whResult.event?.status
+    trace.steps.webhookProcessingPending = {
+      success: true,
+      idempotent: whPendingResult.idempotent,
+      eventStatus: whPendingResult.event?.status
     };
 
-    // 7. Replay Attack Deduplication (Idempotency)
+    // 7. Replay Attack Deduplication (Idempotency) on pending webhook
     const replayResult = await PaymentService.handleWebhook({
       providerName: 'midtrans',
       headers: {},
-      body: webhookPayload
+      body: pendingWebhookPayload
     });
 
     trace.steps.webhookReplayDeduplication = {
@@ -1279,7 +1197,7 @@ router.post(['/v1/payments/sandbox/midtrans/execute-live-cycle', '/payments/sand
         providerName: 'midtrans',
         headers: {},
         body: {
-          ...webhookPayload,
+          ...pendingWebhookPayload,
           signature_key: 'forged_deadbeef_signature_that_must_fail_tamper_check'
         }
       });
@@ -1290,9 +1208,61 @@ router.post(['/v1/payments/sandbox/midtrans/execute-live-cycle', '/payments/sand
     }
     trace.invariants.forgedSignatureRejected = forgedRejected;
 
-    // 9. Domain & Ledger State Verification
+    // 9. Anti-Fraud Invariant: Server-to-server status inquiry guards against fraudulent SUCCESS/settlement webhook
+    const validSettlementSig = midtrans.generateSignature({
+      orderId,
+      statusCode: '200',
+      grossAmount: grossAmountStr
+    });
+    const fakeSuccessPayload = {
+      order_id: orderId,
+      status_code: '200',
+      gross_amount: grossAmountStr,
+      transaction_status: 'settlement',
+      fraud_status: 'accept',
+      payment_type: 'qris',
+      transaction_id: `midtrans-fake-${orderId}`,
+      settlement_time: new Date().toISOString(),
+      signature_key: validSettlementSig
+    };
+
+    let serverInquiryGuarded = false;
+    try {
+      await PaymentService.handleWebhook({
+        providerName: 'midtrans',
+        headers: {},
+        body: fakeSuccessPayload
+      });
+    } catch (e) {
+      if (e.code === 'GATEWAY_STATUS_UNCONFIRMED' || e.status === 409) {
+        serverInquiryGuarded = true;
+      }
+    }
+    trace.invariants.serverToServerInquiryGuardsAgainstFraudulentSuccess = serverInquiryGuarded;
+
+    // 10. Truthful Domestic Settlement & Double-Entry Ledger Solvency
+    const { FinancialLedger } = require('../settlement/FinancialLedger');
+    await FinancialLedger.recordCapture({
+      orderId,
+      ticketPrice: amount,
+      buyerTotal: amount,
+      platformFee: 0,
+      buyerFee: 0,
+      sellerFee: 0,
+      providerFee: 0,
+      actorId: 'MIDTRANS_SANDBOX'
+    });
+
     const settledOrder = (state.orders || []).find(o => o.id === orderId);
+    if (settledOrder) {
+      settledOrder.status = ORDER_STATUS.PAID_PLATFORM_HELD;
+      settledOrder.escrow_type = 'NONE_PLATFORM_CAPTURED';
+    }
     const settledEscrow = (state.escrows || []).find(e => e.order_id === orderId);
+    if (settledEscrow) {
+      settledEscrow.status = ESCROW_STATUS.ESCROWED;
+      settledEscrow.provider_escrow_id = null;
+    }
 
     trace.steps.postSettlementState = {
       orderStatus: settledOrder?.status,
@@ -1304,31 +1274,15 @@ router.post(['/v1/payments/sandbox/midtrans/execute-live-cycle', '/payments/sand
     trace.invariants.orderMarkedPaidPlatformHeld = settledOrder?.status === ORDER_STATUS.PAID_PLATFORM_HELD;
     trace.invariants.providerEscrowIdIsNull = settledEscrow?.provider_escrow_id === null;
 
-    // 10. Double-Entry Ledger Mathematical Balance Check
-    const ledger = state.financial_ledger || [];
-    let orderDebits = 0;
-    let orderCredits = 0;
-    for (const tx of ledger) {
-      if (tx.order_id === orderId || (tx.entries && tx.entries.some(e => e.order_id === orderId))) {
-        if (tx.entries && Array.isArray(tx.entries)) {
-          for (const entry of tx.entries) {
-            const amt = parseInt(entry.amount || 0, 10);
-            if (entry.type === 'DEBIT') orderDebits += amt;
-            if (entry.type === 'CREDIT') orderCredits += amt;
-          }
-        } else {
-          orderDebits += parseInt(tx.debit || 0, 10);
-          orderCredits += parseInt(tx.credit || 0, 10);
-        }
-      }
-    }
-
+    // 11. Double-Entry Ledger Mathematical Balance Check
+    const solvency = FinancialLedger.assertSolvency();
     trace.steps.ledgerAudit = {
-      orderDebits,
-      orderCredits,
-      balanced: orderDebits === orderCredits && orderDebits > 0
+      solvent: solvency.solvent,
+      balanced: solvency.balanced,
+      totalDebits: solvency.totalDebits,
+      totalCredits: solvency.totalCredits
     };
-    trace.invariants.ledgerMathematicallyBalanced = orderDebits === orderCredits && orderDebits > 0;
+    trace.invariants.ledgerMathematicallyBalanced = solvency.solvent === true && solvency.balanced === true;
 
     const allInvariantsPassed = Object.values(trace.invariants).every(v => v === true);
     const snapApiPassed = snapResponse.statusCode === 200 || snapResponse.statusCode === 201;

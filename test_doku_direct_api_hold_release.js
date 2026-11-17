@@ -57,6 +57,7 @@ let mockDokuServer;
 let mockDokuPort;
 let lastInterceptedDokuReq = null;
 let mockDokuReleaseHandler = null;
+const mockDokuOrders = new Map();
 
 function request({ method = 'GET', path, headers = {}, body = null }) {
   return new Promise((resolve, reject) => {
@@ -123,6 +124,7 @@ function createOrder({ orderId, amount = 100000, sellerId = 'sel-1', ticketId = 
     total_amount: amount,
     buyer_total: amount,
     total_price: amount,
+    currency: 'IDR',
     status: 'PENDING_PAYMENT',
     seller_id: sellerId,
     buyer_id: 'byr-001',
@@ -130,6 +132,21 @@ function createOrder({ orderId, amount = 100000, sellerId = 'sel-1', ticketId = 
     created_at: new Date().toISOString()
   };
   state.orders.push(order);
+
+  try {
+    const { getMoneyRepository } = require('./src/storage');
+    const moneyRepo = getMoneyRepository();
+    if (moneyRepo) {
+      if (typeof moneyRepo.createOrder === 'function') {
+        moneyRepo.createOrder(order);
+      } else if (moneyRepo.orders && typeof moneyRepo.orders.set === 'function') {
+        moneyRepo.orders.set(orderId, order);
+      }
+    }
+  } catch (_) {}
+
+  mockDokuOrders.set(`INV-DOKU-${orderId}`, { amount, currency: 'IDR' });
+  mockDokuOrders.set(orderId, { amount, currency: 'IDR' });
 
   const escrow = {
     id: `esc-${orderId}`,
@@ -251,11 +268,14 @@ async function runTestSuite() {
         // Direct API Virtual Account (BCA, Mandiri, BRI, BNI, Permata, DOKU)
         if (req.url.includes('-virtual-account/v2/payment-code') && req.method === 'POST') {
           const inv = json.order?.invoice_number || `INV-${Date.now()}`;
+          const amt = json.order?.amount || 100000;
+          const curr = json.order?.currency || 'IDR';
+          mockDokuOrders.set(inv, { amount: amt, currency: curr });
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
             order: {
               invoice_number: inv,
-              amount: json.order?.amount || 100000
+              amount: amt
             },
             virtual_account_info: {
               virtual_account_number: '8888000012345678',
@@ -280,6 +300,27 @@ async function runTestSuite() {
               status: 'SUCCESS',
               release_id: `REL-${Date.now()}`,
               released_at: new Date().toISOString()
+            }
+          }));
+          return;
+        }
+
+        // Status Inquiry: /orders/v1/status/:invoiceNumber
+        if (req.url.startsWith('/orders/v1/status/') && req.method === 'GET') {
+          const inv = req.url.replace('/orders/v1/status/', '');
+          const existingMock = mockDokuOrders.get(inv) || mockDokuOrders.get(`INV-DOKU-${inv}`) || mockDokuOrders.get(inv.replace(/^INV-DOKU-/, ''));
+          const amt = existingMock ? existingMock.amount : 100000;
+          const curr = existingMock ? existingMock.currency : 'IDR';
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            order: {
+              invoice_number: inv,
+              amount: amt,
+              currency: curr
+            },
+            transaction: {
+              status: 'SUCCESS',
+              date: new Date().toISOString()
             }
           }));
           return;
@@ -951,22 +992,23 @@ async function runTestSuite() {
     });
   });
 
-  await test('6.2 Secondary provider iPaymu creates payment when explicitly selected or routed', async () => {
+  await test('6.2 Frozen iPaymu rejects new payment transactions while preserving history', async () => {
     const orderId = `ord-sec-ipaymu-${Date.now()}`;
     createOrder({ orderId, amount: 150000 });
 
-    const pmt = await PaymentService.createPayment({
-      orderId,
-      amount: 150000,
-      currency: 'IDR',
-      channel: 'IPAYMU_REDIRECT',
-      providerName: 'ipaymu',
-      buyer: { id: 'byr-001', name: 'Buyer Test', email: 'test@tikum.app' }
+    await assert.rejects(async () => {
+      await PaymentService.createPayment({
+        orderId,
+        amount: 150000,
+        currency: 'IDR',
+        channel: 'IPAYMU_REDIRECT',
+        providerName: 'ipaymu',
+        buyer: { id: 'byr-001', name: 'Buyer Test', email: 'test@tikum.app' }
+      });
+    }, (err) => {
+      assert.strictEqual(err.code, 'PROVIDER_FROZEN');
+      return true;
     });
-
-    assert.strictEqual(pmt.provider, 'ipaymu');
-    assert.strictEqual(pmt.status, MONEY_STATE.PAYMENT_PENDING);
-    assert.ok(pmt.paymentUrl);
   });
 
   await test('6.3 Single-active-attempt invariant: failover does NOT double-charge ambiguous attempts', async () => {
@@ -1000,16 +1042,17 @@ async function runTestSuite() {
     assert.strictEqual(thrown.code, 'FAILOVER_UNCERTAIN_STATE_BLOCKED');
   });
 
-  await test('6.4 iPaymu webhook processing remains fully functional', async () => {
+  await test('6.4 iPaymu webhook processing remains fully functional for historical transactions', async () => {
     const orderId = `ord-ip-wh-${Date.now()}`;
     createOrder({ orderId, amount: 50000 });
 
-    await PaymentService.createPayment({
-      orderId,
-      amount: 50000,
-      currency: 'IDR',
-      channel: 'IPAYMU_REDIRECT',
-      providerName: 'ipaymu'
+    state.canonical_payments.push({
+      order_id: orderId,
+      provider: 'ipaymu',
+      provider_reference: orderId,
+      gross_amount: 50000,
+      status: MONEY_STATE.PAYMENT_PENDING,
+      metadata: {}
     });
 
     const ipBody = {

@@ -95,33 +95,15 @@ class PaymentService {
   static getSubsystemStatus() {
     const defaultName = paymentManager.defaultProvider || 'doku';
     let primaryStatus = { status: 'UNCONFIGURED' };
-    let midtransStatus = { status: 'UNCONFIGURED' };
-    let xenditStatus = { status: 'UNCONFIGURED' };
-    let ipaymuStatus = { status: 'UNCONFIGURED' };
 
     try {
       const doku = paymentManager.getProvider('doku');
       if (doku) primaryStatus = doku.getStatus();
     } catch (e) {}
 
-    try {
-      const midtrans = paymentManager.getProvider('midtrans');
-      if (midtrans) midtransStatus = midtrans.getStatus();
-    } catch (e) {}
-
-    try {
-      const xendit = paymentManager.getProvider('xendit');
-      if (xendit) xenditStatus = xendit.getStatus();
-    } catch (e) {}
-
-    try {
-      const ipaymu = paymentManager.getProvider('ipaymu');
-      if (ipaymu) ipaymuStatus = ipaymu.getStatus();
-    } catch (e) {}
-
     return {
       safety_gates: PRODUCTION_SAFETY_GATES,
-      architecture: 'DOKU Primary (Direct API) -> iPaymu Secondary',
+      architecture: 'DOKU Primary (Direct API & Sandbox Ready)',
       target_business_entity: 'PT SHINERVA PRAJNA TEJAS',
       default_provider: defaultName,
       primary_provider_name: 'doku',
@@ -147,31 +129,29 @@ class PaymentService {
         escrow_verification_matrix: primaryStatus.escrow_verification_matrix,
         contract_dependent_items: primaryStatus.contract_dependent_items
       },
-      secondary_provider: {
-        name: 'ipaymu',
-        role: 'SECONDARY_FALLBACK',
-        status: ipaymuStatus.status,
-        is_verified: ipaymuStatus.isVerified,
-        message: ipaymuStatus.message
-      },
-      backup_providers: {
-        backup_1: {
+      frozen_providers: {
+        ipaymu: {
           name: 'ipaymu',
-          status: ipaymuStatus.status,
-          is_verified: ipaymuStatus.isVerified,
-          message: ipaymuStatus.message
-        },
-        backup_2: {
+          status: 'FROZEN',
+          is_verified: false,
+          is_available: false,
+          message: 'iPaymu retained as frozen provider. No new transactions or onboarding.'
+        }
+      },
+      removed_providers: {
+        midtrans: {
           name: 'midtrans',
-          status: midtransStatus.status,
-          is_verified: midtransStatus.isVerified,
-          message: midtransStatus.message
+          status: 'REMOVED',
+          is_verified: false,
+          is_available: false,
+          message: 'Midtrans removed from active payment operations. Historical records preserved.'
         },
-        backup_3: {
+        xendit: {
           name: 'xendit',
-          status: xenditStatus.status,
-          is_verified: xenditStatus.isVerified,
-          message: xenditStatus.message
+          status: 'REMOVED',
+          is_verified: false,
+          is_available: false,
+          message: 'Xendit removed from active payment operations. Historical records preserved.'
         }
       },
       legacy_rcb: {
@@ -183,7 +163,7 @@ class PaymentService {
       marketplace_financial_state: {
         real_money_active: false,
         settlement_active: false,
-        claim: 'PAYMENT_PENDING_MERCHANT_KYC_AND_ESCROW_CONTRACT'
+        payouts_active: false
       }
     };
   }
@@ -211,6 +191,21 @@ class PaymentService {
     }
 
     const targetProviderName = (providerName || paymentManager.defaultProvider || 'doku').toLowerCase();
+
+    if (targetProviderName === 'ipaymu') {
+      const err = new Error('PROVIDER_FROZEN: iPaymu is frozen and cannot process new payment transactions. DOKU is the primary gateway.');
+      err.code = 'PROVIDER_FROZEN';
+      err.status = 503;
+      throw err;
+    }
+
+    if (targetProviderName === 'midtrans' || targetProviderName === 'xendit') {
+      const err = new Error(`PROVIDER_REMOVED: Provider '${targetProviderName}' has been removed from active payment operations. DOKU is the sole primary gateway.`);
+      err.code = 'PROVIDER_REMOVED';
+      err.status = 410;
+      throw err;
+    }
+
     const effectiveIdempotencyKey = idempotencyKey || `idemp-${orderId}-${targetProviderName}`;
 
     // 1. Idempotency Check in canonical_payments
@@ -273,7 +268,8 @@ class PaymentService {
     // 2. Production Safety Gate & Verification Check
     const providerStatus = provider.getStatus();
     const isSimulationAllowed = provider.config?.allowTestSimulation || provider.config?.allowSimulation || provider.allowSimulation;
-    if (!providerStatus.isVerified && !isSimulationAllowed) {
+    const isSandboxPermitted = provider.isSandbox && (Boolean(provider.clientId && provider.secretKey) || isSimulationAllowed);
+    if (!providerStatus.isVerified && !isSimulationAllowed && !isSandboxPermitted) {
       const err = new Error(
         `Payment provider '${effectiveProviderName}' is ${providerStatus.status}. Real-money marketplace activation is gated until verification and merchant KYC are complete.`
       );

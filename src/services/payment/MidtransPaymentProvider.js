@@ -30,7 +30,8 @@ const MIDTRANS_STATUS = {
   ACTIVE: 'ACTIVE',
   PENDING_VERIFICATION: 'PENDING_VERIFICATION',
   DEGRADED: 'DEGRADED',
-  BLOCKED: 'BLOCKED'
+  BLOCKED: 'BLOCKED',
+  REMOVED: 'REMOVED'
 };
 
 class MidtransPaymentProvider extends PaymentProvider {
@@ -73,79 +74,15 @@ class MidtransPaymentProvider extends PaymentProvider {
   }
 
   getStatus() {
-    const depEnv = getDeploymentEnv();
-    const hasKeys = Boolean(this.serverKey);
-    const validation = validateMidtransConfiguration({
-      serverKey: this.serverKey,
-      clientKey: this.clientKey,
-      isProduction: this.isProduction
-    });
-
-    if (depEnv === DEPLOYMENT_ENV.UNKNOWN) {
-      return {
-        provider: this.getName(),
-        status: MIDTRANS_STATUS.BLOCKED,
-        isVerified: false,
-        environment: 'unknown',
-        hasServerKey: hasKeys,
-        message: validation.reason,
-        tier: 'TIER_2A'
-      };
-    }
-
-    if (depEnv === DEPLOYMENT_ENV.PREVIEW) {
-      if (!validation.allowed) {
-        return {
-          provider: this.getName(),
-          status: MIDTRANS_STATUS.BLOCKED,
-          isVerified: false,
-          environment: 'sandbox',
-          hasServerKey: hasKeys,
-          message: validation.reason,
-          tier: 'TIER_2A'
-        };
-      }
-      const isReady = hasKeys || this.allowSimulation;
-      return {
-        provider: this.getName(),
-        status: isReady ? MIDTRANS_STATUS.ACTIVE : MIDTRANS_STATUS.PENDING_VERIFICATION,
-        isVerified: isReady,
-        environment: 'sandbox',
-        hasServerKey: hasKeys,
-        message: isReady
-          ? 'Midtrans Sandbox payment rail active (Preview)'
-          : 'PAYMENT PROVIDER MIDTRANS: Awaiting MIDTRANS_SERVER_KEY configuration',
-        tier: 'TIER_2A'
-      };
-    }
-
-    if (depEnv === DEPLOYMENT_ENV.PRODUCTION) {
-      const isReady = validation.allowed;
-      return {
-        provider: this.getName(),
-        status: isReady ? MIDTRANS_STATUS.ACTIVE : MIDTRANS_STATUS.PENDING_VERIFICATION,
-        isVerified: isReady,
-        environment: this.isProduction ? 'production' : 'sandbox',
-        hasServerKey: hasKeys,
-        message: isReady
-          ? 'Midtrans live production payment rail active'
-          : (validation.reason || 'PAYMENT PROVIDER MIDTRANS: Production merchant activation pending. Real-money transactions gated.'),
-        tier: 'TIER_2A'
-      };
-    }
-
-    // Development / Test
-    const isReady = hasKeys || this.allowSimulation;
     return {
       provider: this.getName(),
-      status: isReady ? MIDTRANS_STATUS.ACTIVE : MIDTRANS_STATUS.PENDING_VERIFICATION,
-      isVerified: isReady,
+      status: MIDTRANS_STATUS.REMOVED,
+      isVerified: false,
+      isAvailable: false,
       environment: this.isProduction ? 'production' : 'sandbox',
-      hasServerKey: hasKeys,
-      message: isReady
-        ? (this.isProduction ? 'Midtrans live production payment rail active' : 'Midtrans Sandbox payment rail active')
-        : 'PAYMENT PROVIDER MIDTRANS: Awaiting MIDTRANS_SERVER_KEY configuration',
-      tier: 'TIER_2A'
+      hasServerKey: Boolean(this.serverKey),
+      message: 'PAYMENT PROVIDER: REMOVED — Midtrans is removed from active payment operations. Historical records preserved.',
+      tier: 'REMOVED'
     };
   }
 
@@ -271,128 +208,10 @@ class MidtransPaymentProvider extends PaymentProvider {
     idempotencyKey = null,
     correlationId = null
   }) {
-    const depEnv = getDeploymentEnv();
-    const validation = validateMidtransConfiguration({
-      serverKey: this.serverKey,
-      clientKey: this.clientKey,
-      isProduction: this.isProduction
-    });
-
-    if (!validation.allowed) {
-      const err = new Error(validation.reason || 'Midtrans payment creation not permitted.');
-      err.code = depEnv === DEPLOYMENT_ENV.PRODUCTION
-        ? 'SANDBOX_PROHIBITED_IN_PRODUCTION'
-        : (depEnv === DEPLOYMENT_ENV.UNKNOWN ? 'UNKNOWN_ENVIRONMENT' : 'MIDTRANS_NOT_ACTIVATED');
-      err.status = 503;
-      throw err;
-    }
-
-    if (requiresEscrow) {
-      // Never fake ESCROW_HELD on Midtrans!
-      throw new CapabilityUnsupportedError(
-        this.getName(),
-        'escrow',
-        'ESCROW_UNAVAILABLE: Midtrans does not provide native third-party escrow. Use DOKU for escrow-backed transactions.'
-      );
-    }
-
-    const gross = parseInt(amount, 10);
-
-    // Live HTTP execution if ServerKey is present and not allowSimulation
-    if (this.serverKey && !this.allowSimulation) {
-      if (this.isProduction && process.env.ENABLE_MIDTRANS_PRODUCTION !== 'true') {
-        throw new Error('Live Midtrans production API client awaiting merchant production activation.');
-      }
-
-      const payload = {
-        transaction_details: {
-          order_id: orderId,
-          gross_amount: gross
-        },
-        customer_details: {
-          first_name: buyer.name || 'Tikum Customer',
-          email: buyer.email || 'support@tikum.app',
-          phone: buyer.phone || '081299927378'
-        }
-      };
-
-      const basicAuth = Buffer.from(`${this.serverKey}:`).toString('base64');
-      const response = await this._httpRequest({
-        url: `${this.snapBaseUrl}/transactions`,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Basic ${basicAuth}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        const errorMsg = response.json?.error_messages?.join(', ') || response.json?.message || `HTTP ${response.statusCode}`;
-        const err = new Error(`Midtrans Snap API error: ${errorMsg}`);
-        err.code = 'MIDTRANS_API_ERROR';
-        err.status = response.statusCode;
-        err.details = response.json;
-        throw err;
-      }
-
-      const snapData = response.json || {};
-      const snapToken = snapData.token;
-      const redirectUrl = snapData.redirect_url;
-
-      return {
-        provider: this.getName(),
-        orderId,
-        providerReference: snapToken || `midtrans-${orderId}`,
-        providerTransactionId: snapToken || `midtrans-${orderId}`,
-        amount: gross,
-        currency,
-        channel,
-        status: MONEY_STATE.PAYMENT_PENDING,
-        requiresEscrow: false,
-        escrowHeld: false,
-        paymentUrl: redirectUrl,
-        paymentDetails: {
-          token: snapToken,
-          redirect_url: redirectUrl,
-          checkoutUrl: redirectUrl
-        },
-        idempotencyKey,
-        correlationId,
-        simulated: false
-      };
-    }
-
-    // Simulation mode for testing / sandbox verification
-    if (this.allowSimulation || !this.serverKey) {
-      const providerRef = `midtrans-${orderId}-${Date.now()}`;
-      const snapToken = `snap-token-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-      return {
-        provider: this.getName(),
-        orderId,
-        providerReference: providerRef,
-        providerTransactionId: providerRef,
-        amount: gross,
-        currency,
-        channel,
-        status: MONEY_STATE.PAYMENT_PENDING,
-        requiresEscrow: false,
-        escrowHeld: false,
-        paymentUrl: `https://app.sandbox.midtrans.com/snap/v2/vtweb/${snapToken}`,
-        paymentDetails: {
-          token: snapToken,
-          redirect_url: `https://app.sandbox.midtrans.com/snap/v2/vtweb/${snapToken}`,
-          checkoutUrl: `https://app.sandbox.midtrans.com/snap/v2/vtweb/${snapToken}`,
-          vaNumber: channel.startsWith('VA') ? `7001${Math.floor(1000000000 + Math.random() * 9000000000)}` : null
-        },
-        idempotencyKey,
-        correlationId,
-        simulated: true
-      };
-    }
-
-    throw new Error('Live Midtrans production client awaiting credentials.');
+    const err = new Error('PROVIDER_REMOVED: Midtrans has been removed from active payment operations. DOKU is the primary gateway.');
+    err.code = 'PROVIDER_REMOVED';
+    err.status = 410;
+    throw err;
   }
 
   async getPaymentStatus(refOrObj) {

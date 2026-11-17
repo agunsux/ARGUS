@@ -160,16 +160,17 @@ async function runSuite() {
       assert.strictEqual(doku.getName(), 'doku');
     });
 
-    await check('1.2 iPaymu is Backup #1, Midtrans is Backup #2, and Xendit is Backup #3', async () => {
+    await check('1.2 DOKU is Primary, iPaymu is FROZEN, and Midtrans/Xendit are REMOVED from active registration', async () => {
+      assert.ok(paymentManager.hasProvider('doku'));
       assert.ok(paymentManager.hasProvider('ipaymu'));
-      assert.ok(paymentManager.hasProvider('midtrans'));
-      assert.ok(paymentManager.hasProvider('xendit'));
+      assert.strictEqual(paymentManager.hasProvider('midtrans'), false);
+      assert.strictEqual(paymentManager.hasProvider('xendit'), false);
       const ipaymu = paymentManager.getProvider('ipaymu');
       const midtrans = paymentManager.getProvider('midtrans');
       const xendit = paymentManager.getProvider('xendit');
-      assert.strictEqual(ipaymu.getName(), 'ipaymu');
-      assert.ok(midtrans instanceof MidtransPaymentProvider);
-      assert.ok(xendit instanceof XenditPaymentProvider);
+      assert.strictEqual(ipaymu.getStatus().status, 'FROZEN');
+      assert.strictEqual(midtrans.getStatus().status, 'REMOVED');
+      assert.strictEqual(xendit.getStatus().status, 'REMOVED');
     });
 
     await check('1.3 RCB is completely absent from live provider registry', async () => {
@@ -222,18 +223,21 @@ async function runSuite() {
       );
     });
 
-    await check('2.4 GET /api/v1/payments/methods exposes active DOKU, Midtrans, and Xendit channels', async () => {
+    await check('2.4 GET /api/v1/payments/methods exposes ONLY active DOKU channels', async () => {
       const res = await request({ method: 'GET', path: '/api/v1/payments/methods' });
       assert.strictEqual(res.statusCode, 200);
       assert.strictEqual(res.json.default_provider, 'doku');
+      const commercialProviders = res.json.providers.filter(p => !p.provider.startsWith('test'));
+      assert.strictEqual(commercialProviders.length, 1);
       const dokuEntry = res.json.providers.find(p => p.provider === 'doku');
       const midtransEntry = res.json.providers.find(p => p.provider === 'midtrans');
       const xenditEntry = res.json.providers.find(p => p.provider === 'xendit');
+      const ipaymuEntry = res.json.providers.find(p => p.provider === 'ipaymu');
       assert.ok(dokuEntry, 'DOKU must be present in payment methods');
-      assert.ok(midtransEntry, 'Midtrans must be present');
-      assert.ok(xenditEntry, 'Xendit must be present');
-      assert.ok(dokuEntry.channels.some(c => (c.code === 'QRIS' || c.code.startsWith('VA')) && c.isEscrowSupported === true));
-      assert.ok(midtransEntry.channels.some(c => c.isEscrowSupported === false));
+      assert.strictEqual(midtransEntry, undefined, 'Midtrans must NOT be present in active methods');
+      assert.strictEqual(xenditEntry, undefined, 'Xendit must NOT be present in active methods');
+      assert.strictEqual(ipaymuEntry, undefined, 'Frozen iPaymu must NOT be present in active methods');
+      assert.ok(dokuEntry.channels.some(c => (c.code === 'QRIS' || c.code.startsWith('VA'))));
     });
 
     // -------------------------------------------------------------------------
@@ -689,59 +693,21 @@ async function runSuite() {
       }, (err) => err.code === 'FAILOVER_UNCERTAIN_STATE_BLOCKED');
     });
 
-    await check('8.2 Escrow-required transaction strictly BLOCKED from failing over to non-escrow Midtrans/Xendit/iPaymu', async () => {
-      assert.throws(() => {
-        PaymentRoutingService.resolveProvider({
-          countryCode: 'ID',
-          currency: 'IDR',
-          tier: 'BACKUP_1', // Midtrans
-          requiresEscrow: true
-        });
-      }, (err) => err.code === 'ESCROW_CAPABILITY_REQUIRED');
-
-      assert.throws(() => {
-        PaymentRoutingService.resolveProvider({
-          countryCode: 'ID',
-          currency: 'IDR',
-          tier: 'BACKUP_2', // Xendit
-          requiresEscrow: true
-        });
-      }, (err) => err.code === 'ESCROW_CAPABILITY_REQUIRED');
-
-      assert.throws(() => {
-        PaymentRoutingService.resolveProvider({
-          countryCode: 'ID',
-          currency: 'IDR',
-          tier: 'BACKUP_3', // iPaymu
-          requiresEscrow: true
-        });
-      }, (err) => err.code === 'ESCROW_CAPABILITY_REQUIRED');
+    await check('8.2 All regional tiers route strictly to DOKU (automatic failover disabled)', async () => {
+      const p1 = PaymentRoutingService.resolveProvider({ countryCode: 'ID', currency: 'IDR', tier: 'PRIMARY' });
+      assert.strictEqual(p1.providerName, 'doku');
+      const b1 = PaymentRoutingService.resolveProvider({ countryCode: 'ID', currency: 'IDR', tier: 'BACKUP_1' });
+      assert.strictEqual(b1.providerName, 'doku');
+      const b2 = PaymentRoutingService.resolveProvider({ countryCode: 'ID', currency: 'IDR', tier: 'BACKUP_2' });
+      assert.strictEqual(b2.providerName, 'doku');
+      const b3 = PaymentRoutingService.resolveProvider({ countryCode: 'ID', currency: 'IDR', tier: 'BACKUP_3' });
+      assert.strictEqual(b3.providerName, 'doku');
     });
 
-    await check('8.3 Non-escrow transaction successfully routes to iPaymu, Midtrans, and Xendit backups', async () => {
-      const b1 = PaymentRoutingService.resolveProvider({
-        countryCode: 'ID',
-        currency: 'IDR',
-        tier: 'BACKUP_1',
-        requiresEscrow: false
-      });
-      assert.strictEqual(b1.providerName, 'ipaymu');
-
-      const b2 = PaymentRoutingService.resolveProvider({
-        countryCode: 'ID',
-        currency: 'IDR',
-        tier: 'BACKUP_2',
-        requiresEscrow: false
-      });
-      assert.strictEqual(b2.providerName, 'midtrans');
-
-      const b3 = PaymentRoutingService.resolveProvider({
-        countryCode: 'ID',
-        currency: 'IDR',
-        tier: 'BACKUP_3',
-        requiresEscrow: false
-      });
-      assert.strictEqual(b3.providerName, 'xendit');
+    await check('8.3 Frozen iPaymu and removed Midtrans/Xendit are unavailable for active routing', async () => {
+      assert.strictEqual(PaymentRoutingService.isProviderAvailable('ipaymu'), false);
+      assert.strictEqual(PaymentRoutingService.isProviderAvailable('midtrans'), false);
+      assert.strictEqual(PaymentRoutingService.isProviderAvailable('xendit'), false);
     });
 
     // -------------------------------------------------------------------------

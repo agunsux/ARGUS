@@ -174,7 +174,9 @@ class DokuPaymentProvider extends PaymentProvider {
 
     const passedCount = Object.values(checklist).filter(Boolean).length;
     const totalCount = Object.keys(checklist).length;
-    const isReady = this.isSandbox && hasCredentials && this.sandboxTested && !this.allowSimulation;
+    const isReady = this.isSandbox
+      ? (hasCredentials && this.sandboxTested && !this.allowSimulation)
+      : (this.enableProduction && this.contractVerified && this.kycVerified && hasCredentials);
 
     return {
       checklist,

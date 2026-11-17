@@ -47,15 +47,15 @@ const PAYMENT_ATTEMPT_STATUS = {
   SUPERSEDED: 'SUPERSEDED'
 };
 
-// Regional routing configuration matrix (Priority: DOKU -> iPaymu -> Midtrans -> Xendit)
+// Regional routing configuration matrix (EPIC P1.0: DOKU sole active Sandbox & Development gateway)
 const ROUTING_CONFIG = {
   ID: {
     primary: 'doku',
-    backup_1: 'ipaymu',
-    backup_2: 'midtrans',
-    backup_3: 'xendit',
-    secondary: 'ipaymu',
-    fallback: 'midtrans',
+    backup_1: null,
+    backup_2: null,
+    backup_3: null,
+    secondary: null,
+    fallback: null,
     allowedCurrencies: ['IDR']
   },
   SG: {
@@ -71,7 +71,7 @@ const ROUTING_CONFIG = {
     allowedCurrencies: ['MYR']
   },
   PH: {
-    primary: 'xendit',
+    primary: 'doku',
     secondary: null,
     fallback: null,
     allowedCurrencies: ['PHP']
@@ -83,9 +83,9 @@ const circuitBreakers = {
   doku: { failures: 0, state: 'CLOSED', nextProbe: 0 },
   doku_direct: { failures: 0, state: 'CLOSED', nextProbe: 0 },
   doku_checkout: { failures: 0, state: 'CLOSED', nextProbe: 0 },
-  ipaymu: { failures: 0, state: 'CLOSED', nextProbe: 0 },
-  midtrans: { failures: 0, state: 'CLOSED', nextProbe: 0 },
-  xendit: { failures: 0, state: 'CLOSED', nextProbe: 0 }
+  ipaymu: { failures: 0, state: 'FROZEN', nextProbe: Infinity },
+  midtrans: { failures: 0, state: 'REMOVED', nextProbe: Infinity },
+  xendit: { failures: 0, state: 'REMOVED', nextProbe: Infinity }
 };
 
 // Ops kill-switches per provider (can be toggled at runtime or via environment)
@@ -93,9 +93,9 @@ const opsKillSwitches = {
   doku: false,
   doku_direct: false,
   doku_checkout: false,
-  ipaymu: false,
-  midtrans: false,
-  xendit: false
+  ipaymu: true,
+  midtrans: true,
+  xendit: true
 };
 
 class PaymentRoutingService {
@@ -143,6 +143,11 @@ class PaymentRoutingService {
   static isProviderAvailable(providerName, subType = null) {
     const key = subType ? `${providerName}_${subType}`.toLowerCase() : (providerName || '').toLowerCase();
     const parentKey = (providerName || '').toLowerCase();
+
+    // iPaymu is frozen; Midtrans & Xendit are removed from active operations
+    if (parentKey === 'ipaymu' || parentKey === 'midtrans' || parentKey === 'xendit') {
+      return false;
+    }
 
     // Check parent kill-switch first
     if (opsKillSwitches[parentKey] || process.env[`KILL_SWITCH_${parentKey.toUpperCase()}`] === 'true') {
@@ -220,19 +225,8 @@ class PaymentRoutingService {
       };
     }
 
-    // Rule F: Both DOKU integrations unavailable -> emergency fallback to iPaymu (if eligible)
-    if (this.isProviderAvailable('ipaymu')) {
-      return {
-        provider: 'ipaymu',
-        channel: isDirectVA ? 'IPAYMU_VA' : 'IPAYMU_REDIRECT',
-        integrationType: 'EMERGENCY_ALTERNATIVE',
-        fallbackApplied: true,
-        originalChannel: ch,
-        reason: 'ALL_DOKU_INTEGRATIONS_UNAVAILABLE_EMERGENCY_IPAYMU'
-      };
-    }
-
-    throw new Error('All configured payment providers (DOKU Direct API, DOKU Checkout, iPaymu) are currently unavailable or circuit-broken.');
+    // DOKU is the sole gateway; no failover to iPaymu or other gateways
+    throw new Error('All configured DOKU payment channels (DOKU Direct API, DOKU Checkout) are currently unavailable or circuit-broken.');
   }
 
   static getCircuitBreakerStatus() {
@@ -332,22 +326,13 @@ class PaymentRoutingService {
       }
     }
 
-    const tiers = ['PRIMARY', 'BACKUP_1', 'BACKUP_2', 'BACKUP_3'];
-    for (const tier of tiers) {
-      try {
-        const resolved = this.resolveProvider({ countryCode, currency, tier, requiresEscrow });
-        if (this.isProviderAvailable(resolved.providerName)) {
-          return resolved;
-        }
-      } catch (err) {
-        if (err.code === 'ESCROW_CAPABILITY_REQUIRED') {
-          // Escrow required cannot route to non-escrow rail; stop failover
-          throw err;
-        }
-      }
+    // DOKU is the sole primary gateway; automatic failover is disabled
+    const resolved = this.resolveProvider({ countryCode, currency, tier: 'PRIMARY', requiresEscrow });
+    if (this.isProviderAvailable(resolved.providerName)) {
+      return resolved;
     }
 
-    throw new Error('All configured payment providers are currently unavailable or circuit-broken.');
+    throw new Error('DOKU payment gateway is currently unavailable or circuit-broken. Automatic failover is disabled.');
   }
 
   /**
