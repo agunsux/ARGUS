@@ -645,10 +645,11 @@ router.get('/events', (req, res) => {
         <div>
           <div class="catalog-card-media" style="position:relative; aspect-ratio:16/9; max-height:190px; margin:-20px -20px 14px -20px; border-bottom:1px solid #1e293b; overflow:hidden; background:#0b1120;">
             ${hasVerifiedImg ? `
-              <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='/api/discovery/events/${e.event_id || e.id}/poster.svg';" />
-            ` : `
-              <img src="/api/discovery/events/${e.event_id || e.id}/poster.svg" alt="${altText} — Tikum Verified Fallback" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" />
-            `}
+              <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+            ` : ''}
+            <div class="catalog-card-fallback" style="display:${hasVerifiedImg ? 'none' : 'flex'}; width:100%; height:100%; align-items:center; justify-content:center; flex-direction:column; gap:6px; background:linear-gradient(145deg,#131d31,#0b1120); color:#94a3b8; font-size:12px; padding:12px; text-align:center;">
+              <img src="/api/discovery/events/${e.event_id || e.id}/poster.svg" alt="${altText} — Tikum Verified Fallback" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none';" />
+            </div>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
             <div style="display:flex; gap:6px; align-items:center;">
@@ -1759,14 +1760,29 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
  * GET /api/discovery/events/:id/poster.svg
  * Serves deterministic, branded 3:4 SVG fallback poster for an event.
  */
-router.get('/api/discovery/events/:id/poster.svg', (req, res) => {
+router.get(['/api/discovery/events/:id/poster.svg', '/api/events/:id/poster.svg', '/events/:id/poster.svg'], (req, res) => {
   const param = req.params.id;
-  const event = canonicalRegistry.getEventById(param) ||
+  let event = canonicalRegistry.getEventById(param) ||
     canonicalRegistry.getEventBySlug(param) ||
-    (state.events || []).find(e => e.id === param || e.slug === param || e.event_id === param);
+    (canonicalRegistry.getAllEvents() || []).find(e => e.id === param || e.slug === param || e.event_id === param);
 
   if (!event) {
-    return res.status(404).type('text/plain').send('Event not found');
+    const heroes = canonicalRegistry.getHeroEvents({ includePast: true });
+    event = heroes.find(e => e.id === param || e.slug === param || e.event_id === param);
+  }
+
+  if (!event && typeof state !== 'undefined' && Array.isArray(state?.events)) {
+    event = state.events.find(e => e.id === param || e.slug === param || e.event_id === param);
+  }
+
+  if (!event) {
+    const cleanTitle = String(param || 'Event').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    event = {
+      canonical_name: cleanTitle,
+      title: cleanTitle,
+      city: 'Jakarta',
+      event_type: 'CONCERT'
+    };
   }
 
   const svg = EventVisualProvenanceService.generateBrandedPosterSvg(event);
