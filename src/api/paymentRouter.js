@@ -557,8 +557,91 @@ router.get('/v1/payments/sandbox/diagnostics', requireAdmin, async (req, res) =>
  * POST /api/v1/payments/sandbox/execute-live-cycle
  * Performs an end-to-end live DOKU Sandbox payment, status inquiry, webhook, and escrow test.
  * Strictly forbidden in production (is_sandbox must be true, enableProduction must be false).
+ * Enforces admin authorization, rate limiting, and strict input validation.
  */
 router.post(['/v1/payments/sandbox/execute-live-cycle', '/payments/sandbox/execute-live-cycle'], async (req, res) => {
+  const crypto = require('crypto');
+  const https = require('https');
+  const { v4: uuidv4 } = require('uuid');
+  const { EscrowService, ESCROW_STATUS } = require('../services/escrowService');
+  const { isPaymentGatewayFrozen } = require('../config/marketplaceMode');
+  const { isProductionDeployment } = require('../config/deploymentEnv');
+
+  // 1. Strict Production Hard Gate: Forbidden in Production or if Production payment gateway is frozen
+  const isProd = (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') || isProductionDeployment();
+  const reqHost = String(req.headers.host || '').toLowerCase();
+  if (isProd || reqHost.includes('tikum.app') || (isPaymentGatewayFrozen() && process.env.VERCEL_ENV === 'production')) {
+    return res.status(403).json({
+      error: 'Live Sandbox cycle is strictly forbidden in Production environment.',
+      code: 'FORBIDDEN_IN_PRODUCTION'
+    });
+  }
+
+  // 2. Admin Authorization Gate: Require Admin API Key or authenticated admin session
+  const adminKey = req.header('x-admin-key') || req.header('x-admin-api-key');
+  const expectedAdminKey = process.env.ADMIN_API_KEY;
+  let isAuthorized = false;
+
+  if (expectedAdminKey && adminKey) {
+    const keyBuf = Buffer.from(String(adminKey).trim());
+    const expectedBuf = Buffer.from(String(expectedAdminKey).trim());
+    if (keyBuf.length === expectedBuf.length && crypto.timingSafeEqual(keyBuf, expectedBuf)) {
+      isAuthorized = true;
+    }
+  }
+
+  if (!isAuthorized) {
+    const { resolveUserAsync } = require('../middleware/auth');
+    const { isAdminIdentity } = require('../config/adminIdentity');
+    try {
+      const user = await resolveUserAsync(req);
+      if (user && isAdminIdentity(user) && req.adminAuthenticated !== false) {
+        isAuthorized = true;
+      }
+    } catch (_) {}
+  }
+
+  // Permitted in local isolated test environment when explicitly testing
+  if (!isAuthorized && process.env.NODE_ENV === 'test' && !process.env.VERCEL) {
+    isAuthorized = true;
+  }
+
+  if (!isAuthorized) {
+    return res.status(401).json({
+      error: 'Admin authorization required to execute sandbox test cycle.',
+      code: 'ADMIN_AUTH_REQUIRED'
+    });
+  }
+
+  // 3. Sliding-window in-memory Rate Limiter: max 5 requests per 60 seconds
+  const nowMs = Date.now();
+  const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  if (!global._sandboxCycleRateLimits) global._sandboxCycleRateLimits = new Map();
+  const limits = global._sandboxCycleRateLimits.get(clientIp) || [];
+  const validLimits = limits.filter(ts => nowMs - ts < 60000);
+  if (validLimits.length >= 5) {
+    return res.status(429).json({
+      error: 'Rate limit exceeded for sandbox execution endpoint (max 5 per minute).',
+      code: 'RATE_LIMIT_EXCEEDED'
+    });
+  }
+  validLimits.push(nowMs);
+  global._sandboxCycleRateLimits.set(clientIp, validLimits);
+
+  // 4. Strict input validation
+  let amount = 50000;
+  if (req.body && req.body.amount) {
+    const parsedAmount = parseInt(req.body.amount, 10);
+    if (!Number.isSafeInteger(parsedAmount) || parsedAmount < 10000 || parsedAmount > 100000) {
+      return res.status(400).json({
+        error: 'Invalid test amount: must be an integer between 10,000 and 100,000 IDR.',
+        code: 'INVALID_AMOUNT'
+      });
+    }
+    amount = parsedAmount;
+  }
+
+  // 5. Provider and environment validation
   const doku = paymentManager.getProvider('doku');
   if (!doku || !doku.isSandbox || doku.enableProduction) {
     return res.status(403).json({ error: 'Live Sandbox cycle is strictly restricted to Sandbox environment.', code: 'FORBIDDEN_IN_PRODUCTION' });
@@ -569,11 +652,6 @@ router.post(['/v1/payments/sandbox/execute-live-cycle', '/payments/sandbox/execu
   if (!clientId || !secretKey) {
     return res.status(503).json({ error: 'DOKU Sandbox credentials not configured in runtime environment.', code: 'CREDENTIALS_MISSING' });
   }
-
-  const crypto = require('crypto');
-  const https = require('https');
-  const { v4: uuidv4 } = require('uuid');
-  const { EscrowService, ESCROW_STATUS } = require('../services/escrowService');
 
   const trace = {
     steps: {},
@@ -587,7 +665,6 @@ router.post(['/v1/payments/sandbox/execute-live-cycle', '/payments/sandbox/execu
     const timestamp = Date.now();
     const orderId = `sbx-ord-${timestamp}`;
     const invoiceNumber = `INV-DOKU-${orderId}`;
-    const amount = 50000;
 
     // 1. Setup in-memory / local state for this test order
     if (!state.orders) state.orders = [];
@@ -910,398 +987,15 @@ router.get(['/v1/payments/sandbox/midtrans/diagnostics', '/payments/sandbox/midt
 });
 
 /**
- * POST /api/v1/payments/sandbox/midtrans/execute-live-cycle
- * Performs an end-to-end live Midtrans Sandbox payment, status inquiry, webhook, and ledger test.
- * Strictly forbidden in production (isProductionDeployment() must be false, isProduction must be false).
- * Permitted exclusively in Preview and isolated test/development environments.
+ * ALL /api/v1/payments/sandbox/midtrans/execute-live-cycle
+ * Midtrans has been permanently removed from active payment operations per EPIC P1.0 / P1.2.
  */
-router.post(['/v1/payments/sandbox/midtrans/execute-live-cycle', '/payments/sandbox/midtrans/execute-live-cycle'], async (req, res) => {
-  const { isProductionDeployment, getDeploymentEnv, validateMidtransConfiguration } = require('../config/deploymentEnv');
-  if (isProductionDeployment()) {
-    return res.status(403).json({ error: 'Live Midtrans Sandbox cycle is strictly restricted to Sandbox/Preview environment.', code: 'FORBIDDEN_IN_PRODUCTION' });
-  }
-
-  const midtrans = paymentManager.getProvider('midtrans');
-  if (!midtrans || midtrans.isProduction) {
-    return res.status(403).json({ error: 'Live Sandbox cycle is strictly restricted to Sandbox environment.', code: 'FORBIDDEN_IN_PRODUCTION' });
-  }
-
-  const serverKey = (midtrans.serverKey || process.env.MIDTRANS_SERVER_KEY || '').trim().replace(/^["']|["']$/g, '');
-  const clientKey = (midtrans.clientKey || process.env.MIDTRANS_CLIENT_KEY || '').trim().replace(/^["']|["']$/g, '');
-
-  const validation = validateMidtransConfiguration({
-    serverKey,
-    clientKey,
-    isProduction: false
+router.all(['/v1/payments/sandbox/midtrans/execute-live-cycle', '/payments/sandbox/midtrans/execute-live-cycle'], (req, res) => {
+  return res.status(410).json({
+    error: 'Midtrans has been removed from active payment operations. DOKU is the primary gateway.',
+    code: 'PROVIDER_REMOVED',
+    isAvailable: false
   });
-
-  if (!validation.allowed || !validation.isSandbox) {
-    return res.status(503).json({
-      error: validation.reason || 'Midtrans Sandbox credentials not configured or invalid.',
-      code: 'CREDENTIALS_INVALID',
-      isAvailable: false
-    });
-  }
-
-  const crypto = require('crypto');
-  const https = require('https');
-  const { EscrowService, ESCROW_STATUS, ORDER_STATUS } = require('../services/escrowService');
-  const { PaymentService } = require('../services/payment/PaymentService');
-
-  const trace = {
-    steps: {},
-    invariants: {},
-    provider: 'midtrans',
-    environment: 'sandbox',
-    targetHost: 'https://app.sandbox.midtrans.com'
-  };
-
-  try {
-    const timestamp = Date.now();
-    const orderId = `sbx-mid-${timestamp}`;
-    const amount = 50000;
-    const grossAmountStr = String(amount);
-
-    // 1. Environment & Credential Verification
-    trace.steps.environmentVerification = {
-      deploymentEnv: getDeploymentEnv(),
-      isProduction: false,
-      isSandbox: true,
-      serverKeyPrefix: serverKey.slice(0, 14),
-      clientKeyPrefix: clientKey.slice(0, 14),
-      serverKeyLength: serverKey.length,
-      clientKeyLength: clientKey.length,
-      hasNoWhitespace: !/\s/.test(serverKey) && !/\s/.test(clientKey)
-    };
-
-    // 2. Setup isolated in-memory test order & event
-    if (!state.events) state.events = [];
-    state.events.push({
-      id: `evt-${orderId}`,
-      title: 'Midtrans Sandbox Live Cycle Test Event',
-      start_date: '2027-10-25T19:00:00+07:00',
-      event_date: '2027-10-25T19:00:00+07:00',
-      status: 'PUBLISHED',
-      is_active: true
-    });
-
-    if (!state.tickets) state.tickets = [];
-    state.tickets.push({
-      id: `tkt-${orderId}`,
-      seller_id: 'seller-sandbox-test',
-      event_id: `evt-${orderId}`,
-      canonical_event_id: `evt-${orderId}`,
-      ticket_type: 'GENERAL_ADMISSION',
-      face_value: amount,
-      currency: 'IDR',
-      status: 'VERIFIED'
-    });
-
-    if (!state.listings) state.listings = [];
-    state.listings.push({
-      id: `lst-${orderId}`,
-      ticket_id: `tkt-${orderId}`,
-      seller_id: 'seller-sandbox-test',
-      event_id: `evt-${orderId}`,
-      canonical_event_id: `evt-${orderId}`,
-      price: amount,
-      currency: 'IDR',
-      status: 'ACTIVE',
-      quantity: 1,
-      total_quantity: 1,
-      available_quantity: 1,
-      reserved_quantity: 0,
-      metadata: { total_quantity: 1, available_quantity: 1, reserved_quantity: 0 }
-    });
-
-    if (!state.orders) state.orders = [];
-    const testOrder = {
-      id: orderId,
-      ticket_id: `tkt-${orderId}`,
-      buyer_id: 'buyer-sandbox-test',
-      seller_id: 'seller-sandbox-test',
-      listing_id: `lst-${orderId}`,
-      canonical_event_id: `evt-${orderId}`,
-      total_amount: amount,
-      buyer_total: amount,
-      seller_payout: amount,
-      status: 'PENDING_PAYMENT',
-      created_at: new Date().toISOString()
-    };
-    state.orders.push(testOrder);
-
-    if (!state.escrows) state.escrows = [];
-    state.escrows.push({
-      id: `esc-${orderId}`,
-      order_id: orderId,
-      buyer_id: 'buyer-sandbox-test',
-      seller_id: 'seller-sandbox-test',
-      amount,
-      currency: 'IDR',
-      status: ESCROW_STATUS.PENDING_PAYMENT,
-      held_by: 'INTERNAL_LEDGER_HELD',
-      provider_escrow_id: null,
-      requires_escrow: false,
-      is_sandbox: true
-    });
-
-    trace.steps.orderCreated = {
-      orderId,
-      amount,
-      status: 'PENDING_PAYMENT'
-    };
-
-    // 3. Real Outbound HTTP Call: Create Snap Transaction on Midtrans Sandbox
-    const snapPayload = JSON.stringify({
-      transaction_details: {
-        order_id: orderId,
-        gross_amount: amount
-      },
-      customer_details: {
-        first_name: 'Tikum Sandbox Tester',
-        email: 'tester@tikum.app',
-        phone: '081234567890'
-      }
-    });
-
-    const basicAuth = Buffer.from(`${serverKey}:`).toString('base64');
-    const snapResponse = await new Promise((resolve) => {
-      const snapUrl = new URL('https://app.sandbox.midtrans.com/snap/v1/transactions');
-      const sReq = https.request(snapUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Basic ${basicAuth}`,
-          'Content-Length': Buffer.byteLength(snapPayload, 'utf8')
-        },
-        timeout: 15000
-      }, (res) => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => {
-          let json = null;
-          try { json = JSON.parse(data); } catch (_) {}
-          resolve({ statusCode: res.statusCode, headers: res.headers, body: data, json });
-        });
-      });
-      sReq.on('timeout', () => { sReq.destroy(); resolve({ statusCode: 504, error: 'TIMEOUT' }); });
-      sReq.on('error', (err) => resolve({ statusCode: 502, error: err.message }));
-      sReq.write(snapPayload);
-      sReq.end();
-    });
-
-    trace.steps.snapCreation = {
-      statusCode: snapResponse.statusCode,
-      hasToken: Boolean(snapResponse.json?.token),
-      tokenPrefix: snapResponse.json?.token ? String(snapResponse.json.token).slice(0, 8) : null,
-      hasRedirectUrl: Boolean(snapResponse.json?.redirect_url),
-      redirectUrlHost: snapResponse.json?.redirect_url ? new URL(snapResponse.json.redirect_url).host : null,
-      errorMessages: snapResponse.json?.error_messages || null
-    };
-
-    // 4. Real Outbound HTTP Call: Status Inquiry on Midtrans Core API Sandbox
-    const statusInquiry = await new Promise((resolve) => {
-      const statusUrl = new URL(`https://api.sandbox.midtrans.com/v2/${orderId}/status`);
-      const stReq = https.request(statusUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Basic ${basicAuth}`
-        },
-        timeout: 10000
-      }, (res) => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => {
-          let json = null;
-          try { json = JSON.parse(data); } catch (_) {}
-          resolve({ statusCode: res.statusCode, body: data, json });
-        });
-      });
-      stReq.on('timeout', () => { stReq.destroy(); resolve({ statusCode: 504, error: 'TIMEOUT' }); });
-      stReq.on('error', (err) => resolve({ statusCode: 502, error: err.message }));
-      stReq.end();
-    });
-
-    trace.steps.statusInquiry = {
-      statusCode: statusInquiry.statusCode,
-      responseStatus: statusInquiry.json?.status_code || null,
-      statusMessage: statusInquiry.json?.status_message || null,
-      transactionStatus: statusInquiry.json?.transaction_status || null
-    };
-
-    // 5. Truthful Escrow Invariant Check (Capability Gate)
-    let escrowBlocked = false;
-    try {
-      await midtrans.createPayment({
-        orderId: `sbx-esc-check-${timestamp}`,
-        amount,
-        requiresEscrow: true
-      });
-    } catch (e) {
-      if (e.code === 'CAPABILITY_UNSUPPORTED' || (e.message && e.message.includes('ESCROW_UNAVAILABLE'))) {
-        escrowBlocked = true;
-      }
-    }
-    trace.invariants.truthfulNonEscrowCapabilityEnforced = escrowBlocked;
-
-    // 6. Live Webhook Delivery Matching Real Status (pending)
-    const validPendingSig = midtrans.generateSignature({
-      orderId,
-      statusCode: '201',
-      grossAmount: grossAmountStr
-    });
-
-    const pendingWebhookPayload = {
-      order_id: orderId,
-      status_code: '201',
-      gross_amount: grossAmountStr,
-      transaction_status: 'pending',
-      fraud_status: 'accept',
-      payment_type: 'qris',
-      transaction_id: `midtrans-trx-${orderId}`,
-      settlement_time: new Date().toISOString(),
-      signature_key: validPendingSig
-    };
-
-    const whPendingResult = await PaymentService.handleWebhook({
-      providerName: 'midtrans',
-      headers: {},
-      body: pendingWebhookPayload
-    });
-
-    trace.steps.webhookProcessingPending = {
-      success: true,
-      idempotent: whPendingResult.idempotent,
-      eventStatus: whPendingResult.event?.status
-    };
-
-    // 7. Replay Attack Deduplication (Idempotency) on pending webhook
-    const replayResult = await PaymentService.handleWebhook({
-      providerName: 'midtrans',
-      headers: {},
-      body: pendingWebhookPayload
-    });
-
-    trace.steps.webhookReplayDeduplication = {
-      idempotent: replayResult.idempotent === true,
-      success: true
-    };
-    trace.invariants.replayAttackDeduplicated = replayResult.idempotent === true;
-
-    // 8. Forged Signature Rejection
-    let forgedRejected = false;
-    try {
-      await PaymentService.handleWebhook({
-        providerName: 'midtrans',
-        headers: {},
-        body: {
-          ...pendingWebhookPayload,
-          signature_key: 'forged_deadbeef_signature_that_must_fail_tamper_check'
-        }
-      });
-    } catch (e) {
-      if (e.code === 'INVALID_WEBHOOK_SIGNATURE' || e.status === 401) {
-        forgedRejected = true;
-      }
-    }
-    trace.invariants.forgedSignatureRejected = forgedRejected;
-
-    // 9. Anti-Fraud Invariant: Server-to-server status inquiry guards against fraudulent SUCCESS/settlement webhook
-    const validSettlementSig = midtrans.generateSignature({
-      orderId,
-      statusCode: '200',
-      grossAmount: grossAmountStr
-    });
-    const fakeSuccessPayload = {
-      order_id: orderId,
-      status_code: '200',
-      gross_amount: grossAmountStr,
-      transaction_status: 'settlement',
-      fraud_status: 'accept',
-      payment_type: 'qris',
-      transaction_id: `midtrans-fake-${orderId}`,
-      settlement_time: new Date().toISOString(),
-      signature_key: validSettlementSig
-    };
-
-    let serverInquiryGuarded = false;
-    try {
-      await PaymentService.handleWebhook({
-        providerName: 'midtrans',
-        headers: {},
-        body: fakeSuccessPayload
-      });
-    } catch (e) {
-      if (e.code === 'GATEWAY_STATUS_UNCONFIRMED' || e.status === 409) {
-        serverInquiryGuarded = true;
-      }
-    }
-    trace.invariants.serverToServerInquiryGuardsAgainstFraudulentSuccess = serverInquiryGuarded;
-
-    // 10. Truthful Domestic Settlement & Double-Entry Ledger Solvency
-    const { FinancialLedger } = require('../settlement/FinancialLedger');
-    await FinancialLedger.recordCapture({
-      orderId,
-      ticketPrice: amount,
-      buyerTotal: amount,
-      platformFee: 0,
-      buyerFee: 0,
-      sellerFee: 0,
-      providerFee: 0,
-      actorId: 'MIDTRANS_SANDBOX'
-    });
-
-    const settledOrder = (state.orders || []).find(o => o.id === orderId);
-    if (settledOrder) {
-      settledOrder.status = ORDER_STATUS.PAID_PLATFORM_HELD;
-      settledOrder.escrow_type = 'NONE_PLATFORM_CAPTURED';
-    }
-    const settledEscrow = (state.escrows || []).find(e => e.order_id === orderId);
-    if (settledEscrow) {
-      settledEscrow.status = ESCROW_STATUS.ESCROWED;
-      settledEscrow.provider_escrow_id = null;
-    }
-
-    trace.steps.postSettlementState = {
-      orderStatus: settledOrder?.status,
-      orderEscrowType: settledOrder?.escrow_type,
-      escrowStatus: settledEscrow?.status,
-      providerEscrowId: settledEscrow?.provider_escrow_id
-    };
-
-    trace.invariants.orderMarkedPaidPlatformHeld = settledOrder?.status === ORDER_STATUS.PAID_PLATFORM_HELD;
-    trace.invariants.providerEscrowIdIsNull = settledEscrow?.provider_escrow_id === null;
-
-    // 11. Double-Entry Ledger Mathematical Balance Check
-    const solvency = FinancialLedger.assertSolvency();
-    trace.steps.ledgerAudit = {
-      solvent: solvency.solvent,
-      balanced: solvency.balanced,
-      totalDebits: solvency.totalDebits,
-      totalCredits: solvency.totalCredits
-    };
-    trace.invariants.ledgerMathematicallyBalanced = solvency.solvent === true && solvency.balanced === true;
-
-    const allInvariantsPassed = Object.values(trace.invariants).every(v => v === true);
-    const snapApiPassed = snapResponse.statusCode === 200 || snapResponse.statusCode === 201;
-
-    res.json({
-      success: allInvariantsPassed && snapApiPassed,
-      overallStatus: allInvariantsPassed && snapApiPassed ? 'PASS' : (snapApiPassed ? 'INVARIANTS_FAILED' : 'SNAP_API_ERROR'),
-      snapApiSuccess: snapApiPassed,
-      trace
-    });
-
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: err.message,
-      code: err.code || 'MIDTRANS_SANDBOX_CYCLE_FAILED',
-      trace
-    });
-  }
 });
 
 /**

@@ -890,10 +890,34 @@ class DokuPaymentProvider extends PaymentProvider {
    */
   async getPaymentStatus(refOrObj = {}) {
     const isObj = typeof refOrObj === 'object' && refOrObj !== null;
-    const inv = isObj
-      ? (refOrObj.invoiceNumber || refOrObj.providerRef || (refOrObj.orderId ? `INV-DOKU-${refOrObj.orderId}` : null))
-      : refOrObj;
-    const orderId = isObj ? refOrObj.orderId : (inv ? String(inv).replace(/^INV-DOKU-/, '') : null);
+    let inv = null;
+    if (isObj) {
+      if (refOrObj.invoiceNumber) {
+        inv = String(refOrObj.invoiceNumber).trim();
+      } else if (refOrObj.orderId) {
+        const oId = String(refOrObj.orderId).trim();
+        inv = oId.startsWith('INV-DOKU-') ? oId : `INV-DOKU-${oId}`;
+      } else if (refOrObj.providerRef) {
+        const pRef = String(refOrObj.providerRef).trim();
+        if (pRef.startsWith('INV-DOKU-')) {
+          inv = pRef;
+        } else if (pRef.startsWith('sbx-ord-') || pRef.startsWith('ord-')) {
+          inv = `INV-DOKU-${pRef}`;
+        } else {
+          inv = pRef;
+        }
+      }
+    } else if (refOrObj) {
+      const sRef = String(refOrObj).trim();
+      if (sRef.startsWith('INV-DOKU-')) {
+        inv = sRef;
+      } else if (sRef.startsWith('sbx-ord-') || sRef.startsWith('ord-')) {
+        inv = `INV-DOKU-${sRef}`;
+      } else {
+        inv = sRef;
+      }
+    }
+    const orderId = (isObj && refOrObj.orderId) ? refOrObj.orderId : (inv ? String(inv).replace(/^INV-DOKU-/, '') : null);
 
     if (this.productionHostRejected || (this.apiBaseUrl === 'https://api.doku.com' || (this.apiBaseUrl.includes('doku.com') && !this.apiBaseUrl.includes('sandbox')))) {
       if (!this.enableProduction) {
