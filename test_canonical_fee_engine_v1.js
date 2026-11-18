@@ -166,7 +166,7 @@ async function runFeeTestSuite() {
       assert.strictEqual(res.total_tikum_fee, 240000);
     });
 
-    syncTest('6. Price Rp 5,000,000 hits exact maximum cap (6% = Rp 300,000)', () => {
+    syncTest('6. Price Rp 5,000,000 applies proportional 6% (Rp 300,000)', () => {
       const res = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 5000000 });
       assert.strictEqual(res.buyer_fee, 300000);
       assert.strictEqual(res.seller_fee, 300000);
@@ -175,15 +175,15 @@ async function runFeeTestSuite() {
       assert.strictEqual(res.total_tikum_fee, 600000);
     });
 
-    syncTest('7. Price Rp 10,000,000 triggers maximum cap of Rp 300,000 (6% = Rp 600,000 > Rp 300,000)', () => {
+    syncTest('7. Price Rp 10,000,000 triggers maximum cap of Rp 500,000 (6% = Rp 600,000 > Rp 500,000)', () => {
       const res = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 10000000 });
       assert.strictEqual(res.raw_buyer_fee, 600000);
       assert.strictEqual(res.raw_seller_fee, 600000);
-      assert.strictEqual(res.buyer_fee, 300000);
-      assert.strictEqual(res.seller_fee, 300000);
-      assert.strictEqual(res.seller_payout, 9700000);
-      assert.strictEqual(res.buyer_total, 10300000);
-      assert.strictEqual(res.total_tikum_fee, 600000);
+      assert.strictEqual(res.buyer_fee, 500000);
+      assert.strictEqual(res.seller_fee, 500000);
+      assert.strictEqual(res.seller_payout, 9500000);
+      assert.strictEqual(res.buyer_total, 10500000);
+      assert.strictEqual(res.total_tikum_fee, 1000000);
     });
 
     syncTest('8. Minimum fee boundary testing across floor transition', () => {
@@ -200,21 +200,21 @@ async function runFeeTestSuite() {
       assert.strictEqual(above.buyer_fee, 35001);
     });
 
-    syncTest('9. Maximum fee boundary testing across cap transition', () => {
-      // Rp 4,999,999 -> floor(4999999 * 6 / 100) = 299,999
-      const below = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 4999999 });
-      assert.strictEqual(below.buyer_fee, 299999);
+    syncTest('9. Maximum fee boundary testing across cap transition (Rp 500,000)', () => {
+      // Rp 8,333,333 -> floor(8333333 * 6 / 100) = 499,999
+      const below = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 8333333 });
+      assert.strictEqual(below.buyer_fee, 499999);
 
-      // Rp 5,000,000 -> 300,000
-      const exact = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 5000000 });
-      assert.strictEqual(exact.buyer_fee, 300000);
+      // Rp 8,333,334 -> floor(8333334 * 6 / 100) = 500,000
+      const exact = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 8333334 });
+      assert.strictEqual(exact.buyer_fee, 500000);
 
-      // Rp 50,000,000 -> 300,000 cap applied
+      // Rp 50,000,000 -> 500,000 cap applied
       const large = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: 50000000 });
-      assert.strictEqual(large.buyer_fee, 300000);
-      assert.strictEqual(large.seller_fee, 300000);
-      assert.strictEqual(large.seller_payout, 49700000);
-      assert.strictEqual(large.buyer_total, 50300000);
+      assert.strictEqual(large.buyer_fee, 500000);
+      assert.strictEqual(large.seller_fee, 500000);
+      assert.strictEqual(large.seller_payout, 49500000);
+      assert.strictEqual(large.buyer_total, 50500000);
     });
 
     // -------------------------------------------------------------

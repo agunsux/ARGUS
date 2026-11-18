@@ -133,10 +133,10 @@ it('3.3 Event PIC presence is correctly scoped to confirmed events and gate hour
 // ── 4. Risk D: Pricing & Business Rules Consistency ──
 console.log('\n── Section 4: Risk D — Pricing Rules Consistency ──');
 
-it('4.1 Canonical PRICING_CONFIG enforces 6% fee, 35k floor, 300k cap, 500k min price, 30% markup cap', () => {
+it('4.1 Canonical PRICING_CONFIG enforces 6% fee, 35k floor, 500k cap, 500k min price, 30% markup cap', () => {
   assert.strictEqual(PRICING_CONFIG.PLATFORM_FEE_PCT, 6);
   assert.strictEqual(PRICING_CONFIG.PLATFORM_MIN_FEE_IDR, 35000);
-  assert.strictEqual(PRICING_CONFIG.PLATFORM_MAX_FEE_IDR, 300000);
+  assert.strictEqual(PRICING_CONFIG.PLATFORM_MAX_FEE_IDR, 500000);
   assert.strictEqual(PRICING_CONFIG.MIN_LISTING_PRICE_IDR, 500000);
   assert.strictEqual(PRICING_CONFIG.MAX_MARKUP_PCT, 30);
 });
@@ -144,7 +144,7 @@ it('4.1 Canonical PRICING_CONFIG enforces 6% fee, 35k floor, 300k cap, 500k min 
 it('4.2 CanonicalFeeEngine constants match PRICING_CONFIG exactly', () => {
   assert.strictEqual(TIKUM_FEE_POLICY_V1.buyer_rate, 0.06);
   assert.strictEqual(TIKUM_FEE_POLICY_V1.minimum_fee, 35000);
-  assert.strictEqual(TIKUM_FEE_POLICY_V1.maximum_fee, 300000);
+  assert.strictEqual(TIKUM_FEE_POLICY_V1.maximum_fee, 500000);
 });
 
 it('4.3 Fee calculations match at all boundary points', () => {
@@ -152,17 +152,17 @@ it('4.3 Fee calculations match at all boundary points', () => {
   assert.strictEqual(CanonicalFeeEngine.calculateOrderPricing(1000000).buyer_fee, 60000);
   assert.strictEqual(CanonicalFeeEngine.calculateOrderPricing(1500000).buyer_fee, 90000);
   assert.strictEqual(CanonicalFeeEngine.calculateOrderPricing(5000000).buyer_fee, 300000);
-  assert.strictEqual(CanonicalFeeEngine.calculateOrderPricing(10000000).buyer_fee, 300000);
+  assert.strictEqual(CanonicalFeeEngine.calculateOrderPricing(10000000).buyer_fee, 500000);
   assert.strictEqual(calculatePlatformFee(500000), 35000);
   assert.strictEqual(calculatePlatformFee(1000000), 60000);
   assert.strictEqual(calculatePlatformFee(1500000), 90000);
   assert.strictEqual(calculatePlatformFee(5000000), 300000);
-  assert.strictEqual(calculatePlatformFee(10000000), 300000);
+  assert.strictEqual(calculatePlatformFee(10000000), 500000);
 });
 
-it('4.4 Terms Section 10 reflects minimum fee Rp 35.000 and max Rp 300.000', () => {
+it('4.4 Terms Section 10 reflects minimum fee Rp 35.000 and max Rp 500.000', () => {
   assert(termsHtml.includes('Rp 35.000') || termsHtml.includes('Rp35.000'), 'Terms mentions min fee');
-  assert(termsHtml.includes('Rp 300.000') || termsHtml.includes('Rp300.000'), 'Terms mentions max fee');
+  assert(termsHtml.includes('Rp 500.000') || termsHtml.includes('Rp500.000'), 'Terms mentions max fee');
   assert(termsHtml.includes('30%'), 'Terms mentions 30% markup cap');
 });
 

@@ -545,11 +545,9 @@ class ListingService {
     }
 
     // Security Gate: Sellers cannot approve their own listings
-    if (officerId && officerId === listing.seller_id) {
-      const err = new Error('Sellers cannot approve their own listings');
-      err.code = 'CANNOT_APPROVE_OWN_LISTING';
-      err.status = 403;
-      throw err;
+    if (officerId) {
+      const { AntiConflictService } = require('../trust/AntiConflictService');
+      AntiConflictService.assertCanVerifyListing(officerId, listing);
     }
 
     const { isPrelaunchListingMode } = require('../config/marketplaceMode');

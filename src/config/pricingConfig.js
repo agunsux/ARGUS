@@ -9,8 +9,12 @@ const PRICING_CONFIG = Object.freeze({
   MIN_LISTING_PRICE_IDR: 500000,
   MAX_MARKUP_PCT: 30,
   PLATFORM_FEE_PCT: 6,
+  PILOT_BUYER_FEE_PCT: 6,
+  PILOT_SELLER_FEE_PCT: 6,
+  NORMAL_BUYER_FEE_PCT: 7,
+  NORMAL_SELLER_FEE_PCT: 7,
   PLATFORM_MIN_FEE_IDR: 35000,
-  PLATFORM_MAX_FEE_IDR: 300000,
+  PLATFORM_MAX_FEE_IDR: 500000,
   CURRENCY: 'IDR'
 });
 
@@ -202,10 +206,111 @@ function validateListingPrice({ price, faceValue, event, configuredMarkupPct = n
   };
 }
 
+/**
+ * Mandatory Pre-Checkout & Deal Creation Simulation.
+ * Explicitly calculates exact IDR amounts and effective percentages with zero hidden fees.
+ *
+ * @param {Object} params
+ * @param {number|string} params.price - Base ticket price in IDR
+ * @param {number|string} [params.quantity=1] - Ticket quantity
+ * @param {boolean} [params.picAssisted=false] - Whether venue PIC handover assistance is included
+ * @param {number|string} [params.picAllocationFee=0] - Explicit PIC allocation fee in IDR
+ * @param {number|string} [params.paymentProcessingFee=0] - Explicit payment processing fee
+ * @returns {Object} Deterministic simulation breakdown
+ */
+function simulateTransactionPricing({
+  price,
+  quantity = 1,
+  picAssisted = false,
+  picAllocationFee = 0,
+  paymentProcessingFee = 0
+}) {
+  const numericPrice = typeof price === 'number' ? price : parseInt(price, 10);
+  const qty = typeof quantity === 'number' ? quantity : parseInt(quantity, 10) || 1;
+  const pgFee = typeof paymentProcessingFee === 'number' ? paymentProcessingFee : parseInt(paymentProcessingFee || 0, 10) || 0;
+  const picFee = picAssisted ? (typeof picAllocationFee === 'number' ? picAllocationFee : parseInt(picAllocationFee || 0, 10) || 0) : 0;
+
+  if (isNaN(numericPrice) || numericPrice <= 0) {
+    return {
+      ticket_base_price: 0,
+      quantity: qty,
+      buyer_service_fee: 0,
+      seller_service_fee: 0,
+      pic_allocation_fee: 0,
+      payment_processing_fee: 0,
+      total_paid_by_buyer: 0,
+      net_payout_seller: 0,
+      effective_buyer_fee_pct: 0,
+      effective_seller_fee_pct: 0,
+      effective_total_fee_pct: 0,
+      currency: PRICING_CONFIG.CURRENCY,
+      standard_plan_reference: {
+        planned_rate_description: 'Tarif standar normal yang direncanakan: 7% Pembeli + 7% Penjual.',
+        active_pilot_description: 'Tarif periode pilot aktif: 6% Pembeli + 6% Penjual (Min Rp35.000, Maks Rp500.000).',
+        is_pilot_active: true
+      }
+    };
+  }
+
+  const grossTicketValue = numericPrice * qty;
+
+  // Buyer fee: 6%, min Rp35.000, cap Rp500.000
+  const rawBuyerFee = Math.round((grossTicketValue * PRICING_CONFIG.PILOT_BUYER_FEE_PCT) / 100);
+  let buyerFee = Math.max(rawBuyerFee, PRICING_CONFIG.PLATFORM_MIN_FEE_IDR);
+  if (PRICING_CONFIG.PLATFORM_MAX_FEE_IDR && buyerFee > PRICING_CONFIG.PLATFORM_MAX_FEE_IDR) {
+    buyerFee = PRICING_CONFIG.PLATFORM_MAX_FEE_IDR;
+  }
+
+  // Seller fee: 6%, min Rp35.000, cap Rp500.000
+  const rawSellerFee = Math.round((grossTicketValue * PRICING_CONFIG.PILOT_SELLER_FEE_PCT) / 100);
+  let sellerFee = Math.max(rawSellerFee, PRICING_CONFIG.PLATFORM_MIN_FEE_IDR);
+  if (PRICING_CONFIG.PLATFORM_MAX_FEE_IDR && sellerFee > PRICING_CONFIG.PLATFORM_MAX_FEE_IDR) {
+    sellerFee = PRICING_CONFIG.PLATFORM_MAX_FEE_IDR;
+  }
+  // Payout guard: seller fee cannot exceed gross ticket value
+  if (sellerFee > grossTicketValue) {
+    sellerFee = grossTicketValue;
+  }
+
+  const totalPaidByBuyer = grossTicketValue + buyerFee + picFee + pgFee;
+  const netPayoutSeller = grossTicketValue - sellerFee;
+
+  // Effective percentages calculated accurately based on actual IDR fees vs base ticket price
+  const effectiveBuyerFeePct = Number(((buyerFee / grossTicketValue) * 100).toFixed(2));
+  const effectiveSellerFeePct = Number(((sellerFee / grossTicketValue) * 100).toFixed(2));
+  const effectiveTotalFeePct = Number((((buyerFee + sellerFee) / grossTicketValue) * 100).toFixed(2));
+
+  return {
+    ticket_base_price: grossTicketValue,
+    unit_price: numericPrice,
+    quantity: qty,
+    buyer_service_fee: buyerFee,
+    seller_service_fee: sellerFee,
+    pic_allocation_fee: picFee,
+    payment_processing_fee: pgFee,
+    total_paid_by_buyer: totalPaidByBuyer,
+    net_payout_seller: netPayoutSeller,
+    effective_buyer_fee_pct: effectiveBuyerFeePct,
+    effective_seller_fee_pct: effectiveSellerFeePct,
+    effective_total_fee_pct: effectiveTotalFeePct,
+    currency: PRICING_CONFIG.CURRENCY,
+    standard_plan_reference: {
+      planned_rate_description: 'Tarif standar normal yang direncanakan: 7% Pembeli + 7% Penjual.',
+      active_pilot_description: 'Tarif periode pilot aktif: 6% Pembeli + 6% Penjual (Min Rp35.000, Maks Rp500.000).',
+      standard_buyer_pct: PRICING_CONFIG.NORMAL_BUYER_FEE_PCT,
+      standard_seller_pct: PRICING_CONFIG.NORMAL_SELLER_FEE_PCT,
+      pilot_buyer_pct: PRICING_CONFIG.PILOT_BUYER_FEE_PCT,
+      pilot_seller_pct: PRICING_CONFIG.PILOT_SELLER_FEE_PCT,
+      is_pilot_active: true
+    }
+  };
+}
+
 module.exports = {
   PRICING_CONFIG,
   calculatePlatformFee,
   calculatePricing,
   calculateFeeBreakdown,
+  simulateTransactionPricing,
   validateListingPrice
 };

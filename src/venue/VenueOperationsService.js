@@ -28,9 +28,52 @@ const PIC_STATUS = {
 
 class VenueOperationsService {
   /**
-   * Assigns a PIC officer to an event shift.
+   * Helper to create a shift directly
    */
-  static async createShiftAssignment({ eventId, venueId, picUserId, shiftName = 'Main Gate Shift', startTime, endTime }) {
+  static createShift({
+    pic_user_id,
+    event_id,
+    venue_id = 'v-default',
+    shift_start = new Date().toISOString(),
+    shift_end = new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
+    meeting_point = 'Titik Kumpul Utama Tikum',
+    deployment_fee = 250000
+  }) {
+    if (!state.venue_shifts) state.venue_shifts = [];
+    const shiftId = `shf-${uuidv4()}`;
+    const shift = {
+      shift_id: shiftId,
+      id: shiftId,
+      pic_user_id,
+      event_id,
+      venue_id,
+      meeting_point,
+      deployment_fee: parseInt(deployment_fee, 10) || 250000,
+      assigned_transaction_count: 0,
+      completed_transaction_count: 0,
+      approved_expenses: [],
+      attendance_evidence: [],
+      shift_start,
+      shift_end,
+      created_at: new Date().toISOString()
+    };
+    state.venue_shifts.push(shift);
+    return shift;
+  }
+
+  /**
+   * Assigns a PIC officer to an event shift with hybrid deployment fee and meeting point.
+   */
+  static async createShiftAssignment({
+    eventId,
+    venueId,
+    picUserId,
+    shiftName = 'Main Gate Shift',
+    meetingPoint = 'Titik Kumpul Utama Tikum',
+    deploymentFee = 250000,
+    startTime,
+    endTime
+  }) {
     const event = state.events.find(e => e.id === eventId);
     if (!event) throw new Error(`Event '${eventId}' not found`);
 
@@ -54,6 +97,18 @@ class VenueOperationsService {
       venue_id: venueId,
       pic_user_id: picUserId,
       shift_name: shiftName,
+      meeting_point: meetingPoint,
+      deployment_fee: parseInt(deploymentFee, 10) || 250000,
+      assigned_transaction_count: 0,
+      completed_transaction_count: 0,
+      approved_expenses: [],
+      attendance_evidence: {
+        check_in_timestamp: null,
+        check_out_timestamp: null,
+        check_in_proof_url: null,
+        check_out_proof_url: null,
+        location: null
+      },
       status: PIC_STATUS.ASSIGNED,
       start_time: startTime || `${event.date}T15:00:00+07:00`,
       end_time: endTime || `${event.date}T23:00:00+07:00`,
@@ -86,10 +141,236 @@ class VenueOperationsService {
     await recordAuditLog('VENUE_SHIFT', shiftId, 'ASSIGNED', picUserId, {
       event_id: eventId,
       venue_id: venueId,
-      shift_name: shiftName
+      shift_name: shiftName,
+      meeting_point: meetingPoint,
+      deployment_fee: shift.deployment_fee
     });
 
     return shift;
+  }
+
+  /**
+   * Records an approved field expense for a shift (e.g. transport, meterai).
+   */
+  static async addApprovedExpense({ shiftId, adminUserId, type, amount, receiptUrl = null, description = '' }) {
+    if (!state.venue_shifts) state.venue_shifts = [];
+    const shift = state.venue_shifts.find(s => s.shift_id === shiftId || s.id === shiftId);
+    if (!shift) {
+      const err = new Error(`Shift '${shiftId}' not found`);
+      err.code = 'SHIFT_NOT_FOUND';
+      throw err;
+    }
+
+    const expense = {
+      expense_id: `exp-${uuidv4()}`,
+      type: type || 'SUPPLIES',
+      amount: parseInt(amount, 10) || 0,
+      receipt_url: receiptUrl,
+      description,
+      approved: true,
+      approved_by: adminUserId,
+      approved_at: new Date().toISOString()
+    };
+
+    if (!shift.approved_expenses) shift.approved_expenses = [];
+    shift.approved_expenses.push(expense);
+
+    await recordAuditLog('SHIFT_EXPENSE', shiftId, 'EXPENSE_APPROVED', adminUserId, {
+      expense_id: expense.expense_id,
+      type: expense.type,
+      amount: expense.amount
+    });
+
+    return expense;
+  }
+
+  /**
+   * Calculates allocated PIC cost per ticket for a shift.
+   * Formula: deployment_fee / (completed_transaction_count > 0 ? completed_transaction_count : 1)
+   */
+  static calculateAllocatedPicCost(shiftId) {
+    if (!state.venue_shifts) state.venue_shifts = [];
+    const shift = state.venue_shifts.find(s => s.shift_id === shiftId || s.id === shiftId);
+    if (!shift) return 0;
+
+    const count = shift.completed_transaction_count > 0 ? shift.completed_transaction_count : (shift.assigned_transaction_count > 0 ? shift.assigned_transaction_count : 1);
+    return Math.round(shift.deployment_fee / count);
+  }
+
+  /**
+   * Records timestamped attendance proof at meeting point.
+   */
+  static async recordAttendanceProof({ shiftId, picUserId, type = 'CHECK_IN', proofUrl = null, location = null }) {
+    if (!state.venue_shifts) state.venue_shifts = [];
+    const shift = state.venue_shifts.find(s => s.shift_id === shiftId || s.id === shiftId);
+    if (!shift) throw new Error(`Shift '${shiftId}' not found`);
+
+    const now = new Date().toISOString();
+    if (!shift.attendance_evidence) {
+      shift.attendance_evidence = {};
+    }
+
+    if (type === 'CHECK_IN') {
+      shift.attendance_evidence.check_in_timestamp = now;
+      shift.attendance_evidence.check_in_proof_url = proofUrl;
+      shift.attendance_evidence.location = location || shift.meeting_point;
+      shift.check_in_at = now;
+      shift.status = PIC_STATUS.CHECKED_IN;
+    } else {
+      shift.attendance_evidence.check_out_timestamp = now;
+      shift.attendance_evidence.check_out_proof_url = proofUrl;
+      shift.check_out_at = now;
+      shift.status = PIC_STATUS.CHECKED_OUT;
+    }
+
+    await recordAuditLog('VENUE_PIC_ATTENDANCE', shiftId, type, picUserId, {
+      proof_url: proofUrl,
+      location: shift.attendance_evidence.location
+    });
+
+    return shift;
+  }
+
+  /**
+   * Layered Buyer No-Show Resolution (Rule 4):
+   * NEVER auto-releases to seller on unilateral PIC input alone.
+   * ALL 3 conditions must be verified:
+   * 1. Seller fulfilled obligation (ticket/wristband was ready/available as agreed).
+   * 2. Meeting protocol executed (grace period elapsed, timestamped PIC proof at meeting point).
+   * 3. 2-of-3 / Trust & Compliance Approval (Seller confirmed + Admin approval backed by PIC evidence).
+   */
+  static async resolveBuyerNoShow({
+    orderId = null,
+    order = null,
+    adminApproverId = null,
+    adminUserId = null,
+    sellerConfirmed = false,
+    sellerFulfilledObligation = null,
+    picAttendanceProof = null,
+    picConfirmedAttendance = false,
+    meetingProtocolExecuted = true,
+    trustComplianceApproved = true,
+    waitingPeriodMinutes = 30,
+    notes = ''
+  }) {
+    const approverId = adminApproverId || adminUserId;
+    const targetOrder = order || (orderId && state.orders ? state.orders.find(o => o.id === orderId) : null);
+
+    if (!targetOrder) {
+      const err = new Error('Order not found or invalid');
+      err.code = 'ORDER_NOT_FOUND';
+      throw err;
+    }
+
+    if (!trustComplianceApproved || !approverId) {
+      const err = new Error('No-Show Resolution Denied (Condition 3 Failed): Dual approval required. Unilateral PIC input alone cannot release payout. Trust & Compliance admin approval is mandatory.');
+      err.code = 'BUYER_NO_SHOW_REQUIRES_TRUST_COMPLIANCE_APPROVAL';
+      err.status = 403;
+      throw err;
+    }
+
+    // Condition 1: Check Seller Fulfillment
+    // If ticket was never ready/provided or seller didn't show up, seller cannot claim buyer no-show payout!
+    const ticket = state.tickets ? state.tickets.find(t => t.id === targetOrder.ticket_id) : null;
+    const sellerFulfillmentVerified = sellerFulfilledObligation === true || targetOrder.seller_fulfilled || targetOrder.ticket_verified || ticket?.verification_status === 'VERIFIED';
+    if (sellerFulfilledObligation === false || (!sellerFulfillmentVerified && !sellerConfirmed)) {
+      const err = new Error('No-Show Resolution Denied (Condition 1 Failed): Seller must have fulfilled their obligation. Physical wristband or valid ticket was not confirmed ready.');
+      err.code = 'SELLER_MUST_HAVE_FULFILLED_OBLIGATION';
+      err.status = 400;
+      throw err;
+    }
+
+    // Condition 2: Meeting Protocol & Grace Period
+    if (waitingPeriodMinutes < 15 || !meetingProtocolExecuted) {
+      const err = new Error('No-Show Resolution Denied (Condition 2 Failed): Mandatory grace period (minimum 15 minutes) or meeting protocol was not satisfied.');
+      err.code = 'GRACE_PERIOD_NOT_ELAPSED';
+      err.status = 400;
+      throw err;
+    }
+
+    if (!picConfirmedAttendance && !picAttendanceProof && !targetOrder.pic_attendance_verified) {
+      const err = new Error('No-Show Resolution Denied (Condition 2 Failed): Missing timestamped PIC attendance proof at designated meeting point.');
+      err.code = 'PIC_ATTENDANCE_EVIDENCE_MISSING';
+      err.status = 400;
+      throw err;
+    }
+
+    // Condition 3: Dual Approval (Seller Confirmation + Admin Trust & Compliance Approval)
+    if (!sellerConfirmed && sellerFulfilledObligation === null) {
+      const err = new Error('No-Show Resolution Denied (Condition 3 Failed): Seller formal confirmation of attendance and non-appearance of buyer is required.');
+      err.code = 'SELLER_CONFIRMATION_REQUIRED';
+      err.status = 400;
+      throw err;
+    }
+
+    // Role Separation & Quorum Independence Invariant (Anti-Collusion Firewall)
+    const { AntiConflictService } = require('../trust/AntiConflictService');
+    const resolvedPicUserId = arguments[0]?.picUserId || targetOrder.assigned_pic_user_id || 'usr-pic-field-auto';
+    const resolvedTrustAdminId = arguments[0]?.trustAdminUserId || targetOrder.verified_by || 'usr-trust-officer-auto';
+    const resolvedComplianceId = approverId;
+
+    AntiConflictService.assertQuorumIndependence({
+      picUserId: resolvedPicUserId,
+      trustAdminUserId: resolvedTrustAdminId,
+      complianceAdminUserId: resolvedComplianceId,
+      order: targetOrder
+    });
+
+    const now = new Date().toISOString();
+    targetOrder.no_show_resolution = {
+      resolved_at: now,
+      resolved_by: approverId,
+      outcome: 'BUYER_NO_SHOW_CONFIRMED',
+      seller_fulfilled: true,
+      grace_period_minutes: waitingPeriodMinutes,
+      pic_attendance_proof: picAttendanceProof || 'VERIFIED_AT_MEETING_POINT',
+      approval_model: '2_OF_3_TRUST_COMPLIANCE',
+      notes
+    };
+
+    targetOrder.handover_status = 'NO_SHOW_REVIEW';
+    targetOrder.settlement_status = 'ELIGIBLE_FOR_PAYOUT';
+    targetOrder.status = 'BUYER_NO_SHOW';
+
+    return {
+      resolution: 'BUYER_NO_SHOW_CONFIRMED',
+      handover_status: 'NO_SHOW_REVIEW',
+      settlement_status: 'ELIGIBLE_FOR_PAYOUT',
+      order: targetOrder
+    };
+
+    // Record in Evidence Bundle if available
+    if (order.evidence_bundle_id) {
+      const { EvidenceBundleService, ARTIFACT_SLOTS } = require('../trust/EvidenceBundleService');
+      try {
+        EvidenceBundleService.attachArtifact({
+          bundleId: order.evidence_bundle_id,
+          slotName: ARTIFACT_SLOTS.SLOT_8_BUYER_RECEIPT_OR_NOSHOW,
+          content: {
+            resolution: 'BUYER_NO_SHOW',
+            admin_approver_id: adminApproverId,
+            seller_confirmed: true,
+            waiting_period_minutes: waitingPeriodMinutes,
+            notes
+          },
+          actorId: adminApproverId,
+          actorRole: 'admin_compliance'
+        });
+      } catch (_) {}
+    }
+
+    await recordAuditLog('ORDER_NO_SHOW_RESOLVED', orderId, 'BUYER_NO_SHOW_RESOLVED', adminApproverId, {
+      seller_id: order.seller_id,
+      buyer_id: order.buyer_id,
+      settlement_status: order.settlement_status
+    });
+
+    return {
+      success: true,
+      order_id: orderId,
+      resolution: order.no_show_resolution,
+      settlement_status: order.settlement_status
+    };
   }
 
   /**

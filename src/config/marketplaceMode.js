@@ -20,7 +20,7 @@ const MARKETPLACE_MODES = {
 };
 
 const PRELAUNCH_ERROR_CODE = 'MARKETPLACE_PRELAUNCH_ONLY';
-const PRELAUNCH_ERROR_MESSAGE = 'TIKUM belum membuka transaksi online otomatis. Anda dapat mengajukan listing dan menawar tiket, dikoordinasikan secara manual oleh Admin.';
+const PRELAUNCH_ERROR_MESSAGE = 'TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.';
 
 const PRELAUNCH_ERROR_RESPONSE = {
   error: PRELAUNCH_ERROR_MESSAGE,

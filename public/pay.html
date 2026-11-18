@@ -93,7 +93,7 @@
       <div id="demoNoticeBanner" class="notice-box notice-warning" style="display: none; background: #FEF3C7; border: 1.5px solid #D97706; padding: 14px 18px; margin-bottom: 20px; border-radius: var(--radius-card); gap: 12px; align-items: flex-start;">
         <i class="fa-solid fa-triangle-exclamation" style="color: #B45309; font-size: 20px; margin-top: 2px;"></i>
         <div>
-          <strong style="color: #92400E; font-size: 14px; text-transform: uppercase; letter-spacing: 0.03em; display: block; margin-bottom: 4px;">DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN</strong>
+          <strong style="color: #92400E; font-size: 14px; text-transform: uppercase; letter-spacing: 0.03em; display: block; margin-bottom: 4px;">DEMO — BUKAN TIKET UNTUK DIJUAL</strong>
           <p style="color: #78350F; font-size: 13px; margin: 0; line-height: 1.5;">
             Halaman ini menampilkan contoh demonstrasi checkout resmi TIKUM (PT SHINERVA PRAJNA TEJAS) untuk pengujian alur antarmuka dan transparansi rincian biaya. Tiket, harga, dan data acara ini merupakan data simulasi dan <strong>tidak dapat dibeli atau ditransaksikan secara riil</strong>.
           </p>
@@ -597,17 +597,17 @@
       if (!id) {
         // Pilot Verification Mode: When visiting /pay directly, render the canonical verified pilot listing
         // so that reviewers and users see a complete, itemized checkout page.
-        // Conspicuously labeled as DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN.
+        // Conspicuously labeled as DEMO_NOT_FOR_SALE
         currentListing = {
           id: 'list-pilot-preview',
           is_demo: true,
           seat_info: 'Kategori CAT 1 — Section A, Row 04, Seat 12 (Data Demonstrasi)',
           price: 1500000,
-          status: 'DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN',
+          status: 'DEMO_NOT_FOR_SALE',
           seller: { kyc_status: 'TERVERIFIKASI (SIMULASI)' },
           event: {
-            name: 'Contoh Demonstrasi Checkout: Tiket Konser King Nassar (Cat 1 — Ilustrasi)',
-            title: 'Contoh Demonstrasi Checkout: Tiket Konser King Nassar (Cat 1 — Ilustrasi)',
+            name: 'Contoh Simulasi Checkout: Tiket Konser King Nassar (Cat 1 — Ilustrasi)',
+            title: 'Contoh Simulasi Checkout: Tiket Konser King Nassar (Cat 1 — Ilustrasi)',
             category: 'DEMO / SIMULASI',
             date: 'Sabtu, 7 November 2026 (Ilustrasi)',
             venue: 'Istora Senayan Jakarta (Simulasi)',
@@ -771,7 +771,7 @@
         }
       } else if (isDemo) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-ban"></i> Pembelian Dinonaktifkan (DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN)';
+        btn.innerHTML = '<i class="fa-solid fa-ban"></i> Pembelian Dinonaktifkan (Item Demonstrasi)';
         btn.style.opacity = '0.6';
         btn.style.cursor = 'not-allowed';
         if (btnOffer) btnOffer.style.display = 'none';

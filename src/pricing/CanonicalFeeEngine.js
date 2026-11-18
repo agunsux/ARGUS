@@ -30,7 +30,7 @@ const TIKUM_FEE_POLICY_V1 = Object.freeze({
   version: 'TIKUM_FEE_POLICY_V1',
   country_code: 'ID',
   currency: 'IDR',
-  description: 'Standard Tikum Canonical Fee Policy V1 (6% Buyer + 6% Seller, Min Rp35k, Max Rp300k)',
+  description: 'Standard Tikum Canonical Fee Policy V1 (6% Buyer + 6% Seller, Min Rp35k, Max Rp500k)',
   seller_rate_numerator: PRICING_CONFIG.PLATFORM_FEE_PCT,
   seller_rate_denominator: 100,
   buyer_rate_numerator: PRICING_CONFIG.PLATFORM_FEE_PCT,

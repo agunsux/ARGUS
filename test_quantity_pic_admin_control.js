@@ -53,11 +53,11 @@ async function runTests() {
     assert.strictEqual(pMin.sellerFee, 35000);
     assert.strictEqual(pMin.sellerPayout, 465000);
 
-    // Maximum fee clamp: Rp 10.000.000 -> 6% = Rp 600.000, capped at max Rp 300.000
+    // Maximum fee clamp: Rp 10.000.000 -> 6% = Rp 600.000, capped at max Rp 500.000
     const pMax = calculateFeeBreakdown(10000000, 1);
-    assert.strictEqual(pMax.unitFee, 300000);
-    assert.strictEqual(pMax.sellerFee, 300000);
-    assert.strictEqual(pMax.sellerPayout, 9700000);
+    assert.strictEqual(pMax.unitFee, 500000);
+    assert.strictEqual(pMax.sellerFee, 500000);
+    assert.strictEqual(pMax.sellerPayout, 9500000);
 
     // Multi-ticket calculation on gross ticket value: 2 tickets @ 500.000 = 1.000.000 gross -> 6% = 60.000
     const pMulti = calculateFeeBreakdown(500000, 2);

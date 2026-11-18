@@ -641,6 +641,16 @@ class TrustPolicyEngine {
       throw err;
     }
 
+    // Hard Block 5: Declared Affiliation Match
+    const { AntiConflictService } = require('./AntiConflictService');
+    if (AntiConflictService.hasConflict(picUserId, { sellerId: order.seller_id, buyerId: order.buyer_id })) {
+      const err = new Error('Security Violation (PC-1): Collusion detected — PIC has an active declared conflict or affiliation with transaction party');
+      err.code = 'COLLUSION_SELF_DEALING_DETECTED';
+      err.status = 403;
+      recordAuditLog('COLLUSION_ALERT', orderId, 'DECLARED_AFFILIATION_CONFLICT', picUserId, { order_id: orderId });
+      throw err;
+    }
+
     // Weak Signal: Shared IP alone is NOT a deterministic collusion block, but a risk signal
     let sharedIpSignal = false;
     if (ipAddress && (ipAddress === order.buyer_ip || ipAddress === order.seller_ip)) {

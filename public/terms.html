@@ -159,19 +159,21 @@
 
       <!-- 10. Penetapan Harga & Biaya Layanan -->
       <div class="terms-section">
-        <h2>10. Penetapan Harga Transparan &amp; Biaya Layanan (Tikum Fee Policy V1)</h2>
+        <h2>10. Penetapan Harga Transparan &amp; Biaya Layanan (Tikum Pilot Fee Structure)</h2>
         <p>
-          Harga tiket ditentukan secara bebas oleh penjual tanpa markup terselubung. Tikum menerapkan kebijakan transparansi harga penuh melalui Tikum Fee Policy V1:
+          Harga tiket disepakati di awal tanpa markup terselubung. Tikum menerapkan kebijakan transparansi harga penuh:
         </p>
         <ul style="color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-left: 20px;">
           <li><strong>Listing Fee:</strong> Rp 0 (Gratis pasang listing tiket).</li>
-          <li><strong>Tikum Seller Fee:</strong> 6% dari harga tiket (minimum Rp 35.000, maksimum Rp 300.000 per pesanan).</li>
-          <li><strong>Tikum Trust &amp; Protection Fee (Buyer):</strong> 6% dari harga tiket (minimum Rp 35.000, maksimum Rp 300.000 per pesanan).</li>
-          <li><strong>Batas Harga Minimum Listing:</strong> Rp 500.000 per tiket.</li>
+          <li><strong>Tikum Seller Platform Service Fee (Pilot):</strong> 6% dari harga tiket (minimum Rp 35.000, maksimum/cap Rp 500.000 per sisi).</li>
+          <li><strong>Tikum Buyer Platform Service Fee (Pilot):</strong> 6% dari harga tiket (minimum Rp 35.000, maksimum/cap Rp 500.000 per sisi).</li>
+          <li><strong>Referensi Rencana Tarif Standar Normal:</strong> 7% Pembeli + 7% Penjual (ditampilkan transparan sebagai perbandingan tarif terencana versus periode pilot, bukan diskon semu).</li>
+          <li><strong>Akurasi Persentase Efektif:</strong> Persentase biaya aktual dihitung secara deterministik (contoh: tiket Rp 300.000 dengan biaya minimum Rp 35.000 + Rp 35.000 = Rp 70.000 memiliki persentase efektif 23,33%, tidak digeneralisasi sebagai 12%).</li>
+          <li><strong>Batas Harga Minimum Listing:</strong> Rp 500.000 per tiket pada katalog umum pilot.</li>
           <li><strong>Batas Markup Penjual:</strong> Maksimum +30% di atas harga resmi promotor (Face Value) untuk mencegah spekulasi harga.</li>
         </ul>
         <p style="margin-top: 10px;">
-          Rincian biaya ditampilkan secara eksplisit di awal sebelum pembayaran tanpa biaya kejutan saat checkout.
+          Simulasi rincian biaya (harga tiket, biaya pembeli, biaya penjual, alokasi PIC venue jika ada, total bayar pembeli, dan transfer bersih penjual) ditampilkan secara eksplisit di awal sebelum pembeli atau penjual menyetujui transaksi. Nol biaya tersembunyi.
         </p>
       </div>
 
@@ -183,30 +185,46 @@
         </p>
       </div>
 
-      <!-- 12. Pembayaran & Tata Kelola Transaksi -->
+      <!-- 12. Mode Pembayaran & Tata Kelola Penyelesaian -->
       <div class="terms-section">
-        <h2>12. Pembayaran &amp; Tata Kelola Transaksi (Settlement Review)</h2>
+        <h2>12. Mode Pembayaran &amp; Tata Kelola Penyelesaian (Settlement Modes)</h2>
         <p>
-          Seluruh pembayaran transaksi tiket di Tikum wajib disetorkan melalui kanal payment gateway resmi berizin Bank Indonesia yang terintegrasi pada sistem Tikum. Status transaksi dikelola dalam sistem pencatatan pemeriksaan platform internal (Transaction Verification Status) sebelum penyelesaian transaksi ke penjual.
+          TIKUM mengoperasikan transaksi berdasarkan dua mode penyelesaian yang terpisah dan eksplisit:
         </p>
-        <p>
-          Tikum bukan merupakan lembaga perbankan atau penyelenggara jasa escrow berizin khusus. Istilah pemeriksaan transaksi merujuk pada tata kelola transaksi di mana penyelesaian dana hasil penjualan kepada penjual diproses setelah tiket tervalidasi dan masa peninjauan selesai. Pembayaran di luar sistem resmi Tikum tidak dilindungi oleh sistem keamanan platform.
+        <ul style="color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-left: 20px;">
+          <li><strong>Mode 1 (Protected Settlement):</strong> Hanya aktif apabila penyedia gerbang pembayaran (misal DOKU/iPaymu) telah menerbitkan persetujuan tertulis resmi untuk penampungan, pemisahan/disbursement, pengembalian dana, dan rekonsiliasi dana marketplace.</li>
+          <li><strong>Mode 2 (Assisted Direct Payment - Standar Cadangan):</strong> Apabila penampungan dana belum disahkan secara tertulis, TIKUM <em>tidak menerima, menyimpan, maupun memegang dana pokok tiket milik penjual</em>. Pembayaran pokok tiket terjadi langsung antara Pembeli dan Penjual melalui mekanisme yang disepakati; TIKUM hanya memproses Biaya Layanan Platform secara terpisah. Dalam Mode 2, istilah escrow/kustodi tidak berlaku dan tidak digunakan.</li>
+        </ul>
+        <p style="margin-top: 10px;">
+          <strong>Pernyataan Kedudukan Perizinan:</strong> Tikum bukan merupakan lembaga perbankan atau penyelenggara jasa escrow berizin khusus. Istilah tata kelola pemeriksaan transaksi merujuk pada perlindungan internal platform (platform-held) di mana penyelesaian hasil penjualan tiket diproses setelah verifikasi serah terima selesai tanpa sengketa.
+        </p>
+        <p style="margin-top: 10px;">
+          <strong>Kanal Pembayaran Pilot:</strong> Selama periode pilot, kanal pembayaran online resmi yang diaktifkan adalah <strong>QRIS</strong> dan <strong>Virtual Account (VA)</strong>. Kartu Kredit dinonaktifkan untuk mencegah biaya MDR berlebih dan risiko sengketa perbankan (chargeback).
         </p>
       </div>
 
-      <!-- 13. Siklus Pesanan -->
+      <!-- 13. Empat Sumbu Status Terpisah (Decoupled State Axes) -->
       <div class="terms-section">
-        <h2>13. Siklus Pesanan (Order Lifecycle)</h2>
+        <h2>13. Empat Sumbu Status Transaksi Terpisah (Decoupled State Axes)</h2>
         <p>
-          Pesanan mengikuti mesin status terstruktur: <code class="mono">PENDING_PAYMENT</code> &rarr; <code class="mono">PAID</code> (Pembayaran Terkonfirmasi / Tertahan di Sistem Platform) &rarr; <code class="mono">ENTRY_CONFIRMED</code> (Verifikasi Serah Terima / Masuk Venue) &rarr; <code class="mono">SETTLED</code> (Penyelesaian Transaksi &amp; Pencairan ke Penjual).
+          Untuk menjamin kebenaran faktual transaksi dan menghindari klaim keliru, sistem Tikum memisahkan 4 status independen:
         </p>
+        <ol style="color: var(--text-muted); font-size: 13.5px; line-height: 1.7; margin-left: 20px;">
+          <li><strong>Status Pembayaran (payment_status):</strong> Mencatat status dana (<code class="mono">UNPAID</code>, <code class="mono">PAYMENT_CONFIRMED_PROVIDER</code>, <code class="mono">FEE_ONLY_PAID</code>, <code class="mono">REFUNDED</code>). Konfirmasi pembayaran bukan jaminan tiket valid di turnstile.</li>
+          <li><strong>Status Verifikasi Tiket (ticket_verification_status):</strong> Mencatat peninjauan bukti kepemilikan (<code class="mono">UNREVIEWED</code>, <code class="mono">OWNERSHIP_EVIDENCE_REVIEWED</code>, <code class="mono">FULFILLMENT_DOCUMENT_VERIFIED</code>, <code class="mono">INVALID_FLAGGED</code>). Bukti kepemilikan ditinjau tidak sama dengan jaminan barcode fisik belum pernah discan pihak ketiga di gerbang.</li>
+          <li><strong>Status Serah Terima (handover_status):</strong> Mencatat proses penyerahan (<code class="mono">PENDING</code>, <code class="mono">SCHEDULED_AT_VENUE</code>, <code class="mono">PIC_HANDOVER_WITNESSED</code>, <code class="mono">DIGITAL_TRANSFERRED</code>, <code class="mono">BUYER_CONFIRMED</code>, <code class="mono">NO_SHOW_REVIEW</code>). Pendampingan PIC hanya membuktikan serah terima fisik/wristband di Titik Kumpul, bukan menjamin izin masuk gate turnstile venue.</li>
+          <li><strong>Status Penyelesaian Dana (settlement_status):</strong> Mencatat hak pencairan dana (<code class="mono">NOT_APPLICABLE_DIRECT</code>, <code class="mono">HELD_PENDING_CONDITIONS</code>, <code class="mono">ELIGIBLE_FOR_PAYOUT</code>, <code class="mono">SETTLED</code>, <code class="mono">DISPUTE_FROZEN</code>).</li>
+        </ol>
       </div>
 
-      <!-- 14. Pembatalan Pesanan -->
+      <!-- 14. Transaksi Mengikat & Pembatalan -->
       <div class="terms-section">
-        <h2>14. Pembatalan Pesanan</h2>
+        <h2>14. Transaksi Mengikat &amp; Kebijakan Tanpa Pembatalan Sepihak (No Change-of-Mind)</h2>
         <p>
-          Pesanan yang belum dibayar dalam batas waktu pembayaran (TTL) akan dibatalkan secara otomatis oleh sistem. Pesanan yang telah dibayar tidak dapat dibatalkan sepihak oleh pembeli kecuali terjadi wanprestasi oleh penjual atau pembatalan acara resmi.
+          Setelah pembayaran dikonfirmasi dan Syarat &amp; Ketentuan disetujui, transaksi bersifat <strong>mengikat (binding)</strong>. Pembeli <strong>tidak dapat membatalkan pesanan karena alasan perubahan rencana pribadi (change of mind)</strong>.
+        </p>
+        <p style="margin-top: 6px;">
+          <strong>Hak Sengketa Pembeli Tetap Terlindungi:</strong> Kebijakan tanpa pembatalan sepihak tidak menghapus hak pembeli untuk mengajukan sengketa dan menerima hak pengembalian dana penuh (refund) apabila terjadi penipuan, ketidaksesuaian kategori/tanggal/kursi tiket dari penjual, penjual gagal menyerahkan tiket (seller non-delivery), atau acara dibatalkan resmi oleh promotor.
         </p>
       </div>
 
@@ -218,12 +236,21 @@
         </p>
       </div>
 
-      <!-- 16. Penyelesaian Sengketa -->
+      <!-- 16. Penyelesaian Sengketa & Tata Kelola No-Show Pembeli -->
       <div class="terms-section">
-        <h2>16. Penyelesaian Sengketa di Lokasi Venue</h2>
+        <h2>16. Penyelesaian Sengketa &amp; Tata Kelola No-Show Pembeli (Layered Verification)</h2>
         <p>
           Apabila tiket ditolak oleh turnstile scanner di gerbang acara, pembeli wajib segera melaporkan kendala kepada Event PIC di lokasi sebelum jam penutupan gerbang. Bukti foto investigasi gerbang akan menjadi dasar penerbitan putusan sengketa oleh Tim Resolusi Tikum.
         </p>
+        <p style="margin-top: 8px;">
+          <strong>Aturan Berlapis Ketidakhadiran Pembeli (Buyer No-Show Rule — Tidak Ada Pencairan Otomatis Sepihak):</strong>
+          Ketidakhadiran pembeli di lokasi acara (no-show) <em>tidak secara otomatis melepaskan pencairan dana ke penjual hanya atas laporan sepihak PIC</em>. Penyelesaian transaksi no-show pembeli hanya dapat disetujui apabila seluruh syarat berikut terverifikasi:
+        </p>
+        <ul style="color: var(--text-muted); font-size: 13.5px; line-height: 1.6; margin-left: 20px;">
+          <li>1. Penjual terbukti telah memenuhi kewajibannya menyediakan tiket/wristband valid sesuai kesepakatan (jika penukaran fisik belum siap atau tiket belum disediakan penjual, transaksi tidak dapat dinyatakan selesai atas dalih pembeli terlambat).</li>
+          <li>2. Protokol pertemuan telah dijalankan penuh (masa tunggu/grace period terpenuhi, notifikasi terkirim kepada pembeli, serta bukti kehadiran PIC berstempel waktu di Titik Kumpul terverifikasi).</li>
+          <li>3. Persetujuan 2-of-3 / Tim Kepatuhan Trust: Pencairan membutuhkan konfirmasi penjual ditambah persetujuan verifikasi Tim Trust &amp; Compliance TIKUM berdasar arsip bukti kehadiran PIC (bukan keputusan sepihak PIC di lapangan).</li>
+        </ul>
       </div>
 
       <!-- 17. Pembatalan / Penundaan Event -->

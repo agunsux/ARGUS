@@ -65,6 +65,13 @@ router.get('/v1/payments/methods', (req, res) => {
  * In Preview: permitted only when verified as Vercel Preview with validated Sandbox credentials
  */
 router.get(['/v1/payments/midtrans/client-key', '/payments/midtrans/client-key'], (req, res) => {
+  const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+  if (isPrelaunchListingMode()) {
+    return res.status(403).json({
+      ...PRELAUNCH_ERROR_RESPONSE,
+      isAvailable: false
+    });
+  }
   return res.status(410).json({
     error: 'Midtrans has been removed from active payment operations. DOKU is the primary gateway.',
     code: 'PROVIDER_REMOVED',
@@ -259,12 +266,12 @@ router.post('/v1/payments/create', async (req, res) => {
       PAYMENT_GATEWAY_FROZEN_RESPONSE
     } = require('../config/marketplaceMode');
 
-    if (isPaymentGatewayFrozen()) {
-      return res.status(503).json(PAYMENT_GATEWAY_FROZEN_RESPONSE);
-    }
-
     if (isPrelaunchListingMode()) {
       return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+    }
+
+    if (isPaymentGatewayFrozen()) {
+      return res.status(503).json(PAYMENT_GATEWAY_FROZEN_RESPONSE);
     }
 
     const buyerId = getCallerUserId(req);

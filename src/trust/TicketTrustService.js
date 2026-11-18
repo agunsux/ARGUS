@@ -179,6 +179,12 @@ class TicketTrustService {
       throw err;
     }
 
+    // Anti-Conflict Rule 7: Enforce verifier is not the seller or affiliated
+    if (officerId) {
+      const { AntiConflictService } = require('./AntiConflictService');
+      AntiConflictService.assertCanVerifyListing(officerId, ticket);
+    }
+
     // Invariant: Do not claim VERIFIED merely because seller uploaded an unreviewed image
     if (status === TICKET_VERIFICATION_STATUS.VERIFIED) {
       const evidence = EvidenceService.getEvidenceForTicket(ticketId, 'admin');

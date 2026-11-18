@@ -25,7 +25,7 @@ const DEFAULT_POLICIES = {
     version: 'TIKUM_FEE_POLICY_V1',
     country_code: 'ID',
     currency: 'IDR',
-    description: 'Standard Tikum Canonical Fee Policy V1 (6% Buyer + 6% Seller, Min Rp35k, Max Rp300k)',
+    description: 'Standard Tikum Canonical Fee Policy V1 (6% Buyer + 6% Seller, Min Rp35k, Max Rp500k)',
     buyer_rate: PRICING_CONFIG.PLATFORM_FEE_PCT / 100,
     buyer_min_fee: PRICING_CONFIG.PLATFORM_MIN_FEE_IDR,
     buyer_max_fee: PRICING_CONFIG.PLATFORM_MAX_FEE_IDR,

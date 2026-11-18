@@ -547,6 +547,14 @@
         <span class="nav-item-left"><i class="fa-solid fa-robot"></i> <span>Automation Center</span></span>
         <span id="sidebarAutomationBadge" class="nav-badge" style="background: #0284c7; color: #fff;">LIVE</span>
       </button>
+      <button class="nav-item" onclick="switchView('pilot-scorecard', this)" id="navPilotScorecard">
+        <span class="nav-item-left"><i class="fa-solid fa-chart-pie" style="color: #10b981;"></i> <span>Pilot Scorecard</span></span>
+        <span id="sidebarScorecardBadge" class="nav-badge" style="background: #059669; color: #fff;">GATE</span>
+      </button>
+      <button class="nav-item" onclick="switchView('event-policies', this)" id="navEventPolicies">
+        <span class="nav-item-left"><i class="fa-solid fa-shield-halved" style="color: #f59e0b;"></i> <span>Policy Registry</span></span>
+        <span id="sidebarPoliciesBadge" class="nav-badge" style="background: #d97706; color: #fff;">3-TIER</span>
+      </button>
       <button class="nav-item" onclick="switchView('settings', this)" id="navSettings">
         <span class="nav-item-left"><i class="fa-solid fa-gear"></i> <span>Settings</span></span>
       </button>
@@ -2399,6 +2407,150 @@
         </div>
       </div>
 
+      <!-- DEDICATED VIEW: PILOT SCORECARD (Rule 10) -->
+      <div id="viewPilotScorecard" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="font-size: 20px; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-chart-pie" style="color: #10b981;"></i> Pilot Scorecard &amp; Cohort Telemetry (Target: 20–30 Deals)
+            </h2>
+            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+              Hard Governance Targets (Rule 10): 100% Evidence Completeness, 0 Unauthorized Releases, 0 Ledger Discrepancies.
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="loadPilotScorecardView()">
+              <i class="fa-solid fa-arrows-rotate"></i> Refresh Telemetry
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 Hard Governance Targets Cards -->
+        <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 20px;">
+          <div class="kpi-card" style="border: 1px solid rgba(16, 185, 129, 0.4); background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%);">
+            <div class="kpi-label" style="color: #6ee7b7;">
+              <span>EVIDENCE COMPLETENESS</span> <i class="fa-solid fa-file-shield" style="color: #10b981;"></i>
+            </div>
+            <div id="scEvidenceCompleteness" class="kpi-value" style="color: #10b981;">100%</div>
+            <div id="scEvidenceGate" class="kpi-sub" style="color: #34d399;">Gate Target: 100% across completed deals</div>
+          </div>
+
+          <div class="kpi-card" style="border: 1px solid rgba(56, 189, 248, 0.4); background: linear-gradient(180deg, rgba(56, 189, 248, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%);">
+            <div class="kpi-label" style="color: #7dd3fc;">
+              <span>UNAUTHORIZED RELEASES</span> <i class="fa-solid fa-lock" style="color: #38bdf8;"></i>
+            </div>
+            <div id="scUnauthorizedReleases" class="kpi-value" style="color: #38bdf8;">0</div>
+            <div id="scReleaseGate" class="kpi-sub" style="color: #38bdf8;">Gate Target: 0 (Zero Unauthorized Payouts)</div>
+          </div>
+
+          <div class="kpi-card" style="border: 1px solid rgba(168, 85, 247, 0.4); background: linear-gradient(180deg, rgba(168, 85, 247, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%);">
+            <div class="kpi-label" style="color: #d8b4fe;">
+              <span>LEDGER DISCREPANCIES</span> <i class="fa-solid fa-scale-balanced" style="color: #a855f7;"></i>
+            </div>
+            <div id="scLedgerDiscrepancies" class="kpi-value" style="color: #a855f7;">0</div>
+            <div id="scLedgerGate" class="kpi-sub" style="color: #c084fc;">Gate Target: 0 (Exact Reconciliation)</div>
+          </div>
+        </div>
+
+        <!-- Cohort Progress & Unit Economics -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 24px;">
+          <!-- Cohort Velocity Card -->
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+              <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-users" style="color: #38bdf8;"></i> Pilot Cohort Volume (Target 20–30)</span>
+              <span id="scCohortBadge" class="badge" style="background: #065f46; color: #34d399;">ON TRACK</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Deals Terdaftar:</span><span id="scDealsCreated" class="mono" style="font-weight: 700; color: #fff;">0</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Deals Berhasil Diselesaikan:</span><span id="scDealsCompleted" class="mono" style="font-weight: 700; color: #10b981;">0</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Deals Dalam Proses:</span><span id="scDealsInProgress" class="mono" style="color: #f59e0b;">0</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Sengketa / Disputed:</span><span id="scDealsDisputed" class="mono" style="color: #ef4444;">0</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Pengembalian / Refunded:</span><span id="scDealsRefunded" class="mono" style="color: #ef4444;">0</span></div>
+              <div style="margin-top: 8px;">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                  <span style="color: #94a3b8;">Target Cohort Progress</span>
+                  <span id="scProgressText" style="color: #38bdf8; font-weight: 700;">0%</span>
+                </div>
+                <div style="background: #1e293b; border-radius: 4px; height: 8px; overflow: hidden;">
+                  <div id="scProgressBar" style="background: #10b981; width: 0%; height: 100%; transition: width 0.3s;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Unit Economics Card -->
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;">
+              <span style="font-weight: 700; color: #fff;"><i class="fa-solid fa-coins" style="color: #f59e0b;"></i> Realized Unit Economics (IDR)</span>
+              <span class="badge" style="background: #1e3a8a; color: #93c5fd;">PILOT V1</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Total GMV:</span><span id="scGmv" class="mono" style="font-weight: 700; color: #fff;">Rp 0</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Buyer Platform Fees (6%):</span><span id="scBuyerFees" class="mono" style="color: #38bdf8;">Rp 0</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Seller Platform Fees (6%):</span><span id="scSellerFees" class="mono" style="color: #38bdf8;">Rp 0</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Alokasi Biaya PIC Venue:</span><span id="scPicFees" class="mono" style="color: #f59e0b;">Rp 0</span></div>
+              <div style="display: flex; justify-content: space-between; border-top: 1px dashed #334155; padding-top: 8px;"><span style="color: #fff; font-weight: 700;">Net Contribution Margin:</span><span id="scNetContribution" class="mono" style="font-weight: 700; color: #10b981;">Rp 0</span></div>
+              <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Effective Take Rate:</span><span id="scTakeRate" class="mono" style="color: #a78bfa;">0%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEDICATED VIEW: EVENT POLICY REGISTRY (Rule 6) -->
+      <div id="viewEventPolicies" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="font-size: 20px; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-shield-halved" style="color: #f59e0b;"></i> Event Policy &amp; Handover Risk Registry (Rule 2 &amp; 6)
+            </h2>
+            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+              Pusat Klasifikasi Kebijakan Promotor: TIER A (Digital Transfer), TIER B (Venue-Assisted PIC), TIER C (Restricted / Blocked). Kebijakan unverified otomatis blokir transaksi (Fail-Closed).
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="loadEventPoliciesView()">
+              <i class="fa-solid fa-arrows-rotate"></i> Refresh Policies
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+          <button class="btn btn-sm btn-primary" id="btnFilterPolicyAll" onclick="filterPolicies('ALL')">All Policies</button>
+          <button class="btn btn-sm btn-secondary" id="btnFilterPolicyTierA" onclick="filterPolicies('TIER_A_DIGITAL')">Tier A (Digital)</button>
+          <button class="btn btn-sm btn-secondary" id="btnFilterPolicyTierB" onclick="filterPolicies('TIER_B_VENUE_ASSISTED')">Tier B (Venue Assisted)</button>
+          <button class="btn btn-sm btn-secondary" id="btnFilterPolicyTierC" onclick="filterPolicies('TIER_C_RESTRICTED')">Tier C (Restricted)</button>
+          <button class="btn btn-sm btn-secondary" id="btnFilterPolicyUnverified" onclick="filterPolicies('POLICY_UNVERIFIED')">Unverified Queue</button>
+        </div>
+
+        <!-- Policies Table -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-list-check"></i> Registered Event Policies</div>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="ops-table" id="policiesTable">
+              <thead>
+                <tr>
+                  <th>Event ID / Nama</th>
+                  <th>Promotor</th>
+                  <th>Mitra Tiket Resmi</th>
+                  <th>Transferability</th>
+                  <th>Nominatif / Fisik</th>
+                  <th>Risk Tier</th>
+                  <th>Status Kebijakan</th>
+                  <th>Sumber Verifikasi</th>
+                  <th>Aksi Verifikasi</th>
+                </tr>
+              </thead>
+              <tbody id="policiesTableBody">
+                <tr><td colspan="9" style="text-align: center; color: #94a3b8;">Memuat kebijakan...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- Modal Automation Log / Result -->
       <div id="automationModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
         <div class="card" style="max-width: 640px; width: 100%; border-color: #0284c7; background: #0f172a; max-height: 85vh; overflow-y: auto;">
@@ -2718,7 +2870,7 @@
     }
 
     // View Switching
-    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust', 'payments', 'editorial', 'inbox', 'partners', 'control-center', 'automation', 'settings'];
+    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust', 'payments', 'editorial', 'inbox', 'partners', 'control-center', 'automation', 'settings', 'pilot-scorecard', 'event-policies'];
 
     function switchView(viewName, btn = null) {
       currentView = viewName;
@@ -2744,6 +2896,12 @@
       const viewSettingsEl = document.getElementById('viewSettings');
       if (viewSettingsEl) viewSettingsEl.style.display = viewName === 'settings' ? 'block' : 'none';
       if (viewName === 'settings') { loadSettingsView(); }
+      const viewPilotScorecardEl = document.getElementById('viewPilotScorecard');
+      if (viewPilotScorecardEl) viewPilotScorecardEl.style.display = viewName === 'pilot-scorecard' ? 'block' : 'none';
+      if (viewName === 'pilot-scorecard') { loadPilotScorecardView(); }
+      const viewEventPoliciesEl = document.getElementById('viewEventPolicies');
+      if (viewEventPoliciesEl) viewEventPoliciesEl.style.display = viewName === 'event-policies' ? 'block' : 'none';
+      if (viewName === 'event-policies') { loadEventPoliciesView(); }
       document.getElementById('viewGeneric').style.display = DEDICATED_VIEWS.includes(viewName) ? 'none' : 'block';
 
       if (viewName === 'event-supply') {
@@ -2764,6 +2922,10 @@
         loadAutomationView();
       } else if (viewName === 'settings') {
         loadSettingsView();
+      } else if (viewName === 'pilot-scorecard') {
+        loadPilotScorecardView();
+      } else if (viewName === 'event-policies') {
+        loadEventPoliciesView();
       } else if (!DEDICATED_VIEWS.includes(viewName)) {
         loadGenericEntityView(viewName);
       }
@@ -5532,6 +5694,163 @@
         }
       } catch (err) {
         showToast('Gagal memuat pengaturan: ' + err.message, 'danger');
+      }
+    }
+
+    // Pilot Scorecard View Loader (Rule 10)
+    async function loadPilotScorecardView() {
+      try {
+        const res = await adminFetch('/api/admin/pilot-scorecard');
+        if (!res.ok) throw new Error('Gagal memuat scorecard');
+        const data = await res.json();
+        const sc = data.scorecard;
+        if (!sc) return;
+
+        // Hard Governance Targets
+        const hgt = sc.hard_governance_targets || {};
+        const elEv = document.getElementById('scEvidenceCompleteness');
+        if (elEv) elEv.innerText = Math.round((hgt.evidence_bundle_completeness_rate || 0) * 100) + '%';
+        const elUnauth = document.getElementById('scUnauthorizedReleases');
+        if (elUnauth) elUnauth.innerText = hgt.unauthorized_fund_releases ?? 0;
+        const elLedger = document.getElementById('scLedgerDiscrepancies');
+        if (elLedger) elLedger.innerText = hgt.financial_ledger_discrepancies ?? 0;
+
+        // Cohort Velocity
+        const cs = sc.cohort_status || {};
+        const elCreated = document.getElementById('scDealsCreated');
+        if (elCreated) elCreated.innerText = cs.deals_created ?? 0;
+        const elComp = document.getElementById('scDealsCompleted');
+        if (elComp) elComp.innerText = cs.deals_completed ?? 0;
+        const elProg = document.getElementById('scDealsInProgress');
+        if (elProg) elProg.innerText = cs.in_progress ?? 0;
+        const elDisp = document.getElementById('scDealsDisputed');
+        if (elDisp) elDisp.innerText = cs.deals_disputed ?? 0;
+        const elRef = document.getElementById('scDealsRefunded');
+        if (elRef) elRef.innerText = cs.deals_refunded ?? 0;
+
+        const targetCohort = sc.cohort_size || 25;
+        const pct = Math.min(100, Math.round(((cs.deals_completed || 0) / targetCohort) * 100));
+        const elPct = document.getElementById('scProgressText');
+        if (elPct) elPct.innerText = `${cs.deals_completed || 0}/${targetCohort} (${pct}%)`;
+        const elBar = document.getElementById('scProgressBar');
+        if (elBar) elBar.style.width = pct + '%';
+
+        // Unit Economics
+        const ue = sc.unit_economics || {};
+        const elGmv = document.getElementById('scGmv');
+        if (elGmv) elGmv.innerText = formatRupiah(ue.total_gmv || 0);
+        const elBf = document.getElementById('scBuyerFees');
+        if (elBf) elBf.innerText = formatRupiah(ue.buyer_platform_fees || 0);
+        const elSf = document.getElementById('scSellerFees');
+        if (elSf) elSf.innerText = formatRupiah(ue.seller_platform_fees || 0);
+        const elPf = document.getElementById('scPicFees');
+        if (elPf) elPf.innerText = formatRupiah(ue.pic_fees_allocated || 0);
+        const elNet = document.getElementById('scNetContribution');
+        if (elNet) elNet.innerText = formatRupiah(ue.net_contribution_margin || 0);
+        const elTr = document.getElementById('scTakeRate');
+        if (elTr) elTr.innerText = (ue.take_rate_pct || 0).toFixed(2) + '%';
+      } catch (err) {
+        showToast('Gagal memuat scorecard: ' + err.message, 'danger');
+      }
+    }
+
+    // Event Policy Registry Loader (Rule 6)
+    let cachedPolicies = [];
+    let currentPolicyFilter = 'ALL';
+
+    async function loadEventPoliciesView() {
+      try {
+        const res = await adminFetch('/api/admin/event-policies');
+        if (!res.ok) throw new Error('Gagal memuat event policies');
+        const data = await res.json();
+        cachedPolicies = data.policies || [];
+        renderPoliciesTable();
+      } catch (err) {
+        showToast('Gagal memuat event policies: ' + err.message, 'danger');
+      }
+    }
+
+    function filterPolicies(filter) {
+      currentPolicyFilter = filter;
+      document.querySelectorAll('#viewEventPolicies button[id^="btnFilterPolicy"]').forEach(b => {
+        b.className = 'btn btn-sm btn-secondary';
+      });
+      const activeBtn = document.getElementById('btnFilterPolicy' + (filter === 'ALL' ? 'All' : filter === 'TIER_A_DIGITAL' ? 'TierA' : filter === 'TIER_B_VENUE_ASSISTED' ? 'TierB' : filter === 'TIER_C_RESTRICTED' ? 'TierC' : 'Unverified'));
+      if (activeBtn) activeBtn.className = 'btn btn-sm btn-primary';
+      renderPoliciesTable();
+    }
+
+    function renderPoliciesTable() {
+      const tbody = document.getElementById('policiesTableBody');
+      if (!tbody) return;
+      let list = cachedPolicies;
+      if (currentPolicyFilter !== 'ALL') {
+        if (currentPolicyFilter === 'POLICY_UNVERIFIED') {
+          list = list.filter(p => p.policy_status === 'POLICY_UNVERIFIED');
+        } else {
+          list = list.filter(p => p.risk_tier === currentPolicyFilter);
+        }
+      }
+
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #94a3b8; padding: 24px;">Tidak ada kebijakan yang sesuai filter.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(p => {
+        const tierBadge = p.risk_tier === 'TIER_A_DIGITAL' ? '<span class="tag tag-low">TIER A (DIGITAL)</span>'
+          : p.risk_tier === 'TIER_B_VENUE_ASSISTED' ? '<span class="tag tag-medium">TIER B (VENUE PIC)</span>'
+          : '<span class="tag tag-critical">TIER C (RESTRICTED)</span>';
+        
+        const statusBadge = p.policy_status === 'POLICY_VERIFIED_ACTIVE' ? '<span class="badge" style="background:#065f46;color:#34d399;">VERIFIED</span>'
+          : p.policy_status === 'POLICY_RESTRICTED' ? '<span class="badge" style="background:#7f1d1d;color:#fca5a5;">RESTRICTED</span>'
+          : '<span class="badge" style="background:#78350f;color:#fde68a;">UNVERIFIED</span>';
+
+        const reqs = [];
+        if (p.is_nominative) reqs.push('Nominatif');
+        if (p.wristband_exchange_required) reqs.push('Wristband');
+        if (p.original_ktp_required) reqs.push('KTP Asli');
+        if (p.surat_kuasa_allowed) reqs.push('Surat Kuasa OK');
+        const reqStr = reqs.length > 0 ? reqs.join(', ') : 'Digital Biasa';
+
+        const sourceLink = p.policy_source_url ? `<a href="${p.policy_source_url}" target="_blank" style="color: #38bdf8; text-decoration: underline;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Sumber</a>` : '<span style="color:#64748b;">N/A</span>';
+
+        return `<tr>
+          <td class="mono" style="font-weight: 600; color: #fff;">${p.event_id}</td>
+          <td>${p.promoter_name || '-'}</td>
+          <td>${p.official_ticketing_partner || '-'}</td>
+          <td><span class="mono">${p.transferability || 'UNCLEAR'}</span></td>
+          <td style="font-size: 11px; color: #cbd5e1;">${reqStr}</td>
+          <td>${tierBadge}</td>
+          <td>${statusBadge}</td>
+          <td>${sourceLink}</td>
+          <td>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 2px 6px;" onclick="verifyPolicyAction('${p.event_id}', 'POLICY_VERIFIED_ACTIVE', 'TIER_A_DIGITAL')">Set Digital</button>
+              <button class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 2px 6px;" onclick="verifyPolicyAction('${p.event_id}', 'POLICY_VERIFIED_ACTIVE', 'TIER_B_VENUE_ASSISTED')">Set PIC</button>
+              <button class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 2px 6px; color: #ef4444;" onclick="verifyPolicyAction('${p.event_id}', 'POLICY_RESTRICTED', 'TIER_C_RESTRICTED')">Blokir</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function verifyPolicyAction(eventId, policyStatus, riskTier) {
+      if (!confirm(`Konfirmasi pembaruan kebijakan untuk event ${eventId} menjadi ${policyStatus} (${riskTier})?`)) return;
+      try {
+        const res = await adminFetch(`/api/admin/event-policies/${eventId}/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ policy_status: policyStatus, risk_tier: riskTier })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Gagal memperbarui status');
+        }
+        showToast(`Kebijakan event ${eventId} berhasil diperbarui.`, 'success');
+        loadEventPoliciesView();
+      } catch (err) {
+        showToast('Gagal memodifikasi kebijakan: ' + err.message, 'danger');
       }
     }
 

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tikum — Buat Transaction Link | Verified Deal</title>
+  <meta name="description" content="Buat tautan transaksi tiket terverifikasi di TIKUM. Transparansi biaya penuh tanpa biaya tersembunyi, perlindungan bukti kepemilikan, dan pendampingan PIC venue.">
+  <link rel="canonical" href="https://tikum.app/deal/create">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/pricing.js"></script>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="/" class="brand">
+        <img src="/assets/tikum-mark-2color.svg" class="brand-logo" width="34" height="34" alt="Tikum">
+        <div>
+          <div class="brand-title">Tikum</div>
+          <span class="brand-subtitle">Your Ticket. Verified Transaction.</span>
+        </div>
+      </a>
+
+      <nav class="main-nav">
+        <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Beranda</a>
+        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak</a>
+        <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> Console</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container" style="max-width: 820px; padding-top: 30px; padding-bottom: 60px;">
+
+    <!-- 5-Step Process Bar -->
+    <div class="card" style="margin-bottom: 24px; padding: 16px 20px; background: #0c1220; border-color: #1e293b;">
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #38bdf8; font-weight: 700; margin-bottom: 8px;">
+        TIKUM — 5 Langkah Transaksi Terverifikasi
+      </div>
+      <div style="display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; font-weight: 600; flex-wrap: wrap;">
+        <span style="color: #38bdf8;"><i class="fa-solid fa-circle-check"></i> 1. Buat Deal</span>
+        <span style="color: #64748b;"><i class="fa-solid fa-circle"></i> 2. Verifikasi</span>
+        <span style="color: #64748b;"><i class="fa-solid fa-circle"></i> 3. Bayar</span>
+        <span style="color: #64748b;"><i class="fa-solid fa-circle"></i> 4. Serah Terima</span>
+        <span style="color: #64748b;"><i class="fa-solid fa-circle"></i> 5. Selesai</span>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 24px;">
+      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Buat Transaction Link (Deal Link)</h1>
+      <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;">
+        Kirim tautan transaksi resmi langsung ke calon pembeli Anda. Biaya dihitung deterministik di awal tanpa kejutan di gerbang pembayaran.
+      </p>
+    </div>
+
+    <!-- Success Result Box -->
+    <div id="resultBox" class="card" style="display: none; border-color: #059669; background: rgba(5, 150, 105, 0.08); margin-bottom: 24px;">
+      <div style="display: flex; gap: 14px; align-items: flex-start;">
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: #059669; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+          <i class="fa-solid fa-link"></i>
+        </div>
+        <div style="flex: 1;">
+          <h3 style="font-size: 18px; font-weight: 700; color: #34d399; margin: 0 0 6px 0;">Deal Link Berhasil Dibuat!</h3>
+          <p style="font-size: 13.5px; color: var(--text-muted); margin: 0 0 14px 0;">
+            Bagikan link transaksi di bawah ini kepada calon pembeli Anda untuk melanjutkan ke Deal Room resmi.
+          </p>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="dealLinkInput" readonly style="flex: 1; padding: 10px 14px; background: #090d16; border: 1px solid #1e293b; color: #38bdf8; font-family: monospace; border-radius: 6px; font-size: 13px;">
+            <button onclick="copyDealLink()" class="btn btn-sm"><i class="fa-solid fa-copy"></i> Salin Link</button>
+            <a id="openDealBtn" href="#" target="_blank" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-up-right-from-square"></i> Buka</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deal Form -->
+    <form id="dealForm" class="card" style="background: #0c1220; border-color: var(--border); padding: 24px;">
+
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">Pilih Acara / Event <span style="color: #ef4444;">*</span></label>
+        <select id="eventSelect" required style="width: 100%; padding: 10px 14px; background: #090d16; border: 1px solid #1e293b; color: #fff; border-radius: 6px;">
+          <option value="">-- Memuat daftar event... --</option>
+        </select>
+        <div id="eventPolicyBadge" style="margin-top: 8px; font-size: 12px; display: none;"></div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;">
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">Kategori Tiket <span style="color: #ef4444;">*</span></label>
+          <input type="text" id="ticketCategory" required placeholder="Contoh: CAT 1, Festival A, VIP" style="width: 100%; padding: 10px 14px; background: #090d16; border: 1px solid #1e293b; color: #fff; border-radius: 6px; box-sizing: border-box;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">Jumlah Tiket (Maks 4)</label>
+          <input type="number" id="ticketQty" min="1" max="4" value="1" style="width: 100%; padding: 10px 14px; background: #090d16; border: 1px solid #1e293b; color: #fff; border-radius: 6px; box-sizing: border-box;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 18px;">
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Section / Tribune</label>
+          <input type="text" id="ticketSection" placeholder="Tribun Barat" style="width: 100%; padding: 9px 12px; background: #090d16; border: 1px solid #1e293b; color: #fff; border-radius: 6px; box-sizing: border-box;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Row / Baris</label>
+          <input type="text" id="ticketRow" placeholder="A" style="width: 100%; padding: 9px 12px; background: #090d16; border: 1px solid #1e293b; color: #fff; border-radius: 6px; box-sizing: border-box;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted);">Seat / Kursi</label>
+          <input type="text" id="ticketSeat" placeholder="12" style="width: 100%; padding: 9px 12px; background: #090d16; border: 1px solid #1e293b; color: #fff; border-radius: 6px; box-sizing: border-box;">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">Harga Kesepakatan per Tiket (IDR) <span style="color: #ef4444;">*</span></label>
+        <input type="number" id="ticketPrice" required min="100000" step="50000" placeholder="Contoh: 1500000" style="width: 100%; padding: 10px 14px; background: #090d16; border: 1px solid #1e293b; color: #fff; border-radius: 6px; box-sizing: border-box; font-size: 16px; font-weight: 700;">
+      </div>
+
+      <!-- Stage A Privacy Notice -->
+      <div class="notice-box notice-info" style="margin-bottom: 20px;">
+        <i class="fa-solid fa-shield-halved"></i>
+        <div>
+          <strong>Aturan Perlindungan Privasi Tahap A (UU PDP No. 27/2022):</strong>
+          Dilarang mengunggah barcode fisik atau kode QR mentah pada tahap pembuatan deal. Cukup unggah invoice atau bukti pembelian tanpa barcode. Barcode resmi hanya diserahkan pada Tahap B setelah pembayaran terkonfirmasi.
+        </div>
+      </div>
+
+      <div style="margin-bottom: 22px;">
+        <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">Catatan Bukti Pembelian Awal / Invoice</label>
+        <input type="text" id="ownershipNote" placeholder="Nomor pesanan awal, platform resmi pembelian (Loket/Tiket), dsb." style="width: 100%; padding: 10px 14px; background: #090d16; border: 1px solid #1e293b; color: #fff; border-radius: 6px; box-sizing: border-box;">
+      </div>
+
+      <!-- Upfront Transparency Simulation Box -->
+      <div class="card" style="background: #090d16; border-color: #1e293b; padding: 18px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <span style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #38bdf8;">
+            <i class="fa-solid fa-calculator"></i> Simulasi Transparansi Biaya Tikum
+          </span>
+          <span id="rateRef" style="font-size: 11px; color: var(--text-muted);">Pilot: 6% + 6% (Min Rp35k, Maks Rp500k)</span>
+        </div>
+
+        <div class="price-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1e293b; font-size: 13px;">
+          <span style="color: var(--text-muted);">Harga Pokok Tiket (Total):</span>
+          <strong id="simBasePrice" class="mono">-</strong>
+        </div>
+        <div class="price-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1e293b; font-size: 13px;">
+          <span style="color: var(--text-muted);">Biaya Layanan Pembeli:</span>
+          <span id="simBuyerFee" class="mono" style="color: #38bdf8;">-</span>
+        </div>
+        <div class="price-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1e293b; font-size: 13px;">
+          <span style="color: var(--text-muted);">Biaya Layanan Penjual:</span>
+          <span id="simSellerFee" class="mono" style="color: #f59e0b;">-</span>
+        </div>
+        <div class="price-row" style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1e293b; font-size: 13px;">
+          <span style="color: var(--text-muted);">Alokasi Pendampingan PIC Venue:</span>
+          <span id="simPicFee" class="mono">-</span>
+        </div>
+        <div class="price-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #334155; font-size: 14px;">
+          <strong style="color: #fff;">Total Dibayar Pembeli:</strong>
+          <strong id="simBuyerTotal" class="mono" style="color: #38bdf8; font-size: 16px;">-</strong>
+        </div>
+        <div class="price-row" style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px;">
+          <strong style="color: #fff;">Bersih Diterima Penjual:</strong>
+          <strong id="simSellerPayout" class="mono" style="color: #34d399; font-size: 16px;">-</strong>
+        </div>
+        <div id="simEffectiveNote" style="font-size: 11px; color: var(--text-muted); margin-top: 8px; font-style: italic;">
+          * Persentase efektif dihitung deterministik sesuai harga tiket.
+        </div>
+      </div>
+
+      <button type="submit" id="btnSubmitDeal" class="btn" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 800;">
+        <i class="fa-solid fa-link"></i> Terbitkan Transaction Link Resmi
+      </button>
+
+    </form>
+
+  </main>
+
+  <script>
+    let eventsList = [];
+    let selectedPolicy = null;
+
+    async function loadEvents() {
+      try {
+        const res = await fetch('/api/mvp/events');
+        const data = await res.json();
+        eventsList = data.events || data || [];
+        const select = document.getElementById('eventSelect');
+        select.innerHTML = '<option value="">-- Pilih Acara --</option>' + eventsList.map(ev => 
+          `<option value="${ev.id || ev.canonical_id}">${ev.title} (${ev.date})</option>`
+        ).join('');
+      } catch (e) {
+        console.error('Failed to load events:', e);
+      }
+    }
+
+    document.getElementById('eventSelect').addEventListener('change', async function() {
+      const eventId = this.value;
+      const badge = document.getElementById('eventPolicyBadge');
+      if (!eventId) {
+        badge.style.display = 'none';
+        selectedPolicy = null;
+        updateSimulation();
+        return;
+      }
+
+      try {
+        const ev = eventsList.find(e => (e.id || e.canonical_id) === eventId);
+        const riskTier = ev?.risk_tier || 'TIER_B_VENUE_ASSISTED';
+        badge.style.display = 'block';
+        if (riskTier === 'TIER_A_DIGITAL') {
+          badge.innerHTML = '<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; padding: 4px 10px; border-radius: 4px;"><i class="fa-solid fa-bolt"></i> TIER A: Transfer Digital (Tanpa PIC)</span>';
+        } else if (riskTier === 'TIER_B_VENUE_ASSISTED') {
+          badge.innerHTML = '<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 4px 10px; border-radius: 4px;"><i class="fa-solid fa-person-shelter"></i> TIER B: Wajib PIC Venue (Penukaran Wristband / KTP)</span>';
+        } else {
+          badge.innerHTML = '<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; padding: 4px 10px; border-radius: 4px;"><i class="fa-solid fa-ban"></i> TIER C: RESTRICTED (Transaksi Diblokir)</span>';
+        }
+        selectedPolicy = { riskTier };
+      } catch (e) {}
+      updateSimulation();
+    });
+
+    document.getElementById('ticketPrice').addEventListener('input', updateSimulation);
+    document.getElementById('ticketQty').addEventListener('input', updateSimulation);
+
+    function updateSimulation() {
+      const price = parseInt(document.getElementById('ticketPrice').value, 10) || 0;
+      const qty = parseInt(document.getElementById('ticketQty').value, 10) || 1;
+      const isPic = selectedPolicy?.riskTier === 'TIER_B_VENUE_ASSISTED';
+
+      const sim = window.TikumPricing ? window.TikumPricing.simulateTransactionPricing({
+        price,
+        quantity: qty,
+        picAssisted: isPic,
+        picAllocationFee: isPic ? 25000 : 0
+      }) : null;
+
+      if (!sim || price <= 0) {
+        document.getElementById('simBasePrice').textContent = '-';
+        document.getElementById('simBuyerFee').textContent = '-';
+        document.getElementById('simSellerFee').textContent = '-';
+        document.getElementById('simPicFee').textContent = '-';
+        document.getElementById('simBuyerTotal').textContent = '-';
+        document.getElementById('simSellerPayout').textContent = '-';
+        return;
+      }
+
+      document.getElementById('simBasePrice').textContent = 'Rp ' + sim.ticket_base_price.toLocaleString('id-ID');
+      document.getElementById('simBuyerFee').textContent = `Rp ${sim.buyer_service_fee.toLocaleString('id-ID')} (${sim.effective_buyer_fee_pct}%)`;
+      document.getElementById('simSellerFee').textContent = `Rp ${sim.seller_service_fee.toLocaleString('id-ID')} (${sim.effective_seller_fee_pct}%)`;
+      document.getElementById('simPicFee').textContent = sim.pic_allocation_fee > 0 ? `Rp ${sim.pic_allocation_fee.toLocaleString('id-ID')} (PIC Venue)` : 'Rp 0 (Transfer Digital)';
+      document.getElementById('simBuyerTotal').textContent = 'Rp ' + sim.total_paid_by_buyer.toLocaleString('id-ID');
+      document.getElementById('simSellerPayout').textContent = 'Rp ' + sim.net_payout_seller.toLocaleString('id-ID');
+      document.getElementById('simEffectiveNote').textContent = `Total persentase biaya efektif: ${sim.effective_total_fee_pct}% dari nilai tiket dasar. (Rencana standar: 7%+7%).`;
+    }
+
+    document.getElementById('dealForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitDeal');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menerbitkan Deal...';
+
+      const payload = {
+        eventId: document.getElementById('eventSelect').value,
+        ticketCategory: document.getElementById('ticketCategory').value,
+        quantity: parseInt(document.getElementById('ticketQty').value, 10),
+        section: document.getElementById('ticketSection').value,
+        row: document.getElementById('ticketRow').value,
+        seat: document.getElementById('ticketSeat').value,
+        price: parseInt(document.getElementById('ticketPrice').value, 10),
+        ownershipEvidence: document.getElementById('ownershipNote').value
+      };
+
+      try {
+        const res = await fetch('/api/deals/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal membuat deal link');
+        }
+
+        document.getElementById('dealLinkInput').value = data.deal.transaction_link;
+        document.getElementById('openDealBtn').href = `/deal/${data.deal.deal_token}`;
+        document.getElementById('resultBox').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+        alert('Gagal: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-link"></i> Terbitkan Transaction Link Resmi';
+      }
+    });
+
+    function copyDealLink() {
+      const input = document.getElementById('dealLinkInput');
+      input.select();
+      document.execCommand('copy');
+      alert('Tautan transaksi berhasil disalin ke clipboard!');
+    }
+
+    loadEvents();
+  </script>
+</body>
+</html>

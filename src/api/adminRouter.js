@@ -4121,4 +4121,109 @@ router.get('/activity-notifications', requireAdmin, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/pilot-scorecard
+ * Returns hard governance targets and operational metrics for pilot cohort.
+ */
+router.get('/pilot-scorecard', requireAdmin, (req, res) => {
+  try {
+    const { PilotScorecardService } = require('../observability/PilotScorecardService');
+    const scorecard = PilotScorecardService.getScorecard();
+    return res.status(200).json({
+      success: true,
+      scorecard
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: err.message,
+      code: 'SCORECARD_FETCH_FAILED'
+    });
+  }
+});
+
+/**
+ * GET /api/admin/event-policies
+ * Lists all Event Policies in the registry.
+ */
+router.get('/event-policies', requireAdmin, (req, res) => {
+  try {
+    const { EventPolicyRegistry } = require('../policy/EventPolicyRegistry');
+    const policies = EventPolicyRegistry.listPolicies();
+    return res.status(200).json({
+      success: true,
+      count: policies.length,
+      policies
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: err.message,
+      code: 'LIST_EVENT_POLICIES_FAILED'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/event-policies/:id/verify
+ * Admin verifies an event policy, setting risk tier and activating live transactions.
+ */
+router.post('/event-policies/:id/verify', requireAdmin, async (req, res) => {
+  try {
+    const { EventPolicyRegistry } = require('../policy/EventPolicyRegistry');
+    const policy = await EventPolicyRegistry.verifyEventPolicy({
+      eventId: req.params.id,
+      adminUserId: req.user?.id || 'admin',
+      riskTier: req.body.riskTier || req.body.risk_tier,
+      policyStatus: req.body.policyStatus || req.body.policy_status,
+      promoterName: req.body.promoterName || req.body.promoter_name,
+      officialTicketingPartner: req.body.officialTicketingPartner || req.body.official_ticketing_partner,
+      transferability: req.body.transferability,
+      isNominative: req.body.isNominative || req.body.is_nominative,
+      wristbandExchangeRequired: req.body.wristbandExchangeRequired || req.body.wristband_exchange_required,
+      wristbandExchangeRules: req.body.wristbandExchangeRules || req.body.wristband_exchange_rules,
+      originalKtpRequired: req.body.originalKtpRequired || req.body.original_ktp_required,
+      suratKuasaAllowed: req.body.suratKuasaAllowed || req.body.surat_kuasa_allowed,
+      policySourceUrl: req.body.policySourceUrl !== undefined ? req.body.policySourceUrl : req.body.policy_source_url
+    });
+
+    return res.status(200).json({
+      success: true,
+      policy
+    });
+  } catch (err) {
+    return res.status(err.status || 400).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'VERIFY_POLICY_FAILED'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/orders/:id/no-show-resolve
+ * Executes layered 2-of-3 Buyer No-Show resolution.
+ */
+router.post('/orders/:id/no-show-resolve', requireAdmin, async (req, res) => {
+  try {
+    const { VenueOperationsService } = require('../venue/VenueOperationsService');
+    const result = await VenueOperationsService.resolveBuyerNoShow({
+      orderId: req.params.id,
+      adminApproverId: req.user?.id || 'admin',
+      sellerConfirmed: req.body.sellerConfirmed === true || req.body.seller_confirmed === true,
+      picAttendanceProof: req.body.picAttendanceProof || req.body.pic_attendance_proof,
+      waitingPeriodMinutes: parseInt(req.body.waitingPeriodMinutes || req.body.waiting_period_minutes, 10) || 30,
+      notes: req.body.notes || ''
+    });
+
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(err.status || 400).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'NO_SHOW_RESOLUTION_FAILED'
+    });
+  }
+});
+
 module.exports = router;

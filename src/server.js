@@ -325,11 +325,18 @@ app.use('/api/auth', authRouter);
 const emailRouter = require('./api/emailRouter');
 app.use('/api', emailRouter);
 
+// Mount TIKUM Deal Link & Deal Room API Router
+const dealRouter = require('./api/dealRouter');
+app.use('/api/deals', dealRouter);
+
 app.get('/admin/inbox', (req, res) => res.redirect(302, '/admin?tab=inbox'));
 
 // Explicit Institutional Frontend Page Delivery
 const { businessProfile } = require('./config/businessProfile');
 app.get('/api/business-profile', (req, res) => res.json(businessProfile));
+
+app.get('/deal/create', (req, res) => res.sendFile(path.join(publicDir, 'deal-create.html'), sendFileOpts));
+app.get(['/deal/:token', '/deal'], (req, res) => res.sendFile(path.join(publicDir, 'deal.html'), sendFileOpts));
 
 app.get('/signup', (req, res) => res.sendFile(path.join(publicDir, 'signup.html'), sendFileOpts));
 app.get('/login', (req, res) => res.sendFile(path.join(publicDir, 'login.html'), sendFileOpts));

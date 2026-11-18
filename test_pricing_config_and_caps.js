@@ -123,7 +123,7 @@ async function runTestSuite() {
       assert.strictEqual(PRICING_CONFIG.MAX_MARKUP_PCT, 30);
       assert.strictEqual(PRICING_CONFIG.PLATFORM_FEE_PCT, 6);
       assert.strictEqual(PRICING_CONFIG.PLATFORM_MIN_FEE_IDR, 35000);
-      assert.strictEqual(PRICING_CONFIG.PLATFORM_MAX_FEE_IDR, 300000);
+      assert.strictEqual(PRICING_CONFIG.PLATFORM_MAX_FEE_IDR, 500000);
       assert.strictEqual(PRICING_CONFIG.CURRENCY, 'IDR');
     });
 
@@ -186,14 +186,14 @@ async function runTestSuite() {
       assert.strictEqual(pricing.buyerTotal, 1065000); // 1.06M + 5k pg fee
     });
 
-    test('7. Price 10,000,000 triggers maximum cap of Rp 300,000 (6% = Rp 600,000)', () => {
+    test('7. Price 10,000,000 triggers maximum cap of Rp 500,000 (6% = Rp 600,000)', () => {
       const fee = calculatePlatformFee(10000000);
-      assert.strictEqual(fee, 300000);
+      assert.strictEqual(fee, 500000);
 
       const pricing = calculatePricing(10000000, 1, 0);
-      assert.strictEqual(pricing.fee, 300000);
-      assert.strictEqual(pricing.sellerPayout, 9700000);
-      assert.strictEqual(pricing.buyerTotal, 10300000);
+      assert.strictEqual(pricing.fee, 500000);
+      assert.strictEqual(pricing.sellerPayout, 9500000);
+      assert.strictEqual(pricing.buyerTotal, 10500000);
     });
 
     test('8. Multi-ticket quantity calculates fee on gross order ticket value', () => {

@@ -425,6 +425,11 @@ router.get('/offers/mine', requireAuth, async (req, res) => {
  * Seller accepts a structured offer (creates matched order)
  */
 router.post('/offers/:offerId/accept', requireAuth, async (req, res) => {
+  const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+  if (isPrelaunchListingMode()) {
+    return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+  }
+
   const offerId = req.params.offerId;
   const sellerId = req.user.id;
 
@@ -592,6 +597,11 @@ router.post('/offers/:offerId/buyer-counter', requireAuth, checkNegotiationRateL
  * Buyer accepts counter-offer -> creates matched order
  */
 router.post('/offers/:offerId/accept-counter', requireAuth, async (req, res) => {
+  const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+  if (isPrelaunchListingMode()) {
+    return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+  }
+
   const offerId = req.params.offerId;
   const buyerId = req.user.id;
 

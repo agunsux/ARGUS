@@ -1502,6 +1502,16 @@ router.post('/seller/orders/:orderId/handoff-challenge', async (req, res) => {
  */
 router.post('/buyer/order', async (req, res) => {
   try {
+    const { buyerId, listingId, quoteId, quote_id, policyVersion } = req.body || {};
+
+    // Demo Listing Guard: Demonstrative / illustrative listings cannot be ordered or purchased
+    if (listingId === 'list-pilot-preview' || String(listingId).toLowerCase().startsWith('demo-')) {
+      return res.status(400).json({
+        error: 'Item demonstrasi tidak dapat dipesan atau dibeli.',
+        code: 'DEMO_ITEM_NOT_PURCHASABLE'
+      });
+    }
+
     const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
     if (isPrelaunchListingMode()) {
       return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
@@ -1518,17 +1528,8 @@ router.post('/buyer/order', async (req, res) => {
       });
     }
 
-    const { buyerId, listingId, quoteId, quote_id, policyVersion } = req.body;
     if (!listingId) {
       return res.status(400).json({ error: 'listingId is required', code: 'VALIDATION_ERROR' });
-    }
-
-    // Demo Listing Guard: Demonstrative / illustrative listings cannot be ordered or purchased
-    if (listingId === 'list-pilot-preview' || String(listingId).toLowerCase().startsWith('demo-')) {
-      return res.status(400).json({
-        error: 'Item demonstrasi tidak dapat dipesan atau dibeli.',
-        code: 'DEMO_ITEM_NOT_PURCHASABLE'
-      });
     }
 
     // When authenticated, the session identity is authoritative
