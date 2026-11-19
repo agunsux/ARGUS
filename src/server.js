@@ -190,6 +190,11 @@ app.get(['/app/buyer', '/buyer-dashboard.html'], (req, res) => {
     });
   }
 
+  if (!isAdminRole(user.role) && (user.role || '').toUpperCase() === 'SELLER') {
+    if (wantsHtml(req)) return res.redirect(302, '/app/seller');
+    return res.status(403).json({ error: 'Forbidden: Buyer access required', code: 'FORBIDDEN' });
+  }
+
   return res.sendFile(path.join(publicDir, 'buyer-dashboard.html'), sendFileOpts);
 });
 
@@ -213,6 +218,11 @@ app.get(['/app/seller', '/seller-dashboard.html'], (req, res) => {
       error: 'Account is suspended. Access denied.',
       code: 'USER_SUSPENDED'
     });
+  }
+
+  if (!isAdminRole(user.role) && (user.role || '').toUpperCase() !== 'SELLER') {
+    if (wantsHtml(req)) return res.redirect(302, '/app/buyer');
+    return res.status(403).json({ error: 'Forbidden: Seller access required', code: 'FORBIDDEN' });
   }
 
   return res.sendFile(path.join(publicDir, 'seller-dashboard.html'), sendFileOpts);

@@ -21,7 +21,7 @@ router.get('/quote', (req, res) => {
   const price = parseInt(req.query.price, 10) || 0;
   const quantity = parseInt(req.query.quantity, 10) || 1;
   const picAssisted = req.query.picAssisted === 'true' || req.query.pic_assisted === 'true';
-  const picAllocationFee = parseInt(req.query.picAllocationFee || req.query.pic_fee, 10) || (picAssisted ? 25000 : 0);
+  const picAllocationFee = parseInt(req.query.picAllocationFee || req.query.pic_fee, 10) || 0;
 
   const quote = simulateTransactionPricing({
     price,

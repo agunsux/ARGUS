@@ -32,6 +32,19 @@ const ARTIFACT_SLOTS = Object.freeze({
   SLOT_9_RESOLUTION_NOTES: 'resolution_notes'
 });
 
+/**
+ * TRUTHFULNESS INVARIANT:
+ * Distinct evidence types preventing conflation of physical handover witnessing,
+ * buyer self-reporting, and independent promoter venue entry.
+ */
+const EVIDENCE_TYPES = Object.freeze({
+  PIC_WITNESSED_HANDOVER: 'PIC_WITNESSED_HANDOVER',             // PIC witnesses exchange at meeting point
+  BUYER_CONFIRMED_RECEIPT: 'BUYER_CONFIRMED_RECEIPT',           // Buyer acknowledges physical receipt
+  BUYER_REPORTED_ENTRY: 'BUYER_REPORTED_ENTRY',                 // Buyer self-reports venue entry (unverified)
+  INDEPENDENTLY_VERIFIED_ENTRY: 'INDEPENDENTLY_VERIFIED_ENTRY', // Promoter turnstile log / RFID gate sync
+  BUYER_NO_SHOW_RECORD: 'BUYER_NO_SHOW_RECORD'                  // Formal 2-of-3 no-show record
+});
+
 class EvidenceBundleService {
   static init() {
     if (!state.evidence_bundles) {
@@ -162,6 +175,31 @@ class EvidenceBundleService {
       }
     }
 
+    // Truthfulness Invariant: Slot 7 documents physical handover witnessing, NOT turnstile gate admission
+    if (slotName === ARTIFACT_SLOTS.SLOT_7_HANDOVER_PROOF) {
+      metadata.evidence_type = metadata.evidence_type || EVIDENCE_TYPES.PIC_WITNESSED_HANDOVER;
+      metadata.guarantees_venue_entry = false;
+      metadata.truthfulness_disclaimer = 'PIC handover witnessing verifies physical possession transfer at designated meeting point; it does not guarantee entry past official promoter turnstiles.';
+    }
+
+    // Truthfulness Invariant: Slot 8 separates buyer self-report from independent promoter entry verification
+    if (slotName === ARTIFACT_SLOTS.SLOT_8_BUYER_RECEIPT_OR_NOSHOW) {
+      if (!metadata.evidence_type) {
+        if (metadata.is_independently_verified === true || metadata.source === 'PROMOTER_TURNSTILE_SCANNER') {
+          metadata.evidence_type = EVIDENCE_TYPES.INDEPENDENTLY_VERIFIED_ENTRY;
+          metadata.is_independently_verified = true;
+        } else if (metadata.resolution === 'BUYER_NO_SHOW') {
+          metadata.evidence_type = EVIDENCE_TYPES.BUYER_NO_SHOW_RECORD;
+        } else if (metadata.turnstile_scanned || metadata.admission_reported) {
+          metadata.evidence_type = EVIDENCE_TYPES.BUYER_REPORTED_ENTRY;
+          metadata.is_independently_verified = false;
+          metadata.truthfulness_notice = 'Entry claim is based on buyer self-report and is not independently verified by promoter turnstile scanner.';
+        } else {
+          metadata.evidence_type = EVIDENCE_TYPES.BUYER_CONFIRMED_RECEIPT;
+        }
+      }
+    }
+
     const artifactId = `art-${uuidv4()}`;
     const now = new Date().toISOString();
     const contentString = typeof content === 'string' ? content : JSON.stringify(content || {});
@@ -287,5 +325,6 @@ class EvidenceBundleService {
 
 module.exports = {
   EvidenceBundleService,
-  ARTIFACT_SLOTS
+  ARTIFACT_SLOTS,
+  EVIDENCE_TYPES
 };

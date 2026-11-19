@@ -23,7 +23,7 @@ const PILOT_PAYMENT_CHANNELS = Object.freeze({
   CREDIT_CARD: 'CREDIT_CARD' // Disabled in pilot
 });
 
-// Four strictly decoupled state axes
+// Decoupled state axes
 const PAYMENT_STATUS = Object.freeze({
   UNPAID: 'UNPAID',
   PAYMENT_CONFIRMED_PROVIDER: 'PAYMENT_CONFIRMED_PROVIDER',
@@ -34,6 +34,7 @@ const PAYMENT_STATUS = Object.freeze({
 const TICKET_VERIFICATION_STATUS = Object.freeze({
   UNREVIEWED: 'UNREVIEWED',
   OWNERSHIP_EVIDENCE_REVIEWED: 'OWNERSHIP_EVIDENCE_REVIEWED',
+  VERIFIED_FOR_HANDOVER: 'VERIFIED_FOR_HANDOVER',
   FULFILLMENT_DOCUMENT_VERIFIED: 'FULFILLMENT_DOCUMENT_VERIFIED',
   INVALID_FLAGGED: 'INVALID_FLAGGED'
 });
@@ -43,8 +44,25 @@ const HANDOVER_STATUS = Object.freeze({
   SCHEDULED_AT_VENUE: 'SCHEDULED_AT_VENUE',
   PIC_HANDOVER_WITNESSED: 'PIC_HANDOVER_WITNESSED',
   DIGITAL_TRANSFERRED: 'DIGITAL_TRANSFERRED',
-  BUYER_CONFIRMED: 'BUYER_CONFIRMED',
+  BUYER_CONFIRMED_RECEIPT: 'BUYER_CONFIRMED_RECEIPT',
+  BUYER_CONFIRMED: 'BUYER_CONFIRMED_RECEIPT', // backward compatible alias
   NO_SHOW_REVIEW: 'NO_SHOW_REVIEW'
+});
+
+const ENTRY_VERIFICATION_STATUS = Object.freeze({
+  NOT_APPLICABLE: 'NOT_APPLICABLE',
+  PENDING_ENTRY: 'PENDING_ENTRY',
+  BUYER_REPORTED_ENTRY: 'BUYER_REPORTED_ENTRY',             // Self-report only
+  INDEPENDENTLY_VERIFIED_ENTRY: 'INDEPENDENTLY_VERIFIED_ENTRY', // Authoritative promoter gate scanner log
+  ENTRY_DISPUTED: 'ENTRY_DISPUTED'
+});
+
+const REFUND_STATUS = Object.freeze({
+  NONE: 'NONE',
+  REFUND_REQUIRED: 'REFUND_REQUIRED',
+  REFUND_INITIATED: 'REFUND_INITIATED',
+  REFUND_CONFIRMED: 'REFUND_CONFIRMED',
+  REFUND_FAILED: 'REFUND_FAILED'
 });
 
 const SETTLEMENT_STATUS = Object.freeze({
@@ -263,13 +281,15 @@ class PaymentModeController {
   }
 
   /**
-   * Initializes decoupled four state axes on an order/deal record
+   * Initializes decoupled state axes on an order/deal record
    */
   static initializeDecoupledAxes({
     paymentStatus = PAYMENT_STATUS.UNPAID,
     ticketVerificationStatus = TICKET_VERIFICATION_STATUS.OWNERSHIP_EVIDENCE_REVIEWED,
     handoverStatus = HANDOVER_STATUS.PENDING,
-    settlementStatus = null
+    settlementStatus = null,
+    entryVerificationStatus = ENTRY_VERIFICATION_STATUS.PENDING_ENTRY,
+    refundStatus = REFUND_STATUS.NONE
   } = {}) {
     const mode = this.getSettlementMode();
     const resolvedSettlementStatus = settlementStatus || (
@@ -282,6 +302,8 @@ class PaymentModeController {
       payment_status: paymentStatus,
       ticket_verification_status: ticketVerificationStatus,
       handover_status: handoverStatus,
+      entry_verification_status: entryVerificationStatus,
+      refund_status: refundStatus,
       settlement_status: resolvedSettlementStatus,
       settlement_mode: mode
     };
@@ -294,6 +316,8 @@ module.exports = {
   PAYMENT_STATUS,
   TICKET_VERIFICATION_STATUS,
   HANDOVER_STATUS,
+  ENTRY_VERIFICATION_STATUS,
+  REFUND_STATUS,
   SETTLEMENT_STATUS,
   PaymentModeController,
   ProviderCustodyAgreementRegistry,
@@ -305,6 +329,8 @@ module.exports = {
     PAYMENT_STATUS,
     TICKET_VERIFICATION_STATUS,
     HANDOVER_STATUS,
+    ENTRY_VERIFICATION_STATUS,
+    REFUND_STATUS,
     SETTLEMENT_STATUS
   }
 };

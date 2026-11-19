@@ -20,7 +20,7 @@ const { v4: uuidv4 } = require('uuid');
 const { state, recordAuditLog } = require('../database');
 const { EventPolicyRegistry, RISK_TIERS, FULFILLMENT_ROUTING } = require('../policy/EventPolicyRegistry');
 const { simulateTransactionPricing, PRICING_CONFIG } = require('../config/pricingConfig');
-const { PaymentModeController, SETTLEMENT_MODES, PILOT_PAYMENT_CHANNELS, PAYMENT_STATUS, TICKET_VERIFICATION_STATUS, HANDOVER_STATUS, SETTLEMENT_STATUS } = require('../config/paymentMode');
+const { PaymentModeController, SETTLEMENT_MODES, PILOT_PAYMENT_CHANNELS, PAYMENT_STATUS, TICKET_VERIFICATION_STATUS, HANDOVER_STATUS, ENTRY_VERIFICATION_STATUS, REFUND_STATUS, SETTLEMENT_STATUS } = require('../config/paymentMode');
 const { EvidenceBundleService, ARTIFACT_SLOTS } = require('../trust/EvidenceBundleService');
 const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
 const { AntiConflictService } = require('../trust/AntiConflictService');
@@ -99,16 +99,16 @@ class DealService {
     const numericPrice = typeof price === 'number' ? price : parseInt(price, 10);
     const qty = Math.min(10, Math.max(1, parseInt(quantity, 10) || 1));
 
-    // 5. PIC Allocation Fee (if VENUE_ASSISTED)
-    // Nominal per-ticket allocation fee for physical venue assistance
-    const picAllocationFee = isPicMandatory ? 25000 : 0;
+    // 5. PIC Governance: No arbitrary flat PIC fee charged to customer.
+    // Actual PIC operational expenses are tracked separately on the VenueOperations shift ledger.
+    const picAllocationFee = 0;
 
     // 6. Upfront Deterministic Pricing Simulation (Rule 1)
     const pricingSimulation = simulateTransactionPricing({
       price: numericPrice,
       quantity: qty,
       picAssisted: isPicMandatory,
-      picAllocationFee
+      picAllocationFee: 0
     });
 
     const dealId = `deal-${uuidv4()}`;
@@ -384,6 +384,8 @@ class DealService {
       payment_status: PAYMENT_STATUS.UNPAID,
       ticket_verification_status: TICKET_VERIFICATION_STATUS.OWNERSHIP_EVIDENCE_REVIEWED,
       handover_status: deal.handover_type === FULFILLMENT_ROUTING.VENUE_ASSISTED ? HANDOVER_STATUS.SCHEDULED_AT_VENUE : HANDOVER_STATUS.PENDING,
+      entry_verification_status: ENTRY_VERIFICATION_STATUS.PENDING_ENTRY,
+      refund_status: REFUND_STATUS.NONE,
       settlement_status: deal.settlement_status,
       settlement_mode: deal.settlement_mode,
       evidence_bundle_id: deal.evidence_bundle_id,

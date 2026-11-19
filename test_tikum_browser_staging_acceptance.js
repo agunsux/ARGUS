@@ -199,7 +199,7 @@ async function runStagingAcceptance() {
     assert.ok((res.json.deal.transaction_link || res.json.deal.deal_link).includes('/deal/'));
     assert.strictEqual(res.json.deal.pricing.buyer_service_fee, 90000);
     assert.strictEqual(res.json.deal.pricing.seller_service_fee, 90000);
-    assert.strictEqual(res.json.deal.pricing.total_paid_by_buyer, 1615000); // 1.5M + 90k fee + 25k PIC allocation
+    assert.strictEqual(res.json.deal.pricing.total_paid_by_buyer, 1590000); // 1.5M base + 90k buyer fee (No arbitrary flat PIC surcharge)
     assert.strictEqual(res.json.deal.pricing.net_payout_seller, 1410000);
 
     createdDeal = res.json.deal;

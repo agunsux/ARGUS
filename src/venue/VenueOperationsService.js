@@ -26,7 +26,14 @@ const PIC_STATUS = {
   CHECKED_OUT: 'CHECKED_OUT'
 };
 
+/**
+ * CANONICAL SINGLE SOURCE OF TRUTH: NO-SHOW POLICY
+ * Mandatory waiting grace period before a buyer no-show claim can be evaluated.
+ */
+const NO_SHOW_GRACE_PERIOD_MINUTES = 30;
+
 class VenueOperationsService {
+  static NO_SHOW_GRACE_PERIOD_MINUTES = NO_SHOW_GRACE_PERIOD_MINUTES;
   /**
    * Helper to create a shift directly
    */
@@ -81,7 +88,8 @@ class VenueOperationsService {
     if (!venue) throw new Error(`Venue '${venueId}' not found`);
 
     const picUser = state.users.find(u => u.id === picUserId);
-    if (!picUser || (picUser.role !== 'pic' && picUser.role !== 'admin')) {
+    const picRole = (picUser?.role || '').toLowerCase();
+    if (!picUser || (picRole !== 'pic' && picRole !== 'admin')) {
       const err = new Error(`User '${picUserId}' must have role 'pic' or 'admin'`);
       err.code = 'INVALID_PIC_ROLE';
       throw err;
@@ -280,11 +288,13 @@ class VenueOperationsService {
       throw err;
     }
 
-    // Condition 2: Meeting Protocol & Grace Period
-    if (waitingPeriodMinutes < 15 || !meetingProtocolExecuted) {
-      const err = new Error('No-Show Resolution Denied (Condition 2 Failed): Mandatory grace period (minimum 15 minutes) or meeting protocol was not satisfied.');
+    // Condition 2: Meeting Protocol & Grace Period (Canonical 30-Minute Boundary Check)
+    if (waitingPeriodMinutes < NO_SHOW_GRACE_PERIOD_MINUTES || !meetingProtocolExecuted) {
+      const err = new Error(`No-Show Resolution Denied (Condition 2 Failed): Mandatory grace period (${NO_SHOW_GRACE_PERIOD_MINUTES} minutes) was not satisfied (Elapsed: ${waitingPeriodMinutes} minutes).`);
       err.code = 'GRACE_PERIOD_NOT_ELAPSED';
       err.status = 400;
+      err.required_grace_period_minutes = NO_SHOW_GRACE_PERIOD_MINUTES;
+      err.elapsed_minutes = waitingPeriodMinutes;
       throw err;
     }
 
@@ -540,5 +550,6 @@ class VenueOperationsService {
 
 module.exports = {
   VenueOperationsService,
-  PIC_STATUS
+  PIC_STATUS,
+  NO_SHOW_GRACE_PERIOD_MINUTES
 };
