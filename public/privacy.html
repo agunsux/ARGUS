@@ -45,7 +45,7 @@
         <a href="/terms" class="nav-link"><i class="fa-solid fa-file-contract"></i> <span data-i18n="footer.terms">Ketentuan</span></a>
         <a href="/refund-policy" class="nav-link"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="footer.refundPolicy">Refund</span></a>
         <a href="/contact" class="nav-link"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contact">Kontak</span></a>
-        <button id="langToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700;" title="Ganti Bahasa">ID</button>
+        <button id="langToggle" class="lang-switcher-pill btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" data-toggle-format="dual" title="Ganti Bahasa / Switch Language"><span class="lang-active">ID</span> | <span class="lang-inactive">EN</span></button>
         <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
@@ -53,8 +53,9 @@
 
   <!-- Main Container -->
   <main class="container" style="max-width: 840px;">
-    
-    <div style="margin-bottom: 30px;">
+    <!-- Indonesian Version (lang-only-id) -->
+    <div class="lang-only-id">
+<div style="margin-bottom: 30px;">
       <div class="hero-pill"><i class="fa-solid fa-user-shield"></i> KEPATUHAN UU NO. 27/2022</div>
       <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Kebijakan Privasi &amp; Perlindungan Data Pribadi</h1>
       <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;">
@@ -87,6 +88,45 @@
       <p style="color: var(--text-muted); margin-bottom: 0;">
         Pengguna berhak untuk meminta salinan data pribadi yang tersimpan, mengajukan koreksi data yang tidak akurat, atau meminta penghapusan akun setelah seluruh kewajiban transaksi tiket selesai. Hubungi Tim Perlindungan Data SHINERVA HQ melalui saluran resmi email <a href="mailto:support@tikum.app" style="color: var(--cyan); text-decoration: none;">support@tikum.app</a> atau WhatsApp <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none;">081299927378</a> untuk permohonan terkait data pribadi.
       </p>
+    </div>
+    </div>
+
+    <!-- English Version (lang-only-en) -->
+    <div class="lang-only-en">
+      <div style="margin-bottom: 30px;">
+        <div class="hero-pill"><i class="fa-solid fa-user-shield"></i> PDP LAW NO. 27/2022 COMPLIANCE</div>
+        <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Privacy Policy &amp; Personal Data Protection</h1>
+        <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;">
+          Tikum's institutional commitment to safeguarding identity and sensitive personal data under Indonesian Law No. 27 of 2022.
+        </p>
+      </div>
+
+      <div class="card" style="line-height: 1.7; font-size: 14px;">
+        <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">1. Data Minimization Principle</h3>
+        <p style="color: var(--text-muted); margin-bottom: 16px;">
+          Tikum only collects personal data strictly necessary to prevent secondary ticket fraud and verify lawful ticket handover at the event venue. We never collect or monetize personal data for third-party advertising or marketing brokers.
+        </p>
+
+        <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">2. Document &amp; Photo Verification Encryption (AES-256-GCM)</h3>
+        <p style="color: var(--text-muted); margin-bottom: 16px;">
+          All proof-of-purchase files (PDF e-vouchers) and gate documentation photos captured by on-site Event PIC personnel are encrypted using military-grade AES-256-GCM before storage. Access to encrypted documents is restricted and unlocked solely during formal dispute investigation proceedings by authorized officers.
+        </p>
+
+        <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">3. Automated 90-Day Retention &amp; Purge Policy</h3>
+        <p style="color: var(--text-muted); margin-bottom: 16px;">
+          In accordance with Article 43 of the PDP Law, all transaction evidentiary files and identity photos are permanently purged from servers after 90 days following final transaction settlement (<code class="mono" style="color: var(--cyan);">SETTLED</code> or <code class="mono" style="color: var(--cyan);">REFUNDED</code>).
+        </p>
+
+        <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">4. Cryptographic Barcode Hashing &amp; Public PII Masking</h3>
+        <p style="color: var(--text-muted); margin-bottom: 16px;">
+          Ticket barcodes or QR codes are never displayed publicly. The system stores only cryptographic SHA-256 hashes to guarantee uniqueness. On public tracking views (<code class="mono" style="color: var(--cyan);">/track/:id</code>), all personally identifiable information (PII) is masked and withheld from client browsers.
+        </p>
+
+        <h3 style="font-size: 16px; color: #fff; margin-bottom: 12px;">5. Rights of Data Subjects</h3>
+        <p style="color: var(--text-muted); margin-bottom: 0;">
+          Users have the right to request a copy of their stored personal data, request correction of inaccurate data, or request account erasure once all transaction obligations are fulfilled. Contact the Data Protection Officer at <a href="mailto:support@tikum.app" style="color: var(--cyan); text-decoration: none;">support@tikum.app</a> or WhatsApp <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none;">+62 812-9992-7378</a> for data inquiries.
+        </p>
+      </div>
     </div>
 
   </main>
@@ -157,6 +197,11 @@
           <a href="/contact"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contactUs">Kontak Kami</span></a>
           <a href="/privacy"><i class="fa-solid fa-user-shield"></i> <span data-i18n="footer.privacyPolicy">Kebijakan Privasi (UU PDP)</span></a>
         </div>
+      </div>
+      <div style="text-align:center; margin-top:20px;">
+        <button id="footerLangToggle" class="footer-lang-toggle lang-switcher-pill" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" data-toggle-format="dual" style="background:#1e293b; border-color:#334155; font-size:12px; padding:6px 14px;">
+          <i class="fa-solid fa-globe" style="color:#38bdf8; margin-right:4px;"></i> <span class="lang-active">ID</span> | <span class="lang-inactive">EN</span>
+        </button>
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">

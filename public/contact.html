@@ -45,7 +45,7 @@
         <a href="/terms" class="nav-link"><i class="fa-solid fa-file-contract"></i> <span data-i18n="footer.terms">Ketentuan</span></a>
         <a href="/refund-policy" class="nav-link"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="footer.refundPolicy">Refund</span></a>
         <a href="/contact" class="nav-link active"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contact">Kontak</span></a>
-        <button id="langToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700;" title="Ganti Bahasa">ID</button>
+        <button id="langToggle" class="lang-switcher-pill btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" data-toggle-format="dual" title="Ganti Bahasa / Switch Language"><span class="lang-active">ID</span> | <span class="lang-inactive">EN</span></button>
         <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
@@ -53,8 +53,9 @@
 
   <!-- Main Container -->
   <main class="container" style="max-width: 900px; padding-top: 40px; padding-bottom: 60px;">
-    
-    <div style="margin-bottom: 32px; text-align: center;">
+    <!-- Indonesian Version (lang-only-id) -->
+    <div class="lang-only-id">
+<div style="margin-bottom: 32px; text-align: center;">
       <div class="hero-pill"><i class="fa-solid fa-headset"></i> SALURAN DUKUNGAN RESMI</div>
       <h1 style="font-size: 30px; font-weight: 800; letter-spacing: -0.5px; margin: 12px 0;">Hubungi Tim Operasional Tikum</h1>
       <p style="font-size: 15px; color: var(--text-muted); max-width: 600px; margin: 0 auto;">
@@ -202,6 +203,83 @@
         </p>
       </div>
     </div>
+    </div>
+
+    <!-- English Version (lang-only-en) -->
+    <div class="lang-only-en">
+      <div style="margin-bottom: 32px; text-align: center;">
+        <div class="hero-pill"><i class="fa-solid fa-headset"></i> OFFICIAL SUPPORT CHANNELS</div>
+        <h1 style="font-size: 30px; font-weight: 800; letter-spacing: -0.5px; margin: 12px 0;">Contact Tikum Operations Team</h1>
+        <p style="font-size: 15px; color: var(--text-muted); max-width: 600px; margin: 0 auto;">
+          Our commitment is to deliver transparent, rapid responses for all attendees, event promoters, and licensed payment partners.
+        </p>
+      </div>
+
+      <div class="grid-2" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 40px;">
+        
+        <!-- Contact Card 1: Official Channels -->
+        <div class="card" style="padding: 28px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="font-size: 20px; color: var(--cyan); margin-bottom: 12px;"><i class="fa-solid fa-address-card"></i></div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 6px;">PT SHINERVA PRAJNA TEJAS</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+              Official operating entity of Tikum (Verified Ticket Marketplace).
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="display: flex; align-items: flex-start; gap: 14px;">
+                <div style="color: var(--cyan); font-size: 18px; margin-top: 2px;"><i class="fa-solid fa-envelope"></i></div>
+                <div>
+                  <div style="font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Official Email</div>
+                  <a href="mailto:support@tikum.app" style="color: #fff; font-weight: 600; font-size: 15px; text-decoration: none;">support@tikum.app</a>
+                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">For ticket verification, promoter partnerships, compliance audits, and dispute escalations.</div>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: flex-start; gap: 14px;">
+                <div style="color: #34d399; font-size: 18px; margin-top: 2px;"><i class="fa-brands fa-whatsapp"></i></div>
+                <div>
+                  <div style="font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Official Phone &amp; WhatsApp</div>
+                  <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399; font-weight: 600; font-size: 15px; text-decoration: none;">+62 812-9992-7378 (081299927378)</a>
+                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Fast operational support and on-site Event PIC team coordination for selected events.</div>
+                  <div style="font-size: 12px; color: #cbd5e1; margin-top: 4px;"><strong>Customer Support Hours:</strong> Monday - Sunday: 09:00 - 21:00 WIB (WhatsApp &amp; Email).</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border);">
+            <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" class="btn btn-cyan" style="width: 100%; text-align: center;">
+              <i class="fa-brands fa-whatsapp"></i> Chat WhatsApp / Call (+62 812-9992-7378)
+            </a>
+          </div>
+        </div>
+
+        <!-- Contact Card 2: Physical Office & Business Address -->
+        <div class="card" style="padding: 28px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="font-size: 20px; color: #f43f5e; margin-bottom: 12px;"><i class="fa-solid fa-location-dot"></i></div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 6px;">Operational Office Address</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+              Official physical headquarters for legal correspondence, operations, and regulatory compliance.
+            </p>
+
+            <div style="background: #0a0f1d; border: 1px solid var(--border); border-radius: 8px; padding: 18px; line-height: 1.8; font-size: 14px; color: #e2e8f0;">
+              <div style="font-weight: 700; color: #fff; font-size: 15px;">PT SHINERVA PRAJNA TEJAS</div>
+              <div>Jl. Pasirluyu No. 79</div>
+              <div>Bandung 40254</div>
+              <div>Indonesia</div>
+            </div>
+
+            <div style="margin-top: 16px; font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+              <i class="fa-solid fa-building-shield" style="color: var(--cyan); margin-right: 4px;"></i>
+              Registered corporate entity governing the Tikum verified ticketing infrastructure.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
 
   </main>
 
@@ -271,6 +349,11 @@
           <a href="/contact"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contactUs">Kontak Kami</span></a>
           <a href="/privacy"><i class="fa-solid fa-user-shield"></i> <span data-i18n="footer.privacyPolicy">Kebijakan Privasi (UU PDP)</span></a>
         </div>
+      </div>
+      <div style="text-align:center; margin-top:20px;">
+        <button id="footerLangToggle" class="footer-lang-toggle lang-switcher-pill" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" data-toggle-format="dual" style="background:#1e293b; border-color:#334155; font-size:12px; padding:6px 14px;">
+          <i class="fa-solid fa-globe" style="color:#38bdf8; margin-right:4px;"></i> <span class="lang-active">ID</span> | <span class="lang-inactive">EN</span>
+        </button>
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">

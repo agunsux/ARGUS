@@ -27,7 +27,7 @@ function resolveRequestLang(req) {
     if (q === 'id' || q.startsWith('id-')) return 'id';
   }
   if (req.headers && req.headers.cookie) {
-    const match = req.headers.cookie.match(/(?:^|;\s*)tikum_lang=([^;]+)/);
+    const match = req.headers.cookie.match(/(?:^|;\s*)(?:tikum_locale|tikum_lang)=([^;]+)/);
     if (match && match[1]) {
       const c = decodeURIComponent(match[1]).toLowerCase();
       if (c === 'en' || c.startsWith('en-')) return 'en';

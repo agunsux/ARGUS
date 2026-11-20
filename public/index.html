@@ -208,7 +208,7 @@
       <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Toggle Theme" style="padding:6px 10px;">
         <i class="fa-solid fa-sun"></i>
       </button>
-      <button class="select-filter" onclick="toggleLang()" id="langToggle" title="Language" style="padding:6px 10px;">ID</button>
+      <button class="select-filter lang-switcher-pill" onclick="toggleLang()" id="langToggle" data-toggle-format="dual" title="Ganti Bahasa / Switch Language" style="padding:6px 12px;"><span class="lang-active">ID</span> | <span class="lang-inactive">EN</span></button>
     </div>
   </header>
 
@@ -1081,6 +1081,11 @@
           <a href="/privacy"><i class="fa-solid fa-user-shield"></i> <span data-i18n="footer.privacyPolicy">Kebijakan Privasi (UU PDP)</span></a>
         </div>
       </div>
+    </div>
+    <div style="text-align:center; margin-top:24px;">
+      <button id="footerLangToggle" class="footer-lang-toggle lang-switcher-pill" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : toggleLang()" data-toggle-format="dual" style="background:#1e293b; border-color:#334155; font-size:12px; padding:6px 14px;">
+        <i class="fa-solid fa-globe" style="color:#38bdf8; margin-right:4px;"></i> <span class="lang-active">ID</span> | <span class="lang-inactive">EN</span>
+      </button>
     </div>
     <div style="max-width: 1200px; margin: 32px auto 0; padding-top: 20px; border-top: 1px solid var(--border-light); text-align: center; font-size: 12px; color: var(--color-text-muted, #6B7280);">
       <span data-i18n="footer.copyrightBuiltIn">&copy; 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — brand marketplace yang dioperasikan di bawah naungan PT SHINERVA PRAJNA TEJAS. Built in Indonesia.</span>

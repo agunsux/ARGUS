@@ -104,7 +104,7 @@
         <a href="/offers" class="nav-link active"><i class="fa-solid fa-handshake"></i> <span data-i18n="nav.offers">Tawaran Harga</span></a>
         <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="nav.track">Lacak Transaksi</span></a>
         <a href="/admin" class="nav-link btn btn-secondary btn-sm"><i class="fa-solid fa-lock"></i> <span data-i18n="nav.adminConsole">Console Internal</span></a>
-        <button id="langToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700;" title="Ganti Bahasa">ID</button>
+        <button id="langToggle" class="lang-switcher-pill btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" data-toggle-format="dual" title="Ganti Bahasa / Switch Language"><span class="lang-active">ID</span> | <span class="lang-inactive">EN</span></button>
         <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
@@ -366,6 +366,11 @@
           <a href="/privacy"><i class="fa-solid fa-user-shield"></i> <span data-i18n="footer.privacyPolicy">Kebijakan Privasi (UU PDP)</span></a>
         </div>
       </div>
+    </div>
+    <div style="text-align:center; margin-top:20px;">
+      <button id="footerLangToggle" class="footer-lang-toggle lang-switcher-pill" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" data-toggle-format="dual" style="background:#1e293b; border-color:#334155; font-size:12px; padding:6px 14px;">
+        <i class="fa-solid fa-globe" style="color:#38bdf8; margin-right:4px;"></i> <span class="lang-active">ID</span> | <span class="lang-inactive">EN</span>
+      </button>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
       &copy; 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — brand marketplace yang dioperasikan di bawah naungan PT SHINERVA PRAJNA TEJAS.

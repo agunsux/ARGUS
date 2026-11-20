@@ -52,7 +52,7 @@
         <a href="/terms" class="nav-link active"><i class="fa-solid fa-file-contract"></i> Syarat &amp; Ketentuan</a>
         <a href="/refund-policy" class="nav-link"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="footer.refundPolicy">Refund</span></a>
         <a href="/contact" class="nav-link"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contact">Kontak</span></a>
-        <button id="langToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700;" title="Ganti Bahasa">ID</button>
+        <button id="langToggle" class="lang-switcher-pill btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" data-toggle-format="dual" title="Ganti Bahasa / Switch Language"><span class="lang-active">ID</span> | <span class="lang-inactive">EN</span></button>
         <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
@@ -60,8 +60,9 @@
 
   <!-- Main Container -->
   <main class="container" style="max-width: 880px; padding-top: 40px; padding-bottom: 60px;">
-    
-    <div style="margin-bottom: 30px;">
+    <!-- Indonesian Version (lang-only-id) -->
+    <div class="lang-only-id">
+<div style="margin-bottom: 30px;">
       <div class="hero-pill"><i class="fa-solid fa-scale-balanced"></i> KONTRAK OPERASIONAL RESMI</div>
       <h1 style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin: 12px 0;">Syarat &amp; Ketentuan Layanan Tikum</h1>
       <p style="font-size: 14px; color: var(--text-muted);">
@@ -289,6 +290,244 @@
       </div>
 
     </div>
+    </div>
+
+    <!-- English Version (lang-only-en) -->
+    <div class="lang-only-en">
+      <div style="margin-bottom: 30px;">
+        <div class="hero-pill"><i class="fa-solid fa-scale-balanced"></i> OFFICIAL OPERATIONAL CONTRACT</div>
+        <h1 style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin: 12px 0;">Tikum Terms of Service</h1>
+        <p style="font-size: 14px; color: var(--text-muted);">
+          Last updated: September 2026. Published by <strong>PT SHINERVA PRAJNA TEJAS</strong> as the operating entity of Tikum platform.
+        </p>
+      </div>
+
+      <div class="notice-box notice-info" style="margin-bottom: 24px;">
+        <i class="fa-solid fa-circle-info"></i>
+        <div>
+          <strong>Legal Standing Disclosure:</strong> Tikum is a technology platform for verified secondary ticket resale by Shinerva. Tikum is not an event promoter, not a primary ticketing agent, and not commercially affiliated with any promoter.
+        </div>
+      </div>
+
+      <div class="notice-box notice-warning" style="margin-bottom: 24px;">
+        <i class="fa-solid fa-gavel"></i>
+        <div>
+          <strong>Governing Language Clause (Law No. 24 of 2009):</strong>
+          In accordance with Law No. 24 of 2009 of the Republic of Indonesia on Flag, Language, National Emblem, and Anthem, this agreement is executed in both Indonesian and English. Both versions are authentic; however, in the event of any conflict, discrepancy, ambiguity, or divergence of interpretation between the Indonesian version and the English version, the Indonesian version shall prevail and govern in all respects under Indonesian law.
+        </div>
+      </div>
+
+      <div class="card" style="padding: 30px; background: #0c1220; border-color: var(--border);">
+        
+        <!-- 1. Introduction -->
+        <div class="terms-section">
+          <h2>1. Introduction</h2>
+          <p>
+            Welcome to Tikum. These Terms of Service ("Terms") govern your access to and use of the website, platform, application programming interfaces (APIs), and on-site operational services provided by PT SHINERVA PRAJNA TEJAS ("Tikum", "we", or "platform operator"). By accessing or using Tikum, you acknowledge that you have read, understood, and agreed to be legally bound by these Terms.
+          </p>
+        </div>
+
+        <!-- 2. Definitions -->
+        <div class="terms-section">
+          <h2>2. Definitions</h2>
+          <ul>
+            <li><strong>Platform:</strong> The entire web application, interfaces, and transaction systems operating under Tikum and Shinerva.</li>
+            <li><strong>Buyer:</strong> Any registered user who reserves and completes payment for secondary event tickets on Tikum.</li>
+            <li><strong>Seller:</strong> Any identity-verified user (KYC) who lists secondary tickets for sale or transfer.</li>
+            <li><strong>Listing:</strong> An offer to transfer a verified ticket published on Tikum's marketplace.</li>
+            <li><strong>Transaction Verification Status:</strong> The internal transaction management and review mechanism of Tikum wherein payout settlement to the seller is executed only after ticket handover or event entry verification is established without active dispute. Tikum is not a licensed banking escrow service provider.</li>
+            <li><strong>Event PIC:</strong> Tikum on-site operational personnel stationed at selected events during designated gate hours to witness and assist physical handover or wristband redemption at designated venue meeting points (optional per event, not guaranteed across all events).</li>
+            <li><strong>Tikum Trust System:</strong> The platform's proprietary identity verification, cryptographic SHA-256 barcode hashing, duplicate prevention, payment holding, and dispute resolution infrastructure.</li>
+            <li><strong>Dispute:</strong> A formal complaint initiated by a buyer regarding gate rejection or failure of ticket validity at the venue.</li>
+          </ul>
+        </div>
+
+        <!-- 3. Role of Tikum -->
+        <div class="terms-section">
+          <h2>3. Role of Tikum as a Trust &amp; Verified Resale Platform</h2>
+          <p>
+            Tikum operates strictly as a neutral technology intermediary providing a verified ticket marketplace. Tikum does not own or manufacture tickets. Tikum verifies barcode uniqueness via SHA-256 hashing, manages internal transaction holding workflows, and coordinates optional on-site meeting point assistance for selected events.
+          </p>
+        </div>
+
+        <!-- 4. User Eligibility -->
+        <div class="terms-section">
+          <h2>4. User Eligibility</h2>
+          <p>
+            To register and transact on Tikum, you must be at least 17 (seventeen) years old or have full legal capacity under the laws of the Republic of Indonesia, and provide accurate, authentic identity documentation upon request.
+          </p>
+        </div>
+
+        <!-- 5. Account Security -->
+        <div class="terms-section">
+          <h2>5. Account &amp; Credential Responsibilities</h2>
+          <p>
+            Users are solely responsible for safeguarding their session credentials, payment links, and verification OTP codes. You are legally responsible for all activities and transactions executed under your authenticated session or transaction links.
+          </p>
+        </div>
+
+        <!-- 6. Buyer Responsibilities -->
+        <div class="terms-section">
+          <h2>6. Buyer Obligations</h2>
+          <p>
+            Buyers are obligated to complete order payments within the prescribed time-to-live (TTL), carry valid government-issued photo identification (KTP/Passport) matching their order to the venue, meet the Tikum Event PIC at designated meeting points on schedule, and abide by promoter and venue regulations.
+          </p>
+        </div>
+
+        <!-- 7. Seller Responsibilities -->
+        <div class="terms-section">
+          <h2>7. Seller Obligations</h2>
+          <p>
+            Sellers warrant that listed tickets are authentic, legally acquired from official promoter channels, free from third-party encumbrances or duplicate listings, and that all necessary transfer authorizations and physical wristbands will be delivered timely.
+          </p>
+        </div>
+
+        <!-- 8. Listing Rules & Anti-Duplication -->
+        <div class="terms-section">
+          <h2>8. Ticket Listing Rules &amp; Anti-Duplication Invariant</h2>
+          <p>
+            Every ticket barcode submitted is cryptographically hashed via SHA-256. Tikum automatically rejects duplicate barcode submissions for the same event to enforce our strict single-owner invariant and eliminate double-selling.
+          </p>
+        </div>
+
+        <!-- 9. Verification & Evidence Review -->
+        <div class="terms-section">
+          <h2>9. Stage A: Ownership Evidence Review</h2>
+          <p>
+            Prior to public listing approval, Tikum Trust Curators inspect promoter purchase receipts, PDF invoices, and seating tier accuracy. Tickets lacking authentic ownership evidence are rejected. Original QR codes remain securely in the seller's control until stage-appropriate handover.
+          </p>
+        </div>
+
+        <!-- 10. Pricing & Service Fees -->
+        <div class="terms-section">
+          <h2>10. Transparent Pricing &amp; Service Fees (Tikum Fee Policy V1)</h2>
+          <p>
+            Listing prices are set by sellers. Tikum enforces 100% upfront fee transparency:
+          </p>
+          <ul style="color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-left: 20px;">
+            <li><strong>Listing Fee:</strong> IDR 0 (Free listing submission).</li>
+            <li><strong>Tikum Seller Fee:</strong> 6% of ticket face value (minimum IDR 35,000, cap IDR 500,000 per transaction side).</li>
+            <li><strong>Tikum Buyer Protection Fee:</strong> 6% of ticket face value (minimum IDR 35,000, cap IDR 500,000 per transaction side).</li>
+            <li><strong>Minimum Listing Price:</strong> IDR 500,000 per ticket.</li>
+            <li><strong>Maximum Markup Cap:</strong> Maximum +30% above official promoter face value to curb unconscionable speculation.</li>
+          </ul>
+          <p style="margin-top: 10px;">
+            All fee breakdowns and net payout simulations are calculated upfront before checkout with zero hidden surprise charges.
+          </p>
+        </div>
+
+        <!-- 11. Structured Offers -->
+        <div class="terms-section">
+          <h2>11. Structured Offers (Make Offer)</h2>
+          <p>
+            Buyers may submit structured price offers within 50% to 150% of the listed price. Acceptance of an offer atomically locks the listing for 2 hours to prevent simultaneous purchases.
+          </p>
+        </div>
+
+        <!-- 12. Payment & Settlement -->
+        <div class="terms-section">
+          <h2>12. Payment Processing &amp; Protected Settlement Review</h2>
+          <p>
+            Payments are processed via authorized Bank Indonesia-licensed payment partners (such as QRIS and Bank Virtual Accounts). Funds are held safely via our payment partner until handover conditions are met. Tikum is not a licensed banking escrow entity; our platform holding workflow governs transaction settlement based on gate validation and dispute clearance.
+          </p>
+        </div>
+
+        <!-- 13. Order Lifecycle -->
+        <div class="terms-section">
+          <h2>13. Order Lifecycle State Machine</h2>
+          <p>
+            Orders transition through canonical states: <code class="mono">PENDING_PAYMENT</code> &rarr; <code class="mono">PAID</code> (Payment Confirmed / Platform Held) &rarr; <code class="mono">ENTRY_CONFIRMED</code> (Handover / Venue Entry Validated) &rarr; <code class="mono">SETTLED</code> (Payout Released to Seller).
+          </p>
+        </div>
+
+        <!-- 14. Cancellations -->
+        <div class="terms-section">
+          <h2>14. Order Cancellation</h2>
+          <p>
+            Unpaid orders expire automatically upon TTL expiration. Paid orders cannot be unilaterally cancelled by the buyer except upon verified seller default or official event cancellation by the promoter.
+          </p>
+        </div>
+
+        <!-- 15. Refunds -->
+        <div class="terms-section">
+          <h2>15. Refund Policy</h2>
+          <p>
+            Detailed conditions, timelines, and calculations for refunds are governed by our <a href="/refund-policy" style="color: var(--cyan);">Refund Policy</a>, which forms an integral part of these Terms.
+          </p>
+        </div>
+
+        <!-- 16. Disputes -->
+        <div class="terms-section">
+          <h2>16. On-Site Venue Disputes</h2>
+          <p>
+            In the event of gate scanner rejection, buyers must notify the on-site Event PIC immediately prior to gate closing. Investigation logs, photos, and gate reports form the evidentiary basis for dispute rulings issued by the Tikum Resolution Team.
+          </p>
+        </div>
+
+        <!-- 17. Event Cancellation -->
+        <div class="terms-section">
+          <h2>17. Event Cancellation &amp; Rescheduling</h2>
+          <p>
+            If an event is officially cancelled by the promoter, refunds are administered in accordance with our Refund Policy. If rescheduled, tickets remain valid for the promoter's new date.
+          </p>
+        </div>
+
+        <!-- 18. Fraud Prevention -->
+        <div class="terms-section">
+          <h2>18. Prohibition of Fraud &amp; Illegal Acts</h2>
+          <p>
+            Listing counterfeit tickets, sharing sold barcodes outside the platform, manipulating digital documents, or attempting cyber-attacks against Tikum is strictly prohibited and subject to criminal prosecution.
+          </p>
+        </div>
+
+        <!-- 19. Platform Rights -->
+        <div class="terms-section">
+          <h2>19. Platform Rights &amp; Account Sanctions</h2>
+          <p>
+            Tikum reserves the right to suspend suspicious transactions, freeze settlement disbursements pending investigation, ban non-compliant accounts, and permanently blacklist verified offending identities.
+          </p>
+        </div>
+
+        <!-- 20. Limitation of Liability -->
+        <div class="terms-section">
+          <h2>20. Limitation of Liability</h2>
+          <p>
+            Tikum is not liable for indirect damages arising from buyer tardiness at the venue, extreme weather conditions, flight/transportation cancellations, or discretionary crowd-control decisions by venue security or law enforcement.
+          </p>
+        </div>
+
+        <!-- 21. Privacy -->
+        <div class="terms-section">
+          <h2>21. Privacy Policy &amp; PDP Law Compliance</h2>
+          <p>
+            Processing and storage of personal data comply with Law No. 27 of 2022 on Personal Data Protection (PDP Law). Refer to our <a href="/privacy" style="color: var(--cyan);">Privacy Policy</a>.
+          </p>
+        </div>
+
+        <!-- 22. Amendments -->
+        <div class="terms-section">
+          <h2>22. Amendments to Terms</h2>
+          <p>
+            Tikum may modify these Terms periodically. Updates take effect upon posting with revised timestamps. Continued platform use constitutes acceptance of updated Terms.
+          </p>
+        </div>
+
+        <!-- 23. Official Contact -->
+        <div class="terms-section" style="margin-bottom: 0;">
+          <h2>23. Official Corporate Contact</h2>
+          <p>
+            For legal inquiries, compliance audits, or official correspondence:
+            <br><br>
+            <strong>PT SHINERVA PRAJNA TEJAS</strong><br>
+            Email: <a href="mailto:support@tikum.app" style="color: var(--cyan); text-decoration: none;">support@tikum.app</a><br>
+            Phone &amp; WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none;">+62 812-9992-7378 (081299927378)</a><br>
+            Customer Support Hours: Monday - Sunday 09:00 - 21:00 WIB (WhatsApp &amp; Email)<br>
+            Address: PT SHINERVA PRAJNA TEJAS, Jl. Pasirluyu No. 79, Bandung 40254, Indonesia
+          </p>
+        </div>
+
+      </div>
+    </div>
 
   </main>
 
@@ -358,6 +597,11 @@
           <a href="/contact"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contactUs">Kontak Kami</span></a>
           <a href="/privacy"><i class="fa-solid fa-user-shield"></i> <span data-i18n="footer.privacyPolicy">Kebijakan Privasi (UU PDP)</span></a>
         </div>
+      </div>
+      <div style="text-align:center; margin-top:20px;">
+        <button id="footerLangToggle" class="footer-lang-toggle lang-switcher-pill" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" data-toggle-format="dual" style="background:#1e293b; border-color:#334155; font-size:12px; padding:6px 14px;">
+          <i class="fa-solid fa-globe" style="color:#38bdf8; margin-right:4px;"></i> <span class="lang-active">ID</span> | <span class="lang-inactive">EN</span>
+        </button>
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">

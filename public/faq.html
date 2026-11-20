@@ -106,7 +106,7 @@
         <a href="/terms" class="nav-link"><i class="fa-solid fa-file-contract"></i> <span data-i18n="footer.terms">Ketentuan</span></a>
         <a href="/refund-policy" class="nav-link"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="footer.refundPolicy">Refund</span></a>
         <a href="/contact" class="nav-link"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contact">Kontak</span></a>
-        <button id="langToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700;" title="Ganti Bahasa">ID</button>
+        <button id="langToggle" class="lang-switcher-pill btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" data-toggle-format="dual" title="Ganti Bahasa / Switch Language"><span class="lang-active">ID</span> | <span class="lang-inactive">EN</span></button>
         <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
@@ -114,8 +114,9 @@
 
   <!-- Main Content -->
   <main class="container" style="max-width: 860px;">
-    
-    <div style="text-align: center; margin-bottom: 40px;">
+    <!-- Indonesian Version (lang-only-id) -->
+    <div class="lang-only-id">
+<div style="text-align: center; margin-bottom: 40px;">
       <div class="hero-pill"><i class="fa-solid fa-circle-question"></i> PUSAT BANTUAN &amp; INFORMASI RESMI</div>
       <h1 style="font-size: 30px; font-weight: 800; letter-spacing: -0.5px; margin-top: 10px;">Pertanyaan yang Sering Diajukan (FAQ)</h1>
       <p style="font-size: 15px; color: var(--text-muted); max-width: 650px; margin: 0 auto;">
@@ -316,6 +317,193 @@
         <a href="/contact" class="btn btn-sm"><i class="fa-solid fa-address-book"></i> Halaman Kontak Resmi</a>
       </div>
     </div>
+    </div>
+
+    <!-- English Version (lang-only-en) -->
+    <div class="lang-only-en">
+      <div style="text-align: center; margin-bottom: 40px;">
+        <div class="hero-pill"><i class="fa-solid fa-circle-question"></i> OFFICIAL HELP CENTER &amp; FAQ</div>
+        <h1 style="font-size: 30px; font-weight: 800; letter-spacing: -0.5px; margin-top: 10px;">Frequently Asked Questions (FAQ)</h1>
+        <p style="font-size: 15px; color: var(--text-muted); max-width: 650px; margin: 0 auto;">
+          Learn how Tikum protects buyers and sellers through cryptographic anti-duplication, protected settlement holding, and on-site Event PIC assistance at confirmed live events.
+        </p>
+      </div>
+
+      <!-- 1. GENERAL -->
+      <section class="faq-category">
+        <div class="faq-category-title"><i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> 1. General Information</div>
+        
+        <div class="faq-item">
+          <div class="faq-question">What is Tikum?</div>
+          <div class="faq-answer">
+            Tikum is a <strong>verified secondary ticket marketplace</strong> by Shinerva designed to eliminate scalping fraud and counterfeit tickets in Indonesia. Tikum safely connects buyers and sellers by holding funds safely via authorized payment partners until handover conditions are met, backed by optional on-site Event PIC teams at selected event meeting points.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">How does Tikum work?</div>
+          <div class="faq-answer">
+            Tikum operates through 5 integrated protection phases:
+            <ol style="margin-top: 6px; padding-left: 20px;">
+              <li><strong>Listing &amp; Barcode Hashing:</strong> Sellers submit tickets; barcode serial numbers are hashed using SHA-256 to enforce our single-owner invariant.</li>
+              <li><strong>Document &amp; Invoice Verification:</strong> Trust Curators inspect official promoter purchase receipts before listings become eligible.</li>
+              <li><strong>Protected Settlement Holding:</strong> Buyers pay via authorized Bank Indonesia-licensed channels (QRIS/VA); funds are held safely until handover is complete.</li>
+              <li><strong>Venue Handover &amp; Validation:</strong> Monitored digital transfer or on-site Event PIC assistance at the venue meeting point on event day.</li>
+              <li><strong>Payout Settlement:</strong> Payout is remitted to the seller only after successful ticket handover or gate admission is confirmed (<code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code>).</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">Is Tikum an official primary ticketing agent?</div>
+          <div class="faq-answer">
+            <strong>No.</strong> Tikum is neither an event promoter nor a primary ticketing vendor. Tikum is a neutral technology platform enabling secure, authentic, and verified secondary peer-to-peer ticket resales.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">What does "Verified Resale Ticket" mean?</div>
+          <div class="faq-answer">
+            A verified resale ticket is a secondary ticket whose official purchase invoice has been validated by Tikum curators, whose barcode hash is uniquely registered in our anti-duplication registry, and whose payment is held until verified admission under our Refund Policy.
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. BUYER -->
+      <section class="faq-category">
+        <div class="faq-category-title"><i class="fa-solid fa-cart-shopping" style="color: #38bdf8;"></i> 2. Buyer Guide</div>
+        
+        <div class="faq-item">
+          <div class="faq-question">How do I purchase a ticket?</div>
+          <div class="faq-answer">
+            Select an event from the Tikum catalog, choose your preferred category or seat, and select your transaction method: purchase immediately with <strong>Buy Now</strong> or propose a structured offer via <strong>Make Offer</strong>. Complete payment via Bank Virtual Account or QRIS processed through licensed payment gateways.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">What is Buy Now?</div>
+          <div class="faq-answer">
+            <strong>Buy Now</strong> allows instant ticket reservation at the seller's asking price. Once selected, an order is generated and reserved for 2 hours for payment completion.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">What is Make Offer?</div>
+          <div class="faq-answer">
+            <strong>Make Offer</strong> allows buyers to submit a structured price proposal (between 50% and 150% of the listed price). The seller can accept, decline, or counter-offer. Acceptance atomically locks the listing for payment.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">What happens after I complete payment?</div>
+          <div class="faq-answer">
+            Once payment is verified, your order is recorded in protected status (Platform-Held). You receive an Order ID (<code class="mono" style="color: var(--cyan);">ord-...</code>) and can monitor handover progress at <a href="/track" style="color: var(--cyan); text-decoration: none;">/track</a>. Funds remain safely held until verified handover is established without dispute.
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. SELLER -->
+      <section class="faq-category">
+        <div class="faq-category-title"><i class="fa-solid fa-tags" style="color: #a855f7;"></i> 3. Seller Guide</div>
+        
+        <div class="faq-item">
+          <div class="faq-question">How do I create a listing or transaction link?</div>
+          <div class="faq-answer">
+            Navigate to <a href="/create" style="color: var(--cyan); text-decoration: none;">Sell Ticket (/create)</a>, select the verified event, enter seating and pricing details, enter the ticket barcode, and attach the official promoter PDF receipt. Your original QR code remains securely in your possession.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">What is the seller verification (KYC) requirement?</div>
+          <div class="faq-answer">
+            To prevent fraud, sellers must verify government-issued ID (KTP/Passport) and selfie before listings are approved. All identity documents are encrypted under the Indonesian Personal Data Protection Act (PDP Law No. 27/2022).
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">When do sellers receive payout settlement?</div>
+          <div class="faq-answer">
+            Funds are remitted to the seller's verified bank account after ticket handover or venue admission is confirmed without active dispute.
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. VERIFICATION & PROTOCOL -->
+      <section class="faq-category">
+        <div class="faq-category-title"><i class="fa-solid fa-fingerprint" style="color: #34d399;"></i> 4. Verification &amp; Security Protocols</div>
+        
+        <div class="faq-item">
+          <div class="faq-question">How does Tikum prevent duplicate barcode sales?</div>
+          <div class="faq-answer">
+            Every barcode string is converted into a cryptographic SHA-256 hash. If another user attempts to register the same barcode for the event, our database instantly rejects the submission.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">Why does Tikum require keeping the QR code in seller control during listing?</div>
+          <div class="faq-answer">
+            Under our <strong>Zero-QR Listing Policy</strong>, sellers must never upload original barcodes or QR codes during Stage A listing. This prevents premature barcode interception or unauthorized distribution prior to formal handover.
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. SETTLEMENT & FEES -->
+      <section class="faq-category">
+        <div class="faq-category-title"><i class="fa-solid fa-credit-card" style="color: #f59e0b;"></i> 5. Payments &amp; Platform Fees</div>
+        
+        <div class="faq-item">
+          <div class="faq-question">What is the Platform Service Fee?</div>
+          <div class="faq-answer">
+            Under Tikum Pilot Fee Policy V1, the platform service fee is 6% per side (minimum IDR 35,000, cap IDR 500,000 per side). Listing a ticket is completely free (IDR 0).
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">How are funds held and protected?</div>
+          <div class="faq-answer">
+            Payments are processed through Bank Indonesia-licensed partners and held in platform-protected settlement accounts until venue entry or wristband exchange is confirmed.
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. EVENT PIC -->
+      <section class="faq-category">
+        <div class="faq-category-title"><i class="fa-solid fa-user-shield" style="color: #06b6d4;"></i> 6. Event PIC On-Site Assistance</div>
+        
+        <div class="faq-item">
+          <div class="faq-question">What is the role of an Event PIC?</div>
+          <div class="faq-answer">
+            An <strong>Event PIC</strong> is a Tikum field officer stationed at selected venue meeting points during gate hours to witness ticket handovers, assist with physical wristband redemption, and record verification logs.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">What is the Buyer No-Show rule?</div>
+          <div class="faq-answer">
+            Under our <strong>Buyer No-Show (2-of-3 Verification Review)</strong> rule, establishing buyer non-appearance requires at least 2 of 3 evidentiary confirmations (PIC log, contact attempt log, and venue timestamp). Payouts are never released automatically based solely on a single party's input.
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. DISPUTES & REFUNDS -->
+      <section class="faq-category">
+        <div class="faq-category-title"><i class="fa-solid fa-scale-balanced" style="color: #ec4899;"></i> 7. Disputes &amp; Refunds</div>
+        
+        <div class="faq-item">
+          <div class="faq-question">What happens if a ticket is rejected at the gate?</div>
+          <div class="faq-answer">
+            Notify the on-site Event PIC immediately before gate closure. The PIC documents the issue and submits turnstile photographic evidence to the Tikum Resolution Team. Validated claims receive full refunds under our Refund Policy.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">How long does a refund take to process?</div>
+          <div class="faq-answer">
+            Approved refunds are remitted to the original payment method within 1 to 3 business days via licensed payment rails.
+          </div>
+        </div>
+      </section>
+    </div>
 
   </main>
 
@@ -385,6 +573,11 @@
           <a href="/contact"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contactUs">Kontak Kami</span></a>
           <a href="/privacy"><i class="fa-solid fa-user-shield"></i> <span data-i18n="footer.privacyPolicy">Kebijakan Privasi (UU PDP)</span></a>
         </div>
+      </div>
+      <div style="text-align:center; margin-top:20px;">
+        <button id="footerLangToggle" class="footer-lang-toggle lang-switcher-pill" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" data-toggle-format="dual" style="background:#1e293b; border-color:#334155; font-size:12px; padding:6px 14px;">
+          <i class="fa-solid fa-globe" style="color:#38bdf8; margin-right:4px;"></i> <span class="lang-active">ID</span> | <span class="lang-inactive">EN</span>
+        </button>
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">

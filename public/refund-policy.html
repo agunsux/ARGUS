@@ -44,7 +44,7 @@
         <a href="/faq" class="nav-link"><i class="fa-solid fa-circle-question"></i> <span data-i18n="nav.faq">FAQ</span></a>
         <a href="/refund-policy" class="nav-link active"><i class="fa-solid fa-rotate-left"></i> Kebijakan Refund</a>
         <a href="/contact" class="nav-link"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contact">Kontak</span></a>
-        <button id="langToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700;" title="Ganti Bahasa">ID</button>
+        <button id="langToggle" class="lang-switcher-pill btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" data-toggle-format="dual" title="Ganti Bahasa / Switch Language"><span class="lang-active">ID</span> | <span class="lang-inactive">EN</span></button>
         <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 11px;" title="Toggle Theme"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
       </nav>
     </div>
@@ -52,8 +52,9 @@
 
   <!-- Main Container -->
   <main class="container" style="max-width: 860px; padding-top: 40px; padding-bottom: 60px;">
-    
-    <div style="margin-bottom: 30px;">
+    <!-- Indonesian Version (lang-only-id) -->
+    <div class="lang-only-id">
+<div style="margin-bottom: 30px;">
       <div class="hero-pill"><i class="fa-solid fa-rotate-left"></i> KEBIJAKAN RESMI TRANSAKSI</div>
       <h1 style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin: 12px 0;">Kebijakan Pengembalian Dana (Refund Policy)</h1>
       <p style="font-size: 14px; color: var(--text-muted);">
@@ -140,6 +141,98 @@
       </ul>
 
     </div>
+    </div>
+
+    <!-- English Version (lang-only-en) -->
+    <div class="lang-only-en">
+      <div style="margin-bottom: 30px;">
+        <div class="hero-pill"><i class="fa-solid fa-rotate-left"></i> OFFICIAL TRANSACTION POLICY</div>
+        <h1 style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin: 12px 0;">Refund Policy &amp; Buyer Protection</h1>
+        <p style="font-size: 14px; color: var(--text-muted);">
+          Last updated: September 2026. This policy governs all secondary ticket transactions on Tikum platform.
+        </p>
+      </div>
+
+      <div class="notice-box notice-info" style="margin-bottom: 24px;">
+        <i class="fa-solid fa-shield-halved"></i>
+        <div>
+          <strong>Platform Protected Settlement Principle:</strong> On Tikum, your payment is processed via Bank Indonesia-authorized payment partners and held safely via our payment partner until handover conditions are met. Ticket sales proceeds are not released to the seller until ticket validity is established or the event concludes without dispute.
+        </div>
+      </div>
+
+      <div class="card" style="line-height: 1.8; font-size: 14px; margin-bottom: 24px;">
+        
+        <h3 style="font-size: 16px; color: #fff; margin-bottom: 10px;">1. Conditions Eligible for Refund</h3>
+        <p style="color: var(--text-muted); margin-bottom: 12px;">
+          Buyers are entitled to a refund upon objective verification of any of the following occurrences:
+        </p>
+        <ul style="color: var(--text-muted); margin-left: 20px; margin-bottom: 18px;">
+          <li>
+            <strong>Gate Scanner Rejection (Invalid / Duplicate Ticket):</strong> The ticket or wristband cannot be scanned by the promoter's official turnstile system due to counterfeit barcode, prior usage by another party, or voided credentials, confirmed by an on-site Event PIC inspection log.
+          </li>
+          <li>
+            <strong>Seller Breach (Seller Failure / No-Show):</strong> The seller fails to transfer the electronic ticket, fails to appear for physical wristband handover at the agreed venue meeting point, or provides an invalid power of attorney.
+          </li>
+          <li>
+            <strong>Official Event Cancellation:</strong> The event is definitively cancelled by the promoter or government authority without rescheduling.
+          </li>
+          <li>
+            <strong>System Technical Error / Double Charge:</strong> Duplicate payment deduction occurred for a single order identifier.
+          </li>
+        </ul>
+
+        <h3 style="font-size: 16px; color: #fff; margin-bottom: 10px;">2. Non-Refundable Conditions</h3>
+        <p style="color: var(--text-muted); margin-bottom: 12px;">
+          Refunds CANNOT be approved under the following circumstances:
+        </p>
+        <ul style="color: var(--text-muted); margin-left: 20px; margin-bottom: 18px;">
+          <li>
+            <strong>Buyer No-Show:</strong> Buyer fails to appear at the venue, arrives after gate hours, or fails to meet the Event PIC as instructed.
+          </li>
+          <li>
+            <strong>Buyer Change of Mind:</strong> Unilateral cancellation by the buyer after successful payment confirmation due to personal scheduling or transportation issues.
+          </li>
+          <li>
+            <strong>Entry Confirmed:</strong> Ticket was successfully scanned at the venue entrance (<code class="mono" style="color: var(--cyan);">ENTRY_CONFIRMED</code>) and admission was granted.
+          </li>
+          <li>
+            <strong>Venue Rules Violation:</strong> Admission was denied by security due to prohibited items, failure to carry matching government ID (KTP/Passport), or violation of dress code/age restrictions.
+          </li>
+        </ul>
+
+        <h3 style="font-size: 16px; color: #fff; margin-bottom: 10px;">3. Event Postponement &amp; Rescheduling</h3>
+        <p style="color: var(--text-muted); margin-bottom: 18px;">
+          If an event is rescheduled to a new date by the promoter, tickets remain valid for the new date. If the promoter offers official refund options for primary ticket holders, Tikum will facilitate order adjustments according to promoter policies.
+        </p>
+
+        <h3 style="font-size: 16px; color: #fff; margin-bottom: 10px;">4. Dispute Resolution Workflow</h3>
+        <p style="color: var(--text-muted); margin-bottom: 12px;">
+          If an issue occurs at the venue:
+        </p>
+        <ol style="color: var(--text-muted); margin-left: 20px; margin-bottom: 18px;">
+          <li>Notify the on-site <strong>Tikum Event PIC</strong> at the venue meeting point within 60 minutes of gate opening.</li>
+          <li>The Event PIC inspects the issue, assists at the promoter helpdesk, and uploads photographic turnstile evidence.</li>
+          <li>The Tikum Resolution Team reviews the dispute file and issues an objective ruling (<code class="mono" style="color: #34d399;">REFUND_BUYER</code>) based on verified audit records.</li>
+        </ol>
+
+        <h3 style="font-size: 16px; color: #fff; margin-bottom: 10px;">5. Refund Payout Mechanism &amp; Timeline</h3>
+        <p style="color: var(--text-muted); margin-bottom: 18px;">
+          Upon dispute approval, refunds are remitted to the buyer's original payment method (bank account or e-wallet) via authorized payment rails within <strong>1 to 3 business days</strong>, subject to inter-bank clearing cycles.
+        </p>
+
+        <h3 style="font-size: 16px; color: #fff; margin-bottom: 10px;">6. Support &amp; Dispute Contacts</h3>
+        <p style="color: var(--text-muted); margin-bottom: 0;">
+          For refund status inquiries or dispute escalation:
+        </p>
+        <ul style="color: var(--text-muted); margin-left: 20px; margin-top: 8px;">
+          <li>Email: <a href="mailto:support@tikum.app" style="color: var(--cyan);">support@tikum.app</a></li>
+          <li>WhatsApp Hotline: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399;">+62 812-9992-7378 (081299927378)</a></li>
+          <li>Support Hours: Monday - Sunday 09:00 - 21:00 WIB (WhatsApp &amp; Email)</li>
+          <li>Mailing Address: <strong>PT SHINERVA PRAJNA TEJAS</strong>, Jl. Pasirluyu No. 79, Bandung 40254, Indonesia</li>
+        </ul>
+
+      </div>
+    </div>
 
   </main>
 
@@ -209,6 +302,11 @@
           <a href="/contact"><i class="fa-solid fa-address-book"></i> <span data-i18n="footer.contactUs">Kontak Kami</span></a>
           <a href="/privacy"><i class="fa-solid fa-user-shield"></i> <span data-i18n="footer.privacyPolicy">Kebijakan Privasi (UU PDP)</span></a>
         </div>
+      </div>
+      <div style="text-align:center; margin-top:20px;">
+        <button id="footerLangToggle" class="footer-lang-toggle lang-switcher-pill" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" data-toggle-format="dual" style="background:#1e293b; border-color:#334155; font-size:12px; padding:6px 14px;">
+          <i class="fa-solid fa-globe" style="color:#38bdf8; margin-right:4px;"></i> <span class="lang-active">ID</span> | <span class="lang-inactive">EN</span>
+        </button>
       </div>
     </div>
     <div style="max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; font-size: 12px; color: var(--text-dim);">
