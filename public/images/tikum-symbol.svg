@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" fill="none">
+  <!-- TIKUM Signature Dual-Tone Emblem (Two figures meeting at the center point) -->
+  <!-- Left Figure: Head & Torso Arc -->
+  <circle cx="28" cy="32" r="10.5" fill="#124E61" />
+  <path d="M 12 76 C 12 56, 26 48, 38 52 C 43 53.6, 46 58, 46 64 C 46 72, 38 76, 24 76 Z" fill="#124E61" />
+  
+  <!-- Right Figure: Head & Torso Arc -->
+  <circle cx="72" cy="32" r="10.5" fill="#124E61" />
+  <path d="M 88 76 C 88 56, 74 48, 62 52 C 57 53.6, 54 58, 54 64 C 54 72, 62 76, 76 76 Z" fill="#124E61" />
+  
+  <!-- Center Meeting Point ("Titik Kumpul") Coral Dot -->
+  <circle cx="50" cy="45" r="9" fill="#DA674E" />
+  
+  <!-- Unifying Base Trust Horizon -->
+  <path d="M 32 82 C 42 85, 58 85, 68 82 C 70 81.5, 71 83.5, 69 84.5 C 57 89, 43 89, 31 84.5 C 29 83.5, 30 81.5, 32 82 Z" fill="#124E61" opacity="0.35" />
+</svg>
