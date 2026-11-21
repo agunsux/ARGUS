@@ -207,6 +207,15 @@ class InMemoryUserRepository extends UserRepository {
       throw new Error('ADMIN_MAGIC_LINK_REQUIRED');
     }
     await this.ensureInitialized();
+    if (userId && !this.users.has(userId)) {
+      try {
+        const { state } = require('../database');
+        const memU = (state.users || []).find(u => u.id === userId);
+        if (memU) {
+          this.users.set(userId, { ...memU });
+        }
+      } catch (_) {}
+    }
     const rawToken = token || (process.env.NODE_ENV === 'test' && require('../config/adminIdentity').isAdminRole(role)
       ? `adm-test-${crypto.randomBytes(16).toString('hex')}`
       : `ses-${crypto.randomBytes(24).toString('hex')}`);
@@ -276,7 +285,17 @@ class InMemoryUserRepository extends UserRepository {
     if (!session || session.revoked) return null;
     if (new Date(session.expires_at) <= new Date()) return null;
 
-    const user = this.users.get(session.user_id);
+    let user = this.users.get(session.user_id);
+    if (!user) {
+      try {
+        const { state } = require('../database');
+        const memU = (state.users || []).find(u => u.id === session.user_id);
+        if (memU) {
+          user = { ...memU };
+          this.users.set(user.id, user);
+        }
+      } catch (_) {}
+    }
     if (!user || user.status !== 'ACTIVE') return null;
 
     session.last_seen_at = new Date().toISOString();

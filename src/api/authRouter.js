@@ -535,7 +535,20 @@ router.put('/me/profile', requireAuth, async (req, res) => {
  * Sends verification link with open-redirect safe next parameter.
  */
 router.post(['/verify-email/request', '/resend-verification'], async (req, res) => {
-  const email = (req.body?.email || req.user?.email || '').trim().toLowerCase();
+  let user = null;
+  const userRepo = getUserRepository();
+  if (req.user) {
+    user = req.user;
+  } else {
+    try {
+      const { resolveUserAsync } = require('../middleware/auth');
+      user = await resolveUserAsync(req);
+    } catch (e) {
+      console.error('FAILED TO RESOLVE USER ASYNC:', e);
+    }
+  }
+
+  const email = (req.body?.email || user?.email || '').trim().toLowerCase();
   const nextParam = req.body?.next || req.query?.next || '/';
   const safeNext = MagicLinkService.validateRedirectUrl(nextParam);
 
@@ -546,20 +559,27 @@ router.post(['/verify-email/request', '/resend-verification'], async (req, res) 
   // 60-second cooldown per email
   const now = Date.now();
   const lastSent = verificationResendCooldowns.get(email) || 0;
-  if (now - lastSent < 60000 && process.env.NODE_ENV !== 'test') {
+  if (now - lastSent < 60000) {
     const remaining = Math.ceil((60000 - (now - lastSent)) / 1000);
     return res.status(429).json({
       success: false,
       error: `Silakan tunggu ${remaining} detik sebelum meminta email verifikasi lagi.`,
-      code: 'RATE_LIMIT_COOLDOWN',
-      retryAfter: remaining
+      code: 'RATE_LIMITED',
+      retryAfter: remaining,
+      cooldown_remaining: remaining
     });
   }
 
-  const userRepo = getUserRepository();
-  const user = await userRepo.getUserByEmail(email) || (state.users || []).find(u => u.email && u.email.toLowerCase() === email);
   if (!user) {
-    return res.status(200).json({ success: true, message: 'Jika email terdaftar, email verifikasi telah dikirim.' });
+    user = await userRepo.getUserByEmail(email) || (state.users || []).find(u => u.email && u.email.toLowerCase() === email);
+  }
+  if (!user) {
+    return res.status(200).json({
+      success: true,
+      message: 'Jika email terdaftar, email verifikasi telah dikirim.',
+      cooldownSeconds: 60,
+      cooldown_seconds: 60
+    });
   }
 
   const rawToken = crypto.randomBytes(32).toString('hex');
@@ -595,7 +615,8 @@ router.post(['/verify-email/request', '/resend-verification'], async (req, res) 
   return res.status(200).json({
     success: true,
     message: 'Email verifikasi telah dikirim. Periksa kotak masuk Anda.',
-    cooldownSeconds: 60
+    cooldownSeconds: 60,
+    cooldown_seconds: 60
   });
 });
 
@@ -616,9 +637,27 @@ router.get('/verify-email', async (req, res) => {
   }
 
   const tokenHash = crypto.createHash('sha256').update(String(token).trim()).digest('hex');
-  const tokenRecord = (state.email_verification_tokens || []).find(
+  let tokenRecord = (state.email_verification_tokens || []).find(
     t => t.token_hash === tokenHash && !t.used
   );
+
+  const userRepo = getUserRepository();
+  if (!tokenRecord && userRepo && typeof userRepo.getMagicLinkTokenByHash === 'function') {
+    try {
+      const dbToken = await userRepo.getMagicLinkTokenByHash(tokenHash);
+      if (dbToken && !dbToken.used && !dbToken.db_expired) {
+        tokenRecord = {
+          id: dbToken.id,
+          user_id: dbToken.user_id,
+          email: dbToken.email,
+          token_hash: dbToken.token_hash,
+          next: dbToken.redirect_url || safeNext,
+          expires_at: dbToken.expires_at,
+          used: false
+        };
+      }
+    } catch (_) {}
+  }
 
   if (!tokenRecord || new Date(tokenRecord.expires_at).getTime() < Date.now()) {
     if (req.accepts('json') && !req.accepts('html')) {
@@ -630,9 +669,13 @@ router.get('/verify-email', async (req, res) => {
   // Mark token used
   tokenRecord.used = true;
   tokenRecord.used_at = new Date().toISOString();
+  if (userRepo && typeof userRepo.consumeMagicLinkToken === 'function') {
+    await userRepo.consumeMagicLinkToken(tokenHash).catch(() => {});
+  }
 
-  const userRepo = getUserRepository();
-  const user = await userRepo.getUserById(tokenRecord.user_id) || (state.users || []).find(u => u.id === tokenRecord.user_id);
+  const user = (tokenRecord.user_id ? await userRepo.getUserById(tokenRecord.user_id) : null) ||
+    (tokenRecord.email ? await userRepo.getUserByEmail(tokenRecord.email) : null) ||
+    (state.users || []).find(u => (tokenRecord.user_id && u.id === tokenRecord.user_id) || (tokenRecord.email && u.email && u.email.toLowerCase() === tokenRecord.email.toLowerCase()));
   if (!user) {
     if (req.accepts('json') && !req.accepts('html')) {
       return res.status(404).json({ success: false, error: 'Pengguna tidak ditemukan.', code: 'USER_NOT_FOUND' });
@@ -670,7 +713,7 @@ router.get('/verify-email', async (req, res) => {
   res.setHeader('Set-Cookie', cookieOptions.join('; '));
 
   // Determine landing route
-  const targetNext = tokenRecord.next || safeNext;
+  const targetNext = MagicLinkService.validateRedirectUrl(tokenRecord.next || nextParam || '/');
   const sellerProfile = await userRepo.getSellerProfile(user.id);
   const fullName = user.name || '';
   const phone = user.phone || meta.whatsapp || '';

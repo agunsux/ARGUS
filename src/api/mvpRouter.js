@@ -1546,12 +1546,38 @@ router.post('/seller/orders/:orderId/handoff-challenge', async (req, res) => {
  */
 router.post('/buyer/order', async (req, res) => {
   try {
+    resolveAuth(req);
+
+    const { buyerId, listingId, quoteId, quote_id, policyVersion } = req.body;
+    if (!listingId) {
+      return res.status(400).json({ error: 'listingId is required', code: 'VALIDATION_ERROR' });
+    }
+
+    // When authenticated, the session identity is authoritative
+    const effectiveBuyerId = (req.user && !isAdminRole(req.user.role)) ? req.user.id : (buyerId || req.user?.id);
+
+    // Anti-conflict self-purchase guard (evaluated first so sellers cannot attempt self-dealing)
+    if (listingId && effectiveBuyerId) {
+      let targetListing = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
+      if (!targetListing) {
+        try {
+          const { getMarketplaceRepository } = require('../storage');
+          targetListing = await getMarketplaceRepository().getListingById(listingId);
+        } catch (_) {}
+      }
+      if (targetListing && targetListing.seller_id && targetListing.seller_id === effectiveBuyerId) {
+        return res.status(403).json({
+          error: 'Penjual dilarang membeli listing tiket miliknya sendiri (Self-purchase is strictly forbidden).',
+          code: 'SELF_PURCHASE_FORBIDDEN'
+        });
+      }
+    }
+
     const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
     if (isPrelaunchListingMode()) {
       return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
     }
 
-    resolveAuth(req);
     const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
 
     // In production, unauthenticated guest order creation is forbidden to prevent buyer impersonation
@@ -1562,11 +1588,6 @@ router.post('/buyer/order', async (req, res) => {
       });
     }
 
-    const { buyerId, listingId, quoteId, quote_id, policyVersion } = req.body;
-    if (!listingId) {
-      return res.status(400).json({ error: 'listingId is required', code: 'VALIDATION_ERROR' });
-    }
-
     // Demo Listing Guard: Demonstrative / illustrative listings cannot be ordered or purchased
     if (listingId === 'list-pilot-preview' || String(listingId).toLowerCase().startsWith('demo-')) {
       return res.status(400).json({
@@ -1575,8 +1596,6 @@ router.post('/buyer/order', async (req, res) => {
       });
     }
 
-    // When authenticated, the session identity is authoritative
-    const effectiveBuyerId = (req.user && !isAdminRole(req.user.role)) ? req.user.id : (buyerId || req.user?.id);
     if (!effectiveBuyerId) {
       return res.status(400).json({ error: 'buyerId and listingId are required', code: 'VALIDATION_ERROR' });
     }
@@ -1586,21 +1605,6 @@ router.post('/buyer/order', async (req, res) => {
     }
     if (!findUser(effectiveBuyerId)) {
       return res.status(401).json({ error: 'Unknown buyer', code: 'AUTH_REQUIRED' });
-    }
-
-    // Anti-conflict self-purchase guard
-    let targetListing = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
-    if (!targetListing) {
-      try {
-        const { getMarketplaceRepository } = require('../storage');
-        targetListing = await getMarketplaceRepository().getListingById(listingId);
-      } catch (_) {}
-    }
-    if (targetListing && targetListing.seller_id && targetListing.seller_id === effectiveBuyerId) {
-      return res.status(403).json({
-        error: 'Penjual dilarang membeli listing tiket miliknya sendiri (Self-purchase is strictly forbidden).',
-        code: 'SELF_PURCHASE_FORBIDDEN'
-      });
     }
 
     const effectiveQuoteId = quoteId || quote_id || null;
