@@ -4,16 +4,23 @@ const crypto = require('crypto');
 function requireCronBearer(req, res, next) {
   const secret = process.env.CRON_SECRET;
   if (typeof secret !== 'string' || !secret.trim()) {
-    return res.status(503).json({ success: false, code: 'CRON_SECRET_NOT_CONFIGURED' });
+    return res.status(503).json({ success: false, code: 'CRON_SECRET_NOT_CONFIGURED', error: 'CRON_SECRET not configured' });
   }
+  let candidateStr = null;
   const header = req.headers?.authorization;
-  if (typeof header !== 'string' || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, code: 'CRON_SECRET_REQUIRED' });
+  if (typeof header === 'string' && header.startsWith('Bearer ')) {
+    candidateStr = header.slice(7).trim();
+  } else if (typeof req.headers?.['x-cron-secret'] === 'string') {
+    candidateStr = req.headers['x-cron-secret'].trim();
   }
-  const candidate = Buffer.from(header.slice(7));
+
+  if (!candidateStr) {
+    return res.status(401).json({ success: false, code: 'CRON_SECRET_REQUIRED', error: 'Unauthorized: Invalid or missing CRON_SECRET' });
+  }
+  const candidate = Buffer.from(candidateStr);
   const expected = Buffer.from(secret);
   if (candidate.length !== expected.length || !crypto.timingSafeEqual(candidate, expected)) {
-    return res.status(401).json({ success: false, code: 'INVALID_CRON_SECRET' });
+    return res.status(401).json({ success: false, code: 'INVALID_CRON_SECRET', error: 'Unauthorized: Invalid or missing CRON_SECRET' });
   }
   return next();
 }

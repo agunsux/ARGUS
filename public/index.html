@@ -573,10 +573,11 @@
     <div class="filter-pills">
       <div class="pill active" data-category="" onclick="setCategory(this, '')" data-i18n="events.allEvents">Semua Event</div>
       <div class="pill" data-category="MUSIC" onclick="setCategory(this, 'MUSIC')" data-i18n="events.concerts">Konser</div>
+      <div class="pill" data-category="KPOP" onclick="setCategory(this, 'KPOP')">K-Pop</div>
+      <div class="pill" data-category="FESTIVAL" onclick="setCategory(this, 'FESTIVAL')" data-i18n="events.festivals">Festival</div>
       <div class="pill" data-category="SPORT" onclick="setCategory(this, 'SPORT')" data-i18n="events.sports">Olahraga</div>
       <div class="pill" data-category="COMEDY" onclick="setCategory(this, 'COMEDY')" data-i18n="events.comedy">Stand Up Comedy</div>
-      <div class="pill" data-category="EXHIBITION" onclick="setCategory(this, 'EXHIBITION')" data-i18n="events.exhibitions">Pameran</div>
-      <div class="pill" data-category="HIBURAN" onclick="setCategory(this, 'HIBURAN')" data-i18n="events.entertainment">Hiburan Lainnya</div>
+      <a href="/past-events" class="pill" style="text-decoration:none; color:inherit; display:inline-flex; align-items:center; gap:4px;" data-i18n="events.pastEvents">Arsip Selesai <i class="fa-solid fa-arrow-right" style="font-size:11px;"></i></a>
     </div>
     <div class="filters-row-selects" style="display:flex; gap:10px;">
       <select id="cityFilter" class="select-filter" onchange="renderAllSections()">
@@ -601,6 +602,77 @@
 
   <!-- Dynamic Sections -->
   <main id="mainContent"></main>
+
+  <!-- Featured Blog & Guides Strip -->
+  <section class="landing-section" id="featuredBlog" style="margin-top: 32px; padding: 32px 0 20px;">
+    <div class="landing-section-header" style="max-width: 1200px; margin: 0 auto 24px; padding: 0 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <div class="landing-kicker" style="color: #38bdf8; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px;">PANDUAN &amp; EDUKASI RESMI</div>
+          <h2 class="landing-title" style="font-size: 24px; font-weight: 800; margin: 0; color: #FFF;">Blog &amp; Panduan Tiket Terverifikasi</h2>
+        </div>
+        <a href="/blog" class="ln-btn ln-btn-ghost" style="font-size: 13px; text-decoration: none; padding: 8px 16px; border-radius: 8px;">Lihat Semua Artikel →</a>
+      </div>
+    </div>
+    <div class="featured-blog-grid" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+      <article class="blog-preview-card">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px;">PANDUAN TIKET</span>
+            <span style="font-size: 12px; color: #9ca3af;"><i class="fa-regular fa-clock"></i> 4 menit baca</span>
+          </div>
+          <h3 style="font-size: 16px; font-weight: 700; color: #f9fafb; margin: 0 0 8px; line-height: 1.4;">
+            <a href="/blog/panduan-tiket-bts-arirang-world-tour-jakarta-gbk-2026" style="color: inherit; text-decoration: none;">Panduan Tiket BTS World Tour Arirang di GBK Jakarta: Tips War &amp; Aturan Masuk</a>
+          </h3>
+          <p style="font-size: 13px; color: #9ca3af; margin: 0 0 16px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+            Informasi lengkap jadwal presale, zonasi tribun GBK, tata cara penukaran wristband, dan verifikasi tiket konser BTS Arirang Jakarta 2026.
+          </p>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1f2937; padding-top: 12px; font-size: 12px; color: #6b7280;">
+          <span>18 November 2026</span>
+          <a href="/blog/panduan-tiket-bts-arirang-world-tour-jakarta-gbk-2026" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Baca Selengkapnya →</a>
+        </div>
+      </article>
+
+      <article class="blog-preview-card">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px;">PANDUAN KONSER</span>
+            <span style="font-size: 12px; color: #9ca3af;"><i class="fa-regular fa-clock"></i> 5 menit baca</span>
+          </div>
+          <h3 style="font-size: 16px; font-weight: 700; color: #f9fafb; margin: 0 0 8px; line-height: 1.4;">
+            <a href="/blog/panduan-nonton-konser-bigbang-jis-akustik-seating-logistik" style="color: inherit; text-decoration: none;">Panduan Konser BIGBANG di JIS: Pilihan Seating, Akustik &amp; Rute Transportasi</a>
+          </h3>
+          <p style="font-size: 13px; color: #9ca3af; margin: 0 0 16px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+            Ulasan akustik tribun JIS, tips memilih nomor kursi terbaik, serta rute KRL dan shuttle bus untuk konser 20th Anniversary BIGBANG di Jakarta.
+          </p>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1f2937; padding-top: 12px; font-size: 12px; color: #6b7280;">
+          <span>20 November 2026</span>
+          <a href="/blog/panduan-nonton-konser-bigbang-jis-akustik-seating-logistik" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Baca Selengkapnya →</a>
+        </div>
+      </article>
+
+      <article class="blog-preview-card">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px;">KEAMANAN TRANSAKSI</span>
+            <span style="font-size: 12px; color: #9ca3af;"><i class="fa-regular fa-clock"></i> 4 menit baca</span>
+          </div>
+          <h3 style="font-size: 16px; font-weight: 700; color: #f9fafb; margin: 0 0 8px; line-height: 1.4;">
+            <a href="/blog/panduan-serah-terima-tiket-aman-dua-tahap-perlindungan-escrow" style="color: inherit; text-decoration: none;">Panduan Serah Terima Tiket Aman: Verifikasi Dua Tahap &amp; Perlindungan Escrow</a>
+          </h3>
+          <p style="font-size: 13px; color: #9ca3af; margin: 0 0 16px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+            Langkah taktis serah terima tiket konser fisik dan digital di venue. Memahami sistem penahanan dana terkelola dan kehadiran petugas lapangan.
+          </p>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1f2937; padding-top: 12px; font-size: 12px; color: #6b7280;">
+          <span>21 November 2026</span>
+          <a href="/blog/panduan-serah-terima-tiket-aman-dua-tahap-perlindungan-escrow" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Baca Selengkapnya →</a>
+        </div>
+      </article>
+    </div>
+  </section>
 
   <!-- Products and Services Section -->
   <section class="landing-section" id="services">
@@ -1352,10 +1424,19 @@
         if (currentCategory) {
           const evCat = [e.category, e.category_group, e.event_type]
             .filter(Boolean).join(' ').toUpperCase();
+          const evTitle = [e.title, e.canonical_name, e.name, e.artist].filter(Boolean).join(' ').toUpperCase();
           if (currentCategory === 'COMEDY') {
             if (!evCat.includes('COMEDY') && !evCat.includes('SHOWS_COMEDY') && !evCat.includes('STAND UP') && !evCat.includes('STANDUP')) return false;
           } else if (currentCategory === 'HIBURAN') {
             if (!evCat.includes('THEATER') && !evCat.includes('MUSICAL') && !evCat.includes('FAMILY') && !evCat.includes('OTHER') && !evCat.includes('FESTIVAL')) return false;
+          } else if (currentCategory === 'KPOP') {
+            if (!evCat.includes('KPOP') && !evCat.includes('K-POP') && !evTitle.includes('KPOP') && !evTitle.includes('K-POP') && !evTitle.includes('BTS') && !evTitle.includes('BIGBANG')) return false;
+          } else if (currentCategory === 'FESTIVAL') {
+            if (!evCat.includes('FESTIVAL') && !evCat.includes('FEST') && !evTitle.includes('FESTIVAL') && !evTitle.includes('FEST')) return false;
+          } else if (currentCategory === 'MUSIC' || currentCategory === 'CONCERT') {
+            if (!evCat.includes('CONCERT') && !evCat.includes('MUSIC') && !evCat.includes('KPOP') && !evCat.includes('FESTIVAL')) return false;
+          } else if (currentCategory === 'SPORT' || currentCategory === 'SPORTS') {
+            if (!evCat.includes('SPORT') && !evCat.includes('BADMINTON') && !evCat.includes('BASKETBALL') && !evCat.includes('FOOTBALL')) return false;
           } else if (!evCat.includes(currentCategory)) {
             return false;
           }
@@ -1474,6 +1555,15 @@
         </div>
       `;
 
+      let tierBadge = '';
+      if (e.has_venue_assist || e.has_pic || e.venue_assist_status === 'PIC_AVAILABLE' || e.venue_assist_status === 'PIC_ON_SITE' || e.wristband_redemption_required) {
+        tierBadge = `<div class="card-tier-badge tier-pic"><i class="fa-solid fa-user-check"></i> Event PIC</div>`;
+      } else if (e.risk_tier === 'TIER_A_DIGITAL' || e.transfer_allowed) {
+        tierBadge = `<div class="card-tier-badge tier-digital"><i class="fa-solid fa-mobile-screen"></i> Transfer Digital</div>`;
+      } else {
+        tierBadge = `<div class="card-tier-badge tier-unverified"><i class="fa-solid fa-clock"></i> Kebijakan Ditinjau</div>`;
+      }
+
       if (img) {
         return `
           <div class="poster-media" data-image-status="${imgStatus}">
@@ -1483,6 +1573,7 @@
             </div>
             <div class="poster-scrim"></div>
             <div class="card-category-pill">${categoryLabel}</div>
+            ${tierBadge}
             <div class="ln-badge ln-badge--status">${statusText}</div>
             ${radarBadge}
           </div>
@@ -1494,6 +1585,7 @@
               ${placeholderInner}
             </div>
             <div class="card-category-pill">${categoryLabel}</div>
+            ${tierBadge}
             <div class="ln-badge ln-badge--status">${statusText}</div>
             ${radarBadge}
           </div>
@@ -1503,7 +1595,10 @@
 
     function resolveCategoryLabel(e) {
       const cat = (e.category || e.category_group || e.event_type || '').toUpperCase();
+      const title = (e.title || e.canonical_name || e.name || '').toUpperCase();
       const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
+      if (cat.includes('KPOP') || cat.includes('K-POP') || title.includes('BTS') || title.includes('BIGBANG')) return 'K-Pop';
+      if (cat.includes('FESTIVAL') || title.includes('FESTIVAL') || title.includes('FEST')) return 'Festival';
       if (cat.includes('SPORT') || cat.includes('BADMINTON') || cat.includes('FOOTBALL')) return isEn ? 'Sports' : 'Olahraga';
       if (cat.includes('COMEDY') || cat.includes('SHOWS_COMEDY') || cat.includes('STANDUP')) return 'Stand Up Comedy';
       if (cat.includes('EXHIBITION') || cat.includes('PAMERAN')) return isEn ? 'Exhibitions' : 'Pameran';

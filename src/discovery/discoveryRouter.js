@@ -28,6 +28,9 @@ const { state, recordAuditLog } = require('../database');
 const { renderFooterHtml } = require('../config/businessProfile');
 const { cityRegistry, CityRegistry } = require('./CityRegistry');
 const { eventPolicyRegistry, POLICY_STATUS, RISK_TIER, PRIMARY_PARTNER } = require('./EventPolicyRegistry');
+const { EventLifecycleService } = require('./EventLifecycleService');
+const { PrimaryEventScannerService } = require('./PrimaryEventScannerService');
+const { SeoBlogEngine } = require('../blog/SeoBlogEngine');
 
 function resolveRequestLocale(req) {
   if (!req) return 'id';
@@ -1293,7 +1296,11 @@ router.get('/api/discovery/events', handleGetEvents);
  * Primary Ticketing Box Event Discovery & Policy Registry Seeding (>= IDR 300,000)
  */
 router.get('/api/discovery/event-policy-registry', (req, res) => {
-  const events = eventPolicyRegistry.getAllEvents(req.query);
+  const includePast = req.query.include_past === 'true' || req.query.status === 'PAST';
+  let events = eventPolicyRegistry.getAllEvents(req.query);
+  if (!includePast) {
+    events = EventLifecycleService.filterActiveEvents(events, req.query.now);
+  }
   const summary = eventPolicyRegistry.getSummary();
   res.json({
     success: true,
@@ -1309,15 +1316,77 @@ router.get('/api/discovery/event-policy-registry', (req, res) => {
  */
 router.get('/api/discovery/events-qualified', (req, res) => {
   const minPrice = parseInt(req.query.min_price || '300000', 10);
-  const events = eventPolicyRegistry.getAllEvents({
+  const includePast = req.query.include_past === 'true' || req.query.status === 'PAST';
+  let events = eventPolicyRegistry.getAllEvents({
     ...req.query,
     min_price: minPrice
   });
+  if (!includePast) {
+    events = EventLifecycleService.filterActiveEvents(events, req.query.now);
+  }
   res.json({
     success: true,
     min_price: minPrice,
     count: events.length,
     events
+  });
+});
+
+/**
+ * GET /api/discovery/past-events
+ * Dedicated query for past/concluded events with pagination and search.
+ */
+router.get('/api/discovery/past-events', (req, res) => {
+  const result = EventLifecycleService.getPastEvents({
+    page: req.query.page,
+    limit: req.query.limit,
+    q: req.query.q,
+    category: req.query.category,
+    city: req.query.city,
+    year: req.query.year,
+    now: req.query.now
+  });
+  res.json(result);
+});
+
+/**
+ * POST /api/cron/archive-past-events
+ * Weekly / on-demand lifecycle archival of concluded events. Protected by CRON_SECRET.
+ */
+router.post('/api/cron/archive-past-events', requireCronBearer, (req, res) => {
+  const result = EventLifecycleService.archiveExpiredEvents({
+    now: req.query.now || req.body?.now,
+    force: req.query.force === 'true' || req.body?.force === true
+  });
+  res.json(result);
+});
+
+/**
+ * POST /api/cron/scan-primary-events
+ * Bi-weekly primary box office discovery sweep (>= IDR 300,000). Protected by CRON_SECRET.
+ */
+router.post('/api/cron/scan-primary-events', requireCronBearer, (req, res) => {
+  const report = PrimaryEventScannerService.scanAllSources({
+    force: req.query.force === 'true' || req.body?.force === true,
+    now: req.query.now || req.body?.now
+  });
+  res.json({
+    success: report.success,
+    report
+  });
+});
+
+/**
+ * POST /api/cron/publish-seo-blog
+ * Twice-weekly automated SEO blog publication pipeline. Protected by CRON_SECRET.
+ */
+router.post('/api/cron/publish-seo-blog', requireCronBearer, (req, res) => {
+  const report = SeoBlogEngine.publishDueArticles({
+    now: req.query.now || req.body?.now
+  });
+  res.json({
+    success: report.success,
+    report
   });
 });
 

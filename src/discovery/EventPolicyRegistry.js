@@ -44,7 +44,7 @@ const PRIMARY_PARTNER = {
   YESPLIS_COM: 'yesplis.com'
 };
 
-const VALID_CATEGORIES = ['CONCERT', 'SPORTS', 'STANDUP_COMEDY'];
+const VALID_CATEGORIES = ['CONCERT', 'KPOP', 'FESTIVAL', 'SPORTS', 'STANDUP_COMEDY'];
 const MINIMUM_PRICE_THRESHOLD = 300000;
 
 class EventPolicyRegistry {
@@ -157,12 +157,16 @@ class EventPolicyRegistry {
 
   getSummary() {
     const events = this.getAllEvents();
-    const categories = { CONCERT: 0, SPORTS: 0, STANDUP_COMEDY: 0 };
+    const categories = { CONCERT: 0, KPOP: 0, FESTIVAL: 0, SPORTS: 0, STANDUP_COMEDY: 0 };
     const platforms = {};
     const riskTiers = { TIER_A_DIGITAL: 0, TIER_B_VENUE_ASSISTED: 0, TIER_C_RESTRICTED: 0 };
 
     for (const e of events) {
-      if (categories[e.category] !== undefined) categories[e.category]++;
+      if (categories[e.category] !== undefined) {
+        categories[e.category]++;
+      } else {
+        categories[e.category] = 1;
+      }
       const plat = e.official_ticketing_partner || 'other';
       platforms[plat] = (platforms[plat] || 0) + 1;
       if (riskTiers[e.risk_tier] !== undefined) riskTiers[e.risk_tier]++;

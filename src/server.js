@@ -67,7 +67,7 @@ app.use(async (req, res, next) => {
 app.use('/api/admin', require('./api/adminAuthRouter'));
 app.use((req, res, next) => {
   // Stop legacy routers from re-resolving a rejected credential from local caches.
-  if (req.authRejected && req.path.startsWith('/api/') && !req.path.startsWith('/api/auth/')) {
+  if (req.authRejected && req.path.startsWith('/api/') && !req.path.startsWith('/api/auth/') && !req.path.startsWith('/api/cron/')) {
     return res.status(401).json({ code: 'AUTH_REQUIRED', error: 'Authentication required.' });
   }
   next();
