@@ -75,6 +75,21 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
       .slice(0, limit);
   }
 
+  // Atomic Parent-First Ticket & Listing Creation
+  async createTicketAndListing({ ticketData, listingData }) {
+    const ticket = await this.createTicket(ticketData);
+    try {
+      const listing = await this.createListing({
+        ...listingData,
+        ticket_id: ticket.id
+      });
+      return { ticket, listing };
+    } catch (err) {
+      this.tickets.delete(ticket.id);
+      throw err;
+    }
+  }
+
   // Listings
   async createListing(listingData) {
     const eventId = listingData.canonical_event_id || listingData.event_id;
@@ -98,6 +113,13 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
           throw err;
         }
       }
+    }
+
+    if (listingData.ticket_id && !this.tickets.has(listingData.ticket_id)) {
+      const err = new Error(`Parent ticket '${listingData.ticket_id}' not found.`);
+      err.code = 'PARENT_TICKET_MISSING';
+      err.statusCode = 400;
+      throw err;
     }
 
     const id = listingData.id || `list-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;

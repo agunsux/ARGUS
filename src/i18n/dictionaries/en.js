@@ -151,7 +151,11 @@ const en = {
     submitBtn: "Register Ticket on Tikum",
     submitting: "Submitting ticket...",
     mode1Notice: "Funds are held via our authorized payment partner until handover conditions are met.",
-    mode2Notice: "Ticket principal is settled directly between parties; TIKUM processes only the platform service fee."
+    mode2Notice: "Ticket principal is settled directly between parties; TIKUM processes only the platform service fee.",
+    stepperStep1: "1. Account & Email Verification",
+    stepperStep2: "2. Seller Identity & Payout Profile",
+    stepperStep3: "3. Ticket Details & Evidence (Stage A — Zero QR)",
+    autofillNotice: "Seller Profile Auto-Filled"
   },
 
   dealRoom: {
@@ -350,6 +354,32 @@ const en = {
     blog: "Blog & Guides"
   },
 
+  profile: {
+    pageTitle: "Profile & Account Security",
+    pageSubtitle: "Manage your identity, email verification, and ticket payout bank details.",
+    emailVerification: "Email Verification",
+    emailVerified: "Email Verified",
+    emailUnverified: "Email Unverified",
+    resendVerification: "Resend Verification Email",
+    verificationSent: "Verification link has been sent to your email.",
+    cooldownNotice: "Please wait before resending.",
+    personalInfo: "Personal Info & Contact",
+    fullName: "Full Name per Legal ID",
+    whatsapp: "Active WhatsApp Number",
+    cityOrAddress: "City / Full Address",
+    sellerPayout: "Seller Payout Bank Details",
+    bankName: "Payout Bank Name",
+    bankAccountNumber: "Bank Account Number",
+    bankAccountHolder: "Account Holder Name",
+    identityDocRef: "Identity Document Reference (KTP)",
+    saveBtn: "Save Profile",
+    saving: "Saving...",
+    savedSuccess: "Profile successfully updated.",
+    autofillBadge: "Profile Verified & Auto-Filled",
+    buyerProportionalNote: "For buyers, only minimal contact details (Name, WhatsApp, and City) are required per PDP Law No. 27/2022 data minimization.",
+    sellerCompleteBadge: "Seller Profile Complete"
+  },
+
   errors: {
     generic: "A system error occurred. Please try again shortly.",
     network: "Network connection lost. Please check your internet connection.",
@@ -361,7 +391,11 @@ const en = {
     barcodeDuplicate: "This barcode number has already been registered for this event.",
     priceOutOfRange: "Asking price exceeds permitted threshold (maximum +30% above official promoter face value).",
     kycRequired: "Identity verification (KYC) is required before proceeding with this transaction.",
-    orderExpired: "Payment window has expired (TTL elapsed)."
+    orderExpired: "Payment window has expired (TTL elapsed).",
+    emailVerificationRequired: "Email verification is required before proceeding with this transaction.",
+    sellerProfileIncomplete: "Seller profile and payout bank details must be completed before creating a listing.",
+    selfPurchaseForbidden: "Sellers are forbidden from purchasing tickets from their own listing.",
+    invalidRelationalReference: "Relational database reference is invalid or unpersisted."
   }
 };
 

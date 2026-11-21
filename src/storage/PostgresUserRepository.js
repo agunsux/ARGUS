@@ -411,6 +411,10 @@ class PostgresUserRepository extends UserRepository {
       fields.push(`last_login_at = $${idx++}`);
       values.push(updates.last_login_at);
     }
+    if (updates.metadata !== undefined) {
+      fields.push(`metadata = COALESCE(metadata, '{}'::jsonb) || $${idx++}::jsonb`);
+      values.push(typeof updates.metadata === 'string' ? updates.metadata : JSON.stringify(updates.metadata));
+    }
 
     if (fields.length === 0) return this.getUserById(id);
 

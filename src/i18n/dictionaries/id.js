@@ -151,7 +151,11 @@ const id = {
     submitBtn: "Daftarkan Tiket ke Tikum",
     submitting: "Mendaftarkan tiket...",
     mode1Notice: "Dana ditahan melalui mitra pembayaran resmi hingga syarat serah terima terpenuhi.",
-    mode2Notice: "Pembayaran pokok tiket dilakukan langsung antar pihak; TIKUM memproses biaya layanan platform."
+    mode2Notice: "Pembayaran pokok tiket dilakukan langsung antar pihak; TIKUM memproses biaya layanan platform.",
+    stepperStep1: "1. Akun & Verifikasi Email",
+    stepperStep2: "2. Profil & Identitas Penjual",
+    stepperStep3: "3. Detail Tiket & Bukti (Tahap A — Tanpa QR)",
+    autofillNotice: "Profil Penjual Terisi Otomatis"
   },
 
   dealRoom: {
@@ -350,6 +354,32 @@ const id = {
     blog: "Blog & Panduan"
   },
 
+  profile: {
+    pageTitle: "Profil & Keamanan Akun",
+    pageSubtitle: "Kelola identitas, verifikasi email, dan data rekening pencairan dana tiket.",
+    emailVerification: "Verifikasi Email",
+    emailVerified: "Email Terverifikasi",
+    emailUnverified: "Email Belum Terverifikasi",
+    resendVerification: "Kirim Ulang Email Verifikasi",
+    verificationSent: "Tautan verifikasi telah dikirim ke email Anda.",
+    cooldownNotice: "Tunggu sebelum mengirim ulang.",
+    personalInfo: "Informasi Pribadi & Kontak",
+    fullName: "Nama Lengkap Sesuai Identitas",
+    whatsapp: "Nomor WhatsApp Aktif",
+    cityOrAddress: "Kota / Alamat Lengkap",
+    sellerPayout: "Data Rekening Pencairan Penjual",
+    bankName: "Nama Bank Pencairan",
+    bankAccountNumber: "Nomor Rekening Bank",
+    bankAccountHolder: "Nama Pemilik Rekening",
+    identityDocRef: "Referensi Dokumen Identitas (KTP)",
+    saveBtn: "Simpan Profil",
+    saving: "Menyimpan...",
+    savedSuccess: "Profil berhasil diperbarui.",
+    autofillBadge: "Profil Terverifikasi & Terisi Otomatis",
+    buyerProportionalNote: "Untuk pembeli, kami hanya memerlukan kontak dasar (Nama, WhatsApp, dan Kota) sesuai prinsip minimisasi data UU PDP No. 27/2022.",
+    sellerCompleteBadge: "Profil Penjual Lengkap"
+  },
+
   errors: {
     generic: "Terjadi kesalahan sistem. Silakan coba beberapa saat lagi.",
     network: "Koneksi jaringan terputus. Periksa koneksi internet Anda.",
@@ -361,7 +391,11 @@ const id = {
     barcodeDuplicate: "Nomor barcode tiket ini telah terdaftar sebelumnya untuk event yang sama.",
     priceOutOfRange: "Harga jual tiket di luar batas toleransi yang diizinkan (maksimal +30% dari harga resmi promotor).",
     kycRequired: "Verifikasi identitas (KYC) wajib diselesaikan sebelum melakukan transaksi ini.",
-    orderExpired: "Batas waktu pembayaran pesanan telah habis (TTL kedaluwarsa)."
+    orderExpired: "Batas waktu pembayaran pesanan telah habis (TTL kedaluwarsa).",
+    emailVerificationRequired: "Verifikasi email wajib diselesaikan sebelum melakukan transaksi ini.",
+    sellerProfileIncomplete: "Profil penjual dan rekening pencairan wajib dilengkapi sebelum membuat listing.",
+    selfPurchaseForbidden: "Penjual dilarang membeli listing tiket miliknya sendiri.",
+    invalidRelationalReference: "Referensi relasional database tidak valid atau belum tersimpan."
   }
 };
 

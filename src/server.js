@@ -332,8 +332,13 @@ app.get('/admin/inbox', (req, res) => res.redirect(302, '/admin?tab=inbox'));
 const { businessProfile } = require('./config/businessProfile');
 app.get('/api/business-profile', (req, res) => res.json(businessProfile));
 
-app.get('/signup', (req, res) => res.sendFile(path.join(publicDir, 'signup.html'), sendFileOpts));
+app.get(['/register', '/signup'], (req, res) => res.sendFile(path.join(publicDir, 'signup.html'), sendFileOpts));
 app.get('/login', (req, res) => res.sendFile(path.join(publicDir, 'login.html'), sendFileOpts));
+app.get(['/profile', '/profile.html'], (req, res) => res.sendFile(path.join(publicDir, 'profile.html'), sendFileOpts));
+app.get('/verify-email', (req, res, next) => {
+  req.url = '/verify-email' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '');
+  require('./api/authRouter')(req, res, next);
+});
 app.get('/account', (req, res) => res.sendFile(path.join(publicDir, 'account.html'), sendFileOpts));
 app.get(['/deal/create', '/create'], (req, res) => res.sendFile(path.join(publicDir, 'create.html'), sendFileOpts));
 app.get(['/deal/:id', '/pay/:id'], (req, res) => res.sendFile(path.join(publicDir, 'pay.html'), sendFileOpts));

@@ -62,29 +62,84 @@ class ListingService {
     const { isPrelaunchListingMode } = require('../config/marketplaceMode');
     const isPrelaunch = isPrelaunchListingMode();
 
-    let profile = (state.seller_profiles || []).find(p => p.user_id === sellerId) || null;
+    let user = (state.users || []).find(u => u.id === sellerId);
+    let userRepo = null;
     try {
       const { getUserRepository } = require('../storage');
-      const userRepo = getUserRepository();
-      const dbProfile = await userRepo.getSellerProfile(sellerId);
-      if (dbProfile) {
-        if (!profile) {
-          if (!state.seller_profiles) state.seller_profiles = [];
-          state.seller_profiles.push(dbProfile);
+      userRepo = getUserRepository();
+      if (!user && userRepo) {
+        user = await userRepo.getUserById(sellerId);
+        if (user && !state.users.some(u => u.id === user.id)) state.users.push(user);
+      }
+    } catch (_) {}
+
+    if (!user) {
+      return { eligible: false, reason: 'Seller account not found', code: 'SELLER_NOT_FOUND' };
+    }
+
+    // Email verification gate (Deliverable B & C)
+    const isEmailVerified = Boolean(
+      user.email_verified ||
+      user.metadata?.email_verified ||
+      user.metadata?.email_verified_at ||
+      (user.email && user.status === 'ACTIVE' && user.metadata?.auth_provider === 'MAGIC_LINK')
+    );
+    if (!isEmailVerified) {
+      return {
+        eligible: false,
+        reason: 'Verifikasi email diperlukan sebelum membuat listing tiket.',
+        code: 'EMAIL_VERIFICATION_REQUIRED'
+      };
+    }
+
+    let profile = (state.seller_profiles || []).find(p => p.user_id === sellerId) || null;
+    if (userRepo) {
+      try {
+        const dbProfile = await userRepo.getSellerProfile(sellerId);
+        if (dbProfile) {
           profile = dbProfile;
+          if (!state.seller_profiles) state.seller_profiles = [];
+          const pIdx = state.seller_profiles.findIndex(p => p.user_id === sellerId);
+          if (pIdx >= 0) state.seller_profiles[pIdx] = { ...state.seller_profiles[pIdx], ...dbProfile };
+          else state.seller_profiles.push(dbProfile);
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw err;
         }
       }
-    } catch (err) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw err;
-      }
+    }
+
+    // Profile-first completeness check (Deliverable C2 & Test 2)
+    const meta = user.metadata || {};
+    const fullName = user.name || user.display_name || meta.full_name || '';
+    const phone = user.phone || meta.whatsapp || '';
+    const address = meta.address || meta.city || '';
+    const bankName = profile?.payout_bank || meta.payout_bank_name || '';
+    const acctNum = profile?.payout_account_masked || meta.payout_account_number || '';
+    const identityRef = profile?.nik_hash || meta.identity_doc_ref || profile?.requested_at || '';
+
+    const isProfileComplete = Boolean(
+      fullName.trim() &&
+      phone.trim() &&
+      address.trim() &&
+      bankName.trim() &&
+      acctNum.trim() &&
+      identityRef
+    );
+
+    if (!isProfileComplete) {
+      return {
+        eligible: false,
+        reason: 'Profil penjual, rekening pencairan, dan referensi identitas harus dilengkapi terlebih dahulu.',
+        code: 'SELLER_PROFILE_INCOMPLETE'
+      };
     }
 
     if (!profile) {
       // In pre-launch listing mode, eligible registered sellers can onboard immediately
       if (isPrelaunch) {
-        let user = (state.users || []).find(u => u.id === sellerId);
-        if (user && (user.status || 'ACTIVE').toUpperCase() !== 'SUSPENDED') {
+        if ((user.status || 'ACTIVE').toUpperCase() !== 'SUSPENDED') {
           profile = {
             user_id: sellerId,
             kyc_status: 'REGISTERED',
@@ -105,7 +160,7 @@ class ListingService {
     }
 
     // In live mode, KYC must be strictly VERIFIED before listing.
-    // In pre-launch mode, ticket listing collection is open for registered sellers without requiring bank details.
+    // In pre-launch mode, ticket listing collection is open for registered sellers once profile is completed.
     if (!isPrelaunch && profile.kyc_status !== 'VERIFIED') {
       return {
         eligible: false,
@@ -267,17 +322,19 @@ class ListingService {
     }
 
     // 3. Prevent duplicate ticket barcodes (preserves existing behavior)
-    const effectiveBarcode = rawBarcode || `DRAFT-BARCODE-${uuidv4()}`;
-    const barcodeHash = this.hashBarcode(effectiveBarcode);
-    const duplicate = state.tickets.find(t => t.event_id === eventId && t.barcode_hash === barcodeHash);
-    if (duplicate && !isDraft && status !== LISTING_STATUS.DRAFT) {
-      const err = new Error('Duplicate ticket barcode detected. This ticket is already registered.');
-      err.code = 'DUPLICATE_TICKET_BARCODE';
-      throw err;
+    // Stage A Zero-QR: rawBarcode is optional! If omitted, no barcode is hashed.
+    const effectiveBarcode = rawBarcode ? String(rawBarcode).trim() : null;
+    const barcodeHash = effectiveBarcode ? this.hashBarcode(effectiveBarcode) : null;
+    if (barcodeHash) {
+      const duplicate = (state.tickets || []).find(t => t.event_id === eventId && t.barcode_hash === barcodeHash);
+      if (duplicate && !isDraft && status !== LISTING_STATUS.DRAFT) {
+        const err = new Error('Duplicate ticket barcode detected. This ticket is already registered.');
+        err.code = 'DUPLICATE_TICKET_BARCODE';
+        throw err;
+      }
     }
 
-    // 4. CANONICAL TICKET CREATION — delegated to TicketInventoryService
-    //    Parse seatInfo into structured fields for the canonical model
+    // 4. CANONICAL TICKET & LISTING DEFINITION
     const rowMatch = seatInfo ? seatInfo.match(/Row\s+(\w+)/i) : null;
     const seatMatch = seatInfo ? seatInfo.match(/Seat\s+(\w+)/i) : null;
     const sectionPart = seatInfo ? seatInfo.split(/[,\-–]/)[0].trim() : 'General';
@@ -295,65 +352,11 @@ class ListingService {
     }
     const normalizedSeatType = seatType || (seatInfo && /row|seat|kursi|baris/i.test(seatInfo) ? 'ASSIGNED' : 'GENERAL_ADMISSION');
 
-    let ticket;
-    try {
-      const { TicketInventoryService } = require('./marketplace/TicketInventoryService');
-      ticket = await TicketInventoryService.createTicket({
-        sellerId,
-        canonicalEventId: eventId,
-        ticketType: normalizedSeatType,
-        section: sectionPart,
-        row: rowMatch ? rowMatch[1] : null,
-        seat: seatMatch ? seatMatch[1] : null,
-        faceValue: parseInt(faceValue, 10),
-        currency: 'IDR',
-        barcodeHash,
-        rawBarcode: null // already hashed above
-      });
+    const ticketId = `tkt-${uuidv4()}`;
+    const listingId = `list-${uuidv4()}`;
 
-      // Immediately submit for verification (legacy flow auto-submits)
-      await TicketInventoryService.submitForVerification(
-        ticket.ticket_id || ticket.id,
-        sellerId,
-        evidenceBundleId
-      );
-
-      // Preserve backward-compatible ticket shape expected by existing tests
-      ticket.seat_info = seatInfo;
-      ticket.price = parseInt(price, 10);
-      ticket.face_value = parseInt(faceValue, 10);
-      ticket.quantity = qty;
-    } catch (delegationErr) {
-      // If TicketInventoryService throws DUPLICATE_TICKET_BARCODE, propagate as-is.
-      if (delegationErr.code === 'DUPLICATE_TICKET_BARCODE') {
-        throw delegationErr;
-      }
-
-      // Legacy fallback: direct ticket creation (temporary safety net)
-      const fallbackTicketId = `tkt-${uuidv4()}`;
-      ticket = {
-        id: fallbackTicketId,
-        ticket_id: fallbackTicketId,
-        event_id: eventId,
-        current_owner_id: sellerId,
-        seller_id: sellerId,
-        status: 'PENDING_VERIFICATION',
-        seat_info: seatInfo,
-        face_value: parseInt(faceValue),
-        price: parseInt(price),
-        barcode_hash: barcodeHash,
-        quantity: qty
-      };
-      state.tickets.push(ticket);
-    }
-
-    const ticketId = ticket.ticket_id || ticket.id;
-
-    // 5. Create Listing entity (listing creation stays in ListingService)
-    // @PERSISTENCE_BOUNDARY
     const isUserCreatedEvent = event.source === 'USER_CREATED';
     const isEventUnverified = !event.is_verified;
-    const listingId = `list-${uuidv4()}`;
 
     const { CanonicalFeeEngine } = require('../pricing/CanonicalFeeEngine');
     const feeBreakdown = CanonicalFeeEngine.calculateTicketFees({
@@ -365,23 +368,49 @@ class ListingService {
       ? LISTING_STATUS.DRAFT
       : (status || LISTING_STATUS.PENDING_VERIFICATION);
 
-    const listing = {
+    const initialTicketStatus = isDraft
+      ? 'DRAFT'
+      : 'OWNERSHIP_EVIDENCE_REVIEWED';
+
+    const ticketData = {
+      id: ticketId,
+      ticket_id: ticketId,
+      canonical_event_id: eventId,
+      event_id: eventId,
+      seller_id: sellerId,
+      original_owner_id: sellerId,
+      current_owner_id: sellerId,
+      ticket_type: normalizedSeatType,
+      section: sectionPart,
+      row_id: rowMatch ? rowMatch[1] : null,
+      seat: seatMatch ? seatMatch[1] : null,
+      face_value: parseInt(faceValue, 10),
+      currency: 'IDR',
+      ticket_format: 'E_TICKET',
+      transfer_method: 'MOBILE_TRANSFER',
+      status: initialTicketStatus,
+      barcode_hash: barcodeHash || null,
+      metadata: {
+        stage: 'STAGE_A_NO_QR',
+        verification_status: 'OWNERSHIP_EVIDENCE_REVIEWED',
+        qr_payload: null,
+        evidence_bundle_id: evidenceBundleId || null,
+        quantity: qty,
+        seat_info: seatInfo,
+        seller_notes: sellerNotes || null
+      }
+    };
+
+    const listingData = {
       id: listingId,
-      listing_id: listingId,
       ticket_id: ticketId,
       seller_id: sellerId,
-      event_id: eventId,
-      face_value: parseInt(faceValue),
-      price: parseInt(price),
+      canonical_event_id: eventId,
+      price: parseInt(price, 10),
+      currency: 'IDR',
+      status: initialStatus,
       seat_info: seatInfo,
-      seat_type: normalizedSeatType,
-      quantity: qty,
-      total_quantity: qty,
-      available_quantity: qty,
-      sold_quantity: 0,
-      reserved_quantity: 0,
-      fulfillment_type: normalizedFulfillment,
-      pic_assistance_status: resolvedPicStatus,
+      face_value: parseInt(faceValue, 10),
       pricing: {
         fee_policy_version: feeBreakdown.fee_policy_version,
         ticket_price: feeBreakdown.ticket_price,
@@ -394,33 +423,19 @@ class ListingService {
         buyer_total: feeBreakdown.buyer_total,
         currency: feeBreakdown.currency
       },
-      status: initialStatus,
-      review_status: needsManualReview ? 'NEEDS_MANUAL_REVIEW' : 'NORMAL',
-      needs_manual_review: needsManualReview,
-      rejection_reason: null,
-      correction_reason: null,
-      seller_notes: sellerNotes || null,
-      evidence_bundle_id: evidenceBundleId || null,
-      user_created_event: isUserCreatedEvent,
-      event_verification_warning: isEventUnverified ? 'Event dibuat oleh pengguna – belum diverifikasi resmi' : null,
-      created_at: new Date().toISOString()
-    };
-    state.listings.push(listing);
-
-    try {
-      const { getMarketplaceRepository } = require('../storage');
-      const marketplaceRepo = getMarketplaceRepository();
-      await marketplaceRepo.createListing({
-        id: listingId,
-        ticket_id: ticketId,
-        seller_id: sellerId,
-        canonical_event_id: eventId,
-        price: parseInt(price, 10),
-        currency: 'IDR',
-        status: initialStatus,
-        seat_info: seatInfo,
-        face_value: parseInt(faceValue, 10),
-        pricing: listing.pricing,
+      quantity: qty,
+      total_quantity: qty,
+      available_quantity: qty,
+      sold_quantity: 0,
+      reserved_quantity: 0,
+      fulfillment_type: normalizedFulfillment,
+      pic_assistance_status: resolvedPicStatus,
+      seat_type: normalizedSeatType,
+      expires_at: null,
+      metadata: {
+        evidence_bundle_id: evidenceBundleId || null,
+        seller_notes: sellerNotes || null,
+        user_created_event: isUserCreatedEvent,
         quantity: qty,
         total_quantity: qty,
         available_quantity: qty,
@@ -428,50 +443,89 @@ class ListingService {
         reserved_quantity: 0,
         fulfillment_type: normalizedFulfillment,
         pic_assistance_status: resolvedPicStatus,
-        seat_type: normalizedSeatType,
-        expires_at: null,
-        metadata: {
-          evidence_bundle_id: evidenceBundleId || null,
-          seller_notes: sellerNotes || null,
-          user_created_event: isUserCreatedEvent,
-          quantity: qty,
-          total_quantity: qty,
-          available_quantity: qty,
-          sold_quantity: 0,
-          reserved_quantity: 0,
-          fulfillment_type: normalizedFulfillment,
-          pic_assistance_status: resolvedPicStatus,
-          seat_type: normalizedSeatType
-        }
-      });
-    } catch (repoErr) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw repoErr;
+        seat_type: normalizedSeatType
       }
+    };
+
+    // 5. ATOMIC PARENT-FIRST PERSISTENCE (Zero Orphan FKs)
+    const { getMarketplaceRepository } = require('../storage');
+    const marketplaceRepo = getMarketplaceRepository();
+
+    let persistedEntities;
+    try {
+      if (typeof marketplaceRepo.createTicketAndListing === 'function') {
+        persistedEntities = await marketplaceRepo.createTicketAndListing({ ticketData, listingData });
+      } else {
+        const persistedTicket = await marketplaceRepo.createTicket(ticketData);
+        try {
+          const persistedListing = await marketplaceRepo.createListing({
+            ...listingData,
+            ticket_id: persistedTicket.id
+          });
+          persistedEntities = { ticket: persistedTicket, listing: persistedListing };
+        } catch (innerErr) {
+          if (typeof marketplaceRepo.deleteTicket === 'function') {
+            await marketplaceRepo.deleteTicket(persistedTicket.id).catch(() => {});
+          }
+          throw innerErr;
+        }
+      }
+    } catch (repoErr) {
+      // Never swallow ticket failure or create orphan listings with unpersisted ticket_id!
+      throw repoErr;
     }
 
-    // 6. Audit log
-    await recordAuditLog('LISTING', listingId, 'SUBMITTED_FOR_VERIFICATION', sellerId, {
-      ticket_id: ticketId,
+    const createdTicket = {
+      ...ticketData,
+      id: persistedEntities?.ticket?.id || ticketId,
+      ticket_id: persistedEntities?.ticket?.id || ticketId,
+      seat_info: seatInfo,
+      price: parseInt(price, 10),
+      face_value: parseInt(faceValue, 10),
+      quantity: qty
+    };
+    if (!state.tickets) state.tickets = [];
+    state.tickets.push(createdTicket);
+
+    const createdListing = {
+      ...listingData,
+      id: persistedEntities?.listing?.id || listingId,
+      listing_id: persistedEntities?.listing?.id || listingId,
+      ticket_id: createdTicket.id,
       event_id: eventId,
-      price: parseInt(price),
+      review_status: needsManualReview ? 'NEEDS_MANUAL_REVIEW' : 'NORMAL',
+      needs_manual_review: needsManualReview,
+      rejection_reason: null,
+      correction_reason: null,
+      user_created_event: isUserCreatedEvent,
+      event_verification_warning: isEventUnverified ? 'Event dibuat oleh pengguna – belum diverifikasi resmi' : null,
+      created_at: new Date().toISOString()
+    };
+    if (!state.listings) state.listings = [];
+    state.listings.push(createdListing);
+
+    // 6. Audit log
+    await recordAuditLog('LISTING', createdListing.id, 'SUBMITTED_FOR_VERIFICATION', sellerId, {
+      ticket_id: createdTicket.id,
+      event_id: eventId,
+      price: parseInt(price, 10),
       quantity: qty,
       fulfillment_type: normalizedFulfillment,
       barcode_hash: barcodeHash,
       canonical_delegation: true
     });
 
-    // 7. Operational Notification to admin@tikum.app (NEW_SELLER_LISTING & LISTING_MODERATION_REQUIRED)
+    // 7. Operational Notification to admin@tikum.app
     try {
       const { OperationalNotificationService } = require('./admin/OperationalNotificationService');
       await OperationalNotificationService.notifySellerListingCreated({
-        listing,
+        listing: createdListing,
         seller: null,
         event: null
       }).catch(err => console.warn('[ListingService] Operational notification warning:', err.message));
     } catch (_) {}
 
-    return { ticket, listing };
+    return { ticket: createdTicket, listing: createdListing };
   }
 
   /**

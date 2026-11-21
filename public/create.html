@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/pricing.js"></script>
+  <script src="/js/draft-store.js"></script>
 </head>
 <body>
 
@@ -245,36 +246,185 @@
     </div>
 
     <!-- Main Creation Form Card -->
-    <!-- Stepper Indicator (Event -> Detail Tiket -> Bukti Tiket -> Harga -> Konfirmasi) -->
-    <div class="stepper-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; background:var(--surface); border:1px solid var(--line-300); padding:16px 20px; border-radius:var(--radius-card); box-shadow:var(--shadow-soft); overflow-x:auto;">
-      <div class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
-        <div style="width:26px; height:26px; border-radius:50%; background:var(--terra-600); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">1</div>
-        <span style="font-size:12.5px; font-weight:700; color:var(--ink-900);">Event</span>
+    <!-- 3-Step Progress Header (Deliverable C2) -->
+    <div id="createStepper" class="stepper-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; background:var(--surface); border:1px solid var(--line-300); padding:16px 20px; border-radius:var(--radius-card); box-shadow:var(--shadow-soft); overflow-x:auto;">
+      <div id="stepItem1" class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
+        <div id="stepNum1" style="width:26px; height:26px; border-radius:50%; background:var(--terra-600); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">1</div>
+        <span id="stepLabel1" style="font-size:12.5px; font-weight:700; color:var(--ink-900);" data-i18n="dealCreate.stepperStep1">1. Akun &amp; Verifikasi Email</span>
       </div>
       <div style="height:1px; flex:1; min-width:16px; background:var(--line-300); margin:0 8px;"></div>
-      <div class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
-        <div style="width:26px; height:26px; border-radius:50%; background:var(--sand-50); border:1px solid var(--line-300); color:var(--ink-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">2</div>
-        <span style="font-size:12.5px; color:var(--ink-700);">Detail Tiket</span>
+      <div id="stepItem2" class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
+        <div id="stepNum2" style="width:26px; height:26px; border-radius:50%; background:var(--sand-50); border:1px solid var(--line-300); color:var(--ink-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">2</div>
+        <span id="stepLabel2" style="font-size:12.5px; color:var(--ink-700);" data-i18n="dealCreate.stepperStep2">2. Profil &amp; Identitas Penjual</span>
       </div>
       <div style="height:1px; flex:1; min-width:16px; background:var(--line-300); margin:0 8px;"></div>
-      <div class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
-        <div style="width:26px; height:26px; border-radius:50%; background:var(--sand-50); border:1px solid var(--line-300); color:var(--ink-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">3</div>
-        <span style="font-size:12.5px; color:var(--ink-700);">Bukti Tiket</span>
-      </div>
-      <div style="height:1px; flex:1; min-width:16px; background:var(--line-300); margin:0 8px;"></div>
-      <div class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
-        <div style="width:26px; height:26px; border-radius:50%; background:var(--sand-50); border:1px solid var(--line-300); color:var(--ink-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">4</div>
-        <span style="font-size:12.5px; color:var(--ink-700);">Harga</span>
-      </div>
-      <div style="height:1px; flex:1; min-width:16px; background:var(--line-300); margin:0 8px;"></div>
-      <div class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
-        <div style="width:26px; height:26px; border-radius:50%; background:var(--sand-50); border:1px solid var(--line-300); color:var(--ink-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">5</div>
-        <span style="font-size:12.5px; color:var(--ink-700);">Konfirmasi</span>
+      <div id="stepItem3" class="stepper-item" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
+        <div id="stepNum3" style="width:26px; height:26px; border-radius:50%; background:var(--sand-50); border:1px solid var(--line-300); color:var(--ink-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">3</div>
+        <span id="stepLabel3" style="font-size:12.5px; color:var(--ink-700);" data-i18n="dealCreate.stepperStep3">3. Detail Tiket &amp; Bukti (Tahap A — Tanpa QR)</span>
       </div>
     </div>
 
-    <div id="formCard" class="card">
+    <!-- Step 1 Gating Card (Unauthenticated or Email Unverified) -->
+    <div id="step1Card" class="card" style="display:none; padding:28px 24px; margin-bottom:24px;">
+      <!-- Unauthenticated View -->
+      <div id="step1UnauthView" style="display:none; text-align:center; padding:16px 8px;">
+        <div style="width:52px; height:52px; border-radius:50%; background:var(--sand-100); border:1px solid var(--line-300); display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--terra-600); margin:0 auto 16px;">
+          <i class="fa-solid fa-user-lock"></i>
+        </div>
+        <h2 style="font-size:20px; font-weight:800; margin-bottom:8px; color:var(--ink-900);">Masuk atau Buat Akun Penjual</h2>
+        <p style="font-size:14px; color:var(--text-muted); max-width:480px; margin:0 auto 24px; line-height:1.5;">
+          Untuk menjaga keamanan transaksi sekunder dan perlindungan anti-penipuan, Anda wajib memiliki akun Tikum terverifikasi sebelum dapat membuat listing tiket.
+        </p>
+        <a href="/login?role=seller&next=/deal/create" class="btn btn-primary" style="background-color:var(--terra-600); color:#fff; border:none; text-decoration:none; padding:12px 28px; font-size:14px; font-weight:700; display:inline-flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-right-to-bracket"></i> Masuk / Daftar Akun Penjual
+        </a>
+      </div>
+
+      <!-- Email Unverified View -->
+      <div id="step1UnverifiedView" style="display:none;">
+        <div class="notice-box notice-warning" style="margin-bottom:16px;">
+          <i class="fa-solid fa-triangle-exclamation" style="font-size:22px;"></i>
+          <div style="flex:1;">
+            <strong style="font-size:14px; display:block; margin-bottom:4px;">Verifikasi Email Diperlukan</strong>
+            <p style="font-size:13px; line-height:1.5; margin:0 0 10px 0;">
+              Tautan verifikasi telah dikirimkan ke email Anda (<span id="step1EmailText" class="mono" style="font-weight:700;">-</span>). Sesuai kebijakan keamanan Tikum, verifikasi email wajib diselesaikan sebelum Anda dapat menjual tiket.
+            </p>
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <button type="button" id="btnStep1Resend" class="btn btn-secondary btn-sm" onclick="handleStep1ResendVerification()">
+                <i class="fa-solid fa-paper-plane"></i> Kirim Ulang Tautan Verifikasi
+              </button>
+              <span id="step1ResendCountdown" style="font-size:12px; color:var(--text-muted); display:none;"></span>
+            </div>
+            <div id="step1ResendFeedback" style="font-size:12px; margin-top:8px; display:none;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 Gating Card (Seller Identity & Payout Profile Form) -->
+    <div id="step2Card" class="card" style="display:none; padding:28px 24px; margin-bottom:24px;">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+        <div style="width:44px; height:44px; border-radius:50%; background:var(--sand-100); border:1px solid var(--line-300); display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--terra-600);">
+          <i class="fa-solid fa-id-card"></i>
+        </div>
+        <div>
+          <h2 style="font-size:18px; font-weight:800; color:var(--ink-900); margin:0;">Lengkapi Profil &amp; Rekening Penjual Sekali Saja</h2>
+          <div style="font-size:13px; color:var(--text-muted); margin-top:2px;">Verifikasi Once, Auto-Fill Forever. Data ini disimpan aman sesuai UU PDP No. 27/2022.</div>
+        </div>
+      </div>
+
+      <p style="font-size:12.5px; color:var(--ink-700); line-height:1.6; margin-bottom:18px; background:var(--sand-50); padding:12px 14px; border-radius:var(--radius-card); border:1px solid var(--line-300);">
+        <i class="fa-solid fa-shield-halved" style="color:var(--terra-600);"></i>
+        Data identitas dan rekening bank diperlukan untuk verifikasi keaslian kepemilikan tiket dan pencairan dana hasil penjualan tiket Anda. Cukup isi satu kali, formulir listing berikutnya akan langsung terisi otomatis.
+      </p>
+
+      <form id="step2ProfileForm" onsubmit="handleSaveStep2Profile(event)">
+        <div class="grid-2" style="margin-bottom:12px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="step2FullName" style="font-size:12px; font-weight:600; color:var(--ink-900);">Nama Lengkap Sesuai KTP *</label>
+            <input type="text" id="step2FullName" class="form-control" placeholder="Nama lengkap sesuai identitas resmi" required>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="step2Whatsapp" style="font-size:12px; font-weight:600; color:var(--ink-900);">Nomor WhatsApp Aktif *</label>
+            <input type="tel" id="step2Whatsapp" class="form-control" placeholder="0812xxxxxxxx" required>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:12px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="step2City" style="font-size:12px; font-weight:600; color:var(--ink-900);">Kota Domisili *</label>
+            <input type="text" id="step2City" class="form-control" placeholder="Contoh: Jakarta Selatan" required>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="step2Address" style="font-size:12px; font-weight:600; color:var(--ink-900);">Alamat Lengkap</label>
+            <input type="text" id="step2Address" class="form-control" placeholder="Alamat domisili">
+          </div>
+        </div>
+
+        <div style="padding-top:14px; border-top:1px solid var(--line-300); margin-top:16px;">
+          <h4 style="font-size:14px; font-weight:700; color:var(--ink-900); margin-bottom:10px;">
+            <i class="fa-solid fa-building-columns" style="color:var(--terra-600);"></i> Rekening Bank Pencairan Dana (Payout)
+          </h4>
+          <div class="grid-2" style="margin-bottom:12px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="step2BankName" style="font-size:12px; font-weight:600; color:var(--ink-900);">Bank Pencairan *</label>
+              <select id="step2BankName" class="form-control" required>
+                <option value="">-- Pilih Bank Pencairan --</option>
+                <option value="BCA">BCA (Bank Central Asia)</option>
+                <option value="MANDIRI">Bank Mandiri</option>
+                <option value="BNI">BNI (Bank Negara Indonesia)</option>
+                <option value="BRI">BRI (Bank Rakyat Indonesia)</option>
+                <option value="PERMATA">Bank Permata</option>
+                <option value="CIMB">CIMB Niaga</option>
+                <option value="BSI">BSI (Bank Syariah Indonesia)</option>
+                <option value="JAGO">Bank Jago</option>
+                <option value="SEABANK">SeaBank</option>
+                <option value="LAINNYA">Bank Lainnya</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="step2AccountHolder" style="font-size:12px; font-weight:600; color:var(--ink-900);">Nama Pemilik Rekening *</label>
+              <input type="text" id="step2AccountHolder" class="form-control" placeholder="Nama pemilik rekening bank" required>
+            </div>
+          </div>
+
+          <div class="grid-2" style="margin-bottom:14px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="step2AccountNumber" style="font-size:12px; font-weight:600; color:var(--ink-900);">Nomor Rekening Bank *</label>
+              <input type="text" id="step2AccountNumber" class="form-control mono" placeholder="Contoh: 1234567890" required>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="step2NikLast4" style="font-size:12px; font-weight:600; color:var(--ink-900);">4 Digit Terakhir NIK KTP *</label>
+              <input type="text" id="step2NikLast4" class="form-control mono" maxlength="4" pattern="[0-9]{4}" placeholder="Contoh: 4821" required>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px; display:flex; align-items:flex-start; gap:8px;">
+          <input type="checkbox" id="step2PdpConsent" required checked style="accent-color:var(--terra-600); width:16px; height:16px; margin-top:2px;">
+          <label for="step2PdpConsent" style="font-size:12px; color:var(--ink-700); cursor:pointer;">
+            Saya menyatakan data di atas adalah benar untuk verifikasi kepemilikan tiket dan persetujuan pencairan sesuai UU PDP No. 27/2022.
+          </label>
+        </div>
+
+        <div id="step2FeedbackMsg" class="notice-box notice-warning" style="display:none; margin-top:14px;"></div>
+
+        <div style="margin-top:16px;">
+          <button type="submit" id="btnSubmitStep2" class="btn btn-primary" style="background-color:var(--terra-600); color:#fff; border:none; padding:12px 24px; font-size:14px; font-weight:700;">
+            <i class="fa-solid fa-arrow-right"></i> Simpan Profil &amp; Lanjutkan ke Detail Tiket
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Step 3: Main Creation Form Card -->
+    <div id="formCard" class="card" style="display:none;">
       <form id="listingForm" onsubmit="handleCreateListing(event)">
+        
+        <!-- Verified Seller Auto-Fill Banner -->
+        <div id="sellerAutoFillBanner" class="notice-box notice-info" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:20px; background:rgba(16, 185, 129, 0.08); border-color:#10B981;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <i class="fa-solid fa-circle-check" style="color:#10B981; font-size:18px;"></i>
+            <div>
+              <strong style="color:#10B981; font-size:13px;" data-i18n="dealCreate.autofillNotice">Profil Penjual Terisi Otomatis ✓</strong>
+              <div id="sellerAutoFillDetails" style="font-size:12px; color:var(--text-muted); margin-top:2px;">-</div>
+            </div>
+          </div>
+          <a href="/profile" class="btn btn-secondary btn-sm" style="font-size:11px; padding:4px 10px; text-decoration:none;">
+            <i class="fa-solid fa-user-pen"></i> Ubah di Profil
+          </a>
+        </div>
+
+        <!-- Draft Restored Banner -->
+        <div id="draftRestoredBanner" class="notice-box notice-warning" style="display:none; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:20px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-clock-rotate-left" style="color:#f59e0b;"></i>
+            <span style="font-size:12.5px;">Draf isian tiket sebelumnya berhasil dipulihkan secara otomatis.</span>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="clearSavedDraft()" style="font-size:11px; padding:4px 8px;">
+            <i class="fa-solid fa-trash-can"></i> Hapus Draf
+          </button>
+        </div>
         
         <!-- Section 1: Event Binding -->
         <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
@@ -432,24 +582,26 @@
           </div>
         </div>
 
-        <!-- Section 3: Anti-Duplicate Security -->
+        <!-- Section 3: Anti-Duplicate Security (Tahap A — Zero-QR) -->
         <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
           <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
-            <span data-i18n="create.wizardStep3">3. Barcode &amp; Protokol Keamanan</span>
+            <span data-i18n="create.wizardStep3">3. Bukti Kepemilikan Tiket (Tahap A — Tanpa QR)</span>
+          </div>
+
+          <div class="notice-box notice-info" style="margin-bottom: 16px; background: rgba(56, 189, 248, 0.08); border-color: rgba(56, 189, 248, 0.3);">
+            <i class="fa-solid fa-qrcode" style="color: var(--cyan); font-size: 20px;"></i>
+            <div>
+              <strong style="color: #38bdf8;">Tahap A — Tanpa QR Code Asli:</strong>
+              <p style="margin: 4px 0 0 0; font-size: 12px; line-height: 1.5; color: var(--text-muted);">
+                Untuk mencegah duplikasi atau penyalahgunaan tiket, Anda <strong>TIDAK</strong> diminta mengunggah QR Code atau Barcode asli saat membuat penawaran. Anda hanya perlu mengunggah bukti pembelian resmi promotor (PDF/tangkapan layar e-voucher) untuk ditinjau oleh tim kurasi Tikum. QR code asli baru diserahkan pada Tahap B setelah pesanan dibayar.
+              </p>
+            </div>
           </div>
 
           <div class="form-group">
-            <label for="barcode" data-i18n="create.barcodeLabel">Nomor Barcode / Serial / Kode Unik Tiket *</label>
-            <input 
-              type="text" 
-              id="barcode" 
-              class="form-control mono" 
-              placeholder="Masukkan kode unik barcode / e-voucher Anda" data-i18n-placeholder="create.barcodePlaceholder"
-              required
-            >
-            <span style="font-size: 11px; color: var(--text-dim);">
-              <i class="fa-solid fa-lock"></i> <span data-i18n="create.barcodeSub">Barcode akan otomatis di-hash dengan kriptografi SHA-256 pada server untuk mencegah penjualan berulang.</span>
-            </span>
+            <label for="evidenceFile" data-i18n="create.evidenceLabel">Bukti Pembelian Resmi Promotor / E-Voucher PDF *</label>
+            <input type="file" id="evidenceFile" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+            <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.evidenceSub">Dokumen dienkripsi AES-256 (UU PDP No. 27/2022)</span>
           </div>
 
           <div class="grid-2">
@@ -463,77 +615,25 @@
               </select>
             </div>
 
-            <div class="form-group" style="grid-column: 1 / -1; margin-top:10px; padding:16px; background:var(--sand-50); border:1px solid var(--line-300); border-radius:var(--radius-card);">
-              <label style="font-size:13px; font-weight:700; color:var(--ink-900); display:block; margin-bottom:6px;">
-                <i class="fa-solid fa-id-card" style="color:var(--terra-600);"></i> <span data-i18n="create.kycSectionTitle">Verifikasi Identitas Penjual &amp; Perlindungan UU PDP No. 27/2022</span>
-              </label>
-              <p style="font-size:12px; color:var(--ink-700); line-height:1.6; margin-bottom:12px;" data-i18n="create.kycSectionDesc">
-                Sesuai ketentuan UU Perlindungan Data Pribadi (UU PDP No. 27/2022), dokumen foto identitas KTP dan swafoto wajah hanya diproses untuk tujuan verifikasi kepemilikan tiket resmi dan pencegahan penjualan tiket duplikat di turnstile venue. Data tersimpan dengan enkripsi standar industri dan tidak diserahkan ke pihak luar tanpa izin Anda.
-              </p>
-              <div class="grid-2">
-                <div>
-                  <label for="ktpFile" style="font-size:12px; font-weight:600; color:var(--ink-900);" data-i18n="create.ktpLabel">Foto KTP / Kartu Identitas</label>
-                  <input type="file" id="ktpFile" class="form-control" accept="image/*,.pdf" style="font-size:12px; margin-top:4px;">
-                </div>
-                <div>
-                  <label for="selfieFile" style="font-size:12px; font-weight:600; color:var(--ink-900);" data-i18n="create.selfieLabel">Swafoto / Foto Wajah Penjual</label>
-                  <input type="file" id="selfieFile" class="form-control" accept="image/*" style="font-size:12px; margin-top:4px;">
-                </div>
-              </div>
-              <div style="margin-top:12px; display:flex; align-items:flex-start; gap:8px;">
-                <input type="checkbox" id="pdpConsent" required checked style="accent-color:var(--terra-600); width:16px; height:16px; margin-top:2px;">
-                <label for="pdpConsent" style="font-size:12px; color:var(--ink-700); cursor:pointer;" data-i18n="create.pdpConsent">
-                  Saya menyetujui pemrosesan data identitas untuk verifikasi keabsahan tiket sesuai UU Perlindungan Data Pribadi (UU PDP No. 27/2022).
-                </label>
-              </div>
-            </div>
-
             <div class="form-group">
-              <label for="evidenceFile" data-i18n="create.evidenceLabel">Bukti Pembelian / PDF Tiket (Opsional)</label>
-              <input type="file" id="evidenceFile" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
-              <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.evidenceSub">Dokumen dienkripsi AES-256 (UU PDP No. 27/2022)</span>
+              <label for="barcode" data-i18n="create.barcodeLabel">Nomor Serial / Barcode Unik (Opsional di Tahap A)</label>
+              <input 
+                type="text" 
+                id="barcode" 
+                class="form-control mono" 
+                placeholder="Nomor serial bukti (opsional)" data-i18n-placeholder="create.barcodePlaceholder"
+              >
+              <span style="font-size: 11px; color: var(--text-dim);">
+                <i class="fa-solid fa-lock"></i> <span data-i18n="create.barcodeSub">Akan di-hash dengan kriptografi SHA-256 pada server untuk perlindungan anti-duplikasi.</span>
+              </span>
             </div>
           </div>
-        </div>
 
-        <!-- Section 4: Session-Bound Seller Identity & Verification Status -->
-        <div style="margin-bottom: 24px;">
-          <div class="form-group">
-            <label data-i18n="create.sellerIdLabel">Identitas Akun Penjual &amp; Status Verifikasi KYC</label>
-            <div id="sellerSessionCard" style="background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; padding: 14px 16px;">
-              <div id="sellerSessionStatusText" style="font-size: 13px; color: var(--text-muted);">
-                <i class="fa-solid fa-circle-notch fa-spin"></i> Memeriksa sesi login &amp; status kelayakan penjual...
-              </div>
-              <div id="sellerOnboardingInlineForm" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08);">
-                <div style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 8px;">Ajukan Onboarding Penjual (Verifikasi Identitas)</div>
-                <div class="grid-2" style="margin-bottom: 10px;">
-                  <div>
-                    <label for="onboardFullName" style="font-size: 11px;">Nama Lengkap Sesuai Identitas *</label>
-                    <input type="text" id="onboardFullName" class="form-control" placeholder="Nama lengkap sesuai KTP">
-                  </div>
-                  <div>
-                    <label for="onboardPhone" style="font-size: 11px;">Nomor WhatsApp Aktif *</label>
-                    <input type="text" id="onboardPhone" class="form-control" placeholder="0812xxxxxxxx">
-                  </div>
-                </div>
-                <div style="margin-bottom: 10px;">
-                  <label for="onboardNikLast4" style="font-size: 11px;">4 Digit Terakhir NIK KTP *</label>
-                  <input type="text" id="onboardNikLast4" class="form-control mono" maxlength="4" pattern="[0-9]{4}" placeholder="Contoh: 4821">
-                </div>
-                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                  <button type="button" id="btnSubmitInlineOnboarding" class="btn btn-secondary btn-sm" onclick="handleInlineOnboarding()">
-                    <i class="fa-solid fa-id-card"></i> Kirim Pengajuan Verifikasi Penjual
-                  </button>
-                  <a href="/app/seller" class="btn btn-secondary btn-sm" style="text-decoration: none;">
-                    <i class="fa-solid fa-store"></i> Buka Dashboard Penjual
-                  </a>
-                </div>
-                <div id="onboardInlineFeedback" style="font-size: 12px; margin-top: 8px; display: none;"></div>
-              </div>
-            </div>
-            <span style="font-size: 11px; color: var(--text-dim); display: block; margin-top: 6px;">
-              <span data-i18n="create.sellerIdSub">Identitas penjual diambil langsung dari sesi login terautentikasi. Sistem Tikum mewajibkan status KYC penjual <code>VERIFIED</code> sebelum listing dapat dibuat.</span>
-            </span>
+          <div style="margin-top:12px; display:flex; align-items:flex-start; gap:8px;">
+            <input type="checkbox" id="pdpConsent" required checked style="accent-color:var(--terra-600); width:16px; height:16px; margin-top:2px;">
+            <label for="pdpConsent" style="font-size:12px; color:var(--ink-700); cursor:pointer;" data-i18n="create.pdpConsent">
+              Saya menyetujui pemrosesan data identitas untuk verifikasi keabsahan tiket sesuai UU Perlindungan Data Pribadi (UU PDP No. 27/2022).
+            </label>
           </div>
         </div>
 
@@ -823,168 +923,343 @@
       }
     }
 
+    function saveFormDraft() {
+      if (!window.TikumDraftStore) return;
+      const draft = {
+        eventId: document.getElementById('eventSelect')?.value || '',
+        quantity: document.getElementById('ticketQuantity')?.value || '1',
+        seatType: document.getElementById('seatType')?.value || 'GENERAL_ADMISSION',
+        seatInfo: document.getElementById('seatInfo')?.value || '',
+        faceValue: document.getElementById('faceValue')?.value || '',
+        sellingPrice: document.getElementById('sellingPrice')?.value || '',
+        fulfillmentType: document.querySelector('input[name="fulfillmentType"]:checked')?.value || 'TIKUM_VENUE_PIC',
+        admissionProtocol: document.getElementById('admissionProtocol')?.value || 'QR_SCAN_ONLY'
+      };
+      window.TikumDraftStore.saveDraft('seller_listing_create', draft);
+    }
+
+    function restoreFormDraft() {
+      if (!window.TikumDraftStore) return;
+      const draft = window.TikumDraftStore.getDraft('seller_listing_create');
+      if (!draft) return;
+
+      let restored = false;
+      if (draft.eventId && document.getElementById('eventSelect')) {
+        document.getElementById('eventSelect').value = draft.eventId;
+        handleEventSelected();
+        restored = true;
+      }
+      if (draft.quantity && document.getElementById('ticketQuantity')) {
+        document.getElementById('ticketQuantity').value = draft.quantity;
+        restored = true;
+      }
+      if (draft.seatType && document.getElementById('seatType')) {
+        document.getElementById('seatType').value = draft.seatType;
+        restored = true;
+      }
+      if (draft.seatInfo && document.getElementById('seatInfo')) {
+        document.getElementById('seatInfo').value = draft.seatInfo;
+        restored = true;
+      }
+      if (draft.faceValue && document.getElementById('faceValue')) {
+        document.getElementById('faceValue').value = draft.faceValue;
+        restored = true;
+      }
+      if (draft.sellingPrice && document.getElementById('sellingPrice')) {
+        document.getElementById('sellingPrice').value = draft.sellingPrice;
+        restored = true;
+      }
+      if (draft.admissionProtocol && document.getElementById('admissionProtocol')) {
+        document.getElementById('admissionProtocol').value = draft.admissionProtocol;
+      }
+      if (draft.fulfillmentType) {
+        const radio = document.querySelector(`input[name="fulfillmentType"][value="${draft.fulfillmentType}"]`);
+        if (radio) radio.checked = true;
+      }
+
+      calculateFeePreview();
+      const banner = document.getElementById('draftRestoredBanner');
+      if (banner && restored) {
+        banner.style.display = 'flex';
+      }
+    }
+
+    function clearSavedDraft() {
+      if (window.TikumDraftStore) {
+        window.TikumDraftStore.clearDraft('seller_listing_create');
+      }
+      const banner = document.getElementById('draftRestoredBanner');
+      if (banner) banner.style.display = 'none';
+    }
+
     let currentSellerSession = null;
+    let step1ResendCooldown = 0;
+    let step1ResendTimer = null;
+
+    function setStep(stepNum, status, profile) {
+      const stepNum1 = document.getElementById('stepNum1');
+      const stepNum2 = document.getElementById('stepNum2');
+      const stepNum3 = document.getElementById('stepNum3');
+      const stepLabel1 = document.getElementById('stepLabel1');
+      const stepLabel2 = document.getElementById('stepLabel2');
+      const stepLabel3 = document.getElementById('stepLabel3');
+
+      const step1Card = document.getElementById('step1Card');
+      const step1UnauthView = document.getElementById('step1UnauthView');
+      const step1UnverifiedView = document.getElementById('step1UnverifiedView');
+      const step2Card = document.getElementById('step2Card');
+      const formCard = document.getElementById('formCard');
+
+      // Reset
+      [stepNum1, stepNum2, stepNum3].forEach(el => {
+        if (el) {
+          el.style.background = 'var(--sand-50)';
+          el.style.color = 'var(--ink-700)';
+          el.style.border = '1px solid var(--line-300)';
+        }
+      });
+      [stepLabel1, stepLabel2, stepLabel3].forEach(el => {
+        if (el) el.style.color = 'var(--ink-700)';
+      });
+
+      if (stepNum === 1) {
+        if (stepNum1) {
+          stepNum1.style.background = 'var(--terra-600)';
+          stepNum1.style.color = '#fff';
+          stepNum1.innerText = '1';
+        }
+        if (stepLabel1) stepLabel1.style.color = 'var(--ink-900)';
+
+        if (step1Card) step1Card.style.display = 'block';
+        if (step2Card) step2Card.style.display = 'none';
+        if (formCard) formCard.style.display = 'none';
+
+        if (status === 'UNAUTHENTICATED') {
+          if (step1UnauthView) step1UnauthView.style.display = 'block';
+          if (step1UnverifiedView) step1UnverifiedView.style.display = 'none';
+        } else {
+          if (step1UnauthView) step1UnauthView.style.display = 'none';
+          if (step1UnverifiedView) step1UnverifiedView.style.display = 'block';
+          if (document.getElementById('step1EmailText') && profile) {
+            document.getElementById('step1EmailText').innerText = profile.email || '';
+          }
+        }
+      } else if (stepNum === 2) {
+        if (stepNum1) {
+          stepNum1.style.background = '#10b981';
+          stepNum1.style.color = '#fff';
+          stepNum1.innerHTML = '<i class="fa-solid fa-check"></i>';
+        }
+        if (stepNum2) {
+          stepNum2.style.background = 'var(--terra-600)';
+          stepNum2.style.color = '#fff';
+          stepNum2.innerText = '2';
+        }
+        if (stepLabel2) stepLabel2.style.color = 'var(--ink-900)';
+
+        if (step1Card) step1Card.style.display = 'none';
+        if (step2Card) step2Card.style.display = 'block';
+        if (formCard) formCard.style.display = 'none';
+
+        if (profile) {
+          if (document.getElementById('step2FullName') && !document.getElementById('step2FullName').value) {
+            document.getElementById('step2FullName').value = profile.full_name || '';
+          }
+          if (document.getElementById('step2Whatsapp') && !document.getElementById('step2Whatsapp').value) {
+            document.getElementById('step2Whatsapp').value = profile.whatsapp || '';
+          }
+          if (document.getElementById('step2City') && !document.getElementById('step2City').value) {
+            document.getElementById('step2City').value = profile.city || '';
+          }
+          if (document.getElementById('step2Address') && !document.getElementById('step2Address').value) {
+            document.getElementById('step2Address').value = profile.address || '';
+          }
+          if (document.getElementById('step2AccountHolder') && !document.getElementById('step2AccountHolder').value) {
+            document.getElementById('step2AccountHolder').value = profile.payout_account_holder || profile.full_name || '';
+          }
+        }
+      } else if (stepNum === 3) {
+        if (stepNum1) {
+          stepNum1.style.background = '#10b981';
+          stepNum1.style.color = '#fff';
+          stepNum1.innerHTML = '<i class="fa-solid fa-check"></i>';
+        }
+        if (stepNum2) {
+          stepNum2.style.background = '#10b981';
+          stepNum2.style.color = '#fff';
+          stepNum2.innerHTML = '<i class="fa-solid fa-check"></i>';
+        }
+        if (stepNum3) {
+          stepNum3.style.background = 'var(--terra-600)';
+          stepNum3.style.color = '#fff';
+          stepNum3.innerText = '3';
+        }
+        if (stepLabel3) stepLabel3.style.color = 'var(--ink-900)';
+
+        if (step1Card) step1Card.style.display = 'none';
+        if (step2Card) step2Card.style.display = 'none';
+        if (formCard) formCard.style.display = 'block';
+
+        if (profile) {
+          const detailsEl = document.getElementById('sellerAutoFillDetails');
+          if (detailsEl) {
+            const bankStr = profile.payout_bank_name ? `${profile.payout_bank_name} ${profile.payout_account_number || ''}` : 'Rekening Payout';
+            detailsEl.innerText = `${profile.full_name || profile.email} • ${profile.whatsapp || '-'} • ${bankStr}`;
+          }
+        }
+        restoreFormDraft();
+      }
+    }
 
     async function initSellerSession() {
-      const statusTextEl = document.getElementById('sellerSessionStatusText');
-      const inlineFormEl = document.getElementById('sellerOnboardingInlineForm');
-      const submitBtn = document.getElementById('btnSubmitListing');
-
       try {
-        const res = await fetch('/api/dashboard/seller', {
-          headers: { 'Accept': 'application/json' },
+        const res = await fetch('/api/auth/me/profile', {
           credentials: 'same-origin'
         });
 
         if (res.status === 401) {
           currentSellerSession = null;
-          inlineFormEl.style.display = 'none';
-          statusTextEl.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-              <div>
-                <strong style="color: #fbbf24;"><i class="fa-solid fa-lock"></i> Sesi Login Diperlukan</strong>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Anda harus masuk ke akun Tikum sebelum dapat mendaftarkan listing tiket atau mengajukan onboarding penjual.</div>
-              </div>
-              <a href="/login?returnTo=%2Fcreate" class="btn btn-primary btn-sm" style="text-decoration:none; background-color:var(--terra-600); color:#fff; border:none;">
-                <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Akun
-              </a>
-            </div>
-          `;
-          submitBtn.disabled = true;
+          setStep(1, 'UNAUTHENTICATED');
           return;
         }
 
         const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.user) {
-          statusTextEl.innerHTML = `<span style="color:#f87171;"><i class="fa-solid fa-triangle-exclamation"></i> ${escapeHtml(data.error || 'Gagal memuat status sesi penjual.')}</span>`;
-          submitBtn.disabled = true;
+        const profile = data.profile;
+        if (!res.ok || !profile) {
+          setStep(1, 'UNAUTHENTICATED');
           return;
         }
 
-        currentSellerSession = data.user;
-        const kycStatus = (data.user.kyc_status || 'UNVERIFIED').toUpperCase();
-        const emailOrId = escapeHtml(data.user.email || data.user.id);
-        const fullName = escapeHtml(data.user.full_name || '');
+        currentSellerSession = profile;
 
-        if (document.getElementById('onboardFullName') && !document.getElementById('onboardFullName').value && data.user.full_name) {
-          document.getElementById('onboardFullName').value = data.user.full_name;
-        }
-        if (document.getElementById('onboardPhone') && !document.getElementById('onboardPhone').value && data.user.phone) {
-          document.getElementById('onboardPhone').value = data.user.phone;
-        }
-
-        if (kycStatus === 'VERIFIED') {
-          inlineFormEl.style.display = 'none';
-          statusTextEl.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-              <div>
-                <div style="font-weight:700; color:#fff;">${fullName ? fullName + ' (' + emailOrId + ')' : emailOrId}</div>
-                <div class="mono" style="font-size:11px; color:var(--text-dim);">ID Sesi: ${escapeHtml(data.user.id)} &bull; Kuota Listing Aktif: ${(data.overview && data.overview.active_listings_count) || 0} / ${(data.overview && data.overview.max_active_listings) || 2}</div>
-              </div>
-              <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> KYC VERIFIED</span>
-            </div>
-          `;
-          submitBtn.disabled = false;
-        } else if (kycStatus === 'PENDING_REVIEW') {
-          inlineFormEl.style.display = 'none';
-          if (data.is_prelaunch) {
-            statusTextEl.innerHTML = `
-              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                <div>
-                  <div style="font-weight:700; color:#fff;">${fullName ? fullName + ' (' + emailOrId + ')' : emailOrId}</div>
-                  <div style="font-size:12px; color:#38bdf8; margin-top:4px;"><i class="fa-solid fa-rocket"></i> <strong>Mode Prelaunch Aktif:</strong> Anda dapat membuat listing tiket koleksi prelaunch / draft. Listing akan disimpan dan baru dapat aktif diperjualbelikan setelah verifikasi KYC Anda disetujui (SLA: 24 jam).</div>
-                </div>
-                <div style="display:flex; gap:8px; align-items:center;">
-                  <span class="badge badge-info"><i class="fa-solid fa-hourglass-half"></i> PRELAUNCH DRAFT</span>
-                  <a href="/app/seller" class="btn btn-secondary btn-sm" style="text-decoration:none;">Dashboard Penjual</a>
-                </div>
-              </div>
-            `;
-            submitBtn.disabled = false;
-          } else {
-            statusTextEl.innerHTML = `
-              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                <div>
-                  <div style="font-weight:700; color:#fff;">${fullName ? fullName + ' (' + emailOrId + ')' : emailOrId}</div>
-                  <div style="font-size:12px; color:#fbbf24; margin-top:4px;">Pengajuan onboarding penjual Anda sedang ditinjau oleh tim Trust &amp; Safety Tikum (<code>PENDING_REVIEW</code>). Estimasi peninjauan: <strong>24 jam (SLA)</strong>. Pembuatan listing live akan terbuka otomatis setelah verifikasi KYC disetujui.</div>
-                </div>
-                <div style="display:flex; gap:8px; align-items:center;">
-                  <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> PENDING REVIEW</span>
-                  <a href="/app/seller" class="btn btn-secondary btn-sm" style="text-decoration:none;">Dashboard Penjual</a>
-                </div>
-              </div>
-            `;
-            submitBtn.disabled = true;
-          }
-        } else if (kycStatus === 'SUSPENDED') {
-          inlineFormEl.style.display = 'none';
-          statusTextEl.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-              <div>
-                <div style="font-weight:700; color:#fff;">${emailOrId}</div>
-                <div style="font-size:12px; color:#f87171; margin-top:4px;">Akun penjual Anda sedang ditangguhkan (<code>SUSPENDED</code>) dan tidak dapat membuat listing baru.</div>
-              </div>
-              <span class="badge badge-warning" style="color:#f87171;">SUSPENDED</span>
-            </div>
-          `;
-          submitBtn.disabled = true;
+        if (!profile.email_verified) {
+          setStep(1, 'EMAIL_UNVERIFIED', profile);
+        } else if (!profile.seller_profile_complete) {
+          setStep(2, 'SELLER_PROFILE_INCOMPLETE', profile);
         } else {
-          // UNVERIFIED or REJECTED
-          inlineFormEl.style.display = 'block';
-          statusTextEl.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-              <div>
-                <div style="font-weight:700; color:#fff;">${fullName ? fullName + ' (' + emailOrId + ')' : emailOrId}</div>
-                <div style="font-size:12px; color:#fbbf24; margin-top:4px;">Akun Anda belum terverifikasi sebagai penjual (Status: <code>${escapeHtml(kycStatus)}</code>). Lengkapi pengajuan onboarding di bawah ini atau melalui <a href="/app/seller" style="color:var(--cyan);">Dashboard Penjual</a>.</div>
-              </div>
-              <span class="badge badge-warning"><i class="fa-solid fa-id-card"></i> ${escapeHtml(kycStatus)}</span>
-            </div>
-          `;
-          submitBtn.disabled = true;
+          setStep(3, 'COMPLETE', profile);
         }
       } catch (err) {
-        statusTextEl.innerHTML = `<span style="color:#f87171;">Gagal memeriksa sesi penjual: ${escapeHtml(err.message)}</span>`;
+        setStep(1, 'UNAUTHENTICATED');
       }
     }
 
-    async function handleInlineOnboarding() {
-      const fullName = (document.getElementById('onboardFullName').value || '').trim();
-      const phone = (document.getElementById('onboardPhone').value || '').trim();
-      const nikLast4 = (document.getElementById('onboardNikLast4').value || '').trim();
-      const fb = document.getElementById('onboardInlineFeedback');
-      const btn = document.getElementById('btnSubmitInlineOnboarding');
+    async function handleStep1ResendVerification() {
+      const btn = document.getElementById('btnStep1Resend');
+      const countdown = document.getElementById('step1ResendCountdown');
+      const fb = document.getElementById('step1ResendFeedback');
 
-      fb.style.display = 'block';
+      if (step1ResendCooldown > 0) return;
+
       btn.disabled = true;
+      fb.style.display = 'block';
       fb.style.color = 'var(--text-muted)';
-      fb.innerText = 'Mengirim pengajuan onboarding penjual...';
+      fb.innerText = 'Mengirim tautan verifikasi...';
 
       try {
-        const res = await fetch('/api/dashboard/seller/onboarding', {
+        const res = await fetch('/api/auth/resend-verification', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({
-            full_name: fullName,
-            phone: phone,
-            identity_number_last4: nikLast4,
-            consent_accepted: true
-          })
+          credentials: 'same-origin'
         });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          throw new Error(data.message || data.error || 'Gagal mengajukan onboarding penjual.');
+        const data = await res.json();
+
+        if (res.status === 429) {
+          startStep1Cooldown(data.cooldown_remaining || 60);
+          fb.style.color = '#f59e0b';
+          fb.innerText = data.error || 'Harap tunggu sebelum meminta email baru.';
+          return;
         }
-        fb.style.color = '#34d399';
-        fb.innerText = data.message || 'Pengajuan onboarding diterima (PENDING_REVIEW).';
-        await initSellerSession();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal mengirim email verifikasi');
+        }
+
+        fb.style.color = '#10b981';
+        fb.innerText = data.message || 'Tautan verifikasi email berhasil dikirim!';
+        startStep1Cooldown(data.cooldown_seconds || 60);
+
       } catch (err) {
         fb.style.color = '#f87171';
         fb.innerText = err.message;
-      } finally {
         btn.disabled = false;
       }
     }
+
+    function startStep1Cooldown(seconds) {
+      step1ResendCooldown = seconds;
+      const btn = document.getElementById('btnStep1Resend');
+      const countdown = document.getElementById('step1ResendCountdown');
+
+      btn.disabled = true;
+      countdown.style.display = 'inline';
+
+      if (step1ResendTimer) clearInterval(step1ResendTimer);
+      step1ResendTimer = setInterval(() => {
+        step1ResendCooldown--;
+        countdown.innerText = `(Kirim ulang dalam ${step1ResendCooldown}d)`;
+        if (step1ResendCooldown <= 0) {
+          clearInterval(step1ResendTimer);
+          btn.disabled = false;
+          countdown.style.display = 'none';
+        }
+      }, 1000);
+    }
+
+    async function handleSaveStep2Profile(e) {
+      e.preventDefault();
+      const fb = document.getElementById('step2FeedbackMsg');
+      const btn = document.getElementById('btnSubmitStep2');
+
+      fb.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan Profil...';
+
+      const payload = {
+        full_name: document.getElementById('step2FullName').value.trim(),
+        whatsapp: document.getElementById('step2Whatsapp').value.trim(),
+        city: document.getElementById('step2City').value.trim(),
+        address: document.getElementById('step2Address').value.trim(),
+        payout_bank_name: document.getElementById('step2BankName').value,
+        payout_account_holder: document.getElementById('step2AccountHolder').value.trim(),
+        payout_account_number: document.getElementById('step2AccountNumber').value.trim(),
+        identity_doc_ref: document.getElementById('step2NikLast4').value.trim(),
+        seller_profile_submit: true
+      };
+
+      try {
+        const res = await fetch('/api/auth/me/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || data.error || 'Gagal menyimpan profil penjual');
+        }
+
+        // Advance to Step 3
+        await initSellerSession();
+
+      } catch (err) {
+        fb.style.display = 'block';
+        fb.innerText = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> Simpan Profil &amp; Lanjutkan ke Detail Tiket';
+      }
+    }
+
+    // Attach draft autosave listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('listingForm');
+      if (form) {
+        ['input', 'change'].forEach(evt => {
+          form.addEventListener(evt, saveFormDraft);
+        });
+      }
+    });
 
     async function handleCreateNewEvent(e) {
       e.preventDefault();
@@ -1019,7 +1294,6 @@
           throw new Error(data.message || data.error || 'Gagal membuat event baru');
         }
 
-        // Add to local events list and set as selected
         eventsList.unshift(data.event);
         const select = document.getElementById('eventSelect');
         const opt = document.createElement('option');
@@ -1073,6 +1347,8 @@
       const seatType = document.getElementById('seatType')?.value || 'GENERAL_ADMISSION';
       const fulfillmentType = document.querySelector('input[name="fulfillmentType"]:checked')?.value || 'SELLER_MANAGED';
 
+      const barcodeVal = (document.getElementById('barcode')?.value || '').trim() || 'STAGE_A_ZERO_QR';
+
       const formData = new FormData();
       formData.append('eventId', eventId);
       formData.append('seatInfo', document.getElementById('seatInfo').value.trim());
@@ -1082,12 +1358,12 @@
       formData.append('faceValue', faceValue);
       formData.append('price', sellingPrice);
       formData.append('sellingPrice', sellingPrice);
-      formData.append('rawBarcode', document.getElementById('barcode').value.trim());
-      formData.append('barcode', document.getElementById('barcode').value.trim());
-      formData.append('admissionProtocol', document.getElementById('admissionProtocol').value);
+      formData.append('rawBarcode', barcodeVal);
+      formData.append('barcode', barcodeVal);
+      formData.append('admissionProtocol', document.getElementById('admissionProtocol')?.value || 'QR_SCAN_ONLY');
 
       const fileInput = document.getElementById('evidenceFile');
-      if (fileInput.files.length > 0) {
+      if (fileInput && fileInput.files.length > 0) {
         formData.append('evidence', fileInput.files[0]);
       }
 
@@ -1101,11 +1377,14 @@
         const data = await res.json();
         if (!res.ok) {
           if (res.status === 401) {
-            window.location.href = '/login?returnTo=%2Fcreate';
+            window.location.href = '/login?role=seller&next=/deal/create';
             return;
           }
           throw new Error(data.message || data.error || 'Gagal membuat listing di server');
         }
+
+        // Clear safe draft on success
+        clearSavedDraft();
 
         // Show real response
         const listing = data.listing;
@@ -1142,6 +1421,7 @@
 
     function resetForm() {
       document.getElementById('listingForm').reset();
+      clearSavedDraft();
       document.getElementById('formCard').style.display = 'block';
       document.getElementById('successCard').style.display = 'none';
       document.getElementById('eventPreviewBox').style.display = 'none';
@@ -1158,9 +1438,15 @@
     }
 
     // Initialize
-    initEvents();
+    initEvents().then(() => {
+      restoreListingDraft();
+    });
     initSellerSession();
+
+    document.getElementById('listingForm')?.addEventListener('input', saveListingDraft);
+    document.getElementById('listingForm')?.addEventListener('change', saveListingDraft);
   </script>
+  <script src="/js/draft-store.js"></script>
   <script src="/js/i18n.js"></script>
 
   <script>
