@@ -345,7 +345,9 @@ const en = {
     buyerProt: "Buyer Protection",
     verifInfo: "Ticket Verification",
     escrow: "Protected Settlement",
-    copyrightNotice: "© 2026 PT SHINERVA PRAJNA TEJAS. All rights reserved. TIKUM is a verified ticket resale platform."
+    copyrightNotice: "© 2026 PT SHINERVA PRAJNA TEJAS. All rights reserved. TIKUM is a verified ticket resale platform.",
+    pastEvents: "Past Events",
+    blog: "Blog & Guides"
   },
 
   errors: {

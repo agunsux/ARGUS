@@ -200,7 +200,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 1.500.000 - Rp 4.500.000',
         policy_source_url: 'https://www.tiket.com/to-do/bts-world-tour-arirang-jakarta-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_B_VENUE_ASSISTED,
         wristband_redemption_required: true,
         image_url: '/images/events/bts-arirang-world-tour-jakarta-2026.svg'
@@ -236,7 +236,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 350.000 - Rp 1.500.000',
         policy_source_url: 'https://www.tiket.com/to-do/ibl-finals-jakarta-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_A_DIGITAL,
         wristband_redemption_required: false,
         image_url: '/images/events/ibl-finals-jakarta-2026.svg'
@@ -254,7 +254,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 300.000 - Rp 2.000.000',
         policy_source_url: 'https://www.tiket.com/to-do/indonesia-open-badminton-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_B_VENUE_ASSISTED,
         wristband_redemption_required: true,
         image_url: '/images/events/indonesia-open-badminton-2026.svg'
@@ -274,7 +274,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 1.150.000 - Rp 5.500.000',
         policy_source_url: 'https://www.loket.com/event/guns-n-roses-jakarta-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_B_VENUE_ASSISTED,
         wristband_redemption_required: true,
         image_url: '/images/events/guns-n-roses-jakarta-2026.svg'
@@ -292,7 +292,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 1.550.000 - Rp 3.950.000',
         policy_source_url: 'https://www.loket.com/event/lany-beautiful-blur-jakarta-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_B_VENUE_ASSISTED,
         wristband_redemption_required: true,
         image_url: '/images/events/lany-beautiful-blur-jakarta-2026.svg'
@@ -310,7 +310,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 320.000 - Rp 650.000',
         policy_source_url: 'https://www.loket.com/event/the-15th-efestaphoria-surabaya-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_A_DIGITAL,
         wristband_redemption_required: false,
         image_url: '/images/events/the-15th-efestaphoria-surabaya-2026.svg'
@@ -328,7 +328,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 350.000 - Rp 750.000',
         policy_source_url: 'https://www.loket.com/event/pandji-mens-rea-standup-tour-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_A_DIGITAL,
         wristband_redemption_required: false,
         image_url: '/images/events/pandji-mens-rea-standup-tour.svg'
@@ -348,7 +348,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 350.000 - Rp 850.000',
         policy_source_url: 'https://tiptip.id/event/suci-fest-2026-jakarta',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_A_DIGITAL,
         wristband_redemption_required: false,
         image_url: '/images/events/suci-fest-2026-jakarta.svg'
@@ -366,7 +366,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 300.000 - Rp 650.000',
         policy_source_url: 'https://tiptip.id/event/abdel-achrian-menolak-muda-standup',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_A_DIGITAL,
         wristband_redemption_required: false,
         image_url: '/images/events/abdel-achrian-menolak-muda.svg'
@@ -384,7 +384,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 300.000 - Rp 500.000',
         policy_source_url: 'https://tiptip.id/event/abdur-arsyad-kontras-special-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_A_DIGITAL,
         wristband_redemption_required: false,
         image_url: '/images/events/abdur-arsyad-kontras-special.svg'
@@ -404,7 +404,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 450.000 - Rp 1.200.000',
         policy_source_url: 'https://goersapp.com/events/ultraverse-festival-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_A_DIGITAL,
         wristband_redemption_required: false,
         image_url: '/images/events/ultraverse-festival-2026.svg'
@@ -422,7 +422,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 650.000 - Rp 1.850.000',
         policy_source_url: 'https://goersapp.com/events/soundrenaline-sana-sini-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_B_VENUE_ASSISTED,
         wristband_redemption_required: true,
         image_url: '/images/events/soundrenaline-sana-sini-2026.svg'
@@ -442,7 +442,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 350.000 - Rp 750.000',
         policy_source_url: 'https://www.kiostix.com/id/event/boomfest-bandung-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_A_DIGITAL,
         wristband_redemption_required: false,
         image_url: '/images/events/boomfest-bandung-2026.svg'
@@ -460,7 +460,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 400.000 - Rp 1.500.000',
         policy_source_url: 'https://www.kiostix.com/id/event/tora-fight-series-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_A_DIGITAL,
         wristband_redemption_required: false,
         image_url: '/images/events/tora-fight-series-2026.svg'
@@ -480,7 +480,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 325.000 - Rp 750.000',
         policy_source_url: 'https://dewatiket.id/event/nyanyian-riang-gembira-tour-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_A_DIGITAL,
         wristband_redemption_required: false,
         image_url: '/images/events/nyanyian-riang-gembira-2026.svg'
@@ -498,7 +498,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 375.000 - Rp 950.000',
         policy_source_url: 'https://dewatiket.id/event/spectra-fest-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_A_DIGITAL,
         wristband_redemption_required: false,
         image_url: '/images/events/spectra-fest-2026.svg'
@@ -518,7 +518,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 500.000 - Rp 1.500.000',
         policy_source_url: 'https://artatix.co.id/event/jogja-rockarta-festival-2026',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_B_VENUE_ASSISTED,
         wristband_redemption_required: true,
         image_url: '/images/events/jogja-rockarta-festival-2026.svg'
@@ -538,7 +538,7 @@ class EventPolicyRegistry {
         price_range_idr: 'Rp 1.750.000 - Rp 4.200.000',
         policy_source_url: 'https://yesplis.com/event/dwp-2026-jakarta',
         last_verified_at: '2026-11-21T08:00:00Z',
-        policy_status: POLICY_STATUS.POLICY_VERIFIED_ACTIVE,
+        policy_status: POLICY_STATUS.POLICY_UNVERIFIED,
         risk_tier: RISK_TIER.TIER_B_VENUE_ASSISTED,
         wristband_redemption_required: true,
         image_url: '/images/events/dwp-2026-jakarta.svg'

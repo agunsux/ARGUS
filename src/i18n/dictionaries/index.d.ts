@@ -344,6 +344,8 @@ export interface FooterDictionary {
   verifInfo: string;
   escrow: string;
   copyrightNotice: string;
+  pastEvents: string;
+  blog: string;
 }
 
 export interface ErrorsDictionary {

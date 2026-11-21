@@ -244,7 +244,7 @@
       "privacy": "Kebijakan Privasi",
       "cookie": "Kebijakan Cookie",
       "disclaimer": "Pernyataan Sanggahan",
-      "aboutBrand": "Marketplace tiket sekunder terverifikasi. Transaksi aman dengan rekening penampungan internal (escrow) dan pendampingan fisik di gerbang venue.",
+      "aboutBrand": "Marketplace tiket sekunder terverifikasi. Transaksi aman dengan penahanan dana melalui mitra pembayaran resmi dan pendampingan staf PIC di venue.",
       "operationalOffice": "Kantor Operasional & Surat:",
       "officialContact": "Kontak Resmi",
       "customerSupport": "Layanan Pengguna:",
@@ -274,7 +274,9 @@
       "copyrightBuiltIn": "© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM — brand marketplace yang dioperasikan di bawah naungan PT SHINERVA PRAJNA TEJAS. Built in Indonesia.",
       "managedBy": "Dikelola oleh PT Shinerva Prajna Tejas",
       "escrow": "Penahanan Dana",
-      "copyrightNotice": "© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM adalah platform marketplace tiket terverifikasi."
+      "copyrightNotice": "© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM adalah platform marketplace tiket terverifikasi.",
+      "pastEvents": "Arsip Event",
+      "blog": "Blog & Panduan"
     },
     "status": {
       "LISTED": "Tersedia",
@@ -594,6 +596,7 @@
       "concerts": "Konser",
       "sports": "Olahraga",
       "comedy": "Stand Up Comedy",
+      "festivals": "Festival Musik",
       "exhibitions": "Pameran",
       "entertainment": "Hiburan Lainnya",
       "allCities": "Semua Kota",
@@ -1160,7 +1163,20 @@
       "zeroInventory": "0 Tiket (Belum Ada)",
       "zeroFakeInventory": "0 Tiket (Zero Fake Inventory)",
       "viewEventDetails": "Lihat Detail Event di TIKUM →",
-      "learnBuyerProtection": "Pelajari Proteksi Pembeli TIKUM"
+      "learnBuyerProtection": "Pelajari Proteksi Pembeli TIKUM",
+      "ctaFind": "Cari Tiket Konser",
+      "ctaSell": "Jual Tiket Anda",
+      "btsDate": "26–29 Desember 2026 • 19:00 WIB",
+      "btsVenue": "Gelora Bung Karno (Main Stadium) • Jakarta Pusat",
+      "btsArtists": "BTS (RM, Jin, SUGA, j-hope, Jimin, V, Jung Kook)",
+      "btsNotice": "Tiket primary resmi melalui portal Tiket.com telah berstatus <strong>Sold Out</strong>. Pemberitahuan resmi dan panduan gate check dapat dicek di portal Big Hit Music & Kemenparekraf.",
+      "btsOfficialBtn": "Lihat Pengumuman Resmi Big Hit ↗",
+      "bigbangDate": "16–17 Januari 2027 • 19:00 WIB",
+      "bigbangVenue": "Jakarta International Stadium (JIS) • Jakarta Utara",
+      "bigbangArtists": "BIGBANG (G-DRAGON, TAEYANG, DAESUNG)",
+      "bigbangNotice": "Jadwal resmi terkonfirmasi di portal YG Entertainment & Live Nation Asia. Tiket resmi dibuka melalui portal resmi LOKET mulai Rp 1.800.000.",
+      "bigbangOfficialBtn": "Lihat Pengumuman Resmi YG ↗",
+      "officialTicketsAvailable": "TIKET RESMI TERSEDIA"
     },
     "services": {
       "kicker": "PRODUK & LAYANAN RESMI",
@@ -1662,7 +1678,7 @@
       "privacy": "Privacy Policy",
       "cookie": "Cookie Policy",
       "disclaimer": "Disclaimer",
-      "aboutBrand": "Verified secondary ticket marketplace. Secure transactions with internal escrow repository and physical assistance at the venue gate.",
+      "aboutBrand": "Verified secondary ticket marketplace. Secure transactions with fund holding via authorized payment partner and on-site PIC assistance at venue gate.",
       "operationalOffice": "Operational & Mailing Office:",
       "officialContact": "Official Contact",
       "customerSupport": "Customer Support:",
@@ -1692,7 +1708,9 @@
       "copyrightBuiltIn": "© 2026 PT SHINERVA PRAJNA TEJAS. All rights reserved. TIKUM — verified ticket marketplace operated under PT SHINERVA PRAJNA TEJAS. Built in Indonesia.",
       "managedBy": "Operated by PT Shinerva Prajna Tejas",
       "escrow": "Protected Settlement",
-      "copyrightNotice": "© 2026 PT SHINERVA PRAJNA TEJAS. All rights reserved. TIKUM is a verified ticket resale platform."
+      "copyrightNotice": "© 2026 PT SHINERVA PRAJNA TEJAS. All rights reserved. TIKUM is a verified ticket resale platform.",
+      "pastEvents": "Past Events",
+      "blog": "Blog & Guides"
     },
     "status": {
       "LISTED": "Listed",
@@ -2012,6 +2030,7 @@
       "concerts": "Concerts",
       "sports": "Sports",
       "comedy": "Stand Up Comedy",
+      "festivals": "Music Festivals",
       "exhibitions": "Exhibitions",
       "entertainment": "Other Entertainment",
       "allCities": "All Cities",
@@ -2578,7 +2597,20 @@
       "zeroInventory": "0 Tickets (None Available)",
       "zeroFakeInventory": "0 Tickets (Zero Fake Inventory)",
       "viewEventDetails": "View Event Details on TIKUM →",
-      "learnBuyerProtection": "Learn About TIKUM Buyer Protection"
+      "learnBuyerProtection": "Learn About TIKUM Buyer Protection",
+      "ctaFind": "Find Concert Tickets",
+      "ctaSell": "Sell Your Tickets",
+      "btsDate": "December 26–29, 2026 • 19:00 WIB",
+      "btsVenue": "Gelora Bung Karno (Main Stadium) • Central Jakarta",
+      "btsArtists": "BTS (RM, Jin, SUGA, j-hope, Jimin, V, Jung Kook)",
+      "btsNotice": "Official primary tickets via Tiket.com are <strong>Sold Out</strong>. Official notice and gate check guide are available on Big Hit Music portal.",
+      "btsOfficialBtn": "View Official Big Hit Announcement ↗",
+      "bigbangDate": "January 16–17, 2027 • 19:00 WIB",
+      "bigbangVenue": "Jakarta International Stadium (JIS) • North Jakarta",
+      "bigbangArtists": "BIGBANG (G-DRAGON, TAEYANG, DAESUNG)",
+      "bigbangNotice": "Official schedule confirmed on YG Entertainment & Live Nation Asia portals. Official tickets available on LOKET from IDR 1,800,000.",
+      "bigbangOfficialBtn": "View Official YG Announcement ↗",
+      "officialTicketsAvailable": "OFFICIAL TICKETS AVAILABLE"
     },
     "services": {
       "kicker": "OFFICIAL PRODUCTS & SERVICES",
@@ -5027,33 +5059,20 @@
         if (translated) el.setAttribute('aria-label', translated);
       });
 
-      // Update Header Lang Switcher Triggers
-      const langBtns = document.querySelectorAll('#langToggle, #btnLangToggle, .lang-toggle-btn, .footer-lang-toggle, #footerLangToggle');
+      // Update Header & Footer Lang Switcher Triggers (Clean Segmented Pill ID | EN)
+      const langBtns = document.querySelectorAll('#langToggle, #btnLangToggle, .lang-toggle-btn, .footer-lang-toggle, #footerLangToggle, .lang-switcher-pill');
+      const isId = norm === 'id';
       langBtns.forEach(langBtn => {
-        const displayLabel = norm === 'id' ? 'ID' : 'EN';
-        const innerLabel = langBtn.querySelector('#langLabel, #opsLangLabel, #langCode, .lang-label');
-        if (innerLabel) {
-          innerLabel.textContent = displayLabel;
-        } else if (langBtn.querySelector('i, svg')) {
-          const textNode = Array.from(langBtn.childNodes).find(n => n.nodeType === 3 && n.textContent.trim());
-          if (textNode) {
-            textNode.textContent = ' ' + displayLabel;
-          } else {
-            langBtn.appendChild(document.createTextNode(' ' + displayLabel));
-          }
-        } else {
-          langBtn.textContent = displayLabel;
-        }
-        langBtn.setAttribute('title', norm === 'id' ? 'Ganti Bahasa (English)' : 'Ubah ke Bahasa Indonesia');
-        langBtn.setAttribute('aria-label', norm === 'id' ? 'Beralih ke Bahasa Inggris' : 'Beralih ke Bahasa Indonesia');
+        // Enforce strict segmented pill structure: Prevents any "ID ID EN" duplication
+        langBtn.innerHTML = '<span class="lang-pill-item ' + (isId ? 'lang-active font-bold text-emerald-400' : 'lang-inactive text-slate-400') + '">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item ' + (!isId ? 'lang-active font-bold text-emerald-400' : 'lang-inactive text-slate-400') + '">EN</span>';
+        langBtn.setAttribute('title', isId ? 'Ganti Bahasa (English)' : 'Ubah ke Bahasa Indonesia');
+        langBtn.setAttribute('aria-label', isId ? 'Beralih ke Bahasa Inggris' : 'Beralih ke Bahasa Indonesia');
 
         if (!langBtn.getAttribute('data-bound-lang-click')) {
           langBtn.setAttribute('data-bound-lang-click', '1');
           langBtn.addEventListener('click', function(e) {
-            if (!langBtn.getAttribute('onclick')) {
-              e.preventDefault();
-              toggleLang();
-            }
+            e.preventDefault();
+            toggleLang();
           });
         }
       });

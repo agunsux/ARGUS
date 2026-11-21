@@ -345,7 +345,9 @@ const id = {
     buyerProt: "Perlindungan Pembeli",
     verifInfo: "Verifikasi Tiket",
     escrow: "Penahanan Dana",
-    copyrightNotice: "© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM adalah platform marketplace tiket terverifikasi."
+    copyrightNotice: "© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM adalah platform marketplace tiket terverifikasi.",
+    pastEvents: "Arsip Event",
+    blog: "Blog & Panduan"
   },
 
   errors: {

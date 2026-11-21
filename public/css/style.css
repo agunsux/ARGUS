@@ -2484,3 +2484,510 @@ html[lang="en"] .lang-id {
 
 
 
+
+
+/* ==========================================================================
+   TIKUM APP SHELL DESIGN SYSTEM (LEFT SIDEBAR + 64px SLIM TOPBAR + MINIMAL FOOTER)
+   WCAG AA Compliant, Zero-Overlap Sticky Topbar, Minimalist 2-Tier Footer
+   ========================================================================== */
+
+:root {
+  --sidebar-width: 256px;
+  --sidebar-rail-width: 72px;
+  --topbar-height: 64px;
+  --color-app-bg: #0B0F19;
+  --color-surface-sidebar: #0F172A;
+  --color-surface-topbar: rgba(15, 23, 42, 0.94);
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-text-primary: #E6EAF2;
+  --color-text-secondary: #A8B3C7;
+  --color-text-footer: #B8C1D1;
+  --color-text-muted: #64748B;
+  --color-brand-primary: #E05A3A;
+  --color-brand-emerald: #10B981;
+}
+
+body.dark-mode {
+  background-color: var(--color-app-bg);
+  color: var(--color-text-primary);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+#appShell {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  background-color: var(--color-app-bg);
+}
+
+/* 1. Collapsible Left Sidebar */
+#appSidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  background-color: var(--color-surface-sidebar);
+  border-right: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebar-brand-header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  flex-shrink: 0;
+}
+
+.sidebar-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.sidebar-brand-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #FFF;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.sidebar-brand-sub {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #FFF;
+}
+
+.sidebar-nav-container {
+  flex: 1;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sidebar-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--color-text-muted);
+  padding: 0 10px 6px;
+  margin: 0;
+}
+
+.sidebar-nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  min-height: 40px;
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: 14.5px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #FFF;
+}
+
+.sidebar-nav-item.active {
+  background: rgba(224, 90, 58, 0.15);
+  color: #FF8A65;
+  font-weight: 700;
+}
+
+.sidebar-nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-legal-details {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 12px;
+  margin-top: auto;
+}
+
+.sidebar-legal-summary {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  list-style: none;
+}
+
+.sidebar-legal-summary::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-legal-summary:hover {
+  color: var(--color-text-secondary);
+}
+
+.sidebar-footer-info {
+  padding: 12px 18px;
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* Desktop Collapsed Rail Mode */
+#appShell.sidebar-collapsed #appSidebar {
+  width: var(--sidebar-rail-width);
+}
+
+#appShell.sidebar-collapsed .sidebar-brand-text,
+#appShell.sidebar-collapsed .sidebar-group-label,
+#appShell.sidebar-collapsed .sidebar-nav-label,
+#appShell.sidebar-collapsed .sidebar-legal-details,
+#appShell.sidebar-collapsed .sidebar-footer-info {
+  display: none !important;
+}
+
+#appShell.sidebar-collapsed .sidebar-brand-header {
+  justify-content: center;
+  padding: 0;
+}
+
+#appShell.sidebar-collapsed .sidebar-toggle-btn {
+  display: none;
+}
+
+#appShell.sidebar-collapsed .sidebar-nav-item {
+  justify-content: center;
+  padding: 0;
+}
+
+/* 2. Main Content Wrapper & Sticky 64px Topbar */
+#appMainWrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  transition: margin-left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#appShell.sidebar-collapsed #appMainWrapper {
+  margin-left: var(--sidebar-rail-width);
+}
+
+#appTopbar {
+  position: sticky;
+  top: 0;
+  height: var(--topbar-height);
+  background-color: var(--color-surface-topbar);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 40;
+  white-space: nowrap;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-hamburger-btn {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.topbar-center {
+  flex: 1;
+  max-width: 420px;
+  margin: 0 20px;
+}
+
+.topbar-search-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.topbar-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.topbar-search-input {
+  width: 100%;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  padding: 0 14px 0 36px;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.topbar-search-input:focus {
+  border-color: var(--color-brand-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Single Segmented Pill Switcher */
+.lang-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 20px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  user-select: none;
+}
+
+.lang-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.lang-toggle-btn .lang-active {
+  color: #34D399;
+  font-weight: 700;
+}
+
+.lang-toggle-btn .lang-inactive {
+  color: #64748B;
+}
+
+.lang-toggle-btn .lang-divider {
+  margin: 0 5px;
+  color: #475569;
+}
+
+/* 3. Minimalist 2-Tier Footer */
+#appFooter.site-footer {
+  background-color: #0A0E17;
+  border-top: 1px solid var(--color-border-subtle);
+  padding: 48px 24px 28px;
+  margin-top: auto;
+}
+
+.footer-tier-1 {
+  max-width: 1160px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.4fr 1.2fr 1fr;
+  gap: 40px;
+  padding-bottom: 36px;
+}
+
+.footer-col-brand h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #FFF;
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-col-brand p,
+.footer-col-brand address {
+  font-style: normal;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-text-footer);
+  margin: 0 0 8px;
+}
+
+.footer-col-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #FFF;
+  margin: 0 0 16px;
+}
+
+.footer-contact-item {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--color-text-footer);
+  margin-bottom: 8px;
+}
+
+.footer-contact-item a {
+  color: #38BDF8;
+  text-decoration: none;
+}
+
+.footer-contact-item a:hover {
+  text-decoration: underline;
+}
+
+/* Essential 6 Links: 2x3 mini grid */
+.footer-essential-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+
+.footer-essential-link {
+  font-size: 13.5px;
+  color: var(--color-text-footer);
+  text-decoration: none;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+
+.footer-essential-link:hover {
+  color: #38BDF8;
+}
+
+.footer-tier-2 {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.footer-legal-uu {
+  max-width: 800px;
+  line-height: 1.5;
+}
+
+/* Mobile & Tablet Responsiveness (< 1024px) */
+@media (max-width: 1023px) {
+  #appSidebar {
+    transform: translateX(-100%);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  }
+
+  #appShell.sidebar-open #appSidebar {
+    transform: translateX(0);
+  }
+
+  #appMainWrapper {
+    margin-left: 0 !important;
+  }
+
+  .topbar-hamburger-btn {
+    display: flex;
+  }
+
+  #sidebarBackdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 45;
+  }
+
+  #appShell.sidebar-open #sidebarBackdrop {
+    display: block;
+  }
+
+  .footer-tier-1 {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .footer-tier-2 {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

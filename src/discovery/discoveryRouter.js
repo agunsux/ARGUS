@@ -1354,11 +1354,20 @@ router.get('/api/discovery/past-events', (req, res) => {
  * Weekly / on-demand lifecycle archival of concluded events. Protected by CRON_SECRET.
  */
 router.post('/api/cron/archive-past-events', requireCronBearer, (req, res) => {
-  const result = EventLifecycleService.archiveExpiredEvents({
-    now: req.query.now || req.body?.now,
-    force: req.query.force === 'true' || req.body?.force === true
-  });
-  res.json(result);
+  try {
+    const result = EventLifecycleService.archiveExpiredEvents({
+      now: req.query.now || req.body?.now,
+      force: req.query.force === 'true' || req.body?.force === true
+    });
+    res.json(result);
+  } catch (err) {
+    console.error('archive-past-events cron error:', err);
+    res.status(err.code === 'EROFS' ? 200 : 500).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'CRON_ARCHIVE_ERROR'
+    });
+  }
 });
 
 /**
@@ -1366,14 +1375,23 @@ router.post('/api/cron/archive-past-events', requireCronBearer, (req, res) => {
  * Bi-weekly primary box office discovery sweep (>= IDR 300,000). Protected by CRON_SECRET.
  */
 router.post('/api/cron/scan-primary-events', requireCronBearer, (req, res) => {
-  const report = PrimaryEventScannerService.scanAllSources({
-    force: req.query.force === 'true' || req.body?.force === true,
-    now: req.query.now || req.body?.now
-  });
-  res.json({
-    success: report.success,
-    report
-  });
+  try {
+    const report = PrimaryEventScannerService.scanAllSources({
+      force: req.query.force === 'true' || req.body?.force === true,
+      now: req.query.now || req.body?.now
+    });
+    res.json({
+      success: report.success,
+      report
+    });
+  } catch (err) {
+    console.error('scan-primary-events cron error:', err);
+    res.status(err.code === 'EROFS' ? 200 : 500).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'CRON_SCANNER_ERROR'
+    });
+  }
 });
 
 /**
@@ -1381,13 +1399,22 @@ router.post('/api/cron/scan-primary-events', requireCronBearer, (req, res) => {
  * Twice-weekly automated SEO blog publication pipeline. Protected by CRON_SECRET.
  */
 router.post('/api/cron/publish-seo-blog', requireCronBearer, (req, res) => {
-  const report = SeoBlogEngine.publishDueArticles({
-    now: req.query.now || req.body?.now
-  });
-  res.json({
-    success: report.success,
-    report
-  });
+  try {
+    const report = SeoBlogEngine.publishDueArticles({
+      now: req.query.now || req.body?.now
+    });
+    res.json({
+      success: report.success,
+      report
+    });
+  } catch (err) {
+    console.error('publish-seo-blog cron error:', err);
+    res.status(err.code === 'EROFS' ? 200 : 500).json({
+      success: false,
+      error: err.message,
+      code: err.code || 'CRON_BLOG_ERROR'
+    });
+  }
 });
 
 router.get('/api/discovery/event-policy-registry/:id', (req, res) => {

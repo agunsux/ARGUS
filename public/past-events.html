@@ -257,21 +257,153 @@
   </style>
 </head>
 <body>
-  <!-- Header -->
-  <header class="ln-header" style="background:#0D111A; border-bottom:1px solid #1F2937; padding:12px 24px; display:flex; align-items:center; justify-content:space-between;">
-    <div style="display:flex; align-items:center; gap:20px;">
-      <a href="/" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
-        <img src="/assets/tikum-logo.svg" alt="TIKUM Logo" width="32" height="32" onerror="this.src='/assets/placeholder-event.svg';">
-        <span style="font-weight:900; font-size:20px; color:#FFF; letter-spacing:-0.03em;">TIKUM</span>
-      </a>
-      <span style="color:#6B7280; font-size:13px; border-left:1px solid #374151; padding-left:14px;">Arsip Event Resmi</span>
-    </div>
-    <nav style="display:flex; align-items:center; gap:16px;">
-      <a href="/" style="color:#9CA3AF; text-decoration:none; font-size:13.5px; font-weight:600;"><i class="fa-solid fa-arrow-left"></i> Kembali ke Beranda</a>
-      <a href="/events" style="color:#9CA3AF; text-decoration:none; font-size:13.5px; font-weight:600;">Jelajah Konser Aktif</a>
-      <a href="/panduan-pembeli" style="color:#38BDF8; text-decoration:none; font-size:13.5px; font-weight:600;">Panduan Pembeli</a>
-    </nav>
-  </header>
+  <div id="appShell">
+    <div id="sidebarBackdrop"></div>
+
+    <!-- Collapsible Left Sidebar (256px Desktop / Slide-Over Drawer Mobile) -->
+    <aside id="appSidebar" class="app-sidebar" aria-label="Navigasi Utama">
+      <div class="sidebar-brand-header">
+        <a href="/" class="sidebar-brand-link">
+          <img src="/assets/tikum-mark-2color.svg" width="30" height="30" alt="Tikum Logo">
+          <div class="sidebar-brand-text">
+            <div class="sidebar-brand-title">TIKUM</div>
+            <div class="sidebar-brand-sub">by PT Shinerva Prajna Tejas</div>
+          </div>
+        </a>
+        <button type="button" id="sidebarToggleDesktop" class="sidebar-toggle-btn" aria-label="Ciutkan / Lebarkan Sidebar" title="Ciutkan Sidebar">
+          <i class="fa-solid fa-angles-left"></i>
+        </button>
+        <button type="button" id="sidebarCloseMobile" class="sidebar-toggle-btn" style="display:none;" aria-label="Tutup Sidebar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="sidebar-nav-container">
+        <!-- 1. JELAJAH / DISCOVER -->
+        <div>
+          <p class="sidebar-group-label" data-i18n="nav.groupDiscover">Jelajah</p>
+          <ul class="sidebar-nav-list">
+            <li>
+              <a href="/" class="sidebar-nav-item ">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-house"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.home">Beranda</span>
+              </a>
+            </li>
+            <li>
+              <a href="/offers" class="sidebar-nav-item ">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-ticket"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.events">Katalog Event</span>
+              </a>
+            </li>
+            <li>
+              <a href="/events?category=MUSIC" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-music"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.concerts">Konser &amp; K-Pop</span>
+              </a>
+            </li>
+            <li>
+              <a href="/events?category=SPORT" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-futbol"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.sports">Olahraga &amp; Stand-Up</span>
+              </a>
+            </li>
+            <li>
+              <a href="/past-events" class="sidebar-nav-item active">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-box-archive"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.pastEvents">Arsip Event</span>
+              </a>
+            </li>
+            <li>
+              <a href="/blog" class="sidebar-nav-item ">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-newspaper"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.blog">Blog &amp; Panduan</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 2. TRANSAKSI / TRANSACTIONS -->
+        <div>
+          <p class="sidebar-group-label" data-i18n="nav.groupTransactions">Transaksi</p>
+          <ul class="sidebar-nav-list">
+            <li>
+              <a href="/create" class="sidebar-nav-item " style="color:var(--color-brand-primary); font-weight:700;">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-circle-plus"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.submitListing">Buat Deal Link</span>
+              </a>
+            </li>
+            <li>
+              <a href="/track" class="sidebar-nav-item ">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-magnifying-glass-location"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.track">Lacak Transaksi</span>
+              </a>
+            </li>
+            <li>
+              <a href="/pay" class="sidebar-nav-item ">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.pricingAndFees">Perlindungan &amp; Biaya</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 3. BANTUAN & LEGAL / SUPPORT & LEGAL -->
+        <details class="sidebar-legal-details">
+          <summary class="sidebar-legal-summary">
+            <span>Bantuan &amp; Legal</span>
+            <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i>
+          </summary>
+          <ul class="sidebar-nav-list" style="margin-top:6px;">
+            <li><a href="/panduan-pembeli" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i class="fa-solid fa-book-open"></i></span><span class="sidebar-nav-label">Panduan Pembeli</span></a></li>
+            <li><a href="/ticket-verification" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i class="fa-solid fa-qrcode"></i></span><span class="sidebar-nav-label">Verifikasi &amp; PIC</span></a></li>
+            <li><a href="/faq" class="sidebar-nav-item "><span class="sidebar-nav-icon"><i class="fa-solid fa-circle-question"></i></span><span class="sidebar-nav-label" data-i18n="footer.faq">FAQ</span></a></li>
+            <li><a href="/terms" class="sidebar-nav-item "><span class="sidebar-nav-icon"><i class="fa-solid fa-file-contract"></i></span><span class="sidebar-nav-label" data-i18n="footer.terms">Syarat &amp; Ketentuan</span></a></li>
+            <li><a href="/privacy" class="sidebar-nav-item "><span class="sidebar-nav-icon"><i class="fa-solid fa-user-shield"></i></span><span class="sidebar-nav-label" data-i18n="footer.privacyPolicy">Privasi (UU PDP)</span></a></li>
+            <li><a href="/refund-policy" class="sidebar-nav-item "><span class="sidebar-nav-icon"><i class="fa-solid fa-rotate-left"></i></span><span class="sidebar-nav-label" data-i18n="footer.refundPolicy">Refund &amp; Sengketa</span></a></li>
+            <li><a href="/contact" class="sidebar-nav-item "><span class="sidebar-nav-icon"><i class="fa-solid fa-address-book"></i></span><span class="sidebar-nav-label" data-i18n="footer.contactUs">Kontak Resmi</span></a></li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="sidebar-footer-info">
+        <div style="color:#10B981; font-weight:700; margin-bottom:2px;"><i class="fa-solid fa-circle-check"></i> Pra-Peluncuran</div>
+        <div>Listing Only Mode Active</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div id="appMainWrapper">
+      <!-- Zero-Overlap 64px Slim Topbar -->
+      <header id="appTopbar" class="app-topbar">
+        <div class="topbar-left">
+          <button type="button" id="sidebarToggleMobile" class="topbar-hamburger-btn" aria-label="Buka Menu Navigasi">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
+            <img src="/assets/tikum-mark-2color.svg" width="28" height="28" alt="Tikum">
+            <span style="font-weight:800; font-size:17px; color:#FFF; letter-spacing:0.5px;">Tikum</span>
+          </a>
+        </div>
+
+        <div class="topbar-center">
+          <div class="topbar-search-wrap">
+            <i class="fa-solid fa-magnifying-glass topbar-search-icon"></i>
+            <input type="search" id="topbarSearchInput" class="topbar-search-input" placeholder="Cari konser, artis, GBK, JIS..." aria-label="Cari event" onkeydown="if(event.key==='Enter') window.location.href='/?q=' + encodeURIComponent(this.value)">
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <a href="/create" class="ln-btn ln-btn-primary" style="padding:8px 16px; font-size:13px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-plus"></i> <span data-i18n="nav.submitListing">+ Buat Deal</span>
+          </a>
+          <button class="select-filter" onclick="if(window.TikumI18n) window.TikumI18n.toggleTheme();" id="themeToggle" title="Toggle Theme" style="padding:6px 10px; height:36px; display:inline-flex; align-items:center; justify-content:center;">
+            <i class="fa-solid fa-sun" id="themeIcon"></i>
+          </button>
+          <button class="lang-toggle-btn lang-switcher-pill" onclick="if(window.TikumI18n) window.TikumI18n.toggleLang();" id="langToggle" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
+            <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>
+          </button>
+        </div>
+      </header>
 
   <!-- Main Archive Header -->
   <div class="archive-header">
@@ -325,21 +457,70 @@
     </div>
   </main>
 
-  <!-- Footer -->
-  <footer style="background:#080B11; border-top:1px solid #1F2937; padding:30px 24px; margin-top:auto; color:#9CA3AF; font-size:13px; line-height:1.6;">
-    <div style="max-width:1200px; margin:0 auto; display:flex; flex-wrap:wrap; justify-content:space-between; gap:20px;">
-      <div>
-        <strong style="color:#FFF;">TIKUM — by PT SHINERVA PRAJNA TEJAS</strong><br>
-        Jalan Pasirluyu No. 79, Bandung 40254, Indonesia<br>
-        Email: <a href="mailto:support@tikum.app" style="color:#38BDF8; text-decoration:none;">support@tikum.app</a> · WhatsApp: +62 812-9992-7378
-      </div>
-      <div>
-        <em>Kebijakan Arsip &amp; Zero Fake Inventory:</em><br>
-        Event yang telah selesai tidak menerima pembuatan listing resale baru atau pembelian tiket.<br>
-        Seluruh data audit historis dilindungi secara permanen.
-      </div>
-    </div>
-  </footer>
+  <!-- Minimalist 2-Tier Footer (Eliminating 17-link stack) -->
+      <footer id="appFooter" class="app-footer site-footer">
+        <div class="footer-tier-1">
+          <div class="footer-col-brand">
+            <h3>
+              <img src="/assets/tikum-mark-2color.svg" width="22" height="22" alt="Tikum">
+              <span>TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
+            </h3>
+            <p data-i18n="footer.aboutBrand">
+              Pasar tiket event terverifikasi yang dioperasikan di bawah naungan PT SHINERVA PRAJNA TEJAS. Dilengkapi verifikasi sumber resmi dan asistensi staf di venue acara terkonfirmasi.
+            </p>
+            <address>
+              <strong data-i18n="footer.operationalOffice">Kantor Operasional &amp; Surat:</strong><br>
+              PT SHINERVA PRAJNA TEJAS<br>
+              Jl. Pasirluyu No. 79, Bandung 40254, Indonesia
+            </address>
+          </div>
+
+          <div class="footer-col-contact">
+            <div class="footer-col-title" data-i18n="footer.officialContact">Kontak Resmi</div>
+            <div class="footer-contact-item">
+              <strong data-i18n="footer.customerSupport">Customer Support:</strong>
+              <a href="mailto:support@tikum.app">support@tikum.app</a>
+            </div>
+            <div class="footer-contact-item">
+              <strong data-i18n="footer.phoneAndWa">WhatsApp Resmi:</strong>
+              <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer">+62 812-9992-7378</a>
+            </div>
+            <div class="footer-contact-item">
+              <span data-i18n="footer.supportHours">Jam Layanan:</span>
+              <span data-i18n="footer.supportHoursValue">Senin - Minggu 09:00 - 21:00 WIB</span>
+            </div>
+            <div style="font-size:12px; color:var(--color-text-muted); margin-top:6px;" data-i18n="footer.picVenueNote">
+              (Event PIC bertugas di venue pada jam operasional gerbang acara terkonfirmasi)
+            </div>
+          </div>
+
+          <div class="footer-col-links">
+            <div class="footer-col-title" data-i18n="footer.servicesAndLegal">Tautan Esensial</div>
+            <div class="footer-essential-grid">
+              <a href="/terms" class="footer-essential-link" data-i18n="footer.terms">Syarat &amp; Ketentuan</a>
+              <a href="/privacy" class="footer-essential-link" data-i18n="footer.privacyPolicy">Privasi (UU PDP)</a>
+              <a href="/refund-policy" class="footer-essential-link" data-i18n="footer.refundPolicy">Refund &amp; Sengketa</a>
+              <a href="/past-events" class="footer-essential-link" data-i18n="footer.pastEvents">Arsip Event</a>
+              <a href="/faq" class="footer-essential-link" data-i18n="footer.faq">FAQ / Bantuan</a>
+              <a href="/blog" class="footer-essential-link" data-i18n="footer.blog">Blog &amp; Panduan</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-tier-2">
+          <div class="footer-legal-uu">
+            <span data-i18n="footer.copyrightNotice">© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM adalah platform marketplace tiket terverifikasi.</span>
+            <span style="display:block; font-size:11.5px; color:#64748b; margin-top:4px;">Bahasa Indonesia adalah bahasa pengendali hukum berdasarkan UU No. 24/2009.</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <button id="footerLangToggle" class="footer-lang-toggle lang-switcher-pill lang-toggle-btn" onclick="if(window.TikumI18n) window.TikumI18n.toggleLang();" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
+              <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>
+            </button>
+          </div>
+        </div>
+      </footer>
+    </div> <!-- /#appMainWrapper -->
+  </div> <!-- /#appShell -->
 
   <script>
     let searchTimer = null;
@@ -444,5 +625,52 @@
 
     document.addEventListener('DOMContentLoaded', loadArchivedEvents);
   </script>
+
+  <script>
+    function initAppShell() {
+      const shell = document.getElementById('appShell');
+      const toggleDesktop = document.getElementById('sidebarToggleDesktop');
+      const toggleMobile = document.getElementById('sidebarToggleMobile');
+      const closeMobile = document.getElementById('sidebarCloseMobile');
+      const backdrop = document.getElementById('sidebarBackdrop');
+
+      if (localStorage.getItem('tikum_sidebar_collapsed') === 'true' && window.innerWidth >= 1024) {
+        if (shell) shell.classList.add('sidebar-collapsed');
+      }
+
+      if (toggleDesktop) {
+        toggleDesktop.addEventListener('click', function() {
+          if (!shell) return;
+          const isCollapsed = shell.classList.toggle('sidebar-collapsed');
+          localStorage.setItem('tikum_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+        });
+      }
+
+      function openSidebar() {
+        if (!shell) return;
+        shell.classList.add('sidebar-open');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeSidebar() {
+        if (!shell) return;
+        shell.classList.remove('sidebar-open');
+        document.body.style.overflow = '';
+      }
+
+      if (toggleMobile) toggleMobile.addEventListener('click', openSidebar);
+      if (closeMobile) closeMobile.addEventListener('click', closeSidebar);
+      if (backdrop) backdrop.addEventListener('click', closeSidebar);
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && shell && shell.classList.contains('sidebar-open')) {
+          closeSidebar();
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', initAppShell);
+  </script>
+
 </body>
 </html>

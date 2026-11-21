@@ -245,18 +245,18 @@ class SeoBlogEngine {
       },
       {
         id: 'art-live-safe-handover-escrow',
-        title: 'Panduan Serah Terima Tiket Aman: Verifikasi Dua Tahap & Perlindungan Escrow',
+        title: 'Panduan Serah Terima Tiket Aman: Verifikasi Dua Tahap & Penahanan Dana Terlindungi',
         slug: 'panduan-serah-terima-tiket-aman-dua-tahap-perlindungan-escrow',
-        description: 'Langkah taktis serah terima tiket konser fisik dan digital di venue. Memahami sistem penahanan dana terkelola dan kehadiran petugas lapangan.',
+        description: 'Langkah taktis serah terima tiket konser fisik dan digital di venue. Memahami sistem penahanan dana melalui mitra pembayaran resmi dan pendampingan Event PIC.',
         category: CONTENT_PILLARS.TICKET_SAFETY,
         search_intent: SEARCH_INTENTS.INFORMATIONAL,
-        keywords: ['serah terima tiket', 'escrow tiket konser', 'verifikasi dua tahap', 'keamanan tiket resale'],
+        keywords: ['serah terima tiket', 'penahanan dana tiket konser', 'verifikasi dua tahap', 'keamanan tiket resale'],
         author: 'Tim Editorial Tikum',
         status: CONTENT_STATUS.PUBLISHED,
         published_at: '2026-11-21T09:00:00+07:00',
         scheduled_at: null,
-        en_title: 'Safe Ticket Handover Guide: Two-Stage Verification & Escrow Protection',
-        en_summary: 'Step-by-step procedures for digital and physical ticket handovers at Indonesian venues, explaining platform-held escrow and on-site PIC coordination.',
+        en_title: 'Safe Ticket Handover Guide: Two-Stage Verification & Protected Settlement',
+        en_summary: 'Step-by-step procedures for digital and physical ticket handovers at Indonesian venues, explaining fund holding via authorized payment partner and on-site PIC coordination.',
         faq: [
           {
             question: 'Bagaimana alur verifikasi dua tahap di TIKUM bekerja?',
@@ -264,25 +264,25 @@ class SeoBlogEngine {
           },
           {
             question: 'Kapan dana penjualan tiket dicairkan ke rekening penjual?',
-            answer: 'Dana hasil penjualan baru dilepaskan setelah pembeli berhasil menerima tiket atau konfirmasi turnstile berhasil dilakukan sesuai batas waktu operasional.'
+            answer: 'Dana hasil penjualan baru dilepaskan setelah pembeli mengonfirmasi penerimaan tiket atau penyelesaian serah terima sesuai batas waktu operasional melalui mitra pembayaran resmi sesuai mode transaksi yang disetujui.'
           },
           {
             question: 'Apa fungsi petugas lapangan (Event PIC) di lokasi acara?',
-            answer: 'Event PIC bertugas mendampingi pertemuan pembeli dan penjual, memfasilitasi titik kumpul aman, dan mencatat bukti berita acara serah terima tiket.'
+            answer: 'Event PIC bertugas mendampingi serah terima / penukaran wristband oleh pembeli dan penjual di Titik Kumpul venue terkonfirmasi, memastikan pertemuan berlangsung tertib dan tercatat dalam bukti digital transaksi.'
           }
         ],
         content: `
           <h2>Menghilangkan Risiko dalam Transaksi Tiket Sekunder</h2>
           <p>Membeli tiket konser dari tangan kedua di media sosial kerap berujung kecemasan penipuan tiket ganda atau tiket palsu. TIKUM hadir menghadirkan protokol verifikasi dua tahap yang mengamankan kedua belah pihak.</p>
           
-          <h3>Prinsip Penahanan Dana Terkelola (Platform-Held)</h3>
-          <p>Sistem penahanan dana memastikan uang pembeli tidak langsung mengalir ke penjual sebelum hak atas tiket terbukti nyata. Penjual pun terlindungi dari risiko pembeli yang membatalkan sepihak setelah menerima tiket.</p>
+          <h3>Prinsip Penahanan Dana Melalui Mitra Pembayaran Resmi</h3>
+          <p>Sistem penahanan dana melalui mitra pembayaran resmi memastikan dana pembeli tertahan dengan aman dan tidak langsung mengalir ke penjual sebelum syarat serah terima tiket terpenuhi sesuai mode transaksi yang disetujui. Penjual pun terlindungi dari risiko pembeli yang membatalkan sepihak setelah menerima tiket.</p>
           
           <h3>Tiga Langkah Serah Terima Aman di Venue</h3>
           <ol>
-            <li><strong>Pertemuan di Titik Kumpul Resmi:</strong> Gunakan meeting point strategis yang telah disepakati di dekat gerbang masuk.</li>
-            <li><strong>Pemeriksaan Fisik Gelang & Segel:</strong> Pastikan barcode atau chip RFID tidak mengalami kerusakan fisik atau bekas robekan.</li>
-            <li><strong>Konfirmasi Penyelesaian di Aplikasi:</strong> Pembeli dan penjual menandai transaksi selesai untuk memproses pencairan dana secara otomatis.</li>
+            <li><strong>Pertemuan di Titik Kumpul Venue:</strong> Gunakan meeting point strategis yang telah disepakati bersama pendampingan Event PIC di dekat area penukaran/gerbang masuk.</li>
+            <li><strong>Pemeriksaan Fisik Gelang & Segel:</strong> Pastikan gelang, barcode, atau voucher fisik tidak mengalami kerusakan fisik atau cacat segel.</li>
+            <li><strong>Konfirmasi Penyelesaian di Aplikasi:</strong> Pembeli dan penjual menandai transaksi selesai untuk memproses penyelesaian dana melalui mitra resmi.</li>
           </ol>
 
           <p>Pelajari lebih lanjut opsi perlindungan di halaman <a href="/deal/create">Buat Penawaran Terlindungi</a>.</p>

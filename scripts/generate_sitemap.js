@@ -19,8 +19,17 @@ function generate() {
   });
 
   const targetPath = path.resolve(__dirname, '../public/sitemap.xml');
-  fs.writeFileSync(targetPath, xml, 'utf8');
-  console.log(`Generated public/sitemap.xml (${xml.length} bytes).`);
+  try {
+    fs.writeFileSync(targetPath, xml, 'utf8');
+    console.log(`Generated public/sitemap.xml (${xml.length} bytes).`);
+  } catch (err) {
+    if (err.code === 'EROFS' || err.code === 'EACCES') {
+      console.warn(`[SERVERLESS READONLY] Unable to write sitemap.xml to disk (${err.code}): ${err.message}. Dynamic sitemap route will serve on demand.`);
+    } else {
+      throw err;
+    }
+  }
+  return xml;
 }
 
 if (require.main === module) {
