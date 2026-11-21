@@ -96,9 +96,21 @@
           <p class="sidebar-group-label" data-i18n="nav.groupTransactions">Transaksi</p>
           <ul class="sidebar-nav-list">
             <li>
-              <a href="/create" class="sidebar-nav-item" style="color:var(--color-brand-primary); font-weight:700;">
+              <a href="/offers" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-ticket"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.buyTickets">Beli Tiket / Cari Event</span>
+              </a>
+            </li>
+            <li>
+              <a href="/deal" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-door-open"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.dealRoomLookup">Punya Kode Deal? (Buka Room)</span>
+              </a>
+            </li>
+            <li>
+              <a href="/deal/create" class="sidebar-nav-item" style="color:var(--color-brand-primary); font-weight:700;">
                 <span class="sidebar-nav-icon"><i class="fa-solid fa-circle-plus"></i></span>
-                <span class="sidebar-nav-label" data-i18n="nav.submitListing">Buat Deal Link</span>
+                <span class="sidebar-nav-label" data-i18n="nav.submitListing">Jual Tiket / Buat Deal</span>
               </a>
             </li>
             <li>
@@ -186,8 +198,11 @@
         </div>
 
         <div class="topbar-right">
-          <a href="/create" class="ln-btn ln-btn-primary" style="padding:8px 16px; font-size:13px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-plus"></i> <span data-i18n="nav.submitListing">+ Buat Deal</span>
+          <a href="/deal" class="ln-btn ln-btn-ghost" style="padding:8px 12px; font-size:13px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-door-open"></i> <span data-i18n="nav.dealRoomLookup">Buka Deal Room</span>
+          </a>
+          <a href="/deal/create" class="ln-btn ln-btn-primary" style="padding:8px 14px; font-size:13px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-plus"></i> <span data-i18n="nav.submitListing">+ Jual Tiket</span>
           </a>
           <button class="select-filter" onclick="if(window.TikumI18n) window.TikumI18n.toggleTheme();" id="themeToggle" title="Toggle Theme" style="padding:6px 10px; height:36px; display:inline-flex; align-items:center; justify-content:center;">
             <i class="fa-solid fa-sun" id="themeIcon"></i>
@@ -296,61 +311,67 @@
               </div>
 
               <div class="form-group" style="margin-bottom:0;">
-                <label for="profAddress">Alamat Lengkap (Wajib untuk Penjual) *</label>
+                <label for="profAddress"><span data-i18n="profile.cityOrAddress">Alamat Lengkap</span> <span style="font-size:11.5px; color:var(--text-muted); font-weight:normal;">(Opsional untuk Pembeli, Wajib untuk Penjual)</span></label>
                 <textarea id="profAddress" class="form-control" rows="2" placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan" style="resize:vertical;"></textarea>
               </div>
             </div>
 
-            <!-- Section B: Seller Payout Details -->
-            <div id="sellerPayoutSection" style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-                <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;" data-i18n="profile.sellerPayout">
-                  2. Rekening Pencairan Penjual (Escrow Settlement)
+            <!-- Section B: Seller Payout Details (Collapsible & Proportional to Selling) -->
+            <details id="sellerPayoutDetails" class="seller-payout-details" style="margin-bottom: 24px; border: 1px solid var(--line-300); border-radius: 10px; overflow: hidden; background: rgba(255,255,255,0.015);">
+              <summary style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: rgba(255,255,255,0.03); font-weight: 700; user-select: none;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <i class="fa-solid fa-store" style="color: var(--color-brand-primary, #E05A3A); font-size: 16px;"></i>
+                  <span data-i18n="profile.sellerSectionSummary">Aktifkan Profil Penjual (Khusus Jual Tiket)</span>
                 </div>
-                <span class="badge badge-info"><i class="fa-solid fa-lock"></i> Terenkripsi UU PDP</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span class="badge badge-info" style="font-size: 11px;"><i class="fa-solid fa-lock"></i> Terenkripsi UU PDP</span>
+                  <i class="fa-solid fa-chevron-down" style="font-size: 12px; color: var(--text-muted);"></i>
+                </div>
+              </summary>
+
+              <div id="sellerPayoutSection" style="padding: 20px; border-top: 1px solid var(--line-300);">
+                <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px;" data-i18n="profile.sellerSectionDesc">
+                  Bagian ini <strong>hanya wajib diisi jika Anda ingin menjual tiket</strong> di <code>/deal/create</code>. Hasil penjualan tiket akan dicairkan ke rekening bank ini setelah serah terima tiket terkonfirmasi. Data rekening dilindungi enkripsi AES-256.
+                </p>
+
+                <div class="grid-2">
+                  <div class="form-group">
+                    <label for="profBankName" data-i18n="profile.bankName">Nama Bank *</label>
+                    <select id="profBankName" class="form-control">
+                      <option value="">-- Pilih Bank Pencairan --</option>
+                      <option value="BCA">BCA (Bank Central Asia)</option>
+                      <option value="MANDIRI">Bank Mandiri</option>
+                      <option value="BRI">BRI (Bank Rakyat Indonesia)</option>
+                      <option value="BNI">BNI (Bank Negara Indonesia)</option>
+                      <option value="CIMB">CIMB Niaga</option>
+                      <option value="PERMATA">Bank Permata</option>
+                      <option value="BSI">BSI (Bank Syariah Indonesia)</option>
+                      <option value="JAGO">Bank Jago</option>
+                      <option value="SEABANK">SeaBank Indonesia</option>
+                      <option value="OTHER">Bank Lainnya</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="profAccountNum" data-i18n="profile.bankAccountNumber">Nomor Rekening Bank *</label>
+                    <input type="text" id="profAccountNum" class="form-control mono" placeholder="Contoh: 1234567890">
+                  </div>
+                </div>
+
+                <div class="grid-2">
+                  <div class="form-group">
+                    <label for="profAccountHolder" data-i18n="profile.bankAccountHolder">Nama Pemilik Rekening *</label>
+                    <input type="text" id="profAccountHolder" class="form-control" placeholder="Nama sesuai buku tabungan">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="profDocRef" data-i18n="profile.identityDocRef">Referensi Identitas (4 Digit Terakhir KTP)</label>
+                    <input type="text" id="profDocRef" class="form-control mono" placeholder="Contoh: 1234 (4 digit terakhir NIK)" maxlength="16">
+                    <span style="font-size: 11px; color: var(--text-dim);">Kami tidak menyimpan NIK lengkap. Cukup 4 digit terakhir untuk referensi KYC.</span>
+                  </div>
+                </div>
               </div>
-
-              <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:14px;">
-                Hasil penjualan tiket akan dicairkan ke rekening bank ini setelah serah terima tiket terkonfirmasi. Data rekening dilindungi enkripsi AES-256.
-              </p>
-
-              <div class="grid-2">
-                <div class="form-group">
-                  <label for="profBankName" data-i18n="profile.bankName">Nama Bank *</label>
-                  <select id="profBankName" class="form-control">
-                    <option value="">-- Pilih Bank Pencairan --</option>
-                    <option value="BCA">BCA (Bank Central Asia)</option>
-                    <option value="MANDIRI">Bank Mandiri</option>
-                    <option value="BRI">BRI (Bank Rakyat Indonesia)</option>
-                    <option value="BNI">BNI (Bank Negara Indonesia)</option>
-                    <option value="CIMB">CIMB Niaga</option>
-                    <option value="PERMATA">Bank Permata</option>
-                    <option value="BSI">BSI (Bank Syariah Indonesia)</option>
-                    <option value="JAGO">Bank Jago</option>
-                    <option value="SEABANK">SeaBank Indonesia</option>
-                    <option value="OTHER">Bank Lainnya</option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label for="profAccountNum" data-i18n="profile.bankAccountNumber">Nomor Rekening Bank *</label>
-                  <input type="text" id="profAccountNum" class="form-control mono" placeholder="Contoh: 1234567890">
-                </div>
-              </div>
-
-              <div class="grid-2">
-                <div class="form-group">
-                  <label for="profAccountHolder" data-i18n="profile.bankAccountHolder">Nama Pemilik Rekening *</label>
-                  <input type="text" id="profAccountHolder" class="form-control" placeholder="Nama sesuai buku tabungan">
-                </div>
-
-                <div class="form-group">
-                  <label for="profDocRef" data-i18n="profile.identityDocRef">Referensi Identitas (4 Digit Terakhir KTP)</label>
-                  <input type="text" id="profDocRef" class="form-control mono" placeholder="Contoh: 1234 (4 digit terakhir NIK)" maxlength="16">
-                  <span style="font-size:11px; color:var(--text-dim);">Kami tidak menyimpan NIK lengkap. Cukup 4 digit terakhir untuk referensi KYC.</span>
-                </div>
-              </div>
-            </div>
+            </details>
 
             <!-- Feedback Alert -->
             <div id="profileAlert" class="notice-box" style="display:none; margin-bottom:16px;"></div>
@@ -478,13 +499,13 @@
         loadedProfile = data.profile;
         renderProfileData(loadedProfile);
 
-        if (setupRole === 'seller') {
-          const sellerSection = document.getElementById('sellerPayoutSection');
-          if (sellerSection) {
-            sellerSection.scrollIntoView({ behavior: 'smooth' });
-            sellerSection.style.border = '1px solid var(--terra-600)';
-            sellerSection.style.borderRadius = '8px';
-            sellerSection.style.padding = '16px';
+        if (setupRole === 'seller' || (loadedProfile && loadedProfile.seller_profile_complete)) {
+          const sellerDetails = document.getElementById('sellerPayoutDetails');
+          if (sellerDetails) {
+            sellerDetails.open = true;
+            if (setupRole === 'seller') {
+              sellerDetails.scrollIntoView({ behavior: 'smooth' });
+            }
           }
         }
       } catch (err) {
@@ -579,16 +600,34 @@
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
       hideProfileAlert();
 
+      const sellerDetailsEl = document.getElementById('sellerPayoutDetails');
+      const isSellerOpen = Boolean(sellerDetailsEl?.open || setupRole === 'seller');
+      const bankName = document.getElementById('profBankName').value;
+      const acctNum = document.getElementById('profAccountNum').value.trim();
+      const acctHolder = document.getElementById('profAccountHolder').value.trim();
+      const docRef = document.getElementById('profDocRef').value.trim();
+
+      const isSubmittingSeller = Boolean(isSellerOpen && (bankName || acctNum || acctHolder || setupRole === 'seller'));
+
+      if (isSubmittingSeller) {
+        if (!bankName || !acctNum || !acctHolder) {
+          showProfileAlert('Untuk mengaktifkan profil penjual, Nama Bank, Nomor Rekening, dan Nama Pemilik Rekening wajib diisi.', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Profil';
+          return;
+        }
+      }
+
       const payload = {
         full_name: document.getElementById('profFullName').value.trim(),
         whatsapp: document.getElementById('profWhatsapp').value.trim(),
         city: document.getElementById('profCity').value.trim(),
         address: document.getElementById('profAddress').value.trim(),
-        payout_bank_name: document.getElementById('profBankName').value,
-        payout_account_number: document.getElementById('profAccountNum').value.trim(),
-        payout_account_holder: document.getElementById('profAccountHolder').value.trim(),
-        identity_doc_ref: document.getElementById('profDocRef').value.trim(),
-        seller_profile_submit: true
+        payout_bank_name: bankName,
+        payout_account_number: acctNum,
+        payout_account_holder: acctHolder,
+        identity_doc_ref: docRef,
+        seller_profile_submit: isSubmittingSeller
       };
 
       try {

@@ -71,7 +71,10 @@ const en = {
     productsAndServices: "Products & Services",
     buyerGuide: "Buyer Guide",
     signInSignUp: "Sign In / Sign Up",
-    backToHome: "Back to Home"
+    backToHome: "Back to Home",
+    buyTickets: "Buy Tickets / Browse Events",
+    dealRoomLookup: "Have a Deal Code? (Open Room)",
+    sellerDealLink: "Sell Tickets / Create Deal Link"
   },
 
   landing: {
@@ -190,7 +193,30 @@ const en = {
     escrowStatusLabel: "Fund Protection Status:",
     entryInstruction: "Venue Entry Instructions:",
     entryInstructionDesc: "Meet the TIKUM PIC at the venue meeting point on event day. Keep your Order ID ready for verification prior to barcode scanning.",
-    trackOrderBtn: "Track Status & Protocol at /track"
+    trackOrderBtn: "Track Status & Protocol at /track",
+    sellerSelfListingBadge: "This is Your Listing (Seller Mode)",
+    copyLinkForBuyer: "Copy Link for Buyer",
+    linkCopied: "Link Copied Successfully!"
+  },
+
+  dealHub: {
+    pill: "BUYER DEAL & TRANSACTION HUB",
+    title: "Open Deal Room & Buy Tickets Securely",
+    subtitle: "Have a deal code or transaction link from a seller? Enter it below to enter the Deal Room protected by Tikum escrow holding.",
+    lookupTitle: "Have a Deal Link or Code?",
+    lookupDesc: "Paste the deal link (e.g. tikum.app/deal/list-abc) or enter the Deal ID:",
+    inputPlaceholder: "Example: list-123, deal-456, or https://... URL",
+    btnOpenRoom: "Open Deal Room",
+    lookupEmptyErr: "Please enter a Deal ID or Deal URL.",
+    lookupInvalidErr: "Invalid Deal ID format.",
+    sellerBannerTitle: "Want to Sell Tickets?",
+    sellerBannerDesc: "Create your protected Deal Link in 2 minutes with zero upfront fees.",
+    sellerBannerBtn: "Create Seller Deal Link",
+    publicListingsTitle: "Available Public Listings",
+    publicListingsSubtitle: "Official secondary tickets with ownership verified by Tikum.",
+    noListingsTitle: "No active public listings at the moment",
+    noListingsDesc: "New listings from verified sellers will appear here. You can also explore our official event catalog.",
+    browseCatalogBtn: "Browse Event Catalog"
   },
 
   verification: {
@@ -377,7 +403,10 @@ const en = {
     savedSuccess: "Profile successfully updated.",
     autofillBadge: "Profile Verified & Auto-Filled",
     buyerProportionalNote: "For buyers, only minimal contact details (Name, WhatsApp, and City) are required per PDP Law No. 27/2022 data minimization.",
-    sellerCompleteBadge: "Seller Profile Complete"
+    sellerCompleteBadge: "Seller Profile Complete",
+    sellerSectionSummary: "Activate Seller Profile (Selling Tickets Only)",
+    sellerSectionDesc: "This section is only required if you want to sell tickets for escrow settlement payout.",
+    buyerOnlyNotice: "Buyer profile is active. You are ready to purchase tickets without bank account or identity documents."
   },
 
   errors: {

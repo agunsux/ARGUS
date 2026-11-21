@@ -245,9 +245,21 @@
           <p class="sidebar-group-label" data-i18n="nav.groupTransactions">Transaksi</p>
           <ul class="sidebar-nav-list">
             <li>
-              <a href="/create" class="sidebar-nav-item" style="color:var(--color-brand-primary); font-weight:700;">
+              <a href="/offers" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-ticket"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.buyTickets">Beli Tiket / Cari Event</span>
+              </a>
+            </li>
+            <li>
+              <a href="/deal" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-door-open"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.dealRoomLookup">Punya Kode Deal? (Buka Room)</span>
+              </a>
+            </li>
+            <li>
+              <a href="/deal/create" class="sidebar-nav-item" style="color:var(--color-brand-primary); font-weight:700;">
                 <span class="sidebar-nav-icon"><i class="fa-solid fa-circle-plus"></i></span>
-                <span class="sidebar-nav-label" data-i18n="nav.submitListing">Buat Deal Link</span>
+                <span class="sidebar-nav-label" data-i18n="nav.submitListing">Jual Tiket / Buat Deal</span>
               </a>
             </li>
             <li>
@@ -260,6 +272,12 @@
               <a href="/pay" class="sidebar-nav-item">
                 <span class="sidebar-nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
                 <span class="sidebar-nav-label" data-i18n="nav.pricingAndFees">Perlindungan &amp; Biaya</span>
+              </a>
+            </li>
+            <li>
+              <a href="/profile" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-user-gear"></i></span>
+                <span class="sidebar-nav-label" data-i18n="profile.pageTitle">Profil Akun</span>
               </a>
             </li>
           </ul>
@@ -311,8 +329,11 @@
         </div>
 
         <div class="topbar-right">
-          <a href="/create" class="ln-btn ln-btn-primary" style="padding:8px 16px; font-size:13px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-plus"></i> <span data-i18n="nav.submitListing">+ Buat Deal</span>
+          <a href="/deal" class="ln-btn ln-btn-ghost" style="padding:8px 12px; font-size:13px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-door-open"></i> <span data-i18n="nav.dealRoomLookup">Buka Deal Room</span>
+          </a>
+          <a href="/deal/create" class="ln-btn ln-btn-primary" style="padding:8px 14px; font-size:13px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-plus"></i> <span data-i18n="nav.submitListing">+ Jual Tiket</span>
           </a>
           <div id="authHeaderContainer">
             <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up" data-i18n="auth.signInSignUp" style="height:36px; padding:0 14px; font-size:13px;">Masuk / Daftar</button>
@@ -352,10 +373,13 @@
       </p>
       <div class="hero-cta-group" style="display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap;">
         <a href="#upcoming" class="ln-btn ln-btn-primary" style="padding: 12px 24px; font-size: 14px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="spotlight.ctaFind">Cari Tiket Konser</span>
+          <i class="fa-solid fa-ticket"></i> <span data-i18n="nav.buyTickets">Beli Tiket / Cari Event</span>
         </a>
-        <a href="/create" class="ln-btn ln-btn-ghost" style="padding: 12px 24px; font-size: 14px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--primary, #E05A3A); color: var(--primary, #E05A3A);">
-          <i class="fa-solid fa-plus-circle"></i> <span data-i18n="spotlight.ctaSell">Jual Tiket Anda</span>
+        <a href="/deal" class="ln-btn ln-btn-secondary" style="padding: 12px 22px; font-size: 14px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--line-300); color: #FFF;">
+          <i class="fa-solid fa-door-open"></i> <span data-i18n="nav.dealRoomLookup">Punya Link/Kode Deal?</span>
+        </a>
+        <a href="/deal/create" class="ln-btn ln-btn-ghost" style="padding: 12px 24px; font-size: 14px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--primary, #E05A3A); color: var(--primary, #E05A3A);">
+          <i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellerDealLink">Jual Tiket / Buat Deal Link</span>
         </a>
       </div>
     </div>

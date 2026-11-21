@@ -71,7 +71,10 @@ const id = {
     productsAndServices: "Produk & Layanan",
     buyerGuide: "Panduan Pembeli",
     signInSignUp: "Masuk / Daftar",
-    backToHome: "Kembali ke Beranda"
+    backToHome: "Kembali ke Beranda",
+    buyTickets: "Beli Tiket / Cari Event",
+    dealRoomLookup: "Punya Kode Deal? (Buka Room)",
+    sellerDealLink: "Jual Tiket / Buat Deal Link"
   },
 
   landing: {
@@ -190,7 +193,30 @@ const id = {
     escrowStatusLabel: "Status Perlindungan Dana:",
     entryInstruction: "Instruksi Masuk Venue:",
     entryInstructionDesc: "Temui TIKUM PIC di titik kumpul venue pada hari acara. Simpan ID Pesanan Anda untuk proses pencocokan tiket sebelum pemindaian barcode.",
-    trackOrderBtn: "Lacak Status & Protokol di /track"
+    trackOrderBtn: "Lacak Status & Protokol di /track",
+    sellerSelfListingBadge: "Ini Listing Anda (Mode Penjual)",
+    copyLinkForBuyer: "Salin Link untuk Pembeli",
+    linkCopied: "Link Berhasil Disalin!"
+  },
+
+  dealHub: {
+    pill: "PUSAT DEAL & TRANSAKSI PEMBELI",
+    title: "Buka Deal Room & Beli Tiket Aman",
+    subtitle: "Punya kode deal atau link transaksi dari penjual? Masukkan di bawah untuk membuka Deal Room dengan proteksi penampungan escrow platform Tikum.",
+    lookupTitle: "Punya Link atau Kode Deal?",
+    lookupDesc: "Tempelkan tautan deal (misal: tikum.app/deal/list-abc) atau masukkan ID Deal:",
+    inputPlaceholder: "Contoh: list-123, deal-456, atau link https://...",
+    btnOpenRoom: "Buka Deal Room",
+    lookupEmptyErr: "Silakan masukkan ID Deal atau URL Deal.",
+    lookupInvalidErr: "Format ID Deal tidak valid.",
+    sellerBannerTitle: "Ingin Menjual Tiket?",
+    sellerBannerDesc: "Buat Deal Link terproteksi Anda sendiri dalam 2 menit tanpa biaya awal.",
+    sellerBannerBtn: "Buat Deal Link Penjual",
+    publicListingsTitle: "Listing Publik Tersedia",
+    publicListingsSubtitle: "Tiket sekunder resmi yang telah diverifikasi kepemilikannya oleh sistem Tikum.",
+    noListingsTitle: "Belum ada listing publik yang aktif",
+    noListingsDesc: "Listing baru dari penjual terverifikasi akan muncul di sini. Anda juga dapat mencari event di katalog resmi.",
+    browseCatalogBtn: "Jelajahi Katalog Event"
   },
 
   verification: {
@@ -377,7 +403,10 @@ const id = {
     savedSuccess: "Profil berhasil diperbarui.",
     autofillBadge: "Profil Terverifikasi & Terisi Otomatis",
     buyerProportionalNote: "Untuk pembeli, kami hanya memerlukan kontak dasar (Nama, WhatsApp, dan Kota) sesuai prinsip minimisasi data UU PDP No. 27/2022.",
-    sellerCompleteBadge: "Profil Penjual Lengkap"
+    sellerCompleteBadge: "Profil Penjual Lengkap",
+    sellerSectionSummary: "Aktifkan Profil Penjual (Khusus Jual Tiket)",
+    sellerSectionDesc: "Bagian ini hanya wajib diisi jika Anda ingin menjual tiket untuk pencairan dana escrow.",
+    buyerOnlyNotice: "Profil pembeli aktif. Anda siap bertransaksi tanpa perlu mengisi data rekening atau dokumen identitas."
   },
 
   errors: {

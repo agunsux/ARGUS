@@ -38,12 +38,16 @@ function getCallerUserId(req) {
  * Public status of payment subsystem & safety gates
  */
 router.get('/v1/payments/status', (req, res) => {
-  const { isPaymentGatewayFrozen } = require('../config/marketplaceMode');
+  const { isPaymentGatewayFrozen, isPrelaunchListingMode, getMarketplaceMode } = require('../config/marketplaceMode');
   const frozen = isPaymentGatewayFrozen();
+  const prelaunch = isPrelaunchListingMode();
   res.json({
     ...PaymentService.getSubsystemStatus(),
     is_payment_gateway_frozen: frozen,
-    coordination_mode: frozen ? 'MANUAL_ESCROW' : 'ONLINE_GATEWAY'
+    coordination_mode: frozen ? 'MANUAL_ESCROW' : 'ONLINE_GATEWAY',
+    marketplace_mode: getMarketplaceMode(),
+    is_prelaunch: prelaunch,
+    NO_REAL_PAYMENT: prelaunch
   });
 });
 
