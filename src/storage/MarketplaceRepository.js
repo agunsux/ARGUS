@@ -17,6 +17,9 @@ class MarketplaceRepository {
   async listTicketsBySeller(sellerId) { throw new Error('Not implemented'); }
   async listAllTickets(limit = 200) { throw new Error('Not implemented'); }
 
+  // Atomic Parent-First Ticket & Listing Creation
+  async createTicketAndListing({ ticketData, listingData }) { throw new Error('Not implemented'); }
+
   // Listings
   async createListing(listingData) { throw new Error('Not implemented'); }
   async getListingById(listingId) { throw new Error('Not implemented'); }

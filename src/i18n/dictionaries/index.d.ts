@@ -150,6 +150,36 @@ export interface DealCreateDictionary {
   submitting: string;
   mode1Notice: string;
   mode2Notice: string;
+  stepperStep1: string;
+  stepperStep2: string;
+  stepperStep3: string;
+  autofillNotice: string;
+}
+
+export interface ProfileDictionary {
+  pageTitle: string;
+  pageSubtitle: string;
+  emailVerification: string;
+  emailVerified: string;
+  emailUnverified: string;
+  resendVerification: string;
+  verificationSent: string;
+  cooldownNotice: string;
+  personalInfo: string;
+  fullName: string;
+  whatsapp: string;
+  cityOrAddress: string;
+  sellerPayout: string;
+  bankName: string;
+  bankAccountNumber: string;
+  bankAccountHolder: string;
+  identityDocRef: string;
+  saveBtn: string;
+  saving: string;
+  savedSuccess: string;
+  autofillBadge: string;
+  buyerProportionalNote: string;
+  sellerCompleteBadge: string;
 }
 
 export interface DealRoomDictionary {
@@ -360,6 +390,10 @@ export interface ErrorsDictionary {
   priceOutOfRange: string;
   kycRequired: string;
   orderExpired: string;
+  emailVerificationRequired: string;
+  sellerProfileIncomplete: string;
+  selfPurchaseForbidden: string;
+  invalidRelationalReference: string;
 }
 
 export interface TikumDictionarySchema {
@@ -381,6 +415,7 @@ export interface TikumDictionarySchema {
   brand: BrandDictionary;
   meta: MetaDictionary;
   footer: FooterDictionary;
+  profile: ProfileDictionary;
   errors: ErrorsDictionary;
 }
 

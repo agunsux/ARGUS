@@ -180,6 +180,162 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     return await this.pool.query(text, params);
   }
 
+  sanitizeDbError(err) {
+    if (!err) return err;
+    if (err.code === '23503' || err.code === 'PARENT_TICKET_MISSING') {
+      const sanitized = new Error('Referensi data tidak valid atau belum terdaftar.');
+      sanitized.code = 'INVALID_RELATIONAL_REFERENCE';
+      sanitized.statusCode = 400;
+      sanitized.originalDetail = err.detail || err.message;
+      sanitized.constraint = err.constraint || 'marketplace_listings_ticket_id_fkey';
+      sanitized.bilingual = {
+        id: 'Referensi data tiket, event, atau akun penjual tidak valid atau belum terdaftar.',
+        en: 'Invalid or unregistered relational reference (ticket, event, or seller account).'
+      };
+      return sanitized;
+    }
+    if (err.code === '23505') {
+      const sanitized = new Error('Data sudah terdaftar sebelumnya.');
+      sanitized.code = 'DUPLICATE_RESOURCE';
+      sanitized.statusCode = 409;
+      sanitized.constraint = err.constraint;
+      sanitized.bilingual = {
+        id: 'Data sudah terdaftar sebelumnya dalam sistem.',
+        en: 'This resource is already registered in the system.'
+      };
+      return sanitized;
+    }
+    if (err.code === '23502') {
+      const sanitized = new Error('Kolom data wajib tidak boleh kosong.');
+      sanitized.code = 'MISSING_REQUIRED_COLUMN';
+      sanitized.statusCode = 400;
+      sanitized.column = err.column;
+      sanitized.bilingual = {
+        id: 'Kolom data wajib tidak boleh kosong.',
+        en: 'Required data field cannot be empty.'
+      };
+      return sanitized;
+    }
+    return err;
+  }
+
+  async ensureEventExists(eventId, client = null) {
+    if (!eventId) return null;
+    const queryExecutor = client || this;
+    try {
+      const evRes = await queryExecutor.query('SELECT id FROM canonical_events WHERE id = $1', [eventId]);
+      if (evRes.rows && evRes.rows.length > 0) return evRes.rows[0];
+    } catch (_) {}
+
+    // Find in memory or registries
+    let event = null;
+    try {
+      const { state } = require('../database');
+      if (state && state.events) {
+        event = state.events.find(e => e.id === eventId || e.event_id === eventId);
+      }
+    } catch (_) {}
+
+    if (!event) {
+      try {
+        const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
+        if (canonicalRegistry && typeof canonicalRegistry.getEventById === 'function') {
+          event = canonicalRegistry.getEventById(eventId);
+        }
+      } catch (_) {}
+    }
+
+    if (!event) {
+      try {
+        const { EventPolicyRegistry } = require('../policy/EventPolicyRegistry');
+        if (EventPolicyRegistry && typeof EventPolicyRegistry.getEventById === 'function') {
+          event = EventPolicyRegistry.getEventById(eventId);
+        }
+      } catch (_) {}
+    }
+
+    if (!event) return null;
+
+    const slug = event.slug || event.id || `event-${Date.now()}`;
+    const name = event.canonical_name || event.name || event.title || 'Event Tikum';
+    const eventType = event.event_type || event.category || 'CONCERT';
+    const category = event.category || 'CONCERT';
+    const startDate = event.start_date || (event.start_datetime ? new Date(event.start_datetime).toISOString().split('T')[0] : null);
+    const startDatetime = event.start_datetime || (startDate ? new Date(startDate).toISOString() : null);
+    const venueName = event.venue_name || event.venue || 'Venue Indonesia';
+    const city = event.city || event.venue_city || 'Jakarta';
+    const isVerified = Boolean(event.is_verified || event.verification_status === 'VERIFIED');
+    const verificationStatus = event.verification_status || (isVerified ? 'VERIFIED' : 'UNVERIFIED');
+    const lifecycleStatus = event.lifecycle_status || event.status || 'UPCOMING';
+    const archiveStatus = event.archive_status || 'ACTIVE';
+    const publicVisibility = event.public_visibility !== false;
+    const meta = event.metadata || {};
+
+    const insertSql = `
+      INSERT INTO canonical_events (
+        id, slug, canonical_name, event_type, category, start_date, start_datetime,
+        venue_name, city, is_verified, verification_status, lifecycle_status,
+        archive_status, public_visibility, metadata
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      ON CONFLICT (id) DO UPDATE SET
+        updated_at = NOW()
+      RETURNING *;
+    `;
+    try {
+      const res = await queryExecutor.query(insertSql, [
+        eventId, slug, name, eventType, category, startDate, startDatetime,
+        venueName, city, isVerified, verificationStatus, lifecycleStatus,
+        archiveStatus, publicVisibility, JSON.stringify(meta)
+      ]);
+      return res.rows[0];
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async ensureUserExists(userId, client = null) {
+    if (!userId) return null;
+    const queryExecutor = client || this;
+    try {
+      const uRes = await queryExecutor.query('SELECT id FROM users WHERE id = $1', [userId]);
+      if (uRes.rows && uRes.rows.length > 0) return uRes.rows[0];
+    } catch (_) {}
+
+    let user = null;
+    try {
+      const { state } = require('../database');
+      if (state && state.users) {
+        user = state.users.find(u => u.id === userId);
+      }
+    } catch (_) {}
+
+    if (!user) return null;
+
+    const email = user.email || `${userId}@user.tikum.app`;
+    const normEmail = email.toLowerCase().trim();
+    const name = user.name || user.display_name || 'Pengguna Tikum';
+    const role = user.role || 'SELLER';
+    const status = user.status || 'ACTIVE';
+    const metadata = user.metadata || {};
+
+    const insertSql = `
+      INSERT INTO users (
+        id, email, normalized_email, name, role, status, metadata
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (id) DO UPDATE SET
+        updated_at = NOW()
+      RETURNING *;
+    `;
+    try {
+      const res = await queryExecutor.query(insertSql, [
+        userId, email, normEmail, name, role, status, JSON.stringify(metadata)
+      ]);
+      return res.rows[0];
+    } catch (_) {
+      return null;
+    }
+  }
+
   async withTransaction(fn) {
     await this.ensureInitialized();
     if (this.degraded) {
@@ -212,42 +368,51 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       return this.fallbackRepo.createTicket(ticketData);
     }
 
-    const id = ticketData.id || ticketData.ticket_id || `tkt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-    const sql = `
-      INSERT INTO marketplace_tickets (
-        id, seller_id, current_owner_id, canonical_event_id, ticket_type,
-        section, row_id, seat, quantity, face_value, currency,
-        ticket_format, transfer_method, status, locked_by, barcode_hash, metadata
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-      ON CONFLICT (id) DO UPDATE SET
-        status = EXCLUDED.status,
-        current_owner_id = EXCLUDED.current_owner_id,
-        locked_by = EXCLUDED.locked_by,
-        updated_at = NOW()
-      RETURNING *;
-    `;
-    const params = [
-      id,
-      ticketData.seller_id || ticketData.original_owner_id,
-      ticketData.current_owner_id || ticketData.seller_id || ticketData.original_owner_id,
-      ticketData.canonical_event_id || ticketData.event_id,
-      ticketData.ticket_type || 'GENERAL_ADMISSION',
-      ticketData.section || null,
-      ticketData.row_id || ticketData.row || null,
-      ticketData.seat || null,
-      ticketData.quantity || 1,
-      ticketData.face_value || ticketData.faceValue || 0,
-      ticketData.currency || 'IDR',
-      ticketData.ticket_format || 'E_TICKET',
-      ticketData.transfer_method || 'MOBILE_TRANSFER',
-      ticketData.status || 'VERIFIED',
-      ticketData.locked_by || null,
-      ticketData.barcode_hash || null,
-      JSON.stringify(ticketData.metadata || {})
-    ];
+    try {
+      const eventId = ticketData.canonical_event_id || ticketData.event_id;
+      const sellerId = ticketData.seller_id || ticketData.original_owner_id;
+      if (sellerId) await this.ensureUserExists(sellerId);
+      if (eventId) await this.ensureEventExists(eventId);
 
-    const res = await this.query(sql, params);
-    return res.rows[0];
+      const id = ticketData.id || ticketData.ticket_id || `tkt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      const sql = `
+        INSERT INTO marketplace_tickets (
+          id, seller_id, current_owner_id, canonical_event_id, ticket_type,
+          section, row_id, seat, quantity, face_value, currency,
+          ticket_format, transfer_method, status, locked_by, barcode_hash, metadata
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        ON CONFLICT (id) DO UPDATE SET
+          status = EXCLUDED.status,
+          current_owner_id = EXCLUDED.current_owner_id,
+          locked_by = EXCLUDED.locked_by,
+          updated_at = NOW()
+        RETURNING *;
+      `;
+      const params = [
+        id,
+        ticketData.seller_id || ticketData.original_owner_id,
+        ticketData.current_owner_id || ticketData.seller_id || ticketData.original_owner_id,
+        eventId,
+        ticketData.ticket_type || 'GENERAL_ADMISSION',
+        ticketData.section || null,
+        ticketData.row_id || ticketData.row || null,
+        ticketData.seat || null,
+        ticketData.quantity || 1,
+        ticketData.face_value || ticketData.faceValue || 0,
+        ticketData.currency || 'IDR',
+        ticketData.ticket_format || 'E_TICKET',
+        ticketData.transfer_method || 'MOBILE_TRANSFER',
+        ticketData.status || 'VERIFIED',
+        typeof ticketData.locked_by === 'string' ? ticketData.locked_by.slice(0, 64) : null,
+        ticketData.barcode_hash || null,
+        JSON.stringify(ticketData.metadata || {})
+      ];
+
+      const res = await this.query(sql, params);
+      return res.rows[0];
+    } catch (err) {
+      throw this.sanitizeDbError(err);
+    }
   }
 
   async getTicketById(ticketId) {
@@ -270,16 +435,119 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       }
       return this.fallbackRepo.updateTicketStatus(ticketId, status, lockedBy);
     }
+    const lockedByStr = typeof lockedBy === 'string' ? lockedBy.slice(0, 64) : (lockedBy?.locked_by ? String(lockedBy.locked_by).slice(0, 64) : null);
+    const extraMeta = typeof lockedBy === 'object' && lockedBy !== null ? lockedBy : null;
     const sql = `
       UPDATE marketplace_tickets
       SET status = $2,
           locked_by = CASE WHEN $3::text IS NOT NULL THEN $3 ELSE locked_by END,
+          metadata = CASE WHEN $4::text IS NOT NULL THEN COALESCE(metadata, '{}'::jsonb) || $4::jsonb ELSE metadata END,
           updated_at = NOW()
       WHERE id = $1
       RETURNING *;
     `;
-    const res = await this.query(sql, [ticketId, status, lockedBy]);
-    return res.rows[0] || null;
+    try {
+      const res = await this.query(sql, [ticketId, status, lockedByStr, extraMeta ? JSON.stringify(extraMeta) : null]);
+      return res.rows[0] || null;
+    } catch (err) {
+      throw this.sanitizeDbError(err);
+    }
+  }
+
+  async createTicketAndListing({ ticketData, listingData }) {
+    await this.ensureInitialized();
+    if (this.degraded) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+      }
+      return this.fallbackRepo.createTicketAndListing({ ticketData, listingData });
+    }
+
+    try {
+      return await this.withTransaction(async (client) => {
+        const eventId = ticketData.canonical_event_id || ticketData.event_id || listingData.canonical_event_id || listingData.event_id;
+        const sellerId = ticketData.seller_id || listingData.seller_id;
+
+        // 1. Ensure parent user exists
+        if (sellerId) {
+          await this.ensureUserExists(sellerId, client);
+        }
+
+        // 2. Ensure parent event exists
+        if (eventId) {
+          await this.ensureEventExists(eventId, client);
+        }
+
+        // 3. Insert parent ticket FIRST
+        const ticketId = ticketData.id || ticketData.ticket_id || `tkt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        const ticketSql = `
+          INSERT INTO marketplace_tickets (
+            id, seller_id, current_owner_id, canonical_event_id, ticket_type,
+            section, row_id, seat, quantity, face_value, currency,
+            ticket_format, transfer_method, status, locked_by, barcode_hash, metadata
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          ON CONFLICT (id) DO UPDATE SET
+            status = EXCLUDED.status,
+            current_owner_id = EXCLUDED.current_owner_id,
+            locked_by = EXCLUDED.locked_by,
+            updated_at = NOW()
+          RETURNING *;
+        `;
+        const ticketParams = [
+          ticketId,
+          ticketData.seller_id || ticketData.original_owner_id,
+          ticketData.current_owner_id || ticketData.seller_id || ticketData.original_owner_id,
+          eventId,
+          ticketData.ticket_type || 'GENERAL_ADMISSION',
+          ticketData.section || null,
+          ticketData.row_id || ticketData.row || null,
+          ticketData.seat || null,
+          ticketData.quantity || 1,
+          ticketData.face_value || ticketData.faceValue || 0,
+          ticketData.currency || 'IDR',
+          ticketData.ticket_format || 'E_TICKET',
+          ticketData.transfer_method || 'MOBILE_TRANSFER',
+          ticketData.status || 'VERIFIED',
+          typeof ticketData.locked_by === 'string' ? ticketData.locked_by.slice(0, 64) : null,
+          ticketData.barcode_hash || null,
+          JSON.stringify(ticketData.metadata || {})
+        ];
+        const tktRes = await client.query(ticketSql, ticketParams);
+        const persistedTicket = tktRes.rows[0];
+
+        // 4. Insert child listing SECOND referencing persisted ticket ID
+        const listingId = listingData.id || listingData.listing_id || `list-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        const listingSql = `
+          INSERT INTO marketplace_listings (
+            id, ticket_id, seller_id, canonical_event_id, price, currency,
+            status, expires_at, pricing_policy_version, metadata
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          ON CONFLICT (id) DO UPDATE SET
+            price = EXCLUDED.price,
+            status = EXCLUDED.status,
+            updated_at = NOW()
+          RETURNING *;
+        `;
+        const listingParams = [
+          listingId,
+          persistedTicket.id,
+          sellerId,
+          eventId,
+          listingData.price,
+          listingData.currency || 'IDR',
+          listingData.status || 'ACTIVE',
+          listingData.expires_at || null,
+          listingData.pricing_policy_version || 'TIKUM_FEE_POLICY_V1',
+          JSON.stringify(listingData.metadata || {})
+        ];
+        const listRes = await client.query(listingSql, listingParams);
+        const persistedListing = listRes.rows[0];
+
+        return { ticket: persistedTicket, listing: persistedListing };
+      });
+    } catch (err) {
+      throw this.sanitizeDbError(err);
+    }
   }
 
   async listTicketsBySeller(sellerId) {
@@ -334,33 +602,50 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       }
     }
 
-    const id = listingData.id || listingData.listing_id || `list-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-    const sql = `
-      INSERT INTO marketplace_listings (
-        id, ticket_id, seller_id, canonical_event_id, price, currency,
-        status, expires_at, pricing_policy_version, metadata
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      ON CONFLICT (id) DO UPDATE SET
-        price = EXCLUDED.price,
-        status = EXCLUDED.status,
-        updated_at = NOW()
-      RETURNING *;
-    `;
-    const params = [
-      id,
-      listingData.ticket_id,
-      listingData.seller_id,
-      listingData.canonical_event_id || listingData.event_id,
-      listingData.price,
-      listingData.currency || 'IDR',
-      listingData.status || 'ACTIVE',
-      listingData.expires_at || null,
-      listingData.pricing_policy_version || 'TIKUM_FEE_POLICY_V1',
-      JSON.stringify(listingData.metadata || {})
-    ];
+    try {
+      if (listingData.seller_id) await this.ensureUserExists(listingData.seller_id);
+      if (eventId) await this.ensureEventExists(eventId);
 
-    const res = await this.query(sql, params);
-    return res.rows[0];
+      if (listingData.ticket_id) {
+        const tCheck = await this.query('SELECT id FROM marketplace_tickets WHERE id = $1', [listingData.ticket_id]);
+        if (!tCheck || !tCheck.rows || tCheck.rows.length === 0) {
+          const err = new Error(`Parent ticket '${listingData.ticket_id}' not found in database.`);
+          err.code = 'PARENT_TICKET_MISSING';
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
+      const id = listingData.id || listingData.listing_id || `list-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      const sql = `
+        INSERT INTO marketplace_listings (
+          id, ticket_id, seller_id, canonical_event_id, price, currency,
+          status, expires_at, pricing_policy_version, metadata
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (id) DO UPDATE SET
+          price = EXCLUDED.price,
+          status = EXCLUDED.status,
+          updated_at = NOW()
+        RETURNING *;
+      `;
+      const params = [
+        id,
+        listingData.ticket_id,
+        listingData.seller_id,
+        listingData.canonical_event_id || listingData.event_id,
+        listingData.price,
+        listingData.currency || 'IDR',
+        listingData.status || 'ACTIVE',
+        listingData.expires_at || null,
+        listingData.pricing_policy_version || 'TIKUM_FEE_POLICY_V1',
+        JSON.stringify(listingData.metadata || {})
+      ];
+
+      const res = await this.query(sql, params);
+      return res.rows[0];
+    } catch (err) {
+      throw this.sanitizeDbError(err);
+    }
   }
 
   async getListingById(listingId) {

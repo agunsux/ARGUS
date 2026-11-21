@@ -286,6 +286,27 @@ router.post('/login', async (req, res) => {
   });
 });
 
+function normalizeWhatsApp(phone) {
+  if (!phone || typeof phone !== 'string') return '';
+  let clean = phone.replace(/[^\d+]/g, '').trim();
+  if (!clean) return '';
+  if (clean.startsWith('+62')) return clean;
+  if (clean.startsWith('62')) return '+' + clean;
+  if (clean.startsWith('0')) return '+62' + clean.slice(1);
+  if (clean.startsWith('8')) return '+62' + clean;
+  if (clean.startsWith('+')) return clean;
+  return '+62' + clean;
+}
+
+function maskSensitiveRef(val, keep = 4) {
+  if (!val || typeof val !== 'string') return '';
+  const str = val.trim();
+  if (str.length <= keep) return '****' + str;
+  return '****' + str.slice(-keep);
+}
+
+const verificationResendCooldowns = new Map();
+
 /**
  * GET /api/auth/me
  * Returns current authenticated user profile.
@@ -303,6 +324,428 @@ router.get('/me', requireAuth, (req, res) => {
       last_login_at: req.user.last_login_at
     }
   });
+});
+
+/**
+ * GET /api/auth/me/profile
+ * Returns unified profile data with UU PDP data minimization & completeness calculations.
+ */
+router.get('/me/profile', requireAuth, async (req, res) => {
+  try {
+    const userRepo = getUserRepository();
+    const user = await userRepo.getUserById(req.user.id) || req.user;
+    const sellerProfile = await userRepo.getSellerProfile(req.user.id);
+    const meta = user.metadata && typeof user.metadata === 'object' ? user.metadata : {};
+
+    const email = user.email || '';
+    const emailVerified = Boolean(
+      user.email_verified ||
+      meta.email_verified ||
+      meta.email_verified_at ||
+      (user.email && user.status === 'ACTIVE' && meta.auth_provider === 'MAGIC_LINK')
+    );
+    const fullName = user.name || user.display_name || meta.full_name || '';
+    const rawWa = user.phone || meta.whatsapp || '';
+    const whatsapp = rawWa ? normalizeWhatsApp(String(rawWa)) : '';
+    const city = meta.city || '';
+    const address = meta.address || '';
+
+    const buyerProfileComplete = Boolean(emailVerified && fullName.trim() && whatsapp.trim());
+
+    const sellerKycStatus = sellerProfile?.kyc_status || 'UNVERIFIED';
+    const rawIdentityRef = sellerProfile?.nik_hash || meta.identity_doc_ref || '';
+    const identityDocRefMasked = rawIdentityRef ? maskSensitiveRef(rawIdentityRef) : null;
+    const payoutBankName = sellerProfile?.payout_bank || meta.payout_bank_name || '';
+    const rawPayoutAcct = sellerProfile?.payout_account_masked || meta.payout_account_number || '';
+    const payoutAccountMasked = rawPayoutAcct ? maskSensitiveRef(rawPayoutAcct) : null;
+    const payoutAccountHolder = sellerProfile?.display_name || meta.payout_account_holder || fullName || '';
+    const sellerIdentitySubmitted = Boolean(rawIdentityRef || sellerProfile?.requested_at);
+
+    const sellerProfileComplete = Boolean(
+      emailVerified &&
+      fullName.trim() &&
+      whatsapp.trim() &&
+      (address.trim() || city.trim()) &&
+      payoutBankName.trim() &&
+      (payoutAccountMasked || rawPayoutAcct) &&
+      sellerIdentitySubmitted
+    );
+
+    return res.status(200).json({
+      success: true,
+      profile: {
+        id: user.id,
+        email,
+        email_verified: emailVerified,
+        full_name: fullName,
+        whatsapp,
+        city,
+        address,
+        buyer_profile_complete: buyerProfileComplete,
+        seller_kyc_status: sellerKycStatus,
+        identity_doc_ref: identityDocRefMasked,
+        payout_bank_name: payoutBankName,
+        payout_account_number: payoutAccountMasked,
+        payout_account_holder: payoutAccountHolder,
+        seller_identity_submitted: sellerIdentitySubmitted,
+        seller_profile_complete: sellerProfileComplete,
+        role: user.role || 'BUYER'
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Gagal memuat profil.', code: 'PROFILE_FETCH_FAILED' });
+  }
+});
+
+/**
+ * PUT /api/auth/me/profile
+ * Updates contact, address, and payout profiles durably across DB & memory.
+ */
+router.put('/me/profile', requireAuth, async (req, res) => {
+  try {
+    const userRepo = getUserRepository();
+    const userId = req.user.id;
+    const body = req.body || {};
+
+    const user = await userRepo.getUserById(userId) || req.user;
+    const meta = { ...(user.metadata && typeof user.metadata === 'object' ? user.metadata : {}) };
+
+    if (body.full_name !== undefined) {
+      meta.full_name = String(body.full_name).trim().slice(0, 120);
+    }
+    if (body.whatsapp !== undefined || body.phone !== undefined) {
+      const rawWa = body.whatsapp !== undefined ? body.whatsapp : body.phone;
+      meta.whatsapp = normalizeWhatsApp(String(rawWa));
+    }
+    if (body.city !== undefined) {
+      meta.city = String(body.city).trim().slice(0, 100);
+    }
+    if (body.address !== undefined) {
+      meta.address = String(body.address).trim().slice(0, 255);
+    }
+
+    // User table updates
+    const userUpdates = { metadata: meta };
+    if (meta.full_name) {
+      userUpdates.name = meta.full_name;
+      userUpdates.display_name = meta.full_name;
+    }
+    if (meta.whatsapp) {
+      userUpdates.phone = meta.whatsapp;
+    }
+    await userRepo.updateUser(userId, userUpdates);
+
+    // Synchronize in-memory user
+    const memUser = (state.users || []).find(u => u.id === userId);
+    if (memUser) {
+      if (userUpdates.name) memUser.name = userUpdates.name;
+      if (userUpdates.display_name) memUser.display_name = userUpdates.display_name;
+      if (userUpdates.phone) memUser.phone = userUpdates.phone;
+      memUser.metadata = { ...(memUser.metadata || {}), ...meta };
+    }
+
+    // Seller fields if provided
+    const bankName = body.payout_bank_name || body.bank_name || body.payout_bank;
+    const acctNum = body.payout_account_number || body.bank_account_number;
+    const acctHolder = body.payout_account_holder || body.bank_account_holder || meta.full_name;
+    const docRef = body.identity_doc_ref || body.nik;
+
+    let sellerProfile = await userRepo.getSellerProfile(userId);
+    if (bankName || acctNum || docRef || body.seller_profile_submit) {
+      const existingSp = sellerProfile || {};
+      const spUpdates = {
+        user_id: userId,
+        display_name: acctHolder ? String(acctHolder).trim().slice(0, 120) : (existingSp.display_name || userUpdates.name || user.name),
+        payout_bank: bankName ? String(bankName).trim().slice(0, 60) : (existingSp.payout_bank || null),
+        payout_account_masked: acctNum ? String(acctNum).trim().slice(0, 60) : (existingSp.payout_account_masked || null),
+        nik_hash: docRef ? String(docRef).trim().slice(0, 128) : (existingSp.nik_hash || null),
+        kyc_status: existingSp.kyc_status === 'VERIFIED' ? 'VERIFIED' : 'PENDING_REVIEW',
+        requested_at: existingSp.requested_at || new Date().toISOString()
+      };
+      sellerProfile = await userRepo.upsertSellerProfile(userId, spUpdates);
+
+      // In-memory sync
+      if (!state.seller_profiles) state.seller_profiles = [];
+      const spIdx = state.seller_profiles.findIndex(p => p.user_id === userId);
+      if (spIdx >= 0) {
+        state.seller_profiles[spIdx] = { ...state.seller_profiles[spIdx], ...sellerProfile };
+      } else {
+        state.seller_profiles.push(sellerProfile);
+      }
+    }
+
+    // Recompute completeness
+    const emailVerified = Boolean(
+      user.email_verified ||
+      meta.email_verified ||
+      meta.email_verified_at ||
+      (user.email && user.status === 'ACTIVE' && meta.auth_provider === 'MAGIC_LINK')
+    );
+    const fullName = userUpdates.name || user.name || '';
+    const whatsapp = userUpdates.phone || user.phone || '';
+    const buyerProfileComplete = Boolean(emailVerified && fullName.trim() && whatsapp.trim());
+
+    const rawIdentityRef = sellerProfile?.nik_hash || meta.identity_doc_ref || '';
+    const identityDocRefMasked = rawIdentityRef ? maskSensitiveRef(rawIdentityRef) : null;
+    const payoutBankName = sellerProfile?.payout_bank || meta.payout_bank_name || '';
+    const rawPayoutAcct = sellerProfile?.payout_account_masked || meta.payout_account_number || '';
+    const payoutAccountMasked = rawPayoutAcct ? maskSensitiveRef(rawPayoutAcct) : null;
+    const payoutAccountHolder = sellerProfile?.display_name || meta.payout_account_holder || fullName || '';
+    const sellerIdentitySubmitted = Boolean(rawIdentityRef || sellerProfile?.requested_at);
+
+    const sellerProfileComplete = Boolean(
+      emailVerified &&
+      fullName.trim() &&
+      whatsapp.trim() &&
+      (meta.address || meta.city) &&
+      payoutBankName.trim() &&
+      (payoutAccountMasked || rawPayoutAcct) &&
+      sellerIdentitySubmitted
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profil berhasil diperbarui.',
+      profile: {
+        id: userId,
+        email: user.email,
+        email_verified: emailVerified,
+        full_name: fullName,
+        whatsapp,
+        city: meta.city || '',
+        address: meta.address || '',
+        buyer_profile_complete: buyerProfileComplete,
+        seller_kyc_status: sellerProfile?.kyc_status || 'UNVERIFIED',
+        identity_doc_ref: identityDocRefMasked,
+        payout_bank_name: payoutBankName,
+        payout_account_number: payoutAccountMasked,
+        payout_account_holder: payoutAccountHolder,
+        seller_identity_submitted: sellerIdentitySubmitted,
+        seller_profile_complete: sellerProfileComplete,
+        role: user.role || 'BUYER'
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Gagal memperbarui profil.', code: 'PROFILE_UPDATE_FAILED' });
+  }
+});
+
+/**
+ * POST /api/auth/verify-email/request and /resend-verification
+ * Sends verification link with open-redirect safe next parameter.
+ */
+router.post(['/verify-email/request', '/resend-verification'], async (req, res) => {
+  let user = null;
+  const userRepo = getUserRepository();
+  if (req.user) {
+    user = req.user;
+  } else {
+    try {
+      const { resolveUserAsync } = require('../middleware/auth');
+      user = await resolveUserAsync(req);
+    } catch (e) {
+      console.error('FAILED TO RESOLVE USER ASYNC:', e);
+    }
+  }
+
+  const email = (req.body?.email || user?.email || '').trim().toLowerCase();
+  const nextParam = req.body?.next || req.query?.next || '/';
+  const safeNext = MagicLinkService.validateRedirectUrl(nextParam);
+
+  if (!email) {
+    return res.status(400).json({ success: false, error: 'Email wajib diisi.', code: 'EMAIL_REQUIRED' });
+  }
+
+  // 60-second cooldown per email
+  const now = Date.now();
+  const lastSent = verificationResendCooldowns.get(email) || 0;
+  if (now - lastSent < 60000) {
+    const remaining = Math.ceil((60000 - (now - lastSent)) / 1000);
+    return res.status(429).json({
+      success: false,
+      error: `Silakan tunggu ${remaining} detik sebelum meminta email verifikasi lagi.`,
+      code: 'RATE_LIMITED',
+      retryAfter: remaining,
+      cooldown_remaining: remaining
+    });
+  }
+
+  if (!user) {
+    user = await userRepo.getUserByEmail(email) || (state.users || []).find(u => u.email && u.email.toLowerCase() === email);
+  }
+  if (!user) {
+    return res.status(200).json({
+      success: true,
+      message: 'Jika email terdaftar, email verifikasi telah dikirim.',
+      cooldownSeconds: 60,
+      cooldown_seconds: 60
+    });
+  }
+
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+  if (!state.email_verification_tokens) state.email_verification_tokens = [];
+  state.email_verification_tokens.push({
+    id: `evt-${uuidv4()}`,
+    user_id: user.id,
+    email: user.email,
+    token_hash: tokenHash,
+    next: safeNext,
+    expires_at: expiresAt,
+    used: false
+  });
+
+  verificationResendCooldowns.set(email, now);
+
+  const baseUrl = MagicLinkService.resolveBaseUrl();
+  const verifyUrl = `${baseUrl}/verify-email?token=${rawToken}&next=${encodeURIComponent(safeNext)}`;
+
+  try {
+    await emailService.sendVerificationEmail({
+      to: user.email,
+      code: rawToken,
+      name: user.name || 'Pengguna Tikum'
+    });
+  } catch (err) {
+    console.error('[AuthRouter:VerifyEmail] Failed to send email:', err.message);
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: 'Email verifikasi telah dikirim. Periksa kotak masuk Anda.',
+    cooldownSeconds: 60,
+    cooldown_seconds: 60
+  });
+});
+
+/**
+ * GET /api/auth/verify-email
+ * Verifies email token, marks email_verified = true, establishes session, and redirects to safe next.
+ */
+router.get('/verify-email', async (req, res) => {
+  const token = req.query.token;
+  const nextParam = req.query.next;
+  const safeNext = MagicLinkService.validateRedirectUrl(nextParam);
+
+  if (!token) {
+    if (req.accepts('json') && !req.accepts('html')) {
+      return res.status(400).json({ success: false, error: 'Token verifikasi diperlukan.', code: 'INVALID_TOKEN' });
+    }
+    return res.redirect(`/login?error=INVALID_TOKEN&next=${encodeURIComponent(safeNext)}`);
+  }
+
+  const tokenHash = crypto.createHash('sha256').update(String(token).trim()).digest('hex');
+  let tokenRecord = (state.email_verification_tokens || []).find(
+    t => t.token_hash === tokenHash && !t.used
+  );
+
+  const userRepo = getUserRepository();
+  if (!tokenRecord && userRepo && typeof userRepo.getMagicLinkTokenByHash === 'function') {
+    try {
+      const dbToken = await userRepo.getMagicLinkTokenByHash(tokenHash);
+      if (dbToken && !dbToken.used && !dbToken.db_expired) {
+        tokenRecord = {
+          id: dbToken.id,
+          user_id: dbToken.user_id,
+          email: dbToken.email,
+          token_hash: dbToken.token_hash,
+          next: dbToken.redirect_url || safeNext,
+          expires_at: dbToken.expires_at,
+          used: false
+        };
+      }
+    } catch (_) {}
+  }
+
+  if (!tokenRecord || new Date(tokenRecord.expires_at).getTime() < Date.now()) {
+    if (req.accepts('json') && !req.accepts('html')) {
+      return res.status(400).json({ success: false, error: 'Token verifikasi tidak valid atau kedaluwarsa.', code: 'TOKEN_EXPIRED' });
+    }
+    return res.redirect(`/login?error=TOKEN_EXPIRED&next=${encodeURIComponent(safeNext)}`);
+  }
+
+  // Mark token used
+  tokenRecord.used = true;
+  tokenRecord.used_at = new Date().toISOString();
+  if (userRepo && typeof userRepo.consumeMagicLinkToken === 'function') {
+    await userRepo.consumeMagicLinkToken(tokenHash).catch(() => {});
+  }
+
+  const user = (tokenRecord.user_id ? await userRepo.getUserById(tokenRecord.user_id) : null) ||
+    (tokenRecord.email ? await userRepo.getUserByEmail(tokenRecord.email) : null) ||
+    (state.users || []).find(u => (tokenRecord.user_id && u.id === tokenRecord.user_id) || (tokenRecord.email && u.email && u.email.toLowerCase() === tokenRecord.email.toLowerCase()));
+  if (!user) {
+    if (req.accepts('json') && !req.accepts('html')) {
+      return res.status(404).json({ success: false, error: 'Pengguna tidak ditemukan.', code: 'USER_NOT_FOUND' });
+    }
+    return res.redirect('/login?error=USER_NOT_FOUND');
+  }
+
+  // Update user email_verified in Postgres & memory
+  const meta = { ...(user.metadata && typeof user.metadata === 'object' ? user.metadata : {}), email_verified: true, email_verified_at: new Date().toISOString() };
+  await userRepo.updateUser(user.id, { metadata: meta }).catch(() => {});
+  user.email_verified = true;
+  user.metadata = meta;
+  const memUser = (state.users || []).find(u => u.id === user.id);
+  if (memUser) {
+    memUser.email_verified = true;
+    memUser.metadata = meta;
+  }
+
+  // Create or refresh session
+  const ip = req.ip || req.connection?.remoteAddress || '127.0.0.1';
+  const userAgent = req.headers['user-agent'] || null;
+  const sessionRes = await userRepo.createSession({ userId: user.id, role: user.role, ip, userAgent });
+  const session = sessionRes.session;
+
+  const cookieOptions = [
+    `session_token=${session.session_token}`,
+    'HttpOnly',
+    'Path=/',
+    'SameSite=Lax',
+    `Max-Age=${24 * 60 * 60}`
+  ];
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+    cookieOptions.push('Secure');
+  }
+  res.setHeader('Set-Cookie', cookieOptions.join('; '));
+
+  // Determine landing route
+  const targetNext = MagicLinkService.validateRedirectUrl(tokenRecord.next || nextParam || '/');
+  const sellerProfile = await userRepo.getSellerProfile(user.id);
+  const fullName = user.name || '';
+  const phone = user.phone || meta.whatsapp || '';
+  const isSeller = (user.role || '').toUpperCase() === 'SELLER';
+
+  let redirectDestination = targetNext;
+  if (isSeller) {
+    const isSellerComplete = Boolean(fullName && phone && (meta.address || meta.city) && (sellerProfile?.payout_bank || meta.payout_bank_name) && (sellerProfile?.payout_account_masked || meta.payout_account_number));
+    if (!isSellerComplete) {
+      redirectDestination = `/profile?setup=seller&next=${encodeURIComponent(targetNext)}&verified=true`;
+    } else {
+      redirectDestination = `${targetNext}${targetNext.includes('?') ? '&' : '?'}verified=true`;
+    }
+  } else {
+    const isBuyerComplete = Boolean(fullName && phone);
+    if (!isBuyerComplete) {
+      redirectDestination = `/profile?setup=buyer&next=${encodeURIComponent(targetNext)}&verified=true`;
+    } else {
+      redirectDestination = `${targetNext}${targetNext.includes('?') ? '&' : '?'}verified=true`;
+    }
+  }
+
+  if (req.accepts('json') && !req.accepts('html')) {
+    return res.status(200).json({
+      success: true,
+      email_verified: true,
+      redirect: redirectDestination,
+      user: { id: user.id, email: user.email, name: user.name, role: user.role }
+    });
+  }
+
+  return res.redirect(redirectDestination);
 });
 
 /**

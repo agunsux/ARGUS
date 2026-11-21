@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tikum — Profil &amp; Pengaturan Akun | by Shinerva</title>
+  <meta name="description" content="Kelola identitas terverifikasi, verifikasi email, dan data rekening pencairan tiket Anda di Tikum (PT SHINERVA PRAJNA TEJAS) sesuai prinsip UU PDP No. 27/2022.">
+  <link rel="canonical" href="https://tikum.app/profile">
+
+  <!-- OpenGraph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Tikum — Profil &amp; Pengaturan Akun | by Shinerva">
+  <meta property="og:description" content="Kelola identitas terverifikasi, verifikasi email, dan rekening pencairan di Tikum.">
+  <meta property="og:url" content="https://tikum.app/profile">
+  <meta property="og:site_name" content="TIKUM">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tikum — Profil &amp; Pengaturan Akun | by Shinerva">
+  <meta name="twitter:description" content="Kelola identitas terverifikasi, verifikasi email, dan rekening pencairan di Tikum.">
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <div id="appShell">
+    <div id="sidebarBackdrop"></div>
+
+    <!-- Collapsible Left Sidebar (256px Desktop / Slide-Over Drawer Mobile) -->
+    <aside id="appSidebar" class="app-sidebar" aria-label="Navigasi Utama">
+      <div class="sidebar-brand-header">
+        <a href="/" class="sidebar-brand-link">
+          <img src="/assets/tikum-mark-2color.svg" width="30" height="30" alt="Tikum Logo">
+          <div class="sidebar-brand-text">
+            <div class="sidebar-brand-title">TIKUM</div>
+            <div class="sidebar-brand-sub">by PT Shinerva Prajna Tejas</div>
+          </div>
+        </a>
+        <button type="button" id="sidebarToggleDesktop" class="sidebar-toggle-btn" aria-label="Ciutkan / Lebarkan Sidebar" title="Ciutkan Sidebar">
+          <i class="fa-solid fa-angles-left"></i>
+        </button>
+        <button type="button" id="sidebarCloseMobile" class="sidebar-toggle-btn" style="display:none;" aria-label="Tutup Sidebar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="sidebar-nav-container">
+        <!-- 1. JELAJAH / DISCOVER -->
+        <div>
+          <p class="sidebar-group-label" data-i18n="nav.groupDiscover">Jelajah</p>
+          <ul class="sidebar-nav-list">
+            <li>
+              <a href="/" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-house"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.home">Beranda</span>
+              </a>
+            </li>
+            <li>
+              <a href="/offers" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-ticket"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.events">Katalog Event</span>
+              </a>
+            </li>
+            <li>
+              <a href="/events?category=MUSIC" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-music"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.concerts">Konser &amp; K-Pop</span>
+              </a>
+            </li>
+            <li>
+              <a href="/events?category=SPORT" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-futbol"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.sports">Olahraga &amp; Stand-Up</span>
+              </a>
+            </li>
+            <li>
+              <a href="/past-events" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-box-archive"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.pastEvents">Arsip Event</span>
+              </a>
+            </li>
+            <li>
+              <a href="/blog" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-newspaper"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.blog">Blog &amp; Panduan</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 2. TRANSAKSI / TRANSACTIONS -->
+        <div>
+          <p class="sidebar-group-label" data-i18n="nav.groupTransactions">Transaksi</p>
+          <ul class="sidebar-nav-list">
+            <li>
+              <a href="/create" class="sidebar-nav-item" style="color:var(--color-brand-primary); font-weight:700;">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-circle-plus"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.submitListing">Buat Deal Link</span>
+              </a>
+            </li>
+            <li>
+              <a href="/track" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-magnifying-glass-location"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.track">Lacak Transaksi</span>
+              </a>
+            </li>
+            <li>
+              <a href="/pay" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.pricingAndFees">Perlindungan &amp; Biaya</span>
+              </a>
+            </li>
+            <li>
+              <a href="/profile" class="sidebar-nav-item active">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-user-gear"></i></span>
+                <span class="sidebar-nav-label" data-i18n="profile.pageTitle">Profil Akun</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 3. BANTUAN & LEGAL / SUPPORT & LEGAL -->
+        <details class="sidebar-legal-details">
+          <summary class="sidebar-group-label" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+            <span data-i18n="footer.servicesAndLegal">Bantuan &amp; Legal</span>
+            <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i>
+          </summary>
+          <ul class="sidebar-nav-list" style="margin-top:6px;">
+            <li>
+              <a href="/terms" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-file-contract"></i></span>
+                <span class="sidebar-nav-label" data-i18n="footer.terms">Syarat &amp; Ketentuan</span>
+              </a>
+            </li>
+            <li>
+              <a href="/privacy" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-user-shield"></i></span>
+                <span class="sidebar-nav-label" data-i18n="footer.privacyPolicy">Privasi (UU PDP)</span>
+              </a>
+            </li>
+            <li>
+              <a href="/refund-policy" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-hand-holding-dollar"></i></span>
+                <span class="sidebar-nav-label" data-i18n="footer.refundPolicy">Refund &amp; Sengketa</span>
+              </a>
+            </li>
+            <li>
+              <a href="/faq" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-circle-question"></i></span>
+                <span class="sidebar-nav-label" data-i18n="footer.faq">FAQ / Bantuan</span>
+              </a>
+            </li>
+          </ul>
+        </details>
+      </div>
+
+      <!-- Safety Mode Status Badge -->
+      <div class="sidebar-safety-badge">
+        <i class="fa-solid fa-shield-halved"></i>
+        <div>Listing Only Mode Active</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div id="appMainWrapper">
+      <!-- Zero-Overlap 64px Slim Topbar -->
+      <header id="appTopbar" class="app-topbar">
+        <div class="topbar-left">
+          <button type="button" id="sidebarToggleMobile" class="topbar-hamburger-btn" aria-label="Buka Menu Navigasi">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
+            <img src="/assets/tikum-mark-2color.svg" width="28" height="28" alt="Tikum">
+            <span style="font-weight:800; font-size:17px; color:#FFF; letter-spacing:0.5px;">Tikum</span>
+          </a>
+        </div>
+
+        <div class="topbar-center">
+          <div class="topbar-search-wrap">
+            <i class="fa-solid fa-magnifying-glass topbar-search-icon"></i>
+            <input type="search" id="topbarSearchInput" class="topbar-search-input" placeholder="Cari konser, artis, GBK, JIS..." aria-label="Cari event" onkeydown="if(event.key==='Enter') window.location.href='/?q=' + encodeURIComponent(this.value)">
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <a href="/create" class="ln-btn ln-btn-primary" style="padding:8px 16px; font-size:13px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-plus"></i> <span data-i18n="nav.submitListing">+ Buat Deal</span>
+          </a>
+          <button class="select-filter" onclick="if(window.TikumI18n) window.TikumI18n.toggleTheme();" id="themeToggle" title="Toggle Theme" style="padding:6px 10px; height:36px; display:inline-flex; align-items:center; justify-content:center;">
+            <i class="fa-solid fa-sun" id="themeIcon"></i>
+          </button>
+          <button class="lang-toggle-btn lang-switcher-pill" onclick="if(window.TikumI18n) window.TikumI18n.toggleLang();" id="langToggle" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
+            <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Container -->
+      <main class="container" style="max-width: 800px; padding: 24px 16px;">
+        
+        <!-- Verification Success Notice Banner -->
+        <div id="verifiedBanner" class="notice-box notice-success" style="display:none; margin-bottom: 20px;">
+          <i class="fa-solid fa-circle-check"></i>
+          <div>
+            <strong>Verifikasi Berhasil:</strong> Alamat email Anda telah berhasil diverifikasi. Profil Anda kini aktif.
+          </div>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+          <div class="hero-pill"><i class="fa-solid fa-user-shield"></i> PENGATURAN IDENTITAS &amp; AKUN</div>
+          <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;" data-i18n="profile.pageTitle">Profil &amp; Keamanan Akun</h1>
+          <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;" data-i18n="profile.pageSubtitle">
+            Kelola identitas, verifikasi email, dan data rekening pencairan dana tiket. Selesai sekali, otomatis terisi selamanya.
+          </p>
+        </div>
+
+        <!-- Verification Status Cards Grid -->
+        <div class="card" style="background:var(--surface); border:1px solid var(--line-300); margin-bottom: 24px; padding: 20px;">
+          <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
+            Status Kesiapan Akun
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+            <!-- Email Verification Badge -->
+            <div id="cardEmailStatus" style="background:#090d16; border:1px solid #1e293b; padding:14px; border-radius:8px;">
+              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Verifikasi Email</div>
+              <div id="badgeEmail" style="margin-top:6px;">
+                <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Memeriksa...</span>
+              </div>
+              <button type="button" id="btnResendVerif" class="btn btn-secondary btn-sm" style="margin-top:10px; display:none; width:100%; font-size:12px;" onclick="handleResendVerification()">
+                <i class="fa-solid fa-envelope"></i> Kirim Ulang Email
+              </button>
+              <div id="resendFeedback" style="font-size:11.5px; color:#34d399; margin-top:6px; display:none;"></div>
+            </div>
+
+            <!-- Buyer Profile Ready Badge -->
+            <div id="cardBuyerStatus" style="background:#090d16; border:1px solid #1e293b; padding:14px; border-radius:8px;">
+              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Profil Pembeli</div>
+              <div id="badgeBuyer" style="margin-top:6px;">
+                <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Memeriksa...</span>
+              </div>
+              <div style="font-size:11px; color:var(--text-dim); margin-top:6px;" data-i18n="profile.buyerProportionalNote">
+                Minimisasi data UU PDP No. 27/2022: Hanya memerlukan Nama, WhatsApp, dan Kota.
+              </div>
+            </div>
+
+            <!-- Seller Profile Ready Badge -->
+            <div id="cardSellerStatus" style="background:#090d16; border:1px solid #1e293b; padding:14px; border-radius:8px;">
+              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Profil Penjual</div>
+              <div id="badgeSeller" style="margin-top:6px;">
+                <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Memeriksa...</span>
+              </div>
+              <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">
+                Wajib melengkapi kontak, alamat, dan rekening pencairan sebelum mendaftarkan tiket.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Unified Profile Form Card -->
+        <div class="card" id="profileFormCard" style="background:var(--surface); border:1px solid var(--line-300); padding: 24px;">
+          <form id="profileForm" onsubmit="handleSaveProfile(event)">
+
+            <!-- Section A: Contact & Identity -->
+            <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+              <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;" data-i18n="profile.personalInfo">
+                1. Informasi Pribadi &amp; Kontak (Pembeli &amp; Penjual)
+              </div>
+
+              <div class="grid-2">
+                <div class="form-group">
+                  <label for="profFullName" data-i18n="profile.fullName">Nama Lengkap Sesuai Identitas *</label>
+                  <input type="text" id="profFullName" class="form-control" required placeholder="Contoh: Budi Santoso" data-i18n-placeholder="profile.fullName">
+                </div>
+
+                <div class="form-group">
+                  <label for="profEmail">Alamat Email Terdaftar (Sesi Login)</label>
+                  <input type="email" id="profEmail" class="form-control mono" readonly style="background:#090d16; color:var(--text-muted); cursor:not-allowed;">
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div class="form-group">
+                  <label for="profWhatsapp" data-i18n="profile.whatsapp">Nomor WhatsApp Aktif *</label>
+                  <input type="tel" id="profWhatsapp" class="form-control mono" required placeholder="08123456789 atau +628123456789" data-i18n-placeholder="profile.whatsapp">
+                  <span style="font-size:11px; color:var(--text-dim);">Format otomatis disesuaikan ke +62 untuk koordinasi transfer tiket.</span>
+                </div>
+
+                <div class="form-group">
+                  <label for="profCity" data-i18n="profile.cityOrAddress">Kota Domisili *</label>
+                  <input type="text" id="profCity" class="form-control" required placeholder="Contoh: Jakarta Selatan, Bandung, Surabaya" data-i18n-placeholder="profile.cityOrAddress">
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="profAddress">Alamat Lengkap (Wajib untuk Penjual) *</label>
+                <textarea id="profAddress" class="form-control" rows="2" placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan" style="resize:vertical;"></textarea>
+              </div>
+            </div>
+
+            <!-- Section B: Seller Payout Details -->
+            <div id="sellerPayoutSection" style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+                <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;" data-i18n="profile.sellerPayout">
+                  2. Rekening Pencairan Penjual (Escrow Settlement)
+                </div>
+                <span class="badge badge-info"><i class="fa-solid fa-lock"></i> Terenkripsi UU PDP</span>
+              </div>
+
+              <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:14px;">
+                Hasil penjualan tiket akan dicairkan ke rekening bank ini setelah serah terima tiket terkonfirmasi. Data rekening dilindungi enkripsi AES-256.
+              </p>
+
+              <div class="grid-2">
+                <div class="form-group">
+                  <label for="profBankName" data-i18n="profile.bankName">Nama Bank *</label>
+                  <select id="profBankName" class="form-control">
+                    <option value="">-- Pilih Bank Pencairan --</option>
+                    <option value="BCA">BCA (Bank Central Asia)</option>
+                    <option value="MANDIRI">Bank Mandiri</option>
+                    <option value="BRI">BRI (Bank Rakyat Indonesia)</option>
+                    <option value="BNI">BNI (Bank Negara Indonesia)</option>
+                    <option value="CIMB">CIMB Niaga</option>
+                    <option value="PERMATA">Bank Permata</option>
+                    <option value="BSI">BSI (Bank Syariah Indonesia)</option>
+                    <option value="JAGO">Bank Jago</option>
+                    <option value="SEABANK">SeaBank Indonesia</option>
+                    <option value="OTHER">Bank Lainnya</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="profAccountNum" data-i18n="profile.bankAccountNumber">Nomor Rekening Bank *</label>
+                  <input type="text" id="profAccountNum" class="form-control mono" placeholder="Contoh: 1234567890">
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div class="form-group">
+                  <label for="profAccountHolder" data-i18n="profile.bankAccountHolder">Nama Pemilik Rekening *</label>
+                  <input type="text" id="profAccountHolder" class="form-control" placeholder="Nama sesuai buku tabungan">
+                </div>
+
+                <div class="form-group">
+                  <label for="profDocRef" data-i18n="profile.identityDocRef">Referensi Identitas (4 Digit Terakhir KTP)</label>
+                  <input type="text" id="profDocRef" class="form-control mono" placeholder="Contoh: 1234 (4 digit terakhir NIK)" maxlength="16">
+                  <span style="font-size:11px; color:var(--text-dim);">Kami tidak menyimpan NIK lengkap. Cukup 4 digit terakhir untuk referensi KYC.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feedback Alert -->
+            <div id="profileAlert" class="notice-box" style="display:none; margin-bottom:16px;"></div>
+
+            <!-- Action Buttons -->
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <a id="btnCancelProfile" href="/" class="btn btn-secondary">
+                <i class="fa-solid fa-arrow-left"></i> Kembali
+              </a>
+              <button type="submit" id="btnSaveProfile" class="btn btn-primary" style="min-width:180px;">
+                <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="profile.saveBtn">Simpan Profil</span>
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+      </main>
+
+      <!-- Minimalist 2-Tier Footer -->
+      <footer id="appFooter" class="app-footer site-footer">
+        <div class="footer-tier-1">
+          <div class="footer-col-brand">
+            <h3>
+              <img src="/assets/tikum-mark-2color.svg" width="22" height="22" alt="Tikum">
+              <span>TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
+            </h3>
+            <p data-i18n="footer.aboutBrand">
+              Pasar tiket event terverifikasi yang dioperasikan di bawah naungan PT SHINERVA PRAJNA TEJAS. Dilengkapi verifikasi sumber resmi dan asistensi staf di venue acara terkonfirmasi.
+            </p>
+            <address>
+              <strong data-i18n="footer.operationalOffice">Kantor Operasional &amp; Surat:</strong><br>
+              PT SHINERVA PRAJNA TEJAS<br>
+              Jl. Pasirluyu No. 79, Bandung 40254, Indonesia
+            </address>
+          </div>
+
+          <div class="footer-col-contact">
+            <div class="footer-col-title" data-i18n="footer.officialContact">Kontak Resmi</div>
+            <div class="footer-contact-item">
+              <strong data-i18n="footer.customerSupport">Customer Support:</strong>
+              <a href="mailto:support@tikum.app">support@tikum.app</a>
+            </div>
+            <div class="footer-contact-item">
+              <strong data-i18n="footer.phoneAndWa">WhatsApp Resmi:</strong>
+              <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer">+62 812-9992-7378</a>
+            </div>
+            <div class="footer-contact-item">
+              <span data-i18n="footer.supportHours">Jam Layanan:</span>
+              <span data-i18n="footer.supportHoursValue">Senin - Minggu 09:00 - 21:00 WIB</span>
+            </div>
+            <div style="font-size:12px; color:var(--color-text-muted); margin-top:6px;" data-i18n="footer.picVenueNote">
+              (Event PIC bertugas di venue pada jam operasional gerbang acara terkonfirmasi)
+            </div>
+          </div>
+
+          <div class="footer-col-links">
+            <div class="footer-col-title" data-i18n="footer.servicesAndLegal">Tautan Esensial</div>
+            <div class="footer-essential-grid">
+              <a href="/terms" class="footer-essential-link" data-i18n="footer.terms">Syarat &amp; Ketentuan</a>
+              <a href="/privacy" class="footer-essential-link" data-i18n="footer.privacyPolicy">Privasi (UU PDP)</a>
+              <a href="/refund-policy" class="footer-essential-link" data-i18n="footer.refundPolicy">Refund &amp; Sengketa</a>
+              <a href="/past-events" class="footer-essential-link" data-i18n="footer.pastEvents">Arsip Event</a>
+              <a href="/faq" class="footer-essential-link" data-i18n="footer.faq">FAQ / Bantuan</a>
+              <a href="/blog" class="footer-essential-link" data-i18n="footer.blog">Blog &amp; Panduan</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-tier-2">
+          <div class="footer-legal-uu">
+            <span data-i18n="footer.copyrightNotice">&copy; 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM adalah platform marketplace tiket terverifikasi.</span>
+            <span style="display:block; font-size:11.5px; color:#64748b; margin-top:4px;">Bahasa Indonesia adalah bahasa pengendali hukum berdasarkan UU No. 24/2009.</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <button id="footerLangToggle" class="footer-lang-toggle lang-switcher-pill lang-toggle-btn" onclick="if(window.TikumI18n) window.TikumI18n.toggleLang();" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
+              <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>
+            </button>
+          </div>
+        </div>
+      </footer>
+    </div> <!-- /#appMainWrapper -->
+  </div> <!-- /#appShell -->
+
+  <script src="/js/draft-store.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const setupRole = urlParams.get('setup');
+    const returnNext = urlParams.get('next');
+    const isVerifiedNow = urlParams.get('verified') === 'true';
+
+    let loadedProfile = null;
+
+    if (isVerifiedNow) {
+      const banner = document.getElementById('verifiedBanner');
+      if (banner) banner.style.display = 'flex';
+    }
+
+    if (returnNext) {
+      const btnCancel = document.getElementById('btnCancelProfile');
+      if (btnCancel && returnNext.startsWith('/') && !returnNext.startsWith('//')) {
+        btnCancel.href = returnNext;
+      }
+    }
+
+    async function loadUserProfile() {
+      try {
+        const res = await fetch('/api/auth/me/profile', {
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (res.status === 401) {
+          const nextTarget = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = `/login?returnTo=${nextTarget}`;
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.profile) {
+          showProfileAlert('Gagal memuat profil: ' + (data.error || 'Terjadi kesalahan.'), 'error');
+          return;
+        }
+
+        loadedProfile = data.profile;
+        renderProfileData(loadedProfile);
+
+        if (setupRole === 'seller') {
+          const sellerSection = document.getElementById('sellerPayoutSection');
+          if (sellerSection) {
+            sellerSection.scrollIntoView({ behavior: 'smooth' });
+            sellerSection.style.border = '1px solid var(--terra-600)';
+            sellerSection.style.borderRadius = '8px';
+            sellerSection.style.padding = '16px';
+          }
+        }
+      } catch (err) {
+        showProfileAlert('Koneksi terputus saat memuat profil.', 'error');
+      }
+    }
+
+    function renderProfileData(p) {
+      document.getElementById('profFullName').value = p.full_name || '';
+      document.getElementById('profEmail').value = p.email || '';
+      document.getElementById('profWhatsapp').value = p.whatsapp || '';
+      document.getElementById('profCity').value = p.city || '';
+      document.getElementById('profAddress').value = p.address || '';
+
+      if (p.payout_bank_name) {
+        document.getElementById('profBankName').value = p.payout_bank_name;
+      }
+      if (p.payout_account_number) {
+        document.getElementById('profAccountNum').value = p.payout_account_number;
+      }
+      if (p.payout_account_holder) {
+        document.getElementById('profAccountHolder').value = p.payout_account_holder;
+      }
+      if (p.identity_doc_ref) {
+        document.getElementById('profDocRef').value = p.identity_doc_ref;
+      }
+
+      // Email badge
+      const badgeEmail = document.getElementById('badgeEmail');
+      const btnResend = document.getElementById('btnResendVerif');
+      if (p.email_verified) {
+        badgeEmail.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> Email Terverifikasi ✓</span>';
+        if (btnResend) btnResend.style.display = 'none';
+      } else {
+        badgeEmail.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Belum Terverifikasi</span>';
+        if (btnResend) btnResend.style.display = 'block';
+      }
+
+      // Buyer badge
+      const badgeBuyer = document.getElementById('badgeBuyer');
+      if (p.buyer_profile_complete) {
+        badgeBuyer.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> Profil Pembeli Siap ✓</span>';
+      } else {
+        badgeBuyer.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Kontak Belum Lengkap</span>';
+      }
+
+      // Seller badge
+      const badgeSeller = document.getElementById('badgeSeller');
+      if (p.seller_profile_complete) {
+        badgeSeller.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> Profil Penjual Siap ✓</span>';
+      } else {
+        badgeSeller.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Belum Lengkap</span>';
+      }
+    }
+
+    async function handleResendVerification() {
+      const btn = document.getElementById('btnResendVerif');
+      const fb = document.getElementById('resendFeedback');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
+      fb.style.display = 'none';
+
+      try {
+        const nextUrl = returnNext || '/profile';
+        const res = await fetch('/api/auth/resend-verification', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ next: nextUrl })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal mengirim email verifikasi.');
+        }
+        fb.style.display = 'block';
+        fb.style.color = '#34d399';
+        fb.innerText = data.message || 'Tautan verifikasi telah dikirim ke email Anda.';
+      } catch (err) {
+        fb.style.display = 'block';
+        fb.style.color = '#f87171';
+        fb.innerText = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-envelope"></i> Kirim Ulang Email';
+      }
+    }
+
+    async function handleSaveProfile(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSaveProfile');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+      hideProfileAlert();
+
+      const payload = {
+        full_name: document.getElementById('profFullName').value.trim(),
+        whatsapp: document.getElementById('profWhatsapp').value.trim(),
+        city: document.getElementById('profCity').value.trim(),
+        address: document.getElementById('profAddress').value.trim(),
+        payout_bank_name: document.getElementById('profBankName').value,
+        payout_account_number: document.getElementById('profAccountNum').value.trim(),
+        payout_account_holder: document.getElementById('profAccountHolder').value.trim(),
+        identity_doc_ref: document.getElementById('profDocRef').value.trim(),
+        seller_profile_submit: true
+      };
+
+      try {
+        const res = await fetch('/api/auth/me/profile', {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal menyimpan profil.');
+        }
+
+        showProfileAlert('Profil berhasil diperbarui!', 'success');
+        if (data.profile) {
+          loadedProfile = data.profile;
+          renderProfileData(loadedProfile);
+        }
+
+        // If next destination is provided, redirect after short delay
+        if (returnNext && returnNext.startsWith('/') && !returnNext.startsWith('//')) {
+          setTimeout(() => {
+            window.location.href = returnNext;
+          }, 800);
+        }
+      } catch (err) {
+        showProfileAlert(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Profil';
+      }
+    }
+
+    function showProfileAlert(msg, type) {
+      const alert = document.getElementById('profileAlert');
+      alert.className = `notice-box notice-${type === 'error' ? 'warning' : 'success'}`;
+      alert.innerHTML = `<i class="fa-solid fa-${type === 'error' ? 'triangle-exclamation' : 'circle-check'}"></i> <div>${escapeHtml(msg)}</div>`;
+      alert.style.display = 'flex';
+      alert.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function hideProfileAlert() {
+      const alert = document.getElementById('profileAlert');
+      alert.style.display = 'none';
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.innerText = str;
+      return div.innerHTML;
+    }
+
+    loadUserProfile();
+  </script>
+  <script src="/js/i18n.js"></script>
+</body>
+</html>

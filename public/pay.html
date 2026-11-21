@@ -483,6 +483,13 @@
           </label>
         </div>
 
+        <div id="selfPurchaseNotice" class="notice-box notice-warning" style="display:none; background:#fff1f2; border:1px solid #fecdd3; color:#9f1239; margin-bottom:14px;">
+          <i class="fa-solid fa-ban" style="color:#e11d48; font-size:20px;"></i>
+          <div>
+            <strong>Self-Purchase Dilarang:</strong> Anda teridentifikasi sebagai pemilik dari tiket listing ini. Sesuai aturan integritas Tikum, penjual dilarang membeli tiket dari listing miliknya sendiri.
+          </div>
+        </div>
+
         <div id="orderErrorMsg" class="notice-box notice-warning" style="display: none;"></div>
 
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px;">
@@ -799,6 +806,7 @@
     }
 
     function renderListing(listing) {
+      setTimeout(checkSelfPurchaseGuard, 50);
       const isDemo = Boolean(listing.is_demo || listing.id === 'list-pilot-preview' || listing.status === 'DEMO_NOT_FOR_SALE' || listing.status === 'DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN');
       const demoBanner = document.getElementById('demoNoticeBanner');
       if (demoBanner) {
@@ -934,22 +942,39 @@
 
     async function checkBuyerSession() {
       try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch('/api/auth/me/profile');
         if (res.ok) {
           const data = await res.json();
-          if (data && data.user) {
-            currentBuyer = data.user;
+          const p = data.profile || data.user;
+          if (p) {
+            currentBuyer = p;
             const authCard = document.getElementById('authBuyerCard');
             const authName = document.getElementById('authBuyerName');
             const authMeta = document.getElementById('authBuyerMeta');
             const pilotContainer = document.getElementById('pilotSelectContainer');
             const unauthNotice = document.getElementById('unauthBuyerNotice');
+            const profileBox = document.getElementById('buyerProfileCompletionBox');
 
-            if (authName) authName.innerText = currentBuyer.name || currentBuyer.email || currentBuyer.id;
-            if (authMeta) authMeta.innerText = `${currentBuyer.email || ''} ${currentBuyer.phone ? '• ' + currentBuyer.phone : ''} (${currentBuyer.id})`;
+            if (authName) authName.innerText = p.full_name || p.name || p.email || p.id;
+            if (authMeta) {
+              const waText = p.whatsapp || p.phone ? '• ' + (p.whatsapp || p.phone) : '';
+              authMeta.innerHTML = `${escapeHtml(p.email || '')} ${escapeHtml(waText)} <span class="badge badge-success" style="font-size:10px; margin-left:6px;"><i class="fa-solid fa-check"></i> Profil Terisi Otomatis ✓</span>`;
+            }
             if (authCard) authCard.style.display = 'block';
             if (unauthNotice) unauthNotice.style.display = 'none';
             if (pilotContainer) pilotContainer.style.display = 'none';
+
+            // Check proportional buyer profile completeness
+            if (!p.buyer_profile_complete && profileBox) {
+              profileBox.style.display = 'flex';
+              if (document.getElementById('inlineBuyerName')) document.getElementById('inlineBuyerName').value = p.full_name || '';
+              if (document.getElementById('inlineBuyerWa')) document.getElementById('inlineBuyerWa').value = p.whatsapp || '';
+            } else if (profileBox) {
+              profileBox.style.display = 'none';
+            }
+
+            // Self-Purchase Check
+            checkSelfPurchaseGuard();
             return;
           }
         }
@@ -962,7 +987,70 @@
       const loginLink = document.getElementById('loginRedirectLink');
       if (unauthNotice) unauthNotice.style.display = 'flex';
       if (pilotContainer) pilotContainer.style.display = 'block';
-      if (loginLink) loginLink.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+      if (loginLink) loginLink.href = `/login?role=buyer&next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+    }
+
+    function checkSelfPurchaseGuard() {
+      if (!currentBuyer || !currentListing) return;
+      if (currentListing.seller_id && currentBuyer.id === currentListing.seller_id) {
+        const btn = document.getElementById('btnOrderSubmit');
+        const selfNotice = document.getElementById('selfPurchaseNotice');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fa-solid fa-ban"></i> Pembelian Sendiri Dilarang';
+          btn.style.opacity = '0.6';
+          btn.style.cursor = 'not-allowed';
+        }
+        if (selfNotice) selfNotice.style.display = 'flex';
+      }
+    }
+
+    async function saveInlineBuyerProfile() {
+      const name = (document.getElementById('inlineBuyerName')?.value || '').trim();
+      const wa = (document.getElementById('inlineBuyerWa')?.value || '').trim();
+      const fb = document.getElementById('inlineBuyerFeedback');
+      const btn = document.getElementById('btnSaveInlineBuyer');
+
+      if (!name || !wa) {
+        if (fb) {
+          fb.style.display = 'block';
+          fb.style.color = '#f87171';
+          fb.innerText = 'Nama lengkap dan nomor WhatsApp wajib diisi.';
+        }
+        return;
+      }
+
+      if (btn) btn.disabled = true;
+      if (fb) {
+        fb.style.display = 'block';
+        fb.style.color = 'var(--text-muted)';
+        fb.innerText = 'Menyimpan profil...';
+      }
+
+      try {
+        const res = await fetch('/api/auth/me/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ full_name: name, whatsapp: wa })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || data.error || 'Gagal menyimpan profil pembeli');
+        }
+        if (fb) {
+          fb.style.color = '#10b981';
+          fb.innerText = 'Profil pembeli berhasil disimpan!';
+        }
+        await checkBuyerSession();
+      } catch (err) {
+        if (fb) {
+          fb.style.color = '#f87171';
+          fb.innerText = err.message;
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     }
 
     async function ensureSnapScript(config) {

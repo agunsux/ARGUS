@@ -121,16 +121,39 @@ class TicketInventoryService {
     rawBarcode = null
   }) {
     // 1. Validate seller exists and is ACTIVE
-    const seller = state.users.find(u => u.id === sellerId);
+    let seller = state.users.find(u => u.id === sellerId);
+    if (!seller) {
+      try {
+        const { getUserRepository } = require('../../storage');
+        const userRepo = getUserRepository();
+        seller = await userRepo.getUserById(sellerId);
+        if (seller && !state.users.some(u => u.id === seller.id)) {
+          state.users.push(seller);
+        }
+      } catch (_) {}
+    }
     if (!seller) {
       const err = new Error(`Seller '${sellerId}' not found`);
       err.code = 'SELLER_NOT_FOUND';
       throw err;
     }
 
-    const sellerProfile = state.seller_profiles
+    let sellerProfile = state.seller_profiles
       ? state.seller_profiles.find(p => p.user_id === sellerId)
       : null;
+    if (!sellerProfile) {
+      try {
+        const { getUserRepository } = require('../../storage');
+        const userRepo = getUserRepository();
+        sellerProfile = await userRepo.getSellerProfile(sellerId);
+        if (sellerProfile) {
+          if (!state.seller_profiles) state.seller_profiles = [];
+          if (!state.seller_profiles.some(p => p.user_id === sellerId)) {
+            state.seller_profiles.push(sellerProfile);
+          }
+        }
+      } catch (_) {}
+    }
 
     // Seller must have a profile (can be PENDING for ticket creation, but not for listing)
     // Suspended sellers cannot create tickets
@@ -141,7 +164,35 @@ class TicketInventoryService {
     }
 
     // 2. Validate canonical event exists and is not CANCELLED
-    const event = state.events.find(e => e.id === canonicalEventId);
+    let event = state.events.find(e => e.id === canonicalEventId || e.event_id === canonicalEventId);
+    if (!event) {
+      try {
+        const { canonicalRegistry } = require('../../discovery/CanonicalEventRegistry');
+        if (canonicalRegistry && typeof canonicalRegistry.getEventById === 'function') {
+          event = canonicalRegistry.getEventById(canonicalEventId);
+        }
+      } catch (_) {}
+      if (!event) {
+        try {
+          const { EventPolicyRegistry } = require('../../policy/EventPolicyRegistry');
+          if (EventPolicyRegistry && typeof EventPolicyRegistry.getEventById === 'function') {
+            event = EventPolicyRegistry.getEventById(canonicalEventId);
+          }
+        } catch (_) {}
+      }
+      if (!event) {
+        try {
+          const { getMarketplaceRepository } = require('../../storage');
+          const repo = getMarketplaceRepository();
+          if (repo && typeof repo.ensureEventExists === 'function') {
+            event = await repo.ensureEventExists(canonicalEventId);
+          }
+        } catch (_) {}
+      }
+      if (event && !state.events.some(e => e.id === (event.id || event.canonical_event_id))) {
+        state.events.push(event);
+      }
+    }
     if (!event) {
       const err = new Error(`Canonical event '${canonicalEventId}' not found`);
       err.code = 'EVENT_NOT_FOUND';
@@ -270,7 +321,10 @@ class TicketInventoryService {
    * @returns {Object} Updated ticket
    */
   static async submitForVerification(ticketId, sellerId, evidenceBundleId = null) {
-    const ticket = this.findTicket(ticketId);
+    let ticket = await this.getTicketById(ticketId);
+    if (!ticket) {
+      ticket = this.findTicket(ticketId);
+    }
     if (!ticket) {
       const err = new Error(`Ticket '${ticketId}' not found`);
       err.code = 'TICKET_NOT_FOUND';

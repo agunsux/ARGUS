@@ -1171,9 +1171,9 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
     const sellerId = (isAdminRole(req.user.role) && bodySellerId) ? bodySellerId : authenticatedUserId;
 
     if (!isDraft) {
-      if (!eventId || !effectiveSeatInfo || !effectiveFaceValue || !effectivePrice || !effectiveBarcode) {
+      if (!eventId || !effectiveSeatInfo || !effectiveFaceValue || !effectivePrice) {
         return res.status(400).json({
-          error: 'Missing required listing fields (eventId, seatInfo, faceValue, price, rawBarcode)',
+          error: 'Missing required listing fields (eventId, seatInfo, faceValue, price)',
           code: 'VALIDATION_ERROR'
         });
       }
@@ -1239,17 +1239,60 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       ticket: result.ticket
     });
   } catch (err) {
+    if (err.code === 'EMAIL_VERIFICATION_REQUIRED' || err.eligibilityCode === 'EMAIL_VERIFICATION_REQUIRED') {
+      return res.status(403).json({
+        error: err.message || 'Verifikasi email diperlukan sebelum membuat listing tiket.',
+        code: 'EMAIL_VERIFICATION_REQUIRED',
+        eligibility_code: 'EMAIL_VERIFICATION_REQUIRED'
+      });
+    }
+
+    if (err.code === 'SELLER_PROFILE_INCOMPLETE' || err.eligibilityCode === 'SELLER_PROFILE_INCOMPLETE') {
+      return res.status(403).json({
+        error: err.message || 'Profil penjual dan rekening pencairan harus dilengkapi terlebih dahulu.',
+        code: 'SELLER_PROFILE_INCOMPLETE',
+        eligibility_code: 'SELLER_PROFILE_INCOMPLETE'
+      });
+    }
+
     if (err.code === 'SELLER_NOT_ELIGIBLE' && [
       'SELLER_ONBOARDING_REQUIRED',
       'SELLER_KYC_PENDING_REVIEW',
       'SELLER_KYC_NOT_VERIFIED',
-      'SELLER_SUSPENDED'
+      'SELLER_SUSPENDED',
+      'EMAIL_VERIFICATION_REQUIRED',
+      'SELLER_PROFILE_INCOMPLETE'
     ].includes(err.eligibilityCode)) {
       return res.status(403).json({
         error: err.message,
         code: err.eligibilityCode,
         eligibility_code: err.eligibilityCode,
         legacy_code: 'SELLER_NOT_ELIGIBLE'
+      });
+    }
+
+    if (err.code === 'INVALID_RELATIONAL_REFERENCE' || err.code === 'PARENT_TICKET_MISSING' || err.code === '23503') {
+      console.error('[API:ListingError:FKViolation]', err.originalDetail || err.message);
+      return res.status(400).json({
+        error: 'Referensi data tiket, event, atau akun tidak valid.',
+        code: 'INVALID_RELATIONAL_REFERENCE',
+        message: err.bilingual?.id || 'Referensi data tidak valid atau belum terdaftar.'
+      });
+    }
+
+    if (err.code === 'DUPLICATE_RESOURCE' || err.code === '23505') {
+      return res.status(409).json({
+        error: 'Data sudah terdaftar sebelumnya.',
+        code: 'DUPLICATE_RESOURCE',
+        message: err.bilingual?.id || 'Data sudah terdaftar sebelumnya dalam sistem.'
+      });
+    }
+
+    if (err.code === 'MISSING_REQUIRED_COLUMN' || err.code === '23502') {
+      return res.status(400).json({
+        error: 'Kolom data wajib belum lengkap.',
+        code: 'MISSING_REQUIRED_COLUMN',
+        message: err.bilingual?.id || 'Kolom data wajib tidak boleh kosong.'
       });
     }
 
@@ -1264,7 +1307,8 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       'EVENT_CONCLUDED',
       'INVALID_EVENT_DATE',
       'LISTING_WINDOW_CLOSED',
-      'LISTING_WINDOW_NOT_OPEN'
+      'LISTING_WINDOW_NOT_OPEN',
+      'INVALID_QUANTITY'
     ].includes(err.code);
     res.status(isClientError ? 400 : 500)
       .json({ error: err.message, code: err.code, eligibility_code: err.eligibilityCode || null });
@@ -1502,12 +1546,38 @@ router.post('/seller/orders/:orderId/handoff-challenge', async (req, res) => {
  */
 router.post('/buyer/order', async (req, res) => {
   try {
+    resolveAuth(req);
+
+    const { buyerId, listingId, quoteId, quote_id, policyVersion } = req.body;
+    if (!listingId) {
+      return res.status(400).json({ error: 'listingId is required', code: 'VALIDATION_ERROR' });
+    }
+
+    // When authenticated, the session identity is authoritative
+    const effectiveBuyerId = (req.user && !isAdminRole(req.user.role)) ? req.user.id : (buyerId || req.user?.id);
+
+    // Anti-conflict self-purchase guard (evaluated first so sellers cannot attempt self-dealing)
+    if (listingId && effectiveBuyerId) {
+      let targetListing = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
+      if (!targetListing) {
+        try {
+          const { getMarketplaceRepository } = require('../storage');
+          targetListing = await getMarketplaceRepository().getListingById(listingId);
+        } catch (_) {}
+      }
+      if (targetListing && targetListing.seller_id && targetListing.seller_id === effectiveBuyerId) {
+        return res.status(403).json({
+          error: 'Penjual dilarang membeli listing tiket miliknya sendiri (Self-purchase is strictly forbidden).',
+          code: 'SELF_PURCHASE_FORBIDDEN'
+        });
+      }
+    }
+
     const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
     if (isPrelaunchListingMode()) {
       return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
     }
 
-    resolveAuth(req);
     const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
 
     // In production, unauthenticated guest order creation is forbidden to prevent buyer impersonation
@@ -1518,11 +1588,6 @@ router.post('/buyer/order', async (req, res) => {
       });
     }
 
-    const { buyerId, listingId, quoteId, quote_id, policyVersion } = req.body;
-    if (!listingId) {
-      return res.status(400).json({ error: 'listingId is required', code: 'VALIDATION_ERROR' });
-    }
-
     // Demo Listing Guard: Demonstrative / illustrative listings cannot be ordered or purchased
     if (listingId === 'list-pilot-preview' || String(listingId).toLowerCase().startsWith('demo-')) {
       return res.status(400).json({
@@ -1531,8 +1596,6 @@ router.post('/buyer/order', async (req, res) => {
       });
     }
 
-    // When authenticated, the session identity is authoritative
-    const effectiveBuyerId = (req.user && !isAdminRole(req.user.role)) ? req.user.id : (buyerId || req.user?.id);
     if (!effectiveBuyerId) {
       return res.status(400).json({ error: 'buyerId and listingId are required', code: 'VALIDATION_ERROR' });
     }
@@ -1542,15 +1605,6 @@ router.post('/buyer/order', async (req, res) => {
     }
     if (!findUser(effectiveBuyerId)) {
       return res.status(401).json({ error: 'Unknown buyer', code: 'AUTH_REQUIRED' });
-    }
-
-    // Anti-conflict self-purchase guard
-    const targetListing = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
-    if (targetListing && targetListing.seller_id && targetListing.seller_id === effectiveBuyerId) {
-      return res.status(403).json({
-        error: 'Penjual dilarang membeli listing tiket miliknya sendiri (Self-purchase is strictly forbidden).',
-        code: 'SELF_PURCHASE_FORBIDDEN'
-      });
     }
 
     const effectiveQuoteId = quoteId || quote_id || null;
