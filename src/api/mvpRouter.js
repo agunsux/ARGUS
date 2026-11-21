@@ -1544,6 +1544,15 @@ router.post('/buyer/order', async (req, res) => {
       return res.status(401).json({ error: 'Unknown buyer', code: 'AUTH_REQUIRED' });
     }
 
+    // Anti-conflict self-purchase guard
+    const targetListing = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
+    if (targetListing && targetListing.seller_id && targetListing.seller_id === effectiveBuyerId) {
+      return res.status(403).json({
+        error: 'Penjual dilarang membeli listing tiket miliknya sendiri (Self-purchase is strictly forbidden).',
+        code: 'SELF_PURCHASE_FORBIDDEN'
+      });
+    }
+
     const effectiveQuoteId = quoteId || quote_id || null;
     const requestedQty = parseInt(req.body.quantity !== undefined ? req.body.quantity : (req.body.orderQuantity !== undefined ? req.body.orderQuantity : 1), 10);
     if (isNaN(requestedQty) || requestedQty < 1 || requestedQty > 4) {

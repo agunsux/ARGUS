@@ -271,6 +271,7 @@ app.use(trustApi);
 // Mount Canonical Payment & Webhook Router (DOKU Primary Escrow + Multi-Provider Rails)
 const paymentRouter = require('./api/paymentRouter');
 app.use('/api', paymentRouter);
+app.use('/webhooks', paymentRouter);
 
 // Mount MVP Transaction Trust Loop APIs
 const mvpRouter = require('./api/mvpRouter');

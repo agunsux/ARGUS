@@ -1062,6 +1062,14 @@ router.all('/v1/payments/webhook/rcb', (req, res) => {
 });
 
 /**
+ * POST /api/webhooks/doku & POST /api/v1/payments/webhook/doku
+ * Authoritative DOKU Webhook Ingestion with HMAC-SHA256 signature verification & idempotent processing
+ */
+router.post(['/webhooks/doku', '/v1/payments/webhook/doku', '/webhook/doku', '/webhooks/doku/notifications'], async (req, res) => {
+  await processWebhookRequest(req, res, 'doku');
+});
+
+/**
  * POST /api/v1/payments/webhook/:provider
  * Multi-provider webhook endpoint (e.g. doku, midtrans, xendit)
  */

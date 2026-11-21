@@ -1329,6 +1329,32 @@ function resetDatabase() {
     });
   }
 
+  // Ensure every event in state.events has a valid, non-null local image asset
+  if (Array.isArray(state.events)) {
+    for (const ev of state.events) {
+      if (!ev.image_url && !ev.poster_url) {
+        const cat = (ev.category || '').toUpperCase();
+        const slug = (ev.slug || ev.id || '').toLowerCase();
+        let img = '/images/events/concert-default.svg';
+        if (slug.includes('gnr') || slug.includes('roses')) img = '/images/events/guns-n-roses-jakarta-2026.svg';
+        else if (slug.includes('bts')) img = '/images/events/bts-arirang-world-tour-jakarta-2026.svg';
+        else if (slug.includes('bigbang') || slug.includes('big-bang')) img = '/images/events/bigbang-world-tour-jakarta-2026.svg';
+        else if (slug.includes('morgan-jay')) img = '/images/events/morgan-jay-goofy-guy-jakarta-2026.svg';
+        else if (slug.includes('mcr') || slug.includes('chemical')) img = '/images/events/mcr-live-in-jakarta-2026.svg';
+        else if (slug.includes('nassar')) img = '/images/events/king-nassar-lost-in-the-jungle-2026.svg';
+        else if (slug.includes('ibl') || slug.includes('basketball')) img = '/images/events/ibl-finals-jakarta-2026.svg';
+        else if (slug.includes('badminton') || slug.includes('indonesia-open')) img = '/images/events/indonesia-open-badminton-2026.svg';
+        else if (slug.includes('lany')) img = '/images/events/lany-beautiful-blur-jakarta-2026.svg';
+        else if (slug.includes('dwp')) img = '/images/events/dwp-2026-jakarta.svg';
+        else if (slug.includes('pandji') || slug.includes('standup') || slug.includes('abdur') || slug.includes('raditya')) img = '/images/events/standup-default.svg';
+        else if (cat.includes('SPORT')) img = '/images/events/sports-default.svg';
+        else if (cat.includes('FESTIVAL')) img = '/images/events/festival-default.svg';
+        ev.image_url = img;
+        ev.poster_url = img;
+      }
+    }
+  }
+
   state.evidence_bundles = [
     {
       id: 'bdl-seed-1',

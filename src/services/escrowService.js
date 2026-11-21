@@ -171,6 +171,14 @@ class EscrowService {
       throw err;
     }
 
+    // Anti-Conflict Self-Purchase Prevention: Sellers cannot buy their own listings
+    if (listing.seller_id && listing.seller_id === buyerId) {
+      const err = new Error('SELF_PURCHASE_FORBIDDEN: Sellers are strictly prohibited from purchasing their own ticket listings.');
+      err.code = 'SELF_PURCHASE_FORBIDDEN';
+      err.status = 403;
+      throw err;
+    }
+
     // Reservation validation if converting from reservation
     let reservation = null;
     if (reservationId) {
@@ -383,6 +391,7 @@ class EscrowService {
       status: ORDER_STATUS.PENDING_PAYMENT,
       payment_deadline: paymentDeadline,
       expires_at: paymentDeadline,
+      evidence_bundle_id: listing.evidence_bundle_id || null,
       created_at: new Date().toISOString()
     };
     state.orders.push(order);

@@ -2327,3 +2327,35 @@ html[lang="en"] .lang-id {
   opacity: 0.5;
 }
 
+/* Universal Event Poster Container & Image Pipeline Guards */
+.event-poster-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: var(--surface-subtle, #1a1a24);
+  border-radius: var(--radius-sm, 8px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.event-poster-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.event-poster-container--thumb {
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  aspect-ratio: 1 / 1;
+}
+
+.event-poster-container--card {
+  aspect-ratio: 4 / 3;
+}
+
+

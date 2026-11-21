@@ -132,7 +132,11 @@
 
       <!-- Listing Details Card -->
       <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 14px;">
+          <div style="display: flex; gap: 14px; align-items: flex-start;">
+            <div class="event-poster-container event-poster-container--thumb" id="eventPosterContainer">
+              <img id="eventPosterImg" src="/images/events/concert-default.svg" alt="Event Poster" onerror="this.onerror=null; this.src='/images/events/concert-default.svg';">
+            </div>
           <div>
             <span id="eventCategoryBadge" class="badge badge-slate" style="margin-bottom: 6px;">EVENT</span>
             <h2 id="eventTitle" style="font-size: 20px; font-weight: 800; color: #fff;">-</h2>
@@ -140,6 +144,7 @@
               <i class="fa-regular fa-calendar" style="width: 16px;"></i> <span id="eventDate">-</span> &bull; 
               <i class="fa-solid fa-location-dot" style="width: 16px;"></i> <span id="eventVenue">-</span>
             </div>
+          </div>
           </div>
           <div id="eventVerificationBadge"></div>
         </div>
@@ -686,6 +691,7 @@
       // Event details
       const ev = listing.event || {};
       document.getElementById('eventTitle').innerText = ev.name || ev.title || 'Event Tanpa Judul';
+      if (document.getElementById('eventPosterImg')) document.getElementById('eventPosterImg').src = ev.image_url || '/images/events/concert-default.svg';
       document.getElementById('eventCategoryBadge').innerText = ev.category || 'EVENT';
       document.getElementById('eventDate').innerText = ev.date || ev.start_date || '-';
       document.getElementById('eventVenue').innerText = `${ev.venue || ev.venue_name || '-'}, ${ev.venue_city || 'Jakarta'}`;

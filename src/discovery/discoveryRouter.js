@@ -27,6 +27,7 @@ const { discoverySignalService, SIGNAL_STATUS } = require('./EventDiscoverySigna
 const { state, recordAuditLog } = require('../database');
 const { renderFooterHtml } = require('../config/businessProfile');
 const { cityRegistry, CityRegistry } = require('./CityRegistry');
+const { eventPolicyRegistry, POLICY_STATUS, RISK_TIER, PRIMARY_PARTNER } = require('./EventPolicyRegistry');
 
 function resolveRequestLocale(req) {
   if (!req) return 'id';
@@ -1286,6 +1287,54 @@ function handleGetEvents(req, res) {
 // Canonical Discovery REST API endpoints
 router.get('/api/events', handleGetEvents);
 router.get('/api/discovery/events', handleGetEvents);
+
+/**
+ * GET /api/discovery/event-policy-registry
+ * Primary Ticketing Box Event Discovery & Policy Registry Seeding (>= IDR 300,000)
+ */
+router.get('/api/discovery/event-policy-registry', (req, res) => {
+  const events = eventPolicyRegistry.getAllEvents(req.query);
+  const summary = eventPolicyRegistry.getSummary();
+  res.json({
+    success: true,
+    count: events.length,
+    summary,
+    events
+  });
+});
+
+/**
+ * GET /api/discovery/events-qualified
+ * Returns events qualified for secondary listing & escrow protection (min price >= 300k IDR).
+ */
+router.get('/api/discovery/events-qualified', (req, res) => {
+  const minPrice = parseInt(req.query.min_price || '300000', 10);
+  const events = eventPolicyRegistry.getAllEvents({
+    ...req.query,
+    min_price: minPrice
+  });
+  res.json({
+    success: true,
+    min_price: minPrice,
+    count: events.length,
+    events
+  });
+});
+
+router.get('/api/discovery/event-policy-registry/:id', (req, res) => {
+  const event = eventPolicyRegistry.getEventById(req.params.id);
+  if (!event) {
+    return res.status(404).json({
+      success: false,
+      error: `Event '${req.params.id}' not found in Event Policy Registry`,
+      code: 'EVENT_NOT_FOUND'
+    });
+  }
+  res.json({
+    success: true,
+    event
+  });
+});
 
 /**
  * GET /api/events/archived and GET /api/discovery/events/archived

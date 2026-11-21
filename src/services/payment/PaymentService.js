@@ -695,6 +695,7 @@ class PaymentService {
           });
           order.status = 'LATE_PAYMENT_PENDING_REVIEW';
           order.marketplace_status = 'LATE_PAYMENT';
+          order.payment_status = 'PAYMENT_CONFIRMED_PROVIDER';
           await recordAuditLog('ORDER', order.id, 'LATE_PAYMENT_CAPTURED', 'GATEWAY', {
             provider: targetProviderName,
             provider_ref: event.providerRef,
@@ -717,12 +718,43 @@ class PaymentService {
             isProviderEscrow: supportsEscrowHold
           });
           order.marketplace_status = 'PAID';
+          order.payment_status = 'PAYMENT_CONFIRMED_PROVIDER';
           order.payment_money_state = supportsEscrowHold
             ? MONEY_STATE.ESCROW_HELD
             : MONEY_STATE.CAPTURED_PLATFORM_SETTLEMENT;
           order.escrow_type = supportsEscrowHold
             ? 'THIRD_PARTY_PROVIDER_ESCROW'
             : 'NONE_PLATFORM_CAPTURED';
+        }
+
+        // Strict State Decoupling & Evidence Bundle Slot #5 Recording
+        // Record payment settlement artifact into slot #5 without altering ticket_verification_status or releasing funds
+        const paymentSettlementArtifact = {
+          slot: 5,
+          slot_name: 'paymentSettlementRecord',
+          artifact_type: 'PAYMENT_SETTLEMENT_RECORD',
+          provider: targetProviderName,
+          provider_reference: event.providerRef,
+          order_id: event.orderId,
+          amount: event.amount,
+          currency: event.currency || 'IDR',
+          payment_status: 'PAYMENT_CONFIRMED_PROVIDER',
+          paid_at: event.paidAt || new Date().toISOString(),
+          recorded_at: new Date().toISOString(),
+          payload_hash: payloadHash
+        };
+
+        if (!order.evidence_bundle) {
+          order.evidence_bundle = {};
+        }
+        order.evidence_bundle.slot_5_payment_settlement = paymentSettlementArtifact;
+        order.evidence_bundle.paymentSettlementRecord = paymentSettlementArtifact;
+
+        const bundle = (state.evidence_bundles || []).find(b => (order.evidence_bundle_id && b.id === order.evidence_bundle_id) || (order.ticket_id && b.ticket_id === order.ticket_id));
+        if (bundle) {
+          if (!bundle.artifacts) bundle.artifacts = {};
+          bundle.artifacts.slot_5 = paymentSettlementArtifact;
+          bundle.artifacts.paymentSettlementRecord = paymentSettlementArtifact;
         }
       }
 

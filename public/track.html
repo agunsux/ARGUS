@@ -104,7 +104,11 @@
 
       <!-- Header Summary Card -->
       <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 16px;">
+          <div style="display: flex; gap: 14px; align-items: flex-start;">
+            <div class="event-poster-container event-poster-container--thumb" id="transEventPosterContainer">
+              <img id="transEventPosterImg" src="/images/events/concert-default.svg" alt="Event Poster" onerror="this.onerror=null; this.src='/images/events/concert-default.svg';">
+            </div>
           <div>
             <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
               <span id="transTypeBadge" class="badge badge-info">ORDER</span>
@@ -112,6 +116,7 @@
             </div>
             <h2 id="transEventTitle" style="font-size: 20px; font-weight: 800; color: #fff;">-</h2>
             <div id="transEventMeta" style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">-</div>
+          </div>
           </div>
           <div style="text-align: right;">
             <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">ID Transaksi Ledger:</div>

@@ -312,15 +312,15 @@
       <article class="concert-card" id="card-bigbang">
         <div class="poster-wrap">
           <img
-            src="https://ygfamily.com/artist/bigbang/worldtour2027-jakarta.jpg"
-            data-fallback-svg="/assets/placeholder-event.svg"
+            src="/images/events/bigbang-world-tour-jakarta-2026.svg"
+            data-fallback-svg="/images/events/concert-default.svg"
             alt="Poster resmi BIGBANG 2026–27 WORLD TOUR in Jakarta di Jakarta International Stadium"
             class="poster-img"
             width="540"
             height="280"
             loading="eager"
             fetchpriority="high"
-            onerror="this.onerror=null; this.src='/assets/placeholder-event.svg';"
+            onerror="this.onerror=null; this.src='/images/events/concert-default.svg';"
           >
           <div class="poster-overlay">
             <span class="badge badge-verified" data-i18n="spotlight.officialChannel">✓ OFFICIAL CHANNEL</span>
@@ -1445,7 +1445,14 @@
     }
 
     function renderPosterMedia(e, categoryLabel, statusText, radarBadge, isPriority = false) {
-      const img = e.image_url && e.is_fallback_image !== true && e.image_status !== 'FALLBACK' && e.image_status !== 'BROKEN' ? e.image_url : '';
+      let img = e.image_url;
+      if (!img || img === 'null' || img === 'undefined' || e.image_status === 'BROKEN') {
+        const cat = (e.category || categoryLabel || '').toUpperCase();
+        if (cat.includes('SPORT')) img = '/images/events/sports-default.svg';
+        else if (cat.includes('COMEDY') || cat.includes('STANDUP')) img = '/images/events/standup-default.svg';
+        else if (cat.includes('FESTIVAL')) img = '/images/events/festival-default.svg';
+        else img = '/images/events/concert-default.svg';
+      }
       const visual = getCategoryVisual(e.category || categoryLabel);
       const title = escapeHtml(e.title || e.canonical_name || 'Event');
       const venue = escapeHtml(e.venue_name || e.venue || '');
@@ -1470,7 +1477,7 @@
       if (img) {
         return `
           <div class="poster-media" data-image-status="${imgStatus}">
-            <img src="${img}" alt="${altText}" width="250" height="312" ${priorityAttr} decoding="async" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+            <img src="${img}" alt="${altText}" width="250" height="312" ${priorityAttr} decoding="async" onerror="this.onerror=null; this.src='/images/events/concert-default.svg';" />
             <div class="poster-fallback-wrap" style="display: none;">
               ${placeholderInner}
             </div>

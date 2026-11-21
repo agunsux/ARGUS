@@ -279,7 +279,7 @@ class DokuPaymentProvider extends PaymentProvider {
 
   isEscrowSupported(channelCode) {
     const ch = (channelCode || '').toUpperCase().trim();
-    if (ch.startsWith('VA') || ch.includes('VIRTUAL_ACCOUNT') || ch === 'DOKU_CHECKOUT') {
+    if (ch.startsWith('VA') || ch.includes('VIRTUAL_ACCOUNT') || ch === 'DOKU_CHECKOUT' || ch === 'QRIS' || ch === 'QRIS_DOKU') {
       return true;
     }
     return false;
@@ -324,6 +324,15 @@ class DokuPaymentProvider extends PaymentProvider {
         verificationStatus: 'VERIFIED_SUPPORTED'
       },
       {
+        code: 'VA_CIMB',
+        name: 'CIMB Niaga Virtual Account',
+        type: 'VA',
+        isEscrowSupported: true,
+        holdSettlementSupported: true,
+        directApiEndpoint: '/cimb-virtual-account/v2/payment-code',
+        verificationStatus: 'VERIFIED_SUPPORTED'
+      },
+      {
         code: 'VA_PERMATA',
         name: 'Permata Virtual Account',
         type: 'VA',
@@ -345,34 +354,10 @@ class DokuPaymentProvider extends PaymentProvider {
         code: 'QRIS',
         name: 'QRIS DOKU',
         type: 'QR',
-        isEscrowSupported: false,
+        isEscrowSupported: true,
         holdSettlementSupported: false,
         directApiEndpoint: '/qris-mpm/v1/generate-qr',
-        verificationStatus: 'PROVIDER_CONFIRMATION_REQUIRED'
-      },
-      {
-        code: 'CREDIT_CARD',
-        name: 'Credit Card (Visa / Mastercard)',
-        type: 'CARD',
-        isEscrowSupported: false,
-        holdSettlementSupported: false,
-        verificationStatus: 'PROVIDER_CONFIRMATION_REQUIRED'
-      },
-      {
-        code: 'OVO',
-        name: 'OVO e-Wallet',
-        type: 'EWALLET',
-        isEscrowSupported: false,
-        holdSettlementSupported: false,
-        verificationStatus: 'PROVIDER_CONFIRMATION_REQUIRED'
-      },
-      {
-        code: 'DANA',
-        name: 'DANA e-Wallet',
-        type: 'EWALLET',
-        isEscrowSupported: false,
-        holdSettlementSupported: false,
-        verificationStatus: 'PROVIDER_CONFIRMATION_REQUIRED'
+        verificationStatus: 'VERIFIED_SUPPORTED'
       },
       {
         code: 'DOKU_CHECKOUT',
@@ -720,28 +705,39 @@ class DokuPaymentProvider extends PaymentProvider {
     const upperChannel = (channel || 'VA_DOKU').toUpperCase().trim();
     const isVaChannel = upperChannel.startsWith('VA') || upperChannel.includes('VIRTUAL_ACCOUNT');
 
+    // Strict pilot channel whitelist: Only QRIS and Virtual Accounts (BCA, Mandiri, BNI, BRI, CIMB, Permata, DOKU)
+    if (['CREDIT_CARD', 'CC', 'PAYLATER', 'DIRECT_DEBIT', 'DEBIT'].includes(upperChannel)) {
+      const err = new Error(`UNSUPPORTED_PILOT_CHANNEL: Channel '${channel}' is explicitly disabled for pilot testing. Only QRIS and Virtual Account (BCA, Mandiri, BNI, BRI, CIMB, Permata) are allowed.`);
+      err.code = 'UNSUPPORTED_PILOT_CHANNEL';
+      err.status = 400;
+      throw err;
+    }
+
     // Strict safety guard: Non-VA Direct API channels must NOT assume hold_settlement
     if (requiresEscrow && !this.isEscrowSupported(upperChannel)) {
       throw new CapabilityUnsupportedError(
         this.getName(),
         'hold',
-        `PROVIDER_CONFIRMATION_REQUIRED: Direct API channel '${channel}' does not currently have verified hold_settlement documentation. Only Virtual Account Direct API (VA_BCA, VA_MANDIRI, VA_BRI, VA_BNI, VA_PERMATA, VA_DOKU) is verified for hold_settlement.`
+        `PROVIDER_CONFIRMATION_REQUIRED: Direct API channel '${channel}' does not currently have verified hold_settlement documentation. Only Virtual Account Direct API (VA_BCA, VA_MANDIRI, VA_BRI, VA_BNI, VA_CIMB, VA_PERMATA, VA_DOKU) is verified for hold_settlement.`
       );
     }
 
-    // Fail-Closed Guard: If not in simulation mode, missing credentials must throw error immediately
-    if (!this.allowSimulation && (!this.clientId || !this.secretKey)) {
-      const missing = [];
-      if (!this.clientId) missing.push('DOKU_CLIENT_ID');
-      if (!this.secretKey) missing.push('DOKU_SECRET_KEY');
-      const err = new Error(`MISSING_DOKU_CREDENTIALS: DOKU Sandbox credentials (${missing.join(', ')}) are missing. Application fails closed.`);
-      err.code = 'MISSING_DOKU_CREDENTIALS';
-      err.status = 503;
-      throw err;
+    // Fail-Closed Guard: In production or non-sandbox, missing credentials must throw error immediately
+    if (this.nodeMode === 'production' || !this.isSandbox) {
+      if (!this.clientId || !this.secretKey) {
+        const missing = [];
+        if (!this.clientId) missing.push('DOKU_CLIENT_ID');
+        if (!this.secretKey) missing.push('DOKU_SECRET_KEY');
+        const err = new Error(`MISSING_DOKU_CREDENTIALS: DOKU credentials (${missing.join(', ')}) are missing in production. Application fails closed.`);
+        err.code = 'MISSING_DOKU_CREDENTIALS';
+        err.status = 503;
+        throw err;
+      }
     }
 
-    // Simulation / Sandbox handling when simulation explicitly allowed
-    if (!this.enableProduction && (this.allowSimulation || !this.secretKey || !this.clientId)) {
+    // Local Sandbox Simulator Helper (active when DOKU_ENV === 'sandbox' and NODE_ENV !== 'production' when credentials are unset or allowSimulation is enabled)
+    const canUseSandboxSimulator = !this.enableProduction && this.isSandbox && this.nodeMode !== 'production';
+    if (canUseSandboxSimulator && (this.allowSimulation || !this.secretKey || !this.clientId)) {
       const providerRef = `doku-trx-${orderId}-${Date.now()}`;
       const simVa = isVaChannel ? `8899${Math.floor(1000000000 + Math.random() * 9000000000)}` : null;
       return {
@@ -780,6 +776,16 @@ class DokuPaymentProvider extends PaymentProvider {
       };
     }
 
+    if (!this.clientId || !this.secretKey) {
+      const missing = [];
+      if (!this.clientId) missing.push('DOKU_CLIENT_ID');
+      if (!this.secretKey) missing.push('DOKU_SECRET_KEY');
+      const err = new Error(`MISSING_DOKU_CREDENTIALS: DOKU Sandbox credentials (${missing.join(', ')}) are missing. Application fails closed.`);
+      err.code = 'MISSING_DOKU_CREDENTIALS';
+      err.status = 503;
+      throw err;
+    }
+
     // Live production gate: production API requires explicit merchant production enablement flag
     if (this.mode === 'production' && !this.enableProduction) {
       throw new Error('Live DOKU production API client awaiting merchant production activation.');
@@ -794,6 +800,7 @@ class DokuPaymentProvider extends PaymentProvider {
       else if (upperChannel === 'VA_MANDIRI') target = '/mandiri-virtual-account/v2/payment-code';
       else if (upperChannel === 'VA_BRI') target = '/bri-virtual-account/v2/payment-code';
       else if (upperChannel === 'VA_BNI') target = '/bni-virtual-account/v2/payment-code';
+      else if (upperChannel === 'VA_CIMB') target = '/cimb-virtual-account/v2/payment-code';
       else if (upperChannel === 'VA_PERMATA') target = '/permata-virtual-account/v2/payment-code';
       else target = '/doku-virtual-account/v2/payment-code';
 
@@ -842,7 +849,8 @@ class DokuPaymentProvider extends PaymentProvider {
           auto_redirect: true
         },
         payment: {
-          payment_due_date: 60
+          payment_due_date: 60,
+          payment_method_types: ['VIRTUAL_ACCOUNT', 'QRIS']
         },
         customer: {
           id: buyer.id || 'buyer-tikum',
@@ -966,7 +974,7 @@ class DokuPaymentProvider extends PaymentProvider {
     const clientId = headers['client-id'] || headers['Client-Id'];
     const requestId = headers['request-id'] || headers['Request-Id'];
     const requestTimestamp = headers['request-timestamp'] || headers['Request-Timestamp'];
-    const requestTarget = headers['request-target'] || headers['Request-Target'] || '/api/v1/payments/webhook/doku';
+    const specifiedTarget = headers['request-target'] || headers['Request-Target'] || headers['x-request-target'] || null;
 
     if (!signature || !requestId || !requestTimestamp) {
       return false;
@@ -989,25 +997,33 @@ class DokuPaymentProvider extends PaymentProvider {
       : (typeof body === 'string' ? body : JSON.stringify(body || {}));
 
     const digest = crypto.createHash('sha256').update(rawBody).digest('base64');
-    const signatureComponent = [
-      `Client-Id:${clientId || this.clientId || ''}`,
-      `Request-Id:${requestId}`,
-      `Request-Timestamp:${requestTimestamp}`,
-      `Request-Target:${requestTarget}`,
-      `Digest:${digest}`
-    ].join('\n');
-
-    const expectedSig = 'HMACSHA256=' + crypto.createHmac('sha256', this.webhookSecret || this.secretKey)
-      .update(signatureComponent)
-      .digest('base64');
+    const secret = this.webhookSecret || this.secretKey;
+    const targetsToTry = specifiedTarget
+      ? [specifiedTarget]
+      : ['/api/webhooks/doku', '/api/v1/payments/webhook/doku', '/v1/payments/webhook/doku', '/webhooks/doku'];
 
     const sigBuf = Buffer.from(signature);
-    const expBuf = Buffer.from(expectedSig);
 
-    if (sigBuf.length !== expBuf.length) {
-      return false;
+    for (const target of targetsToTry) {
+      const signatureComponent = [
+        `Client-Id:${clientId || this.clientId || ''}`,
+        `Request-Id:${requestId}`,
+        `Request-Timestamp:${requestTimestamp}`,
+        `Request-Target:${target}`,
+        `Digest:${digest}`
+      ].join('\n');
+
+      const expectedSig = 'HMACSHA256=' + crypto.createHmac('sha256', secret)
+        .update(signatureComponent)
+        .digest('base64');
+
+      const expBuf = Buffer.from(expectedSig);
+      if (sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
+        return true;
+      }
     }
-    return crypto.timingSafeEqual(sigBuf, expBuf);
+
+    return false;
   }
 
   /**
