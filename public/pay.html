@@ -181,11 +181,11 @@
                 <span data-i18n="nav.cities">Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
               </a>
               <div class="city-dropdown-menu">
-                <a href="/offers?city=Jakarta" class="city-dropdown-item">Jakarta</a>
-                <a href="/offers?city=Bandung" class="city-dropdown-item">Bandung</a>
-                <a href="/offers?city=Surabaya" class="city-dropdown-item">Surabaya</a>
-                <a href="/offers?city=Bali" class="city-dropdown-item">Bali</a>
-                <a href="/offers" class="city-dropdown-item">Semua Kota</a>
+                <a href="/offers?city=Jakarta" class="city-dropdown-item" data-i18n="nav.jakarta">Jakarta</a>
+                <a href="/offers?city=Bandung" class="city-dropdown-item" data-i18n="nav.bandung">Bandung</a>
+                <a href="/offers?city=Surabaya" class="city-dropdown-item" data-i18n="nav.surabaya">Surabaya</a>
+                <a href="/offers?city=Bali" class="city-dropdown-item" data-i18n="nav.bali">Bali</a>
+                <a href="/offers" class="city-dropdown-item" data-i18n="nav.allCities">Semua Kota</a>
               </div>
             </li>
           </ul>
@@ -534,7 +534,7 @@
         <div id="unauthBuyerNotice" class="notice-box notice-info" style="display:none; margin-bottom:14px; font-size:12.5px;">
           <i class="fa-solid fa-user-lock"></i>
           <div style="flex:1;">
-            <strong>Belum Masuk Akun:</strong> Anda dapat <a id="loginRedirectLink" href="/login" style="color:var(--terra-600); font-weight:700; text-decoration:underline;">Masuk / Daftar</a> agar pesanan tercatat di dasbor akun Anda, atau lanjutkan menggunakan akun pengujian simulasi di bawah.
+            <strong>Belum Masuk Akun:</strong> Anda dapat <a id="loginRedirectLink" href="/login" style="color:var(--terra-600); font-weight:700; text-decoration:underline;" data-i18n="nav.signIn">Masuk</a> agar pesanan tercatat di dasbor akun Anda, atau lanjutkan menggunakan akun pengujian simulasi di bawah.
           </div>
         </div>
 
@@ -613,7 +613,7 @@
         <div id="selfPurchaseNotice" class="notice-box notice-warning" style="display:none; background:#fff1f2; border:1px solid #fecdd3; color:#9f1239; margin-bottom:14px;">
           <i class="fa-solid fa-ban" style="color:#e11d48; font-size:20px;"></i>
           <div>
-            <strong>Self-Purchase Dilarang:</strong> Anda teridentifikasi sebagai pemilik dari tiket listing ini. Sesuai aturan integritas Tikum, penjual dilarang membeli tiket dari listing miliknya sendiri.
+            <strong data-i18n="pay.selfPurchaseForbidden">Self-Purchase Dilarang:</strong> Anda teridentifikasi sebagai pemilik dari tiket listing ini. Sesuai aturan integritas Tikum, penjual dilarang membeli tiket dari listing miliknya sendiri.
           </div>
         </div>
 
@@ -996,7 +996,9 @@
       const priceTicketEl = document.getElementById('priceTicket');
       priceTicketEl.innerText = 'Rp ' + Number(ticketAmount).toLocaleString('id-ID');
       if (isDemo) {
-        priceTicketEl.innerHTML += '<div style="font-size:11px; color:#d97706; font-weight:600; margin-top:2px;">(Harga ilustratif — bukan penawaran tiket aktif)</div>';
+        const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
+      const illustrativeText = isEn ? '(Illustrative price — not an active ticket offer)' : '(Harga ilustratif — bukan penawaran tiket aktif)';
+      priceTicketEl.innerHTML += `<div style="font-size:11px; color:#d97706; font-weight:600; margin-top:2px;">${illustrativeText}</div>`;
       }
       document.getElementById('pricePlatformFee').innerText = 'Rp ' + Number(buyerFeeAmount).toLocaleString('id-ID');
 

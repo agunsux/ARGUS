@@ -438,6 +438,7 @@ export interface ErrorsDictionary {
 }
 
 export interface TikumDictionarySchema {
+  [key: string]: any;
   common: CommonDictionary;
   nav: NavDictionary;
   landing: LandingDictionary;

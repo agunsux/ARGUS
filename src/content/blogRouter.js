@@ -26,6 +26,32 @@ const { InternalLinkingService } = require('../seo/InternalLinkingService');
 const { renderFooterHtml, businessProfile } = require('../config/businessProfile');
 
 // -------------------------------------------------------------
+// Utility: Request Locale Resolution
+// -------------------------------------------------------------
+function resolveRequestLocale(req) {
+  if (!req) return 'id';
+  if (req.query && (req.query.lang || req.query.locale)) {
+    const q = (req.query.lang || req.query.locale).toLowerCase();
+    if (q === 'en' || q.startsWith('en-')) return 'en';
+    if (q === 'id' || q.startsWith('id-')) return 'id';
+  }
+  if (req.cookies && (req.cookies.tikum_locale || req.cookies.tikum_lang)) {
+    const c = (req.cookies.tikum_locale || req.cookies.tikum_lang).toLowerCase();
+    if (c === 'en' || c.startsWith('en-')) return 'en';
+    if (c === 'id' || c.startsWith('id-')) return 'id';
+  }
+  if (req.headers && req.headers.cookie) {
+    const match = req.headers.cookie.match(/(?:^|;\s*)(?:tikum_locale|tikum_lang)=([^;]+)/);
+    if (match && match[1]) {
+      const c = decodeURIComponent(match[1]).toLowerCase();
+      if (c === 'en' || c.startsWith('en-')) return 'en';
+      if (c === 'id' || c.startsWith('id-')) return 'id';
+    }
+  }
+  return 'id';
+}
+
+// -------------------------------------------------------------
 // Utility: Reading Time
 // -------------------------------------------------------------
 function calculateReadingTime(htmlContent) {
@@ -200,7 +226,7 @@ router.get(['/blog/editorial-standards', '/blog/tentang-editorial', '/blog/autho
   });
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${resolveRequestLocale(req)}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -310,7 +336,7 @@ router.get('/blog/category/:category', (req, res) => {
 
   if (!meta) {
     return res.status(404).send(`<!DOCTYPE html>
-      <html lang="id"><head><title>Kategori Tidak Ditemukan — Tikum</title><meta name="robots" content="noindex, nofollow"></head>
+      <html lang="${resolveRequestLocale(req)}"><head><title>Kategori Tidak Ditemukan — Tikum</title><meta name="robots" content="noindex, nofollow"></head>
       <body style="font-family:sans-serif; background:#0f172a; color:#fff; text-align:center; padding:50px;">
         <h2>Kategori Tidak Ditemukan</h2>
         <p>Kategori blog yang Anda cari tidak tersedia.</p>
@@ -365,7 +391,7 @@ router.get('/blog/category/:category', (req, res) => {
   }).join('');
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${resolveRequestLocale(req)}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -472,7 +498,7 @@ router.get(['/blog', '/guides'], (req, res) => {
   }).join('');
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${resolveRequestLocale(req)}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -519,7 +545,7 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
 
   if (!article || (!isDue && !isPreview)) {
     return res.status(404).send(`<!DOCTYPE html>
-      <html lang="id"><head><title>Artikel Tidak Ditemukan — Tikum</title><meta name="robots" content="noindex, nofollow"></head>
+      <html lang="${resolveRequestLocale(req)}"><head><title>Artikel Tidak Ditemukan — Tikum</title><meta name="robots" content="noindex, nofollow"></head>
       <body style="font-family:sans-serif; background:#0f172a; color:#fff; text-align:center; padding:50px;">
         <h2>Artikel Tidak Ditemukan</h2>
         <p>Artikel yang Anda cari tidak tersedia atau belum dipublikasikan.</p>
@@ -593,7 +619,7 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
   }
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${resolveRequestLocale(req)}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

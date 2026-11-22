@@ -144,7 +144,20 @@
       "cities": "Kota",
       "buyTickets": "Beli Tiket / Cari Event",
       "groupDiscover": "Jelajah",
-      "groupTransactions": "Transaksi"
+      "groupTransactions": "Transaksi",
+      "sellerDealLink": "Jual Tiket / Buat Deal Link",
+      "allCities": "Semua Kota",
+      "jakarta": "Jakarta",
+      "bandung": "Bandung",
+      "surabaya": "Surabaya",
+      "bali": "Bali",
+      "exploreTickets": "Jelajah Tiket",
+      "sellTicketsNow": "Jual Tiket Sekarang",
+      "mobileHome": "Beranda",
+      "mobileConcerts": "Konser",
+      "mobileSearch": "Cari",
+      "mobileTickets": "Tiket",
+      "mobileAccount": "Akun"
     },
     "hero": {
       "headline": "TIKUM — Pasar Tiket Event Terverifikasi",
@@ -267,7 +280,7 @@
       "picVenueNote": "(Tim Event PIC bertugas di venue pada jam operasional gerbang acara terkonfirmasi)",
       "aboutTikum": "Tentang TIKUM",
       "checkoutDemo": "Halaman Checkout (/pay)",
-      "buyerGuide": "Panduan Pembeli & Proteksi",
+      "buyerGuide": "Panduan Pembeli",
       "sellerGuide": "Panduan Penjual",
       "feeStructure": "Struktur Harga & Biaya",
       "fundsFlow": "Alur Dana & Penahanan Transaksi",
@@ -281,7 +294,13 @@
       "escrow": "Penahanan Dana",
       "copyrightNotice": "© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM adalah platform marketplace tiket terverifikasi.",
       "pastEvents": "Arsip Event",
-      "blog": "Blog & Panduan"
+      "blog": "Blog & Panduan",
+      "legalAndHelp": "Bantuan & Legal",
+      "verificationAndPic": "Verifikasi & PIC",
+      "prelaunchMode": "Mode Persiapan Peluncuran Aktif (Hanya Listing)",
+      "companyEntity": "PT SHINERVA PRAJNA TEJAS",
+      "officeAddress": "Jl. Pasirluyu No. 79, Bandung 40254",
+      "rightsReserved": "Seluruh hak cipta dilindungi undang-undang."
     },
     "status": {
       "LISTED": "Tersedia",
@@ -510,7 +529,19 @@
       "soldTitle": "Tiket Terjual — Menunggu Hari Acara",
       "soldDesc": "Dana diamankan di penampungan hingga serah terima fisik/gate verification selesai.",
       "waitingEventDay": "MENUNGGU HARI ACARA",
-      "entryProtocol": "Protokol Masuk Venue:"
+      "entryProtocol": "Protokol Masuk Venue:",
+      "pageTitle": "Lacak Status Transaksi & Verifikasi Gerbang",
+      "pageSubtitle": "Setiap perubahan status tiket diverifikasi secara kriptografis melalui Tikum Trust Protocol dan dicatat ke dalam audit ledger permanen.",
+      "searchPlaceholder": "Masukkan ID Transaksi atau ID Listing (contoh: ord-..., list-...)",
+      "btnTrack": "Lacak Transaksi",
+      "verifyingId": "Memverifikasi ID dengan database audit ledger Tikum...",
+      "escrowStatus": "Status Dana Escrow",
+      "ticketStatus": "Status Keabsahan Tiket",
+      "gateStatus": "Status Verifikasi Gerbang",
+      "disputeStatus": "Status Mediasi / Sengketa",
+      "stageA": "Tahap A — Verifikasi Dokumen & Kepemilikan",
+      "stageB": "Tahap B — Penyerahan Lapangan / Gerbang Venue",
+      "evidenceAuditTrail": "Audit Trail & Bukti Lapangan"
     },
     "sell": {
       "stepEvent": "Pilih Event",
@@ -623,7 +654,15 @@
       "radarVerified": "Radar Terverifikasi",
       "allCategories": "Semua Kategori",
       "gateProtocol": "Protokol Verifikasi Gerbang (TIKUM PIC)",
-      "listedPrice": "Harga tertera"
+      "listedPrice": "Harga tertera",
+      "tierPic": "Event PIC",
+      "tierDigital": "Transfer Digital",
+      "tierUnderReview": "Kebijakan Ditinjau",
+      "officialPosterPending": "Poster Resmi Belum Tersedia · Sumber Terverifikasi",
+      "fromPrice": "Mulai",
+      "viewTickets": "Lihat Tiket",
+      "sellThisTicket": "Jual Tiket Ini",
+      "posterUnavailableVerified": "Poster Resmi Belum Tersedia · Sumber Terverifikasi"
     },
     "search": {
       "placeholder": "Cari konser, artis, festival, atau kota...",
@@ -768,7 +807,7 @@
     },
     "profile": {
       "title": "Profil Pengguna",
-      "personalInfo": "Informasi Pribadi",
+      "personalInfo": "Informasi Pribadi & Kontak",
       "name": "Nama Lengkap",
       "email": "Email Terdaftar",
       "phone": "Nomor Telepon",
@@ -799,7 +838,16 @@
       "sellerCompleteBadge": "Profil Penjual Lengkap",
       "sellerSectionSummary": "Aktifkan Profil Penjual (Khusus Jual Tiket)",
       "sellerSectionDesc": "Bagian ini hanya wajib diisi jika Anda ingin menjual tiket untuk pencairan dana escrow.",
-      "buyerOnlyNotice": "Profil pembeli aktif. Anda siap bertransaksi tanpa perlu mengisi data rekening atau dokumen identitas."
+      "buyerOnlyNotice": "Profil pembeli aktif. Anda siap bertransaksi tanpa perlu mengisi data rekening atau dokumen identitas.",
+      "emailVerifiedStatus": "Verifikasi Berhasil: Email Anda telah terkonfirmasi.",
+      "readinessTitle": "Status Kesiapan Akun",
+      "emailBadge": "Verifikasi Email",
+      "buyerBadge": "Profil Pembeli",
+      "sellerBadge": "Profil Penjual",
+      "sellerReqHint": "Wajib melengkapi kontak, alamat, dan rekening pencairan sebelum dapat menjual tiket.",
+      "statusVerified": "Terverifikasi",
+      "statusUnverified": "Belum Lengkap",
+      "statusActive": "Aktif"
     },
     "settings": {
       "title": "Pengaturan Akun",
@@ -1000,34 +1048,34 @@
       "sellerProfileIncomplete": "Profil penjual dan rekening pencairan wajib dilengkapi sebelum membuat listing.",
       "selfPurchaseForbidden": "Penjual dilarang membeli listing tiket miliknya sendiri.",
       "invalidRelationalReference": "Referensi relasional database tidak valid atau belum tersimpan.",
-    "profile": {
-      "pageTitle": "Profil & Keamanan Akun",
-      "pageSubtitle": "Kelola identitas, verifikasi email, dan data rekening pencairan dana tiket.",
-      "emailVerification": "Verifikasi Email",
-      "emailVerified": "Email Terverifikasi",
-      "emailUnverified": "Email Belum Terverifikasi",
-      "resendVerification": "Kirim Ulang Email Verifikasi",
-      "verificationSent": "Tautan verifikasi telah dikirim ke email Anda.",
-      "cooldownNotice": "Tunggu sebelum mengirim ulang.",
-      "personalInfo": "Informasi Pribadi & Kontak",
-      "fullName": "Nama Lengkap Sesuai Identitas",
-      "whatsapp": "Nomor WhatsApp Aktif",
-      "cityOrAddress": "Kota / Alamat Lengkap",
-      "sellerPayout": "Data Rekening Pencairan Penjual",
-      "bankName": "Nama Bank Pencairan",
-      "bankAccountNumber": "Nomor Rekening Bank",
-      "bankAccountHolder": "Nama Pemilik Rekening",
-      "identityDocRef": "Referensi Dokumen Identitas (KTP)",
-      "saveBtn": "Simpan Profil",
-      "saving": "Menyimpan...",
-      "savedSuccess": "Profil berhasil diperbarui.",
-      "autofillBadge": "Profil Terverifikasi & Terisi Otomatis",
-      "buyerProportionalNote": "Untuk pembeli, kami hanya memerlukan kontak dasar (Nama, WhatsApp, dan Kota) sesuai prinsip minimisasi data UU PDP No. 27/2022.",
-      "sellerCompleteBadge": "Profil Penjual Lengkap",
-      "sellerSectionSummary": "Aktifkan Profil Penjual (Khusus Jual Tiket)",
-      "sellerSectionDesc": "Bagian ini hanya wajib diisi jika Anda ingin menjual tiket untuk pencairan dana escrow.",
-      "buyerOnlyNotice": "Profil pembeli aktif. Anda siap bertransaksi tanpa perlu mengisi data rekening atau dokumen identitas."
-    }
+      "profile": {
+        "pageTitle": "Profil & Keamanan Akun",
+        "pageSubtitle": "Kelola identitas, verifikasi email, dan data rekening pencairan dana tiket.",
+        "emailVerification": "Verifikasi Email",
+        "emailVerified": "Email Terverifikasi",
+        "emailUnverified": "Email Belum Terverifikasi",
+        "resendVerification": "Kirim Ulang Email Verifikasi",
+        "verificationSent": "Tautan verifikasi telah dikirim ke email Anda.",
+        "cooldownNotice": "Tunggu sebelum mengirim ulang.",
+        "personalInfo": "Informasi Pribadi & Kontak",
+        "fullName": "Nama Lengkap Sesuai Identitas",
+        "whatsapp": "Nomor WhatsApp Aktif",
+        "cityOrAddress": "Kota / Alamat Lengkap",
+        "sellerPayout": "Data Rekening Pencairan Penjual",
+        "bankName": "Nama Bank Pencairan",
+        "bankAccountNumber": "Nomor Rekening Bank",
+        "bankAccountHolder": "Nama Pemilik Rekening",
+        "identityDocRef": "Referensi Dokumen Identitas (KTP)",
+        "saveBtn": "Simpan Profil",
+        "saving": "Menyimpan...",
+        "savedSuccess": "Profil berhasil diperbarui.",
+        "autofillBadge": "Profil Terverifikasi & Terisi Otomatis",
+        "buyerProportionalNote": "Untuk pembeli, kami hanya memerlukan kontak dasar (Nama, WhatsApp, dan Kota) sesuai prinsip minimisasi data UU PDP No. 27/2022.",
+        "sellerCompleteBadge": "Profil Penjual Lengkap",
+        "sellerSectionSummary": "Aktifkan Profil Penjual (Khusus Jual Tiket)",
+        "sellerSectionDesc": "Bagian ini hanya wajib diisi jika Anda ingin menjual tiket untuk pencairan dana escrow.",
+        "buyerOnlyNotice": "Profil pembeli aktif. Anda siap bertransaksi tanpa perlu mengisi data rekening atau dokumen identitas."
+      }
     },
     "accessibility": {
       "langToggleAria": "Pilih bahasa tampilan (Bahasa Indonesia / English)",
@@ -1119,7 +1167,28 @@
       "termsBindingNotice": "Dengan menyelesaikan pesanan, Anda terikat oleh Syarat & Ketentuan Layanan Tikum dan Kebijakan Pengembalian Dana.",
       "termsCheckbox": "Saya telah membaca dan menyetujui Syarat & Ketentuan serta Kebijakan Pengembalian Dana.",
       "realSubmit": "Lanjutkan Pembayaran Resmi",
-      "trackOrderBtn": "Lacak Status & Protokol di /track"
+      "trackOrderBtn": "Lacak Status & Protokol di /track",
+      "loadingPublicListing": "Memuat listing publik...",
+      "prelaunchTitle": "TIKUM sedang dalam tahap persiapan peluncuran.",
+      "prelaunchDesc": "Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Transaksi pembelian publik dan penyerahan tiket resmi akan diaktifkan secara bertahap.",
+      "demoNotForPurchase": "DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN",
+      "notPurchasableNotice": "Listing ini merupakan contoh tampilan sistem (mockup). Tiket ini tidak dapat dibeli atau ditransaksikan secara riil saat ini.",
+      "illustrativePrice": "Harga ilustratif — bukan penawaran tiket aktif. Tidak ada pembayaran yang akan diproses.",
+      "yourListingBanner": "Ini Listing Anda (Mode Penjual)",
+      "yourListingDesc": "Anda terautentikasi sebagai penjual pemilik tiket ini. Bagikan tautan ini ke calon pembeli untuk transaksi aman.",
+      "selfPurchaseForbidden": "Self-Purchase Dilarang:",
+      "selfPurchaseDetail": "Penjual tidak diperbolehkan membeli tiket milik sendiri demi mencegah manipulasi audit trail.",
+      "copyBuyerLink": "Salin Link Pembeli",
+      "modalMakeOfferTitle": "Ajukan Tawaran Harga Tiket",
+      "modalMakeOfferDesc": "Tawaran terikat aturan ketat Tikum. Minimal 50% dari harga listing. Penjual memiliki 24 jam untuk merespon.",
+      "modalOfferRules": "Aturan Transaksi Tanpa Chat: Penjual hanya dapat merespon dengan: Terima, Tolak, atau Tawar Balik (maks 5 ronde). Tidak ada chat bebas.",
+      "modalOfferAmount": "Nominal Tawaran (Rp):",
+      "modalOfferHint": "Min 50% • Maks < Harga Normal",
+      "modalNormalPrice": "Harga Listing Normal:",
+      "modalYourOffer": "Nominal Tawaran Anda:",
+      "trustProtectionFee": "Tikum Trust & Protection Fee (6% minimum Rp35.000 per tiket):",
+      "totalBuyerPayment": "Total Pembayaran Pembeli:",
+      "btnSubmitOffer": "Ajukan Tawaran Resmi"
     },
     "create": {
       "wizardStep1": "1. Pemilihan Event & Kategori Tiket",
@@ -1169,7 +1238,46 @@
       "stepperStep1": "1. Akun & Verifikasi Email",
       "stepperStep2": "2. Profil & Identitas Penjual",
       "stepperStep3": "3. Detail Tiket & Bukti (Tahap A — Tanpa QR)",
-      "autofillNotice": "Profil Penjual Terisi Otomatis"
+      "autofillNotice": "Profil Penjual Terisi Otomatis",
+      "step1Title": "Masuk atau Buat Akun Penjual",
+      "step1Subtitle": "Untuk menjaga keamanan transaksi sekunder dan perlindungan anti-penipuan, setiap penjual wajib memiliki akun terverifikasi.",
+      "step2Title": "Lengkapi Profil & Rekening Penjual Sekali Saja",
+      "step2Subtitle": "Verifikasi Sekali, Terisi Otomatis Selamanya. Data ini disimpan aman sesuai UU PDP dan hanya digunakan untuk pencairan dana tiket Anda.",
+      "step3Title": "Detail Tiket & Ketentuan Penyerahan",
+      "labelFullName": "Nama Lengkap Sesuai KTP *",
+      "labelWhatsapp": "Nomor WhatsApp Aktif *",
+      "labelCity": "Kota Domisili *",
+      "labelAddress": "Alamat Lengkap",
+      "labelBank": "Bank Pencairan *",
+      "selectBankDefault": "-- Pilih Bank Pencairan --",
+      "labelAccountHolder": "Nama Pemilik Rekening *",
+      "labelAccountNumber": "Nomor Rekening Bank *",
+      "labelNikLast4": "4 Digit Terakhir NIK KTP *",
+      "labelConsent": "Saya menyatakan data di atas adalah benar untuk verifikasi kepemilikan tiket dan pencairan dana penjualan sesuai Syarat Layanan & Kebijakan Privasi Tikum.",
+      "btnSaveProfile": "Simpan Profil & Lanjut ke Formulir Tiket",
+      "draftRestored": "Draf isian tiket sebelumnya berhasil dipulihkan secara otomatis.",
+      "labelSelectEvent": "1. Pilih Event yang Sesuai *",
+      "selectEventLoading": "-- Memuat daftar event dari server... --",
+      "labelQuantity": "Jumlah Tiket yang Dijual (1 - 4 tiket) *",
+      "quantityHint": "Maksimal 4 tiket per listing (kuota inventaris terikat)",
+      "labelSeatType": "Tipe Tempat Duduk *",
+      "optFestival": "Festival / Standing / General Admission",
+      "optNumbered": "Numbered Seating (Nomor Kursi Tertentu)",
+      "labelFulfillment": "Pilihan Penyerahan Tiket (Fulfillment Option) *",
+      "descFulfillmentPic": "Petugas lapangan TIKUM hadir di venue untuk mendampingi serah terima fisik / wristband sebelum gerbang masuk.",
+      "descFulfillmentDigital": "Penjual mentransfer e-tiket langsung ke pembeli. Dana tetap tertahan di escrow hingga pembeli berhasil masuk venue.",
+      "zeroQrStrip": "Tahap A — Tanpa QR Code Asli: Anda TIDAK PERLU mengunggah barcode/QR tiket saat membuat listing. QR hanya diserahkan pada Hari H / saat settlement.",
+      "btnSubmitListing": "Daftarkan Tiket untuk Ditinjau",
+      "successTitle": "Listing Berhasil Dibuat di Server Tikum",
+      "successDesc": "Data transaksi telah dicatat ke dalam database ledger kami.",
+      "officialListingId": "ID Listing Resmi:",
+      "currentSystemStatus": "Status Sistem Saat Ini:",
+      "boundEvent": "Event Terikat:",
+      "ticketPrice": "Harga Tiket:",
+      "nextStepsLabel": "Langkah Selanjutnya:",
+      "nextStepsDesc": "Admin Tikum akan memvalidasi bukti kepemilikan Anda. Anda akan menerima notifikasi email setelah listing disetujui menjadi status ACTIVE.",
+      "btnOpenDealRoom": "Buka Deal Room Sekarang",
+      "btnCreateAnother": "Buat Listing Lain"
     },
     "offers": {
       "loading": "Mengambil daftar tawaran resmi dari server Tikum...",
@@ -1191,7 +1299,39 @@
       "reasonPreferAnother": "Memilih pembeli lain",
       "reasonListingUpdated": "Listing akan diperbarui / diedit",
       "reasonOther": "Lainnya",
-      "cooldownNotice": "Pembeli akan dikenakan masa tunggu (cooldown) 6 jam pada listing ini sebelum dapat mengajukan tawaran baru."
+      "cooldownNotice": "Pembeli akan dikenakan masa tunggu (cooldown) 6 jam pada listing ini sebelum dapat mengajukan tawaran baru.",
+      "pageTitle": "Manajemen Tawaran Harga Tiket",
+      "pageSubtitle": "Sistem penawaran terikat tanpa obrolan bebas. Semua nominal terstruktur dan berbatas waktu demi kepastian kedua pihak.",
+      "demoAccountLabel": "Pilih Identitas Akun (Demo Mode):",
+      "demoAccountHint": "Ganti pengguna untuk mensimulasikan perspektif pembeli vs penjual.",
+      "tabBuyer": "Tawaran Saya (Pembeli)",
+      "tabSeller": "Kotak Tawaran Masuk (Penjual)",
+      "sortHighest": "Nominal Tertinggi",
+      "sortNewest": "Waktu Terbaru",
+      "modalCounterTitle": "Ajukan Tawaran Balik",
+      "modalCounterSub": "Kirimkan nominal penawaran harga baru secara terstruktur.",
+      "modalCounterAmount": "Nominal Tawaran Balik (Rp):",
+      "modalCounterHint": "Batas tawar-menawar maksimal 5 kali per listing. Tidak ada fitur chat bebas.",
+      "btnSendCounter": "Kirim Tawaran Balik",
+      "listingNormalPrice": "Harga Normal Listing:",
+      "yourOfferDiscount": "Tawaran Anda ({pct}% diskon):",
+      "offerAcceptedNotice": "Tawaran Anda Telah Diterima Penjual!",
+      "sellerCounteredNotice": "Penjual Mengajukan Tawaran Balik:",
+      "sellerDeclinedNotice": "Tawaran Ditolak Penjual:",
+      "soldToOtherNotice": "Tiket telah terjual ke pembeli lain. Tawaran Anda otomatis dibatalkan.",
+      "yourListingPrice": "Harga Listing Anda:",
+      "offeredAmount": "Nominal Ditawarkan ({pct}% diskon):",
+      "btnAccept": "Terima",
+      "btnDecline": "Tolak",
+      "btnCounter": "Tawar Balik",
+      "btnCancel": "Batalkan",
+      "statusPending": "MENUNGGU RESPON",
+      "statusAccepted": "DITERIMA",
+      "statusDeclined": "DITOLAK",
+      "statusCountered": "KONTRA TERTUNDA",
+      "statusExpired": "KEDALUWARSA",
+      "statusCancelled": "DIBATALKAN",
+      "maxNegotiationReached": "Batas tawar-menawar tercapai (5/5)."
     },
     "discovery": {
       "heroTitle": "Temukan Acara Langsung & Akses Tiket Terpercaya",
@@ -1406,7 +1546,7 @@
       "zeroFakeTitle": "Kebijakan Zero Fake Inventory",
       "zeroFakeDesc": "Setiap penawaran wajib melalui kurasi bukti kepemilikan. Tidak ada spekulasi atau tiket fiktif.",
       "prelaunchNoticeTitle": "TIKUM Sedang dalam Tahap Persiapan Peluncuran",
-            "prelaunchNoticeDesc": "Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran live belum tersedia.",
+      "prelaunchNoticeDesc": "Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran live belum tersedia.",
       "editorialHeroTitle": "Beli & Jual Tiket Konser Tanpa Was-Was.",
       "editorialHeroSubtitle": "Jelajahi konser tanpa wajib login, cek biaya transparan di muka, dan serah terima aman dengan saksi fisik Event PIC di venue.",
       "searchPlaceholder": "Cari konser, artis, GBK, JIS, atau kota...",
@@ -1439,7 +1579,58 @@
       "closingCtaHeading": "Punya Tiket Nganggur atau Sudah Deal di X / TikTok?",
       "closingCtaSub": "Gunakan TIKUM sebagai ruang transaksi aman dengan saksi fisik Event PIC dan perlindungan dua arah.",
       "closingCtaSellBtn": "Jual Tiket (Simpel 2 Menit)",
-      "closingCtaDealBtn": "Buka Deal Room"
+      "closingCtaDealBtn": "Buka Deal Room",
+      "heroKicker": "Tiket Resmi Terkurasi & Sekunder Terverifikasi",
+      "filterAll": "Semua",
+      "filterConcerts": "Konser & Musik",
+      "filterSports": "Olahraga",
+      "filterFestivals": "Festival & Lainnya",
+      "filterEnded": "Arsip Selesai",
+      "twoWayProtectionTitle": "Perlindungan Dua Arah",
+      "twoWayProtectionSubtitle": "Dirancang untuk memberantas calo liar dan manipulasi tiket, sambil tetap memberi ruang aman bagi penjual jujur dan jastip tiket terverifikasi.",
+      "founderQuoteLead": "TIKUM lahir dari kekecewaan kami sebagai penonton konser di Indonesia.",
+      "founderQuoteBody": "Bukan sekadar perantara, kami membangun protokol verifikasi identitas, bukti kepemilikan bertingkat, dan opsi pendampingan staf lapangan di venue agar setiap tiket yang berpindah tangan benar-benar sah dan terlindungi sampai ke gerbang.",
+      "founderQuoteAuthor": "Founder & Tim Operasional TIKUM",
+      "bentoBuyerTitle": "Untuk Pembeli Tiket",
+      "bentoBuyerPill1": "Verifikasi Bertingkat",
+      "bentoBuyerPill2": "Dana Ditahan Aman",
+      "bentoBuyerPill3": "Pendampingan Venue",
+      "bentoBuyerItem1Title": "Pemeriksaan Bukti Pembelian Asli",
+      "bentoBuyerItem1Desc": "Setiap penawaran wajib menyertakan bukti invoice/e-voucher resmi dari promotor berizin yang diverifikasi sebelum tayang.",
+      "bentoBuyerItem2Title": "Penahanan Dana Hingga Selesai",
+      "bentoBuyerItem2Desc": "Dana transaksi tidak langsung mengalir ke penjual, melainkan tertahan di mitra pembayaran resmi hingga tiket sukses berpindah tangan.",
+      "bentoBuyerItem3Title": "Dukungan Event PIC di Lokasi",
+      "bentoBuyerItem3Desc": "Untuk event berskala besar, staf lapangan TIKUM siap mendampingi proses penukaran gelang fisik di titik kumpul venue.",
+      "bentoSellerTitle": "Untuk Penjual Jujur & Jastip",
+      "bentoSellerPill1": "Kepastian Pembayaran",
+      "bentoSellerPill2": "Perlindungan No-Show",
+      "bentoSellerPill3": "Bebas Biaya Listing",
+      "bentoSellerItem1Title": "Jaminan Dana Masuk",
+      "bentoSellerItem1Desc": "Penjual tidak perlu khawatir pembeli kabur; dana telah terkunci penuh di kanal resmi sebelum Anda menyerahkan tiket.",
+      "bentoSellerItem2Title": "Perlindungan Ketidakhadiran Pembeli",
+      "bentoSellerItem2Desc": "Jika pembeli tidak hadir tanpa konfirmasi di titik kumpul venue, sistem peninjauan multi-pihak melindungi hak pencairan Anda.",
+      "bentoSellerItem3Title": "Gratis Pendaftaran & Reputasi",
+      "bentoSellerItem3Desc": "Tanpa biaya di muka untuk membuat deal link atau listing; bangun reputasi terpercaya untuk transaksi berikutnya.",
+      "howItWorksSubtitle": "Transparansi penuh dari pembuatan deal hingga masuk gerbang venue.",
+      "transparentPilotFeeTitle": "Struktur Biaya Transparan (Tarif Pilot)",
+      "transparentPilotFeeSubtitle": "TIKUM beroperasi dengan biaya layanan tetap untuk mendanai verifikasi dokumen, infrastruktur keamanan, dan staf PIC venue.",
+      "buyerFeeLabel": "Biaya Pembeli",
+      "buyerFeeValue": "6% (min. Rp35.000, maks. Rp500.000)",
+      "sellerFeeLabel": "Biaya Penjual",
+      "sellerFeeValue": "6% (min. Rp35.000, maks. Rp500.000)",
+      "pilotFeeNote": "Tanpa biaya tersembunyi. Tidak ada potongan tambahan di luar persentase layanan resmi.",
+      "latestGuidesTitle": "Panduan & Informasi Terkini",
+      "latestGuidesSubtitle": "Tips keamanan transaksi, panduan penukaran gelang, dan regulasi promotor resmi.",
+      "readGuideBtn": "Baca Panduan →",
+      "closingCtaTitle": "Punya Tiket yang Tidak Bisa Dipakai?",
+      "closingCtaSubtitle": "Daftarkan dalam 2 menit. Verifikasi bukti kepemilikan dan dapatkan deal link aman untuk dibagikan ke calon pembeli Anda di media sosial.",
+      "closingCtaBtn": "Jual Tiket Sekarang →",
+      "twoWayProtectionEyebrow": "Standar Keamanan Transaksi Sekunder",
+      "fiveStepsSub": "Dari pembuatan tautan transaksi hingga penyelesaian dengan bukti objektif lapangan.",
+      "feeDetailsLink": "Detail Biaya →",
+      "sellCtaButton": "Jual Tiket (Simpel 2 Menit)",
+      "openDealCtaButton": "Buka Deal Room",
+      "workflowBadge": "Alur Transaksi Bertahap"
     },
     "dealCreate": {
       "pageTitle": "Buat Tautan Transaksi / Ajukan Listing Tiket",
@@ -1617,6 +1808,39 @@
       "eligibilityTitle": "Kriteria Pengembalian Dana yang Memenuhi Syarat",
       "nonEligibilityTitle": "Kondisi yang Tidak Memenuhi Syarat Pengembalian Dana",
       "processTitle": "Alur Pengajuan dan Waktu Pemrosesan Refund"
+    },
+    "blog": {
+      "kicker": "EDUKASI & TIPS",
+      "allArticles": "Lihat Seluruh Artikel →",
+      "buyerGuideKicker": "PANDUAN PEMBELI",
+      "post1Title": "Panduan Serah Terima Tiket Aman Dua Tahap & Bukti Lapangan",
+      "post1Snippet": "Memahami alur verifikasi bukti kepemilikan tahap A dan asistensi saksi fisik venue Tikum.",
+      "readGuide": "Baca Panduan →",
+      "securityTipsKicker": "TIPS KEAMANAN",
+      "post2Title": "Cara Aman Jual Beli Tiket Konser di Medsos (X & TikTok)",
+      "post2Snippet": "Menghindari penipuan tiket di media sosial dengan mengalihkan transaksi ke deal room berstatus verifikasi.",
+      "venueOpsKicker": "OPERASIONAL VENUE",
+      "post3Title": "Aturan Penukaran Wristband & Bukti Resmi di GBK & JIExpo",
+      "post3Snippet": "Prosedur penukaran gelang konser bertiket dengan pendampingan saksi fisik di venue acara."
+    },
+    "pastEvents": {
+      "pageTitle": "Arsip Event Selesai & Dibatalkan",
+      "pageSubtitle": "Koleksi permanen event resmi di Indonesia yang tanggal pelaksanaannya telah lewat atau dibatalkan oleh promotor. Halaman ini dipertahankan sebagai riwayat harga, verifikasi penipuan, dan dokumentasi keterbukaan publik.",
+      "categoryAll": "Semua Kategori",
+      "categoryConcert": "Konser Musik",
+      "categoryFestival": "Festival Musik",
+      "categorySports": "Olahraga",
+      "categoryComedy": "Stand-up Comedy",
+      "searchPlaceholder": "Cari arsip nama konser, artis, atau venue...",
+      "emptyTitle": "Tidak ada event arsip yang cocok dengan pencarian Anda.",
+      "emptyDesc": "Coba gunakan kata kunci artis, nama venue, atau reset filter.",
+      "statusConcluded": "SELESAI",
+      "statusCancelled": "DIBATALKAN",
+      "statusPostponed": "DITUNDA",
+      "statusArchived": "DIARSIPKAN",
+      "viewArchive": "Lihat Arsip Event",
+      "eventDate": "Tanggal Acara",
+      "lastKnownPrice": "Harga Resmi Terakhir"
     }
   },
   "en": {
@@ -1705,7 +1929,20 @@
       "cities": "Cities",
       "buyTickets": "Buy Tickets / Browse Events",
       "groupDiscover": "Discover",
-      "groupTransactions": "Transactions"
+      "groupTransactions": "Transactions",
+      "sellerDealLink": "Sell Tickets / Create Deal Link",
+      "allCities": "All Cities",
+      "jakarta": "Jakarta",
+      "bandung": "Bandung",
+      "surabaya": "Surabaya",
+      "bali": "Bali",
+      "exploreTickets": "Explore Tickets",
+      "sellTicketsNow": "Sell Tickets Now",
+      "mobileHome": "Home",
+      "mobileConcerts": "Concerts",
+      "mobileSearch": "Search",
+      "mobileTickets": "Tickets",
+      "mobileAccount": "Account"
     },
     "hero": {
       "headline": "TIKUM — Verified Event Ticket Marketplace",
@@ -1828,7 +2065,7 @@
       "picVenueNote": "(Event PIC team operates on-site at venue during confirmed event gate hours)",
       "aboutTikum": "About TIKUM",
       "checkoutDemo": "Checkout Page (/pay)",
-      "buyerGuide": "Buyer Guide & Protection",
+      "buyerGuide": "Buyer Guide",
       "sellerGuide": "Seller Guide",
       "feeStructure": "Pricing & Fee Structure",
       "fundsFlow": "Funds Flow & Escrow Holding",
@@ -1842,7 +2079,13 @@
       "escrow": "Protected Settlement",
       "copyrightNotice": "© 2026 PT SHINERVA PRAJNA TEJAS. All rights reserved. TIKUM is a verified ticket resale platform.",
       "pastEvents": "Past Events",
-      "blog": "Blog & Guides"
+      "blog": "Blog & Guides",
+      "legalAndHelp": "Help & Legal",
+      "verificationAndPic": "Verification & PIC",
+      "prelaunchMode": "Pre-Launch Mode Active (Listing Only)",
+      "companyEntity": "PT SHINERVA PRAJNA TEJAS",
+      "officeAddress": "Jl. Pasirluyu No. 79, Bandung 40254",
+      "rightsReserved": "All rights reserved."
     },
     "status": {
       "LISTED": "Listed",
@@ -2071,7 +2314,19 @@
       "soldTitle": "Ticket Sold — Awaiting Event Day",
       "soldDesc": "Funds secured in escrow until physical handover / gate verification concludes.",
       "waitingEventDay": "AWAITING EVENT DAY",
-      "entryProtocol": "Venue Entry Protocol:"
+      "entryProtocol": "Venue Entry Protocol:",
+      "pageTitle": "Track Transaction Status & Gate Verification",
+      "pageSubtitle": "Every ticket status change is cryptographically verified through Tikum Trust Protocol and recorded in a permanent audit ledger.",
+      "searchPlaceholder": "Enter Transaction ID or Listing ID (e.g., ord-..., list-...)",
+      "btnTrack": "Track Transaction",
+      "verifyingId": "Verifying ID against Tikum audit ledger database...",
+      "escrowStatus": "Escrow Fund Status",
+      "ticketStatus": "Ticket Validity Status",
+      "gateStatus": "Gate Verification Status",
+      "disputeStatus": "Mediation / Dispute Status",
+      "stageA": "Stage A — Document & Ownership Verification",
+      "stageB": "Stage B — Field Handoff / Venue Gate",
+      "evidenceAuditTrail": "Audit Trail & Field Evidence"
     },
     "sell": {
       "stepEvent": "Select Event",
@@ -2184,7 +2439,15 @@
       "radarVerified": "Verified Radar",
       "allCategories": "All Categories",
       "gateProtocol": "Gate Verification Protocol (TIKUM PIC)",
-      "listedPrice": "Listed price"
+      "listedPrice": "Listed price",
+      "tierPic": "Event PIC",
+      "tierDigital": "Digital Transfer",
+      "tierUnderReview": "Policy Under Review",
+      "officialPosterPending": "Official Poster Pending · Verified Source",
+      "fromPrice": "From",
+      "viewTickets": "View Tickets",
+      "sellThisTicket": "Sell This Ticket",
+      "posterUnavailableVerified": "Official Poster Unavailable · Verified Source"
     },
     "search": {
       "placeholder": "Search concerts, artists, festivals, or cities...",
@@ -2329,7 +2592,7 @@
     },
     "profile": {
       "title": "User Profile",
-      "personalInfo": "Personal Information",
+      "personalInfo": "Personal Info & Contact",
       "name": "Full Name",
       "email": "Registered Email",
       "phone": "Phone Number",
@@ -2344,23 +2607,32 @@
       "resendVerification": "Resend Verification Email",
       "verificationSent": "Verification link has been sent to your email.",
       "cooldownNotice": "Please wait before resending.",
-      "fullName": "Full Name as on ID",
+      "fullName": "Full Name per Legal ID",
       "whatsapp": "Active WhatsApp Number",
       "cityOrAddress": "City / Full Address",
-      "sellerPayout": "Seller Payout Bank Account",
+      "sellerPayout": "Seller Payout Bank Details",
       "bankName": "Payout Bank Name",
       "bankAccountNumber": "Bank Account Number",
       "bankAccountHolder": "Account Holder Name",
       "identityDocRef": "Identity Document Reference (KTP)",
       "saveBtn": "Save Profile",
       "saving": "Saving...",
-      "savedSuccess": "Profile updated successfully.",
-      "autofillBadge": "Verified Profile & Auto-Filled",
-      "buyerProportionalNote": "For buyers, we only require basic contact info (Name, WhatsApp, City) under the data minimization principle of PDP Law No. 27/2022.",
+      "savedSuccess": "Profile successfully updated.",
+      "autofillBadge": "Profile Verified & Auto-Filled",
+      "buyerProportionalNote": "For buyers, only minimal contact details (Name, WhatsApp, and City) are required per PDP Law No. 27/2022 data minimization.",
       "sellerCompleteBadge": "Seller Profile Complete",
       "sellerSectionSummary": "Activate Seller Profile (Selling Tickets Only)",
       "sellerSectionDesc": "This section is only required if you want to sell tickets for escrow settlement payout.",
-      "buyerOnlyNotice": "Buyer profile is active. You are ready to purchase tickets without bank account or identity documents."
+      "buyerOnlyNotice": "Buyer profile is active. You are ready to purchase tickets without bank account or identity documents.",
+      "emailVerifiedStatus": "Verification Successful: Your email has been confirmed.",
+      "readinessTitle": "Account Readiness Status",
+      "emailBadge": "Email Verification",
+      "buyerBadge": "Buyer Profile",
+      "sellerBadge": "Seller Profile",
+      "sellerReqHint": "Must complete contact, address, and payout bank account before selling tickets.",
+      "statusVerified": "Verified",
+      "statusUnverified": "Incomplete",
+      "statusActive": "Active"
     },
     "settings": {
       "title": "Account Settings",
@@ -2561,34 +2833,34 @@
       "sellerProfileIncomplete": "Seller profile and payout bank details must be completed before creating a listing.",
       "selfPurchaseForbidden": "Sellers are forbidden from purchasing tickets from their own listing.",
       "invalidRelationalReference": "Relational database reference is invalid or unpersisted.",
-    "profile": {
-      "pageTitle": "Profile & Account Security",
-      "pageSubtitle": "Manage your identity, email verification, and ticket payout bank details.",
-      "emailVerification": "Email Verification",
-      "emailVerified": "Email Verified",
-      "emailUnverified": "Email Unverified",
-      "resendVerification": "Resend Verification Email",
-      "verificationSent": "Verification link has been sent to your email.",
-      "cooldownNotice": "Please wait before resending.",
-      "personalInfo": "Personal Info & Contact",
-      "fullName": "Full Name per Legal ID",
-      "whatsapp": "Active WhatsApp Number",
-      "cityOrAddress": "City / Full Address",
-      "sellerPayout": "Seller Payout Bank Details",
-      "bankName": "Payout Bank Name",
-      "bankAccountNumber": "Bank Account Number",
-      "bankAccountHolder": "Account Holder Name",
-      "identityDocRef": "Identity Document Reference (KTP)",
-      "saveBtn": "Save Profile",
-      "saving": "Saving...",
-      "savedSuccess": "Profile successfully updated.",
-      "autofillBadge": "Profile Verified & Auto-Filled",
-      "buyerProportionalNote": "For buyers, only minimal contact details (Name, WhatsApp, and City) are required per PDP Law No. 27/2022 data minimization.",
-      "sellerCompleteBadge": "Seller Profile Complete",
-      "sellerSectionSummary": "Activate Seller Profile (Selling Tickets Only)",
-      "sellerSectionDesc": "This section is only required if you want to sell tickets for escrow settlement payout.",
-      "buyerOnlyNotice": "Buyer profile is active. You are ready to purchase tickets without bank account or identity documents."
-    }
+      "profile": {
+        "pageTitle": "Profile & Account Security",
+        "pageSubtitle": "Manage your identity, email verification, and ticket payout bank details.",
+        "emailVerification": "Email Verification",
+        "emailVerified": "Email Verified",
+        "emailUnverified": "Email Unverified",
+        "resendVerification": "Resend Verification Email",
+        "verificationSent": "Verification link has been sent to your email.",
+        "cooldownNotice": "Please wait before resending.",
+        "personalInfo": "Personal Info & Contact",
+        "fullName": "Full Name per Legal ID",
+        "whatsapp": "Active WhatsApp Number",
+        "cityOrAddress": "City / Full Address",
+        "sellerPayout": "Seller Payout Bank Details",
+        "bankName": "Payout Bank Name",
+        "bankAccountNumber": "Bank Account Number",
+        "bankAccountHolder": "Account Holder Name",
+        "identityDocRef": "Identity Document Reference (KTP)",
+        "saveBtn": "Save Profile",
+        "saving": "Saving...",
+        "savedSuccess": "Profile successfully updated.",
+        "autofillBadge": "Profile Verified & Auto-Filled",
+        "buyerProportionalNote": "For buyers, only minimal contact details (Name, WhatsApp, and City) are required per PDP Law No. 27/2022 data minimization.",
+        "sellerCompleteBadge": "Seller Profile Complete",
+        "sellerSectionSummary": "Activate Seller Profile (Selling Tickets Only)",
+        "sellerSectionDesc": "This section is only required if you want to sell tickets for escrow settlement payout.",
+        "buyerOnlyNotice": "Buyer profile is active. You are ready to purchase tickets without bank account or identity documents."
+      }
     },
     "accessibility": {
       "langToggleAria": "Select display language (Bahasa Indonesia / English)",
@@ -2680,7 +2952,28 @@
       "termsBindingNotice": "By confirming this order, you agree to Tikum Terms of Service and Refund Policy.",
       "termsCheckbox": "I have read and agree to Tikum Terms of Service and Refund Policy.",
       "realSubmit": "Proceed to Official Payment",
-      "trackOrderBtn": "Track Status & Protocol at /track"
+      "trackOrderBtn": "Track Status & Protocol at /track",
+      "loadingPublicListing": "Loading public listing...",
+      "prelaunchTitle": "TIKUM is currently in pre-launch preparation.",
+      "prelaunchDesc": "Prospective sellers can already submit ticket listings for review. Public purchase transactions and official ticket handoffs will be activated gradually.",
+      "demoNotForPurchase": "DEMO — NOT AVAILABLE FOR PURCHASE",
+      "notPurchasableNotice": "This listing is a system preview mock. This ticket cannot be purchased or transacted in real terms at this time.",
+      "illustrativePrice": "Illustrative price — not an active ticket offer. No payment will be processed.",
+      "yourListingBanner": "This Is Your Listing (Seller Mode)",
+      "yourListingDesc": "You are authenticated as the seller owning this ticket. Share this link with prospective buyers for safe transaction.",
+      "selfPurchaseForbidden": "Self-Purchase Forbidden:",
+      "selfPurchaseDetail": "Sellers are not permitted to buy their own tickets to prevent audit trail manipulation.",
+      "copyBuyerLink": "Copy Buyer Link",
+      "modalMakeOfferTitle": "Submit Ticket Price Offer",
+      "modalMakeOfferDesc": "Offers follow strict Tikum rules. Minimum 50% of listing price. Seller has 24 hours to respond.",
+      "modalOfferRules": "No-Chat Transaction Rules: Seller can only respond with: Accept, Decline, or Counter Offer (max 5 rounds). No free chat.",
+      "modalOfferAmount": "Offer Amount (IDR):",
+      "modalOfferHint": "Min 50% • Max < Normal Price",
+      "modalNormalPrice": "Normal Listing Price:",
+      "modalYourOffer": "Your Offer Amount:",
+      "trustProtectionFee": "Tikum Trust & Protection Fee (6% minimum IDR 35,000 per ticket):",
+      "totalBuyerPayment": "Total Buyer Payment:",
+      "btnSubmitOffer": "Submit Official Offer"
     },
     "create": {
       "wizardStep1": "1. Event & Ticket Category Selection",
@@ -2730,7 +3023,46 @@
       "stepperStep1": "1. Account & Email Verification",
       "stepperStep2": "2. Seller Identity & Payout Profile",
       "stepperStep3": "3. Ticket Details & Evidence (Stage A — Zero QR)",
-      "autofillNotice": "Seller Profile Auto-Filled"
+      "autofillNotice": "Seller Profile Auto-Filled",
+      "step1Title": "Sign In or Create Seller Account",
+      "step1Subtitle": "To maintain secondary transaction security and anti-fraud protection, every seller must have a verified account.",
+      "step2Title": "Complete Seller Profile & Payout Account Once",
+      "step2Subtitle": "Verify Once, Auto-Fill Forever. This data is securely stored under PDP Law and only used for your ticket payout.",
+      "step3Title": "Ticket Details & Fulfillment Terms",
+      "labelFullName": "Full Name as per ID Card *",
+      "labelWhatsapp": "Active WhatsApp Number *",
+      "labelCity": "City of Residence *",
+      "labelAddress": "Full Address",
+      "labelBank": "Payout Bank *",
+      "selectBankDefault": "-- Select Payout Bank --",
+      "labelAccountHolder": "Bank Account Holder Name *",
+      "labelAccountNumber": "Bank Account Number *",
+      "labelNikLast4": "Last 4 Digits of National ID (NIK) *",
+      "labelConsent": "I declare the above data is true for ticket ownership verification and sales payout in accordance with Tikum Terms of Service & Privacy Policy.",
+      "btnSaveProfile": "Save Profile & Continue to Ticket Form",
+      "draftRestored": "Previous ticket draft has been automatically restored.",
+      "labelSelectEvent": "1. Select Applicable Event *",
+      "selectEventLoading": "-- Loading event list from server... --",
+      "labelQuantity": "Quantity of Tickets Sold (1 - 4 tickets) *",
+      "quantityHint": "Maximum 4 tickets per listing (bound inventory quota)",
+      "labelSeatType": "Seating Type *",
+      "optFestival": "Festival / Standing / General Admission",
+      "optNumbered": "Numbered Seating (Specific Seat Number)",
+      "labelFulfillment": "Ticket Fulfillment Option *",
+      "descFulfillmentPic": "TIKUM field officer is present at the venue to accompany physical / wristband handoff before the entrance gate.",
+      "descFulfillmentDigital": "Seller transfers e-ticket directly to buyer. Funds remain held in escrow until buyer successfully enters the venue.",
+      "zeroQrStrip": "Stage A — Zero Raw QR: You DO NOT need to upload ticket barcode/QR when creating listing. QR is only handed over on Event Day / during settlement.",
+      "btnSubmitListing": "Register Ticket for Review",
+      "successTitle": "Listing Successfully Created on Tikum Server",
+      "successDesc": "Transaction data has been recorded into our ledger database.",
+      "officialListingId": "Official Listing ID:",
+      "currentSystemStatus": "Current System Status:",
+      "boundEvent": "Bound Event:",
+      "ticketPrice": "Ticket Price:",
+      "nextStepsLabel": "Next Steps:",
+      "nextStepsDesc": "Tikum Admin will validate your proof of ownership. You will receive an email notification once listing is approved to ACTIVE status.",
+      "btnOpenDealRoom": "Open Deal Room Now",
+      "btnCreateAnother": "Create Another Listing"
     },
     "offers": {
       "loading": "Fetching official offers list from Tikum server...",
@@ -2752,7 +3084,39 @@
       "reasonPreferAnother": "Prefer another buyer",
       "reasonListingUpdated": "Listing will be updated / edited",
       "reasonOther": "Other",
-      "cooldownNotice": "Buyer will be subject to a 6-hour cooldown on this listing before submitting a new offer."
+      "cooldownNotice": "Buyer will be subject to a 6-hour cooldown on this listing before submitting a new offer.",
+      "pageTitle": "Ticket Price Offer Management",
+      "pageSubtitle": "Bound offer system without free chat. All amounts are structured and time-bound for certainty on both sides.",
+      "demoAccountLabel": "Select Account Identity (Demo Mode):",
+      "demoAccountHint": "Switch user to simulate buyer vs seller perspective.",
+      "tabBuyer": "My Offers (Buyer)",
+      "tabSeller": "Incoming Offers (Seller)",
+      "sortHighest": "Highest Amount",
+      "sortNewest": "Most Recent",
+      "modalCounterTitle": "Submit Counter Offer",
+      "modalCounterSub": "Send a structured new price offer amount.",
+      "modalCounterAmount": "Counter Offer Amount (IDR):",
+      "modalCounterHint": "Maximum 5 offer rounds per listing. No free chat feature.",
+      "btnSendCounter": "Send Counter Offer",
+      "listingNormalPrice": "Listing Normal Price:",
+      "yourOfferDiscount": "Your Offer ({pct}% discount):",
+      "offerAcceptedNotice": "Your Offer Has Been Accepted by Seller!",
+      "sellerCounteredNotice": "Seller Submitted a Counter Offer:",
+      "sellerDeclinedNotice": "Offer Declined by Seller:",
+      "soldToOtherNotice": "Ticket sold to another buyer. Your offer was automatically cancelled.",
+      "yourListingPrice": "Your Listing Price:",
+      "offeredAmount": "Offered Amount ({pct}% discount):",
+      "btnAccept": "Accept",
+      "btnDecline": "Decline",
+      "btnCounter": "Counter Offer",
+      "btnCancel": "Cancel",
+      "statusPending": "PENDING RESPONSE",
+      "statusAccepted": "ACCEPTED",
+      "statusDeclined": "DECLINED",
+      "statusCountered": "COUNTERED",
+      "statusExpired": "EXPIRED",
+      "statusCancelled": "CANCELLED",
+      "maxNegotiationReached": "Maximum negotiation limit reached (5/5)."
     },
     "discovery": {
       "heroTitle": "Discover Live Events & Trusted Ticket Access",
@@ -2967,7 +3331,7 @@
       "zeroFakeTitle": "Zero Fake Inventory Policy",
       "zeroFakeDesc": "Every listing undergoes mandatory ownership evidence curation. No speculative sales or phantom tickets.",
       "prelaunchNoticeTitle": "TIKUM Is in Pre-Launch Preparation",
-            "prelaunchNoticeDesc": "Prospective sellers can submit ticket listings for review. Purchasing, checkout, and live payments are currently not available.",
+      "prelaunchNoticeDesc": "Prospective sellers can submit ticket listings for review. Purchasing, checkout, and live payments are currently not available.",
       "editorialHeroTitle": "Buy & Sell Event Tickets Without Guesswork.",
       "editorialHeroSubtitle": "Browse concerts freely without mandatory sign-in, check upfront fees, and trade safely with physical Event PIC witnesses at venue.",
       "searchPlaceholder": "Search concerts, artists, GBK, JIS, or cities...",
@@ -3000,7 +3364,58 @@
       "closingCtaHeading": "Have Spare Tickets or Already Agreed on X / TikTok?",
       "closingCtaSub": "Use TIKUM as your safe transaction room with physical Event PIC witness and two-way protection.",
       "closingCtaSellBtn": "Sell Tickets (Quick 2 Mins)",
-      "closingCtaDealBtn": "Open Deal Room"
+      "closingCtaDealBtn": "Open Deal Room",
+      "heroKicker": "Curated Official & Verified Resale Tickets",
+      "filterAll": "All",
+      "filterConcerts": "Concerts & Music",
+      "filterSports": "Sports",
+      "filterFestivals": "Festivals & More",
+      "filterEnded": "Ended Archive",
+      "twoWayProtectionTitle": "Two-Way Protection",
+      "twoWayProtectionSubtitle": "Engineered to eradicate rogue scalpers and ticket fraud, while safeguarding honest sellers and verified personal proxy buyers.",
+      "founderQuoteLead": "TIKUM was born from our frustration as concertgoers in Indonesia.",
+      "founderQuoteBody": "More than an intermediary, we built tiered identity checks, layered proof-of-ownership, and on-site staff assistance so every transferred ticket is genuine and protected right to the gates.",
+      "founderQuoteAuthor": "Founder & TIKUM Operations Team",
+      "bentoBuyerTitle": "For Ticket Buyers",
+      "bentoBuyerPill1": "Tiered Verification",
+      "bentoBuyerPill2": "Funds Held Safely",
+      "bentoBuyerPill3": "Venue Assistance",
+      "bentoBuyerItem1Title": "Authentic Proof of Purchase Verification",
+      "bentoBuyerItem1Desc": "Every listing requires verifiable official promoter invoice/e-voucher proof prior to publication.",
+      "bentoBuyerItem2Title": "Fund Retention Until Completion",
+      "bentoBuyerItem2Desc": "Transaction funds are never disbursed upfront to the seller, remaining safeguarded until handover conditions are met.",
+      "bentoBuyerItem3Title": "On-Site Event PIC Support",
+      "bentoBuyerItem3Desc": "For major events, TIKUM ground staff assist physical wristband exchanges directly at venue meeting points.",
+      "bentoSellerTitle": "For Honest Sellers & Proxy Shoppers",
+      "bentoSellerPill1": "Payment Certainty",
+      "bentoSellerPill2": "No-Show Protection",
+      "bentoSellerPill3": "Zero Listing Fee",
+      "bentoSellerItem1Title": "Guaranteed Inbound Funds",
+      "bentoSellerItem1Desc": "Sellers never worry about buyer ghosting; funds are fully locked in authorized payment rails before handover.",
+      "bentoSellerItem2Title": "Buyer No-Show Safeguards",
+      "bentoSellerItem2Desc": "If a buyer fails to arrive at the venue meeting point, our multi-party review protocol protects your payout rights.",
+      "bentoSellerItem3Title": "Free Registration & Reputation",
+      "bentoSellerItem3Desc": "Zero upfront fees to create deal links or listings; build a trusted seller track record for future events.",
+      "howItWorksSubtitle": "Full transparency from deal agreement to venue entry.",
+      "transparentPilotFeeTitle": "Transparent Fee Structure (Pilot Rate)",
+      "transparentPilotFeeSubtitle": "TIKUM operates with a fixed service fee to sustain document verification, security infrastructure, and venue PIC operations.",
+      "buyerFeeLabel": "Buyer Service Fee",
+      "buyerFeeValue": "6% (min. IDR 35,000, max. IDR 500,000)",
+      "sellerFeeLabel": "Seller Service Fee",
+      "sellerFeeValue": "6% (min. IDR 35,000, max. IDR 500,000)",
+      "pilotFeeNote": "Zero hidden fees. No additional deductions beyond the official service percentage.",
+      "latestGuidesTitle": "Latest Guides & Information",
+      "latestGuidesSubtitle": "Transaction safety tips, wristband redemption guides, and official promoter policies.",
+      "readGuideBtn": "Read Guide →",
+      "closingCtaTitle": "Have a Ticket You Can't Use?",
+      "closingCtaSubtitle": "List it in 2 minutes. Verify ownership proof and generate a secure deal link to share with buyers on social media.",
+      "closingCtaBtn": "Sell Tickets Now →",
+      "twoWayProtectionEyebrow": "Secondary Transaction Security Standard",
+      "fiveStepsSub": "From transaction link creation to settlement with objective field evidence.",
+      "feeDetailsLink": "Fee Details →",
+      "sellCtaButton": "Sell Tickets (Simple 2 Mins)",
+      "openDealCtaButton": "Open Deal Room",
+      "workflowBadge": "Step-by-Step Transaction Flow"
     },
     "dealCreate": {
       "pageTitle": "Create Transaction Link / Submit Ticket Listing",
@@ -3052,9 +3467,9 @@
       "simBannerTitle": "SIMULATION MODE — NOT A LIVE PAYMENT",
       "simBannerDesc": "System is operating in pilot simulation mode. No real money will be charged or deducted.",
       "orderProtectionPill": "TIKUM TRANSACTION PROTECTION",
-      "sellerSelfListingBadge": "This Is Your Listing (Seller View)",
+      "sellerSelfListingBadge": "This is Your Listing (Seller Mode)",
       "copyLinkForBuyer": "Copy Link for Buyer",
-      "linkCopied": "Link Copied!",
+      "linkCopied": "Link Copied Successfully!",
       "ticketDetailsTitle": "Ticket Information & Seller Verification",
       "seatInfoLabel": "Ticket Position / Seat:",
       "listingIdLabel": "Official Listing ID:",
@@ -3178,6 +3593,39 @@
       "eligibilityTitle": "Eligible Refund Criteria",
       "nonEligibilityTitle": "Non-Eligible Refund Conditions",
       "processTitle": "Refund Submission Workflow and Processing Timeline"
+    },
+    "blog": {
+      "kicker": "EDUCATION & TIPS",
+      "allArticles": "View All Articles →",
+      "buyerGuideKicker": "BUYER GUIDE",
+      "post1Title": "Two-Stage Safe Ticket Handoff Guide & Field Evidence",
+      "post1Snippet": "Understanding Stage A proof of ownership verification and Tikum venue physical witness assistance.",
+      "readGuide": "Read Guide →",
+      "securityTipsKicker": "SECURITY TIPS",
+      "post2Title": "Safe Way to Buy and Sell Concert Tickets on Social Media (X & TikTok)",
+      "post2Snippet": "Avoid social media ticket scams by redirecting transactions to verified deal rooms.",
+      "venueOpsKicker": "VENUE OPERATIONS",
+      "post3Title": "Wristband Exchange Rules & Official Evidence at GBK & JIExpo",
+      "post3Snippet": "Concert wristband redemption procedure with physical witness accompaniment at event venues."
+    },
+    "pastEvents": {
+      "pageTitle": "Archive of Concluded & Cancelled Events",
+      "pageSubtitle": "Permanent archive of official Indonesian events whose dates have passed or were cancelled by promoters. Retained as price history, fraud verification, and public transparency record.",
+      "categoryAll": "All Categories",
+      "categoryConcert": "Music Concerts",
+      "categoryFestival": "Music Festivals",
+      "categorySports": "Sports",
+      "categoryComedy": "Stand-up Comedy",
+      "searchPlaceholder": "Search archive of concert names, artists, or venues...",
+      "emptyTitle": "No archived events match your search.",
+      "emptyDesc": "Try searching by artist, venue name, or reset filters.",
+      "statusConcluded": "CONCLUDED",
+      "statusCancelled": "CANCELLED",
+      "statusPostponed": "POSTPONED",
+      "statusArchived": "ARCHIVED",
+      "viewArchive": "View Event Archive",
+      "eventDate": "Event Date",
+      "lastKnownPrice": "Last Known Official Price"
     }
   },
   "zh-CN": {
@@ -5036,7 +5484,7 @@
   }
 
   function resolveInitialLanguage(overrideSearch, overrideStorage) {
-    // 1. Explicit user selection (URL query parameter ?lang= or ?locale=)
+    // 1. Explicit user selection via query string (?lang= or ?locale=)
     try {
       let searchStr = '';
       if (typeof overrideSearch === 'string') {
@@ -5053,18 +5501,7 @@
       }
     } catch (e) {}
 
-    // 2. Cookie user preference ('tikum_locale' or 'tikum_lang')
-    if (hasDoc && typeof document !== 'undefined' && document.cookie) {
-      try {
-        const match = document.cookie.match(/(?:^|;\s*)(?:tikum_locale|tikum_lang)=([^;]+)/);
-        if (match && match[1]) {
-          const normCookie = normalizeLang(decodeURIComponent(match[1]));
-          if (normCookie) return normCookie;
-        }
-      } catch (e) {}
-    }
-
-    // 3. Stored user preference (localStorage 'tikum_locale' or 'tikum_lang')
+    // 2. Stored user preference in localStorage (tikum_locale, then tikum_lang)
     try {
       let saved = null;
       if (overrideStorage !== undefined) {
@@ -5076,15 +5513,18 @@
       if (normSaved) return normSaved;
     } catch (e) {}
 
-    // 3b. Browser language fallback detection
-    try {
-      if (typeof navigator !== 'undefined' && navigator.language) {
-        const navLang = (navigator.language || '').toLowerCase();
-        if (navLang.startsWith('en')) return 'en';
-      }
-    } catch (e) {}
+    // 3. Cookie preference (tikum_locale, then tikum_lang)
+    if (hasDoc && typeof document !== 'undefined' && document.cookie) {
+      try {
+        const match = document.cookie.match(/(?:^|;\s*)(?:tikum_locale|tikum_lang)=([^;]+)/);
+        if (match && match[1]) {
+          const normCookie = normalizeLang(decodeURIComponent(match[1]));
+          if (normCookie) return normCookie;
+        }
+      } catch (e) {}
+    }
 
-    // 4. Default fallback: Indonesian ('id')
+    // 4. Strict default fallback: Indonesian ('id') - Zero navigator.language auto-flip
     return 'id';
   }
 
@@ -5212,12 +5652,11 @@
   }
 
   function applyLanguage(lang) {
-    const norm = normalizeLang(lang) || 'id';
+    const norm = (lang === 'en' || (typeof lang === 'string' && lang.toLowerCase().startsWith('en'))) ? 'en' : 'id';
     currentLang = norm;
 
     if (hasStorage) {
       try {
-        localStorage.setItem('tikum_locale', norm);
         localStorage.setItem('tikum_locale', norm);
         localStorage.setItem('tikum_lang', norm);
       } catch (e) {}
@@ -5225,7 +5664,6 @@
 
     if (hasDoc) {
       try {
-        document.cookie = 'tikum_locale=' + encodeURIComponent(norm) + ';path=/;max-age=31536000;SameSite=Lax';
         document.cookie = 'tikum_locale=' + encodeURIComponent(norm) + ';path=/;max-age=31536000;SameSite=Lax';
         document.cookie = 'tikum_lang=' + encodeURIComponent(norm) + ';path=/;max-age=31536000;SameSite=Lax';
       } catch (e) {}
@@ -5263,15 +5701,16 @@
         const key = el.getAttribute('data-i18n');
         const translated = t(key);
         if (translated !== undefined) {
-          if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-            el.placeholder = translated;
+          if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
+            // NEVER overwrite user input value; only update placeholder if applicable
+            if (el.tagName !== 'SELECT') {
+              el.placeholder = translated;
+            }
           } else if (el.hasAttribute('data-i18n-html')) {
             el.innerHTML = translated;
           } else {
-            // Check if el contains an icon or child elements that should be preserved
             const icon = el.querySelector('i, svg');
             if (icon && !el.hasAttribute('data-i18n-replace-all')) {
-              // Preserve icon, replace text node
               const textNode = Array.from(el.childNodes).find(n => n.nodeType === 3 && n.textContent.trim().length > 0);
               if (textNode) {
                 textNode.textContent = ' ' + translated.trim();
@@ -5307,17 +5746,24 @@
         }
       });
 
-      document.querySelectorAll('[data-i18n-aria]').forEach(el => {
-        const key = el.getAttribute('data-i18n-aria');
+      document.querySelectorAll('[data-i18n-aria], [data-i18n-aria-label]').forEach(el => {
+        const key = el.getAttribute('data-i18n-aria-label') || el.getAttribute('data-i18n-aria');
         const translated = t(key);
         if (translated) el.setAttribute('aria-label', translated);
       });
 
+      document.querySelectorAll('[data-i18n-value]').forEach(el => {
+        const key = el.getAttribute('data-i18n-value');
+        const translated = t(key);
+        if (translated && (el.tagName === 'BUTTON' || (el.tagName === 'INPUT' && (el.type === 'button' || el.type === 'submit')))) {
+          el.value = translated;
+        }
+      });
+
       // Update Header & Footer Lang Switcher Triggers (Clean Segmented Pill ID | EN)
-      const langBtns = document.querySelectorAll('#langToggle, #btnLangToggle, .lang-toggle-btn, .footer-lang-toggle, #footerLangToggle, .lang-switcher-pill');
+      const langBtns = document.querySelectorAll('#langToggle, #btnLangToggle, .lang-toggle-btn, .footer-lang-toggle, #footerLangToggle, .lang-switcher-pill, .btn-lang-toggle');
       const isId = norm === 'id';
       langBtns.forEach(langBtn => {
-        // Enforce strict segmented pill structure: Prevents any "ID ID EN" duplication
         langBtn.innerHTML = '<span class="lang-pill-item ' + (isId ? 'lang-active font-bold text-emerald-400' : 'lang-inactive text-slate-400') + '">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item ' + (!isId ? 'lang-active font-bold text-emerald-400' : 'lang-inactive text-slate-400') + '">EN</span>';
         langBtn.setAttribute('title', isId ? 'Ganti Bahasa (English)' : 'Ubah ke Bahasa Indonesia');
         langBtn.setAttribute('aria-label', isId ? 'Beralih ke Bahasa Inggris' : 'Beralih ke Bahasa Indonesia');
@@ -5331,8 +5777,12 @@
         }
       });
 
-      // Notify dynamic rendering engines
-      window.dispatchEvent(new CustomEvent('tikum:languageChanged', { detail: { lang: norm } }));
+      // Dispatch comprehensive event matrix for dynamic listeners
+      const eventDetail = { locale: norm, lang: norm, language: norm };
+      window.dispatchEvent(new CustomEvent('tikum:locale-change', { detail: eventDetail }));
+      window.dispatchEvent(new CustomEvent('tikum:langchange', { detail: eventDetail }));
+      window.dispatchEvent(new CustomEvent('languageChanged', { detail: eventDetail }));
+      window.dispatchEvent(new CustomEvent('tikum:languageChanged', { detail: eventDetail }));
     }
   }
 
@@ -5387,8 +5837,10 @@
   const TikumI18n = {
     t,
     getLang: () => currentLang,
+    getLocale: () => currentLang,
     getTheme: () => currentTheme,
     setLang: applyLanguage,
+    setLocale: applyLanguage,
     applyLanguage: applyLanguage,
     setTheme: applyTheme,
     translateStatus,

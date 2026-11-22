@@ -39,8 +39,13 @@ function resolveRequestLocale(req) {
     if (q === 'en' || q.startsWith('en-')) return 'en';
     if (q === 'id' || q.startsWith('id-')) return 'id';
   }
+  if (req.cookies && (req.cookies.tikum_locale || req.cookies.tikum_lang)) {
+    const c = (req.cookies.tikum_locale || req.cookies.tikum_lang).toLowerCase();
+    if (c === 'en' || c.startsWith('en-')) return 'en';
+    if (c === 'id' || c.startsWith('id-')) return 'id';
+  }
   if (req.headers && req.headers.cookie) {
-    const match = req.headers.cookie.match(/(?:^|;\s*)tikum_lang=([^;]+)/);
+    const match = req.headers.cookie.match(/(?:^|;\s*)(?:tikum_locale|tikum_lang)=([^;]+)/);
     if (match && match[1]) {
       const c = decodeURIComponent(match[1]).toLowerCase();
       if (c === 'en' || c.startsWith('en-')) return 'en';

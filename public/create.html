@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tikum — Buat Transfer Tiket Terverifikasi | by Shinerva</title>
+  <title data-i18n="create.pageTitle">Tikum — Buat Transfer Tiket Terverifikasi | by Shinerva</title>
   <meta name="description" content="Daftarkan penjualan tiket sekunder terverifikasi di Tikum (SHINERVA HQ). Perlindungan anti-duplikasi barcode dan pencairan dana aman via escrow.">
   <link rel="canonical" href="https://tikum.app/create">
 
@@ -183,11 +183,11 @@
                 <span data-i18n="nav.cities">Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
               </a>
               <div class="city-dropdown-menu">
-                <a href="/offers?city=Jakarta" class="city-dropdown-item">Jakarta</a>
-                <a href="/offers?city=Bandung" class="city-dropdown-item">Bandung</a>
-                <a href="/offers?city=Surabaya" class="city-dropdown-item">Surabaya</a>
-                <a href="/offers?city=Bali" class="city-dropdown-item">Bali</a>
-                <a href="/offers" class="city-dropdown-item">Semua Kota</a>
+                <a href="/offers?city=Jakarta" class="city-dropdown-item" data-i18n="nav.jakarta">Jakarta</a>
+                <a href="/offers?city=Bandung" class="city-dropdown-item" data-i18n="nav.bandung">Bandung</a>
+                <a href="/offers?city=Surabaya" class="city-dropdown-item" data-i18n="nav.surabaya">Surabaya</a>
+                <a href="/offers?city=Bali" class="city-dropdown-item" data-i18n="nav.bali">Bali</a>
+                <a href="/offers" class="city-dropdown-item" data-i18n="nav.allCities">Semua Kota</a>
               </div>
             </li>
           </ul>
@@ -225,7 +225,7 @@
         </div>
         <div>
           <h3 style="font-size: 18px; font-weight: 700; color: #34d399; margin-bottom: 2px;">Listing Berhasil Dibuat di Server Tikum</h3>
-          <div style="font-size: 13px; color: var(--text-muted);">Data transaksi telah dicatat ke dalam database ledger kami.</div>
+          <div style="font-size: 13px; color: var(--text-muted);"><span data-i18n="create.successDesc">Data transaksi telah dicatat ke dalam database ledger kami.</span></div>
         </div>
       </div>
 
@@ -258,7 +258,7 @@
       <div class="notice-box notice-info">
         <i class="fa-solid fa-circle-info"></i>
         <div>
-          <strong>Langkah Selanjutnya:</strong> Tim kurasi Tikum akan memvalidasi keaslian barcode tiket. Setelah status berubah menjadi <code class="mono">ACTIVE</code>, tiket siap dibeli oleh pembeli menggunakan tautan pembayaran terlindungi.
+          <strong data-i18n="create.nextStepsLabel">Langkah Selanjutnya:</strong> Tim kurasi Tikum akan memvalidasi keaslian barcode tiket. Setelah status berubah menjadi <code class="mono">ACTIVE</code>, tiket siap dibeli oleh pembeli menggunakan tautan pembayaran terlindungi.
         </div>
       </div>
 
@@ -385,7 +385,7 @@
             <div class="form-group" style="margin-bottom:0;">
               <label for="step2BankName" style="font-size:12px; font-weight:600; color:var(--ink-900);">Bank Pencairan *</label>
               <select id="step2BankName" class="form-control" required>
-                <option value="">-- Pilih Bank Pencairan --</option>
+                <option value="" data-i18n="create.selectBankDefault">-- Pilih Bank Pencairan --</option>
                 <option value="BCA">BCA (Bank Central Asia)</option>
                 <option value="MANDIRI">Bank Mandiri</option>
                 <option value="BNI">BNI (Bank Negara Indonesia)</option>
@@ -475,7 +475,7 @@
 
           <div class="form-group">
             <select id="eventSelect" class="form-control" required onchange="handleEventSelected()">
-              <option value="">-- Memuat daftar event dari server... --</option>
+              <option value="" data-i18n="create.selectEventLoading">-- Memuat daftar event dari server... --</option>
             </select>
           </div>
 
@@ -514,7 +514,7 @@
                 required
                 oninput="calculateFeePreview()"
               >
-              <span style="font-size: 11px; color: var(--text-dim);">Maksimal 4 tiket per listing (kuota inventaris terikat)</span>
+              <span style="font-size: 11px; color: var(--text-dim);"><span data-i18n="create.quantityHint">Maksimal 4 tiket per listing (kuota inventaris terikat)</span></span>
             </div>
 
             <div class="form-group">
@@ -1290,6 +1290,9 @@
     }
 
     // Attach draft autosave listeners
+    window.addEventListener('tikum:locale-change', () => { calculateFeePreview(); });
+    window.addEventListener('tikum:languageChanged', () => { calculateFeePreview(); });
+
     document.addEventListener('DOMContentLoaded', () => {
       const form = document.getElementById('listingForm');
       if (form) {

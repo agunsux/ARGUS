@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tikum — Profil &amp; Pengaturan Akun | by Shinerva</title>
+  <title data-i18n="profile.title">Tikum — Profil &amp; Pengaturan Akun | by Shinerva</title>
   <meta name="description" content="Kelola identitas terverifikasi, verifikasi email, dan data rekening pencairan tiket Anda di Tikum (PT SHINERVA PRAJNA TEJAS) sesuai prinsip UU PDP No. 27/2022.">
   <link rel="canonical" href="https://tikum.app/profile">
 
@@ -199,11 +199,11 @@
                 <span data-i18n="nav.cities">Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
               </a>
               <div class="city-dropdown-menu">
-                <a href="/offers?city=Jakarta" class="city-dropdown-item">Jakarta</a>
-                <a href="/offers?city=Bandung" class="city-dropdown-item">Bandung</a>
-                <a href="/offers?city=Surabaya" class="city-dropdown-item">Surabaya</a>
-                <a href="/offers?city=Bali" class="city-dropdown-item">Bali</a>
-                <a href="/offers" class="city-dropdown-item">Semua Kota</a>
+                <a href="/offers?city=Jakarta" class="city-dropdown-item" data-i18n="nav.jakarta">Jakarta</a>
+                <a href="/offers?city=Bandung" class="city-dropdown-item" data-i18n="nav.bandung">Bandung</a>
+                <a href="/offers?city=Surabaya" class="city-dropdown-item" data-i18n="nav.surabaya">Surabaya</a>
+                <a href="/offers?city=Bali" class="city-dropdown-item" data-i18n="nav.bali">Bali</a>
+                <a href="/offers" class="city-dropdown-item" data-i18n="nav.allCities">Semua Kota</a>
               </div>
             </li>
           </ul>
@@ -243,14 +243,14 @@
 
         <!-- Verification Status Cards Grid -->
         <div class="card" style="background:#FFFFFF; border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)); border-radius:16px; margin-bottom: 24px; padding: 20px; box-shadow: 0 4px 16px rgba(14, 59, 74, 0.04);">
-          <div style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
+          <div style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;" data-i18n="profile.readinessTitle">
             Status Kesiapan Akun
           </div>
           
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
             <!-- Email Verification Badge -->
             <div id="cardEmailStatus" style="background:var(--tikum-cream-50, #FAF8F4); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding:16px; border-radius:12px;">
-              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Verifikasi Email</div>
+              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;" data-i18n="profile.emailBadge">Verifikasi Email</div>
               <div id="badgeEmail" style="margin-top:6px;">
                 <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Memeriksa...</span>
               </div>
@@ -262,7 +262,7 @@
 
             <!-- Buyer Profile Ready Badge -->
             <div id="cardBuyerStatus" style="background:var(--tikum-cream-50, #FAF8F4); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding:16px; border-radius:12px;">
-              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Profil Pembeli</div>
+              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;" data-i18n="profile.buyerBadge">Profil Pembeli</div>
               <div id="badgeBuyer" style="margin-top:6px;">
                 <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Memeriksa...</span>
               </div>
@@ -273,11 +273,11 @@
 
             <!-- Seller Profile Ready Badge -->
             <div id="cardSellerStatus" style="background:var(--tikum-cream-50, #FAF8F4); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding:16px; border-radius:12px;">
-              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Profil Penjual</div>
+              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;" data-i18n="profile.sellerBadge">Profil Penjual</div>
               <div id="badgeSeller" style="margin-top:6px;">
                 <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Memeriksa...</span>
               </div>
-              <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">
+              <div style="font-size:11px; color:var(--text-dim); margin-top:6px;" data-i18n="profile.sellerReqHint">
                 Wajib melengkapi kontak, alamat, dan rekening pencairan sebelum mendaftarkan tiket.
               </div>
             </div>
@@ -544,31 +544,32 @@
         document.getElementById('profDocRef').value = p.identity_doc_ref;
       }
 
+      const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
       // Email badge
       const badgeEmail = document.getElementById('badgeEmail');
       const btnResend = document.getElementById('btnResendVerif');
       if (p.email_verified) {
-        badgeEmail.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> Email Terverifikasi ✓</span>';
+        badgeEmail.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> ' + (isEn ? 'Email Verified ✓' : 'Email Terverifikasi ✓') + '</span>';
         if (btnResend) btnResend.style.display = 'none';
       } else {
-        badgeEmail.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Belum Terverifikasi</span>';
+        badgeEmail.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> ' + (isEn ? 'Unverified' : 'Belum Terverifikasi') + '</span>';
         if (btnResend) btnResend.style.display = 'block';
       }
 
       // Buyer badge
       const badgeBuyer = document.getElementById('badgeBuyer');
       if (p.buyer_profile_complete) {
-        badgeBuyer.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> Profil Pembeli Siap ✓</span>';
+        badgeBuyer.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> ' + (isEn ? 'Buyer Profile Ready ✓' : 'Profil Pembeli Siap ✓') + '</span>';
       } else {
-        badgeBuyer.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Kontak Belum Lengkap</span>';
+        badgeBuyer.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> ' + (isEn ? 'Contact Incomplete' : 'Kontak Belum Lengkap') + '</span>';
       }
 
       // Seller badge
       const badgeSeller = document.getElementById('badgeSeller');
       if (p.seller_profile_complete) {
-        badgeSeller.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> Profil Penjual Siap ✓</span>';
+        badgeSeller.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> ' + (isEn ? 'Seller Profile Ready ✓' : 'Profil Penjual Siap ✓') + '</span>';
       } else {
-        badgeSeller.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Belum Lengkap</span>';
+        badgeSeller.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> ' + (isEn ? 'Incomplete' : 'Belum Lengkap') + '</span>';
       }
     }
 

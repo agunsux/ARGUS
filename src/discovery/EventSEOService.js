@@ -423,16 +423,18 @@ class EventSEOService {
         (event.metadata && (event.metadata.official_ticket_availability === 'SOLD_OUT' || event.metadata.primary_ticket_status === 'SOLD_OUT'))
       );
       const availBadge = isSoldOut
-        ? `<span class="badge badge-danger" style="font-size:11px; background:#ef4444; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-xmark"></i> Tiket Resmi Habis (Sold Out)</span>`
-        : `<span class="badge badge-slate" style="font-size:11px; background:#475569; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-question"></i> Cek Ketersediaan di Situs Resmi</span>`;
+        ? `<span class="badge badge-danger" style="font-size:11px; background:#ef4444; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-xmark"></i> ${isEn ? 'Official Tickets Sold Out' : 'Tiket Resmi Habis (Sold Out)'}</span>`
+        : `<span class="badge badge-slate" style="font-size:11px; background:#475569; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-question"></i> ${isEn ? 'Check Availability on Official Site' : 'Cek Ketersediaan di Situs Resmi'}</span>`;
 
       let priceHtml = '';
       if (event.min_price) {
-        const priceLabel = isSoldOut ? 'Harga Rilis Resmi (Habis):' : 'Mulai dari';
+        const priceLabel = isSoldOut ? (isEn ? 'Official Release Price (Sold Out):' : 'Harga Rilis Resmi (Habis):') : (isEn ? 'Starting from' : 'Mulai dari');
+        const pricePrefix = isEn ? 'IDR ' : 'Rp ';
+        const priceLocale = isEn ? 'en-US' : 'id-ID';
         priceHtml = `
           <div style="font-size:13.5px; color:#38bdf8; font-weight:700; margin-top:4px;">
-            ${priceLabel} Rp ${event.min_price.toLocaleString('id-ID')}
-            ${event.max_price && event.max_price > event.min_price ? ` - Rp ${event.max_price.toLocaleString('id-ID')}` : ''}
+            ${priceLabel} ${pricePrefix}${event.min_price.toLocaleString(priceLocale)}
+            ${event.max_price && event.max_price > event.min_price ? ` - ${pricePrefix}${event.max_price.toLocaleString(priceLocale)}` : ''}
           </div>
         `;
       }
@@ -444,7 +446,7 @@ class EventSEOService {
               <i class="fa-solid fa-building-circle-check" style="font-size:24px; color:#38bdf8; margin-top:2px;"></i>
               <div>
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:4px;">
-                  <strong style="font-size:16px; color:#f8fafc;">Sumber Tiket Resmi (Primary Provider)</strong>
+                  <strong style="font-size:16px; color:#f8fafc;">${isEn ? 'Official Primary Ticket Source' : 'Sumber Tiket Resmi (Primary Provider)'}</strong>
                   ${availBadge}
                 </div>
                 <div class="text-muted" style="font-size:12.5px; color:#94a3b8;">${providerName}</div>
@@ -453,12 +455,12 @@ class EventSEOService {
             </div>
             <div class="official-action">
               <a href="${event.official_ticket_url}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-outline" style="padding:10px 18px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; border-radius:8px;">
-                ${isSoldOut ? 'Cek Waiting List di Situs Resmi' : 'Buka Halaman Tiket Resmi'} <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                ${isSoldOut ? (isEn ? 'Check Waiting List on Official Site' : 'Cek Waiting List di Situs Resmi') : (isEn ? 'Open Official Ticket Page' : 'Buka Halaman Tiket Resmi')} <i class="fa-solid fa-arrow-up-right-from-square"></i>
               </a>
             </div>
           </div>
           <div style="font-size:11.5px; color:#94a3b8; margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
-            <i class="fa-solid fa-circle-info"></i> Transaksi pembelian berlangsung di platform resmi ${providerName}. Tikum tidak menerbitkan tiket atau memproses pembayaran tiket resmi ini.
+            <i class="fa-solid fa-circle-info"></i> ${isEn ? `Ticket purchases take place on the official ${providerName} platform. Tikum does not issue tickets or process payments for these primary tickets.` : `Transaksi pembelian berlangsung di platform resmi ${providerName}. Tikum tidak menerbitkan tiket atau memproses pembayaran tiket resmi ini.`}
           </div>
         </div>
       `;
@@ -468,8 +470,8 @@ class EventSEOService {
           <div class="official-header" style="display:flex; gap:12px; align-items:center;">
             <i class="fa-solid fa-circle-info" style="font-size:24px; color:#94a3b8;"></i>
             <div>
-              <strong style="font-size:15px; color:#e2e8f0;">Kanal Tiket Resmi Belum Terdaftar</strong>
-              <div class="text-muted" style="font-size:12.5px; color:#94a3b8;">Tikum sedang memverifikasi kanal penjualan tiket resmi dengan promotor terkait. Silakan periksa kembali berkala atau pantau tiket resale di bawah.</div>
+              <strong style="font-size:15px; color:#e2e8f0;">${isEn ? 'Official Ticket Channel Not Yet Registered' : 'Kanal Tiket Resmi Belum Terdaftar'}</strong>
+              <div class="text-muted" style="font-size:12.5px; color:#94a3b8;">${isEn ? 'Tikum is currently verifying official ticket sales channels with the relevant promoter. Please check back regularly or browse verified resale tickets below.' : 'Tikum sedang memverifikasi kanal penjualan tiket resmi dengan promotor terkait. Silakan periksa kembali berkala atau pantau tiket resale di bawah.'}</div>
             </div>
           </div>
         </div>
@@ -662,7 +664,7 @@ class EventSEOService {
         ${(event.admission_protocol && event.admission_protocol.description) || (event.metadata && event.metadata.admission_protocol && event.metadata.admission_protocol.description) || (hasEventPic ? 'Verifikasi tiket digital dan fisik di gate acara bersama Event PIC Tikum.' : 'Verifikasi tiket elektronik dan kepatuhan identitas sesuai ketentuan resmi promotor dan penyedia tiket primer. Layanan PIC venue TIKUM belum dijadwalkan untuk event ini.')}
       </p>
       <div style="font-size: 11px; color: #64748b; margin-top: 6px; border-top: 1px solid #1e293b; padding-top: 6px;">
-        <em>${(event.admission_protocol && event.admission_protocol.verification_disclaimer) || (event.metadata && event.metadata.admission_protocol && event.metadata.admission_protocol.verification_disclaimer) || (hasEventPic ? 'Verifikasi fisik gerbang memvalidasi kepemilikan dan integritas tiket, namun tidak menggantikan validasi kriptografis langsung dari promotor penerbit tiket.' : 'Layanan PIC lapangan TIKUM belum dijadwalkan untuk event ini. Ketentuan pemindahtanganan/resale sepenuhnya tunduk pada kebijakan promotor dan penyedia tiket resmi.')}</em>
+        <em>${(event.admission_protocol && event.admission_protocol.verification_disclaimer) || (event.metadata && event.metadata.admission_protocol && event.metadata.admission_protocol.verification_disclaimer) || (hasEventPic ? (isEn ? 'Physical gate verification validates ticket authenticity and possession, but does not replace direct promoter cryptographic validation.' : 'Verifikasi fisik gerbang memvalidasi kepemilikan dan integritas tiket, namun tidak menggantikan validasi kriptografis langsung dari promotor penerbit tiket.') : (isEn ? 'Tikum on-site PIC service is not currently scheduled for this event. Transfer and resale terms remain subject to official promoter policies.' : 'Layanan PIC lapangan TIKUM belum dijadwalkan untuk event ini. Ketentuan pemindahtanganan/resale sepenuhnya tunduk pada kebijakan promotor dan penyedia tiket resmi.'))}</em>
       </div>
     </section>
 
@@ -675,8 +677,8 @@ class EventSEOService {
           <p style="font-size: 12.5px; color: #94a3b8; line-height: 1.5; margin: 0;">Ya. Setiap tiket sekunder diverifikasi identitas dan barcode kepemilikannya. Dana Anda tersimpan aman di rekening escrow hingga Anda sukses masuk gerbang acara.</p>
         </div>
         <div style="background: #0f172a; border: 1px solid #1e293b; padding: 16px; border-radius: 10px;">
-          <h4 style="font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: #f8fafc;">Bagaimana peran staf PIC Tikum di lokasi?</h4>
-          <p style="font-size: 12.5px; color: #94a3b8; line-height: 1.5; margin: 0;">Pada event dengan pendampingan aktif, staf operasional (Event PIC Tikum) siap mendampingi pembeli di sekitar venue jika terjadi hambatan saat penukaran gelang atau scanning barcode turnstile.</p>
+          <h4 style="font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: #f8fafc;">${isEn ? 'What is the role of Tikum on-site PIC staff?' : 'Bagaimana peran staf PIC Tikum di lokasi?'}</h4>
+          <p style="font-size: 12.5px; color: #94a3b8; line-height: 1.5; margin: 0;">${isEn ? 'For events with active support, Tikum field operations staff (Event PIC) assist buyers on-site if issues arise during physical wristband exchange or turnstile barcode scanning.' : 'Pada event dengan pendampingan aktif, staf operasional (Event PIC Tikum) siap mendampingi pembeli di sekitar venue jika terjadi hambatan saat penukaran gelang atau scanning barcode turnstile.'}</p>
         </div>
       </div>
     </section>

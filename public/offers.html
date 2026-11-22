@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tikum — Sistem Tawaran Harga (Negotiation System) | by Shinerva</title>
+  <title data-i18n="offers.pageTitle">Tikum — Sistem Tawaran Harga (Negotiation System) | by Shinerva</title>
   <meta name="description" content="Sistem tawaran harga tiket terstruktur tanpa chat bebas di Tikum. Negosiasi transparan dengan perlindungan dana di rekening penampungan internal.">
   <link rel="canonical" href="https://tikum.app/offers">
 
@@ -225,11 +225,11 @@
                 <span data-i18n="nav.cities">Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
               </a>
               <div class="city-dropdown-menu">
-                <a href="/offers?city=Jakarta" class="city-dropdown-item">Jakarta</a>
-                <a href="/offers?city=Bandung" class="city-dropdown-item">Bandung</a>
-                <a href="/offers?city=Surabaya" class="city-dropdown-item">Surabaya</a>
-                <a href="/offers?city=Bali" class="city-dropdown-item">Bali</a>
-                <a href="/offers" class="city-dropdown-item">Semua Kota</a>
+                <a href="/offers?city=Jakarta" class="city-dropdown-item" data-i18n="nav.jakarta">Jakarta</a>
+                <a href="/offers?city=Bandung" class="city-dropdown-item" data-i18n="nav.bandung">Bandung</a>
+                <a href="/offers?city=Surabaya" class="city-dropdown-item" data-i18n="nav.surabaya">Surabaya</a>
+                <a href="/offers?city=Bali" class="city-dropdown-item" data-i18n="nav.bali">Bali</a>
+                <a href="/offers" class="city-dropdown-item" data-i18n="nav.allCities">Semua Kota</a>
               </div>
             </li>
           </ul>
@@ -292,11 +292,11 @@
     <!-- Tab Bar -->
     <div class="tab-bar">
       <button id="tabBuyer" class="tab-btn active" onclick="switchTab('buyer')">
-        <i class="fa-solid fa-bag-shopping"></i> Tawaran Saya (Pembeli)
+        <i class="fa-solid fa-bag-shopping"></i> <span data-i18n="offers.tabBuyer">Tawaran Saya (Pembeli)</span>
         <span id="buyerCountBadge" class="badge badge-slate">0</span>
       </button>
       <button id="tabSeller" class="tab-btn" onclick="switchTab('seller')">
-        <i class="fa-solid fa-inbox"></i> Kotak Tawaran Masuk (Penjual)
+        <i class="fa-solid fa-inbox"></i> <span data-i18n="offers.tabSeller">Kotak Tawaran Masuk (Penjual)</span>
         <span id="sellerCountBadge" class="badge badge-warning" style="display: none;">0</span>
       </button>
     </div>
@@ -308,10 +308,10 @@
       </div>
       <div style="display: flex; gap: 8px;">
         <button id="sortHighestBtn" class="btn btn-sm" onclick="setSellerSort('HIGHEST')">
-          <i class="fa-solid fa-arrow-down-wide-short"></i> Nominal Tertinggi
+          <i class="fa-solid fa-arrow-down-wide-short"></i> <span data-i18n="offers.sortHighest">Nominal Tertinggi</span>
         </button>
         <button id="sortLatestBtn" class="btn btn-secondary btn-sm" onclick="setSellerSort('LATEST')">
-          <i class="fa-solid fa-clock"></i> Waktu Terbaru
+          <i class="fa-solid fa-clock"></i> <span data-i18n="offers.sortNewest">Waktu Terbaru</span>
         </button>
       </div>
     </div>
@@ -624,19 +624,21 @@
     }
 
     function renderStatusBadge(status) {
+      const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
+      const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
       switch (status) {
         case 'PENDING':
-          return '<span class="badge badge-warning"><i class="fa-solid fa-clock"></i> PENDING</span>';
+          return `<span class="badge badge-warning"><i class="fa-solid fa-clock"></i> ${t('offers.statusPending', 'MENUNGGU RESPON')}</span>`;
         case 'ACCEPTED':
-          return '<span class="badge badge-success"><i class="fa-solid fa-check-double"></i> DITERIMA</span>';
+          return `<span class="badge badge-success"><i class="fa-solid fa-check-double"></i> ${t('offers.statusAccepted', 'DITERIMA')}</span>`;
         case 'DECLINED':
-          return '<span class="badge badge-danger"><i class="fa-solid fa-ban"></i> DITOLAK</span>';
+          return `<span class="badge badge-danger"><i class="fa-solid fa-ban"></i> ${t('offers.statusDeclined', 'DITOLAK')}</span>`;
         case 'EXPIRED':
-          return '<span class="badge badge-slate"><i class="fa-solid fa-hourglass-end"></i> KEDALUWARSA</span>';
+          return `<span class="badge badge-slate"><i class="fa-solid fa-hourglass-end"></i> ${t('offers.statusExpired', 'KEDALUWARSA')}</span>`;
         case 'WITHDRAWN':
-          return '<span class="badge badge-slate"><i class="fa-solid fa-arrow-rotate-left"></i> DITARIK</span>';
+          return `<span class="badge badge-slate"><i class="fa-solid fa-arrow-rotate-left"></i> ${isEn ? 'WITHDRAWN' : 'DITARIK'}</span>`;
         case 'SUPERSEDED':
-          return '<span class="badge badge-info"><i class="fa-solid fa-arrows-split-up-and-left"></i> DIBATALKAN (SUPERSEDED)</span>';
+          return `<span class="badge badge-info"><i class="fa-solid fa-arrows-split-up-and-left"></i> ${t('offers.statusCancelled', 'DIBATALKAN')}</span>`;
         default:
           return `<span class="badge badge-slate">${status}</span>`;
       }

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#FAF6F2">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>Tikum — Verified Ticket Marketplace by Shinerva</title>
+  <title data-i18n="meta.title">Tikum — Verified Ticket Marketplace by Shinerva</title>
   <meta name="description" content="Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli. Platform penemuan event berbayar dan bertiket di Indonesia dengan verifikasi sumber resmi.">
   <link rel="canonical" href="https://tikum.app/">
   <link rel="alternate" hreflang="id" href="https://tikum.app/">
@@ -330,11 +330,11 @@
                 <span data-i18n="nav.cities">Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
               </a>
               <div class="city-dropdown-menu">
-                <a href="/offers?city=Jakarta" class="city-dropdown-item">Jakarta</a>
-                <a href="/offers?city=Bandung" class="city-dropdown-item">Bandung</a>
-                <a href="/offers?city=Surabaya" class="city-dropdown-item">Surabaya</a>
-                <a href="/offers?city=Bali" class="city-dropdown-item">Bali</a>
-                <a href="/offers" class="city-dropdown-item">Semua Kota</a>
+                <a href="/offers?city=Jakarta" class="city-dropdown-item" data-i18n="nav.jakarta">Jakarta</a>
+                <a href="/offers?city=Bandung" class="city-dropdown-item" data-i18n="nav.bandung">Bandung</a>
+                <a href="/offers?city=Surabaya" class="city-dropdown-item" data-i18n="nav.surabaya">Surabaya</a>
+                <a href="/offers?city=Bali" class="city-dropdown-item" data-i18n="nav.bali">Bali</a>
+                <a href="/offers" class="city-dropdown-item" data-i18n="nav.allCities">Semua Kota</a>
               </div>
             </li>
           </ul>
@@ -398,10 +398,10 @@
       <!-- Equal-Weight Dual Hero CTAs -->
       <div class="hero-dual-cta-group">
         <a href="#unifiedDiscovery" class="btn-hero-coral" data-i18n="landing.heroCtaExplore">
-          <i class="fa-solid fa-ticket"></i> <span>Jelajah Tiket</span>
+          <i class="fa-solid fa-ticket"></i> <span data-i18n="nav.exploreTickets">Jelajah Tiket</span>
         </a>
         <a href="/deal/create" class="btn-hero-outline" data-i18n="landing.heroCtaSell">
-          <i class="fa-solid fa-plus-circle"></i> <span>Jual Tiket Sekarang</span>
+          <i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicketsNow">Jual Tiket Sekarang</span>
         </a>
       </div>
     </div>
@@ -453,7 +453,7 @@
   <section class="two-way-protection-section" id="twoWayProtection" data-reveal>
     <div style="max-width:1120px; margin:0 auto; text-align:center; margin-bottom:36px;">
       <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(250,241,226,0.18); border-radius:999px; padding:6px 16px; font-size:12.5px; font-weight:700; color:#FAF1E2; margin-bottom:14px; text-transform:uppercase;">
-        <i class="fa-solid fa-shield-halved" style="color:#DA674E;"></i> <span>Standar Keamanan Transaksi Sekunder</span>
+        <i class="fa-solid fa-shield-halved" style="color:#DA674E;"></i> <span data-i18n="landing.twoWayProtectionEyebrow">Standar Keamanan Transaksi Sekunder</span>
       </div>
       <h2 class="font-display" style="font-size:clamp(1.85rem, 3vw, 2.6rem); font-weight:700; color:#FAF1E2; margin:0 0 12px;" data-i18n="landing.twoWayHeadline">
         Perlindungan Dua Arah — Adil untuk Pembeli &amp; Penjual Jujur.
@@ -532,7 +532,7 @@
   <section class="flow-rail-section" id="howItWorks" data-reveal>
     <div style="max-width:1160px; margin:0 auto; text-align:center; margin-bottom:40px;">
       <div style="display:inline-flex; align-items:center; gap:8px; background:var(--tikum-teal-100); border-radius:999px; padding:6px 16px; font-size:12.5px; font-weight:700; color:var(--tikum-teal-700); margin-bottom:12px; text-transform:uppercase;">
-        <i class="fa-solid fa-route"></i> <span>Alur Transaksi Bertahap</span>
+        <i class="fa-solid fa-route"></i> <span data-i18n="landing.workflowBadge">Alur Transaksi Bertahap</span>
       </div>
       <h2 class="font-display" style="font-size:clamp(1.85rem, 3vw, 2.6rem); font-weight:700; color:var(--tikum-ink-900); margin:0 0 10px;" data-i18n="landing.flowRailHeading">
         Alur 5 Langkah Transaksi Aman
@@ -719,23 +719,23 @@
   <nav class="mobile-bottom-nav" aria-label="Navigasi Seluler">
     <a href="/" class="mobile-nav-item active">
       <i class="fa-solid fa-house"></i>
-      <span>Beranda</span>
+      <span data-i18n="nav.mobileHome">Beranda</span>
     </a>
     <a href="#upcoming" class="mobile-nav-item" onclick="applyNavCategory('MUSIC'); return false;">
       <i class="fa-solid fa-music"></i>
-      <span>Konser</span>
+      <span data-i18n="nav.mobileConcerts">Konser</span>
     </a>
     <button type="button" class="mobile-nav-item" onclick="focusSearch()">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <span>Cari</span>
+      <span data-i18n="nav.mobileSearch">Cari</span>
     </button>
     <a href="/track" class="mobile-nav-item">
       <i class="fa-solid fa-ticket"></i>
-      <span>Tiket</span>
+      <span data-i18n="nav.mobileTickets">Tiket</span>
     </a>
     <button type="button" class="mobile-nav-item" onclick="handleMobileAccountClick()">
       <i class="fa-solid fa-user"></i>
-      <span>Akun</span>
+      <span data-i18n="nav.mobileAccount">Akun</span>
     </button>
   </nav>
 
@@ -1114,18 +1114,20 @@
           <div class="poster-fallback-title">${title}</div>
           <div class="poster-fallback-meta">${escapeHtml(categoryLabel)}${venue ? ' · ' + venue : ''}</div>
           <div class="poster-fallback-verified">
-            <i class="fa-solid fa-shield-check" style="color: #34D399; font-size: 10px;"></i> Poster Resmi Belum Tersedia · Sumber Terverifikasi
+            <i class="fa-solid fa-shield-check" style="color: #34D399; font-size: 10px;"></i> ${t('events.posterUnavailableVerified', 'Poster Resmi Belum Tersedia · Sumber Terverifikasi')}
           </div>
         </div>
       `;
 
       let tierBadge = '';
+      const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
+      const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
       if (e.has_venue_assist || e.has_pic || e.venue_assist_status === 'PIC_AVAILABLE' || e.venue_assist_status === 'PIC_ON_SITE' || e.wristband_redemption_required) {
-        tierBadge = `<div class="card-tier-badge tier-pic"><i class="fa-solid fa-user-check"></i> Event PIC</div>`;
+        tierBadge = `<div class="card-tier-badge tier-pic"><i class="fa-solid fa-user-check"></i> ${t('events.tierPic', 'Event PIC')}</div>`;
       } else if (e.risk_tier === 'TIER_A_DIGITAL' || e.transfer_allowed) {
-        tierBadge = `<div class="card-tier-badge tier-digital"><i class="fa-solid fa-mobile-screen"></i> Transfer Digital</div>`;
+        tierBadge = `<div class="card-tier-badge tier-digital"><i class="fa-solid fa-mobile-screen"></i> ${t('events.tierDigital', 'Transfer Digital')}</div>`;
       } else {
-        tierBadge = `<div class="card-tier-badge tier-unverified"><i class="fa-solid fa-clock"></i> Kebijakan Ditinjau</div>`;
+        tierBadge = `<div class="card-tier-badge tier-unverified"><i class="fa-solid fa-clock"></i> ${t('events.tierUnderReview', 'Kebijakan Ditinjau')}</div>`;
       }
 
       if (img) {
@@ -1398,7 +1400,7 @@
       const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
 
       if (!filtered.length) {
-        main.innerHTML = '<div class="ln-rail ln-empty" style="text-align:center; padding:48px 20px; background:#FFFFFF; border-radius:20px; border:1px solid rgba(18,78,97,0.12); margin-top:24px;"><i class="fa-solid fa-magnifying-glass" style="font-size:28px; color:var(--tikum-teal-700); margin-bottom:12px; display:block;"></i><h3 style="font-size:18px; font-weight:700; color:var(--tikum-ink-900); margin-bottom:8px;">' + t('discoveryRails.emptySearch', 'Tidak ada event terverifikasi yang sesuai dengan pencarian Anda.') + '</h3><p style="font-size:14px; color:var(--tikum-ink-600); margin:0;">Coba ganti kata kunci atau pilih kota lain.</p></div>';
+        main.innerHTML = '<div class="ln-rail ln-empty" style="text-align:center; padding:48px 20px; background:#FFFFFF; border-radius:20px; border:1px solid rgba(18,78,97,0.12); margin-top:24px;"><i class="fa-solid fa-magnifying-glass" style="font-size:28px; color:var(--tikum-teal-700); margin-bottom:12px; display:block;"></i><h3 style="font-size:18px; font-weight:700; color:var(--tikum-ink-900); margin-bottom:8px;">' + t('discoveryRails.emptySearch', 'Tidak ada event terverifikasi yang sesuai dengan pencarian Anda.') + '</h3><p style="font-size:14px; color:var(--tikum-ink-600); margin:0;">' + t('discoveryRails.emptySearchSub', 'Coba ganti kata kunci atau pilih kota lain.') + '</p></div>';
         return;
       }
 
@@ -1576,6 +1578,7 @@
       }
     }
 
+    window.addEventListener('tikum:locale-change', function(e) { const heroEvent = (homeFeed && homeFeed.sections && homeFeed.sections.hero) || allEvents[0]; renderHeroFeature(heroEvent); renderAllSections(); if (homeFeed) updateFreshnessBadge(homeFeed); });
     window.addEventListener('tikum:languageChanged', function(e) {
       const heroEvent = (homeFeed && homeFeed.sections && homeFeed.sections.hero) || allEvents[0];
       renderHeroFeature(heroEvent);
