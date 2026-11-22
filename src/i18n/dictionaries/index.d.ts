@@ -70,6 +70,13 @@ export interface NavDictionary {
   buyerGuide: string;
   signInSignUp: string;
   backToHome: string;
+  buyTickets?: string;
+  dealRoomLookup: string;
+  sellerDealLink?: string;
+  cities: string;
+  signIn: string;
+  groupDiscover?: string;
+  groupTransactions?: string;
 }
 
 export interface LandingDictionary {
@@ -98,6 +105,7 @@ export interface LandingDictionary {
   editorialHeroSubtitle: string;
   searchPlaceholder: string;
   instantDealNotice: string;
+  instantDealPlaceholder: string;
   openDealRoomBtn: string;
   heroCtaExplore: string;
   heroCtaSell: string;

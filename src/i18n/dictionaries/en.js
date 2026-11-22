@@ -73,8 +73,12 @@ const en = {
     signInSignUp: "Sign In / Sign Up",
     backToHome: "Back to Home",
     buyTickets: "Buy Tickets / Browse Events",
-    dealRoomLookup: "Have a Deal Code? (Open Room)",
-    sellerDealLink: "Sell Tickets / Create Deal Link"
+    dealRoomLookup: "Open Deal",
+    sellerDealLink: "Sell Tickets / Create Deal Link",
+    cities: "Cities",
+    signIn: "Sign In",
+    groupDiscover: "Discover",
+    groupTransactions: "Transactions"
   },
 
   landing: {
@@ -102,8 +106,9 @@ const en = {
     editorialHeroTitle: "Buy & Sell Event Tickets Without Guesswork.",
     editorialHeroSubtitle: "Browse concerts freely without mandatory sign-in, check upfront fees, and trade safely with physical Event PIC witnesses at venue.",
     searchPlaceholder: "Search concerts, artists, GBK, JIS, or cities...",
-    instantDealNotice: "Already agreed on X / TikTok? Paste Deal Link or Code here",
-    openDealRoomBtn: "Open Deal Room",
+    instantDealNotice: "Already agreed on X, TikTok, IG, or FB? Secure your trade here:",
+    instantDealPlaceholder: "Paste tikum.app/deal/... link or deal code...",
+    openDealRoomBtn: "Open Deal →",
     heroCtaExplore: "Explore Tickets",
     heroCtaSell: "Sell Tickets Now",
     unifiedDiscoveryTitle: "Popular & Trending Events",

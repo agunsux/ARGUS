@@ -107,7 +107,7 @@
       "myTickets": "Tiket Saya",
       "support": "Bantuan",
       "account": "Akun",
-      "signIn": "Masuk / Daftar",
+      "signIn": "Masuk",
       "findTickets": "Cari Tiket",
       "offers": "Tawaran Harga",
       "track": "Lacak Transaksi",
@@ -139,7 +139,12 @@
       "login": "Masuk",
       "signup": "Daftar",
       "pastEvents": "Arsip Event",
-      "signInSignUp": "Masuk / Daftar"
+      "signInSignUp": "Masuk / Daftar",
+      "dealRoomLookup": "Buka Deal",
+      "cities": "Kota",
+      "buyTickets": "Beli Tiket / Cari Event",
+      "groupDiscover": "Jelajah",
+      "groupTransactions": "Transaksi"
     },
     "hero": {
       "headline": "TIKUM — Pasar Tiket Event Terverifikasi",
@@ -791,7 +796,10 @@
       "savedSuccess": "Profil berhasil diperbarui.",
       "autofillBadge": "Profil Terverifikasi & Terisi Otomatis",
       "buyerProportionalNote": "Untuk pembeli, kami hanya memerlukan kontak dasar (Nama, WhatsApp, dan Kota) sesuai prinsip minimisasi data UU PDP No. 27/2022.",
-      "sellerCompleteBadge": "Profil Penjual Lengkap"
+      "sellerCompleteBadge": "Profil Penjual Lengkap",
+      "sellerSectionSummary": "Aktifkan Profil Penjual (Khusus Jual Tiket)",
+      "sellerSectionDesc": "Bagian ini hanya wajib diisi jika Anda ingin menjual tiket untuk pencairan dana escrow.",
+      "buyerOnlyNotice": "Profil pembeli aktif. Anda siap bertransaksi tanpa perlu mengisi data rekening atau dokumen identitas."
     },
     "settings": {
       "title": "Pengaturan Akun",
@@ -1015,7 +1023,10 @@
       "savedSuccess": "Profil berhasil diperbarui.",
       "autofillBadge": "Profil Terverifikasi & Terisi Otomatis",
       "buyerProportionalNote": "Untuk pembeli, kami hanya memerlukan kontak dasar (Nama, WhatsApp, dan Kota) sesuai prinsip minimisasi data UU PDP No. 27/2022.",
-      "sellerCompleteBadge": "Profil Penjual Lengkap"
+      "sellerCompleteBadge": "Profil Penjual Lengkap",
+      "sellerSectionSummary": "Aktifkan Profil Penjual (Khusus Jual Tiket)",
+      "sellerSectionDesc": "Bagian ini hanya wajib diisi jika Anda ingin menjual tiket untuk pencairan dana escrow.",
+      "buyerOnlyNotice": "Profil pembeli aktif. Anda siap bertransaksi tanpa perlu mengisi data rekening atau dokumen identitas."
     }
     },
     "accessibility": {
@@ -1399,8 +1410,9 @@
       "editorialHeroTitle": "Beli & Jual Tiket Konser Tanpa Was-Was.",
       "editorialHeroSubtitle": "Jelajahi konser tanpa wajib login, cek biaya transparan di muka, dan serah terima aman dengan saksi fisik Event PIC di venue.",
       "searchPlaceholder": "Cari konser, artis, GBK, JIS, atau kota...",
-      "instantDealNotice": "Sudah deal di X / TikTok? Tempel Link atau Kode Deal di sini",
-      "openDealRoomBtn": "Buka Deal Room",
+      "instantDealNotice": "Sudah deal di X, TikTok, IG, atau FB? Amankan transaksinya di sini:",
+      "instantDealPlaceholder": "Tempel link tikum.app/deal/... atau kode deal...",
+      "openDealRoomBtn": "Buka Deal →",
       "heroCtaExplore": "Jelajah Tiket",
       "heroCtaSell": "Jual Tiket Sekarang",
       "unifiedDiscoveryTitle": "Event Populer & Terbaru",
@@ -1433,6 +1445,11 @@
       "pageTitle": "Buat Tautan Transaksi / Ajukan Listing Tiket",
       "pageSubtitle": "Daftarkan tiket Anda untuk ditinjau. Dapatkan tautan transaksi aman dengan verifikasi dan perlindungan sistem Tikum.",
       "zeroQrCallout": "QR Tiket Tetap dalam Kendali Anda — Jangan unggah QR Code/Barcode asli saat membuat penawaran.",
+      "sellerProtectionStrip": "QR tetap di tangan Anda saat listing · Saksi fisik Event PIC · Anti klaim invalid sepihak · Evidence Bundle 9 artefak",
+      "stepperStep1": "1. Akun & Verifikasi Email",
+      "stepperStep2": "2. Profil & Identitas Penjual",
+      "stepperStep3": "3. Detail Tiket & Bukti (Tahap A — Tanpa QR)",
+      "autofillNotice": "Profil Penjual Terisi Otomatis",
       "wizardStep1": "1. Pemilihan Event & Kategori Tiket",
       "wizardStep2": "2. Detail Kursi, Jumlah & Fulfillment",
       "wizardStep3": "3. Barcode & Protokol Keamanan",
@@ -1474,6 +1491,9 @@
       "simBannerTitle": "MODE SIMULASI — BUKAN PEMBAYARAN LIVE",
       "simBannerDesc": "Platform sedang berjalan dalam mode pengujian pilot. Dana pembelian disimulasikan dan tidak ada pemotongan saldo riil.",
       "orderProtectionPill": "PERLINDUNGAN TRANSAKSI TIKUM",
+      "sellerSelfListingBadge": "Ini Listing Anda (Mode Penjual)",
+      "copyLinkForBuyer": "Salin Link untuk Pembeli",
+      "linkCopied": "Link Berhasil Disalin!",
       "ticketDetailsTitle": "Informasi Tiket & Validasi Penjual",
       "seatInfoLabel": "Posisi / Kursi Tiket:",
       "listingIdLabel": "ID Listing Resmi:",
@@ -1501,6 +1521,25 @@
       "entryInstruction": "Instruksi Masuk Venue:",
       "entryInstructionDesc": "Temui TIKUM PIC di titik kumpul venue pada hari acara. Simpan ID Pesanan Anda untuk proses pencocokan tiket sebelum pemindaian barcode.",
       "trackOrderBtn": "Lacak Status & Protokol di /track"
+    },
+    "dealHub": {
+      "pill": "PUSAT DEAL & TRANSAKSI PEMBELI",
+      "title": "Buka Deal Room & Beli Tiket Aman",
+      "subtitle": "Punya kode deal atau link transaksi dari penjual? Masukkan di bawah untuk membuka Deal Room dengan proteksi penampungan escrow platform Tikum.",
+      "lookupTitle": "Punya Link atau Kode Deal?",
+      "lookupDesc": "Tempelkan tautan deal (misal: tikum.app/deal/list-abc) atau masukkan ID Deal:",
+      "inputPlaceholder": "Contoh: list-123, deal-456, atau link https://...",
+      "btnOpenRoom": "Buka Deal Room",
+      "lookupEmptyErr": "Silakan masukkan ID Deal atau URL Deal.",
+      "lookupInvalidErr": "Format ID Deal tidak valid.",
+      "sellerBannerTitle": "Ingin Menjual Tiket?",
+      "sellerBannerDesc": "Buat Deal Link terproteksi Anda sendiri dalam 2 menit tanpa biaya awal.",
+      "sellerBannerBtn": "Buat Deal Link Penjual",
+      "publicListingsTitle": "Listing Publik Tersedia",
+      "publicListingsSubtitle": "Tiket sekunder resmi yang telah diverifikasi kepemilikannya oleh sistem Tikum.",
+      "noListingsTitle": "Belum ada listing publik yang aktif",
+      "noListingsDesc": "Listing baru dari penjual terverifikasi akan muncul di sini. Anda juga dapat mencari event di katalog resmi.",
+      "browseCatalogBtn": "Jelajahi Katalog Event"
     },
     "picOps": {
       "title": "Operasional Lapangan Event PIC",
@@ -1629,7 +1668,7 @@
       "myTickets": "My Tickets",
       "support": "Help & Support",
       "account": "Account",
-      "signIn": "Sign In / Register",
+      "signIn": "Sign In",
       "findTickets": "Find Tickets",
       "offers": "Offers & Negotiation",
       "track": "Track Deal",
@@ -1661,7 +1700,12 @@
       "login": "Log In",
       "signup": "Sign Up",
       "pastEvents": "Archived Events",
-      "signInSignUp": "Sign In / Sign Up"
+      "signInSignUp": "Sign In / Sign Up",
+      "dealRoomLookup": "Open Deal",
+      "cities": "Cities",
+      "buyTickets": "Buy Tickets / Browse Events",
+      "groupDiscover": "Discover",
+      "groupTransactions": "Transactions"
     },
     "hero": {
       "headline": "TIKUM — Verified Event Ticket Marketplace",
@@ -2313,7 +2357,10 @@
       "savedSuccess": "Profile updated successfully.",
       "autofillBadge": "Verified Profile & Auto-Filled",
       "buyerProportionalNote": "For buyers, we only require basic contact info (Name, WhatsApp, City) under the data minimization principle of PDP Law No. 27/2022.",
-      "sellerCompleteBadge": "Seller Profile Complete"
+      "sellerCompleteBadge": "Seller Profile Complete",
+      "sellerSectionSummary": "Activate Seller Profile (Selling Tickets Only)",
+      "sellerSectionDesc": "This section is only required if you want to sell tickets for escrow settlement payout.",
+      "buyerOnlyNotice": "Buyer profile is active. You are ready to purchase tickets without bank account or identity documents."
     },
     "settings": {
       "title": "Account Settings",
@@ -2537,7 +2584,10 @@
       "savedSuccess": "Profile successfully updated.",
       "autofillBadge": "Profile Verified & Auto-Filled",
       "buyerProportionalNote": "For buyers, only minimal contact details (Name, WhatsApp, and City) are required per PDP Law No. 27/2022 data minimization.",
-      "sellerCompleteBadge": "Seller Profile Complete"
+      "sellerCompleteBadge": "Seller Profile Complete",
+      "sellerSectionSummary": "Activate Seller Profile (Selling Tickets Only)",
+      "sellerSectionDesc": "This section is only required if you want to sell tickets for escrow settlement payout.",
+      "buyerOnlyNotice": "Buyer profile is active. You are ready to purchase tickets without bank account or identity documents."
     }
     },
     "accessibility": {
@@ -2921,8 +2971,9 @@
       "editorialHeroTitle": "Buy & Sell Event Tickets Without Guesswork.",
       "editorialHeroSubtitle": "Browse concerts freely without mandatory sign-in, check upfront fees, and trade safely with physical Event PIC witnesses at venue.",
       "searchPlaceholder": "Search concerts, artists, GBK, JIS, or cities...",
-      "instantDealNotice": "Already agreed on X / TikTok? Paste Deal Link or Code here",
-      "openDealRoomBtn": "Open Deal Room",
+      "instantDealNotice": "Already agreed on X, TikTok, IG, or FB? Secure your trade here:",
+      "instantDealPlaceholder": "Paste tikum.app/deal/... link or deal code...",
+      "openDealRoomBtn": "Open Deal →",
       "heroCtaExplore": "Explore Tickets",
       "heroCtaSell": "Sell Tickets Now",
       "unifiedDiscoveryTitle": "Popular & Trending Events",
@@ -2955,6 +3006,11 @@
       "pageTitle": "Create Transaction Link / Submit Ticket Listing",
       "pageSubtitle": "Submit your ticket for review. Receive a secure transaction link protected by Tikum systems.",
       "zeroQrCallout": "Your Ticket QR Stays in Your Control — Do not upload the original QR Code/Barcode when creating a deal or listing.",
+      "sellerProtectionStrip": "QR stays with you during listing · Physical Event PIC witness · Anti unilateral invalid claims · 9-artifact Evidence Bundle",
+      "stepperStep1": "1. Account & Email Verification",
+      "stepperStep2": "2. Seller Identity & Payout Profile",
+      "stepperStep3": "3. Ticket Details & Evidence (Stage A — Zero QR)",
+      "autofillNotice": "Seller Profile Auto-Filled",
       "wizardStep1": "1. Event & Ticket Category Selection",
       "wizardStep2": "2. Seat Details, Quantity & Fulfillment",
       "wizardStep3": "3. Barcode & Security Protocol",
@@ -2996,6 +3052,9 @@
       "simBannerTitle": "SIMULATION MODE — NOT A LIVE PAYMENT",
       "simBannerDesc": "System is operating in pilot simulation mode. No real money will be charged or deducted.",
       "orderProtectionPill": "TIKUM TRANSACTION PROTECTION",
+      "sellerSelfListingBadge": "This Is Your Listing (Seller View)",
+      "copyLinkForBuyer": "Copy Link for Buyer",
+      "linkCopied": "Link Copied!",
       "ticketDetailsTitle": "Ticket Information & Seller Verification",
       "seatInfoLabel": "Ticket Position / Seat:",
       "listingIdLabel": "Official Listing ID:",
@@ -3023,6 +3082,25 @@
       "entryInstruction": "Venue Entry Instructions:",
       "entryInstructionDesc": "Meet the TIKUM PIC at the venue meeting point on event day. Keep your Order ID ready for verification prior to barcode scanning.",
       "trackOrderBtn": "Track Status & Protocol at /track"
+    },
+    "dealHub": {
+      "pill": "BUYER DEAL & TRANSACTION HUB",
+      "title": "Open Deal Room & Buy Tickets Securely",
+      "subtitle": "Have a deal code or transaction link from a seller? Enter it below to enter the Deal Room protected by Tikum escrow holding.",
+      "lookupTitle": "Have a Deal Link or Code?",
+      "lookupDesc": "Paste the deal link (e.g. tikum.app/deal/list-abc) or enter the Deal ID:",
+      "inputPlaceholder": "Example: list-123, deal-456, or https://... URL",
+      "btnOpenRoom": "Open Deal Room",
+      "lookupEmptyErr": "Please enter a Deal ID or Deal URL.",
+      "lookupInvalidErr": "Invalid Deal ID format.",
+      "sellerBannerTitle": "Want to Sell Tickets?",
+      "sellerBannerDesc": "Create your protected Deal Link in 2 minutes with zero upfront fees.",
+      "sellerBannerBtn": "Create Seller Deal Link",
+      "publicListingsTitle": "Available Public Listings",
+      "publicListingsSubtitle": "Official secondary tickets with ownership verified by Tikum.",
+      "noListingsTitle": "No active public listings at the moment",
+      "noListingsDesc": "New listings from verified sellers will appear here. You can also explore our official event catalog.",
+      "browseCatalogBtn": "Browse Event Catalog"
     },
     "picOps": {
       "title": "Event PIC Field Operations",

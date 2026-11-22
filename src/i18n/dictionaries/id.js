@@ -73,8 +73,12 @@ const id = {
     signInSignUp: "Masuk / Daftar",
     backToHome: "Kembali ke Beranda",
     buyTickets: "Beli Tiket / Cari Event",
-    dealRoomLookup: "Punya Kode Deal? (Buka Room)",
-    sellerDealLink: "Jual Tiket / Buat Deal Link"
+    dealRoomLookup: "Buka Deal",
+    sellerDealLink: "Jual Tiket / Buat Deal Link",
+    cities: "Kota",
+    signIn: "Masuk",
+    groupDiscover: "Jelajah",
+    groupTransactions: "Transaksi"
   },
 
   landing: {
@@ -102,8 +106,9 @@ const id = {
     editorialHeroTitle: "Beli & Jual Tiket Konser Tanpa Was-Was.",
     editorialHeroSubtitle: "Jelajahi konser tanpa wajib login, cek biaya transparan di muka, dan serah terima aman dengan saksi fisik Event PIC di venue.",
     searchPlaceholder: "Cari konser, artis, GBK, JIS, atau kota...",
-    instantDealNotice: "Sudah deal di X / TikTok? Tempel Link atau Kode Deal di sini",
-    openDealRoomBtn: "Buka Deal Room",
+    instantDealNotice: "Sudah deal di X, TikTok, IG, atau FB? Amankan transaksinya di sini:",
+    instantDealPlaceholder: "Tempel link tikum.app/deal/... atau kode deal...",
+    openDealRoomBtn: "Buka Deal →",
     heroCtaExplore: "Jelajah Tiket",
     heroCtaSell: "Jual Tiket Sekarang",
     unifiedDiscoveryTitle: "Event Populer & Terbaru",

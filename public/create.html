@@ -180,7 +180,7 @@
             <li><a href="/offers?category=FESTIVAL" class="topbar-nav-link" data-i18n="nav.festivals">Festival</a></li>
             <li class="city-dropdown-wrap">
               <a href="javascript:void(0)" class="topbar-nav-link" aria-haspopup="true">
-                <span>Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
+                <span data-i18n="nav.cities">Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
               </a>
               <div class="city-dropdown-menu">
                 <a href="/offers?city=Jakarta" class="city-dropdown-item">Jakarta</a>
@@ -195,10 +195,10 @@
         </div>
 
         <div class="topbar-right">
-          <a href="/deal" class="btn-topbar-deal" data-i18n="nav.dealRoomLookup">Buka Deal</a>
+          <a href="/deal" class="btn-topbar-deal"><i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11.5px; opacity:0.85;"></i> <span data-i18n="nav.dealRoomLookup">Buka Deal</span></a>
           <a href="/deal/create" class="btn-topbar-seller"><i class="fa-solid fa-plus"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
           <div id="authHeaderContainer">
-            <button id="btnLoginSignUp" class="btn-auth-header" onclick="if(typeof openAuthModal==='function') openAuthModal(); else window.location.href='/login';" aria-label="Login / Sign Up" data-i18n="auth.signInSignUp" style="height:38px; padding:0 14px; font-size:13.5px; border-radius:8px;">Masuk / Daftar</button>
+            <button id="btnLoginSignUp" class="btn-auth-header" onclick="if(typeof openAuthModal==='function') openAuthModal(); else window.location.href='/login';" aria-label="Login / Sign Up" data-i18n="nav.signIn">Masuk</button>
           </div>
           <button class="lang-toggle-btn lang-switcher-pill" onclick="if(window.TikumI18n) window.TikumI18n.toggleLang(); else if(typeof toggleLang==='function') toggleLang();" id="langToggle" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
             <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>

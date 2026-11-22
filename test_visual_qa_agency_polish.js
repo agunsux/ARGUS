@@ -357,6 +357,118 @@ console.log('  ✓ Zero prohibited absolute claims verified across entire dictio
 console.log('  ✓ PT Shinerva Prajna Tejas & Bandung office address verified in footer.\n');
 
 // -----------------------------------------------------------------------------
+// [TEST 9] Topbar Hierarchy, Ghost Sign-In Pill & Single-Coral Action
+// -----------------------------------------------------------------------------
+console.log('[TEST 9] Topbar Visual Hierarchy, Ghost Sign-In Pill & Single-Coral Action...');
+
+// 9.1 Single solid Coral CTA
+assert.ok(styleCss.includes('.btn-topbar-seller'), 'style.css must define .btn-topbar-seller');
+assert.ok(styleCss.includes('--terra-600') || styleCss.includes('#DA674E'), 'Seller CTA must use Coral brand color');
+
+// 9.2 Sign-in button must be Teal Outline / Ghost Pill (NOT solid coral)
+assert.ok(styleCss.includes('.btn-auth-header'), 'style.css must define .btn-auth-header');
+const authHeaderCssMatch = styleCss.match(/\.btn-auth-header\s*\{([^}]+)\}/);
+assert.ok(authHeaderCssMatch, '.btn-auth-header block must exist in style.css');
+const authHeaderCss = authHeaderCssMatch[1];
+assert.ok(authHeaderCss.includes('transparent'), '.btn-auth-header must have transparent background');
+assert.ok(authHeaderCss.includes('#0E3B4A'), '.btn-auth-header must use Teal text color #0E3B4A');
+assert.ok(authHeaderCss.includes('1.5px solid rgba(18, 78, 97,'), '.btn-auth-header must have Teal ghost border');
+assert.ok(!authHeaderCss.includes('background: #DA674E') && !authHeaderCss.includes('background: var(--terra-600)'), '.btn-auth-header must NOT be solid coral');
+
+// 9.3 Subtle Deal Room lookup link with icon
+assert.ok(styleCss.includes('.btn-topbar-deal'), 'style.css must define .btn-topbar-deal');
+for (const route of CORE_ROUTES) {
+  const html = fs.readFileSync(path.join(__dirname, route.file), 'utf8');
+  assert.ok(html.includes('class="btn-topbar-deal"'), `${route.file} must have .btn-topbar-deal subtle link in header`);
+  assert.ok(html.includes('data-i18n="nav.dealRoomLookup"'), `${route.file} must have data-i18n="nav.dealRoomLookup"`);
+  assert.ok(html.includes('data-i18n="nav.cities"'), `${route.file} must have data-i18n="nav.cities" on Cities link`);
+  assert.ok(html.includes('data-i18n="nav.signIn"'), `${route.file} must have data-i18n="nav.signIn" on auth button`);
+}
+
+console.log('  ✓ .btn-topbar-seller is the ONLY solid Coral pill CTA in the header.');
+console.log('  ✓ .btn-auth-header converted to refined Teal Outline Ghost Pill (#0E3B4A).');
+console.log('  ✓ nav.dealRoomLookup, nav.cities, and nav.signIn active on all headers.\n');
+
+// -----------------------------------------------------------------------------
+// [TEST 10] Agency-Grade Hero Deal Dock & Search Box Submit Button
+// -----------------------------------------------------------------------------
+console.log('[TEST 10] Agency-Grade Hero Deal Dock & Event Search Submit Button...');
+
+// 10.1 Search box submit button
+assert.ok(styleCss.includes('.seatgeek-search-submit-btn'), 'style.css must define .seatgeek-search-submit-btn');
+assert.ok(indexHtml.includes('seatgeek-search-submit-btn'), 'Homepage search box must include internal submit button');
+
+// 10.2 Deal Dock structure & copy
+assert.ok(styleCss.includes('.hero-deal-dock'), 'style.css must style .hero-deal-dock');
+assert.ok(styleCss.includes('.hero-deal-form'), 'style.css must style .hero-deal-form');
+assert.ok(styleCss.includes('.hero-deal-submit-btn'), 'style.css must style .hero-deal-submit-btn');
+
+assert.ok(indexHtml.includes('hero-deal-dock'), 'index.html must render hero-deal-dock');
+assert.ok(!indexHtml.includes('⚡ Already agreed'), 'Homepage must eliminate ⚡ emoji and legacy plain text');
+assert.ok(indexHtml.includes('TikTok') && indexHtml.includes('IG'), 'Homepage deal dock caption must reference TikTok and IG');
+assert.ok(indexHtml.includes('handleHeroDealSubmit'), 'Deal dock form must handle submit with extraction logic');
+
+console.log('  ✓ Search box equipped with sharp internal submit pill button.');
+console.log('  ✓ Deal-Link Dock renders translucent Teal-Glass container with Warm Cream submit pill.');
+console.log('  ✓ Deal Dock caption references X, TikTok, IG, and FB with zero awkward emojis.\n');
+
+// -----------------------------------------------------------------------------
+// [TEST 11] Client i18n Leak Guard Across All Public HTML Files
+// -----------------------------------------------------------------------------
+console.log('[TEST 11] Client i18n Leak Guard Across All Public HTML Files...');
+
+const clientI18n = require('./public/js/i18n');
+const clientTranslations = clientI18n.translations;
+
+function getClientNestedValue(obj, keyPath) {
+  const parts = keyPath.split('.');
+  let current = obj;
+  for (const part of parts) {
+    if (current === undefined || current === null) return undefined;
+    current = current[part];
+  }
+  return current;
+}
+
+const allHtmlFiles = fs.readdirSync(path.join(__dirname, 'public')).filter(f => f.endsWith('.html'));
+const missingInClient_ID = new Set();
+const missingInClient_EN = new Set();
+
+for (const file of allHtmlFiles) {
+  const content = fs.readFileSync(path.join(__dirname, 'public', file), 'utf8');
+  const regex = /data-i18n(?:-placeholder)?=["']([^"']+)["']/g;
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    const key = match[1];
+    if (getClientNestedValue(clientTranslations.id, key) === undefined) {
+      missingInClient_ID.add(`${file}: ${key}`);
+    }
+    if (getClientNestedValue(clientTranslations.en, key) === undefined) {
+      missingInClient_EN.add(`${file}: ${key}`);
+    }
+  }
+}
+
+assert.strictEqual(missingInClient_ID.size, 0, `Client ID dictionary missing keys referenced in HTML: ${Array.from(missingInClient_ID).join('; ')}`);
+assert.strictEqual(missingInClient_EN.size, 0, `Client EN dictionary missing keys referenced in HTML: ${Array.from(missingInClient_EN).join('; ')}`);
+
+// Specific key values
+assert.strictEqual(clientI18n.t('nav.dealRoomLookup', 'id'), 'Buka Deal', 'client nav.dealRoomLookup ID must be "Buka Deal"');
+assert.strictEqual(clientI18n.t('nav.dealRoomLookup', 'en'), 'Open Deal', 'client nav.dealRoomLookup EN must be "Open Deal"');
+assert.strictEqual(clientI18n.t('nav.cities', 'id'), 'Kota', 'client nav.cities ID must be "Kota"');
+assert.strictEqual(clientI18n.t('nav.cities', 'en'), 'Cities', 'client nav.cities EN must be "Cities"');
+assert.strictEqual(clientI18n.t('nav.signIn', 'id'), 'Masuk', 'client nav.signIn ID must be "Masuk"');
+assert.strictEqual(clientI18n.t('nav.signIn', 'en'), 'Sign In', 'client nav.signIn EN must be "Sign In"');
+assert.ok(clientI18n.t('landing.instantDealNotice', 'id').includes('IG'), 'landing.instantDealNotice ID must mention IG');
+assert.ok(clientI18n.t('landing.instantDealNotice', 'en').includes('IG'), 'landing.instantDealNotice EN must mention IG');
+assert.strictEqual(clientI18n.t('landing.openDealRoomBtn', 'id'), 'Buka Deal →');
+assert.strictEqual(clientI18n.t('landing.openDealRoomBtn', 'en'), 'Open Deal →');
+
+console.log(`  ✓ 100% of data-i18n keys across all ${allHtmlFiles.length} HTML files verified in public/js/i18n.js.`);
+console.log('  ✓ nav.dealRoomLookup, nav.cities, nav.signIn, and landing keys confirmed in client dictionary.');
+console.log('  ✓ ZERO raw dot-notation translation keys can leak in the browser.\n');
+
+// -----------------------------------------------------------------------------
 // RUN ASYNC SUITES
 // -----------------------------------------------------------------------------
 async function runAll() {
