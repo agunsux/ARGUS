@@ -3630,14 +3630,111 @@ h1, h2, h3, h4, .font-display {
   gap: 10px;
 }
 
+/* Logo Proportions & Aspect Ratio */
+.brand img, .topbar-left .brand img {
+  height: 32px !important;
+  width: auto !important;
+  aspect-ratio: 220 / 52 !important;
+  display: block !important;
+  object-fit: contain !important;
+}
+
+.footer-logo-light {
+  height: 30px !important;
+  width: auto !important;
+  aspect-ratio: 220 / 52 !important;
+  display: block !important;
+  margin-bottom: 12px !important;
+}
+
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
 @media (max-width: 1023px) {
   .topbar-nav-links {
-    display: none;
+    display: none !important;
   }
   .bento-grid-2col {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
   .flow-rail-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+  }
+  .hero-editorial-h1 {
+    font-size: clamp(2rem, 5vw, 3rem) !important;
+    line-height: 1.1 !important;
   }
 }
+
+@media (max-width: 640px) {
+  #appTopbar {
+    padding: 0 16px !important;
+  }
+  .topbar-hamburger-btn {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    display: flex !important;
+  }
+  .topbar-left .brand img {
+    height: 28px !important;
+  }
+  .btn-topbar-deal {
+    display: none !important;
+  }
+  #authHeaderContainer {
+    display: none !important;
+  }
+  .btn-topbar-seller {
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+  }
+  .hero-teal-editorial {
+    padding: 48px 16px 56px !important;
+  }
+  .hero-editorial-h1 {
+    font-size: clamp(1.85rem, 6.5vw, 2.35rem) !important;
+    line-height: 1.12 !important;
+    padding: 0 8px !important;
+  }
+  .instant-deal-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    border-radius: 16px !important;
+    padding: 14px 16px !important;
+    gap: 10px !important;
+    text-align: center !important;
+  }
+  .instant-deal-btn {
+    text-align: center !important;
+  }
+  .pilot-fee-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 16px 18px !important;
+  }
+  .two-way-protection-section {
+    padding: 56px 16px !important;
+  }
+  .founder-quote-glass {
+    padding: 24px 20px !important;
+  }
+  .bento-card-flow {
+    padding: 24px 20px !important;
+  }
+  .events-grid, .ln-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .wizard-card-ticketswap {
+    padding: 24px 18px !important;
+  }
+  .footer-tier-1 {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+}
+

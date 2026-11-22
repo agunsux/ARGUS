@@ -33,7 +33,7 @@
     <aside id="appSidebar" class="app-sidebar" aria-label="Navigasi Utama">
       <div class="sidebar-brand-header">
         <a href="/" class="sidebar-brand-link">
-          <img src="/assets/tikum-mark-2color.svg" width="30" height="30" alt="Tikum Logo">
+          <img src="/images/tikum-symbol.svg" width="30" height="30" alt="Tikum Logo">
           <div class="sidebar-brand-text">
             <div class="sidebar-brand-title">TIKUM</div>
             <div class="sidebar-brand-sub">by PT Shinerva Prajna Tejas</div>
@@ -185,7 +185,7 @@
             <i class="fa-solid fa-bars"></i>
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <img src="/images/tikum-horizontal.svg" width="130" height="32" alt="Tikum">
+            <img src="/images/tikum-horizontal.svg" height="32" alt="Tikum" style="height:32px; width:auto; aspect-ratio:220/52; display:block;">
           </a>
         </div>
 
@@ -242,14 +242,14 @@
         </div>
 
         <!-- Verification Status Cards Grid -->
-        <div class="card" style="background:var(--surface); border:1px solid var(--line-300); margin-bottom: 24px; padding: 20px;">
-          <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
+        <div class="card" style="background:#FFFFFF; border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)); border-radius:16px; margin-bottom: 24px; padding: 20px; box-shadow: 0 4px 16px rgba(14, 59, 74, 0.04);">
+          <div style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
             Status Kesiapan Akun
           </div>
           
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
             <!-- Email Verification Badge -->
-            <div id="cardEmailStatus" style="background:#090d16; border:1px solid #1e293b; padding:14px; border-radius:8px;">
+            <div id="cardEmailStatus" style="background:var(--tikum-cream-50, #FAF8F4); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding:16px; border-radius:12px;">
               <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Verifikasi Email</div>
               <div id="badgeEmail" style="margin-top:6px;">
                 <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Memeriksa...</span>
@@ -261,7 +261,7 @@
             </div>
 
             <!-- Buyer Profile Ready Badge -->
-            <div id="cardBuyerStatus" style="background:#090d16; border:1px solid #1e293b; padding:14px; border-radius:8px;">
+            <div id="cardBuyerStatus" style="background:var(--tikum-cream-50, #FAF8F4); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding:16px; border-radius:12px;">
               <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Profil Pembeli</div>
               <div id="badgeBuyer" style="margin-top:6px;">
                 <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Memeriksa...</span>
@@ -272,7 +272,7 @@
             </div>
 
             <!-- Seller Profile Ready Badge -->
-            <div id="cardSellerStatus" style="background:#090d16; border:1px solid #1e293b; padding:14px; border-radius:8px;">
+            <div id="cardSellerStatus" style="background:var(--tikum-cream-50, #FAF8F4); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding:16px; border-radius:12px;">
               <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Profil Penjual</div>
               <div id="badgeSeller" style="margin-top:6px;">
                 <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Memeriksa...</span>
@@ -285,12 +285,12 @@
         </div>
 
         <!-- Unified Profile Form Card -->
-        <div class="card" id="profileFormCard" style="background:var(--surface); border:1px solid var(--line-300); padding: 24px;">
+        <div class="card" id="profileFormCard" style="background:#FFFFFF; border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)); border-radius:16px; padding: 24px; box-shadow: 0 4px 16px rgba(14, 59, 74, 0.04);">
           <form id="profileForm" onsubmit="handleSaveProfile(event)">
 
             <!-- Section A: Contact & Identity -->
-            <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
-              <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;" data-i18n="profile.personalInfo">
+            <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12));">
+              <div style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;" data-i18n="profile.personalInfo">
                 1. Informasi Pribadi &amp; Kontak (Pembeli &amp; Penjual)
               </div>
 
@@ -302,7 +302,7 @@
 
                 <div class="form-group">
                   <label for="profEmail">Alamat Email Terdaftar (Sesi Login)</label>
-                  <input type="email" id="profEmail" class="form-control mono" readonly style="background:#090d16; color:var(--text-muted); cursor:not-allowed;">
+                  <input type="email" id="profEmail" class="form-control mono" readonly style="background:var(--tikum-cream-100, #F2EDE4); color:var(--text-muted); cursor:not-allowed;">
                 </div>
               </div>
 
@@ -326,10 +326,10 @@
             </div>
 
             <!-- Section B: Seller Payout Details (Collapsible & Proportional to Selling) -->
-            <details id="sellerPayoutDetails" class="seller-payout-details" style="margin-bottom: 24px; border: 1px solid var(--line-300); border-radius: 10px; overflow: hidden; background: rgba(255,255,255,0.015);">
-              <summary style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: rgba(255,255,255,0.03); font-weight: 700; user-select: none;">
+            <details id="sellerPayoutDetails" class="seller-payout-details" style="margin-bottom: 24px; border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.15)); border-radius: 12px; overflow: hidden; background: #FFFFFF;">
+              <summary style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--tikum-cream-50, #FAF8F4); font-weight: 700; user-select: none;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                  <i class="fa-solid fa-store" style="color: var(--color-brand-primary, #E05A3A); font-size: 16px;"></i>
+                  <i class="fa-solid fa-store" style="color: var(--tikum-coral-500, #DA674E); font-size: 16px;"></i>
                   <span data-i18n="profile.sellerSectionSummary">Aktifkan Profil Penjual (Khusus Jual Tiket)</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -338,7 +338,7 @@
                 </div>
               </summary>
 
-              <div id="sellerPayoutSection" style="padding: 20px; border-top: 1px solid var(--line-300);">
+              <div id="sellerPayoutSection" style="padding: 20px; border-top: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.15));">
                 <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px;" data-i18n="profile.sellerSectionDesc">
                   Bagian ini <strong>hanya wajib diisi jika Anda ingin menjual tiket</strong> di <code>/deal/create</code>. Hasil penjualan tiket akan dicairkan ke rekening bank ini setelah serah terima tiket terkonfirmasi. Data rekening dilindungi enkripsi AES-256.
                 </p>
@@ -404,8 +404,10 @@
       <footer id="appFooter" class="app-footer site-footer">
         <div class="footer-tier-1">
           <div class="footer-col-brand">
+            <div style="margin-bottom: 14px;">
+              <img src="/images/tikum-horizontal-light.svg" class="footer-logo-light" height="30" alt="TIKUM">
+            </div>
             <h3>
-              <img src="/assets/tikum-mark-2color.svg" width="22" height="22" alt="Tikum">
               <span>TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
             </h3>
             <p data-i18n="footer.aboutBrand">

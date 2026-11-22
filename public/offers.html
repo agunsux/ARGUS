@@ -95,7 +95,7 @@
     <aside id="appSidebar" class="app-sidebar" aria-label="Navigasi Utama">
       <div class="sidebar-brand-header">
         <a href="/" class="sidebar-brand-link">
-          <img src="/assets/tikum-mark-2color.svg" width="30" height="30" alt="Tikum Logo">
+          <img src="/images/tikum-symbol.svg" width="30" height="30" alt="Tikum Logo">
           <div class="sidebar-brand-text">
             <div class="sidebar-brand-title">TIKUM</div>
             <div class="sidebar-brand-sub">by PT Shinerva Prajna Tejas</div>
@@ -211,7 +211,7 @@
             <i class="fa-solid fa-bars"></i>
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <img src="/images/tikum-horizontal.svg" width="130" height="32" alt="Tikum">
+            <img src="/images/tikum-horizontal.svg" height="32" alt="Tikum" style="height:32px; width:auto; aspect-ratio:220/52; display:block;">
           </a>
         </div>
 
@@ -254,23 +254,23 @@
     <!-- Hero Header -->
     <div style="margin-bottom: 24px;">
       <div class="hero-pill"><i class="fa-solid fa-scale-balanced"></i> SISTEM TAWAR-MENAWAR STRUKTUR (EPIC 4.0)</div>
-      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #fff;">Manajemen Tawaran Harga Tiket</h1>
+      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: var(--tikum-ink-900, #0E222A);">Manajemen Tawaran Harga Tiket</h1>
       <p style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">
         Sistem penawaran terikat tanpa obrolan bebas. Semua nominal terikat verifikasi transaksi internal dan dicairkan pasca-verifikasi gate.
       </p>
     </div>
 
     <!-- Pilot User Switcher -->
-    <div class="card" style="padding: 14px 20px; margin-bottom: 24px; background: rgba(30, 41, 59, 0.5); border-color: #334155; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div class="card" style="padding: 16px 20px; margin-bottom: 24px; background: #FFFFFF; border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)); border-radius: 16px; box-shadow: 0 4px 16px rgba(14, 59, 74, 0.04); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <i class="fa-solid fa-user-gear" style="color: var(--terra-600); font-size: 18px;"></i>
         <div>
-          <strong style="font-size: 13px; color: #fff;">Pilih Identitas Akun (Demo Mode):</strong>
+          <strong style="font-size: 13px; color: var(--tikum-ink-900, #0E222A);">Pilih Identitas Akun (Demo Mode):</strong>
           <div style="font-size: 11px; color: var(--text-muted);">Ganti pengguna untuk mensimulasikan perspektif pembeli vs penjual</div>
         </div>
       </div>
       <div>
-        <select id="userSelector" class="form-control mono" style="padding: 8px 12px; font-size: 13px; width: 280px;" onchange="handleUserChange()">
+        <select id="userSelector" class="form-control mono" style="padding: 8px 12px; font-size: 13px; width: 100%; max-width: 280px;" onchange="handleUserChange()">
           <option value="buyer-1">Dewi Lestari (buyer-1) — Pembeli 1</option>
           <option value="buyer-2">Rina Wijaya (buyer-2) — Pembeli 2</option>
           <option value="seller-1">Budi Santoso (seller-1) — Penjual Terverifikasi</option>
@@ -325,7 +325,7 @@
     <!-- Empty State -->
     <div id="offersEmpty" class="card" style="display: none; text-align: center; padding: 50px 20px;">
       <i class="fa-solid fa-handshake-slash" style="font-size: 36px; color: var(--text-dim); margin-bottom: 12px;"></i>
-      <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px;" data-i18n="offers.emptyTitle">Belum Ada Tawaran</h3>
+      <h3 style="font-size: 16px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); margin-bottom: 6px;" data-i18n="offers.emptyTitle">Belum Ada Tawaran</h3>
       <p id="emptyMsg" style="font-size: 13px; color: var(--text-muted); max-width: 420px; margin: 0 auto 16px;" data-i18n="offers.emptyDesc">
         Anda belum memiliki penawaran aktif. Kunjungi katalog tiket untuk mengajukan tawaran terstruktur.
       </p>
@@ -343,7 +343,7 @@
       <div class="hero-pill" style="margin-bottom: 12px; background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);">
         <i class="fa-solid fa-check"></i> <span data-i18n="offers.acceptTitle">KONFIRMASI PENERIMAAN TAWARAN</span>
       </div>
-      <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;" data-i18n="offers.acceptHeading">Terima Tawaran Pembeli?</h3>
+      <h3 style="font-size: 18px; font-weight: 800; color: var(--tikum-ink-900, #0E222A); margin-bottom: 8px;" data-i18n="offers.acceptHeading">Terima Tawaran Pembeli?</h3>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6;">
         Anda akan menerima tawaran senilai <strong id="acceptAmountText" style="color: #34d399;">Rp -</strong>.
       </p>
@@ -370,13 +370,13 @@
       <div class="hero-pill" style="margin-bottom: 12px; background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
         <i class="fa-solid fa-xmark"></i> <span data-i18n="offers.declineTitle">TOLAK TAWARAN RESMI</span>
       </div>
-      <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;" data-i18n="offers.declineHeading">Pilih Alasan Penolakan</h3>
+      <h3 style="font-size: 18px; font-weight: 800; color: var(--tikum-ink-900, #0E222A); margin-bottom: 8px;" data-i18n="offers.declineHeading">Pilih Alasan Penolakan</h3>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
         <span data-i18n="offers.declineStandardNotice">Sesuai regulasi Tikum, penolakan tawaran wajib menggunakan alasan terstandarisasi tanpa teks bebas:</span>
       </p>
 
       <div class="form-group" style="margin-bottom: 16px;">
-        <label for="declineReasonSelect" style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 6px; display: block;">
+        <label for="declineReasonSelect" style="font-size: 12px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); margin-bottom: 6px; display: block;">
           <span data-i18n="offers.declineEnum">Alasan Penolakan (Enum Resmi):</span>
         </label>
         <select id="declineReasonSelect" class="form-control" style="width: 100%; padding: 10px 12px; font-size: 13px;">
@@ -410,13 +410,13 @@
       <div class="hero-pill" style="margin-bottom: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);">
         <i class="fa-solid fa-arrows-rotate"></i> TAWARAN BALIK / COUNTER-OFFER
       </div>
-      <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;" id="counterModalTitle">Ajukan Tawaran Balik</h3>
+      <h3 style="font-size: 18px; font-weight: 800; color: var(--tikum-ink-900, #0E222A); margin-bottom: 8px;" id="counterModalTitle">Ajukan Tawaran Balik</h3>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;" id="counterModalDesc">
         Kirimkan nominal penawaran harga baru secara terstruktur.
       </p>
 
       <div class="form-group" style="margin-bottom: 16px;">
-        <label for="counterPriceInput" style="font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 6px; display: block;">
+        <label for="counterPriceInput" style="font-size: 12px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); margin-bottom: 6px; display: block;">
           Nominal Tawaran Balik (Rp):
         </label>
         <input type="number" id="counterPriceInput" class="form-control" style="width: 100%; padding: 10px 12px; font-size: 14px;" placeholder="Contoh: 1350000">
@@ -463,8 +463,10 @@
       <footer id="appFooter" class="app-footer site-footer">
         <div class="footer-tier-1">
           <div class="footer-col-brand">
+            <div style="margin-bottom: 14px;">
+              <img src="/images/tikum-horizontal-light.svg" class="footer-logo-light" height="30" alt="TIKUM">
+            </div>
             <h3>
-              <img src="/assets/tikum-mark-2color.svg" width="22" height="22" alt="Tikum">
               <span>TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
             </h3>
             <p data-i18n="footer.aboutBrand">
@@ -689,7 +691,7 @@
               </div>
             ` : ''}
 
-            <div style="background: #090d16; border: 1px solid #1e293b; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+            <div style="background: var(--tikum-cream-50, #FAF8F4); border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
               <div class="grid-2" style="font-size: 13px;">
                 <div>
                   <span style="color: var(--text-dim); font-size: 11px;">Harga Normal Listing:</span>
@@ -813,7 +815,7 @@
             </div>
           ` : ''}
 
-          <div style="background: #090d16; border: 1px solid #1e293b; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+          <div style="background: var(--tikum-cream-50, #FAF8F4); border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
             <div class="grid-2" style="font-size: 13px;">
               <div>
                 <span style="color: var(--text-dim); font-size: 11px;">Harga Listing Anda:</span>

@@ -35,7 +35,7 @@
     <aside id="appSidebar" class="app-sidebar" aria-label="Navigasi Utama">
       <div class="sidebar-brand-header">
         <a href="/" class="sidebar-brand-link">
-          <img src="/assets/tikum-mark-2color.svg" width="30" height="30" alt="Tikum Logo">
+          <img src="/images/tikum-symbol.svg" width="30" height="30" alt="Tikum Logo">
           <div class="sidebar-brand-text">
             <div class="sidebar-brand-title">TIKUM</div>
             <div class="sidebar-brand-sub">by PT Shinerva Prajna Tejas</div>
@@ -169,7 +169,7 @@
             <i class="fa-solid fa-bars"></i>
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <img src="/images/tikum-horizontal.svg" width="130" height="32" alt="Tikum">
+            <img src="/images/tikum-horizontal.svg" height="32" alt="Tikum" style="height:32px; width:auto; aspect-ratio:220/52; display:block;">
           </a>
         </div>
 
@@ -207,7 +207,7 @@
       </header>
 
   <!-- Main Container -->
-  <main class="container" style="max-width: 800px;">
+  <main class="container wizard-workspace-ticketswap" style="max-width: 740px;">
     
     <div style="margin-bottom: 24px;">
       <div class="hero-pill"><i class="fa-solid fa-ticket"></i> REGISTRASI PENJUALAN TIKET</div>
@@ -229,7 +229,7 @@
         </div>
       </div>
 
-      <div class="card" style="background: #090d16; border-color: #1e293b; margin-bottom: 16px;">
+      <div class="card" style="background: #FFFFFF; border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)); border-radius: 14px; margin-bottom: 16px;">
         <div class="price-row">
           <span>ID Listing Resmi:</span>
           <strong id="resListingId" class="mono" style="color: var(--cyan); font-size: 14px;">-</strong>
@@ -465,7 +465,7 @@
         <!-- Section 1: Event Binding -->
         <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-            <label style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;">
+            <label style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); text-transform: uppercase; letter-spacing: 0.5px;">
               1. Pilih Event yang Sesuai *
             </label>
             <button type="button" class="btn btn-secondary btn-sm" onclick="toggleNewEventDrawer()">
@@ -480,10 +480,10 @@
           </div>
 
           <!-- Event Details Preview Box -->
-          <div id="eventPreviewBox" class="card" style="display: none; background: #090d16; padding: 14px; margin-top: 10px; margin-bottom: 0;">
+          <div id="eventPreviewBox" class="card" style="display: none; background: var(--tikum-cream-50, #FAF8F4); border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); border-radius: 12px; padding: 14px; margin-top: 10px; margin-bottom: 0;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
               <div>
-                <div id="prevEventName" style="font-weight: 700; color: #fff; font-size: 14px;">-</div>
+                <div id="prevEventName" style="font-weight: 700; color: var(--tikum-ink-900, #0E222A); font-size: 14px;">-</div>
                 <div id="prevEventMeta" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">-</div>
               </div>
               <div id="prevEventBadge"></div>
@@ -497,7 +497,7 @@
 
         <!-- Section 2: Ticket Information -->
         <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
-          <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
+          <div style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
             <span data-i18n="create.wizardStep2">2. Detail Kursi, Jumlah &amp; Fulfillment</span>
           </div>
 
@@ -539,14 +539,14 @@
           </div>
 
           <div class="form-group" style="margin-top: 14px; margin-bottom: 18px;">
-            <label style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 8px; display: block;">
+            <label style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); margin-bottom: 8px; display: block;">
               Pilihan Penyerahan Tiket (Fulfillment Option) *
             </label>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
-              <label style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 8px; cursor: pointer;">
+              <label style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; background: var(--tikum-cream-50, #FAF8F4); border: 1.5px solid var(--tikum-border, rgba(18, 78, 97, 0.18)); border-radius: 12px; cursor: pointer;">
                 <input type="radio" name="fulfillmentType" value="TIKUM_VENUE_PIC" checked style="margin-top: 3px; accent-color: var(--cyan);">
                 <div>
-                  <div style="font-weight: 700; color: #fff; font-size: 13px;">
+                  <div style="font-weight: 700; color: var(--tikum-ink-900, #0E222A); font-size: 13px;">
                     <i class="fa-solid fa-person-military-pointing" style="color: var(--cyan);"></i> Opsi A: Dibantu PIC TIKUM di Venue
                   </div>
                   <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
@@ -555,10 +555,10 @@
                 </div>
               </label>
 
-              <label style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; cursor: pointer;">
+              <label style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; background: var(--tikum-cream-50, #FAF8F4); border: 1.5px solid var(--tikum-border, rgba(18, 78, 97, 0.18)); border-radius: 12px; cursor: pointer;">
                 <input type="radio" name="fulfillmentType" value="SELLER_MANAGED" style="margin-top: 3px; accent-color: var(--cyan);">
                 <div>
-                  <div style="font-weight: 700; color: #fff; font-size: 13px;">
+                  <div style="font-weight: 700; color: var(--tikum-ink-900, #0E222A); font-size: 13px;">
                     <i class="fa-solid fa-handshake" style="color: #fbbf24;"></i> Opsi B: Transfer Mandiri oleh Penjual
                   </div>
                   <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
@@ -620,7 +620,7 @@
 
         <!-- Section 3: Anti-Duplicate Security (Tahap A — Zero-QR) -->
         <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
-          <div style="font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
+          <div style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
             <span data-i18n="create.wizardStep3">3. Bukti Kepemilikan Tiket (Tahap A — Tanpa QR)</span>
           </div>
 
@@ -788,8 +788,10 @@
       <footer id="appFooter" class="app-footer site-footer">
         <div class="footer-tier-1">
           <div class="footer-col-brand">
+            <div style="margin-bottom: 14px;">
+              <img src="/images/tikum-horizontal-light.svg" class="footer-logo-light" height="30" alt="TIKUM">
+            </div>
             <h3>
-              <img src="/assets/tikum-mark-2color.svg" width="22" height="22" alt="Tikum">
               <span>TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
             </h3>
             <p data-i18n="footer.aboutBrand">
