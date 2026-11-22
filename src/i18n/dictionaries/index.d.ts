@@ -94,6 +94,38 @@ export interface LandingDictionary {
   zeroFakeDesc: string;
   prelaunchNoticeTitle: string;
   prelaunchNoticeDesc: string;
+  editorialHeroTitle: string;
+  editorialHeroSubtitle: string;
+  searchPlaceholder: string;
+  instantDealNotice: string;
+  openDealRoomBtn: string;
+  heroCtaExplore: string;
+  heroCtaSell: string;
+  unifiedDiscoveryTitle: string;
+  unifiedDiscoverySubtitle: string;
+  twoWayHeadline: string;
+  twoWaySubtitle: string;
+  founderQuoteText: string;
+  founderQuoteRole: string;
+  twoWayBuyerTitle: string;
+  twoWayBuyerF1: string;
+  twoWayBuyerF2: string;
+  twoWayBuyerF3: string;
+  twoWayBuyerF4: string;
+  twoWaySellerTitle: string;
+  twoWaySellerF1: string;
+  twoWaySellerF2: string;
+  twoWaySellerF3: string;
+  twoWaySellerF4: string;
+  twoWaySellerF5: string;
+  flowRailHeading: string;
+  feeSummaryBarTitle: string;
+  feeSummaryBarDesc: string;
+  blogStripHeading: string;
+  closingCtaHeading: string;
+  closingCtaSub: string;
+  closingCtaSellBtn: string;
+  closingCtaDealBtn: string;
 }
 
 export interface PricingDictionary {
@@ -116,6 +148,7 @@ export interface DealCreateDictionary {
   pageTitle: string;
   pageSubtitle: string;
   zeroQrCallout: string;
+  sellerProtectionStrip: string;
   wizardStep1: string;
   wizardStep2: string;
   wizardStep3: string;

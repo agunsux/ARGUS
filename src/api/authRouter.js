@@ -451,7 +451,8 @@ router.put('/me/profile', requireAuth, async (req, res) => {
     const docRef = body.identity_doc_ref || body.nik;
 
     let sellerProfile = await userRepo.getSellerProfile(userId);
-    if (bankName || acctNum || docRef || body.seller_profile_submit) {
+    const hasValidBankDetails = Boolean(bankName && String(bankName).trim() && acctNum && String(acctNum).trim());
+    if (hasValidBankDetails || (body.seller_profile_submit && (bankName || acctNum))) {
       const existingSp = sellerProfile || {};
       const spUpdates = {
         user_id: userId,

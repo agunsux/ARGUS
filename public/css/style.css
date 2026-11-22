@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import url('/css/tikum-tokens.css');
 
 /* ==========================================================================
@@ -2989,5 +2990,654 @@ body.dark-mode {
   .footer-tier-2 {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+
+/* ==========================================================================
+   TIKUM DEEP TEAL, SEATGEEK-SIMPLE & FLOW NINJA DESIGN SYSTEM OVERHAUL
+   ========================================================================== */
+
+:root {
+  --sidebar-width: 280px;
+  --sidebar-rail-width: 72px;
+  --topbar-height: 72px;
+  --color-app-bg: var(--tikum-cream-50, #FAF8F4);
+  --color-surface-sidebar: #FFFFFF;
+  --color-surface-topbar: rgba(250, 248, 244, 0.92);
+  --color-border-subtle: var(--tikum-border, rgba(18, 78, 97, 0.12));
+  --color-text-primary: var(--tikum-ink-900, #0E222A);
+  --color-text-secondary: var(--tikum-ink-600, #4A606A);
+  --color-text-footer: #FAF1E2;
+  --color-text-muted: #4A606A;
+  --color-brand-primary: var(--tikum-coral-500, #DA674E);
+  --color-brand-emerald: #179A6B;
+}
+
+body, body.dark-mode {
+  background-color: var(--tikum-cream-50, #FAF8F4) !important;
+  color: var(--tikum-ink-900, #0E222A) !important;
+  font-family: var(--font-body, 'Plus Jakarta Sans', -apple-system, sans-serif) !important;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display, 'Bricolage Grotesque', 'Plus Jakarta Sans', sans-serif) !important;
+}
+
+#appShell {
+  background-color: var(--tikum-cream-50, #FAF8F4) !important;
+}
+
+#appMainWrapper {
+  margin-left: 0 !important;
+  width: 100% !important;
+  background-color: var(--tikum-cream-50, #FAF8F4);
+}
+
+/* Off-canvas Mobile/Desktop Slide-Over Drawer */
+#appSidebar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  width: 280px !important;
+  background-color: #FFFFFF !important;
+  border-right: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)) !important;
+  z-index: 50 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transform: translateX(-100%) !important;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 4px 0 24px rgba(14, 59, 74, 0.15) !important;
+}
+
+#appShell.sidebar-open #appSidebar {
+  transform: translateX(0) !important;
+}
+
+#sidebarBackdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 38, 48, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 45;
+}
+
+#appShell.sidebar-open #sidebarBackdrop {
+  display: block !important;
+}
+
+/* SeatGeek Single-Row Top Navigation Header (72px) */
+#appTopbar {
+  position: sticky !important;
+  top: 0 !important;
+  height: 72px !important;
+  background: rgba(250, 248, 244, 0.92) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border-bottom: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 28px !important;
+  z-index: 40 !important;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease !important;
+}
+
+#appTopbar.is-scrolled {
+  box-shadow: 0 4px 20px rgba(14, 59, 74, 0.08) !important;
+  border-bottom-color: rgba(18, 78, 97, 0.2) !important;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.topbar-nav-link {
+  font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tikum-ink-900, #0E222A);
+  text-decoration: none;
+  transition: color 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbar-nav-link:hover {
+  color: var(--tikum-coral-500, #DA674E);
+}
+
+/* SeatGeek City Popover */
+.city-dropdown-wrap {
+  position: relative;
+}
+
+.city-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: #FFFFFF;
+  border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12));
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(14, 59, 74, 0.12);
+  padding: 8px 0;
+  min-width: 170px;
+  z-index: 60;
+}
+
+.city-dropdown-wrap:hover .city-dropdown-menu,
+.city-dropdown-wrap:focus-within .city-dropdown-menu {
+  display: block;
+}
+
+.city-dropdown-item {
+  display: block;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tikum-ink-900, #0E222A);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.city-dropdown-item:hover {
+  background: var(--tikum-cream-50, #FAF8F4);
+  color: var(--tikum-coral-500, #DA674E);
+}
+
+/* Action Cluster */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.btn-topbar-deal {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tikum-ink-900, #0E222A);
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-topbar-deal:hover {
+  background: var(--tikum-teal-100, #E4F1F4);
+  color: var(--tikum-teal-700, #124E61);
+}
+
+.btn-topbar-seller {
+  background-color: var(--tikum-coral-500, #DA674E) !important;
+  color: #FFFFFF !important;
+  font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif) !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  border-radius: 999px !important;
+  padding: 10px 20px !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.btn-topbar-seller:hover {
+  background-color: var(--tikum-coral-600, #C2533B) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(218, 103, 78, 0.28);
+}
+
+.btn-topbar-seller:active {
+  transform: scale(0.98);
+}
+
+/* Minimalist 2-Tier Deep Teal Footer */
+#appFooter.site-footer {
+  background-color: var(--tikum-teal-950, #092630) !important;
+  border-top: 1px solid rgba(250, 241, 226, 0.12) !important;
+  padding: 56px 24px 32px !important;
+  margin-top: auto !important;
+  color: var(--tikum-cream-text, #FAF1E2) !important;
+}
+
+.footer-col-brand h3 {
+  color: #FAF1E2 !important;
+  font-family: var(--font-display, 'Bricolage Grotesque', sans-serif) !important;
+}
+
+.footer-col-brand p,
+.footer-col-brand address {
+  color: rgba(250, 241, 226, 0.75) !important;
+}
+
+.footer-contact-item {
+  color: rgba(250, 241, 226, 0.8) !important;
+}
+
+.footer-contact-item a {
+  color: var(--tikum-coral-500, #DA674E) !important;
+}
+
+.footer-essential-link {
+  color: rgba(250, 241, 226, 0.8) !important;
+}
+
+.footer-essential-link:hover {
+  color: var(--tikum-coral-500, #DA674E) !important;
+}
+
+.footer-tier-2 {
+  border-top: 1px solid rgba(250, 241, 226, 0.12) !important;
+  color: rgba(250, 241, 226, 0.6) !important;
+}
+
+/* ==========================================================================
+   FLOW NINJA MOTION ENGINE & GPU-ACCELERATED REVEALS
+   ========================================================================== */
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 600ms cubic-bezier(0.22, 1, 0.36, 1), transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+[data-reveal].is-revealed {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* Card Hover Lifts */
+.event-card-item, .poster-card, .bento-card-flow, .wizard-card-ticketswap {
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.event-card-item:hover, .poster-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 18px 36px rgba(14, 59, 74, 0.12);
+}
+
+.event-card-item:hover .poster-img, .poster-card:hover .poster-img {
+  transform: scale(1.03);
+}
+
+/* Flow Ninja Editorial Hero */
+.hero-teal-editorial {
+  background-color: var(--tikum-teal-900, #0E3B4A);
+  background-image: radial-gradient(circle at 50% 0%, rgba(18, 78, 97, 0.85) 0%, #0E3B4A 70%);
+  color: var(--tikum-cream-text, #FAF1E2);
+  padding: 72px 24px 84px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-editorial-h1 {
+  font-family: var(--font-display, 'Bricolage Grotesque', 'Plus Jakarta Sans', sans-serif);
+  font-size: clamp(2.5rem, 4.8vw, 4.25rem);
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  color: #FAF1E2;
+  text-align: center;
+  max-width: 920px;
+  margin: 0 auto 16px;
+}
+
+.hero-editorial-sub {
+  font-size: clamp(16px, 1.8vw, 19px);
+  line-height: 1.6;
+  color: rgba(250, 241, 226, 0.85);
+  text-align: center;
+  max-width: 780px;
+  margin: 0 auto 36px;
+}
+
+.seatgeek-search-box {
+  max-width: 680px;
+  margin: 0 auto 16px;
+  position: relative;
+}
+
+.seatgeek-search-input {
+  width: 100%;
+  height: 56px;
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: var(--tikum-ink-900, #0E222A);
+  font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
+  font-size: 16px;
+  font-weight: 500;
+  padding: 0 24px 0 54px;
+  border: 2px solid transparent;
+  box-shadow: 0 12px 32px rgba(9, 38, 48, 0.25);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.seatgeek-search-input:focus {
+  border-color: var(--tikum-coral-500, #DA674E);
+  box-shadow: 0 14px 36px rgba(218, 103, 78, 0.22);
+}
+
+.seatgeek-search-icon {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--tikum-teal-700, #124E61);
+  font-size: 18px;
+  pointer-events: none;
+}
+
+.instant-deal-bar {
+  max-width: 680px;
+  margin: 0 auto 32px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(250, 241, 226, 0.2);
+  border-radius: 999px;
+  padding: 8px 10px 8px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13.5px;
+  color: #FAF1E2;
+}
+
+.instant-deal-btn {
+  background: rgba(250, 241, 226, 0.15);
+  color: #FAF1E2;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 999px;
+  padding: 8px 16px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.18s;
+}
+
+.instant-deal-btn:hover {
+  background: var(--tikum-coral-500, #DA674E);
+}
+
+.hero-dual-cta-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.btn-hero-coral {
+  background-color: var(--tikum-coral-500, #DA674E);
+  color: #FFFFFF;
+  font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
+  font-weight: 700;
+  font-size: 15px;
+  border-radius: 999px;
+  padding: 14px 28px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s;
+}
+
+.btn-hero-coral:hover {
+  background-color: var(--tikum-coral-600, #C2533B);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(218, 103, 78, 0.35);
+}
+
+.btn-hero-outline {
+  background-color: transparent;
+  color: #FAF1E2;
+  border: 1.5px solid rgba(250, 241, 226, 0.4);
+  font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
+  font-weight: 700;
+  font-size: 15px;
+  border-radius: 999px;
+  padding: 14px 28px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.btn-hero-outline:hover {
+  border-color: #FAF1E2;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Two-Way Protection Bento Section */
+.two-way-protection-section {
+  background-color: var(--tikum-teal-900, #0E3B4A);
+  color: var(--tikum-cream-text, #FAF1E2);
+  padding: 80px 24px;
+}
+
+.founder-quote-glass {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(250, 241, 226, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 36px 40px;
+  margin-bottom: 40px;
+  max-width: 1120px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.bento-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.bento-card-flow {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(250, 241, 226, 0.14);
+  border-radius: 24px;
+  padding: 36px;
+  color: #FAF1E2;
+}
+
+.bento-card-flow h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #FAF1E2;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bento-feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bento-feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: rgba(250, 241, 226, 0.88);
+}
+
+.bento-check-icon {
+  color: var(--tikum-coral-500, #DA674E);
+  font-size: 16px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+/* 5-Step Flow Ninja Rail */
+.flow-rail-section {
+  background-color: var(--tikum-cream-50, #FAF8F4);
+  padding: 72px 24px;
+}
+
+.flow-rail-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+  max-width: 1160px;
+  margin: 0 auto 36px;
+}
+
+.flow-step-box {
+  background: #FFFFFF;
+  border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12));
+  border-radius: 18px;
+  padding: 24px 20px;
+  box-shadow: 0 4px 16px rgba(14, 59, 74, 0.04);
+}
+
+.flow-step-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--tikum-teal-100, #E4F1F4);
+  color: var(--tikum-teal-700, #124E61);
+  font-weight: 800;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.flow-step-title {
+  font-weight: 700;
+  font-size: 15.5px;
+  color: var(--tikum-ink-900, #0E222A);
+  margin-bottom: 8px;
+}
+
+.flow-step-desc {
+  font-size: 13.5px;
+  color: var(--tikum-ink-600, #4A606A);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.pilot-fee-bar {
+  max-width: 1160px;
+  margin: 0 auto;
+  background: #FFFFFF;
+  border: 1.5px solid var(--tikum-border, rgba(18, 78, 97, 0.15));
+  border-radius: 16px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* TicketSwap-Inspired Centered Seller Wizard (/deal/create) */
+.wizard-workspace-ticketswap {
+  max-width: 740px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.wizard-card-ticketswap {
+  background: #FFFFFF;
+  border-radius: 24px;
+  border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12));
+  box-shadow: 0 12px 36px rgba(14, 59, 74, 0.06);
+  padding: 40px;
+}
+
+.wizard-steps-pill-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.wizard-step-pill {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--tikum-cream-100, #F2EDE4);
+  color: var(--tikum-ink-600, #4A606A);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.wizard-step-pill.active {
+  background: var(--tikum-teal-700, #124E61);
+  color: #FAF1E2;
+}
+
+.wizard-step-pill.completed {
+  background: var(--tikum-teal-100, #E4F1F4);
+  color: var(--tikum-teal-700, #124E61);
+}
+
+.seller-protection-strip {
+  background: var(--tikum-teal-100, #E4F1F4);
+  border: 1px solid rgba(18, 78, 97, 0.18);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--tikum-teal-700, #124E61);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 1023px) {
+  .topbar-nav-links {
+    display: none;
+  }
+  .bento-grid-2col {
+    grid-template-columns: 1fr;
+  }
+  .flow-rail-grid {
+    grid-template-columns: 1fr;
   }
 }

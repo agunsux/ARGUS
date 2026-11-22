@@ -149,26 +149,38 @@
             <i class="fa-solid fa-bars"></i>
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <img src="/assets/tikum-mark-2color.svg" width="28" height="28" alt="Tikum">
-            <span style="font-weight:800; font-size:17px; color:#FFF; letter-spacing:0.5px;">Tikum</span>
+            <img src="/images/tikum-horizontal.svg" width="130" height="32" alt="Tikum">
           </a>
         </div>
 
         <div class="topbar-center">
-          <div class="topbar-search-wrap">
-            <i class="fa-solid fa-magnifying-glass topbar-search-icon"></i>
-            <input type="search" id="topbarSearchInput" class="topbar-search-input" placeholder="Cari konser, artis, GBK, JIS..." aria-label="Cari event" onkeydown="if(event.key==='Enter') window.location.href='/?q=' + encodeURIComponent(this.value)">
-          </div>
+          <ul class="topbar-nav-links">
+            <li><a href="/offers?category=CONCERT" class="topbar-nav-link" data-i18n="nav.concerts">Konser &amp; Musik</a></li>
+            <li><a href="/offers?category=SPORTS" class="topbar-nav-link" data-i18n="nav.sports">Olahraga</a></li>
+            <li><a href="/offers?category=FESTIVAL" class="topbar-nav-link" data-i18n="nav.festivals">Festival</a></li>
+            <li class="city-dropdown-wrap">
+              <a href="javascript:void(0)" class="topbar-nav-link" aria-haspopup="true">
+                <span>Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
+              </a>
+              <div class="city-dropdown-menu">
+                <a href="/offers?city=Jakarta" class="city-dropdown-item">Jakarta</a>
+                <a href="/offers?city=Bandung" class="city-dropdown-item">Bandung</a>
+                <a href="/offers?city=Surabaya" class="city-dropdown-item">Surabaya</a>
+                <a href="/offers?city=Bali" class="city-dropdown-item">Bali</a>
+                <a href="/offers" class="city-dropdown-item">Semua Kota</a>
+              </div>
+            </li>
+          </ul>
+          <input type="search" id="topbarSearchInput" class="topbar-search-input" style="display:none;" placeholder="Cari..." aria-label="Cari event">
         </div>
 
         <div class="topbar-right">
-          <a href="/create" class="ln-btn ln-btn-primary" style="padding:8px 16px; font-size:13px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-plus"></i> <span data-i18n="nav.submitListing">+ Buat Deal</span>
-          </a>
-          <button class="select-filter" onclick="if(window.TikumI18n) window.TikumI18n.toggleTheme();" id="themeToggle" title="Toggle Theme" style="padding:6px 10px; height:36px; display:inline-flex; align-items:center; justify-content:center;">
-            <i class="fa-solid fa-sun" id="themeIcon"></i>
-          </button>
-          <button class="lang-toggle-btn lang-switcher-pill" onclick="if(window.TikumI18n) window.TikumI18n.toggleLang();" id="langToggle" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
+          <a href="/deal" class="btn-topbar-deal" data-i18n="nav.dealRoomLookup">Buka Deal</a>
+          <a href="/deal/create" class="btn-topbar-seller"><i class="fa-solid fa-plus"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
+          <div id="authHeaderContainer">
+            <button id="btnLoginSignUp" class="btn-auth-header" onclick="if(typeof openAuthModal==='function') openAuthModal(); else window.location.href='/login';" aria-label="Login / Sign Up" data-i18n="auth.signInSignUp" style="height:38px; padding:0 14px; font-size:13.5px; border-radius:8px;">Masuk / Daftar</button>
+          </div>
+          <button class="lang-toggle-btn lang-switcher-pill" onclick="if(window.TikumI18n) window.TikumI18n.toggleLang(); else if(typeof toggleLang==='function') toggleLang();" id="langToggle" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
             <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>
           </button>
         </div>
@@ -712,5 +724,6 @@
     document.addEventListener('DOMContentLoaded', initAppShell);
   </script>
 
+  <script src="/js/motion.js"></script>
 </body>
 </html>

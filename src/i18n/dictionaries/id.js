@@ -71,7 +71,10 @@ const id = {
     productsAndServices: "Produk & Layanan",
     buyerGuide: "Panduan Pembeli",
     signInSignUp: "Masuk / Daftar",
-    backToHome: "Kembali ke Beranda"
+    backToHome: "Kembali ke Beranda",
+    buyTickets: "Beli Tiket / Cari Event",
+    dealRoomLookup: "Punya Kode Deal? (Buka Room)",
+    sellerDealLink: "Jual Tiket / Buat Deal Link"
   },
 
   landing: {
@@ -95,7 +98,39 @@ const id = {
     zeroFakeTitle: "Kebijakan Zero Fake Inventory",
     zeroFakeDesc: "Setiap penawaran wajib melalui kurasi bukti kepemilikan. Tidak ada spekulasi atau tiket fiktif.",
     prelaunchNoticeTitle: "TIKUM Sedang dalam Tahap Persiapan Peluncuran",
-    prelaunchNoticeDesc: "Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran live belum tersedia."
+    prelaunchNoticeDesc: "Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran live belum tersedia.",
+    editorialHeroTitle: "Beli & Jual Tiket Konser Tanpa Was-Was.",
+    editorialHeroSubtitle: "Jelajahi konser tanpa wajib login, cek biaya transparan di muka, dan serah terima aman dengan saksi fisik Event PIC di venue.",
+    searchPlaceholder: "Cari konser, artis, GBK, JIS, atau kota...",
+    instantDealNotice: "Sudah deal di X / TikTok? Tempel Link atau Kode Deal di sini",
+    openDealRoomBtn: "Buka Deal Room",
+    heroCtaExplore: "Jelajah Tiket",
+    heroCtaSell: "Jual Tiket Sekarang",
+    unifiedDiscoveryTitle: "Event Populer & Terbaru",
+    unifiedDiscoverySubtitle: "Pilihan konser resmi, festival, dan pertandingan olahraga dengan verifikasi ketersediaan tiket resale.",
+    twoWayHeadline: "Perlindungan Dua Arah — Adil untuk Pembeli & Penjual Jujur.",
+    twoWaySubtitle: "Sistem resale yang berimbang tanpa spekulasi, dilengkapi saksi fisik dan bukti transaksi yang objektif.",
+    founderQuoteText: "TIKUM lahir dari pengalaman nyata: menjual 2 tiket konser bersebelahan dari pembelian yang sama di platform resale global, namun hanya dibayar 1 karena klaim 'invalid' sepihak tanpa bukti lapangan, potongan biaya selangit, dan CS yang tidak membantu. Kami membangun TIKUM agar transaksi tiket sekunder punya saksi objektif dan bukti yang adil bagi kedua belah pihak.",
+    founderQuoteRole: "Founder TIKUM — PT Shinerva Prajna Tejas",
+    twoWayBuyerTitle: "Untuk Pembeli Tiket",
+    twoWayBuyerF1: "Peninjauan Bukti Kepemilikan Tahap A (Zero Fake Inventory)",
+    twoWayBuyerF2: "Biaya Transparan di Awal — Tanpa Biaya Tersembunyi (No Drip Fees)",
+    twoWayBuyerF3: "Pendampingan Event PIC Resmi saat Penukaran Wristband / Venue",
+    twoWayBuyerF4: "Prosedur Sengketa Terstruktur & Perlindungan Dana Mitra Pembayaran",
+    twoWaySellerTitle: "Untuk Penjual Jujur & Jastip",
+    twoWaySellerF1: "QR Tetap di Tangan Penjual saat Listing (Zero-QR Stage A)",
+    twoWaySellerF2: "Anti Tuduhan Tiket Invalid Sepihak (Wajib Berita Acara Event PIC)",
+    twoWaySellerF3: "Hak Jawab & Investigasi Lapangan 7×24 Jam",
+    twoWaySellerF4: "Bebas Chargeback Sepihak Kartu Kredit via Rail QRIS / VA Resmi",
+    twoWaySellerF5: "Paket Bukti Digital Transaksi (Evidence Bundle 9 Artefak)",
+    flowRailHeading: "Alur 5 Langkah Transaksi Aman",
+    feeSummaryBarTitle: "Transparansi Biaya Pilot Layanan",
+    feeSummaryBarDesc: "Tarif Pilot 6% sisi pembeli + 6% sisi penjual (min. Rp35.000, maks. Rp500.000 per sisi). Persentase efektif dapat berbeda untuk tiket dengan nominal lebih rendah.",
+    blogStripHeading: "Panduan & Edukasi Konser Terbaru",
+    closingCtaHeading: "Punya Tiket Nganggur atau Sudah Deal di X / TikTok?",
+    closingCtaSub: "Gunakan TIKUM sebagai ruang transaksi aman dengan saksi fisik Event PIC dan perlindungan dua arah.",
+    closingCtaSellBtn: "Jual Tiket (Simpel 2 Menit)",
+    closingCtaDealBtn: "Buka Deal Room"
   },
 
   pricing: {
@@ -118,6 +153,7 @@ const id = {
     pageTitle: "Buat Tautan Transaksi / Ajukan Listing Tiket",
     pageSubtitle: "Daftarkan tiket Anda untuk ditinjau. Dapatkan tautan transaksi aman dengan verifikasi dan perlindungan sistem Tikum.",
     zeroQrCallout: "QR Tiket Tetap dalam Kendali Anda — Jangan unggah QR Code/Barcode asli saat membuat penawaran.",
+    sellerProtectionStrip: "QR tetap di tangan Anda saat listing · Saksi fisik Event PIC · Anti klaim invalid sepihak · Evidence Bundle 9 artefak",
     wizardStep1: "1. Pemilihan Event & Kategori Tiket",
     wizardStep2: "2. Detail Kursi, Jumlah & Fulfillment",
     wizardStep3: "3. Barcode & Protokol Keamanan",
@@ -190,7 +226,30 @@ const id = {
     escrowStatusLabel: "Status Perlindungan Dana:",
     entryInstruction: "Instruksi Masuk Venue:",
     entryInstructionDesc: "Temui TIKUM PIC di titik kumpul venue pada hari acara. Simpan ID Pesanan Anda untuk proses pencocokan tiket sebelum pemindaian barcode.",
-    trackOrderBtn: "Lacak Status & Protokol di /track"
+    trackOrderBtn: "Lacak Status & Protokol di /track",
+    sellerSelfListingBadge: "Ini Listing Anda (Mode Penjual)",
+    copyLinkForBuyer: "Salin Link untuk Pembeli",
+    linkCopied: "Link Berhasil Disalin!"
+  },
+
+  dealHub: {
+    pill: "PUSAT DEAL & TRANSAKSI PEMBELI",
+    title: "Buka Deal Room & Beli Tiket Aman",
+    subtitle: "Punya kode deal atau link transaksi dari penjual? Masukkan di bawah untuk membuka Deal Room dengan proteksi penampungan escrow platform Tikum.",
+    lookupTitle: "Punya Link atau Kode Deal?",
+    lookupDesc: "Tempelkan tautan deal (misal: tikum.app/deal/list-abc) atau masukkan ID Deal:",
+    inputPlaceholder: "Contoh: list-123, deal-456, atau link https://...",
+    btnOpenRoom: "Buka Deal Room",
+    lookupEmptyErr: "Silakan masukkan ID Deal atau URL Deal.",
+    lookupInvalidErr: "Format ID Deal tidak valid.",
+    sellerBannerTitle: "Ingin Menjual Tiket?",
+    sellerBannerDesc: "Buat Deal Link terproteksi Anda sendiri dalam 2 menit tanpa biaya awal.",
+    sellerBannerBtn: "Buat Deal Link Penjual",
+    publicListingsTitle: "Listing Publik Tersedia",
+    publicListingsSubtitle: "Tiket sekunder resmi yang telah diverifikasi kepemilikannya oleh sistem Tikum.",
+    noListingsTitle: "Belum ada listing publik yang aktif",
+    noListingsDesc: "Listing baru dari penjual terverifikasi akan muncul di sini. Anda juga dapat mencari event di katalog resmi.",
+    browseCatalogBtn: "Jelajahi Katalog Event"
   },
 
   verification: {
@@ -377,7 +436,10 @@ const id = {
     savedSuccess: "Profil berhasil diperbarui.",
     autofillBadge: "Profil Terverifikasi & Terisi Otomatis",
     buyerProportionalNote: "Untuk pembeli, kami hanya memerlukan kontak dasar (Nama, WhatsApp, dan Kota) sesuai prinsip minimisasi data UU PDP No. 27/2022.",
-    sellerCompleteBadge: "Profil Penjual Lengkap"
+    sellerCompleteBadge: "Profil Penjual Lengkap",
+    sellerSectionSummary: "Aktifkan Profil Penjual (Khusus Jual Tiket)",
+    sellerSectionDesc: "Bagian ini hanya wajib diisi jika Anda ingin menjual tiket untuk pencairan dana escrow.",
+    buyerOnlyNotice: "Profil pembeli aktif. Anda siap bertransaksi tanpa perlu mengisi data rekening atau dokumen identitas."
   },
 
   errors: {

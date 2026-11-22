@@ -71,7 +71,10 @@ const en = {
     productsAndServices: "Products & Services",
     buyerGuide: "Buyer Guide",
     signInSignUp: "Sign In / Sign Up",
-    backToHome: "Back to Home"
+    backToHome: "Back to Home",
+    buyTickets: "Buy Tickets / Browse Events",
+    dealRoomLookup: "Have a Deal Code? (Open Room)",
+    sellerDealLink: "Sell Tickets / Create Deal Link"
   },
 
   landing: {
@@ -95,7 +98,39 @@ const en = {
     zeroFakeTitle: "Zero Fake Inventory Policy",
     zeroFakeDesc: "Every listing undergoes mandatory ownership evidence curation. No speculative sales or phantom tickets.",
     prelaunchNoticeTitle: "TIKUM Is in Pre-Launch Preparation",
-    prelaunchNoticeDesc: "Prospective sellers can submit ticket listings for review. Purchasing, checkout, and live payments are currently not available."
+    prelaunchNoticeDesc: "Prospective sellers can submit ticket listings for review. Purchasing, checkout, and live payments are currently not available.",
+    editorialHeroTitle: "Buy & Sell Event Tickets Without Guesswork.",
+    editorialHeroSubtitle: "Browse concerts freely without mandatory sign-in, check upfront fees, and trade safely with physical Event PIC witnesses at venue.",
+    searchPlaceholder: "Search concerts, artists, GBK, JIS, or cities...",
+    instantDealNotice: "Already agreed on X / TikTok? Paste Deal Link or Code here",
+    openDealRoomBtn: "Open Deal Room",
+    heroCtaExplore: "Explore Tickets",
+    heroCtaSell: "Sell Tickets Now",
+    unifiedDiscoveryTitle: "Popular & Trending Events",
+    unifiedDiscoverySubtitle: "Curated official concerts, festivals, and sports matches with verified resale ticket availability.",
+    twoWayHeadline: "Two-Way Protection — Fair for Both Buyers & Honest Sellers.",
+    twoWaySubtitle: "Balanced secondary ticket transactions with objective witnesses and verified evidence protecting both parties.",
+    founderQuoteText: "TIKUM was born from real frustration: selling 2 adjacent concert tickets from the same official order on a global resale platform, only to be paid for 1 after an unverified 'invalid' claim—with steep fees and unhelpful support. We built TIKUM so secondary ticket trades have objective witnesses and fair proof for both sides.",
+    founderQuoteRole: "TIKUM Founder — PT Shinerva Prajna Tejas",
+    twoWayBuyerTitle: "For Ticket Buyers",
+    twoWayBuyerF1: "Stage A Ownership Review (Zero Fake Inventory)",
+    twoWayBuyerF2: "All-In Upfront Pricing — Zero Hidden Drip Fees",
+    twoWayBuyerF3: "Official Event PIC Assistance at Venue / Wristband Exchange",
+    twoWayBuyerF4: "Structured Dispute Resolution & Payment Partner Protection",
+    twoWaySellerTitle: "For Honest Sellers & Personal Shoppers",
+    twoWaySellerF1: "QR Stays with Seller During Listing (Zero-QR Stage A)",
+    twoWaySellerF2: "Anti Unilateral Invalid Claims (Event PIC Minutes Required)",
+    twoWaySellerF3: "Right of Reply & 7×24h On-Site Investigation",
+    twoWaySellerF4: "Shielded from Unilateral Credit Card Chargebacks via QRIS / VA",
+    twoWaySellerF5: "Digital Evidence Bundle (9 Canonical Artifacts)",
+    flowRailHeading: "5-Step Safe Transaction Flow",
+    feeSummaryBarTitle: "Transparent Pilot Service Fee",
+    feeSummaryBarDesc: "Pilot Rate 6% buyer + 6% seller (min IDR 35,000, cap IDR 500,000 per side). Effective percentage varies for lower-priced tickets.",
+    blogStripHeading: "Latest Concert Guides & Tips",
+    closingCtaHeading: "Have Spare Tickets or Already Agreed on X / TikTok?",
+    closingCtaSub: "Use TIKUM as your safe transaction room with physical Event PIC witness and two-way protection.",
+    closingCtaSellBtn: "Sell Tickets (Quick 2 Mins)",
+    closingCtaDealBtn: "Open Deal Room"
   },
 
   pricing: {
@@ -118,6 +153,7 @@ const en = {
     pageTitle: "Create Transaction Link / Submit Ticket Listing",
     pageSubtitle: "Submit your ticket for review. Receive a secure transaction link protected by Tikum systems.",
     zeroQrCallout: "Your Ticket QR Stays in Your Control — Do not upload the original QR Code/Barcode when creating a deal or listing.",
+    sellerProtectionStrip: "QR stays with you during listing · Physical Event PIC witness · Anti unilateral invalid claims · 9-artifact Evidence Bundle",
     wizardStep1: "1. Event & Ticket Category Selection",
     wizardStep2: "2. Seat Details, Quantity & Fulfillment",
     wizardStep3: "3. Barcode & Security Protocol",
@@ -190,7 +226,30 @@ const en = {
     escrowStatusLabel: "Fund Protection Status:",
     entryInstruction: "Venue Entry Instructions:",
     entryInstructionDesc: "Meet the TIKUM PIC at the venue meeting point on event day. Keep your Order ID ready for verification prior to barcode scanning.",
-    trackOrderBtn: "Track Status & Protocol at /track"
+    trackOrderBtn: "Track Status & Protocol at /track",
+    sellerSelfListingBadge: "This is Your Listing (Seller Mode)",
+    copyLinkForBuyer: "Copy Link for Buyer",
+    linkCopied: "Link Copied Successfully!"
+  },
+
+  dealHub: {
+    pill: "BUYER DEAL & TRANSACTION HUB",
+    title: "Open Deal Room & Buy Tickets Securely",
+    subtitle: "Have a deal code or transaction link from a seller? Enter it below to enter the Deal Room protected by Tikum escrow holding.",
+    lookupTitle: "Have a Deal Link or Code?",
+    lookupDesc: "Paste the deal link (e.g. tikum.app/deal/list-abc) or enter the Deal ID:",
+    inputPlaceholder: "Example: list-123, deal-456, or https://... URL",
+    btnOpenRoom: "Open Deal Room",
+    lookupEmptyErr: "Please enter a Deal ID or Deal URL.",
+    lookupInvalidErr: "Invalid Deal ID format.",
+    sellerBannerTitle: "Want to Sell Tickets?",
+    sellerBannerDesc: "Create your protected Deal Link in 2 minutes with zero upfront fees.",
+    sellerBannerBtn: "Create Seller Deal Link",
+    publicListingsTitle: "Available Public Listings",
+    publicListingsSubtitle: "Official secondary tickets with ownership verified by Tikum.",
+    noListingsTitle: "No active public listings at the moment",
+    noListingsDesc: "New listings from verified sellers will appear here. You can also explore our official event catalog.",
+    browseCatalogBtn: "Browse Event Catalog"
   },
 
   verification: {
@@ -377,7 +436,10 @@ const en = {
     savedSuccess: "Profile successfully updated.",
     autofillBadge: "Profile Verified & Auto-Filled",
     buyerProportionalNote: "For buyers, only minimal contact details (Name, WhatsApp, and City) are required per PDP Law No. 27/2022 data minimization.",
-    sellerCompleteBadge: "Seller Profile Complete"
+    sellerCompleteBadge: "Seller Profile Complete",
+    sellerSectionSummary: "Activate Seller Profile (Selling Tickets Only)",
+    sellerSectionDesc: "This section is only required if you want to sell tickets for escrow settlement payout.",
+    buyerOnlyNotice: "Buyer profile is active. You are ready to purchase tickets without bank account or identity documents."
   },
 
   errors: {

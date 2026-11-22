@@ -39,36 +39,42 @@
 
 :root {
   /* ==========================================================================
-     COLOR TOKENS (Strictly Defensible Contrast Ratios)
+     TIKUM DEEP TEAL & WARM CREAM BRAND PALETTE (Single Source of Truth)
      ========================================================================== */
+  --tikum-teal-950: #092630; /* deep footer & hero shadow base */
+  --tikum-teal-900: #0E3B4A; /* editorial hero & Two-Way Protection section */
+  --tikum-teal-700: #124E61; /* primary signature brand teal */
+  --tikum-teal-100: #E4F1F4; /* soft teal pill/badge tint on light canvas */
+  --tikum-cream-50: #FAF8F4; /* main light browsing canvas — warm, calm, premium */
+  --tikum-cream-100: #F2EDE4; /* subtle secondary light surface / muted cards */
+  --tikum-surface: #FFFFFF; /* crisp elevated event & form cards */
+  --tikum-cream-text: #FAF1E2; /* warm cream typography on dark teal sections */
+  --tikum-coral-500: #DA674E; /* signature center-dot coral — primary high-conversion CTAs */
+  --tikum-coral-600: #C2533B; /* CTA hover state */
+  --tikum-ink-900: #0E222A; /* high-contrast primary ink on light canvas, WCAG AAA */
+  --tikum-ink-600: #4A606A; /* secondary muted ink on light canvas, WCAG AA >= 4.5:1 */
+  --tikum-trust-green: #179A6B; /* Event PIC / verified evidence badges */
+  --tikum-border: rgba(18, 78, 97, 0.12); /* clean hairline borders on light surfaces */
 
-  /* Terracotta — Single primary action per screen (<= 10% total surface) */
-  --terra-600: #B8472F;  /* Primary brand / CTA (White text contrast: 5.31:1, AA) */
-  --terra-700: #9E3A25;  /* Hover / Pressed state (White text contrast: 7.02:1, AAA) */
-  --terra-100: #F7E4DC;  /* Soft tint (selected chips, active pills) */
+  /* Aliases for backwards compatibility */
+  --color-brand-primary: var(--tikum-coral-500);
+  --color-brand-teal: var(--tikum-teal-700);
+  --color-brand-teal-deep: var(--tikum-teal-900);
+  --color-canvas: var(--tikum-cream-50);
+  --color-surface-card: var(--tikum-surface);
+  --terra-600: var(--tikum-coral-500);
+  --terra-700: var(--tikum-coral-600);
+  --terra-100: var(--tikum-teal-100);
+  --sand-50: var(--tikum-cream-50);
+  --surface: var(--tikum-surface);
+  --ink-900: var(--tikum-ink-900);
+  --ink-700: var(--tikum-ink-600);
+  --ok-600: var(--tikum-trust-green);
 
-  /* Warm Sand & Surfaces */
-  --sand-50:   #FAF6F2;  /* Page background (warm, never pure harsh white) */
-  --surface:   #FFFFFF;  /* Cards, modals, surface containers */
-
-  /* Ink / Text Hierarchy (Max 2 type weights per screen: 500 & 700) */
-  --ink-900:   #2B2724;  /* Primary text (Contrast on sand-50: 13.56:1, AAA) */
-  --ink-700:   #4A443F;  /* Secondary text / captions (Contrast on sand-50: 7.39:1, AAA) */
-  --ink-500:   #8A827B;  /* Tertiary / placeholder only (never for critical body) */
-
-  /* Borders & Dividers */
-  --line-300:  #D9D3CD;  /* Card borders, input strokes */
-  --line-100:  #F1EDE8;  /* Subtle dividers, skeletons */
-
-  /* Semantic Accents */
-  --amber-500: #F2A33A;  /* Jago-echo accent: ONLY for Venue Protected & 1 promo cue/screen */
-  --ok-600:    #2F7D5B;  /* Trust / Verified / Escrow Locked / Gate Confirmed */
-  --danger-600:#A3162A;  /* Error / Dispute / Blocked (Terracotta is NEVER used for errors) */
-
-  /* ==========================================================================
-     TYPOGRAPHY SCALE (Plus Jakarta Sans, weights 500 and 700 only)
-     ========================================================================== */
-  --font-family-base: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Fluid Typography */
+  --font-display: 'Bricolage Grotesque', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-family-base: var(--font-body);
 
   --font-size-12: 12px;
   --font-size-14: 14px;

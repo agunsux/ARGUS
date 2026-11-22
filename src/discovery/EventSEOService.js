@@ -241,15 +241,11 @@ class EventSEOService {
                   <div style="font-size:11.5px; color:#047857; font-weight:600; display:flex; align-items:center; gap:5px;">
                     <i class="fa-solid fa-shield-halved"></i> ${picProtectionText}
                   </div>
-                  ${isPrelaunch ? `
-                  <button type="button" class="btn btn-sm btn-disabled" disabled style="padding:10px 20px; font-weight:700; border-radius:8px; background:#64748b; color:#f8fafc; border:none; cursor:not-allowed;" title="Pembelian belum dibuka selama masa persiapan peluncuran">
-                    <i class="fa-solid fa-lock"></i> Belum Tersedia
-                  </button>
-                  ` : `
-                  <a href="/pay?listing_id=${l.id}" class="btn btn-sm btn-primary" style="padding:10px 20px; font-weight:700; border-radius:8px; text-decoration:none;">
-                    <i class="fa-solid fa-lock"></i> Beli Aman via Escrow
-                  </a>
-                  `}
+                  <div class="listing-action-cta" data-listing-id="${l.id}" data-seller-id="${l.seller_id || ''}">
+                    <a href="/deal/${l.id}" class="btn btn-sm btn-primary" style="padding:10px 20px; font-weight:700; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                      <i class="fa-solid fa-ticket"></i> Lihat &amp; Beli Tiket
+                    </a>
+                  </div>
                 </div>
               </div>`;
             }).join('')}
@@ -746,6 +742,28 @@ class EventSEOService {
         feedback.innerText = 'Terjadi gangguan koneksi. Silakan coba kembali.';
       }
     }
+
+    (async function checkEventListingsOwnership() {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const userId = data.user?.id;
+        if (!userId) return;
+        document.querySelectorAll('.listing-action-cta').forEach(el => {
+          const sellerId = el.getAttribute('data-seller-id');
+          const listingId = el.getAttribute('data-listing-id');
+          if (sellerId && sellerId === userId) {
+            el.innerHTML = '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">' +
+              '<span class="badge badge-warning" style="font-size:11px; font-weight:700;"><i class="fa-solid fa-store"></i> Ini Listing Anda (Mode Penjual)</span>' +
+              '<button type="button" class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText(window.location.origin + \'/deal/\' + \'' + listingId + '\'); alert(\'Link Deal Room untuk pembeli berhasil disalin!\');" style="font-size:12px; font-weight:600; cursor:pointer;">' +
+                '<i class="fa-solid fa-copy"></i> Salin Link untuk Pembeli' +
+              '</button>' +
+            '</div>';
+          }
+        });
+      } catch (_) {}
+    })();
   </script>
 </body>
 </html>`;

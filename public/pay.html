@@ -96,21 +96,39 @@
           <p class="sidebar-group-label" data-i18n="nav.groupTransactions">Transaksi</p>
           <ul class="sidebar-nav-list">
             <li>
-              <a href="/create" class="sidebar-nav-item " style="color:var(--color-brand-primary); font-weight:700;">
-                <span class="sidebar-nav-icon"><i class="fa-solid fa-circle-plus"></i></span>
-                <span class="sidebar-nav-label" data-i18n="nav.submitListing">Buat Deal Link</span>
+              <a href="/offers" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-ticket"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.buyTickets">Beli Tiket / Cari Event</span>
               </a>
             </li>
             <li>
-              <a href="/track" class="sidebar-nav-item ">
+              <a href="/deal" class="sidebar-nav-item active">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-door-open"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.dealRoomLookup">Punya Kode Deal? (Buka Room)</span>
+              </a>
+            </li>
+            <li>
+              <a href="/deal/create" class="sidebar-nav-item" style="color:var(--color-brand-primary); font-weight:700;">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-circle-plus"></i></span>
+                <span class="sidebar-nav-label" data-i18n="nav.submitListing">Jual Tiket / Buat Deal</span>
+              </a>
+            </li>
+            <li>
+              <a href="/track" class="sidebar-nav-item">
                 <span class="sidebar-nav-icon"><i class="fa-solid fa-magnifying-glass-location"></i></span>
                 <span class="sidebar-nav-label" data-i18n="nav.track">Lacak Transaksi</span>
               </a>
             </li>
             <li>
-              <a href="/pay" class="sidebar-nav-item active">
+              <a href="/pay" class="sidebar-nav-item">
                 <span class="sidebar-nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
                 <span class="sidebar-nav-label" data-i18n="nav.pricingAndFees">Perlindungan &amp; Biaya</span>
+              </a>
+            </li>
+            <li>
+              <a href="/profile" class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-user-gear"></i></span>
+                <span class="sidebar-nav-label" data-i18n="profile.pageTitle">Profil Akun</span>
               </a>
             </li>
           </ul>
@@ -149,26 +167,38 @@
             <i class="fa-solid fa-bars"></i>
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <img src="/assets/tikum-mark-2color.svg" width="28" height="28" alt="Tikum">
-            <span style="font-weight:800; font-size:17px; color:#FFF; letter-spacing:0.5px;">Tikum</span>
+            <img src="/images/tikum-horizontal.svg" width="130" height="32" alt="Tikum">
           </a>
         </div>
 
         <div class="topbar-center">
-          <div class="topbar-search-wrap">
-            <i class="fa-solid fa-magnifying-glass topbar-search-icon"></i>
-            <input type="search" id="topbarSearchInput" class="topbar-search-input" placeholder="Cari konser, artis, GBK, JIS..." aria-label="Cari event" onkeydown="if(event.key==='Enter') window.location.href='/?q=' + encodeURIComponent(this.value)">
-          </div>
+          <ul class="topbar-nav-links">
+            <li><a href="/offers?category=CONCERT" class="topbar-nav-link" data-i18n="nav.concerts">Konser &amp; Musik</a></li>
+            <li><a href="/offers?category=SPORTS" class="topbar-nav-link" data-i18n="nav.sports">Olahraga</a></li>
+            <li><a href="/offers?category=FESTIVAL" class="topbar-nav-link" data-i18n="nav.festivals">Festival</a></li>
+            <li class="city-dropdown-wrap">
+              <a href="javascript:void(0)" class="topbar-nav-link" aria-haspopup="true">
+                <span>Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
+              </a>
+              <div class="city-dropdown-menu">
+                <a href="/offers?city=Jakarta" class="city-dropdown-item">Jakarta</a>
+                <a href="/offers?city=Bandung" class="city-dropdown-item">Bandung</a>
+                <a href="/offers?city=Surabaya" class="city-dropdown-item">Surabaya</a>
+                <a href="/offers?city=Bali" class="city-dropdown-item">Bali</a>
+                <a href="/offers" class="city-dropdown-item">Semua Kota</a>
+              </div>
+            </li>
+          </ul>
+          <input type="search" id="topbarSearchInput" class="topbar-search-input" style="display:none;" placeholder="Cari..." aria-label="Cari event">
         </div>
 
         <div class="topbar-right">
-          <a href="/create" class="ln-btn ln-btn-primary" style="padding:8px 16px; font-size:13px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-plus"></i> <span data-i18n="nav.submitListing">+ Buat Deal</span>
-          </a>
-          <button class="select-filter" onclick="if(window.TikumI18n) window.TikumI18n.toggleTheme();" id="themeToggle" title="Toggle Theme" style="padding:6px 10px; height:36px; display:inline-flex; align-items:center; justify-content:center;">
-            <i class="fa-solid fa-sun" id="themeIcon"></i>
-          </button>
-          <button class="lang-toggle-btn lang-switcher-pill" onclick="if(window.TikumI18n) window.TikumI18n.toggleLang();" id="langToggle" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
+          <a href="/deal" class="btn-topbar-deal" data-i18n="nav.dealRoomLookup">Buka Deal</a>
+          <a href="/deal/create" class="btn-topbar-seller"><i class="fa-solid fa-plus"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
+          <div id="authHeaderContainer">
+            <button id="btnLoginSignUp" class="btn-auth-header" onclick="if(typeof openAuthModal==='function') openAuthModal(); else window.location.href='/login';" aria-label="Login / Sign Up" data-i18n="auth.signInSignUp" style="height:38px; padding:0 14px; font-size:13.5px; border-radius:8px;">Masuk / Daftar</button>
+          </div>
+          <button class="lang-toggle-btn lang-switcher-pill" onclick="if(window.TikumI18n) window.TikumI18n.toggleLang(); else if(typeof toggleLang==='function') toggleLang();" id="langToggle" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
             <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>
           </button>
         </div>
@@ -176,6 +206,82 @@
 
   <!-- Main Container -->
   <main class="container" style="max-width: 800px;">
+
+    <!-- Buyer Deal Hub (Rendered on /deal without ID) -->
+    <div id="buyerDealHub" style="display: none; margin-bottom: 30px;">
+      <div style="margin-bottom: 24px;">
+        <div class="hero-pill"><i class="fa-solid fa-door-open"></i> <span data-i18n="dealHub.pill">PUSAT DEAL &amp; TRANSAKSI PEMBELI</span></div>
+        <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;" data-i18n="dealHub.title">Buka Deal Room &amp; Beli Tiket Aman</h1>
+        <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;" data-i18n="dealHub.subtitle">
+          Punya kode deal atau link transaksi dari penjual? Masukkan di bawah untuk membuka Deal Room dengan proteksi penampungan escrow platform Tikum.
+        </p>
+      </div>
+
+      <!-- Card 1: Deal Lookup Input Box -->
+      <div class="card" style="background:var(--surface); border:1.5px solid var(--line-300); padding:24px; margin-bottom:24px; box-shadow:var(--shadow-soft);">
+        <h3 style="font-size:16px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-arrow-right-to-bracket" style="color:var(--color-brand-primary, #E05A3A);"></i>
+          <span data-i18n="dealHub.lookupTitle">Punya Link atau Kode Deal?</span>
+        </h3>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;" data-i18n="dealHub.lookupDesc">
+          Tempelkan tautan deal (misal: <code>tikum.app/deal/list-abc</code>) atau masukkan ID Deal:
+        </p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:240px;">
+            <input type="text" id="dealLookupInput" class="form-control mono" placeholder="Contoh: list-123, deal-456, atau link https://..." data-i18n-placeholder="dealHub.inputPlaceholder" onkeydown="if(event.key==='Enter') handleDealLookup()">
+          </div>
+          <button type="button" id="btnOpenDealRoom" class="btn btn-primary" onclick="handleDealLookup()" style="padding:10px 22px; font-weight:700; white-space:nowrap;">
+            <i class="fa-solid fa-door-open"></i> <span data-i18n="dealHub.btnOpenRoom">Buka Deal Room</span>
+          </button>
+        </div>
+        <div id="dealLookupError" style="display:none; color:var(--danger, #ef4444); font-size:12.5px; margin-top:8px; font-weight:600;"></div>
+      </div>
+
+      <!-- Card 2: Seller Dual-Entry Secondary Banner -->
+      <div class="notice-box notice-info" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:24px; padding:16px 20px; background:rgba(224, 90, 58, 0.08); border:1px solid rgba(224, 90, 58, 0.25); border-radius:var(--radius-card);">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <i class="fa-solid fa-store" style="color:var(--color-brand-primary, #E05A3A); font-size:22px;"></i>
+          <div>
+            <strong style="font-size:14px; color:var(--ink-900, #FFF); display:block;" data-i18n="dealHub.sellerBannerTitle">Ingin Menjual Tiket?</strong>
+            <span style="font-size:12.5px; color:var(--text-muted);" data-i18n="dealHub.sellerBannerDesc">Buat Deal Link terproteksi Anda sendiri dalam 2 menit tanpa biaya awal.</span>
+          </div>
+        </div>
+        <a href="/deal/create" class="btn btn-secondary btn-sm" style="font-weight:700; text-decoration:none;">
+          <i class="fa-solid fa-plus-circle"></i> <span data-i18n="dealHub.sellerBannerBtn">Buat Deal Link Penjual</span>
+        </a>
+      </div>
+
+      <!-- Card 3: Available Public Listings -->
+      <div class="card" style="background:var(--surface); border:1px solid var(--line-300); padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h3 style="font-size:16px; font-weight:700; margin:0; display:flex; align-items:center; gap:8px;" data-i18n="dealHub.publicListingsTitle">
+              <i class="fa-solid fa-ticket" style="color:var(--cyan);"></i> Listing Publik Tersedia
+            </h3>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;" data-i18n="dealHub.publicListingsSubtitle">
+              Tiket sekunder resmi yang telah diverifikasi kepemilikannya oleh sistem Tikum.
+            </div>
+          </div>
+          <a href="/events" class="btn btn-secondary btn-sm" style="font-size:12px;">
+            <i class="fa-solid fa-calendar-days"></i> <span data-i18n="pay.viewCatalog">Lihat Semua Event</span>
+          </a>
+        </div>
+
+        <div id="dealHubListingsLoading" style="text-align:center; padding:30px 10px;">
+          <i class="fa-solid fa-spinner fa-spin" style="font-size:24px; color:var(--cyan); margin-bottom:8px;"></i>
+          <div style="font-size:13px; color:var(--text-muted);">Memuat listing publik...</div>
+        </div>
+
+        <div id="dealHubListingsContainer" style="display:none; flex-direction:column; gap:12px;"></div>
+
+        <div id="dealHubEmptyNotice" style="display:none; text-align:center; padding:30px 16px; background:rgba(255,255,255,0.02); border-radius:8px;">
+          <i class="fa-solid fa-ticket-simple" style="font-size:32px; color:var(--text-dim); margin-bottom:10px;"></i>
+          <div style="font-size:14px; font-weight:700; color:var(--text-muted); margin-bottom:4px;" data-i18n="dealHub.noListingsTitle">Belum ada listing publik yang aktif</div>
+          <p style="font-size:12.5px; color:var(--text-dim); margin-bottom:14px;" data-i18n="dealHub.noListingsDesc">Listing baru dari penjual terverifikasi akan muncul di sini. Anda juga dapat mencari event di katalog resmi.</p>
+          <a href="/events" class="btn btn-primary btn-sm"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="dealHub.browseCatalogBtn">Jelajahi Katalog Event</span></a>
+        </div>
+      </div>
+    </div>
 
     <!-- Loading State -->
     <div id="payLoading" style="text-align: center; padding: 60px 20px;">
@@ -483,6 +589,27 @@
           </label>
         </div>
 
+        <!-- Seller Mode Action Card (Shown when logged-in user is the seller of this listing) -->
+        <div id="sellerSelfListingCard" class="card" style="display:none; background:#FFFBEB; border:1.5px solid #F59E0B; padding:18px; border-radius:var(--radius-card); margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+            <span class="badge" style="background:#F59E0B; color:#78350F; font-size:12px; font-weight:800; padding:6px 12px; border-radius:6px;">
+              <i class="fa-solid fa-store"></i> <span data-i18n="dealRoom.sellerSelfListingBadge">Ini Listing Anda (Mode Penjual)</span>
+            </span>
+            <span style="font-size:12px; color:#92400E; font-weight:600;">Status: Aktif untuk Calon Pembeli</span>
+          </div>
+          <p style="font-size:13px; color:#78350F; line-height:1.5; margin:0 0 14px;">
+            Anda terautentikasi sebagai penjual pemilik tiket ini. Bagikan tautan Deal Room ini langsung kepada calon pembeli Anda:
+          </p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <button type="button" id="btnCopyDealLinkForBuyer" class="btn btn-primary" onclick="copyDealLinkForBuyer()" style="background:#D97706; border-color:#D97706; font-size:13px; font-weight:700;">
+              <i class="fa-regular fa-copy"></i> <span id="copyDealLinkText" data-i18n="dealRoom.copyLinkForBuyer">Salin Link untuk Pembeli</span>
+            </button>
+            <a href="/deal/create" class="btn btn-secondary" style="font-size:13px; font-weight:600; text-decoration:none;">
+              <i class="fa-solid fa-plus-circle"></i> Buat Listing Lain
+            </a>
+          </div>
+        </div>
+
         <div id="selfPurchaseNotice" class="notice-box notice-warning" style="display:none; background:#fff1f2; border:1px solid #fecdd3; color:#9f1239; margin-bottom:14px;">
           <i class="fa-solid fa-ban" style="color:#e11d48; font-size:20px;"></i>
           <div>
@@ -719,9 +846,9 @@
     let currentListing = null;
 
     function getListingIdFromUrl() {
-      // Check path /pay/:id
+      // Check path /pay/:id or /deal/:id
       const pathParts = window.location.pathname.split('/').filter(Boolean);
-      if (pathParts.length >= 2 && pathParts[0] === 'pay') {
+      if (pathParts.length >= 2 && (pathParts[0] === 'pay' || pathParts[0] === 'deal')) {
         return pathParts[1];
       }
       // Check query param ?id=... or ?listing_id=...
@@ -734,6 +861,7 @@
       const loadingEl = document.getElementById('payLoading');
       const notFoundEl = document.getElementById('payNotFound');
       const surfaceEl = document.getElementById('paySurface');
+      const hubEl = document.getElementById('buyerDealHub');
 
       try {
         const cfgRes = await fetch('/api/v1/payments/active-config');
@@ -746,37 +874,14 @@
       } catch (_) {}
 
       if (!id) {
-        // Pilot Verification Mode: When visiting /pay directly, render the canonical verified pilot listing
-        // so that reviewers and users see a complete, itemized checkout page.
-        // Conspicuously labeled as DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN.
-        currentListing = {
-          id: 'list-pilot-preview',
-          is_demo: true,
-          seat_info: 'Kategori CAT 1 — Section A, Row 04, Seat 12 (Data Demonstrasi)',
-          price: 1500000,
-          status: 'DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN',
-          seller: { kyc_status: 'TERVERIFIKASI (SIMULASI)' },
-          event: {
-            name: 'Contoh Demonstrasi Checkout: Tiket Konser King Nassar (Cat 1 — Ilustrasi)',
-            title: 'Contoh Demonstrasi Checkout: Tiket Konser King Nassar (Cat 1 — Ilustrasi)',
-            category: 'DEMO / SIMULASI',
-            date: 'Sabtu, 7 November 2026 (Ilustrasi)',
-            venue: 'Istora Senayan Jakarta (Simulasi)',
-            venue_city: 'Jakarta Pusat',
-            is_verified: false
-          },
-          pricing: {
-            ticketPrice: 1500000,
-            platformFee: 90000,
-            buyer_fee: 90000,
-            buyer_tax: 0,
-            totalAmount: 1590000,
-            buyer_total: 1590000
-          }
-        };
+        // Buyer Deal Hub: When visiting /deal or /pay directly without ID, render Buyer Hub
         loadingEl.style.display = 'none';
-        renderListing(currentListing);
-        surfaceEl.style.display = 'block';
+        notFoundEl.style.display = 'none';
+        surfaceEl.style.display = 'none';
+        if (hubEl) {
+          hubEl.style.display = 'block';
+          loadBuyerDealHub();
+        }
         return;
       }
 
@@ -994,14 +1099,151 @@
       if (!currentBuyer || !currentListing) return;
       if (currentListing.seller_id && currentBuyer.id === currentListing.seller_id) {
         const btn = document.getElementById('btnOrderSubmit');
+        const offerBtn = document.getElementById('btnOpenOfferModal');
+        const selfCard = document.getElementById('sellerSelfListingCard');
         const selfNotice = document.getElementById('selfPurchaseNotice');
-        if (btn) {
-          btn.disabled = true;
-          btn.innerHTML = '<i class="fa-solid fa-ban"></i> Pembelian Sendiri Dilarang';
-          btn.style.opacity = '0.6';
-          btn.style.cursor = 'not-allowed';
+
+        if (btn) btn.style.display = 'none';
+        if (offerBtn) offerBtn.style.display = 'none';
+        if (selfNotice) selfNotice.style.display = 'none';
+        if (selfCard) selfCard.style.display = 'block';
+      }
+    }
+
+    function copyDealLinkForBuyer() {
+      if (!currentListing) return;
+      const shareUrl = `${window.location.origin}/deal/${encodeURIComponent(currentListing.id)}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          const txt = document.getElementById('copyDealLinkText');
+          if (txt) {
+            txt.innerText = (window.TikumI18n ? window.TikumI18n.t('dealRoom.linkCopied') : 'Link Berhasil Disalin!');
+            setTimeout(() => {
+              txt.innerText = (window.TikumI18n ? window.TikumI18n.t('dealRoom.copyLinkForBuyer') : 'Salin Link untuk Pembeli');
+            }, 2500);
+          }
+        }).catch(() => {
+          prompt('Salin link deal berikut:', shareUrl);
+        });
+      } else {
+        prompt('Salin link deal berikut:', shareUrl);
+      }
+    }
+
+    function handleDealLookup() {
+      const inputEl = document.getElementById('dealLookupInput');
+      const errEl = document.getElementById('dealLookupError');
+      if (!inputEl) return;
+      const raw = inputEl.value.trim();
+      if (!raw) {
+        if (errEl) {
+          errEl.innerText = (window.TikumI18n ? window.TikumI18n.t('dealHub.lookupEmptyErr') : 'Silakan masukkan ID Deal atau URL Deal.');
+          errEl.style.display = 'block';
         }
-        if (selfNotice) selfNotice.style.display = 'flex';
+        return;
+      }
+      if (errEl) errEl.style.display = 'none';
+
+      let dealId = raw;
+      try {
+        if (raw.startsWith('http://') || raw.startsWith('https://')) {
+          const parsed = new URL(raw);
+          const parts = parsed.pathname.split('/').filter(Boolean);
+          if (parts.length >= 2 && (parts[0] === 'deal' || parts[0] === 'pay')) {
+            dealId = parts[1];
+          } else if (parsed.searchParams.get('id')) {
+            dealId = parsed.searchParams.get('id');
+          } else if (parsed.searchParams.get('listing_id')) {
+            dealId = parsed.searchParams.get('listing_id');
+          }
+        } else if (raw.includes('/')) {
+          const parts = raw.split('/').filter(Boolean);
+          if (parts.length >= 2 && (parts[0] === 'deal' || parts[0] === 'pay')) {
+            dealId = parts[1];
+          } else {
+            dealId = parts[parts.length - 1];
+          }
+        }
+      } catch (_) {}
+
+      dealId = dealId.split('?')[0].split('#')[0].trim();
+      if (!dealId) {
+        if (errEl) {
+          errEl.innerText = (window.TikumI18n ? window.TikumI18n.t('dealHub.lookupInvalidErr') : 'Format ID Deal tidak valid.');
+          errEl.style.display = 'block';
+        }
+        return;
+      }
+
+      window.location.href = `/deal/${encodeURIComponent(dealId)}`;
+    }
+
+    async function loadBuyerDealHub() {
+      const loading = document.getElementById('dealHubListingsLoading');
+      const container = document.getElementById('dealHubListingsContainer');
+      const emptyNotice = document.getElementById('dealHubEmptyNotice');
+      if (!container) return;
+
+      try {
+        const res = await fetch('/api/mvp/listings');
+        if (!res.ok) throw new Error('Gagal memuat listing');
+        const data = await res.json();
+        const listings = (data.listings || []).filter(l => l.status === 'ACTIVE' || l.status === 'OWNERSHIP_EVIDENCE_REVIEWED');
+
+        if (loading) loading.style.display = 'none';
+
+        if (!listings.length) {
+          if (container) container.style.display = 'none';
+          if (emptyNotice) emptyNotice.style.display = 'block';
+          return;
+        }
+
+        if (emptyNotice) emptyNotice.style.display = 'none';
+        container.style.display = 'flex';
+        container.innerHTML = listings.map(l => {
+          const ev = l.event || {};
+          const evTitle = ev.name || ev.title || 'Event Tikum';
+          const evDate = ev.date || ev.start_date || '-';
+          const evVenue = `${ev.venue || ev.venue_name || '-'}`;
+          const seat = l.seat_info || 'General Admission';
+          const price = l.price || l.face_value || 0;
+          const fmtPrice = (window.TikumI18n && typeof window.TikumI18n.formatCurrency === 'function')
+            ? window.TikumI18n.formatCurrency(price, 'IDR')
+            : ('Rp ' + price.toLocaleString('id-ID'));
+          const isSellerOfListing = currentBuyer && l.seller_id && currentBuyer.id === l.seller_id;
+
+          return `
+            <div style="background:var(--sand-50, #090d16); border:1px solid var(--line-300, #1e293b); border-radius:10px; padding:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+              <div>
+                <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">
+                  ${ev.category || 'EVENT'} &bull; <i class="fa-regular fa-calendar"></i> ${evDate}
+                </div>
+                <h4 style="font-size:16px; font-weight:800; color:var(--ink-900, #FFF); margin:4px 0;">${evTitle}</h4>
+                <div style="font-size:12.5px; color:var(--text-muted);">
+                  <i class="fa-solid fa-location-dot"></i> ${evVenue} &bull; <i class="fa-solid fa-chair"></i> ${seat}
+                </div>
+              </div>
+              <div style="text-align:right; min-width:160px;">
+                <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Harga Tiket</div>
+                <div style="font-size:17px; font-weight:800; color:var(--color-brand-primary, #E05A3A);">${fmtPrice}</div>
+                <div style="margin-top:6px;">
+                  ${isSellerOfListing ? `
+                    <span class="badge badge-warning" style="font-size:11px; margin-bottom:4px; display:inline-block;"><i class="fa-solid fa-store"></i> Listing Anda</span>
+                    <a href="/deal/${l.id}" class="btn btn-secondary btn-sm" style="font-size:12px;"><i class="fa-solid fa-share-nodes"></i> Buka Room</a>
+                  ` : `
+                    <a href="/deal/${l.id}" class="btn btn-primary btn-sm" style="font-size:12.5px; font-weight:700;"><i class="fa-solid fa-ticket"></i> Lihat &amp; Beli Tiket</a>
+                  `}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        if (loading) loading.style.display = 'none';
+        if (emptyNotice) {
+          emptyNotice.style.display = 'block';
+          emptyNotice.innerHTML = '<div style="color:var(--text-muted); font-size:13px;">Gagal memuat listing saat ini. Silakan kunjungi <a href="/events" style="color:var(--color-brand-primary);">Katalog Event</a>.</div>';
+        }
       }
     }
 
@@ -1426,5 +1668,6 @@
     document.addEventListener('DOMContentLoaded', initAppShell);
   </script>
 
+  <script src="/js/motion.js"></script>
 </body>
 </html>
