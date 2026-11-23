@@ -2073,7 +2073,7 @@ class CanonicalEventRegistry {
 
     // Default active upcoming hero concerts: strictly qualified (lowest official tier >= 500k)
     // King Nassar is excluded due to Rp 350.000 Tribun Regular tier.
-    return [btsHero, morganJayHero, efestaphoriaHero, mcrHero, gnrHero];
+    return [btsHero, bigbangHero, efestaphoriaHero, morganJayHero, mcrHero, gnrHero];
   }
 
   getAllEvents() {

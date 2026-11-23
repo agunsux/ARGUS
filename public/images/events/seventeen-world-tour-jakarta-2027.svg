@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a192f" />
+      <stop offset="100%" stop-color="#1e3a5f" />
+    </linearGradient>
+    <radialGradient id="spotlight" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#f472b6" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="450" fill="url(#bg)" />
+  <rect width="800" height="450" fill="url(#spotlight)" />
+  <rect width="800" height="450" fill="url(#grid)" />
+  <g transform="translate(50, 60)">
+    <rect x="0" y="0" width="100" height="28" rx="14" fill="rgba(255,255,255,0.08)" stroke="#f472b6" stroke-width="1.5" />
+    <text x="50" y="18" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="800" fill="#f472b6" text-anchor="middle" letter-spacing="1.5">K-POP</text>
+  </g>
+  <g transform="translate(620, 60)">
+    <rect x="0" y="0" width="130" height="28" rx="14" fill="rgba(217,98,72,0.18)" stroke="#DA674E" stroke-width="1.5" />
+    <text x="65" y="18" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="700" fill="#DA674E" text-anchor="middle">HIGH DEMAND</text>
+  </g>
+  <circle cx="400" cy="210" r="60" fill="rgba(255,255,255,0.03)" stroke="#38bdf8" stroke-width="2" />
+  <text x="400" y="226" font-family="system-ui, -apple-system, sans-serif" font-size="36" text-anchor="middle" fill="#38bdf8">&#9835;</text>
+  <text x="400" y="320" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">SEVENTEEN [RIGHT HERE] WORLD TOUR</text>
+  <text x="400" y="352" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="500" fill="#94a3b8" text-anchor="middle">ICE BSD Hall 5-6, Tangerang (Jabodetabek)</text>
+  <g transform="translate(250, 390)">
+    <rect x="0" y="0" width="300" height="32" rx="6" fill="rgba(15,23,42,0.8)" stroke="rgba(255,255,255,0.1)" stroke-width="1" />
+    <text x="150" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="#cbd5e1" text-anchor="middle">TIKUM.APP • TRANSAKSI TERVERIFIKASI</text>
+  </g>
+</svg>

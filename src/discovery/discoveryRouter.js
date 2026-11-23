@@ -507,6 +507,40 @@ router.get('/events', (req, res) => {
     ? new Date(req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
     : new Date();
 
+  // If canonicalRegistry is empty (e.g. serverless Vercel memory), fallback to verified eventPolicyRegistry
+  if (allEvents.length === 0) {
+    const policyEvents = eventPolicyRegistry.getAllEvents({
+      city,
+      category,
+      sort: 'hype'
+    });
+    const activePolicy = showAllOrPast ? policyEvents : EventLifecycleService.filterActiveEvents(policyEvents, now);
+    allEvents = activePolicy.map(pe => ({
+      id: pe.id,
+      event_id: pe.id,
+      title: pe.event_name,
+      canonical_name: pe.event_name,
+      name: pe.event_name,
+      category: pe.category,
+      event_type: pe.category,
+      venue_name: pe.venue,
+      venue: pe.venue,
+      city: pe.city,
+      metro_area: pe.metro_area,
+      start_date: pe.event_date,
+      date: pe.event_date,
+      min_price: pe.starting_price_idr,
+      price_min: pe.starting_price_idr,
+      price_range_idr: pe.price_range_idr,
+      promoter: pe.promoter_name,
+      official_ticket_url: pe.policy_source_url,
+      image_url: pe.image_url,
+      status: 'ON_SALE',
+      ticket_status: 'ON_SALE',
+      verification_status: 'VERIFIED'
+    }));
+  }
+
   const searchTerm = (q || req.query.search || '').trim();
   if (searchTerm) {
     const term = searchTerm.toLowerCase();
@@ -1322,9 +1356,11 @@ router.get('/api/discovery/event-policy-registry', (req, res) => {
 router.get('/api/discovery/events-qualified', (req, res) => {
   const minPrice = parseInt(req.query.min_price || '300000', 10);
   const includePast = req.query.include_past === 'true' || req.query.status === 'PAST';
-  let events = eventPolicyRegistry.getAllEvents({
+  let events = eventPolicyRegistry.getQualifiedEvents({
     ...req.query,
-    min_price: minPrice
+    minPrice,
+    sort: req.query.sort || 'hype',
+    includePast
   });
   if (!includePast) {
     events = EventLifecycleService.filterActiveEvents(events, req.query.now);
@@ -1449,7 +1485,37 @@ function handleGetArchivedEvents(req, res) {
     ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
     : new Date();
 
-  const allEvents = canonicalRegistry.getAllEvents();
+  let allEvents = canonicalRegistry.getAllEvents();
+  if (allEvents.length === 0) {
+    const pastRes = EventLifecycleService.getPastEvents({
+      page: req.query.page,
+      limit: req.query.limit,
+      q: req.query.q,
+      category: req.query.category,
+      city: req.query.city,
+      year: req.query.year,
+      now
+    });
+    const mapped = (pastRes.events || []).map(e => ({
+      ...e,
+      is_past: true,
+      resale_available: false,
+      resale_inventory_count: 0,
+      purchasing_enabled: false,
+      lifecycle_status: 'PAST'
+    }));
+    return res.json({
+      success: true,
+      total: pastRes.total,
+      count: mapped.length,
+      events: mapped,
+      data: mapped,
+      page: pastRes.page,
+      limit: pastRes.limit,
+      total_pages: pastRes.total_pages
+    });
+  }
+
   let archived = allEvents.filter(e => {
     return e.archive_status === 'ARCHIVED' ||
       e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS' ||
@@ -1602,6 +1668,51 @@ router.get('/api/events/home-feed', (req, res) => {
 
   // Guarantee 1 concert = 1 canonical homepage card (Zero Duplicate Guarantee + Image Priority Preservation)
   allEvents = deduplicateAndEnrichPublicEvents(allEvents);
+
+  // If canonicalRegistry is empty (e.g. serverless Vercel memory), federate from verified eventPolicyRegistry
+  if (allEvents.length === 0) {
+    const policyEvents = eventPolicyRegistry.getAllEvents({
+      city,
+      category,
+      sort: 'hype'
+    });
+    const activePolicy = EventLifecycleService.filterActiveEvents(policyEvents, now);
+    allEvents = activePolicy.map(pe => ({
+      id: pe.id,
+      event_id: pe.id,
+      title: pe.event_name,
+      canonical_name: pe.event_name,
+      name: pe.event_name,
+      category: pe.category,
+      category_group: (pe.category === 'CONCERT' || pe.category === 'KPOP') ? 'MUSIC' : (pe.category === 'SPORTS' ? 'SPORTS' : (pe.category === 'STANDUP_COMEDY' ? 'SHOWS_COMEDY' : 'FESTIVALS_EXPERIENCES')),
+      venue_name: pe.venue,
+      venue: pe.venue,
+      city: pe.city,
+      metro_area: pe.metro_area,
+      start_date: pe.event_date,
+      date: pe.event_date,
+      event_start_at: `${pe.event_date}T19:00:00+07:00`,
+      min_price: pe.starting_price_idr,
+      max_price: pe.starting_price_idr * 3,
+      price_range_idr: pe.price_range_idr,
+      promoter: pe.promoter_name,
+      official_ticket_url: pe.policy_source_url,
+      image_url: pe.image_url,
+      is_fallback: false,
+      verification_status: 'VERIFIED',
+      verification_tier: 'TIER_A_DOUBLE_OFFICIAL',
+      popularity_score: pe.hype_score,
+      demand_score: pe.hype_score,
+      hype_score: pe.hype_score,
+      fanbase_tier: pe.fanbase_tier,
+      hype_label: pe.hype_label,
+      status: 'ON_SALE',
+      ticket_status: 'ON_SALE',
+      official_ticket_status: 'ON_SALE',
+      homepage_visibility: true,
+      country: 'Indonesia'
+    }));
+  }
 
   // Country filter if supplied
   if (country && country.trim()) {

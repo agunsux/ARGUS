@@ -330,7 +330,7 @@
                 <span data-i18n="nav.cities">Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
               </a>
               <div class="city-dropdown-menu">
-                <a href="/offers?city=Jakarta" class="city-dropdown-item" data-i18n="nav.jakarta">Jakarta</a>
+                <a href="/offers?city=Jakarta" class="city-dropdown-item" data-i18n="events.jakartaJabodetabek">Jakarta (Jabodetabek)</a>
                 <a href="/offers?city=Bandung" class="city-dropdown-item" data-i18n="nav.bandung">Bandung</a>
                 <a href="/offers?city=Surabaya" class="city-dropdown-item" data-i18n="nav.surabaya">Surabaya</a>
                 <a href="/offers?city=Bali" class="city-dropdown-item" data-i18n="nav.bali">Bali</a>
@@ -404,6 +404,34 @@
           <i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicketsNow">Jual Tiket Sekarang</span>
         </a>
       </div>
+
+      <!-- Flow Ninja Kinetic Event Ribbon (Marquee) -->
+      <div class="flow-marquee-wrapper" aria-hidden="true">
+        <div class="flow-marquee-track">
+          <div class="flow-marquee-content">
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>BTS WORLD TOUR 'ARIRANG'</strong> · 26–29 Des 2026 · SUGBK Jakarta</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>BIGBANG &lt; XX : COSMOS &gt;</strong> · 16–17 Jan 2027 · JIS Jakarta</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>SEVENTEEN [RIGHT HERE]</strong> · 23–24 Jan 2027 · ICE BSD</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>SHEILA ON 7</strong> · 17 Jan 2027 · Jatim Expo Surabaya</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>DWP 2026</strong> · 11–13 Des 2026 · JIExpo Kemayoran</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>INDONESIA MASTERS 2027</strong> · 21–26 Jan 2027 · Istora Senayan</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>PANDJI PRAGIWAKSONO</strong> · 06 Feb 2027 · SICC Sentul</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>TULUS KONSER INTIM</strong> · 12 Des 2026 · Eldorado Dome Bandung</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>BALI SUNSET FESTIVAL</strong> · 20 Feb 2027 · GWK Bali</span>
+          </div>
+          <div class="flow-marquee-content" aria-hidden="true">
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>BTS WORLD TOUR 'ARIRANG'</strong> · 26–29 Des 2026 · SUGBK Jakarta</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>BIGBANG &lt; XX : COSMOS &gt;</strong> · 16–17 Jan 2027 · JIS Jakarta</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>SEVENTEEN [RIGHT HERE]</strong> · 23–24 Jan 2027 · ICE BSD</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>SHEILA ON 7</strong> · 17 Jan 2027 · Jatim Expo Surabaya</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>DWP 2026</strong> · 11–13 Des 2026 · JIExpo Kemayoran</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>INDONESIA MASTERS 2027</strong> · 21–26 Jan 2027 · Istora Senayan</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>PANDJI PRAGIWAKSONO</strong> · 06 Feb 2027 · SICC Sentul</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>TULUS KONSER INTIM</strong> · 12 Des 2026 · Eldorado Dome Bandung</span>
+            <span class="flow-marquee-item"><span class="flow-marquee-dot">●</span> <strong>BALI SUNSET FESTIVAL</strong> · 20 Feb 2027 · GWK Bali</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -417,29 +445,34 @@
         <div class="filter-pills" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
           <div class="pill active" data-category="" onclick="setCategory(this, '')" data-i18n="events.allEvents">Semua Event</div>
           <div class="pill" data-category="MUSIC" onclick="setCategory(this, 'MUSIC')" data-i18n="events.concerts">Konser &amp; Musik</div>
-          <div class="pill" data-category="KPOP" onclick="setCategory(this, 'KPOP')">K-Pop</div>
+          <div class="pill" data-category="KPOP" onclick="setCategory(this, 'KPOP')" data-i18n="events.kpop">K-Pop</div>
           <div class="pill" data-category="FESTIVAL" onclick="setCategory(this, 'FESTIVAL')" data-i18n="events.festivals">Festival</div>
           <div class="pill" data-category="SPORT" onclick="setCategory(this, 'SPORT')" data-i18n="events.sports">Olahraga</div>
           <div class="pill" data-category="COMEDY" onclick="setCategory(this, 'COMEDY')" data-i18n="events.comedy">Stand Up Comedy</div>
           <a href="/past-events" class="pill" style="text-decoration:none; color:inherit; display:inline-flex; align-items:center; gap:4px;" data-i18n="events.pastEvents">Arsip Selesai <i class="fa-solid fa-arrow-right" style="font-size:11px;"></i></a>
         </div>
-        <div class="filters-row-selects" style="display:flex; gap:10px; margin-top:12px;">
+        <div class="filters-row-selects" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:12px;">
           <select id="cityFilter" class="select-filter" onchange="renderAllSections()" style="background:#FFFFFF; border:1px solid rgba(18,78,97,0.18); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:#0E222A;">
             <option value="" data-i18n="events.allCities">Semua Kota</option>
-            <option value="Jakarta">Jakarta</option>
-            <option value="Bandung">Bandung</option>
-            <option value="Surabaya">Surabaya</option>
-            <option value="Bali">Bali</option>
-            <option value="Yogyakarta">Yogyakarta</option>
-            <option value="Semarang">Semarang</option>
-            <option value="Medan">Medan</option>
-            <option value="Makassar">Makassar</option>
+            <option value="Jakarta" data-i18n="events.jakartaJabodetabek">Jakarta (Jabodetabek)</option>
+            <option value="Bandung" data-i18n="events.bandung">Bandung</option>
+            <option value="Surabaya" data-i18n="events.surabaya">Surabaya</option>
+            <option value="Bali" data-i18n="events.bali">Bali</option>
+            <option value="Yogyakarta" data-i18n="events.yogyakarta">Yogyakarta</option>
+            <option value="Semarang" data-i18n="events.semarang">Semarang</option>
+            <option value="Medan" data-i18n="events.medan">Medan</option>
+            <option value="Makassar" data-i18n="events.makassar">Makassar</option>
           </select>
           <select id="dateFilter" class="select-filter" onchange="renderAllSections()" style="background:#FFFFFF; border:1px solid rgba(18,78,97,0.18); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:#0E222A;">
             <option value="" data-i18n="events.allDates">Semua Waktu</option>
             <option value="week" data-i18n="events.thisWeek">Minggu Ini</option>
             <option value="month" data-i18n="events.thisMonth">Bulan Ini</option>
             <option value="3months" data-i18n="events.next3Months">3 Bulan Ke Depan</option>
+          </select>
+          <select id="sortFilter" class="select-filter" onchange="renderAllSections()" style="background:#FFFFFF; border:1px solid rgba(18,78,97,0.18); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:#0E222A;">
+            <option value="hype" data-i18n="events.sortHype">Urutkan: Paling Hype</option>
+            <option value="date" data-i18n="events.sortDate">Urutkan: Tanggal Terdekat</option>
+            <option value="price_asc" data-i18n="events.sortPriceAsc">Harga: Terendah</option>
           </select>
         </div>
       </div>
@@ -947,6 +980,41 @@
         }
       }
 
+      // Fail-safe discovery tier: /api/discovery/events-qualified
+      if (!allEvents.length) {
+        try {
+          const res = await fetch('/api/discovery/events-qualified?sort=hype', { headers: { Accept: 'application/json' } });
+          const data = await res.json();
+          if (data && data.events && data.events.length) {
+            allEvents = data.events.map(pe => ({
+              ...pe,
+              id: pe.id,
+              event_id: pe.id,
+              title: pe.event_name,
+              canonical_name: pe.event_name,
+              name: pe.event_name,
+              start_date: pe.event_date,
+              date: pe.event_date,
+              venue_name: pe.venue,
+              venue: pe.venue,
+              city: pe.city,
+              metro_area: pe.metro_area,
+              category: pe.category,
+              min_price: pe.starting_price_idr,
+              price_min: pe.starting_price_idr,
+              price_range_idr: pe.price_range_idr,
+              official_ticket_url: pe.policy_source_url,
+              image_url: pe.image_url,
+              verification_status: 'VERIFIED',
+              ticket_status: 'ON_SALE',
+              status: 'ON_SALE'
+            }));
+          }
+        } catch (err) {
+          console.error('Failed fetching qualified events fallback:', err);
+        }
+      }
+
       renderAllSections();
     }
 
@@ -966,22 +1034,41 @@
       const q = (document.getElementById('searchInput').value || '').toLowerCase();
       const city = (document.getElementById('cityFilter').value || '').toLowerCase();
       const dateF = document.getElementById('dateFilter').value;
+      const sortF = document.getElementById('sortFilter') ? document.getElementById('sortFilter').value : 'hype';
       const now = Date.now();
 
-      return allEvents.filter(e => {
+      let list = allEvents.filter(e => {
         // Search
         if (q) {
           const haystack = [
-            e.title, e.canonical_name, e.venue_name, e.city,
+            e.title, e.canonical_name, e.name, e.venue_name, e.venue, e.city,
             Array.isArray(e.artists) ? e.artists.join(' ') : e.artist
           ].filter(Boolean).join(' ').toLowerCase();
           if (!haystack.includes(q)) return false;
         }
 
-        // City
+        // City (with Jakarta = Jabodetabek Normalization)
         if (city && city !== 'semua') {
           const evCity = (e.city || e.venue_city || '').toLowerCase();
-          if (!evCity.includes(city)) return false;
+          const evMetro = (e.metro_area || '').toLowerCase();
+          const evVenue = (e.venue || e.venue_name || '').toLowerCase();
+          if (city === 'jakarta' || city === 'jabodetabek') {
+            const isJabo = evMetro === 'jabodetabek' ||
+              evCity.includes('jakarta') ||
+              evCity.includes('tangerang') ||
+              evCity.includes('bogor') ||
+              evCity.includes('depok') ||
+              evCity.includes('bekasi') ||
+              evVenue.includes('ice bsd') ||
+              evVenue.includes('sicc') ||
+              evVenue.includes('senayan') ||
+              evVenue.includes('gbk') ||
+              evVenue.includes('kemayoran') ||
+              evVenue.includes('jis');
+            if (!isJabo) return false;
+          } else {
+            if (!evCity.includes(city) && !evMetro.includes(city)) return false;
+          }
         }
 
         // Category
@@ -994,7 +1081,7 @@
           } else if (currentCategory === 'HIBURAN') {
             if (!evCat.includes('THEATER') && !evCat.includes('MUSICAL') && !evCat.includes('FAMILY') && !evCat.includes('OTHER') && !evCat.includes('FESTIVAL')) return false;
           } else if (currentCategory === 'KPOP') {
-            if (!evCat.includes('KPOP') && !evCat.includes('K-POP') && !evTitle.includes('KPOP') && !evTitle.includes('K-POP') && !evTitle.includes('BTS') && !evTitle.includes('BIGBANG')) return false;
+            if (!evCat.includes('KPOP') && !evCat.includes('K-POP') && !evTitle.includes('KPOP') && !evTitle.includes('K-POP') && !evTitle.includes('BTS') && !evTitle.includes('BIGBANG') && !evTitle.includes('SEVENTEEN')) return false;
           } else if (currentCategory === 'FESTIVAL') {
             if (!evCat.includes('FESTIVAL') && !evCat.includes('FEST') && !evTitle.includes('FESTIVAL') && !evTitle.includes('FEST')) return false;
           } else if (currentCategory === 'MUSIC' || currentCategory === 'CONCERT') {
@@ -1017,6 +1104,18 @@
 
         return true;
       });
+
+      // Sorting
+      if (sortF === 'date') {
+        list.sort((a, b) => (a.date || a.start_date || '9999').localeCompare(b.date || b.start_date || '9999'));
+      } else if (sortF === 'price_asc') {
+        list.sort((a, b) => (a.min_price || a.price_min || a.starting_price_idr || 0) - (b.min_price || b.price_min || b.starting_price_idr || 0));
+      } else {
+        // default: hype
+        list.sort((a, b) => (b.hype_score || b.demand_score || b.popularity_score || 0) - (a.hype_score || a.demand_score || a.popularity_score || 0));
+      }
+
+      return list;
     }
 
     function formatRupiah(num) {
@@ -1130,6 +1229,10 @@
         tierBadge = `<div class="card-tier-badge tier-unverified"><i class="fa-solid fa-clock"></i> ${t('events.tierUnderReview', 'Kebijakan Ditinjau')}</div>`;
       }
 
+      const hypeBadge = e.hype_label
+        ? `<div class="card-hype-pill">${escapeHtml(e.hype_label)}</div>`
+        : '';
+
       if (img) {
         return `
           <div class="poster-media" data-image-status="${imgStatus}">
@@ -1140,6 +1243,7 @@
             <div class="poster-scrim"></div>
             <div class="card-category-pill">${categoryLabel}</div>
             ${tierBadge}
+            ${hypeBadge}
             <div class="ln-badge ln-badge--status">${statusText}</div>
             ${radarBadge}
           </div>
@@ -1152,6 +1256,7 @@
             </div>
             <div class="card-category-pill">${categoryLabel}</div>
             ${tierBadge}
+            ${hypeBadge}
             <div class="ln-badge ln-badge--status">${statusText}</div>
             ${radarBadge}
           </div>
@@ -1404,17 +1509,30 @@
         return;
       }
 
-      const title = filtersActive
-        ? t('discoveryRails.searchResultsTitle', 'Hasil Pencarian')
-        : t('landing.unifiedDiscoveryTitle', 'Event Populer & Terbaru');
-      const lead = filtersActive
-        ? filtered.length + ' ' + t('discoveryRails.searchResultsLead', 'event terverifikasi ditemukan')
-        : t('landing.unifiedDiscoverySubtitle', 'Pilihan konser resmi, festival, dan pertandingan olahraga dengan verifikasi ketersediaan tiket resale.');
+      if (filtersActive) {
+        const title = t('discoveryRails.searchResultsTitle', 'Hasil Pencarian');
+        const lead = filtered.length + ' ' + t('discoveryRails.searchResultsLead', 'event terverifikasi ditemukan');
+        main.innerHTML = [
+          renderGridSection(title, lead, filtered, { anchor: 'unifiedDiscovery', priority: true }),
+          renderAttribution()
+        ].join('');
+      } else {
+        const topHype = [...filtered]
+          .sort((a, b) => (b.hype_score || b.demand_score || b.popularity_score || 0) - (a.hype_score || a.demand_score || a.popularity_score || 0))
+          .slice(0, 6);
 
-      main.innerHTML = [
-        renderGridSection(title, lead, filtered, { anchor: 'unifiedDiscovery' }),
-        renderAttribution()
-      ].join('');
+        const hypeTitle = t('landing.trendingHypeTitle', 'Sedang Hype — 3 Bulan Ke Depan');
+        const hypeLead = t('landing.trendingHypeSubtitle', 'Pilihan konser megabintang, festival besar, dan turnamen olahraga dengan antusiasme tertinggi.');
+
+        const gridTitle = t('landing.unifiedDiscoveryTitle', 'Katalog Event Terverifikasi');
+        const gridLead = t('landing.unifiedDiscoverySubtitle', 'Pilihan konser resmi, festival, dan tiket pertandingan olahraga dengan verifikasi kepemilikan.');
+
+        main.innerHTML = [
+          renderRail(hypeTitle, hypeLead, topHype, { anchor: 'trendingHypeRail', priority: true }),
+          renderGridSection(gridTitle, gridLead, filtered, { anchor: 'unifiedDiscovery' }),
+          renderAttribution()
+        ].join('');
+      }
 
       if (window.refreshTikumReveals) window.refreshTikumReveals();
       if (window.TikumI18n && typeof window.TikumI18n.setLang === 'function') {
@@ -1471,8 +1589,9 @@
           </div>
         `;
       } else {
+        const signInText = window.TikumI18n ? window.TikumI18n.t('nav.signIn', 'Masuk') : 'Masuk';
         container.innerHTML = `
-          <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up">Masuk / Daftar</button>
+          <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up" data-i18n="nav.signIn">${signInText}</button>
         `;
       }
     }

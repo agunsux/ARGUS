@@ -146,12 +146,12 @@ class HeroSelectionService {
     if (titleLower.includes('bts') || artistLower.includes('bts') || titleLower.includes('arirang')) {
       score += 2000;
       rationales.push('BTS World Tour marquee stadium concert (First Choice candidate)');
+    } else if (titleLower.includes('bigbang') || artistLower.includes('bigbang') || titleLower.includes('cosmos')) {
+      score += 1950;
+      rationales.push('BIGBANG 2026–27 World Tour headline act (Second Choice candidate)');
     } else if (titleLower.includes('morgan jay') || artistLower.includes('morgan jay') || titleLower.includes('goofy guy')) {
       score += 1900;
-      rationales.push('Morgan Jay: The Goofy Guy Tour Jakarta (Second Choice candidate)');
-    } else if (titleLower.includes('bigbang') || artistLower.includes('bigbang')) {
-      score += 1800;
-      rationales.push('BIGBANG 2026–27 World Tour headline act (Second Choice candidate)');
+      rationales.push('Morgan Jay: The Goofy Guy Tour Jakarta (Third Choice candidate)');
     } else if (titleLower.includes('enhypen') || artistLower.includes('enhypen')) {
       score += 1500;
       rationales.push('ENHYPEN stadium tour headline act');

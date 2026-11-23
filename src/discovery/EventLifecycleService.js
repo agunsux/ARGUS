@@ -264,7 +264,23 @@ class EventLifecycleService {
 
     if (city && city.trim()) {
       const c = city.trim().toLowerCase();
-      pastList = pastList.filter(e => (e.city || '').toLowerCase().includes(c));
+      if (c === 'jakarta' || c === 'jabodetabek' || c === 'jakarta (jabodetabek)') {
+        pastList = pastList.filter(e =>
+          e.metro_area === 'JABODETABEK' ||
+          (e.city || '').toLowerCase().includes('jakarta') ||
+          (e.city || '').toLowerCase().includes('tangerang') ||
+          (e.city || '').toLowerCase().includes('bogor') ||
+          (e.city || '').toLowerCase().includes('depok') ||
+          (e.city || '').toLowerCase().includes('bekasi') ||
+          (e.venue || '').toLowerCase().includes('ice bsd') ||
+          (e.venue || '').toLowerCase().includes('sicc')
+        );
+      } else {
+        pastList = pastList.filter(e =>
+          (e.city || '').toLowerCase().includes(c) ||
+          (e.metro_area || '').toLowerCase() === c
+        );
+      }
     }
 
     if (year && year.trim()) {

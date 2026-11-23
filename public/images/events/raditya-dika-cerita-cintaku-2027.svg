@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2c1a0e" />
+      <stop offset="100%" stop-color="#120b06" />
+    </linearGradient>
+    <radialGradient id="spotlight" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#fb923c" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#bg)" />
+  <rect width="800" height="450" fill="url(#spotlight)" />
+  <g transform="translate(50, 60)">
+    <rect x="0" y="0" width="140" height="28" rx="14" fill="rgba(255,255,255,0.08)" stroke="#fb923c" stroke-width="1.5" />
+    <text x="70" y="18" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="800" fill="#fb923c" text-anchor="middle" letter-spacing="1">STANDUP COMEDY</text>
+  </g>
+  <circle cx="400" cy="210" r="60" fill="rgba(255,255,255,0.03)" stroke="#fb923c" stroke-width="2" />
+  <text x="400" y="226" font-family="system-ui, -apple-system, sans-serif" font-size="36" text-anchor="middle" fill="#fb923c">&#127908;</text>
+  <text x="400" y="320" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="900" fill="#ffffff" text-anchor="middle">RADITYA DIKA: CERITA CINTAKU TOUR 2027</text>
+  <text x="400" y="352" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="500" fill="#94a3b8" text-anchor="middle">Balai Kartini Expo Hall, Jakarta (Jabodetabek)</text>
+  <g transform="translate(250, 390)">
+    <rect x="0" y="0" width="300" height="32" rx="6" fill="rgba(15,23,42,0.8)" stroke="rgba(255,255,255,0.1)" stroke-width="1" />
+    <text x="150" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="#cbd5e1" text-anchor="middle">TIKUM.APP • TRANSAKSI TERVERIFIKASI</text>
+  </g>
+</svg>
