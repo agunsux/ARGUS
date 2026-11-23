@@ -79,22 +79,21 @@ class EventLifecycleService {
    */
   static isEventPast(event, now = null) {
     if (!event) return false;
-    const rawStatus = (event.lifecycle_status || event.status || '').toUpperCase();
-    if (rawStatus === 'PAST' || rawStatus === 'ARCHIVED' || rawStatus === 'COMPLETED' || rawStatus === 'CANCELLED') {
-      return true;
-    }
-
     const eventDate = event.event_date || event.start_date || event.date;
     const endDate = event.end_date || null;
     return this.isPastEvent(eventDate, endDate, now);
   }
 
   /**
-   * Filters out concluded events for active discovery surfaces.
+   * Filters out concluded and cancelled events for active discovery surfaces.
    */
   static filterActiveEvents(events, now = null) {
     if (!Array.isArray(events)) return [];
-    return events.filter(e => !this.isEventPast(e, now));
+    return events.filter(e => {
+      const rawStatus = (e.lifecycle_status || e.status || '').toUpperCase();
+      if (rawStatus === 'CANCELLED' || rawStatus === 'DELETED') return false;
+      return !this.isEventPast(e, now);
+    });
   }
 
   /**
