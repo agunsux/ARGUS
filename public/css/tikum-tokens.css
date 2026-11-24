@@ -38,6 +38,14 @@
 }
 
 :root {
+  /* Public theme surfaces; brand and legacy aliases remain unchanged. */
+  --theme-canvas: #0B1220;
+  --theme-secondary: #111C2E;
+  --theme-elevated: #172438;
+  --theme-card: #1B2A40;
+  --theme-text: #F8FAFC;
+  --theme-muted: #B6C2D1;
+  --theme-border: #344358;
   --tikum-beige: #F6EBDD;
   --tikum-navy: #081E3C;
   --tikum-blue: #006BB6;

@@ -48,6 +48,7 @@
       display: flex;
       flex-direction: column;
     }
+    html[data-theme="dark"], body.dark-mode { background-color: #0b1120 !important; color: #f8fafc !important; }
 
     .account-header {
       background: var(--card-bg);
@@ -275,9 +276,6 @@
         <a href="/" style="font-size: 14px; color: var(--text-muted); text-decoration: none; margin-right: 8px;">
           <i class="fa-solid fa-house"></i> Beranda
         </a>
-        <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
-          <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
-        </button>
       </div>
     </div>
   </header>
@@ -396,25 +394,6 @@
   </nav>
 
   <script>
-    // Theme Toggle
-    const themeToggle = document.getElementById('themeToggle');
-    const isDark = localStorage.getItem('tikum_theme') === 'dark';
-    if (isDark) {
-      document.body.classList.add('dark-mode');
-      if (themeToggle) themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>';
-    }
-
-    if (themeToggle) {
-      themeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const activeDark = document.body.classList.contains('dark-mode');
-        localStorage.setItem('tikum_theme', activeDark ? 'dark' : 'light');
-        themeToggle.innerHTML = activeDark 
-          ? '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>' 
-          : '<i class="fa-solid fa-moon"></i> <span>Dark Mode</span>';
-      });
-    }
-
     // Fetch Session
     async function loadAccount() {
       const loadingView = document.getElementById('loadingView');

@@ -1553,7 +1553,7 @@
       "prelaunchNoticeTitle": "TIKUM Sedang dalam Tahap Persiapan Peluncuran",
       "prelaunchNoticeDesc": "Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran live belum tersedia.",
       "editorialHeroTitle": "Beli & Jual Tiket Konser Tanpa Was-Was.",
-      "editorialHeroSubtitle": "Jelajahi konser tanpa wajib login, cek biaya transparan di muka, dan serah terima aman dengan saksi fisik Event PIC di venue.",
+      "editorialHeroSubtitle": "Temukan event, jelajahi tiket, dan dapatkan dukungan saat dibutuhkan. Event PIC tersedia di venue yang berpartisipasi.",
       "searchPlaceholder": "Cari konser, artis, GBK, JIS, atau kota...",
       "instantDealNotice": "Sudah deal di X, TikTok, IG, atau FB? Amankan transaksinya di sini:",
       "instantDealPlaceholder": "Tempel link tikum.app/deal/... atau kode deal...",
@@ -3345,7 +3345,7 @@
       "prelaunchNoticeTitle": "TIKUM Is in Pre-Launch Preparation",
       "prelaunchNoticeDesc": "Prospective sellers can submit ticket listings for review. Purchasing, checkout, and live payments are currently not available.",
       "editorialHeroTitle": "Buy & Sell Event Tickets Without Guesswork.",
-      "editorialHeroSubtitle": "Browse concerts freely without mandatory sign-in, check upfront fees, and trade safely with physical Event PIC witnesses at venue.",
+      "editorialHeroSubtitle": "Discover events, browse tickets, and get support when it matters. Event PIC support is available at participating venues.",
       "searchPlaceholder": "Search concerts, artists, GBK, JIS, or cities...",
       "instantDealNotice": "Already agreed on X, TikTok, IG, or FB? Secure your trade here:",
       "instantDealPlaceholder": "Paste tikum.app/deal/... link or deal code...",
@@ -5546,13 +5546,6 @@
   let currentLang = resolveInitialLanguage();
   let currentTheme = 'dark';
 
-  if (hasStorage) {
-    try {
-      const savedTheme = localStorage.getItem('tikum_theme');
-      if (savedTheme) currentTheme = savedTheme;
-    } catch (e) { }
-  }
-
   function getNested(obj, pathStr) {
     if (!obj || !pathStr) return undefined;
     const parts = pathStr.split('.');
@@ -5782,7 +5775,7 @@
         langBtn.setAttribute('title', isId ? 'Ganti Bahasa (English)' : 'Ubah ke Bahasa Indonesia');
         langBtn.setAttribute('aria-label', isId ? 'Beralih ke Bahasa Inggris' : 'Beralih ke Bahasa Indonesia');
 
-        if (!langBtn.getAttribute('data-bound-lang-click')) {
+        if (!langBtn.getAttribute('data-bound-lang-click') && !langBtn.getAttribute('onclick')) {
           langBtn.setAttribute('data-bound-lang-click', '1');
           langBtn.addEventListener('click', function (e) {
             e.preventDefault();
@@ -5801,12 +5794,8 @@
   }
 
   function applyTheme(theme) {
-    currentTheme = theme === 'light' ? 'light' : 'dark';
-    if (hasStorage) {
-      try {
-        localStorage.setItem('tikum_theme', currentTheme);
-      } catch (e) { }
-    }
+    // Retain the public API for older pages, but MVP uses a single dark theme.
+    currentTheme = 'dark';
     if (hasDoc) {
       document.documentElement.setAttribute('data-theme', currentTheme);
       if (currentTheme === 'dark') {

@@ -204,9 +204,6 @@
           <i class="fa-solid fa-house"></i> <span data-i18n="nav.home">Beranda</span>
         </a>
         <button id="langToggle" class="theme-toggle-btn" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" title="Ganti Bahasa"><i class="fa-solid fa-globe"></i> <span id="langLabel">ID</span></button>
-        <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
-          <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
-        </button>
       </div>
     </div>
   </header>
@@ -259,24 +256,6 @@
   </main>
 
   <script>
-    const themeToggle = document.getElementById('themeToggle');
-    const isDark = localStorage.getItem('tikum_theme') === 'dark';
-    if (isDark) {
-      document.body.classList.add('dark-mode');
-      if (themeToggle) themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>';
-    }
-
-    if (themeToggle) {
-      themeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const activeDark = document.body.classList.contains('dark-mode');
-        localStorage.setItem('tikum_theme', activeDark ? 'dark' : 'light');
-        themeToggle.innerHTML = activeDark 
-          ? '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>' 
-          : '<i class="fa-solid fa-moon"></i> <span>Dark Mode</span>';
-      });
-    }
-
     const ERROR_MESSAGES = {
       TOKEN_EXPIRED: 'Tautan magic link sudah kedaluwarsa (berlaku 15 menit). Silakan minta magic link baru.',
       TOKEN_ALREADY_USED: 'Tautan magic link ini sudah pernah digunakan. Silakan minta magic link baru untuk masuk.',

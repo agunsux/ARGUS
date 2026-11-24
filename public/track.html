@@ -23,6 +23,7 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/marketplace-refresh.css">
 </head>
 <body>
 
@@ -149,7 +150,7 @@
             <i class="fa-solid fa-bars"></i>
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <img src="/images/tikum-horizontal.svg" width="130" height="32" alt="Tikum">
+            <img src="/images/tikum-horizontal.svg" height="32" alt="Tikum" style="height:32px; width:auto; aspect-ratio:220/52; display:block;">
           </a>
         </div>
 
@@ -536,7 +537,9 @@
       }
     }
 
+    let lastFetchedTx = null;
     function renderTracking(tx) {
+      lastFetchedTx = tx;
       document.getElementById('transIdText').innerText = tx.id;
       document.getElementById('transTypeBadge').innerText = tx.type;
       
@@ -666,7 +669,7 @@
 
     window.addEventListener('tikum:languageChanged', function() {
       if (lastFetchedTx) {
-        renderTimeline(lastFetchedTx);
+        renderTracking(lastFetchedTx);
       }
     });
 

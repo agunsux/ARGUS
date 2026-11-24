@@ -111,6 +111,7 @@ class DokuPaymentProvider extends PaymentProvider {
    * Validates DOKU configuration and credential presence without leaking secrets
    */
   validateConfiguration() {
+    const { validateDokuConfiguration } = require('../../config/deploymentEnv');
     const issues = [];
     if (!this.clientId) issues.push('DOKU_CLIENT_ID is missing');
     if (!this.secretKey) issues.push('DOKU_SECRET_KEY is missing');
@@ -118,6 +119,17 @@ class DokuPaymentProvider extends PaymentProvider {
     if (!this.env) issues.push('DOKU_ENV is missing');
     if (this.productionHostRejected) {
       issues.push('PRODUCTION_HOST_REJECTED: https://api.doku.com cannot be selected while production payments are gated.');
+    }
+
+    const envValidation = validateDokuConfiguration({
+      clientId: this.clientId,
+      secretKey: this.secretKey,
+      apiBaseUrl: this.apiBaseUrl,
+      env: this.env
+    });
+
+    if (!envValidation.allowed && envValidation.reason) {
+      issues.push(envValidation.reason);
     }
 
     return {
@@ -129,7 +141,8 @@ class DokuPaymentProvider extends PaymentProvider {
       hasClientId: Boolean(this.clientId),
       hasSecretKey: Boolean(this.secretKey),
       hasWebhookSecret: Boolean(this.webhookSecret),
-      productionHostRejected: this.productionHostRejected
+      productionHostRejected: this.productionHostRejected,
+      deploymentCheck: envValidation
     };
   }
 

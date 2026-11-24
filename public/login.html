@@ -17,8 +17,8 @@
       --text-main: #18181B;
       --text-muted: #52525B;
       --border-color: #E3E0D8;
-      --primary: #059669;
-      --primary-hover: #047857;
+      --primary: #006BB6;
+      --primary-hover: #081E3C;
     }
 
     body.dark-mode {
@@ -27,12 +27,12 @@
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --border-color: #334155;
-      --primary: #10b981;
-      --primary-hover: #059669;
+      --primary: #006BB6;
+      --primary-hover: #07558a;
     }
 
     body {
-      background-color: var(--bg-page);
+      background: var(--bg-page) !important;
       color: var(--text-main);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
@@ -40,6 +40,7 @@
       display: flex;
       flex-direction: column;
     }
+    html[data-theme="dark"], body.dark-mode { background-color: #0b1120 !important; color: #f8fafc !important; }
 
     .auth-header {
       background: var(--card-bg);
@@ -48,7 +49,7 @@
     }
 
     .header-container {
-      max-width: 900px;
+      max-width: 1240px;
       margin: 0 auto;
       display: flex;
       justify-content: space-between;
@@ -95,8 +96,8 @@
       align-items: center;
       gap: 6px;
       padding: 4px 10px;
-      background: #ecfdf5;
-      color: #059669;
+      background: rgba(0,107,182,.12);
+      color: var(--text-main);
       border-radius: 9999px;
       font-size: 12px;
       font-weight: 600;
@@ -188,6 +189,18 @@
       border: 1px solid #fecaca;
       display: block;
     }
+    .auth-nav { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
+    .auth-nav a { color:var(--text-main); text-decoration:none; font-size:14px; }
+    .auth-nav .auth-sell { background:#b8472f; color:#fff; border-radius:999px; padding:9px 14px; }
+    .auth-header a:focus-visible, .auth-header button:focus-visible, .auth-input:focus-visible, .auth-btn:focus-visible { outline:3px solid #e05a2b; outline-offset:3px; }
+    body.dark-mode .brand-logo img { content: url('/images/tikum-horizontal-light.svg'); }
+    @media (max-width:640px) {
+      .auth-header { padding:12px; }
+      .header-container { align-items:flex-start; gap:12px; flex-wrap:wrap; }
+      .auth-nav { gap:8px; }
+      .auth-nav a, .theme-toggle-btn { font-size:12px; }
+      .auth-card { margin:24px auto; }
+    }
   </style>
 </head>
 <body>
@@ -195,26 +208,22 @@
   <!-- Site Header -->
   <header class="auth-header">
     <div class="header-container">
-      <a href="/" class="brand-logo" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
-        <img src="/assets/tikum-mark-2color.svg" width="30" height="30" alt="Tikum">
-        <span style="font-weight:800; font-size:18px; color:inherit;">Tikum</span>
+      <a href="/" class="brand-logo">
+        <img src="/images/tikum-horizontal.svg" width="127" height="30" alt="TIKUM">
       </a>
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <a href="/" style="font-size: 14px; color: var(--text-muted); text-decoration: none;">
-          <i class="fa-solid fa-house"></i> <span data-i18n="nav.home">Beranda</span>
-        </a>
-        <button id="langToggle" class="theme-toggle-btn" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" title="Ganti Bahasa"><i class="fa-solid fa-globe"></i> <span id="langLabel">ID</span></button>
-        <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
-          <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
-        </button>
-      </div>
+      <nav class="auth-nav" aria-label="Navigasi utama / Main navigation">
+        <a href="/offers" data-i18n="nav.buyTickets">Jelajahi Event</a>
+        <a href="/how-it-works" data-i18n="footer.how">Cara Kerja</a>
+        <a class="auth-sell" href="/deal/create" data-i18n="nav.sellTicket">Jual Tiket</a>
+        <button type="button" id="langToggle" class="theme-toggle-btn" onclick="window.TikumI18n && window.TikumI18n.toggleLang()" aria-label="Ganti bahasa / Switch language">ID | EN</button>
+      </nav>
     </div>
   </header>
 
   <main style="padding: 20px; flex: 1;">
     <div class="auth-card" id="authCard">
       <div class="auth-badge">
-        <i class="fa-solid fa-shield-halved"></i> Passwordless Secure Auth
+        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i> <span data-i18n="auth.title">Masuk ke Tikum</span>
       </div>
 
       <!-- State: Input Email Form -->
@@ -264,25 +273,6 @@
   </main>
 
   <script>
-    // Theme Toggle
-    const themeToggle = document.getElementById('themeToggle');
-    const isDark = localStorage.getItem('tikum_theme') === 'dark';
-    if (isDark) {
-      document.body.classList.add('dark-mode');
-      if (themeToggle) themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>';
-    }
-
-    if (themeToggle) {
-      themeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const activeDark = document.body.classList.contains('dark-mode');
-        localStorage.setItem('tikum_theme', activeDark ? 'dark' : 'light');
-        themeToggle.innerHTML = activeDark 
-          ? '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>' 
-          : '<i class="fa-solid fa-moon"></i> <span>Dark Mode</span>';
-      });
-    }
-
     const ERROR_MESSAGES = {
       TOKEN_EXPIRED: 'Tautan magic link sudah kedaluwarsa (berlaku 15 menit). Silakan minta magic link baru.',
       TOKEN_ALREADY_USED: 'Tautan magic link ini sudah pernah digunakan. Silakan minta magic link baru untuk masuk.',

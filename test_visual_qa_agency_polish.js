@@ -189,10 +189,11 @@ console.log('  ✓ Readiness badges, headings, and input labels adhere to WCAG A
 // -----------------------------------------------------------------------------
 // [TEST 6] Zero Horizontal Overflow & Headless Browser Visual Audit
 // -----------------------------------------------------------------------------
-console.log('[TEST 6] Zero Horizontal Overflow & Headless Multi-Viewport Captures...');
+console.log('[TEST 6] Static Responsive Layout Checks (not browser geometry)...');
 
-assert.ok(styleCss.includes('overflow-x: hidden !important'), 'Global overflow-x: hidden must be enforced');
-assert.ok(styleCss.includes('max-width: 100vw !important'), 'Global max-width: 100vw must be enforced');
+const refreshCss = fs.readFileSync(path.join(__dirname, 'public/css/marketplace-refresh.css'), 'utf8');
+assert.match(styleCss, /#appMainWrapper\s*\{[^}]*min-width:\s*0/s, 'Main layout must allow flex items to shrink');
+assert.match(refreshCss, /\.flow-marquee-wrapper\s*\{[^}]*overflow-x:\s*auto/s, 'Poster marquee must provide local horizontal scrolling');
 
 async function runBrowserVisualAudit() {
   const server = app.listen(0);
@@ -223,7 +224,7 @@ async function runBrowserVisualAudit() {
       if (vp.width <= 640) {
         assert.ok(styleCss.includes('@media (max-width: 640px)'), 'style.css must have @media (max-width: 640px) rules');
         assert.ok(styleCss.includes('.topbar-hamburger-btn'), 'style.css must show mobile hamburger on <=640px');
-        assert.ok(styleCss.includes('overflow-x: hidden !important'), 'Global overflow guard must be active on mobile');
+        assert.match(styleCss, /\.footer-tier-1\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s, 'Mobile footer columns must shrink within their container');
       }
       // Assert desktop rules for 1280px & 1440px
       if (vp.width >= 1280) {
@@ -251,7 +252,7 @@ async function runBrowserVisualAudit() {
     }
 
     console.log('  ✓ All 5 core routes return 200 OK with strict viewport meta tags.');
-    console.log('  ✓ Responsive geometry assertions passed across 360px, 390px, 1280px, and 1440px (Zero Horizontal Overflow).\n');
+    console.log('  ✓ Static responsive layout rules checked; browser geometry not measured.\n');
   } finally {
     server.close();
   }
@@ -477,7 +478,7 @@ async function runAll() {
 
   console.log('======================================================================');
   console.log('  ALL AGENCY-GRADE VISUAL, LOGO, SPACING & MOTION CHECKS PASSED!      ');
-  console.log('  100% PIXEL-ACCURATE, ZERO OVERFLOW & PRODUCTION-READY (100% OK)     ');
+  console.log('  Browser geometry and visual acceptance require separate checks.     ');
   console.log('======================================================================\n');
 }
 

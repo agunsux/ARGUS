@@ -23,6 +23,7 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/marketplace-refresh.css">
   <style>
     .tab-bar {
       display: flex;
@@ -84,9 +85,37 @@
       justify-content: center;
       padding: 20px;
     }
+    /* Offers-specific surfaces: legacy cream tokens must not leak into dark cards. */
+    body.offers-page {
+      --tikum-ink-900: #F6EBDD;
+      --tikum-cream-50: #111C2E;
+      --tikum-border: #344358;
+      --surface: #1B2A40;
+      --border: #344358;
+      --text-muted: #B6C2D1;
+      --text-dim: #A9B9C9;
+    }
+    .offers-page .offers-identity, .offers-page #offersEmpty,
+    .offers-page .offer-card, .offers-page .modal-overlay .card {
+      background: #1B2A40;
+      color: #F6EBDD;
+      border: 1px solid #344358;
+    }
+    .offers-page .offers-identity { background: #1B2A40 !important; }
+    .offers-page .tab-btn { min-width: 0; flex: 1; justify-content: center; color: #C8D3DF; }
+    .offers-page .tab-btn.active { color: #FF9872; border-bottom-color: #E05A2B; }
+    .offers-page .form-control { background: #0B1526; color: #F6EBDD; border: 1px solid #53677F; }
+    .offers-page .form-control:focus-visible, .offers-page button:focus-visible,
+    .offers-page a:focus-visible { outline: 3px solid #FF9872; outline-offset: 3px; }
+    .offers-page .offer-card { overflow-wrap: anywhere; }
+    .offers-page .offer-card code { color: #FFAD8C !important; }
+    .offers-page .notice-box { color: #F6EBDD; }
+    .offers-page .btn-outline, .offers-page .btn-secondary { color: #F6EBDD; border-color: #71849B; }
+    .offers-page .btn-outline:hover, .offers-page .btn-secondary:hover { background: #344358; }
+    .offers-page .hero-pill { color: #B6DFFF; }
   </style>
 </head>
-<body>
+<body class="offers-page">
 
   <div id="appShell">
     <div id="sidebarBackdrop"></div>
@@ -262,7 +291,7 @@
     </div>
 
     <!-- Pilot User Switcher -->
-    <div class="card" style="padding: 16px 20px; margin-bottom: 24px; background: #FFFFFF; border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)); border-radius: 16px; box-shadow: 0 4px 16px rgba(14, 59, 74, 0.04); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div class="card offers-identity" style="padding: 16px 20px; margin-bottom: 24px; border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)); border-radius: 16px; box-shadow: 0 4px 16px rgba(14, 59, 74, 0.04); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <i class="fa-solid fa-user-gear" style="color: var(--terra-600); font-size: 18px;"></i>
         <div>

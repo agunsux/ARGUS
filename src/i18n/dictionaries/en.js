@@ -1493,7 +1493,7 @@ module.exports = {
     "prelaunchNoticeTitle": "TIKUM Is in Pre-Launch Preparation",
     "prelaunchNoticeDesc": "Prospective sellers can submit ticket listings for review. Purchasing, checkout, and live payments are currently not available.",
     "editorialHeroTitle": "Buy & Sell Event Tickets Without Guesswork.",
-    "editorialHeroSubtitle": "Browse concerts freely without mandatory sign-in, check upfront fees, and trade safely with physical Event PIC witnesses at venue.",
+    "editorialHeroSubtitle": "Discover events, browse tickets, and get support when it matters. Event PIC support is available at participating venues.",
     "searchPlaceholder": "Search concerts, artists, GBK, JIS, or cities...",
     "instantDealNotice": "Already agreed on X, TikTok, IG, or FB? Secure your trade here:",
     "instantDealPlaceholder": "Paste tikum.app/deal/... link or deal code...",

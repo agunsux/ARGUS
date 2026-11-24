@@ -1493,7 +1493,7 @@ module.exports = {
     "prelaunchNoticeTitle": "TIKUM Sedang dalam Tahap Persiapan Peluncuran",
     "prelaunchNoticeDesc": "Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran live belum tersedia.",
     "editorialHeroTitle": "Beli & Jual Tiket Konser Tanpa Was-Was.",
-    "editorialHeroSubtitle": "Jelajahi konser tanpa wajib login, cek biaya transparan di muka, dan serah terima aman dengan saksi fisik Event PIC di venue.",
+    "editorialHeroSubtitle": "Temukan event, jelajahi tiket, dan dapatkan dukungan saat dibutuhkan. Event PIC tersedia di venue yang berpartisipasi.",
     "searchPlaceholder": "Cari konser, artis, GBK, JIS, atau kota...",
     "instantDealNotice": "Sudah deal di X, TikTok, IG, atau FB? Amankan transaksinya di sini:",
     "instantDealPlaceholder": "Tempel link tikum.app/deal/... atau kode deal...",

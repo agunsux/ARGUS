@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <script>document.documentElement.dataset.theme = 'dark';</script>
   <meta name="theme-color" content="#FAF6F2">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -38,6 +39,7 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/marketplace-refresh.css">
 
   <!-- Schema.org Structured Data -->
   <script type="application/ld+json">
@@ -323,9 +325,9 @@
 
         <div class="topbar-center">
           <ul class="topbar-nav-links">
-            <li><a href="/offers?category=CONCERT" class="topbar-nav-link" data-i18n="nav.concerts">Konser &amp; Musik</a></li>
-            <li><a href="/offers?category=SPORTS" class="topbar-nav-link" data-i18n="nav.sports">Olahraga</a></li>
-            <li><a href="/offers?category=FESTIVAL" class="topbar-nav-link" data-i18n="nav.festivals">Festival</a></li>
+            <li><a href="/offers" class="topbar-nav-link" data-i18n="nav.buyTickets">Jelajahi Event</a></li>
+            <li><a href="/how-it-works" class="topbar-nav-link" data-i18n="footer.how">Cara Kerja</a></li>
+            <li><a href="/faq" class="topbar-nav-link" data-i18n="footer.faq">Bantuan</a></li>
             <li class="city-dropdown-wrap">
               <a href="javascript:void(0)" class="topbar-nav-link" aria-haspopup="true">
                 <span data-i18n="nav.cities">Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
@@ -348,9 +350,6 @@
           <div id="authHeaderContainer">
             <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up" data-i18n="nav.signIn">Masuk</button>
           </div>
-          <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Toggle Theme" style="display:none; padding:6px 10px; height:36px;">
-            <i class="fa-solid fa-sun" id="themeIcon"></i>
-          </button>
           <button class="lang-toggle-btn lang-switcher-pill" onclick="toggleLang()" id="langToggle" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
             <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>
           </button>
@@ -360,18 +359,18 @@
   <!-- SECTION 1: Deep Teal Editorial Hero (Motion + SeatGeek Search + Instant Deal Link) -->
   <section class="hero-teal-editorial" id="editorialHero" data-reveal>
     <div style="max-width:1120px; margin:0 auto; text-align:center;">
-      <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.1); border:1px solid rgba(250,241,226,0.2); border-radius:999px; padding:6px 16px; font-size:12.5px; font-weight:700; color:#F7FAFF; margin-bottom:20px; text-transform:uppercase; letter-spacing:0.5px;">
+      <div class="hero-eyebrow-pill">
         <span style="color:#E05A2B;">●</span> <span data-i18n="spotlight.eyebrow">TIKUM by PT SHINERVA PRAJNA TEJAS • Verified Ticket Marketplace</span>
       </div>
       <h1 class="hero-editorial-h1" data-i18n="landing.editorialHeroTitle">Beli &amp; Jual Tiket Konser Tanpa Was-Was.</h1>
       <p class="hero-editorial-sub" data-i18n="landing.editorialHeroSubtitle">
-        Jelajahi konser tanpa wajib login, cek biaya transparan di muka, dan serah terima aman dengan saksi fisik Event PIC di venue.
+        Temukan event, jelajahi tiket, dan dapatkan dukungan saat dibutuhkan. Event PIC tersedia di venue yang berpartisipasi.
       </p>
 
       <!-- SeatGeek Large Search Bar -->
       <div class="seatgeek-search-box">
         <i class="fa-solid fa-magnifying-glass seatgeek-search-icon"></i>
-        <input type="search" id="searchInput" class="seatgeek-search-input" placeholder="Cari konser, artis, GBK, JIS, atau kota..." data-i18n-placeholder="landing.searchPlaceholder" oninput="debounceSearch()">
+        <input type="search" id="searchInput" class="seatgeek-search-input" aria-label="Cari event, artis, venue, atau kota" placeholder="Cari konser, artis, GBK, JIS, atau kota..." data-i18n-placeholder="landing.searchPlaceholder" oninput="debounceSearch()">
         <button type="button" class="seatgeek-search-submit-btn" onclick="debounceSearch()" aria-label="Cari">
           <i class="fa-solid fa-arrow-right"></i>
         </button>
@@ -408,8 +407,7 @@
 
       <div class="flow-marquee-wrapper" aria-label="Event highlights">
         <div class="flow-marquee-track" id="eventMarquee">
-          <div class="flow-marquee-content"><span class="flow-marquee-item">TIKUM ? Temukan acara pilihan Anda</span></div>
-          <div class="flow-marquee-content" aria-hidden="true"><span class="flow-marquee-item">TIKUM ? Temukan acara pilihan Anda</span></div>
+          <div class="flow-marquee-content"><span class="flow-marquee-item">Poster event mendatang belum tersedia.</span></div>
         </div>
       </div>
       <button type="button" class="marquee-toggle" id="marqueeToggle" aria-pressed="false" aria-label="Pause event highlights">Pause</button>
@@ -824,25 +822,6 @@
     let currentCategory = '';
     let searchTimeout = null;
 
-    // Theme initialization (Dark mode default to match Verified Concert Hero; user preference stored in localStorage)
-    document.addEventListener('DOMContentLoaded', () => {
-      const savedTheme = localStorage.getItem('tikum_theme');
-      const icon = document.querySelector('#themeToggle i');
-      if (savedTheme === 'light') {
-        document.body.classList.remove('dark-mode');
-        if (icon) {
-          icon.classList.remove('fa-sun');
-          icon.classList.add('fa-moon');
-        }
-      } else {
-        document.body.classList.add('dark-mode');
-        if (icon) {
-          icon.classList.remove('fa-moon');
-          icon.classList.add('fa-sun');
-        }
-      }
-    });
-
     // Nav shortcut: apply a category filter and scroll to the listings.
     function applyNavCategory(cat) {
       currentCategory = cat || '';
@@ -877,21 +856,6 @@
         window.location.href = '/account';
       } else {
         openAuthModal();
-      }
-    }
-
-    function toggleTheme() {
-      document.body.classList.toggle('dark-mode');
-      const isDark = document.body.classList.contains('dark-mode');
-      localStorage.setItem('tikum_theme', isDark ? 'dark' : 'light');
-      const icon = document.querySelector('#themeToggle i');
-      if (!icon) return;
-      if (isDark) {
-        icon.classList.remove('fa-moon');
-        icon.classList.add('fa-sun');
-      } else {
-        icon.classList.remove('fa-sun');
-        icon.classList.add('fa-moon');
       }
     }
 

@@ -2436,11 +2436,15 @@ html[lang="en"] .lang-id {
 
 /* Strict Mobile Optimization (360px - 430px) */
 @media (max-width: 480px) {
-  html, body {
-    overflow-x: hidden;
-    max-width: 100vw;
-  }
-
+  #appTopbar { gap: 6px; }
+  #appTopbar .topbar-left { min-width: 0; gap: 6px; }
+  #appTopbar .topbar-left .brand-title { display: none; }
+  #appTopbar .topbar-left .brand img { max-width: 100px; height: auto; }
+  #appTopbar .topbar-right { min-width: 0; gap: 6px; }
+  #appTopbar .topbar-right .ln-btn { padding-inline: 8px; font-size: 12px; white-space: nowrap; }
+  #appTopbar .lang-toggle-btn { padding-inline: 8px; }
+  .footer-tier-1 { grid-template-columns: minmax(0, 1fr); }
+  .footer-col-brand, .footer-col-contact, .footer-col-links { min-width: 0; overflow-wrap: anywhere; }
   .filter-pills {
     display: flex;
     overflow-x: auto;
@@ -3754,11 +3758,6 @@ h1, h2, h3, h4, .font-display {
   margin-bottom: 12px !important;
 }
 
-html, body {
-  overflow-x: hidden !important;
-  max-width: 100vw !important;
-}
-
 @media (max-width: 1023px) {
   .topbar-nav-links {
     display: none !important;
@@ -4024,7 +4023,12 @@ h2 { font-family: var(--font-display); font-size: clamp(1.75rem, 3vw, 2.5rem); }
 .event-card-item:hover .poster-img, .poster-card:hover .poster-img { transform: scale(1.04); }
 .poster-img { transition: transform 300ms ease; }
 #appFooter.site-footer { background: var(--knicks-navy-900) !important; border-top: 3px solid transparent !important; border-image: linear-gradient(90deg, #006BB6 0%, #006BB6 70%, #E05A2B 100%) 1 !important; }
-.footer-tier-1 { max-width: 1240px; margin-inline: auto; grid-template-columns: 1.4fr 1fr 1fr; gap: 48px; }
+@media (min-width: 1024px) {
+  .footer-tier-1 { max-width: 1240px; margin-inline: auto; grid-template-columns: 1.4fr 1fr 1fr; gap: 48px; }
+}
+@media (max-width: 1023px) {
+  .footer-tier-1 { grid-template-columns: 1fr !important; gap: 32px !important; max-width: 100% !important; }
+}
 .footer-tier-2 { max-width: 1240px; margin-inline: auto; }
 :focus-visible { outline: 3px solid var(--knicks-blue-600); outline-offset: 3px; }
 @media (max-width: 1023px) {
@@ -4037,5 +4041,14 @@ h2 { font-family: var(--font-display); font-size: clamp(1.75rem, 3vw, 2.5rem); }
   input, select, textarea { font-size: 16px !important; }
   .hero-deal-submit-btn { min-height: 46px !important; }
   .footer-tier-1 { grid-template-columns: 1fr; gap: 32px; }
+}
+
+/* The compact shared header/footer must fit without clipping or a page-wide mask. */
+@media (max-width: 480px) {
+  #appTopbar .topbar-center { display: none !important; }
+  #appTopbar .topbar-left .brand > span { display: none; }
+  #appTopbar .topbar-right .ln-btn { padding-inline: 8px !important; }
+  .footer-essential-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .footer-essential-link { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 }
 
