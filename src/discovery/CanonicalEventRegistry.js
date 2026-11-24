@@ -204,6 +204,7 @@ class CanonicalEventRegistry {
 
     // Construct Canonical Event Model conforming to Part 6 & P0 Invariants
     const canonicalEvent = {
+      verification_state: eventData.verification_state || null,
       event_id: eventId,
       id: eventId, // compatibility with existing marketplace queries
       slug: slug,

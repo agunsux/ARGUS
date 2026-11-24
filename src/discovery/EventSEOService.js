@@ -604,7 +604,7 @@ class EventSEOService {
         return `
           <figure class="event-poster" data-image-status="${event.image_status || (hasVerifiedPoster ? 'VERIFIED_AUTHORIZED_SELLER' : 'FALLBACK_VERIFIED')}">
             ${hasVerifiedPoster ? `
-              <img src="${event.image_url}" alt="${posterAlt}" loading="lazy" decoding="async"
+              <img src="${event.image_url}" alt="${posterAlt}" loading="lazy" decoding="async" style="width:100%; max-width:480px; aspect-ratio:3/4; object-fit:contain; border-radius:8px; display:block; margin:0 auto;"
                    onerror="this.onerror=null; this.src='${fallbackPosterSrc}';">
             ` : `
               <img src="${fallbackPosterSrc}" alt="${posterAlt} — Tikum Verified Fallback" loading="lazy" decoding="async" style="width:100%; max-width:480px; aspect-ratio:3/4; object-fit:contain; border-radius:8px; display:block; margin:0 auto;">

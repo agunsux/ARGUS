@@ -114,6 +114,39 @@
     initScrollReveals();
     initStickyHeaderShadow();
     initDrawerInteractions();
+    document.addEventListener('click', event => {
+      const button = event.target.closest('[data-rail-direction]');
+      if (!button) return;
+      const rail = button.closest('.ln-section').querySelector('.ln-rail');
+      if (rail) rail.scrollBy({ left: Number(button.dataset.railDirection) * rail.clientWidth * 0.8, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+    });
+    const track = document.getElementById('eventMarquee');
+    const toggle = document.getElementById('marqueeToggle');
+    if (track && toggle) {
+      toggle.addEventListener('click', () => {
+        const paused = toggle.getAttribute('aria-pressed') !== 'true';
+        toggle.setAttribute('aria-pressed', String(paused));
+        toggle.setAttribute('aria-label', paused ? 'Play event highlights' : 'Pause event highlights');
+        toggle.textContent = paused ? 'Play' : 'Pause';
+        track.classList.toggle('is-paused', paused);
+      });
+      fetch('/api/discovery/events-qualified').then(response => {
+        if (!response.ok) throw new Error('Event feed unavailable');
+        return response.json();
+      }).then(data => {
+        const events = Array.isArray(data.events) ? data.events : [];
+        if (!events.length) return;
+        track.querySelectorAll('.flow-marquee-content').forEach(content => {
+          content.replaceChildren();
+          events.slice(0, 10).forEach(event => {
+            const item = document.createElement('span');
+            item.className = 'flow-marquee-item';
+            item.textContent = `● ${event.event_name || event.title || ''} · ${event.event_date || event.start_date || ''} · ${event.venue || ''}`;
+            content.appendChild(item);
+          });
+        });
+      }).catch(() => { /* Keep the branded fallback on feed errors. */ });
+    }
   }
 
   if (document.readyState === 'loading') {

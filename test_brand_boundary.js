@@ -111,7 +111,9 @@ async function runBrandBoundaryTests() {
   check('2. Public navigation across all customer pages renders TIKUM brand', () => {
     for (const filename of customerFacingFiles) {
       const content = fs.readFileSync(path.join(publicDir, filename), 'utf8');
-      assert.ok(content.includes('class="brand-title">Tikum</div>') || content.includes('Tikum — by Shinerva'),
+      const sidebarBrand = /class="sidebar-brand-title"\s*>\s*TIKUM\s*<\/div>/i.test(content) &&
+        /class="sidebar-brand-sub"\s*>\s*by\s+PT\s+Shinerva\s+Prajna\s+Tejas\s*<\/div>/i.test(content);
+      assert.ok(content.includes('class="brand-title">Tikum</div>') || content.includes('Tikum — by Shinerva') || sidebarBrand,
         `Navigation missing Tikum brand in ${filename}`);
     }
   });

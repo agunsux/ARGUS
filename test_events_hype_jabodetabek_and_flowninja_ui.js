@@ -25,7 +25,7 @@ console.log('[1/8] Verifying EventPolicyRegistry 3-Month Catalog & Hype Ranking.
 const { eventPolicyRegistry } = require('./src/discovery/EventPolicyRegistry');
 
 const activeEvents = eventPolicyRegistry.getQualifiedEvents({ sort: 'hype' });
-assert.ok(activeEvents.length >= 10, `Expected at least 10 active events, got ${activeEvents.length}`);
+assert.ok(activeEvents.length >= 14, `Expected at least 14 active events, got ${activeEvents.length}`);
 
 const cutoffDate = '2026-11-24';
 const maxDate = '2027-02-24';
@@ -166,7 +166,7 @@ async function runDiscoveryApiTests() {
     assert.strictEqual(resQual.status, 200);
     assert.strictEqual(resQual.body.success, true);
     const list = resQual.body.events || resQual.body.data || [];
-    assert.ok(list.length >= 10, `Expected >= 10 qualified events, got ${list.length}`);
+    assert.ok(list.length >= 14, `Expected >= 14 qualified events, got ${list.length}`);
     assert.ok((list[0].id || list[0].event_id).includes('bts'), 'Top #1 hype event must be BTS');
     assert.ok((list[1].id || list[1].event_id).includes('bigbang'), 'Top #2 hype event must be BIGBANG');
 
@@ -215,16 +215,13 @@ const logoFiles = [
 for (const file of logoFiles) {
   const content = fs.readFileSync(path.join(__dirname, file), 'utf8');
   assert.ok(content.includes('<svg') && content.includes('</svg>'), `${file} must be valid SVG`);
-  // Must include the ticket-stub notch path
-  assert.ok(
-    content.includes('M 43 56 H 57') || content.includes('ticket-stub') || content.includes('a 7 7 0 0 1'),
-    `${file} must contain the signature ticket-stub notch geometry`
-  );
+  assert.ok(!content.includes('M 43 56 H 57'), `${file} must not contain ticket-stub geometry`);
+  assert.ok(content.includes('cx="28"') && content.includes('cx="72"') && content.includes('cx="50"'), `${file} must contain the two heads and central dot`);
   // Color checks
-  assert.ok(content.includes('#DA674E') || content.includes('#D96248'), `${file} must contain Terracotta center dot`);
+  assert.ok(content.includes('#E05A2B') || content.includes('#E05A2B'), `${file} must contain Terracotta center dot`);
 }
 
-console.log('  ✓ All 5 SVG logos contain the ticket-stub notch geometry underneath the terracotta dot.\n');
+console.log('  ✓ All 5 SVG logos retain two heads and a central dot without ticket-stub geometry.\n');
 
 // -----------------------------------------------------------------------------
 // 7. FLOW NINJA MOTION & FRONTEND TEMPLATES

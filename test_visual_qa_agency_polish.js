@@ -66,22 +66,22 @@ console.log('[TEST 1] Teal Logo Proportions, Surface Contrast & Favicon...');
 const logoPath = path.join(__dirname, 'public/images/tikum-horizontal.svg');
 assert.ok(fs.existsSync(logoPath), 'tikum-horizontal.svg must exist');
 const logoSvg = fs.readFileSync(logoPath, 'utf8');
-assert.ok(logoSvg.includes('#124E61'), 'tikum-horizontal.svg must contain Deep Teal #124E61');
-assert.ok(logoSvg.includes('#DA674E'), 'tikum-horizontal.svg must contain Signature Coral #DA674E');
+assert.ok(logoSvg.includes('#081E3C'), 'tikum-horizontal.svg must contain Deep Navy #081E3C');
+assert.ok(logoSvg.includes('#E05A2B'), 'tikum-horizontal.svg must contain Signature Coral #E05A2B');
 assert.ok(logoSvg.includes('viewBox="0 0 220 52"'), 'tikum-horizontal.svg viewBox must be 220x52');
 
 // 1.2 Footer horizontal light logo
 const logoLightPath = path.join(__dirname, 'public/images/tikum-horizontal-light.svg');
 assert.ok(fs.existsSync(logoLightPath), 'tikum-horizontal-light.svg must exist');
 const logoLightSvg = fs.readFileSync(logoLightPath, 'utf8');
-assert.ok(logoLightSvg.includes('#FAF1E2'), 'tikum-horizontal-light.svg must contain Warm Cream #FAF1E2');
-assert.ok(logoLightSvg.includes('#DA674E'), 'tikum-horizontal-light.svg must contain Coral #DA674E dot');
+assert.ok(logoLightSvg.includes('#F6EBDD'), 'tikum-horizontal-light.svg must contain Warm Beige #F6EBDD');
+assert.ok(logoLightSvg.includes('#E05A2B'), 'tikum-horizontal-light.svg must contain Coral #E05A2B dot');
 
 // 1.3 Favicon
 const faviconPath = path.join(__dirname, 'public/favicon.svg');
 assert.ok(fs.existsSync(faviconPath), 'favicon.svg must exist');
 const faviconSvg = fs.readFileSync(faviconPath, 'utf8');
-assert.ok(faviconSvg.includes('#124E61') && faviconSvg.includes('#DA674E'), 'favicon.svg must have brand dual-tone colors');
+assert.ok(faviconSvg.includes('#124E61') && faviconSvg.includes('#E05A2B'), 'favicon.svg must have teal and terracotta');
 
 // 1.4 Aspect ratio styling in CSS
 assert.ok(styleCss.includes('aspect-ratio: 220 / 52'), 'style.css must enforce 220/52 aspect ratio for razor-sharp rendering');
@@ -363,7 +363,7 @@ console.log('[TEST 9] Topbar Visual Hierarchy, Ghost Sign-In Pill & Single-Coral
 
 // 9.1 Single solid Coral CTA
 assert.ok(styleCss.includes('.btn-topbar-seller'), 'style.css must define .btn-topbar-seller');
-assert.ok(styleCss.includes('--terra-600') || styleCss.includes('#DA674E'), 'Seller CTA must use Coral brand color');
+assert.ok(styleCss.includes('--terra-600') || styleCss.includes('#E05A2B'), 'Seller CTA must use Coral brand color');
 
 // 9.2 Sign-in button must be Teal Outline / Ghost Pill (NOT solid coral)
 assert.ok(styleCss.includes('.btn-auth-header'), 'style.css must define .btn-auth-header');
@@ -371,9 +371,9 @@ const authHeaderCssMatch = styleCss.match(/\.btn-auth-header\s*\{([^}]+)\}/);
 assert.ok(authHeaderCssMatch, '.btn-auth-header block must exist in style.css');
 const authHeaderCss = authHeaderCssMatch[1];
 assert.ok(authHeaderCss.includes('transparent'), '.btn-auth-header must have transparent background');
-assert.ok(authHeaderCss.includes('#0E3B4A'), '.btn-auth-header must use Teal text color #0E3B4A');
+assert.ok(authHeaderCss.includes('#081E3C'), '.btn-auth-header must use Teal text color #081E3C');
 assert.ok(authHeaderCss.includes('1.5px solid rgba(18, 78, 97,'), '.btn-auth-header must have Teal ghost border');
-assert.ok(!authHeaderCss.includes('background: #DA674E') && !authHeaderCss.includes('background: var(--terra-600)'), '.btn-auth-header must NOT be solid coral');
+assert.ok(!authHeaderCss.includes('background: #E05A2B') && !authHeaderCss.includes('background: var(--terra-600)'), '.btn-auth-header must NOT be solid coral');
 
 // 9.3 Subtle Deal Room lookup link with icon
 assert.ok(styleCss.includes('.btn-topbar-deal'), 'style.css must define .btn-topbar-deal');
@@ -386,7 +386,7 @@ for (const route of CORE_ROUTES) {
 }
 
 console.log('  ✓ .btn-topbar-seller is the ONLY solid Coral pill CTA in the header.');
-console.log('  ✓ .btn-auth-header converted to refined Teal Outline Ghost Pill (#0E3B4A).');
+console.log('  ✓ .btn-auth-header converted to refined Teal Outline Ghost Pill (#081E3C).');
 console.log('  ✓ nav.dealRoomLookup, nav.cities, and nav.signIn active on all headers.\n');
 
 // -----------------------------------------------------------------------------

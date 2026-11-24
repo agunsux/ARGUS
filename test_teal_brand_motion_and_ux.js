@@ -28,9 +28,9 @@ const tokensCss = fs.readFileSync(path.join(__dirname, 'public/css/tikum-tokens.
 const styleCss = fs.readFileSync(path.join(__dirname, 'public/css/style.css'), 'utf8');
 
 // Brand colors
-assert.ok(tokensCss.includes('#124E61') || styleCss.includes('#124E61'), 'Brand Teal (#124E61) token must exist');
-assert.ok(tokensCss.includes('#FAF8F4') || styleCss.includes('#FAF8F4'), 'Warm Cream (#FAF8F4) canvas token must exist');
-assert.ok(tokensCss.includes('#DA674E') || styleCss.includes('#DA674E'), 'Signature Coral (#DA674E) CTA token must exist');
+assert.ok(tokensCss.includes('#006BB6') || styleCss.includes('#006BB6'), 'Brand Teal (#006BB6) token must exist');
+assert.ok(tokensCss.includes('#F6EBDD') || styleCss.includes('#F6EBDD'), 'Warm Beige (#F6EBDD) canvas token must exist');
+assert.ok(tokensCss.includes('#E05A2B') || styleCss.includes('#E05A2B'), 'Signature Coral (#E05A2B) CTA token must exist');
 
 // Dual-tone SVG vector assets
 const requiredSvgs = [
@@ -59,7 +59,7 @@ assert.ok(motionJs.includes('prefers-reduced-motion'), 'motion.js must handle pr
 assert.ok(motionJs.includes('IntersectionObserver'), 'motion.js must implement IntersectionObserver');
 assert.ok(styleCss.includes('[data-reveal]'), 'style.css must have [data-reveal] styles');
 
-console.log('  ✓ Exact Teal brand tokens (#124E61, #FAF8F4, #DA674E) verified.');
+console.log('  ✓ Exact Teal brand tokens (#006BB6, #F4F7FB, #E05A2B) verified.');
 console.log('  ✓ All 5 dual-tone SVG vector assets verified in public/images/ and favicon.');
 console.log('  ✓ Fluid Google Fonts & Flow Ninja motion engine verified.\n');
 

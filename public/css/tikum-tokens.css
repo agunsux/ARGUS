@@ -38,21 +38,44 @@
 }
 
 :root {
+  --tikum-beige: #F6EBDD;
+  --tikum-navy: #081E3C;
+  --tikum-blue: #006BB6;
+  --tikum-terracotta: #E05A2B;
+  --tikum-terracotta-ink: #B83E16;
+  --knicks-navy-950: #051428;
+  --knicks-navy-900: #081E3C;
+  --knicks-navy-800: #0D2B54;
+  --knicks-blue-600: #006BB6;
+  --knicks-blue-hover: #005491;
+  --knicks-blue-soft: #E6F2FB;
+  --knicks-terracotta-500: #E05A2B;
+  --knicks-terracotta-hover: #C4491E;
+  --knicks-terracotta-soft: #FDEEE8;
+  --fn-white: #FFFFFF;
+  --fn-canvas: #F6EBDD;
+  --fn-surface-soft: #FBF6EE;
+  --fn-ink-900: #0B192C;
+  --fn-ink-600: #475B73;
+  --fn-on-dark: #F7FAFF;
+  --fn-on-dark-muted: #B6C7DE;
+  --fn-border-light: rgba(8, 30, 60, 0.10);
+  --fn-border-dark: rgba(255, 255, 255, 0.12);
   /* ==========================================================================
      TIKUM DEEP TEAL & WARM CREAM BRAND PALETTE (Single Source of Truth)
      ========================================================================== */
-  --tikum-teal-950: #092630; /* deep footer & hero shadow base */
-  --tikum-teal-900: #0E3B4A; /* editorial hero & Two-Way Protection section */
-  --tikum-teal-700: #124E61; /* primary signature brand teal */
-  --tikum-teal-100: #E4F1F4; /* soft teal pill/badge tint on light canvas */
-  --tikum-cream-50: #FAF8F4; /* main light browsing canvas — warm, calm, premium */
-  --tikum-cream-100: #F2EDE4; /* subtle secondary light surface / muted cards */
+  --tikum-teal-950: #051428; /* deep footer & hero shadow base */
+  --tikum-teal-900: #081E3C; /* editorial hero & Two-Way Protection section */
+  --tikum-teal-700: #006BB6; /* primary signature brand teal */
+  --tikum-teal-100: #E6F2FB; /* soft teal pill/badge tint on light canvas */
+  --tikum-cream-50: #F6EBDD; /* main light browsing canvas */
+  --tikum-cream-100: #FBF6EE; /* secondary light surface */
   --tikum-surface: #FFFFFF; /* crisp elevated event & form cards */
-  --tikum-cream-text: #FAF1E2; /* warm cream typography on dark teal sections */
-  --tikum-coral-500: #DA674E; /* signature center-dot coral — primary high-conversion CTAs */
-  --tikum-coral-600: #C2533B; /* CTA hover state */
-  --tikum-ink-900: #0E222A; /* high-contrast primary ink on light canvas, WCAG AAA */
-  --tikum-ink-600: #4A606A; /* secondary muted ink on light canvas, WCAG AA >= 4.5:1 */
+  --tikum-cream-text: #F7FAFF; /* warm cream typography on dark teal sections */
+  --tikum-coral-500: #B83E16; /* accessible white-text CTA fill */
+  --tikum-coral-600: #99310F; /* CTA hover state */
+  --tikum-ink-900: #0B192C; /* high-contrast primary ink on light canvas, WCAG AAA */
+  --tikum-ink-600: #475B73; /* secondary muted ink on light canvas, WCAG AA >= 4.5:1 */
   --tikum-trust-green: #179A6B; /* Event PIC / verified evidence badges */
   --tikum-border: rgba(18, 78, 97, 0.12); /* clean hairline borders on light surfaces */
 

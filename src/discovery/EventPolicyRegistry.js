@@ -162,6 +162,7 @@ class EventPolicyRegistry {
       policy_status: eventData.policy_status || POLICY_STATUS.POLICY_UNVERIFIED,
       lifecycle_status: eventData.lifecycle_status || (eventData.event_date < '2026-11-24' ? 'PAST' : 'ACTIVE'),
       status: eventData.status || (eventData.event_date < '2026-11-24' ? 'COMPLETED' : 'ACTIVE'),
+      verification_state: eventData.verification_state || null,
       risk_tier: eventData.risk_tier || RISK_TIER.TIER_A_DIGITAL,
       image_url: eventData.image_url,
       transfer_allowed: eventData.transfer_allowed !== undefined ? Boolean(eventData.transfer_allowed) : true,
@@ -181,6 +182,7 @@ class EventPolicyRegistry {
    */
   getAllEvents(options = {}) {
     let list = Array.from(this.events.values());
+    if (options.publicOnly) list = list.filter(e => !require('./CatalogSafety').isUnverifiedLead(e));
 
     if (options.category && options.category.toUpperCase() !== 'ALL') {
       const cat = options.category.toUpperCase().trim();

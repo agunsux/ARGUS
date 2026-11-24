@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
+const vm = require('vm');
+const Module = require('module');
 
 function getAllJsFiles(dir) {
   let results = [];
@@ -23,10 +24,12 @@ console.log(`Checking syntax for ${srcFiles.length} files in src/ ...`);
 let errorCount = 0;
 for (const file of srcFiles) {
   try {
-    execFileSync(process.execPath, ['-c', file], { stdio: 'pipe' });
+    // Match CommonJS parsing, including Node's support for a leading shebang.
+    const source = fs.readFileSync(file, 'utf8').replace(/^#![^\n]*/, '');
+    new vm.Script(Module.wrap(source), { filename: file });
   } catch (err) {
     console.error(`❌ Syntax error in: ${file}`);
-    console.error(err.stderr ? err.stderr.toString() : err.message);
+    console.error(err.stack || err.message);
     errorCount++;
   }
 }

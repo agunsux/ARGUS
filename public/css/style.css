@@ -429,7 +429,7 @@ a:hover {
 
 .poster-card-img-wrap {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3 / 4;
   background-color: var(--sand-50);
   overflow: hidden;
   position: relative;
@@ -438,7 +438,7 @@ a:hover {
 .poster-card-img-wrap img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -1875,7 +1875,7 @@ a:hover {
   height: 38px;
   border-radius: 999px;
   background-color: transparent !important;
-  color: #0E3B4A !important;
+  color: #081E3C !important;
   border: 1.5px solid rgba(18, 78, 97, 0.25) !important;
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-size: 13.5px;
@@ -1893,7 +1893,7 @@ a:hover {
 .btn-auth-header:hover {
   background-color: rgba(18, 78, 97, 0.06) !important;
   border-color: rgba(18, 78, 97, 0.45) !important;
-  color: #0E3B4A !important;
+  color: #081E3C !important;
 }
 
 .user-dropdown-container {
@@ -3007,21 +3007,21 @@ body.dark-mode {
   --sidebar-width: 280px;
   --sidebar-rail-width: 72px;
   --topbar-height: 72px;
-  --color-app-bg: var(--tikum-cream-50, #FAF8F4);
+  --color-app-bg: var(--tikum-cream-50, #F6EBDD);
   --color-surface-sidebar: #FFFFFF;
   --color-surface-topbar: rgba(250, 248, 244, 0.92);
   --color-border-subtle: var(--tikum-border, rgba(18, 78, 97, 0.12));
-  --color-text-primary: var(--tikum-ink-900, #0E222A);
-  --color-text-secondary: var(--tikum-ink-600, #4A606A);
-  --color-text-footer: #FAF1E2;
-  --color-text-muted: #4A606A;
-  --color-brand-primary: var(--tikum-coral-500, #DA674E);
+  --color-text-primary: var(--tikum-ink-900, #0B192C);
+  --color-text-secondary: var(--tikum-ink-600, #475B73);
+  --color-text-footer: #F7FAFF;
+  --color-text-muted: #475B73;
+  --color-brand-primary: var(--tikum-coral-500, #E05A2B);
   --color-brand-emerald: #179A6B;
 }
 
 body, body.dark-mode {
-  background-color: var(--tikum-cream-50, #FAF8F4) !important;
-  color: var(--tikum-ink-900, #0E222A) !important;
+  background-color: var(--tikum-cream-50, #F6EBDD) !important;
+  color: var(--tikum-ink-900, #0B192C) !important;
   font-family: var(--font-body, 'Plus Jakarta Sans', -apple-system, sans-serif) !important;
   font-size: 16px;
   line-height: 1.65;
@@ -3032,13 +3032,13 @@ h1, h2, h3, h4, .font-display {
 }
 
 #appShell {
-  background-color: var(--tikum-cream-50, #FAF8F4) !important;
+  background-color: var(--tikum-cream-50, #F6EBDD) !important;
 }
 
 #appMainWrapper {
   margin-left: 0 !important;
   width: 100% !important;
-  background-color: var(--tikum-cream-50, #FAF8F4);
+  background-color: var(--tikum-cream-50, #F6EBDD);
 }
 
 /* Off-canvas Mobile/Desktop Slide-Over Drawer */
@@ -3117,7 +3117,7 @@ h1, h2, h3, h4, .font-display {
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-size: 15px;
   font-weight: 600;
-  color: var(--tikum-ink-900, #0E222A);
+  color: var(--tikum-ink-900, #0B192C);
   text-decoration: none;
   transition: color 0.18s ease;
   display: inline-flex;
@@ -3126,7 +3126,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .topbar-nav-link:hover {
-  color: var(--tikum-coral-500, #DA674E);
+  color: var(--tikum-coral-500, #E05A2B);
 }
 
 /* SeatGeek City Popover */
@@ -3158,14 +3158,14 @@ h1, h2, h3, h4, .font-display {
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--tikum-ink-900, #0E222A);
+  color: var(--tikum-ink-900, #0B192C);
   text-decoration: none;
   transition: background 0.15s, color 0.15s;
 }
 
 .city-dropdown-item:hover {
-  background: var(--tikum-cream-50, #FAF8F4);
-  color: var(--tikum-coral-500, #DA674E);
+  background: var(--tikum-cream-50, #F6EBDD);
+  color: var(--tikum-coral-500, #E05A2B);
 }
 
 /* Action Cluster */
@@ -3181,7 +3181,7 @@ h1, h2, h3, h4, .font-display {
   gap: 6px;
   font-size: 13.5px;
   font-weight: 600;
-  color: #0E3B4A;
+  color: #081E3C;
   text-decoration: none;
   padding: 6px 14px;
   border-radius: 999px;
@@ -3193,11 +3193,11 @@ h1, h2, h3, h4, .font-display {
 .btn-topbar-deal:hover {
   background: rgba(18, 78, 97, 0.08);
   border-color: rgba(18, 78, 97, 0.28);
-  color: #0E3B4A;
+  color: #081E3C;
 }
 
 .btn-topbar-seller {
-  background-color: var(--tikum-coral-500, #DA674E) !important;
+  background-color: var(--tikum-coral-500, #E05A2B) !important;
   color: #FFFFFF !important;
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif) !important;
   font-weight: 700 !important;
@@ -3214,7 +3214,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .btn-topbar-seller:hover {
-  background-color: var(--tikum-coral-600, #C2533B) !important;
+  background-color: var(--tikum-coral-600, #C4491E) !important;
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(218, 103, 78, 0.28);
 }
@@ -3225,15 +3225,15 @@ h1, h2, h3, h4, .font-display {
 
 /* Minimalist 2-Tier Deep Teal Footer */
 #appFooter.site-footer {
-  background-color: var(--tikum-teal-950, #092630) !important;
+  background-color: var(--tikum-teal-950, #051428) !important;
   border-top: 1px solid rgba(250, 241, 226, 0.12) !important;
   padding: 56px 24px 32px !important;
   margin-top: auto !important;
-  color: var(--tikum-cream-text, #FAF1E2) !important;
+  color: var(--tikum-cream-text, #F7FAFF) !important;
 }
 
 .footer-col-brand h3 {
-  color: #FAF1E2 !important;
+  color: #F7FAFF !important;
   font-family: var(--font-display, 'Bricolage Grotesque', sans-serif) !important;
 }
 
@@ -3247,7 +3247,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .footer-contact-item a {
-  color: var(--tikum-coral-500, #DA674E) !important;
+  color: var(--tikum-coral-500, #E05A2B) !important;
 }
 
 .footer-essential-link {
@@ -3255,7 +3255,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .footer-essential-link:hover {
-  color: var(--tikum-coral-500, #DA674E) !important;
+  color: var(--tikum-coral-500, #E05A2B) !important;
 }
 
 .footer-tier-2 {
@@ -3303,9 +3303,9 @@ h1, h2, h3, h4, .font-display {
 
 /* Flow Ninja Editorial Hero */
 .hero-teal-editorial {
-  background-color: var(--tikum-teal-900, #0E3B4A);
-  background-image: radial-gradient(circle at 50% 0%, rgba(18, 78, 97, 0.85) 0%, #0E3B4A 70%);
-  color: var(--tikum-cream-text, #FAF1E2);
+  background-color: var(--tikum-teal-900, #081E3C);
+  background-image: radial-gradient(circle at 50% 0%, rgba(18, 78, 97, 0.85) 0%, #081E3C 70%);
+  color: var(--tikum-cream-text, #F7FAFF);
   padding: 72px 24px 84px;
   position: relative;
   overflow: hidden;
@@ -3317,7 +3317,7 @@ h1, h2, h3, h4, .font-display {
   font-weight: 700;
   line-height: 1.06;
   letter-spacing: -0.03em;
-  color: #FAF1E2;
+  color: #F7FAFF;
   text-align: center;
   max-width: 920px;
   margin: 0 auto 16px;
@@ -3343,7 +3343,7 @@ h1, h2, h3, h4, .font-display {
   height: 56px;
   border-radius: 999px;
   background: #FFFFFF;
-  color: var(--tikum-ink-900, #0E222A);
+  color: var(--tikum-ink-900, #0B192C);
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-size: 15.5px;
   font-weight: 500;
@@ -3355,7 +3355,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .seatgeek-search-input:focus {
-  border-color: var(--tikum-coral-500, #DA674E);
+  border-color: var(--tikum-coral-500, #E05A2B);
   box-shadow: 0 14px 36px rgba(218, 103, 78, 0.22);
 }
 
@@ -3364,7 +3364,7 @@ h1, h2, h3, h4, .font-display {
   left: 20px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--tikum-teal-700, #124E61);
+  color: var(--tikum-teal-700, #006BB6);
   font-size: 18px;
   pointer-events: none;
 }
@@ -3378,8 +3378,8 @@ h1, h2, h3, h4, .font-display {
   height: 40px;
   border-radius: 999px;
   border: none;
-  background: var(--tikum-teal-700, #124E61);
-  color: #FAF1E2;
+  background: var(--tikum-teal-700, #006BB6);
+  color: #F7FAFF;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3388,7 +3388,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .seatgeek-search-submit-btn:hover {
-  background: var(--tikum-coral-500, #DA674E);
+  background: var(--tikum-coral-500, #E05A2B);
   transform: translateY(-50%) scale(1.04);
 }
 
@@ -3428,7 +3428,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .hero-deal-form:focus-within {
-  border-color: #FAF1E2;
+  border-color: #F7FAFF;
   box-shadow: 0 0 0 4px rgba(250, 241, 226, 0.14), 0 10px 28px rgba(0, 0, 0, 0.2);
   background: rgba(9, 38, 48, 0.75);
 }
@@ -3450,7 +3450,7 @@ h1, h2, h3, h4, .font-display {
   width: 100%;
   border: none;
   background: transparent;
-  color: #FAF1E2;
+  color: #F7FAFF;
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-size: 14.5px;
   font-weight: 500;
@@ -3468,8 +3468,8 @@ h1, h2, h3, h4, .font-display {
   padding: 0 20px;
   border-radius: 999px;
   border: none;
-  background: #FAF1E2;
-  color: #0E3B4A;
+  background: #F7FAFF;
+  color: #081E3C;
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-size: 13.5px;
   font-weight: 700;
@@ -3505,7 +3505,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .btn-hero-coral {
-  background-color: var(--tikum-coral-500, #DA674E);
+  background-color: var(--tikum-coral-500, #E05A2B);
   color: #FFFFFF;
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-weight: 700;
@@ -3520,14 +3520,14 @@ h1, h2, h3, h4, .font-display {
 }
 
 .btn-hero-coral:hover {
-  background-color: var(--tikum-coral-600, #C2533B);
+  background-color: var(--tikum-coral-600, #C4491E);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(218, 103, 78, 0.35);
 }
 
 .btn-hero-outline {
   background-color: transparent;
-  color: #FAF1E2;
+  color: #F7FAFF;
   border: 1.5px solid rgba(250, 241, 226, 0.4);
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-weight: 700;
@@ -3542,14 +3542,14 @@ h1, h2, h3, h4, .font-display {
 }
 
 .btn-hero-outline:hover {
-  border-color: #FAF1E2;
+  border-color: #F7FAFF;
   background: rgba(255, 255, 255, 0.08);
 }
 
 /* Two-Way Protection Bento Section */
 .two-way-protection-section {
-  background-color: var(--tikum-teal-900, #0E3B4A);
-  color: var(--tikum-cream-text, #FAF1E2);
+  background-color: var(--tikum-teal-900, #081E3C);
+  color: var(--tikum-cream-text, #F7FAFF);
   padding: 80px 24px;
 }
 
@@ -3579,13 +3579,13 @@ h1, h2, h3, h4, .font-display {
   border: 1px solid rgba(250, 241, 226, 0.14);
   border-radius: 24px;
   padding: 36px;
-  color: #FAF1E2;
+  color: #F7FAFF;
 }
 
 .bento-card-flow h3 {
   font-size: 22px;
   font-weight: 700;
-  color: #FAF1E2;
+  color: #F7FAFF;
   margin-bottom: 18px;
   display: flex;
   align-items: center;
@@ -3611,7 +3611,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .bento-check-icon {
-  color: var(--tikum-coral-500, #DA674E);
+  color: var(--tikum-coral-500, #E05A2B);
   font-size: 16px;
   margin-top: 3px;
   flex-shrink: 0;
@@ -3619,7 +3619,7 @@ h1, h2, h3, h4, .font-display {
 
 /* 5-Step Flow Ninja Rail */
 .flow-rail-section {
-  background-color: var(--tikum-cream-50, #FAF8F4);
+  background-color: var(--tikum-cream-50, #F6EBDD);
   padding: 72px 24px;
 }
 
@@ -3643,8 +3643,8 @@ h1, h2, h3, h4, .font-display {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--tikum-teal-100, #E4F1F4);
-  color: var(--tikum-teal-700, #124E61);
+  background: var(--tikum-teal-100, #E6F2FB);
+  color: var(--tikum-teal-700, #006BB6);
   font-weight: 800;
   font-size: 15px;
   display: flex;
@@ -3656,13 +3656,13 @@ h1, h2, h3, h4, .font-display {
 .flow-step-title {
   font-weight: 700;
   font-size: 15.5px;
-  color: var(--tikum-ink-900, #0E222A);
+  color: var(--tikum-ink-900, #0B192C);
   margin-bottom: 8px;
 }
 
 .flow-step-desc {
   font-size: 13.5px;
-  color: var(--tikum-ink-600, #4A606A);
+  color: var(--tikum-ink-600, #475B73);
   line-height: 1.5;
   margin: 0;
 }
@@ -3705,8 +3705,8 @@ h1, h2, h3, h4, .font-display {
   flex: 1;
   padding: 10px 14px;
   border-radius: 999px;
-  background: var(--tikum-cream-100, #F2EDE4);
-  color: var(--tikum-ink-600, #4A606A);
+  background: var(--tikum-cream-100, #EBF0F7);
+  color: var(--tikum-ink-600, #475B73);
   font-size: 13px;
   font-weight: 700;
   text-align: center;
@@ -3714,23 +3714,23 @@ h1, h2, h3, h4, .font-display {
 }
 
 .wizard-step-pill.active {
-  background: var(--tikum-teal-700, #124E61);
-  color: #FAF1E2;
+  background: var(--tikum-teal-700, #006BB6);
+  color: #F7FAFF;
 }
 
 .wizard-step-pill.completed {
-  background: var(--tikum-teal-100, #E4F1F4);
-  color: var(--tikum-teal-700, #124E61);
+  background: var(--tikum-teal-100, #E6F2FB);
+  color: var(--tikum-teal-700, #006BB6);
 }
 
 .seller-protection-strip {
-  background: var(--tikum-teal-100, #E4F1F4);
+  background: var(--tikum-teal-100, #E6F2FB);
   border: 1px solid rgba(18, 78, 97, 0.18);
   border-radius: 12px;
   padding: 12px 18px;
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--tikum-teal-700, #124E61);
+  color: var(--tikum-teal-700, #006BB6);
   margin-bottom: 24px;
   display: flex;
   align-items: center;
@@ -3892,9 +3892,26 @@ html, body {
   will-change: transform;
 }
 
-.flow-marquee-track:hover {
+.flow-marquee-wrapper:hover .flow-marquee-track,
+.flow-marquee-wrapper:focus-within .flow-marquee-track,
+.flow-marquee-track.is-paused {
   animation-play-state: paused;
 }
+
+.marquee-toggle {
+  min-width: 44px;
+  min-height: 44px;
+  margin-top: 8px;
+  border: 1px solid #F6EBDD;
+  border-radius: 999px;
+  padding: 0 16px;
+  background: #081E3C;
+  color: #F6EBDD;
+  cursor: pointer;
+}
+.rail-controls { display: flex; gap: 8px; padding: 0 24px; justify-content: flex-end; }
+.brand .brand-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.rail-controls button { width: 44px; height: 44px; border: 0; border-radius: 50%; color: #fff; background: #006BB6; cursor: pointer; }
 
 .flow-marquee-content {
   display: flex;
@@ -3916,7 +3933,7 @@ html, body {
 }
 
 .flow-marquee-dot {
-  color: var(--tikum-coral-500, #DA674E);
+  color: var(--tikum-coral-500, #E05A2B);
   font-size: 11px;
 }
 
@@ -3982,5 +3999,43 @@ html, body {
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
+}
+
+/* Knicks arena identity: keep existing component hooks and behavior intact. */
+#appTopbar {
+  background: rgba(255, 255, 255, .92) !important;
+  padding-inline: max(24px, calc((100% - 1240px) / 2)) !important;
+}
+.topbar-nav-links { gap: clamp(12px, 1.5vw, 24px); white-space: nowrap; }
+.topbar-nav-link:hover, .city-dropdown-item:hover { color: var(--knicks-blue-600); }
+.topbar-right { gap: 8px; }
+.btn-topbar-deal, .btn-topbar-seller, .btn-auth-header { min-height: 40px; }
+.btn-auth-header { color: var(--knicks-blue-600) !important; border-color: var(--knicks-blue-600) !important; }
+.lang-toggle-btn .lang-active { color: var(--knicks-blue-600) !important; }
+.brand img, .topbar-left .brand img { height: 30px !important; }
+.hero-teal-editorial {
+  background: radial-gradient(ellipse at 20% 0%, rgba(0,107,182,.38), transparent 52%), radial-gradient(ellipse at 85% 30%, rgba(224,90,43,.16), transparent 45%), var(--knicks-navy-900);
+}
+.hero-editorial-h1 { font-size: clamp(2.35rem, 4.8vw, 4.2rem); }
+h2 { font-family: var(--font-display); font-size: clamp(1.75rem, 3vw, 2.5rem); }
+.flow-marquee-wrapper { mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); background: rgba(5,20,40,.45); }
+.flow-marquee-wrapper:hover .flow-marquee-track, .flow-marquee-wrapper:focus-within .flow-marquee-track { animation-play-state: paused; }
+.event-card-item:hover, .poster-card:hover { transform: translateY(-6px); }
+.event-card-item:hover .poster-img, .poster-card:hover .poster-img { transform: scale(1.04); }
+.poster-img { transition: transform 300ms ease; }
+#appFooter.site-footer { background: var(--knicks-navy-900) !important; border-top: 3px solid transparent !important; border-image: linear-gradient(90deg, #006BB6 0%, #006BB6 70%, #E05A2B 100%) 1 !important; }
+.footer-tier-1 { max-width: 1240px; margin-inline: auto; grid-template-columns: 1.4fr 1fr 1fr; gap: 48px; }
+.footer-tier-2 { max-width: 1240px; margin-inline: auto; }
+:focus-visible { outline: 3px solid var(--knicks-blue-600); outline-offset: 3px; }
+@media (max-width: 1023px) {
+  #appTopbar { height: 64px !important; padding-inline: 16px !important; }
+  .topbar-left .brand img { height: 26px !important; }
+  .topbar-hamburger-btn { min-width: 44px; min-height: 44px; }
+}
+@media (max-width: 640px) {
+  .hero-editorial-h1 { font-size: clamp(2rem, 8vw, 2.5rem) !important; }
+  input, select, textarea { font-size: 16px !important; }
+  .hero-deal-submit-btn { min-height: 46px !important; }
+  .footer-tier-1 { grid-template-columns: 1fr; gap: 32px; }
 }
 

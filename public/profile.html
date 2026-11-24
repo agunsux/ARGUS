@@ -186,6 +186,7 @@
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
             <img src="/images/tikum-horizontal.svg" height="32" alt="Tikum" style="height:32px; width:auto; aspect-ratio:220/52; display:block;">
+            <div class="brand-title">Tikum</div>
           </a>
         </div>
 
@@ -243,13 +244,13 @@
 
         <!-- Verification Status Cards Grid -->
         <div class="card" style="background:#FFFFFF; border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)); border-radius:16px; margin-bottom: 24px; padding: 20px; box-shadow: 0 4px 16px rgba(14, 59, 74, 0.04);">
-          <div style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;" data-i18n="profile.readinessTitle">
+          <div style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0B192C); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;" data-i18n="profile.readinessTitle">
             Status Kesiapan Akun
           </div>
           
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
             <!-- Email Verification Badge -->
-            <div id="cardEmailStatus" style="background:var(--tikum-cream-50, #FAF8F4); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding:16px; border-radius:12px;">
+            <div id="cardEmailStatus" style="background:var(--tikum-cream-50, #F6EBDD); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding:16px; border-radius:12px;">
               <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;" data-i18n="profile.emailBadge">Verifikasi Email</div>
               <div id="badgeEmail" style="margin-top:6px;">
                 <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Memeriksa...</span>
@@ -261,7 +262,7 @@
             </div>
 
             <!-- Buyer Profile Ready Badge -->
-            <div id="cardBuyerStatus" style="background:var(--tikum-cream-50, #FAF8F4); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding:16px; border-radius:12px;">
+            <div id="cardBuyerStatus" style="background:var(--tikum-cream-50, #F6EBDD); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding:16px; border-radius:12px;">
               <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;" data-i18n="profile.buyerBadge">Profil Pembeli</div>
               <div id="badgeBuyer" style="margin-top:6px;">
                 <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Memeriksa...</span>
@@ -272,7 +273,7 @@
             </div>
 
             <!-- Seller Profile Ready Badge -->
-            <div id="cardSellerStatus" style="background:var(--tikum-cream-50, #FAF8F4); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding:16px; border-radius:12px;">
+            <div id="cardSellerStatus" style="background:var(--tikum-cream-50, #F6EBDD); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding:16px; border-radius:12px;">
               <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;" data-i18n="profile.sellerBadge">Profil Penjual</div>
               <div id="badgeSeller" style="margin-top:6px;">
                 <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half"></i> Memeriksa...</span>
@@ -290,7 +291,7 @@
 
             <!-- Section A: Contact & Identity -->
             <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12));">
-              <div style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;" data-i18n="profile.personalInfo">
+              <div style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0B192C); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;" data-i18n="profile.personalInfo">
                 1. Informasi Pribadi &amp; Kontak (Pembeli &amp; Penjual)
               </div>
 
@@ -302,7 +303,7 @@
 
                 <div class="form-group">
                   <label for="profEmail">Alamat Email Terdaftar (Sesi Login)</label>
-                  <input type="email" id="profEmail" class="form-control mono" readonly style="background:var(--tikum-cream-100, #F2EDE4); color:var(--text-muted); cursor:not-allowed;">
+                  <input type="email" id="profEmail" class="form-control mono" readonly style="background:var(--tikum-cream-100, #EBF0F7); color:var(--text-muted); cursor:not-allowed;">
                 </div>
               </div>
 
@@ -327,9 +328,9 @@
 
             <!-- Section B: Seller Payout Details (Collapsible & Proportional to Selling) -->
             <details id="sellerPayoutDetails" class="seller-payout-details" style="margin-bottom: 24px; border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.15)); border-radius: 12px; overflow: hidden; background: #FFFFFF;">
-              <summary style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--tikum-cream-50, #FAF8F4); font-weight: 700; user-select: none;">
+              <summary style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--tikum-cream-50, #F6EBDD); font-weight: 700; user-select: none;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                  <i class="fa-solid fa-store" style="color: var(--tikum-coral-500, #DA674E); font-size: 16px;"></i>
+                  <i class="fa-solid fa-store" style="color: var(--tikum-coral-500, #E05A2B); font-size: 16px;"></i>
                   <span data-i18n="profile.sellerSectionSummary">Aktifkan Profil Penjual (Khusus Jual Tiket)</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">

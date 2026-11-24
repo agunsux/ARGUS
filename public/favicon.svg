@@ -2,16 +2,13 @@
   <!-- Rounded Deep Teal Tile -->
   <rect width="100" height="100" rx="24" fill="#124E61" />
   
-  <!-- Warm Cream Figures Meeting at Terracotta Dot with Ticket-Stub Notch -->
-  <circle cx="28" cy="32" r="10.5" fill="#FAF1E2" />
-  <path d="M 12 76 C 12 56, 26 48, 38 52 C 43 53.6, 46 58, 46 64 C 46 72, 38 76, 24 76 Z" fill="#FAF1E2" />
+  <circle cx="28" cy="32" r="10.5" fill="#FFFFFF" />
+  <path d="M 12 76 C 12 56, 26 48, 38 52 C 43 53.6, 46 58, 46 64 C 46 72, 38 76, 24 76 Z" fill="#FFFFFF" />
   
-  <circle cx="72" cy="32" r="10.5" fill="#FAF1E2" />
-  <path d="M 88 76 C 88 56, 74 48, 62 52 C 57 53.6, 54 58, 54 64 C 54 72, 62 76, 76 76 Z" fill="#FAF1E2" />
+  <circle cx="72" cy="32" r="10.5" fill="#FFFFFF" />
+  <path d="M 88 76 C 88 56, 74 48, 62 52 C 57 53.6, 54 58, 54 64 C 54 72, 62 76, 76 76 Z" fill="#FFFFFF" />
   
   <!-- Signature Terracotta Center Dot -->
-  <circle cx="50" cy="45" r="9" fill="#DA674E" />
+  <circle cx="50" cy="45" r="9" fill="#E05A2B" />
 
-  <!-- Signature Notched Ticket Stub -->
-  <path d="M 43 56 H 57 A 2 2 0 0 1 59 58 V 61.5 A 2.5 2.5 0 0 0 59 66.5 V 70 A 2 2 0 0 1 57 72 H 43 A 2 2 0 0 1 41 70 V 66.5 A 2.5 2.5 0 0 0 41 61.5 V 58 A 2 2 0 0 1 43 56 Z" fill="#FAF1E2" />
 </svg>

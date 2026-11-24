@@ -168,6 +168,7 @@
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
             <img src="/images/tikum-horizontal.svg" height="32" alt="Tikum" style="height:32px; width:auto; aspect-ratio:220/52; display:block;">
+            <div class="brand-title">Tikum</div>
           </a>
         </div>
 
@@ -371,7 +372,7 @@
             </div>
           <div>
             <span id="eventCategoryBadge" class="badge badge-slate" style="margin-bottom: 6px;">EVENT</span>
-            <h2 id="eventTitle" style="font-size: 20px; font-weight: 800; color: var(--tikum-ink-900, #0E222A);">-</h2>
+            <h2 id="eventTitle" style="font-size: 20px; font-weight: 800; color: var(--tikum-ink-900, #0B192C);">-</h2>
             <div id="eventLocationMeta" style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
               <i class="fa-regular fa-calendar" style="width: 16px;"></i> <span id="eventDate">-</span> &bull; 
               <i class="fa-solid fa-location-dot" style="width: 16px;"></i> <span id="eventVenue">-</span>
@@ -385,7 +386,7 @@
           <div class="grid-2" style="font-size: 13px;">
             <div>
               <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;" data-i18n="pay.seatInfo">Posisi / Kursi Tiket:</div>
-              <strong id="seatInfoText" style="color: var(--tikum-ink-900, #0E222A); font-size: 14px;">-</strong>
+              <strong id="seatInfoText" style="color: var(--tikum-ink-900, #0B192C); font-size: 14px;">-</strong>
             </div>
             <div>
               <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;" data-i18n="pay.listingId">ID Listing Resmi:</div>
@@ -692,13 +693,13 @@
 
     <!-- Modal Ajukan Tawaran (Epic 4.0) -->
     <div id="offerModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
-      <div class="card" style="max-width: 520px; width: 100%; border: 1.5px solid var(--tikum-teal-700, #124E61); box-shadow: 0 25px 50px -12px rgba(14, 59, 74, 0.25); margin: 0; position: relative; background: #FFFFFF; border-radius: 20px;">
+      <div class="card" style="max-width: 520px; width: 100%; border: 1.5px solid var(--tikum-teal-700, #006BB6); box-shadow: 0 25px 50px -12px rgba(14, 59, 74, 0.25); margin: 0; position: relative; background: #FFFFFF; border-radius: 20px;">
         <button onclick="closeOfferModal()" style="position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">
           <i class="fa-solid fa-xmark"></i>
         </button>
 
         <div class="hero-pill" style="margin-bottom: 12px;"><i class="fa-solid fa-handshake"></i> TAWAR HARGA RESMI</div>
-        <h2 style="font-size: 18px; font-weight: 800; color: var(--tikum-ink-900, #0E222A); margin-bottom: 6px;">Ajukan Tawaran Harga Tiket</h2>
+        <h2 style="font-size: 18px; font-weight: 800; color: var(--tikum-ink-900, #0B192C); margin-bottom: 6px;">Ajukan Tawaran Harga Tiket</h2>
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
           Tawaran terikat aturan ketat Tikum. Minimal 50% dari harga listing dan harus di bawah harga normal.
         </p>
@@ -711,18 +712,18 @@
         </div>
 
         <div class="form-group" style="margin-bottom: 14px;">
-          <label for="offerAmountInput" style="font-size: 13px; font-weight: 600; color: var(--tikum-ink-900, #0E222A); display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <label for="offerAmountInput" style="font-size: 13px; font-weight: 600; color: var(--tikum-ink-900, #0B192C); display: flex; justify-content: space-between; margin-bottom: 6px;">
             <span>Nominal Tawaran (Rp):</span>
             <span id="offerRangeHint" style="font-size: 11px; color: var(--cyan);">Min 50% &bull; Maks &lt; Harga Normal</span>
           </label>
           <div style="position: relative;">
             <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-weight: 700; font-size: 14px;">Rp</span>
-            <input type="number" id="offerAmountInput" class="form-control mono" style="padding-left: 42px; font-size: 16px; font-weight: 700; color: var(--tikum-ink-900, #0E222A); width: 100%;" placeholder="Contoh: 1200000" oninput="updateOfferCalculations()">
+            <input type="number" id="offerAmountInput" class="form-control mono" style="padding-left: 42px; font-size: 16px; font-weight: 700; color: var(--tikum-ink-900, #0B192C); width: 100%;" placeholder="Contoh: 1200000" oninput="updateOfferCalculations()">
           </div>
         </div>
 
         <!-- Real-time calculation preview -->
-        <div class="card" style="background: var(--tikum-cream-50, #FAF8F4); border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding: 14px; margin-bottom: 16px; border-radius: 12px;">
+        <div class="card" style="background: var(--tikum-cream-50, #F6EBDD); border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding: 14px; margin-bottom: 16px; border-radius: 12px;">
           <div class="price-row" style="font-size: 12px; margin-bottom: 6px; display: flex; justify-content: space-between;">
             <span style="color: var(--text-muted);">Harga Listing Normal:</span>
             <strong id="calcOriginalPrice" class="mono">-</strong>
@@ -1217,7 +1218,7 @@
           const isSellerOfListing = currentBuyer && l.seller_id && currentBuyer.id === l.seller_id;
 
           return `
-            <div style="background:var(--tikum-cream-50, #FAF8F4); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); border-radius:12px; padding:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+            <div style="background:var(--tikum-cream-50, #F6EBDD); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); border-radius:12px; padding:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
               <div>
                 <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">
                   ${ev.category || 'EVENT'} &bull; <i class="fa-regular fa-calendar"></i> ${evDate}

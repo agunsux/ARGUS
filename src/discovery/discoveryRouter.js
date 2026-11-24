@@ -470,6 +470,7 @@ router.get('/events/:slug', (req, res, next) => {
 function deduplicateAndEnrichPublicEvents(events) {
   const dedupedPublicEvents = [];
   for (const rawCandidate of events) {
+    if (require('./CatalogSafety').isUnverifiedLead(rawCandidate)) continue;
     const resolvedImg = EventVisualProvenanceService.resolveCatalogEventImageProvenance(rawCandidate, rawCandidate.metadata || {});
     const candidate = { ...rawCandidate, ...resolvedImg };
     const dupMatch = EventDeduplicationService.findDuplicateCandidate(candidate, dedupedPublicEvents);
@@ -501,7 +502,7 @@ router.get('/events', (req, res) => {
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
   res.setHeader('Vary', 'Cookie, Accept-Language');
 
-  let allEvents = canonicalRegistry.getAllEvents();
+  let allEvents = canonicalRegistry.getAllEvents().filter(e => !require('./CatalogSafety').isUnverifiedLead(e));
   const showAllOrPast = include_past === 'true' || scope === 'all';
   const now = (req.query?.now || req.headers?.['x-simulate-clock'] || (process.env.NODE_ENV === 'test' && process.env.SIMULATE_NOW))
     ? new Date(req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
@@ -509,7 +510,7 @@ router.get('/events', (req, res) => {
 
   // If canonicalRegistry is empty (e.g. serverless Vercel memory), fallback to verified eventPolicyRegistry
   if (allEvents.length === 0) {
-    const policyEvents = eventPolicyRegistry.getAllEvents({
+    const policyEvents = eventPolicyRegistry.getAllEvents({ publicOnly: true,
       city,
       category,
       sort: 'hype'
@@ -686,9 +687,9 @@ router.get('/events', (req, res) => {
     return `
       <div class="event-card-item" data-event-id="${e.event_id}" data-ticket-status="${isSoldOut ? 'SOLD_OUT' : (isPresale ? 'PRESALE' : 'ON_SALE')}" style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
         <div>
-          <div class="catalog-card-media" style="position:relative; aspect-ratio:16/9; max-height:190px; margin:-20px -20px 14px -20px; border-bottom:1px solid #1e293b; overflow:hidden; background:#0b1120;">
+          <div class="catalog-card-media" style="position:relative; aspect-ratio:3/4; margin:-20px -20px 14px -20px; border-bottom:1px solid #1e293b; overflow:hidden; background:#0b1120;">
             ${hasVerifiedImg ? `
-              <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='/api/discovery/events/${e.event_id || e.id}/poster.svg';" />
+              <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:contain; display:block;" onerror="this.onerror=null; this.src='/api/discovery/events/${e.event_id || e.id}/poster.svg';" />
             ` : `
               <img src="/api/discovery/events/${e.event_id || e.id}/poster.svg" alt="${altText} — Tikum Verified Fallback" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" />
             `}
@@ -1094,7 +1095,7 @@ function handleGetEvents(req, res) {
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
 
-  let allEvents = canonicalRegistry.getAllEvents();
+  let allEvents = canonicalRegistry.getAllEvents().filter(e => !require('./CatalogSafety').isUnverifiedLead(e));
   const showAllOrPast = include_past === 'true' || scope === 'all' || req.query.include_archived === 'true';
   const now = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
     ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
@@ -1362,6 +1363,7 @@ router.get('/api/discovery/events-qualified', (req, res) => {
     sort: req.query.sort || 'hype',
     includePast
   });
+  events = events.filter(e => !require('./CatalogSafety').isUnverifiedLead(e));
   if (!includePast) {
     events = EventLifecycleService.filterActiveEvents(events, req.query.now);
   }
@@ -1643,6 +1645,7 @@ router.get('/api/events/home-feed', (req, res) => {
 
   // Filter canonical events through strict temporal & verification gates (Zero Duplicates + H+2 Gate)
   let allEvents = canonicalRegistry.getAllEvents().filter(e => {
+    if (require('./CatalogSafety').isUnverifiedLead(e)) return false;
     const evStatus = (e.status || '').toUpperCase();
     const evLifecycle = (e.lifecycle_status || '').toUpperCase();
     if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
@@ -1671,7 +1674,7 @@ router.get('/api/events/home-feed', (req, res) => {
 
   // If canonicalRegistry is empty (e.g. serverless Vercel memory), federate from verified eventPolicyRegistry
   if (allEvents.length === 0) {
-    const policyEvents = eventPolicyRegistry.getAllEvents({
+    const policyEvents = eventPolicyRegistry.getAllEvents({ publicOnly: true,
       city,
       category,
       sort: 'hype'

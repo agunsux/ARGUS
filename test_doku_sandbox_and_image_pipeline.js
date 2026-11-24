@@ -347,7 +347,11 @@ async function runTestSuite() {
   // Verify index.html does not contain broken external links
   const indexHtml = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
   assert.strictEqual(indexHtml.includes('https://ygfamily.com/artist/bigbang/worldtour2027-jakarta.jpg'), false, 'index.html must not contain unhosted ygfamily link');
-  assert.ok(indexHtml.includes('/images/events/bigbang-world-tour-jakarta-2026.svg'), 'index.html must point to local verified bigbang svg');
+  const { eventPolicyRegistry } = require('./src/discovery/EventPolicyRegistry');
+  const bigbang = eventPolicyRegistry.getAllEvents().find(ev => (ev.event_name || '').toLowerCase().includes('bigbang'));
+  assert.ok(bigbang, 'Policy registry must contain BIGBANG');
+  assert.strictEqual(bigbang.image_url || bigbang.poster_url, '/images/events/bigbang-world-tour-jakarta-2026.svg', 'BIGBANG registry mapping must reference its local fallback');
+  assert.ok(fs.existsSync(path.join(__dirname, 'public', bigbang.image_url.replace(/^\//, ''))), 'BIGBANG fallback asset must exist');
 
   // Verify pay.html and track.html have event poster containers
   const payHtml = fs.readFileSync(path.join(__dirname, 'public', 'pay.html'), 'utf8');
