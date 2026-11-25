@@ -4,8 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TIKUM Operations Console — ARGUS Trust Engine | SHINERVA HQ</title>
+  <link rel="icon" type="image/svg+xml" href="/images/tikum-brand-symbol.svg">
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/tikum-tokens.css">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard-dark.css">
+  <link rel="stylesheet" href="/css/header-shared.css">
   <style>
     /* Operational Control Center Layout ("Airport Operations Room") */
     body {
@@ -19,8 +24,8 @@
 
     /* Top Control Bar */
     .ops-header {
-      background: #0f172a;
-      border-bottom: 1px solid #1e293b;
+      background: var(--palette-primary-blue, #15365B);
+      border-bottom: 1px solid rgba(243, 235, 221, 0.16);
       padding: 10px 20px;
       display: flex;
       align-items: center;
@@ -116,8 +121,8 @@
     /* Sidebar */
     .ops-sidebar {
       width: 220px;
-      background: #0b1120;
-      border-right: 1px solid #1e293b;
+      background: var(--palette-midnight-navy, #172333);
+      border-right: 1px solid rgba(243, 235, 221, 0.14);
       flex-shrink: 0;
       padding: 16px 8px;
       display: flex;
@@ -438,12 +443,17 @@
 <body>
 
   <!-- Top Operations Bar -->
-  <header class="ops-header">
-    <div style="display: flex; align-items: center; gap: 20px;">
+  <header class="ops-header tikum-shared-header" data-header-variant="admin">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <button type="button" class="tikum-mobile-toggle" aria-controls="tikumAdminDrawer" aria-expanded="false" aria-label="Buka Menu Navigasi">
+        <i class="fa-solid fa-bars" aria-hidden="true"></i>
+      </button>
       <a href="/admin" class="ops-brand">
-        <div class="ops-brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+        <span class="tikum-logo-slot tikum-logo-slot--admin" aria-label="TIKUM">
+          <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="TIKUM">
+        </span>
         <div>
-          <div class="ops-title">TIKUM <span style="color: #38bdf8; font-weight: 400;">OPERATIONS CONTROL</span></div>
+          <div class="ops-title">TIKUM <span style="color: #F3EBDD; font-weight: 500;">OPERATIONS CONTROL</span></div>
           <div class="ops-subtitle">Powered by ARGUS Trust Engine &bull; SHINERVA HQ</div>
         </div>
       </a>
@@ -5472,5 +5482,27 @@
     }
 
   </script>
+  <div id="tikumAdminDrawer" class="tikum-mobile-drawer" aria-label="Admin Navigation">
+    <div class="tikum-mobile-drawer__backdrop"></div>
+    <div class="tikum-mobile-drawer__panel">
+      <div class="tikum-mobile-drawer__head">
+        <a href="/admin" class="ops-brand" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">
+          <span class="tikum-logo-slot tikum-logo-slot--admin" aria-label="TIKUM">
+            <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="TIKUM">
+          </span>
+        </a>
+        <button type="button" class="tikum-header-control" data-drawer-close aria-label="Tutup Menu">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="tikum-mobile-drawer__links">
+        <a href="/admin" class="tikum-mobile-drawer__link active"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> <span>Operations Console</span></a>
+        <a href="/events" class="tikum-mobile-drawer__link"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> <span data-i18n="nav.events">Katalog Event</span></a>
+        <a href="/offers" class="tikum-mobile-drawer__link"><i class="fa-solid fa-handshake" aria-hidden="true"></i> <span data-i18n="nav.offers">Tawaran Tiket</span></a>
+        <a href="/track" class="tikum-mobile-drawer__link"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> <span data-i18n="nav.track">Lacak</span></a>
+      </div>
+    </div>
+  </div>
+  <script src="/js/header-shared.js"></script>
 </body>
 </html>

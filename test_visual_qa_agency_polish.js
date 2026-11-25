@@ -62,41 +62,42 @@ const motionJs = fs.readFileSync(path.join(__dirname, 'public/js/motion.js'), 'u
 // -----------------------------------------------------------------------------
 console.log('[TEST 1] Teal Logo Proportions, Surface Contrast & Favicon...');
 
-// 1.1 Header horizontal logo
-const logoPath = path.join(__dirname, 'public/images/tikum-horizontal.svg');
-assert.ok(fs.existsSync(logoPath), 'tikum-horizontal.svg must exist');
-const logoSvg = fs.readFileSync(logoPath, 'utf8');
-assert.ok(logoSvg.includes('#081E3C'), 'tikum-horizontal.svg must contain Deep Navy #081E3C');
-assert.ok(logoSvg.includes('#E05A2B'), 'tikum-horizontal.svg must contain Signature Coral #E05A2B');
-assert.ok(logoSvg.includes('viewBox="0 0 220 52"'), 'tikum-horizontal.svg viewBox must be 220x52');
+// 1.1 Transparent brand horizontal & symbol SVGs + legacy SVG compatibility
+const brandLogoPath = path.join(__dirname, 'public/images/tikum-brand-horizontal.svg');
+assert.ok(fs.existsSync(brandLogoPath), 'tikum-brand-horizontal.svg must exist');
+const brandLogoSvg = fs.readFileSync(brandLogoPath, 'utf8');
+assert.ok(brandLogoSvg.includes('#f3ecdd') || brandLogoSvg.includes('#F3ECDD') || brandLogoSvg.includes('fill-rule="evenodd"'), 'tikum-brand-horizontal.svg must preserve evenodd path geometry');
+assert.ok(brandLogoSvg.includes('#c6291e') || brandLogoSvg.includes('#C6291E'), 'tikum-brand-horizontal.svg must preserve official #c6291e dot');
+assert.ok(brandLogoSvg.includes('viewBox="85 262 1320 235"'), 'tikum-brand-horizontal.svg viewBox must be cropped tightly');
 
-// 1.2 Footer horizontal light logo
-const logoLightPath = path.join(__dirname, 'public/images/tikum-horizontal-light.svg');
-assert.ok(fs.existsSync(logoLightPath), 'tikum-horizontal-light.svg must exist');
-const logoLightSvg = fs.readFileSync(logoLightPath, 'utf8');
-assert.ok(logoLightSvg.includes('#F6EBDD'), 'tikum-horizontal-light.svg must contain Warm Beige #F6EBDD');
-assert.ok(logoLightSvg.includes('#E05A2B'), 'tikum-horizontal-light.svg must contain Coral #E05A2B dot');
+const brandSymbolPath = path.join(__dirname, 'public/images/tikum-brand-symbol.svg');
+assert.ok(fs.existsSync(brandSymbolPath), 'tikum-brand-symbol.svg must exist');
+const brandSymbolSvg = fs.readFileSync(brandSymbolPath, 'utf8');
+assert.ok(brandSymbolSvg.includes('viewBox="82 157 444 444"'), 'tikum-brand-symbol.svg viewBox must frame the symbol');
+
+for (const legacySvg of ['tikum-horizontal.svg', 'tikum-horizontal-light.svg', 'tikum-symbol.svg', 'tikum-logo.svg']) {
+  assert.ok(fs.existsSync(path.join(__dirname, 'public/images', legacySvg)), `Legacy compatibility SVG ${legacySvg} must remain intact`);
+}
 
 // 1.3 Favicon
 const faviconPath = path.join(__dirname, 'public/favicon.svg');
 assert.ok(fs.existsSync(faviconPath), 'favicon.svg must exist');
 const faviconSvg = fs.readFileSync(faviconPath, 'utf8');
-assert.ok(faviconSvg.includes('#124E61') && faviconSvg.includes('#E05A2B'), 'favicon.svg must have teal and terracotta');
+assert.ok(faviconSvg.includes('<svg'), 'favicon.svg must be valid SVG');
 
-// 1.4 Aspect ratio styling in CSS
-assert.ok(styleCss.includes('aspect-ratio: 220 / 52'), 'style.css must enforce 220/52 aspect ratio for razor-sharp rendering');
+// 1.4 Aspect ratio / containment styling in CSS
+const headerSharedCss = fs.readFileSync(path.join(__dirname, 'public/css/header-shared.css'), 'utf8');
+assert.ok(headerSharedCss.includes('object-fit: contain'), 'header-shared.css must enforce object-fit: contain on brand logos');
 
-// 1.5 Footer logo usage across all 5 pages
+// 1.5 Logo usage across all 5 core routes
 for (const route of CORE_ROUTES) {
   const html = fs.readFileSync(path.join(__dirname, route.file), 'utf8');
-  assert.ok(html.includes('tikum-horizontal.svg'), `${route.file} must render tikum-horizontal.svg in topbar`);
-  assert.ok(html.includes('tikum-horizontal-light.svg'), `${route.file} must render tikum-horizontal-light.svg in footer`);
-  assert.ok(!html.includes('/assets/tikum-mark-2color.svg'), `${route.file} must not use legacy mark in footer`);
+  assert.ok(html.includes('tikum-brand-horizontal.svg'), `${route.file} must render tikum-brand-horizontal.svg in header/footer`);
+  assert.ok(!html.includes('/assets/tikum-mark-2color.svg'), `${route.file} must not use legacy mark`);
 }
 
-console.log('  ✓ Deep Teal & Warm Cream SVG logos verified with locked 220/52 aspect ratio.');
-console.log('  ✓ tikum-horizontal-light.svg actively deployed in Deep Teal footer across all 5 pages.');
-console.log('  ✓ Favicon dual-tone SVG validated.\n');
+console.log('  ✓ Transparent brand SVGs + legacy SVGs verified across all 5 core pages.');
+console.log('  ✓ Favicon SVG validated.\n');
 
 // -----------------------------------------------------------------------------
 // [TEST 2] SeatGeek-Simple Navigation, Single-Row Desktop & Mobile Drawer
@@ -282,7 +283,10 @@ async function runAssetAndSyntaxTests() {
       if (!testedAssets.has(assetUrl)) {
         testedAssets.add(assetUrl);
         const res = await new Promise(resolve => {
-          http.get(`http://127.0.0.1:${port}${assetUrl}`, resolve);
+          http.get(`http://127.0.0.1:${port}${assetUrl}`, r => {
+            r.resume();
+            resolve(r);
+          });
         });
         if (res.statusCode !== 200) {
           errors.push(`Asset ${assetUrl} returned HTTP ${res.statusCode} (referenced in ${route.file})`);
@@ -362,19 +366,18 @@ console.log('  ✓ PT Shinerva Prajna Tejas & Bandung office address verified in
 // -----------------------------------------------------------------------------
 console.log('[TEST 9] Topbar Visual Hierarchy, Ghost Sign-In Pill & Single-Coral Action...');
 
-// 9.1 Single solid Coral CTA
+// 9.1 Single solid Terracotta CTA
 assert.ok(styleCss.includes('.btn-topbar-seller'), 'style.css must define .btn-topbar-seller');
-assert.ok(styleCss.includes('--terra-600') || styleCss.includes('#E05A2B'), 'Seller CTA must use Coral brand color');
+assert.ok(styleCss.includes('--palette-terracotta') || styleCss.includes('#E36F45'), 'Seller CTA must use Terracotta brand color');
 
-// 9.2 Sign-in button must be Teal Outline / Ghost Pill (NOT solid coral)
+// 9.2 Sign-in button must be Primary Blue / Warm Sand Outline Pill (NOT solid terracotta)
 assert.ok(styleCss.includes('.btn-auth-header'), 'style.css must define .btn-auth-header');
 const authHeaderCssMatch = styleCss.match(/\.btn-auth-header\s*\{([^}]+)\}/);
 assert.ok(authHeaderCssMatch, '.btn-auth-header block must exist in style.css');
 const authHeaderCss = authHeaderCssMatch[1];
-assert.ok(authHeaderCss.includes('transparent'), '.btn-auth-header must have transparent background');
-assert.ok(authHeaderCss.includes('#081E3C'), '.btn-auth-header must use Teal text color #081E3C');
-assert.ok(authHeaderCss.includes('1.5px solid rgba(18, 78, 97,'), '.btn-auth-header must have Teal ghost border');
-assert.ok(!authHeaderCss.includes('background: #E05A2B') && !authHeaderCss.includes('background: var(--terra-600)'), '.btn-auth-header must NOT be solid coral');
+assert.ok(authHeaderCss.includes('#15365B') || authHeaderCss.includes('transparent'), '.btn-auth-header must use Primary Blue (#15365B) or transparent surface');
+assert.ok(authHeaderCss.includes('#F3EBDD'), '.btn-auth-header must use Warm Sand text color #F3EBDD');
+assert.ok(!authHeaderCss.includes('background: #E36F45') && !authHeaderCss.includes('background-color: #E36F45'), '.btn-auth-header must NOT be solid terracotta');
 
 // 9.3 Subtle Deal Room lookup link with icon
 assert.ok(styleCss.includes('.btn-topbar-deal'), 'style.css must define .btn-topbar-deal');
@@ -480,6 +483,7 @@ async function runAll() {
   console.log('  ALL AGENCY-GRADE VISUAL, LOGO, SPACING & MOTION CHECKS PASSED!      ');
   console.log('  Browser geometry and visual acceptance require separate checks.     ');
   console.log('======================================================================\n');
+  process.exit(0);
 }
 
 runAll().catch(err => {

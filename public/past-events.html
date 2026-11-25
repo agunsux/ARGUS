@@ -1,25 +1,28 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="pastEvents.pageTitle">Arsip Event Selesai | TIKUM — Pasar Tiket Event Terverifikasi</title>
   <meta name="description" content="Arsip resmi event konser, musik, dan hiburan yang telah selesai atau dibatalkan di Indonesia. Riwayat faktual sumber promotor terverifikasi PT SHINERVA PRAJNA TEJAS.">
   <link rel="canonical" href="https://tikum.app/past-events">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="/images/tikum-brand-symbol.svg">
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/tikum-tokens.css">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/marketplace-refresh.css">
+  <link rel="stylesheet" href="/css/header-shared.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --bg-dark: #0A0D14;
-      --card-bg: #121824;
-      --card-border: #1F2937;
-      --text-main: #F3F4F6;
-      --text-muted: #9CA3AF;
-      --primary: #E05A3A;
-      --accent: #38BDF8;
-      --completed: #6B7280;
+      --bg-dark: #172333;
+      --card-bg: #24364D;
+      --card-border: rgba(243, 235, 221, 0.16);
+      --text-main: #FFFFFF;
+      --text-muted: #CBD5E1;
+      --primary: #E36F45;
+      --accent: #F3EBDD;
+      --completed: #94A3B8;
       --cancelled: #EF4444;
     }
     body {
@@ -265,7 +268,7 @@
     <aside id="appSidebar" class="app-sidebar" aria-label="Navigasi Utama">
       <div class="sidebar-brand-header">
         <a href="/" class="sidebar-brand-link">
-          <img src="/assets/tikum-mark-2color.svg" width="30" height="30" alt="Tikum Logo">
+          <img src="/images/tikum-brand-symbol.svg" width="32" height="32" alt="Tikum Logo">
           <div class="sidebar-brand-text">
             <div class="sidebar-brand-title">TIKUM</div>
             <div class="sidebar-brand-sub">by PT Shinerva Prajna Tejas</div>
@@ -375,13 +378,16 @@
     <!-- Main Content Wrapper -->
     <div id="appMainWrapper">
       <!-- Zero-Overlap 64px Slim Topbar -->
-      <header id="appTopbar" class="app-topbar">
+      <header id="appTopbar" class="app-topbar tikum-shared-header" data-header-variant="marketplace">
         <div class="topbar-left">
           <button type="button" id="sidebarToggleMobile" class="topbar-hamburger-btn" aria-label="Buka Menu Navigasi">
             <i class="fa-solid fa-bars"></i>
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <img src="/images/tikum-horizontal.svg" width="130" height="32" alt="Tikum">
+            <span class="tikum-logo-slot" aria-label="TIKUM">
+              <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="Tikum">
+            </span>
+            <div class="brand-title">Tikum</div>
           </a>
         </div>
 
@@ -474,8 +480,10 @@
       <footer id="appFooter" class="app-footer site-footer">
         <div class="footer-tier-1">
           <div class="footer-col-brand">
+            <div style="margin-bottom: 14px;">
+              <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img footer-logo-light" width="196" height="42" alt="TIKUM">
+            </div>
             <h3>
-              <img src="/assets/tikum-mark-2color.svg" width="22" height="22" alt="Tikum">
               <span>TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
             </h3>
             <p data-i18n="footer.aboutBrand">
@@ -687,6 +695,7 @@
   </script>
 
   <script src="/js/i18n.js"></script>
+  <script src="/js/header-shared.js"></script>
   <script src="/js/motion.js"></script>
 </body>
 </html>

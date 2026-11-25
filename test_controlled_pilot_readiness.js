@@ -74,6 +74,23 @@ async function runSuite() {
   console.log('================================================================\n');
 
   resetDatabase();
+  const pilotSeller = state.users.find(u => u.id === 'seller-1');
+  if (pilotSeller) {
+    pilotSeller.email_verified = true;
+    pilotSeller.metadata = {
+      ...(pilotSeller.metadata || {}),
+      city: 'Jakarta',
+      address: 'Jl. Sudirman No. 1, Jakarta',
+      payout_bank_name: 'BCA',
+      payout_account_number: '1234567890',
+      identity_doc_ref: 'hash-ktp-budi-327101'
+    };
+  }
+  const pilotSellerProfile = state.seller_profiles.find(p => p.user_id === 'seller-1');
+  if (pilotSellerProfile) {
+    pilotSellerProfile.payout_bank = 'BCA';
+    pilotSellerProfile.payout_account_masked = '1234567890';
+  }
 
   // ---------------------------------------------------------------------------
   // SECTION 1: PARTNER AUTHORITY GATING & CONSIGNMENT PRE-CONDITIONS

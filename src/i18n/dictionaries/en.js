@@ -97,7 +97,11 @@ module.exports = {
     "mobileConcerts": "Concerts",
     "mobileSearch": "Search",
     "mobileTickets": "Tickets",
-    "mobileAccount": "Account"
+    "mobileAccount": "Account",
+    "languageLabel": "Language",
+    "menu": "Menu",
+    "buyerDashboard": "Buyer Dashboard",
+    "sellerDashboard": "Seller Dashboard"
   },
   "hero": {
     "headline": "TIKUM — Verified Event Ticket Marketplace",
@@ -607,7 +611,8 @@ module.exports = {
     "fromPrice": "From",
     "viewTickets": "View Tickets",
     "sellThisTicket": "Sell This Ticket",
-    "posterUnavailableVerified": "Official Poster Unavailable · Verified Source"
+    "posterUnavailableVerified": "Official Poster Unavailable · Verified Source",
+    "waitlistMessage": "Hello TIKUM, I am interested in verified resale tickets for: {title} ({url}). Please notify me when a verified seller is available."
   },
   "search": {
     "placeholder": "Search concerts, artists, festivals, or cities...",
@@ -1286,7 +1291,33 @@ module.exports = {
     "heroPill": "INDONESIA EVENT DISCOVERY REGISTRY",
     "allCities": "All Cities",
     "allCategories": "All Categories",
-    "filter": "Filter"
+    "filter": "Filter",
+    "catalogPageTitle": "Indonesia Event Catalog — Discover Concert Schedules, Sports & Verified Tickets | Tikum",
+    "catalogMetaDesc": "Explore all music concerts, festivals, sports, and live shows across Indonesia. Get official ticket information and verified ticket resale at Tikum.",
+    "secondaryGuideBannerTitle": "Secondary Market & Guide:",
+    "secondaryGuideBannerDesc": "Learn about our 6% fee structure, escrow protection, or explore the Tikum checkout simulation.",
+    "checkoutSimulation": "Checkout Simulation",
+    "concludedArchiveTab": "Concluded Events Archive",
+    "catFestival": "Festival",
+    "catComedy": "Stand-Up Comedy",
+    "priceAll": "All Prices (>= IDR 500k)",
+    "price500kTo1m": "IDR 500k - 1M",
+    "price1mTo2m": "IDR 1M - 2M",
+    "priceOver2m": "> IDR 2M",
+    "ticketStatusAll": "All Ticket Statuses",
+    "ticketStatusOnSale": "Available (On Sale)",
+    "ticketStatusSoldOut": "Sold Out",
+    "ticketStatusPresale": "Presale",
+    "dateAll": "All Dates",
+    "dateWeekend": "This Weekend",
+    "dateNextMonth": "Next Month",
+    "officialFrom": "Official from",
+    "resaleTicketsCount": "{count} Resale Tickets ({price})",
+    "noResaleYet": "No resale tickets yet",
+    "viewEventCta": "View Event",
+    "badgeSoldOut": "SOLD OUT",
+    "badgePresale": "PRESALE",
+    "badgeOnSale": "ON SALE"
   },
   "prelaunch": {
     "title": "TIKUM is in pre-launch preparation.",
@@ -1577,7 +1608,11 @@ module.exports = {
     "feeDetailsLink": "Fee Details →",
     "sellCtaButton": "Sell Tickets (Simple 2 Mins)",
     "openDealCtaButton": "Open Deal Room",
-    "workflowBadge": "Step-by-Step Transaction Flow"
+    "workflowBadge": "Step-by-Step Transaction Flow",
+    "liveExperiencesEyebrow": "TIKUM · Live Experiences",
+    "liveExperiencesTitle": "Enter Every Venue With Confidence",
+    "liveExperiencesSubtitle": "From GBK Stadium to major Jakarta festivals, TIKUM Event PIC assists ticket handovers and wristband redemptions directly at participating venues.",
+    "liveExperiencesCta": "Explore Live Events"
   },
   "dealCreate": {
     "pageTitle": "Create Transaction Link / Submit Ticket Listing",

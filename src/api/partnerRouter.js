@@ -37,26 +37,36 @@ router.get('/go/:partnerSlug/:offerId', (req, res) => {
     const wantsHtml = req.headers.accept && req.headers.accept.includes('text/html');
 
     if (wantsHtml) {
+      const { HEADER_VARIANTS, renderSharedHeadAssets, renderSharedFooterScripts, renderSharedHeader, resolveRequestLocale } = require('../ui/sharedHeader');
+      const locale = resolveRequestLocale(req);
       return res.status(status).send(`<!DOCTYPE html>
-<html lang="id">
+<html lang="${locale}" data-theme="dark">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tautan Mitra Tidak Tersedia — Tikum</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 32px; max-width: 480px; text-align: center; }
-    h1 { font-size: 20px; margin-bottom: 12px; color: #f87171; }
-    p { font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px; }
-    .btn { display: inline-block; padding: 10px 20px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; }
+    body { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--palette-midnight-navy, #172333); color: var(--palette-soft-white, #FFFFFF); min-height: 100vh; margin: 0; display: flex; flex-direction: column; }
+    .partner-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .card { background: var(--palette-surface, #24364D); border: 1px solid rgba(203, 213, 225, 0.22); border-radius: 14px; padding: 32px; max-width: 480px; text-align: center; }
+    h1 { font-size: 20px; margin-bottom: 12px; color: var(--palette-terracotta, #E36F45); }
+    p { font-size: 14px; color: var(--palette-secondary-text, #CBD5E1); line-height: 1.6; margin-bottom: 24px; }
+    .btn { display: inline-block; padding: 10px 20px; background: var(--palette-terracotta, #E36F45); color: var(--palette-midnight-navy, #172333); text-decoration: none; border-radius: 999px; font-weight: 700; font-size: 14px; }
   </style>
 </head>
-<body>
-  <div class="card">
-    <h1>Tautan Mitra Tidak Tersedia</h1>
-    <p>${err.message || 'Tautan tiket resmi ini sedang tidak aktif atau tidak memenuhi kebijakan keamanan Tikum.'}</p>
-    <a href="/events" class="btn">Kembali ke Katalog Event</a>
-  </div>
+<body class="dark-mode">
+  ${renderSharedHeader({ variant: HEADER_VARIANTS.PUBLIC, activeNav: 'events', locale })}
+  <main class="partner-wrap">
+    <div class="card">
+      <h1>Tautan Mitra Tidak Tersedia</h1>
+      <p>${err.message || 'Tautan tiket resmi ini sedang tidak aktif atau tidak memenuhi kebijakan keamanan Tikum.'}</p>
+      <a href="/events" class="btn">Kembali ke Katalog Event</a>
+    </div>
+  </main>
+  ${renderSharedFooterScripts()}
 </body>
 </html>`);
     }

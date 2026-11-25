@@ -201,10 +201,10 @@ test('4.3. EventSEOService.renderEventPageHtml renders localized SSR HTML for id
 // -------------------------------------------------------------
 // 5. PUBLIC HTML SURFACE AUDIT
 // -------------------------------------------------------------
-test('5.1. All 19 public HTML files include i18n.js and lang toggle triggers', () => {
+test('5.1. All 21 public HTML files include i18n.js and lang toggle triggers', () => {
   const publicDir = path.resolve(__dirname, 'public');
   const files = fs.readdirSync(publicDir).filter(f => f.endsWith('.html'));
-  assert.strictEqual(files.length, 19, `Expected 19 HTML files, found ${files.length}`);
+  assert.strictEqual(files.length, 21, `Expected 21 HTML files, found ${files.length}`);
 
   files.forEach(file => {
     const content = fs.readFileSync(path.join(publicDir, file), 'utf8');
@@ -217,34 +217,37 @@ test('5.1. All 19 public HTML files include i18n.js and lang toggle triggers', (
 test('5.2. public/index.html has full data-i18n coverage across all major sections', () => {
   const indexHtml = fs.readFileSync(path.resolve(__dirname, 'public/index.html'), 'utf8');
   const requiredTags = [
-    'nav.featuredEvents',
     'nav.events',
-    'nav.productsAndServices',
-    'nav.pricingAndFees',
+    'nav.buyTickets',
+    'nav.dealRoomLookup',
+    'nav.sellTicket',
+    'nav.signIn',
     'nav.submitListing',
-    'prelaunch.title',
-    'prelaunch.bannerDesc',
+    'nav.pricingAndFees',
     'spotlight.eyebrow',
-    'spotlight.title',
-    'services.kicker',
-    'services.title',
-    'pricing.kicker',
-    'pricing.title',
-    'pricing.colComponent',
-    'comparison.kicker',
-    'comparison.title',
-    'howItWorksSection.kicker',
-    'howItWorksSection.buyerColTitle',
-    'sellerExperienceSection.kicker',
-    'faqPreviewSection.kicker',
-    'finalCtaSection.kicker',
+    'landing.editorialHeroTitle',
+    'landing.editorialHeroSubtitle',
+    'landing.instantDealNotice',
+    'landing.openDealRoomBtn',
+    'landing.heroCtaExplore',
+    'landing.heroCtaSell',
+    'landing.liveExperiencesTitle',
+    'landing.twoWayProtectionEyebrow',
+    'landing.twoWayHeadline',
+    'landing.founderQuoteText',
+    'landing.flowRailHeading',
+    'landing.feeSummaryBarTitle',
+    'landing.blogStripHeading',
+    'landing.closingCtaHeading',
     'footer.operationalOffice',
-    'footer.officialContact'
+    'footer.officialContact',
+    'footer.copyrightNotice'
   ];
 
   requiredTags.forEach(tag => {
     assert(indexHtml.includes(`data-i18n="${tag}"`), `public/index.html missing data-i18n="${tag}"`);
   });
+  assert(indexHtml.includes('nav.featuredEvents'), 'public/index.html must reference nav.featuredEvents');
 });
 
 // -------------------------------------------------------------

@@ -1,0 +1,600 @@
+/* ==========================================================================
+   TIKUM SHARED HEADER ARCHITECTURE (6 Variants, Dark-Mode Canonical)
+   Supports: public, marketplace, auth, buyer-dashboard, seller-dashboard, admin
+   Logo container is drop-in ready for final transparent horizontal SVG.
+   ========================================================================== */
+
+:root {
+  --header-surface: rgba(23, 35, 51, 0.95);
+  --header-surface-solid: var(--palette-midnight-navy, #172333);
+  --header-surface-elevated: var(--palette-surface, #24364D);
+  --header-ink: var(--palette-soft-white, #FFFFFF);
+  --header-ink-warm: var(--palette-warm-sand, #F3EBDD);
+  --header-muted: var(--palette-secondary-text, #CBD5E1);
+  --header-accent: var(--palette-terracotta, #E36F45);
+  --header-blue: var(--palette-primary-blue, #15365B);
+  --header-border: rgba(203, 213, 225, 0.22);
+  --tikum-logo-h: 42px;
+  --tikum-logo-w: 196px;
+}
+
+/* --------------------------------------------------------------------------
+   1. Canonical Brand Logo Slots (Transparent Vector Derivatives)
+   -------------------------------------------------------------------------- */
+.tikum-logo-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: var(--tikum-logo-h, 42px);
+  width: var(--tikum-logo-w, 196px);
+  max-width: 100%;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 6px;
+  position: relative;
+  background: transparent;
+}
+
+.tikum-logo-slot--footer {
+  --tikum-logo-h: 42px;
+  --tikum-logo-w: 192px;
+  margin-bottom: 12px;
+}
+
+.tikum-logo-slot--auth {
+  --tikum-logo-h: 40px;
+  --tikum-logo-w: 184px;
+}
+
+.tikum-logo-slot--dash {
+  --tikum-logo-h: 40px;
+  --tikum-logo-w: 178px;
+}
+
+.tikum-logo-slot--admin {
+  --tikum-logo-h: 40px;
+  --tikum-logo-w: 174px;
+}
+
+.tikum-logo-img,
+.tikum-logo-slot .tikum-logo-img,
+.topbar-left .brand .tikum-logo-slot .tikum-logo-img {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+}
+
+/* Legacy temp master support if an unmigrated snippet ever renders it */
+.tikum-logo-img.is-temp-master {
+  object-fit: cover !important;
+  object-position: 50% 46%;
+  transform: scale(1.13);
+  transform-origin: 50% 46%;
+}
+
+.tikum-logo-slot[data-logo-status="temporary-master-preview"] {
+  background: #000139;
+  border: 1px solid rgba(203, 213, 225, 0.22);
+}
+
+.tikum-symbol-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--palette-surface, #24364D);
+  border: 1px solid rgba(203, 213, 225, 0.22);
+}
+
+.tikum-symbol-slot .tikum-logo-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.tikum-symbol-slot .tikum-logo-img.is-temp-master {
+  object-position: 18% 46%;
+  transform: scale(2.85);
+  transform-origin: 18% 46%;
+}
+
+/* --------------------------------------------------------------------------
+   2. Shared Header Controls & Variant Surface Alignment
+   -------------------------------------------------------------------------- */
+.tikum-shared-header,
+#appTopbar,
+.site-header,
+.auth-header,
+.dash-header,
+.ops-header {
+  background: var(--header-surface) !important;
+  border-bottom: 1px solid var(--header-border) !important;
+  color: var(--header-ink) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.tikum-shared-header[data-header-variant="admin"],
+.ops-header {
+  background: var(--palette-midnight-navy, #172333) !important;
+  border-bottom: 1px solid rgba(203, 213, 225, 0.22) !important;
+}
+
+.tikum-shared-header[data-header-variant="auth"],
+.auth-header {
+  background: var(--palette-midnight-navy, #172333) !important;
+  padding: 12px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.tikum-shared-header[data-header-variant="buyer-dashboard"],
+.tikum-shared-header[data-header-variant="seller-dashboard"],
+.dash-header {
+  background: var(--palette-midnight-navy, #172333) !important;
+  border-bottom: 1px solid rgba(203, 213, 225, 0.22) !important;
+}
+
+.tikum-header-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--header-border);
+  border-radius: 10px;
+  color: var(--header-ink);
+  background: var(--palette-primary-blue, #15365B);
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.tikum-header-control:hover {
+  background: var(--header-surface-elevated);
+  border-color: var(--header-ink-warm);
+}
+
+.tikum-header-control:focus-visible,
+.tikum-shared-header a:focus-visible,
+.tikum-shared-header button:focus-visible {
+  outline: 3px solid var(--header-accent);
+  outline-offset: 2px;
+}
+
+/* Remove any legacy theme-toggle display if present */
+[data-theme-toggle],
+#btnThemeToggle,
+#themeToggle {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. SSR .site-header Navigation Layout & Responsive Drawer
+   -------------------------------------------------------------------------- */
+.site-header .header-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  min-height: 80px;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.site-header .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--header-ink);
+  min-width: 0;
+}
+
+.site-header .main-nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: nowrap;
+}
+
+.site-header .nav-link {
+  color: var(--header-ink-warm);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 8px 10px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.site-header .nav-link:hover,
+.site-header .nav-link.active {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.site-header .nav-link-cta {
+  background: var(--palette-terracotta, #E36F45);
+  color: var(--palette-midnight-navy, #172333) !important;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 700;
+}
+
+.site-header .nav-link-cta:hover {
+  background: var(--palette-warm-sand, #F3EBDD);
+  color: var(--palette-midnight-navy, #172333) !important;
+}
+
+/* Auth Header Navigation */
+.auth-header .header-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.auth-header .auth-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.auth-header .auth-nav a {
+  color: var(--header-ink-warm);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.auth-header .auth-nav a:hover {
+  color: #FFFFFF;
+}
+
+.auth-header .auth-nav a.auth-sell {
+  background: var(--palette-terracotta, #E36F45);
+  color: var(--palette-midnight-navy, #172333);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.auth-header .auth-nav a.auth-sell:hover {
+  background: var(--palette-warm-sand, #F3EBDD);
+}
+
+/* Mobile Toggle Button for Non-AppShell Headers (Auth, Dash, SSR, Admin) */
+.tikum-mobile-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--header-border);
+  background: var(--palette-primary-blue, #15365B);
+  color: var(--header-ink);
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tikum-mobile-drawer {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+}
+
+.tikum-mobile-drawer.is-open {
+  display: block;
+}
+
+.tikum-mobile-drawer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(23, 35, 51, 0.78);
+  backdrop-filter: blur(4px);
+}
+
+.tikum-mobile-drawer__panel {
+  position: relative;
+  width: min(300px, 86vw);
+  height: 100%;
+  background: var(--palette-primary-blue, #15365B);
+  border-right: 1px solid rgba(203, 213, 225, 0.22);
+  padding: 18px 16px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  box-shadow: 4px 0 28px rgba(0, 0, 0, 0.55);
+}
+
+.tikum-mobile-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(203, 213, 225, 0.22);
+}
+
+.tikum-mobile-drawer__links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tikum-mobile-drawer__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--header-ink);
+  text-decoration: none;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.tikum-mobile-drawer__link:hover,
+.tikum-mobile-drawer__link.active {
+  background: var(--palette-surface, #24364D);
+  color: #FFFFFF;
+}
+
+/* --------------------------------------------------------------------------
+   4. Five-Language Selector Popover (ID / EN / MS / TL / TH)
+   -------------------------------------------------------------------------- */
+.tikum-lang-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.lang-switcher-pill,
+.lang-toggle-btn,
+.tikum-lang-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 38px !important;
+  padding: 6px 12px !important;
+  border-radius: 999px !important;
+  background: var(--palette-surface, #24364D) !important;
+  border: 1px solid rgba(203, 213, 225, 0.3) !important;
+  color: var(--palette-soft-white, #FFFFFF) !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+
+.lang-switcher-pill:hover,
+.lang-toggle-btn:hover,
+.tikum-lang-btn:hover {
+  background: var(--palette-primary-blue, #15365B) !important;
+  border-color: var(--palette-terracotta, #E36F45) !important;
+}
+
+.tikum-lang-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 196px;
+  background: var(--palette-surface, #24364D);
+  border: 1px solid rgba(203, 213, 225, 0.25);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 16px 36px rgba(3, 8, 20, 0.65);
+  z-index: 1500;
+}
+
+.tikum-lang-menu.is-open {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tikum-lang-menu--up {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+
+.tikum-lang-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--palette-soft-white, #FFFFFF);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tikum-lang-option:hover {
+  background: rgba(21, 54, 91, 0.72);
+}
+
+.tikum-lang-option[aria-checked="true"],
+.tikum-lang-option.is-active {
+  background: var(--palette-primary-blue, #15365B);
+  color: var(--palette-warm-sand, #F3EBDD);
+  font-weight: 700;
+}
+
+.tikum-lang-code {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--palette-warm-sand, #F3EBDD);
+}
+
+/* --------------------------------------------------------------------------
+   5. Responsive Breakpoints (1920 / 1366 / 768 / 430 / 375)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1023px) {
+  .site-header .header-container {
+    min-height: 68px;
+    padding: 10px 16px;
+  }
+
+  .site-header .main-nav {
+    display: none;
+  }
+
+  .tikum-mobile-toggle {
+    display: inline-flex;
+  }
+
+  .ops-header {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 14px !important;
+  }
+
+  .ops-search-box {
+    display: none;
+  }
+
+  .ops-controls {
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+
+  .ops-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1100;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ops-sidebar.is-mobile-open {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 767px) {
+  .dash-header {
+    padding: 10px 14px !important;
+    min-height: 68px;
+  }
+
+  .dash-header .role-switcher {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .dash-header .header-right {
+    gap: 6px !important;
+  }
+
+  .dash-header .user-pill {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --tikum-logo-h: 34px;
+    --tikum-logo-w: 140px;
+  }
+
+  .tikum-logo-slot--footer {
+    --tikum-logo-h: 34px;
+    --tikum-logo-w: 140px;
+  }
+
+  .tikum-logo-slot--auth,
+  .tikum-logo-slot--dash,
+  .tikum-logo-slot--admin {
+    --tikum-logo-h: 34px;
+    --tikum-logo-w: 138px;
+  }
+
+  .site-header .header-container {
+    min-height: 68px;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+
+  .auth-header {
+    padding: 10px 14px;
+  }
+
+  .auth-header .header-container {
+    min-height: 48px;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .auth-header .auth-nav,
+  .tikum-shared-header[data-header-variant="auth"] .main-nav {
+    display: none;
+  }
+
+  .topbar-right {
+    gap: 6px !important;
+  }
+
+  #appTopbar .btn-auth-header {
+    display: none !important;
+  }
+}
+
+@media (max-width: 385px) {
+  :root {
+    --tikum-logo-h: 32px;
+    --tikum-logo-w: 128px;
+  }
+
+  .tikum-logo-slot--auth,
+  .tikum-logo-slot--dash,
+  .tikum-logo-slot--admin {
+    --tikum-logo-h: 32px;
+    --tikum-logo-w: 128px;
+  }
+
+  .lang-switcher-pill,
+  .lang-toggle-btn,
+  .tikum-lang-btn {
+    padding: 5px 9px !important;
+    font-size: 11.5px !important;
+  }
+}

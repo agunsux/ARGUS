@@ -18,56 +18,40 @@ const router = express.Router();
 const { TechnicalSEOService } = require('../seo/TechnicalSEOService');
 const { StructuredDataFactory } = require('../seo/StructuredDataFactory');
 const { renderFooterHtml } = require('../config/businessProfile');
+const {
+  HEADER_VARIANTS,
+  renderSharedHeadAssets,
+  renderSharedFooterScripts,
+  renderSharedHeader,
+  resolveRequestLocale
+} = require('../ui/sharedHeader');
 
 function resolveRequestLang(req) {
-  if (!req) return 'id';
-  if (req.query && (req.query.lang || req.query.locale)) {
-    const q = (req.query.lang || req.query.locale).toLowerCase();
-    if (q === 'en' || q.startsWith('en-')) return 'en';
-    if (q === 'id' || q.startsWith('id-')) return 'id';
-  }
-  if (req.headers && req.headers.cookie) {
-    const match = req.headers.cookie.match(/(?:^|;\s*)(?:tikum_locale|tikum_lang)=([^;]+)/);
-    if (match && match[1]) {
-      const c = decodeURIComponent(match[1]).toLowerCase();
-      if (c === 'en' || c.startsWith('en-')) return 'en';
-      if (c === 'id' || c.startsWith('id-')) return 'id';
-    }
-  }
-  return 'id';
+  return resolveRequestLocale(req);
 }
 
 function renderTrustNavHeader(activePath = '', lang = 'id') {
-  const isEn = lang === 'en';
-  return `
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-          <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle" data-i18n="brand.subtitle">${isEn ? 'Verified Event Ticket Marketplace' : 'Pasar Tiket Event Terverifikasi'}</span>
-        </div>
-      </a>
-      <nav class="main-nav">
-        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">${isEn ? 'Events' : 'Katalog Event'}</span></a>
-        <a href="/blog" class="nav-link ${activePath === '/blog' ? 'active' : ''}"><i class="fa-solid fa-newspaper"></i> <span data-i18n="nav.blog">Blog</span></a>
-        <a href="/how-it-works" class="nav-link ${activePath === '/how-it-works' ? 'active' : ''}"><i class="fa-solid fa-circle-nodes"></i> <span data-i18n="footer.how">${isEn ? 'How It Works' : 'Cara Kerja'}</span></a>
-        <a href="/buyer-protection" class="nav-link ${activePath === '/buyer-protection' ? 'active' : ''}"><i class="fa-solid fa-shield-heart"></i> <span data-i18n="footer.buyerProt">${isEn ? 'Buyer Protection' : 'Perlindungan Pembeli'}</span></a>
-        <a href="/ticket-verification" class="nav-link ${activePath === '/ticket-verification' ? 'active' : ''}"><i class="fa-solid fa-qrcode"></i> <span data-i18n="footer.verifInfo">${isEn ? 'Ticket Verification' : 'Verifikasi Tiket'}</span></a>
-        <a href="/escrow" class="nav-link ${activePath === '/escrow' ? 'active' : ''}"><i class="fa-solid fa-lock"></i> <span data-i18n="escrow.title">${isEn ? 'Platform Holding' : 'Penahanan Dana'}</span></a>
-        <a href="/disputes" class="nav-link ${activePath === '/disputes' ? 'active' : ''}"><i class="fa-solid fa-scale-balanced"></i> <span data-i18n="disputes.title">${isEn ? 'Dispute Resolution' : 'Resolusi Sengketa'}</span></a>
-        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700; margin-left: 8px;">${lang.toUpperCase()}</button>
-      </nav>
-    </div>
-  </header>`;
+  const isEn = lang !== 'id';
+  return renderSharedHeader({
+    variant: HEADER_VARIANTS.PUBLIC,
+    activeNav: activePath === '/blog' ? 'blog' : 'trust',
+    locale: lang,
+    links: [
+      { href: '/events', icon: 'fa-calendar-days', key: 'nav.events', label: isEn ? 'Events' : 'Katalog Event' },
+      { href: '/blog', icon: 'fa-newspaper', key: 'nav.blog', label: 'Blog', active: activePath === '/blog' },
+      { href: '/how-it-works', icon: 'fa-circle-nodes', key: 'footer.how', label: isEn ? 'How It Works' : 'Cara Kerja', active: activePath === '/how-it-works' },
+      { href: '/buyer-protection', icon: 'fa-shield-heart', key: 'footer.buyerProt', label: isEn ? 'Buyer Protection' : 'Perlindungan Pembeli', active: activePath === '/buyer-protection' },
+      { href: '/ticket-verification', icon: 'fa-qrcode', key: 'footer.verifInfo', label: isEn ? 'Ticket Verification' : 'Verifikasi Tiket', active: activePath === '/ticket-verification' },
+      { href: '/create', icon: 'fa-plus-circle', key: 'nav.sellTicket', label: isEn ? 'Sell Ticket' : 'Jual Tiket', cta: true }
+    ]
+  });
 }
 
 function renderTrustLayout({ lang = 'id', title, description, canonicalPath, h1, subtitle, breadcrumbs, faqPairs = [], contentHtml }) {
-  const isEn = lang === 'en';
+  const isEn = lang !== 'id';
   const breadcrumbJsonLd = StructuredDataFactory.createBreadcrumbSchema(breadcrumbs);
   const faqJsonLd = faqPairs.length > 0 ? StructuredDataFactory.createFAQSchema(faqPairs) : null;
-  const jsonLd = faqJsonLd ? [breadcrumbJsonLd, faqJsonLd] : breadcrumbJsonLd;
+  const jsonLd = faqPairs.length > 0 ? [breadcrumbJsonLd, faqJsonLd] : breadcrumbJsonLd;
 
   const headMeta = TechnicalSEOService.renderHeadMeta({
     title,
@@ -77,13 +61,13 @@ function renderTrustLayout({ lang = 'id', title, description, canonicalPath, h1,
   });
 
   const faqSectionHtml = faqPairs.length > 0 ? `
-    <section style="margin-top:40px; background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:32px;">
-      <h2 style="font-size:22px; font-weight:800; color:#f8fafc; margin-bottom:20px;"><i class="fa-solid fa-circle-question" style="color:#38bdf8;"></i> ${isEn ? 'Frequently Asked Questions (FAQ)' : 'Pertanyaan yang Sering Diajukan (FAQ)'}</h2>
+    <section style="margin-top:40px; background:var(--palette-surface, #24364D); border:1px solid rgba(203,213,225,0.22); border-radius:14px; padding:32px;">
+      <h2 style="font-size:22px; font-weight:800; color:var(--palette-soft-white, #FFFFFF); margin-bottom:20px;"><i class="fa-solid fa-circle-question" style="color:var(--palette-terracotta, #E36F45);"></i> ${isEn ? 'Frequently Asked Questions (FAQ)' : 'Pertanyaan yang Sering Diajukan (FAQ)'}</h2>
       <div style="display:flex; flex-direction:column; gap:16px;">
         ${faqPairs.map(pair => `
-          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:20px;">
-            <h3 style="font-size:16px; font-weight:700; color:#f8fafc; margin:0 0 8px;">${pair.q}</h3>
-            <p style="font-size:14px; color:#cbd5e1; line-height:1.6; margin:0;">${pair.a}</p>
+          <div style="background:var(--palette-midnight-navy, #172333); border:1px solid rgba(203,213,225,0.2); border-radius:10px; padding:20px;">
+            <h3 style="font-size:16px; font-weight:700; color:var(--palette-soft-white, #FFFFFF); margin:0 0 8px;">${pair.q}</h3>
+            <p style="font-size:14px; color:var(--palette-secondary-text, #CBD5E1); line-height:1.6; margin:0;">${pair.a}</p>
           </div>
         `).join('')}
       </div>
@@ -91,42 +75,43 @@ function renderTrustLayout({ lang = 'id', title, description, canonicalPath, h1,
   ` : '';
 
   return `<!DOCTYPE html>
-<html lang="${lang}">
+<html lang="${lang}" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
+<body class="dark-mode">
   ${renderTrustNavHeader(canonicalPath, lang)}
   <main class="container" style="padding-top:40px; padding-bottom:60px; max-width:920px;">
-    <nav style="font-size:13px; color:#64748b; margin-bottom:20px;">
-      <a href="/" style="color:#94a3b8; text-decoration:none;" data-i18n="nav.home">${isEn ? 'Home' : 'Beranda'}</a> &rsaquo;
-      <span style="color:#f8fafc;">${breadcrumbs[breadcrumbs.length - 1].name}</span>
+    <nav style="font-size:13px; color:var(--palette-secondary-text, #CBD5E1); margin-bottom:20px;">
+      <a href="/" style="color:var(--palette-warm-sand, #F3EBDD); text-decoration:none;" data-i18n="nav.home">${isEn ? 'Home' : 'Beranda'}</a> &rsaquo;
+      <span style="color:var(--palette-soft-white, #FFFFFF);">${breadcrumbs[breadcrumbs.length - 1].name}</span>
     </nav>
 
-    <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:36px; margin-bottom:30px;">
+    <div style="background:var(--palette-surface, #24364D); border:1px solid rgba(203,213,225,0.22); border-radius:14px; padding:36px; margin-bottom:30px;">
       <div class="hero-pill" data-i18n="trust.badge"><i class="fa-solid fa-shield-halved"></i> TRUST &amp; SAFETY INFRASTRUCTURE</div>
-      <h1 style="font-size:32px; font-weight:800; color:#f8fafc; margin:14px 0 8px;">${h1}</h1>
-      <p style="color:#94a3b8; font-size:16px; line-height:1.6;">${subtitle}</p>
+      <h1 style="font-size:32px; font-weight:800; color:var(--palette-soft-white, #FFFFFF); margin:14px 0 8px;">${h1}</h1>
+      <p style="color:var(--palette-secondary-text, #CBD5E1); font-size:16px; line-height:1.6;">${subtitle}</p>
     </div>
 
     ${contentHtml}
     ${faqSectionHtml}
 
-    <div style="margin-top:40px; background:#0f172a; border:1px solid #0284c7; border-radius:12px; padding:28px; text-align:center;">
-      <h3 style="font-size:20px; font-weight:800; color:#f8fafc; margin-bottom:8px;" data-i18n="trust.readyHeading">${isEn ? 'Ready to Explore Verified Tickets?' : 'Siap Menjelajahi Tiket Terverifikasi?'}</h3>
-      <p style="color:#94a3b8; font-size:14px; margin-bottom:20px;" data-i18n="trust.readySubtitle">${isEn ? 'Find your favorite event tickets or sell safely with escrow protection.' : 'Temukan event favorit Anda atau jual tiket secara aman tanpa khawatir penipuan.'}</p>
+    <div style="margin-top:40px; background:var(--palette-primary-blue, #15365B); border:1px solid rgba(227,111,69,0.55); border-radius:12px; padding:28px; text-align:center;">
+      <h3 style="font-size:20px; font-weight:800; color:var(--palette-soft-white, #FFFFFF); margin-bottom:8px;" data-i18n="trust.readyHeading">${isEn ? 'Ready to Explore Verified Tickets?' : 'Siap Menjelajahi Tiket Terverifikasi?'}</h3>
+      <p style="color:var(--palette-secondary-text, #CBD5E1); font-size:14px; margin-bottom:20px;" data-i18n="trust.readySubtitle">${isEn ? 'Find your favorite event tickets or sell safely with escrow protection.' : 'Temukan event favorit Anda atau jual tiket secara aman tanpa khawatir penipuan.'}</p>
       <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
-        <a href="/events" class="btn btn-primary"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="events.title">${isEn ? 'Browse Event Catalog' : 'Lihat Katalog Event'}</span></a>
+        <a href="/events" class="btn btn-primary"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">${isEn ? 'Browse Event Catalog' : 'Lihat Katalog Event'}</span></a>
         <a href="/create" class="btn btn-secondary"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicket">${isEn ? 'Sell My Ticket' : 'Jual Tiket Saya'}</span></a>
       </div>
     </div>
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(lang)}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 }

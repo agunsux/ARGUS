@@ -463,6 +463,9 @@ export interface TikumDictionarySchema {
 
 declare const id: TikumDictionarySchema;
 declare const en: TikumDictionarySchema;
+declare const ms: TikumDictionarySchema;
+declare const tl: TikumDictionarySchema;
+declare const th: TikumDictionarySchema;
 
-export { id, en };
+export { id, en, ms, tl, th };
 export default TikumDictionarySchema;

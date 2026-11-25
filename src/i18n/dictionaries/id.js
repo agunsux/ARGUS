@@ -97,7 +97,11 @@ module.exports = {
     "mobileConcerts": "Konser",
     "mobileSearch": "Cari",
     "mobileTickets": "Tiket",
-    "mobileAccount": "Akun"
+    "mobileAccount": "Akun",
+    "languageLabel": "Bahasa",
+    "menu": "Menu",
+    "buyerDashboard": "Dasbor Pembeli",
+    "sellerDashboard": "Dasbor Penjual"
   },
   "hero": {
     "headline": "TIKUM — Pasar Tiket Event Terverifikasi",
@@ -607,7 +611,8 @@ module.exports = {
     "fromPrice": "Mulai",
     "viewTickets": "Lihat Tiket",
     "sellThisTicket": "Jual Tiket Ini",
-    "posterUnavailableVerified": "Poster Resmi Belum Tersedia · Sumber Terverifikasi"
+    "posterUnavailableVerified": "Poster Resmi Belum Tersedia · Sumber Terverifikasi",
+    "waitlistMessage": "Halo TIKUM, saya tertarik jika ada tiket resale terverifikasi untuk event: {title} ({url}). Mohon berkabar jika ada penjual terverifikasi."
   },
   "search": {
     "placeholder": "Cari konser, artis, festival, atau kota...",
@@ -1286,7 +1291,33 @@ module.exports = {
     "heroPill": "INDONESIA EVENT DISCOVERY REGISTRY",
     "allCities": "Semua Kota",
     "allCategories": "Semua Kategori",
-    "filter": "Filter"
+    "filter": "Filter",
+    "catalogPageTitle": "Katalog Event Indonesia — Temukan Jadwal Konser, Olahraga & Tiket Terverifikasi | Tikum",
+    "catalogMetaDesc": "Eksplorasi seluruh event musik, festival, sepak bola, basket, dan pertunjukan di Jakarta, Bandung, Surabaya, dan Bali. Dapatkan informasi tiket resmi dan transfer tiket terverifikasi di Tikum.",
+    "secondaryGuideBannerTitle": "Pasar Sekunder & Panduan:",
+    "secondaryGuideBannerDesc": "Pelajari skema biaya 6%, proteksi escrow, atau telusuri simulasi checkout Tikum.",
+    "checkoutSimulation": "Simulasi Checkout",
+    "concludedArchiveTab": "Arsip Event Selesai",
+    "catFestival": "Festival",
+    "catComedy": "Stand-Up Comedy",
+    "priceAll": "Semua Harga (>= Rp 500rb)",
+    "price500kTo1m": "Rp 500rb - 1 Juta",
+    "price1mTo2m": "Rp 1 Juta - 2 Juta",
+    "priceOver2m": "> Rp 2 Juta",
+    "ticketStatusAll": "Semua Status Tiket",
+    "ticketStatusOnSale": "Tersedia (On Sale)",
+    "ticketStatusSoldOut": "Habis (Sold Out)",
+    "ticketStatusPresale": "Presale",
+    "dateAll": "Semua Tanggal",
+    "dateWeekend": "Akhir Pekan Ini",
+    "dateNextMonth": "Bulan Depan",
+    "officialFrom": "Resmi mulai",
+    "resaleTicketsCount": "{count} Tiket Resale ({price})",
+    "noResaleYet": "Belum ada tiket resale",
+    "viewEventCta": "Lihat Event",
+    "badgeSoldOut": "SOLD OUT",
+    "badgePresale": "PRESALE",
+    "badgeOnSale": "ON SALE"
   },
   "prelaunch": {
     "title": "TIKUM sedang dalam tahap persiapan peluncuran.",
@@ -1577,7 +1608,11 @@ module.exports = {
     "feeDetailsLink": "Detail Biaya →",
     "sellCtaButton": "Jual Tiket (Simpel 2 Menit)",
     "openDealCtaButton": "Buka Deal Room",
-    "workflowBadge": "Alur Transaksi Bertahap"
+    "workflowBadge": "Alur Transaksi Bertahap",
+    "liveExperiencesEyebrow": "TIKUM · Pengalaman Konser Langsung",
+    "liveExperiencesTitle": "Masuk ke Venue Tanpa Was-Was",
+    "liveExperiencesSubtitle": "Dari stadion GBK hingga festival besar di Jakarta, Event PIC TIKUM mendampingi serah terima tiket dan penukaran gelang di lokasi acara yang berpartisipasi.",
+    "liveExperiencesCta": "Jelajah Event Aktif"
   },
   "dealCreate": {
     "pageTitle": "Buat Tautan Transaksi / Ajukan Listing Tiket",

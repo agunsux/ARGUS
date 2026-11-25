@@ -9,6 +9,7 @@
  */
 
 const { renderFooterHtml } = require('../config/businessProfile');
+const { HEADER_VARIANTS, renderSharedHeadAssets, renderSharedFooterScripts, renderSharedHeader } = require('../ui/sharedHeader');
 const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
 const { CanonicalFeeEngine } = require('../pricing/CanonicalFeeEngine');
 const { PartnerService } = require('../services/partner/PartnerService');
@@ -523,6 +524,7 @@ class EventSEOService {
   ${(event.event_image || event.poster_url || event.image_url) ? `<meta name="twitter:image" content="${event.event_image || event.poster_url || event.image_url}">` : ''}
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
   
   <script type="application/ld+json">
@@ -530,50 +532,29 @@ class EventSEOService {
   </script>
   <style>
     .event-seo-container { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
-    .event-hero { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 28px; margin-bottom: 24px; }
-    .event-poster { margin: 0 0 20px; border-radius: 10px; overflow: hidden; border: 1px solid #1e293b; background: #0b1120; }
+    .event-hero { background: var(--palette-surface, #24364D); border: 1px solid rgba(203,213,225,0.22); border-radius: 12px; padding: 28px; margin-bottom: 24px; }
+    .event-poster { margin: 0 0 20px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(203,213,225,0.2); background: var(--palette-midnight-navy, #172333); }
     .event-poster img { display: block; width: 100%; height: auto; max-height: 420px; object-fit: cover; }
-    .event-poster figcaption { padding: 8px 12px; font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .event-poster figcaption { padding: 8px 12px; font-size: 10px; color: var(--palette-secondary-text, #CBD5E1); text-transform: uppercase; letter-spacing: 0.05em; }
     .event-poster figcaption a { color: inherit; text-decoration: underline; }
-    .event-meta-strip { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0; color: #94a3b8; font-size: 14px; }
+    .event-meta-strip { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0; color: var(--palette-secondary-text, #CBD5E1); font-size: 14px; }
     .event-meta-item { display: flex; align-items: center; gap: 8px; }
-    .official-ticket-box { background: #131d31; border: 1px solid #2563eb; border-radius: 10px; padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-    .resale-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+    .official-ticket-box { background: var(--palette-primary-blue, #15365B); border: 1px solid rgba(227,111,69,0.5); border-radius: 10px; padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+    .resale-card { background: var(--palette-surface, #24364D); border: 1px solid rgba(203,213,225,0.22); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
     .resale-card.verified-active { border-color: #10b981; }
     .resale-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
-    .listing-pill { background: #1e293b; padding: 12px 18px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .demand-capture-box { background: #1a2333; padding: 18px; border-radius: 8px; margin-top: 14px; }
+    .listing-pill { background: var(--palette-primary-blue, #15365B); padding: 12px 18px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .demand-capture-box { background: var(--palette-primary-blue, #15365B); padding: 18px; border-radius: 8px; margin-top: 14px; }
     .demand-form { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-    .demand-form input { flex: 1; min-width: 220px; padding: 10px 14px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px; }
+    .demand-form input { flex: 1; min-width: 220px; padding: 10px 14px; background: var(--palette-midnight-navy, #172333); border: 1px solid rgba(203,213,225,0.25); color: #fff; border-radius: 6px; }
     .related-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; }
-    .related-card { background: #131d31; border: 1px solid #1e293b; border-radius: 8px; padding: 16px; text-decoration: none; color: inherit; display: block; }
+    .related-card { background: var(--palette-surface, #24364D); border: 1px solid rgba(203,213,225,0.22); border-radius: 8px; padding: 16px; text-decoration: none; color: inherit; display: block; }
     .badge-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
   </style>
 </head>
-<body>
+<body class="dark-mode">
 
-  <!-- Site Header -->
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-          <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle" data-i18n="brand.subtitle">Pasar Tiket Event Terverifikasi</span>
-        </div>
-      </a>
-      <nav class="main-nav">
-        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">Katalog Event</span></a>
-        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> <span data-i18n="nav.offers">Tawaran Tiket</span></a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
-        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="nav.track">Lacak Status</span></a>
-        <div class="nav-controls" style="display: inline-flex; gap: 8px; margin-left: 12px; align-items: center;">
-          <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 12px; font-weight: 700;">ID</button>
-          <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 12px;" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon"></i></button>
-        </div>
-      </nav>
-    </div>
-  </header>
+  ${renderSharedHeader({ variant: HEADER_VARIANTS.MARKETPLACE, activeNav: 'events', locale })}
 
   <main class="event-seo-container">
     ${isPrelaunch ? `
@@ -689,7 +670,7 @@ class EventSEOService {
 
   ${renderFooterHtml(locale)}
 
-  <script src="/js/i18n.js"></script>
+  ${renderSharedFooterScripts()}
 
   <script>
     async function handleDemandSubmit(e, eventId) {
@@ -756,12 +737,25 @@ class EventSEOService {
           const sellerId = el.getAttribute('data-seller-id');
           const listingId = el.getAttribute('data-listing-id');
           if (sellerId && sellerId === userId) {
-            el.innerHTML = '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">' +
-              '<span class="badge badge-warning" style="font-size:11px; font-weight:700;"><i class="fa-solid fa-store"></i> Ini Listing Anda (Mode Penjual)</span>' +
-              '<button type="button" class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText(window.location.origin + \'/deal/\' + \'' + listingId + '\'); alert(\'Link Deal Room untuk pembeli berhasil disalin!\');" style="font-size:12px; font-weight:600; cursor:pointer;">' +
-                '<i class="fa-solid fa-copy"></i> Salin Link untuk Pembeli' +
-              '</button>' +
-            '</div>';
+            el.textContent = '';
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;';
+            const badge = document.createElement('span');
+            badge.className = 'badge badge-warning';
+            badge.style.cssText = 'font-size:11px; font-weight:700;';
+            badge.innerHTML = '<i class="fa-solid fa-store"></i> Ini Listing Anda (Mode Penjual)';
+            const copyBtn = document.createElement('button');
+            copyBtn.type = 'button';
+            copyBtn.className = 'btn btn-sm btn-secondary';
+            copyBtn.style.cssText = 'font-size:12px; font-weight:600; cursor:pointer;';
+            copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i> Salin Link untuk Pembeli';
+            copyBtn.addEventListener('click', () => {
+              navigator.clipboard.writeText(window.location.origin + '/deal/' + listingId);
+              alert('Link Deal Room untuk pembeli berhasil disalin!');
+            });
+            wrap.appendChild(badge);
+            wrap.appendChild(copyBtn);
+            el.appendChild(wrap);
           }
         });
       } catch (_) {}

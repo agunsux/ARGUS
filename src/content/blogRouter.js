@@ -24,32 +24,13 @@ const { TechnicalSEOService } = require('../seo/TechnicalSEOService');
 const { StructuredDataFactory } = require('../seo/StructuredDataFactory');
 const { InternalLinkingService } = require('../seo/InternalLinkingService');
 const { renderFooterHtml, businessProfile } = require('../config/businessProfile');
-
-// -------------------------------------------------------------
-// Utility: Request Locale Resolution
-// -------------------------------------------------------------
-function resolveRequestLocale(req) {
-  if (!req) return 'id';
-  if (req.query && (req.query.lang || req.query.locale)) {
-    const q = (req.query.lang || req.query.locale).toLowerCase();
-    if (q === 'en' || q.startsWith('en-')) return 'en';
-    if (q === 'id' || q.startsWith('id-')) return 'id';
-  }
-  if (req.cookies && (req.cookies.tikum_locale || req.cookies.tikum_lang)) {
-    const c = (req.cookies.tikum_locale || req.cookies.tikum_lang).toLowerCase();
-    if (c === 'en' || c.startsWith('en-')) return 'en';
-    if (c === 'id' || c.startsWith('id-')) return 'id';
-  }
-  if (req.headers && req.headers.cookie) {
-    const match = req.headers.cookie.match(/(?:^|;\s*)(?:tikum_locale|tikum_lang)=([^;]+)/);
-    if (match && match[1]) {
-      const c = decodeURIComponent(match[1]).toLowerCase();
-      if (c === 'en' || c.startsWith('en-')) return 'en';
-      if (c === 'id' || c.startsWith('id-')) return 'id';
-    }
-  }
-  return 'id';
-}
+const {
+  HEADER_VARIANTS,
+  renderSharedHeadAssets,
+  renderSharedFooterScripts,
+  renderSharedHeader,
+  resolveRequestLocale
+} = require('../ui/sharedHeader');
 
 // -------------------------------------------------------------
 // Utility: Reading Time
@@ -161,27 +142,19 @@ function renderFaqSection(faq) {
 // -------------------------------------------------------------
 // Utility: Nav Header
 // -------------------------------------------------------------
-function renderBlogNavHeader(activeCategory = null) {
-  return `
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-          <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle">Editorial &amp; Event Guides</span>
-        </div>
-      </a>
-      <nav class="main-nav">
-        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">Katalog Event</span></a>
-        <a href="/blog" class="nav-link active"><i class="fa-solid fa-newspaper"></i> <span data-i18n="nav.blog">Panduan &amp; Artikel</span></a>
-        <a href="/how-it-works" class="nav-link"><i class="fa-solid fa-circle-nodes"></i> <span data-i18n="footer.how">Cara Kerja</span></a>
-        <a href="/buyer-protection" class="nav-link"><i class="fa-solid fa-shield-check"></i> <span data-i18n="footer.buyerProt">Perlindungan</span></a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
-        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700; margin-left: 8px;">ID</button>
-      </nav>
-    </div>
-  </header>`;
+function renderBlogNavHeader(activeCategory = null, locale = 'id') {
+  return renderSharedHeader({
+    variant: HEADER_VARIANTS.PUBLIC,
+    activeNav: 'blog',
+    locale,
+    links: [
+      { href: '/events', icon: 'fa-calendar-days', key: 'nav.events', label: 'Katalog Event' },
+      { href: '/blog', icon: 'fa-newspaper', key: 'nav.blog', label: 'Panduan & Artikel', active: true },
+      { href: '/how-it-works', icon: 'fa-circle-nodes', key: 'footer.how', label: 'Cara Kerja' },
+      { href: '/buyer-protection', icon: 'fa-shield-heart', key: 'footer.buyerProt', label: 'Perlindungan' },
+      { href: '/create', icon: 'fa-plus-circle', key: 'nav.sellTicket', label: 'Jual Tiket', cta: true }
+    ]
+  });
 }
 
 // -------------------------------------------------------------
@@ -232,6 +205,7 @@ router.get(['/blog/editorial-standards', '/blog/tentang-editorial', '/blog/autho
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
   <style>
     .editorial-container { max-width: 820px; margin: 0 auto; padding: 40px 16px 60px; line-height: 1.8; color: #cbd5e1; }
@@ -244,7 +218,7 @@ router.get(['/blog/editorial-standards', '/blog/tentang-editorial', '/blog/autho
   </style>
 </head>
 <body>
-  ${renderBlogNavHeader()}
+  ${renderBlogNavHeader(null, resolveRequestLocale(req))}
   <main class="editorial-container">
     <nav aria-label="breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
       <a href="/" style="color: #94a3b8; text-decoration: none;">Beranda</a> &rsaquo;
@@ -283,8 +257,8 @@ router.get(['/blog/editorial-standards', '/blog/tentang-editorial', '/blog/autho
       <a href="/blog" class="btn btn-sm btn-primary">Kembali ke Indeks Blog</a>
     </div>
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(resolveRequestLocale(req))}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -397,10 +371,11 @@ router.get('/blog/category/:category', (req, res) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  ${renderBlogNavHeader(catSlug)}
+  ${renderBlogNavHeader(catSlug, resolveRequestLocale(req))}
   <main class="container" style="padding-top:40px; padding-bottom:60px;">
     <div style="text-align:center; max-width:800px; margin:0 auto 28px;">
       <nav aria-label="breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 14px;">
@@ -419,8 +394,8 @@ router.get('/blog/category/:category', (req, res) => {
       ${cardsHtml.length > 0 ? cardsHtml : '<div style="grid-column:1/-1; text-align:center; padding:60px; color:#64748b;">Belum ada artikel yang dipublikasikan pada kategori ini.</div>'}
     </div>
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(resolveRequestLocale(req))}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -504,10 +479,11 @@ router.get(['/blog', '/guides'], (req, res) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  ${renderBlogNavHeader()}
+  ${renderBlogNavHeader(null, resolveRequestLocale(req))}
   <main class="container" style="padding-top:40px; padding-bottom:60px;">
     <div style="text-align:center; max-width:800px; margin:0 auto 28px;">
       <div class="hero-pill"><i class="fa-solid fa-newspaper"></i> TIKUM EDITORIAL PUBLICATION</div>
@@ -525,8 +501,8 @@ router.get(['/blog', '/guides'], (req, res) => {
       Diteliti dan diverifikasi oleh <a href="/blog/editorial-standards" style="color:#38bdf8; text-decoration:underline;">Tim Editorial &amp; Riset Keamanan Tikum</a> &bull; <a href="/blog/rss.xml" style="color:#94a3b8;"><i class="fa-solid fa-rss"></i> RSS Feed</a>
     </div>
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(resolveRequestLocale(req))}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -625,6 +601,7 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
   <style>
     .article-container { max-width: 820px; margin: 0 auto; padding: 40px 16px 60px; }
@@ -641,7 +618,7 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
   </style>
 </head>
 <body>
-  ${renderBlogNavHeader()}
+  ${renderBlogNavHeader(null, resolveRequestLocale(req))}
   <main class="article-container">
     <nav aria-label="breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
       <a href="/" style="color: #94a3b8; text-decoration: none;">Beranda</a> &rsaquo;
@@ -687,8 +664,8 @@ router.get(['/blog/:slug', '/guides/:slug'], (req, res) => {
 
     ${relatedHtml}
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(resolveRequestLocale(req))}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 

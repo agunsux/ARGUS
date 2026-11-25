@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,11 +19,14 @@
   <meta name="twitter:title" content="Tikum — Buat Transfer Tiket Terverifikasi | by Shinerva">
   <meta name="twitter:description" content="Daftarkan tiket sekunder Anda dengan verifikasi anti-duplikasi barcode dan pencairan dana escrow aman.">
 
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="/images/tikum-brand-symbol.svg">
   <link rel="manifest" href="/manifest.json">
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/tikum-tokens.css">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/marketplace-refresh.css">
+  <link rel="stylesheet" href="/css/header-shared.css">
   <script src="/js/pricing.js"></script>
   <script src="/js/draft-store.js"></script>
 </head>
@@ -36,7 +39,7 @@
     <aside id="appSidebar" class="app-sidebar" aria-label="Navigasi Utama">
       <div class="sidebar-brand-header">
         <a href="/" class="sidebar-brand-link">
-          <img src="/images/tikum-symbol.svg" width="30" height="30" alt="Tikum Logo">
+          <img src="/images/tikum-brand-symbol.svg" width="32" height="32" alt="Tikum Logo">
           <div class="sidebar-brand-text">
             <div class="sidebar-brand-title">TIKUM</div>
             <div class="sidebar-brand-sub">by PT Shinerva Prajna Tejas</div>
@@ -164,13 +167,15 @@
     <!-- Main Content Wrapper -->
     <div id="appMainWrapper">
       <!-- Zero-Overlap 64px Slim Topbar -->
-      <header id="appTopbar" class="app-topbar">
+      <header id="appTopbar" class="app-topbar tikum-shared-header" data-header-variant="marketplace">
         <div class="topbar-left">
           <button type="button" id="sidebarToggleMobile" class="topbar-hamburger-btn" aria-label="Buka Menu Navigasi">
             <i class="fa-solid fa-bars"></i>
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <img src="/images/tikum-horizontal.svg" height="32" alt="Tikum" style="height:32px; width:auto; aspect-ratio:220/52; display:block;">
+            <span class="tikum-logo-slot" aria-label="TIKUM">
+              <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="Tikum">
+            </span>
             <div class="brand-title">Tikum</div>
           </a>
         </div>
@@ -281,8 +286,8 @@
     <!-- 3-Step Progress Header (Deliverable C2) -->
     
     <!-- Compact Teal Perlindungan Penjual TIKUM Strip -->
-    <div class="seller-protection-strip" data-i18n="dealCreate.sellerProtectionStrip" style="background:#E6F2FB; border:1px solid rgba(18,78,97,0.18); border-radius:12px; padding:12px 18px; font-size:13.5px; font-weight:600; color:#006BB6; margin-bottom:24px; display:flex; align-items:center; gap:10px;">
-      <i class="fa-solid fa-shield-check" style="font-size:18px; color:#006BB6; flex-shrink:0;"></i>
+    <div class="seller-protection-strip" data-i18n="dealCreate.sellerProtectionStrip" style="background:rgba(21,54,91,0.45); border:1px solid rgba(243,235,221,0.18); border-radius:12px; padding:12px 18px; font-size:13.5px; font-weight:600; color:#F3EBDD; margin-bottom:24px; display:flex; align-items:center; gap:10px;">
+      <i class="fa-solid fa-shield-check" style="font-size:18px; color:#E36F45; flex-shrink:0;"></i>
       <span>QR tetap di tangan Anda saat listing · Saksi fisik Event PIC · Anti klaim invalid sepihak · Evidence Bundle 9 artefak</span>
     </div>
     <div id="createStepper" class="stepper-wrap" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; background:var(--surface); border:1px solid var(--line-300); padding:16px 20px; border-radius:var(--radius-card); box-shadow:var(--shadow-soft); overflow-x:auto;">
@@ -791,7 +796,7 @@
         <div class="footer-tier-1">
           <div class="footer-col-brand">
             <div style="margin-bottom: 14px;">
-              <img src="/images/tikum-horizontal-light.svg" class="footer-logo-light" height="30" alt="TIKUM">
+              <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img footer-logo-light" width="196" height="42" alt="TIKUM">
             </div>
             <h3>
               <span>TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
@@ -1538,6 +1543,7 @@
     document.addEventListener('DOMContentLoaded', initAppShell);
   </script>
 
+  <script src="/js/header-shared.js"></script>
   <script src="/js/motion.js"></script>
 </body>
 </html>

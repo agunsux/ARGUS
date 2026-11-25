@@ -712,7 +712,12 @@ a:hover {
   justify-content: center;
   min-height: 44px;
   min-width: 44px;
-  color: var(--ink-500);
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--palette-secondary-text, #CBD5E1);
   text-decoration: none;
   font-size: 11px;
   font-weight: 500;
@@ -944,7 +949,7 @@ a:hover {
 .pill.active {
   background-color: var(--terra-100) !important;
   border-color: var(--terra-600) !important;
-  color: var(--terra-700) !important;
+  color: var(--tikum-terracotta-ink, #FF9872) !important;
   font-weight: 700 !important;
 }
 
@@ -980,7 +985,7 @@ a:hover {
   min-height: 420px;
   display: flex;
   align-items: flex-end;
-  background-color: var(--ink-900);
+  background-color: var(--palette-midnight-navy, #172333);
   background-size: cover;
   background-position: center 25%;
   color: #FFFFFF;
@@ -1874,9 +1879,9 @@ a:hover {
   padding: 8px 18px;
   height: 38px;
   border-radius: 999px;
-  background-color: transparent !important;
-  color: #081E3C !important;
-  border: 1.5px solid rgba(18, 78, 97, 0.25) !important;
+  background-color: var(--palette-primary-blue, #15365B) !important;
+  color: var(--palette-warm-sand, #F3EBDD) !important;
+  border: 1.5px solid rgba(203, 213, 225, 0.35) !important;
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-size: 13.5px;
   font-weight: 600;
@@ -1891,9 +1896,9 @@ a:hover {
 }
 
 .btn-auth-header:hover {
-  background-color: rgba(18, 78, 97, 0.06) !important;
-  border-color: rgba(18, 78, 97, 0.45) !important;
-  color: #081E3C !important;
+  background-color: var(--palette-surface, #24364D) !important;
+  border-color: var(--palette-terracotta, #E36F45) !important;
+  color: var(--palette-soft-white, #FFFFFF) !important;
 }
 
 .user-dropdown-container {
@@ -1965,44 +1970,50 @@ a:hover {
   color: var(--danger-600) !important;
 }
 
-/* Dark Mode Overrides (Fintech Slate / Muted Dark) */
+/* Dark Mode Canonical Surfaces (Single Theme: Midnight Navy Dark) */
+body,
 body.dark-mode {
-  --sand-50: #141210;
-  --surface: #1E1B18;
-  --ink-900: #FAF6F2;
-  --ink-700: #D8D2CB;
-  --ink-500: #A8A199;
-  --line-300: #332E2A;
-  --line-100: #26221F;
-  --terra-100: #3D1C15;
-  background-color: var(--sand-50);
-  color: var(--ink-900);
+  --sand-50: var(--palette-midnight-navy, #172333);
+  --surface: var(--palette-surface, #24364D);
+  --ink-900: var(--palette-soft-white, #FFFFFF);
+  --ink-700: var(--palette-secondary-text, #CBD5E1);
+  --ink-500: var(--palette-secondary-text, #CBD5E1);
+  --line-300: rgba(203, 213, 225, 0.22);
+  --line-100: var(--palette-surface, #24364D);
+  --terra-100: rgba(227, 111, 69, 0.18);
+  background-color: var(--palette-midnight-navy, #172333);
+  color: var(--palette-soft-white, #FFFFFF);
 }
 
+.site-header,
+.mobile-bottom-nav,
 body.dark-mode .site-header,
 body.dark-mode .mobile-bottom-nav {
-  background: rgba(30, 27, 24, 0.94);
+  background: rgba(23, 35, 51, 0.95);
   border-color: var(--line-300);
 }
 
+.comparison-table th,
 body.dark-mode .comparison-table th {
-  background-color: #26221F;
+  background-color: var(--palette-primary-blue, #15365B);
 }
 
+.comparison-table .col-tikum,
 body.dark-mode .comparison-table .col-tikum {
-  background-color: #3D1C15;
-  color: #E2725B;
+  background-color: rgba(227, 111, 69, 0.18);
+  color: var(--palette-warm-sand, #F3EBDD);
 }
 
+.site-footer,
 body.dark-mode .site-footer {
-  background-color: #141210;
+  background-color: var(--palette-midnight-navy, #172333);
   border-top-color: var(--line-300);
 }
 
 body.dark-mode .card-category-pill {
-  background: rgba(24, 24, 27, 0.92);
-  color: #F8FAFC; /* Crisp readable light text in dark mode */
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(23, 35, 51, 0.92);
+  color: var(--palette-soft-white, #FFFFFF);
+  border: 1px solid rgba(203, 213, 225, 0.25);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
@@ -2439,7 +2450,8 @@ html[lang="en"] .lang-id {
   #appTopbar { gap: 6px; }
   #appTopbar .topbar-left { min-width: 0; gap: 6px; }
   #appTopbar .topbar-left .brand-title { display: none; }
-  #appTopbar .topbar-left .brand img { max-width: 100px; height: auto; }
+  #appTopbar .topbar-left .brand .tikum-logo-slot { width: 138px; height: 34px; }
+  #appTopbar .topbar-left .brand .tikum-logo-img { width: 100%; height: 100%; object-fit: contain; }
   #appTopbar .topbar-right { min-width: 0; gap: 6px; }
   #appTopbar .topbar-right .ln-btn { padding-inline: 8px; font-size: 12px; white-space: nowrap; }
   #appTopbar .lang-toggle-btn { padding-inline: 8px; }
@@ -2766,10 +2778,10 @@ body.dark-mode {
 
 .topbar-hamburger-btn {
   display: none;
-  background: transparent;
-  border: 1px solid var(--color-border-subtle);
+  background: rgba(21, 54, 91, 0.65);
+  border: 1px solid rgba(203, 213, 225, 0.28);
   border-radius: 8px;
-  color: var(--color-text-secondary);
+  color: var(--palette-soft-white, #FFFFFF);
   width: 44px;
   height: 44px;
   align-items: center;
@@ -3004,28 +3016,28 @@ body.dark-mode {
 
 
 /* ==========================================================================
-   TIKUM DEEP TEAL, SEATGEEK-SIMPLE & FLOW NINJA DESIGN SYSTEM OVERHAUL
+   TIKUM DARK MODE SHELL, SEATGEEK-SIMPLE & FLOW NINJA DESIGN SYSTEM
    ========================================================================== */
 
 :root {
   --sidebar-width: 280px;
   --sidebar-rail-width: 72px;
   --topbar-height: 72px;
-  --color-app-bg: var(--tikum-cream-50, #F6EBDD);
-  --color-surface-sidebar: #FFFFFF;
-  --color-surface-topbar: rgba(250, 248, 244, 0.92);
-  --color-border-subtle: var(--tikum-border, rgba(18, 78, 97, 0.12));
-  --color-text-primary: var(--tikum-ink-900, #0B192C);
-  --color-text-secondary: var(--tikum-ink-600, #475B73);
-  --color-text-footer: #F7FAFF;
-  --color-text-muted: #475B73;
-  --color-brand-primary: var(--tikum-coral-500, #E05A2B);
-  --color-brand-emerald: #179A6B;
+  --color-app-bg: var(--palette-midnight-navy, #172333);
+  --color-surface-sidebar: var(--palette-primary-blue, #15365B);
+  --color-surface-topbar: rgba(23, 35, 51, 0.95);
+  --color-border-subtle: rgba(203, 213, 225, 0.22);
+  --color-text-primary: var(--palette-soft-white, #FFFFFF);
+  --color-text-secondary: var(--palette-secondary-text, #CBD5E1);
+  --color-text-footer: var(--palette-soft-white, #FFFFFF);
+  --color-text-muted: var(--palette-secondary-text, #CBD5E1);
+  --color-brand-primary: var(--palette-terracotta, #E36F45);
+  --color-brand-emerald: #10B981;
 }
 
 body, body.dark-mode {
-  background-color: var(--tikum-cream-50, #F6EBDD) !important;
-  color: var(--tikum-ink-900, #0B192C) !important;
+  background-color: var(--palette-midnight-navy, #172333) !important;
+  color: var(--palette-soft-white, #FFFFFF) !important;
   font-family: var(--font-body, 'Plus Jakarta Sans', -apple-system, sans-serif) !important;
   font-size: 16px;
   line-height: 1.65;
@@ -3036,13 +3048,13 @@ h1, h2, h3, h4, .font-display {
 }
 
 #appShell {
-  background-color: var(--tikum-cream-50, #F6EBDD) !important;
+  background-color: var(--palette-midnight-navy, #172333) !important;
 }
 
 #appMainWrapper {
   margin-left: 0 !important;
   width: 100% !important;
-  background-color: var(--tikum-cream-50, #F6EBDD);
+  background-color: var(--palette-midnight-navy, #172333);
 }
 
 /* Off-canvas Mobile/Desktop Slide-Over Drawer */
@@ -3052,14 +3064,14 @@ h1, h2, h3, h4, .font-display {
   left: 0 !important;
   bottom: 0 !important;
   width: 280px !important;
-  background-color: #FFFFFF !important;
-  border-right: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)) !important;
+  background-color: var(--palette-primary-blue, #15365B) !important;
+  border-right: 1px solid rgba(203, 213, 225, 0.22) !important;
   z-index: 50 !important;
   display: flex !important;
   flex-direction: column !important;
   transform: translateX(-100%) !important;
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  box-shadow: 4px 0 24px rgba(14, 59, 74, 0.15) !important;
+  box-shadow: 4px 0 24px rgba(3, 8, 20, 0.48) !important;
 }
 
 #appShell.sidebar-open #appSidebar {
@@ -3070,7 +3082,7 @@ h1, h2, h3, h4, .font-display {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(9, 38, 48, 0.55);
+  background: rgba(23, 35, 51, 0.78);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   z-index: 45;
@@ -3080,15 +3092,15 @@ h1, h2, h3, h4, .font-display {
   display: block !important;
 }
 
-/* SeatGeek Single-Row Top Navigation Header (72px) */
+/* Top Navigation Header (Desktop 80px) */
 #appTopbar {
   position: sticky !important;
   top: 0 !important;
-  height: 72px !important;
-  background: rgba(250, 248, 244, 0.92) !important;
+  height: 80px !important;
+  background: var(--header-surface, rgba(23, 35, 51, 0.95)) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
-  border-bottom: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)) !important;
+  border-bottom: 1px solid var(--header-border, rgba(203, 213, 225, 0.22)) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -3098,8 +3110,8 @@ h1, h2, h3, h4, .font-display {
 }
 
 #appTopbar.is-scrolled {
-  box-shadow: 0 4px 20px rgba(14, 59, 74, 0.08) !important;
-  border-bottom-color: rgba(18, 78, 97, 0.2) !important;
+  box-shadow: 0 4px 20px rgba(3, 8, 20, 0.45) !important;
+  border-bottom-color: rgba(182, 194, 209, 0.28) !important;
 }
 
 .topbar-left {
@@ -3121,7 +3133,7 @@ h1, h2, h3, h4, .font-display {
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-size: 15px;
   font-weight: 600;
-  color: var(--tikum-ink-900, #0B192C);
+  color: var(--palette-warm-sand, #F3EBDD);
   text-decoration: none;
   transition: color 0.18s ease;
   display: inline-flex;
@@ -3130,7 +3142,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .topbar-nav-link:hover {
-  color: var(--tikum-coral-500, #E05A2B);
+  color: var(--palette-terracotta, #E36F45);
 }
 
 /* SeatGeek City Popover */
@@ -3143,10 +3155,10 @@ h1, h2, h3, h4, .font-display {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  background: #FFFFFF;
-  border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12));
+  background: var(--palette-surface, #24364D);
+  border: 1px solid rgba(203, 213, 225, 0.25);
   border-radius: 12px;
-  box-shadow: 0 12px 28px rgba(14, 59, 74, 0.12);
+  box-shadow: 0 12px 28px rgba(3, 8, 20, 0.55);
   padding: 8px 0;
   min-width: 170px;
   z-index: 60;
@@ -3162,14 +3174,14 @@ h1, h2, h3, h4, .font-display {
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--tikum-ink-900, #0B192C);
+  color: var(--palette-soft-white, #FFFFFF);
   text-decoration: none;
   transition: background 0.15s, color 0.15s;
 }
 
 .city-dropdown-item:hover {
-  background: var(--tikum-cream-50, #F6EBDD);
-  color: var(--tikum-coral-500, #E05A2B);
+  background: var(--palette-midnight-navy, #172333);
+  color: var(--palette-terracotta, #E36F45);
 }
 
 /* Action Cluster */
@@ -3185,24 +3197,24 @@ h1, h2, h3, h4, .font-display {
   gap: 6px;
   font-size: 13.5px;
   font-weight: 600;
-  color: #081E3C;
+  color: var(--palette-warm-sand, #F3EBDD);
   text-decoration: none;
   padding: 6px 14px;
   border-radius: 999px;
-  background: transparent;
-  border: 1px solid rgba(18, 78, 97, 0.14);
+  background: var(--palette-primary-blue, #15365B);
+  border: 1px solid rgba(203, 213, 225, 0.25);
   transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
 .btn-topbar-deal:hover {
-  background: rgba(18, 78, 97, 0.08);
-  border-color: rgba(18, 78, 97, 0.28);
-  color: #081E3C;
+  background: var(--palette-surface, #24364D);
+  border-color: var(--palette-terracotta, #E36F45);
+  color: #FFFFFF;
 }
 
 .btn-topbar-seller {
-  background-color: var(--tikum-coral-500, #E05A2B) !important;
-  color: #FFFFFF !important;
+  background-color: var(--palette-terracotta, #E36F45) !important;
+  color: var(--palette-midnight-navy, #172333) !important;
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif) !important;
   font-weight: 700 !important;
   font-size: 14px !important;
@@ -3218,53 +3230,54 @@ h1, h2, h3, h4, .font-display {
 }
 
 .btn-topbar-seller:hover {
-  background-color: var(--tikum-coral-600, #C4491E) !important;
+  background-color: var(--palette-warm-sand, #F3EBDD) !important;
+  color: var(--palette-midnight-navy, #172333) !important;
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(218, 103, 78, 0.28);
+  box-shadow: 0 6px 18px rgba(227, 111, 69, 0.28);
 }
 
 .btn-topbar-seller:active {
   transform: scale(0.98);
 }
 
-/* Minimalist 2-Tier Deep Teal Footer */
+/* Minimalist 2-Tier Midnight Navy Footer */
 #appFooter.site-footer {
-  background-color: var(--tikum-teal-950, #051428) !important;
-  border-top: 1px solid rgba(250, 241, 226, 0.12) !important;
+  background-color: var(--palette-midnight-navy, #172333) !important;
+  border-top: 1px solid rgba(203, 213, 225, 0.18) !important;
   padding: 56px 24px 32px !important;
   margin-top: auto !important;
-  color: var(--tikum-cream-text, #F7FAFF) !important;
+  color: var(--palette-soft-white, #FFFFFF) !important;
 }
 
 .footer-col-brand h3 {
-  color: #F7FAFF !important;
+  color: var(--palette-soft-white, #FFFFFF) !important;
   font-family: var(--font-display, 'Bricolage Grotesque', sans-serif) !important;
 }
 
 .footer-col-brand p,
 .footer-col-brand address {
-  color: rgba(250, 241, 226, 0.75) !important;
+  color: var(--palette-secondary-text, #CBD5E1) !important;
 }
 
 .footer-contact-item {
-  color: rgba(250, 241, 226, 0.8) !important;
+  color: var(--palette-secondary-text, #CBD5E1) !important;
 }
 
 .footer-contact-item a {
-  color: var(--tikum-coral-500, #E05A2B) !important;
+  color: var(--palette-terracotta, #E36F45) !important;
 }
 
 .footer-essential-link {
-  color: rgba(250, 241, 226, 0.8) !important;
+  color: var(--palette-secondary-text, #CBD5E1) !important;
 }
 
 .footer-essential-link:hover {
-  color: var(--tikum-coral-500, #E05A2B) !important;
+  color: var(--palette-terracotta, #E36F45) !important;
 }
 
 .footer-tier-2 {
-  border-top: 1px solid rgba(250, 241, 226, 0.12) !important;
-  color: rgba(250, 241, 226, 0.6) !important;
+  border-top: 1px solid rgba(203, 213, 225, 0.18) !important;
+  color: var(--palette-secondary-text, #CBD5E1) !important;
 }
 
 /* ==========================================================================
@@ -3298,18 +3311,18 @@ h1, h2, h3, h4, .font-display {
 
 .event-card-item:hover, .poster-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 18px 36px rgba(14, 59, 74, 0.12);
+  box-shadow: 0 18px 36px rgba(23, 35, 51, 0.35);
 }
 
 .event-card-item:hover .poster-img, .poster-card:hover .poster-img {
   transform: scale(1.03);
 }
 
-/* Flow Ninja Editorial Hero */
+/* Editorial Hero */
 .hero-teal-editorial {
-  background-color: var(--tikum-teal-900, #081E3C);
-  background-image: radial-gradient(circle at 50% 0%, rgba(18, 78, 97, 0.85) 0%, #081E3C 70%);
-  color: var(--tikum-cream-text, #F7FAFF);
+  background-color: var(--palette-midnight-navy, #172333);
+  background-image: radial-gradient(circle at 50% 0%, rgba(21, 54, 91, 0.85) 0%, #172333 70%);
+  color: var(--palette-soft-white, #FFFFFF);
   padding: 72px 24px 84px;
   position: relative;
   overflow: hidden;
@@ -3321,7 +3334,7 @@ h1, h2, h3, h4, .font-display {
   font-weight: 700;
   line-height: 1.06;
   letter-spacing: -0.03em;
-  color: #F7FAFF;
+  color: var(--palette-soft-white, #FFFFFF);
   text-align: center;
   max-width: 920px;
   margin: 0 auto 16px;
@@ -3330,7 +3343,7 @@ h1, h2, h3, h4, .font-display {
 .hero-editorial-sub {
   font-size: clamp(16px, 1.8vw, 19px);
   line-height: 1.6;
-  color: rgba(250, 241, 226, 0.85);
+  color: var(--palette-secondary-text, #CBD5E1);
   text-align: center;
   max-width: 780px;
   margin: 0 auto 36px;
@@ -3346,21 +3359,25 @@ h1, h2, h3, h4, .font-display {
   width: 100%;
   height: 56px;
   border-radius: 999px;
-  background: #FFFFFF;
-  color: var(--tikum-ink-900, #0B192C);
+  background: var(--palette-midnight-navy, #172333);
+  color: var(--palette-soft-white, #FFFFFF);
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-size: 15.5px;
   font-weight: 500;
   padding: 0 54px 0 52px;
-  border: 2px solid transparent;
-  box-shadow: 0 12px 32px rgba(9, 38, 48, 0.25);
+  border: 1.5px solid rgba(203, 213, 225, 0.28);
+  box-shadow: 0 12px 32px rgba(3, 8, 20, 0.45);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+.seatgeek-search-input::placeholder {
+  color: var(--palette-secondary-text, #CBD5E1);
+}
+
 .seatgeek-search-input:focus {
-  border-color: var(--tikum-coral-500, #E05A2B);
-  box-shadow: 0 14px 36px rgba(218, 103, 78, 0.22);
+  border-color: var(--palette-terracotta, #E36F45);
+  box-shadow: 0 14px 36px rgba(227, 111, 69, 0.22);
 }
 
 .seatgeek-search-icon {
@@ -3368,7 +3385,7 @@ h1, h2, h3, h4, .font-display {
   left: 20px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--tikum-teal-700, #006BB6);
+  color: var(--palette-secondary-text, #CBD5E1);
   font-size: 18px;
   pointer-events: none;
 }
@@ -3382,17 +3399,18 @@ h1, h2, h3, h4, .font-display {
   height: 40px;
   border-radius: 999px;
   border: none;
-  background: var(--tikum-teal-700, #006BB6);
-  color: #F7FAFF;
+  background: var(--palette-primary-blue, #15365B);
+  color: var(--palette-soft-white, #FFFFFF);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.18s ease, transform 0.18s ease;
+  transition: background 0.18s ease, transform 0.18s ease, color 0.18s ease;
 }
 
 .seatgeek-search-submit-btn:hover {
-  background: var(--tikum-coral-500, #E05A2B);
+  background: var(--palette-terracotta, #E36F45);
+  color: var(--palette-midnight-navy, #172333);
   transform: translateY(-50%) scale(1.04);
 }
 
@@ -3472,8 +3490,8 @@ h1, h2, h3, h4, .font-display {
   padding: 0 20px;
   border-radius: 999px;
   border: none;
-  background: #F7FAFF;
-  color: #081E3C;
+  background: var(--palette-soft-white, #FFFFFF);
+  color: var(--palette-midnight-navy, #172333);
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-size: 13.5px;
   font-weight: 700;
@@ -3486,7 +3504,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .hero-deal-submit-btn:hover {
-  background: #FFFFFF;
+  background: var(--palette-warm-sand, #F3EBDD);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
@@ -3509,8 +3527,8 @@ h1, h2, h3, h4, .font-display {
 }
 
 .btn-hero-coral {
-  background-color: var(--tikum-coral-500, #E05A2B);
-  color: #FFFFFF;
+  background-color: var(--palette-terracotta, #E36F45);
+  color: var(--palette-midnight-navy, #172333);
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-weight: 700;
   font-size: 15px;
@@ -3524,15 +3542,15 @@ h1, h2, h3, h4, .font-display {
 }
 
 .btn-hero-coral:hover {
-  background-color: var(--tikum-coral-600, #C4491E);
+  background-color: var(--palette-warm-sand, #F3EBDD);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(218, 103, 78, 0.35);
+  box-shadow: 0 8px 24px rgba(227, 111, 69, 0.35);
 }
 
 .btn-hero-outline {
   background-color: transparent;
-  color: #F7FAFF;
-  border: 1.5px solid rgba(250, 241, 226, 0.4);
+  color: var(--palette-soft-white, #FFFFFF);
+  border: 1.5px solid rgba(243, 235, 221, 0.45);
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-weight: 700;
   font-size: 15px;
@@ -3546,14 +3564,14 @@ h1, h2, h3, h4, .font-display {
 }
 
 .btn-hero-outline:hover {
-  border-color: #F7FAFF;
+  border-color: var(--palette-soft-white, #FFFFFF);
   background: rgba(255, 255, 255, 0.08);
 }
 
 /* Two-Way Protection Bento Section */
 .two-way-protection-section {
-  background-color: var(--tikum-teal-900, #081E3C);
-  color: var(--tikum-cream-text, #F7FAFF);
+  background-color: var(--palette-midnight-navy, #172333);
+  color: var(--palette-soft-white, #FFFFFF);
   padding: 80px 24px;
 }
 
@@ -3615,15 +3633,15 @@ h1, h2, h3, h4, .font-display {
 }
 
 .bento-check-icon {
-  color: var(--tikum-coral-500, #E05A2B);
+  color: var(--palette-terracotta, #E36F45);
   font-size: 16px;
   margin-top: 3px;
   flex-shrink: 0;
 }
 
-/* 5-Step Flow Ninja Rail */
+/* 5-Step Flow Rail */
 .flow-rail-section {
-  background-color: var(--tikum-cream-50, #F6EBDD);
+  background-color: var(--palette-midnight-navy, #172333);
   padding: 72px 24px;
 }
 
@@ -3636,19 +3654,19 @@ h1, h2, h3, h4, .font-display {
 }
 
 .flow-step-box {
-  background: #FFFFFF;
-  border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12));
+  background: var(--palette-surface, #24364D);
+  border: 1px solid rgba(203, 213, 225, 0.22);
   border-radius: 18px;
   padding: 24px 20px;
-  box-shadow: 0 4px 16px rgba(14, 59, 74, 0.04);
+  box-shadow: var(--shadow-soft);
 }
 
 .flow-step-num {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--tikum-teal-100, #E6F2FB);
-  color: var(--tikum-teal-700, #006BB6);
+  background: var(--palette-primary-blue, #15365B);
+  color: var(--palette-warm-sand, #F3EBDD);
   font-weight: 800;
   font-size: 15px;
   display: flex;
@@ -3660,13 +3678,13 @@ h1, h2, h3, h4, .font-display {
 .flow-step-title {
   font-weight: 700;
   font-size: 15.5px;
-  color: var(--tikum-ink-900, #0B192C);
+  color: var(--palette-soft-white, #FFFFFF);
   margin-bottom: 8px;
 }
 
 .flow-step-desc {
   font-size: 13.5px;
-  color: var(--tikum-ink-600, #475B73);
+  color: var(--palette-secondary-text, #CBD5E1);
   line-height: 1.5;
   margin: 0;
 }
@@ -3674,8 +3692,8 @@ h1, h2, h3, h4, .font-display {
 .pilot-fee-bar {
   max-width: 1160px;
   margin: 0 auto;
-  background: #FFFFFF;
-  border: 1.5px solid var(--tikum-border, rgba(18, 78, 97, 0.15));
+  background: var(--palette-surface, #24364D);
+  border: 1.5px solid rgba(203, 213, 225, 0.25);
   border-radius: 16px;
   padding: 20px 24px;
   display: flex;
@@ -3683,7 +3701,7 @@ h1, h2, h3, h4, .font-display {
   gap: 16px;
 }
 
-/* TicketSwap-Inspired Centered Seller Wizard (/deal/create) */
+/* Centered Seller Wizard (/deal/create) */
 .wizard-workspace-ticketswap {
   max-width: 740px;
   margin: 40px auto;
@@ -3691,10 +3709,10 @@ h1, h2, h3, h4, .font-display {
 }
 
 .wizard-card-ticketswap {
-  background: #FFFFFF;
+  background: var(--palette-surface, #24364D);
   border-radius: 24px;
-  border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12));
-  box-shadow: 0 12px 36px rgba(14, 59, 74, 0.06);
+  border: 1px solid rgba(203, 213, 225, 0.22);
+  box-shadow: var(--shadow-soft);
   padding: 40px;
 }
 
@@ -3709,8 +3727,9 @@ h1, h2, h3, h4, .font-display {
   flex: 1;
   padding: 10px 14px;
   border-radius: 999px;
-  background: var(--tikum-cream-100, #EBF0F7);
-  color: var(--tikum-ink-600, #475B73);
+  background: var(--palette-primary-blue, #15365B);
+  color: var(--palette-secondary-text, #CBD5E1);
+  border: 1px solid rgba(203, 213, 225, 0.22);
   font-size: 13px;
   font-weight: 700;
   text-align: center;
@@ -3718,23 +3737,25 @@ h1, h2, h3, h4, .font-display {
 }
 
 .wizard-step-pill.active {
-  background: var(--tikum-teal-700, #006BB6);
-  color: #F7FAFF;
+  background: var(--palette-terracotta, #E36F45);
+  border-color: var(--palette-terracotta, #E36F45);
+  color: var(--palette-midnight-navy, #172333);
 }
 
 .wizard-step-pill.completed {
-  background: var(--tikum-teal-100, #E6F2FB);
-  color: var(--tikum-teal-700, #006BB6);
+  background: rgba(23, 154, 107, 0.22);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #34D399;
 }
 
 .seller-protection-strip {
-  background: var(--tikum-teal-100, #E6F2FB);
-  border: 1px solid rgba(18, 78, 97, 0.18);
+  background: rgba(21, 54, 91, 0.55);
+  border: 1px solid rgba(132, 199, 245, 0.3);
   border-radius: 12px;
   padding: 12px 18px;
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--tikum-teal-700, #006BB6);
+  color: #B6DFFF;
   margin-bottom: 24px;
   display: flex;
   align-items: center;
@@ -3901,16 +3922,16 @@ h1, h2, h3, h4, .font-display {
   min-width: 44px;
   min-height: 44px;
   margin-top: 8px;
-  border: 1px solid #F6EBDD;
+  border: 1px solid var(--palette-warm-sand, #F3EBDD);
   border-radius: 999px;
   padding: 0 16px;
-  background: #081E3C;
-  color: #F6EBDD;
+  background: var(--palette-primary-blue, #15365B);
+  color: var(--palette-warm-sand, #F3EBDD);
   cursor: pointer;
 }
 .rail-controls { display: flex; gap: 8px; padding: 0 24px; justify-content: flex-end; }
 .brand .brand-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.rail-controls button { width: 44px; height: 44px; border: 0; border-radius: 50%; color: #fff; background: #006BB6; cursor: pointer; }
+.rail-controls button { width: 44px; height: 44px; border: 0; border-radius: 50%; color: #fff; background: var(--palette-primary-blue, #15365B); cursor: pointer; }
 
 .flow-marquee-content {
   display: flex;
@@ -3924,7 +3945,7 @@ h1, h2, h3, h4, .font-display {
   font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
   font-size: 13.5px;
   font-weight: 500;
-  color: rgba(250, 241, 226, 0.92);
+  color: var(--palette-warm-sand, #F3EBDD);
   letter-spacing: 0.3px;
   display: inline-flex;
   align-items: center;
@@ -3932,7 +3953,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .flow-marquee-dot {
-  color: var(--tikum-coral-500, #E05A2B);
+  color: var(--palette-terracotta, #E36F45);
   font-size: 11px;
 }
 
@@ -4000,29 +4021,30 @@ h1, h2, h3, h4, .font-display {
   text-transform: uppercase;
 }
 
-/* Knicks arena identity: keep existing component hooks and behavior intact. */
+/* Approved dark-mode brand identity; keep existing component hooks intact. */
 #appTopbar {
-  background: rgba(255, 255, 255, .92) !important;
+  background: var(--header-surface, rgba(23, 35, 51, 0.95)) !important;
   padding-inline: max(24px, calc((100% - 1240px) / 2)) !important;
 }
 .topbar-nav-links { gap: clamp(12px, 1.5vw, 24px); white-space: nowrap; }
-.topbar-nav-link:hover, .city-dropdown-item:hover { color: var(--knicks-blue-600); }
+.topbar-nav-link:hover, .city-dropdown-item:hover { color: var(--palette-terracotta, #E36F45); }
 .topbar-right { gap: 8px; }
 .btn-topbar-deal, .btn-topbar-seller, .btn-auth-header { min-height: 40px; }
-.btn-auth-header { color: var(--knicks-blue-600) !important; border-color: var(--knicks-blue-600) !important; }
-.lang-toggle-btn .lang-active { color: var(--knicks-blue-600) !important; }
-.brand img, .topbar-left .brand img { height: 30px !important; }
+body.dark-mode .btn-auth-header, html[data-theme="dark"] .btn-auth-header { color: var(--palette-warm-sand, #F3EBDD) !important; border-color: rgba(203, 213, 225, 0.35) !important; background-color: var(--palette-primary-blue, #15365B) !important; }
+body.dark-mode .btn-auth-header:hover, html[data-theme="dark"] .btn-auth-header:hover { color: var(--palette-soft-white, #FFFFFF) !important; border-color: var(--palette-terracotta, #E36F45) !important; background-color: var(--palette-surface, #24364D) !important; }
+.lang-toggle-btn .lang-active { color: var(--palette-warm-sand, #F3EBDD) !important; }
+.brand .tikum-logo-img, .topbar-left .brand .tikum-logo-img { width: 100% !important; height: 100% !important; object-fit: contain !important; }
 .hero-teal-editorial {
-  background: radial-gradient(ellipse at 20% 0%, rgba(0,107,182,.38), transparent 52%), radial-gradient(ellipse at 85% 30%, rgba(224,90,43,.16), transparent 45%), var(--knicks-navy-900);
+  background: radial-gradient(ellipse at 20% 0%, rgba(21, 54, 91, 0.65), transparent 52%), radial-gradient(ellipse at 85% 30%, rgba(227, 111, 69, 0.16), transparent 45%), var(--palette-midnight-navy, #172333);
 }
 .hero-editorial-h1 { font-size: clamp(2.35rem, 4.8vw, 4.2rem); }
 h2 { font-family: var(--font-display); font-size: clamp(1.75rem, 3vw, 2.5rem); }
-.flow-marquee-wrapper { mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); background: rgba(5,20,40,.45); }
+.flow-marquee-wrapper { mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); background: rgba(23, 35, 51, 0.45); }
 .flow-marquee-wrapper:hover .flow-marquee-track, .flow-marquee-wrapper:focus-within .flow-marquee-track { animation-play-state: paused; }
 .event-card-item:hover, .poster-card:hover { transform: translateY(-6px); }
 .event-card-item:hover .poster-img, .poster-card:hover .poster-img { transform: scale(1.04); }
 .poster-img { transition: transform 300ms ease; }
-#appFooter.site-footer { background: var(--knicks-navy-900) !important; border-top: 3px solid transparent !important; border-image: linear-gradient(90deg, #006BB6 0%, #006BB6 70%, #E05A2B 100%) 1 !important; }
+#appFooter.site-footer { background: var(--palette-midnight-navy, #172333) !important; border-top: 3px solid transparent !important; border-image: linear-gradient(90deg, #15365B 0%, #15365B 70%, #E36F45 100%) 1 !important; }
 @media (min-width: 1024px) {
   .footer-tier-1 { max-width: 1240px; margin-inline: auto; grid-template-columns: 1.4fr 1fr 1fr; gap: 48px; }
 }
@@ -4030,10 +4052,9 @@ h2 { font-family: var(--font-display); font-size: clamp(1.75rem, 3vw, 2.5rem); }
   .footer-tier-1 { grid-template-columns: 1fr !important; gap: 32px !important; max-width: 100% !important; }
 }
 .footer-tier-2 { max-width: 1240px; margin-inline: auto; }
-:focus-visible { outline: 3px solid var(--knicks-blue-600); outline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--palette-terracotta, #E36F45); outline-offset: 3px; }
 @media (max-width: 1023px) {
-  #appTopbar { height: 64px !important; padding-inline: 16px !important; }
-  .topbar-left .brand img { height: 26px !important; }
+  #appTopbar { height: 68px !important; padding-inline: 16px !important; }
   .topbar-hamburger-btn { min-width: 44px; min-height: 44px; }
 }
 @media (max-width: 640px) {
@@ -4046,7 +4067,12 @@ h2 { font-family: var(--font-display); font-size: clamp(1.75rem, 3vw, 2.5rem); }
 /* The compact shared header/footer must fit without clipping or a page-wide mask. */
 @media (max-width: 480px) {
   #appTopbar .topbar-center { display: none !important; }
-  #appTopbar .topbar-left .brand > span { display: none; }
+  #appTopbar .topbar-left .brand-title { display: none !important; }
+  #appTopbar .topbar-left .brand > .tikum-logo-slot {
+    display: inline-flex !important;
+    width: var(--tikum-logo-w, 138px);
+    height: var(--tikum-logo-h, 34px);
+  }
   #appTopbar .topbar-right .ln-btn { padding-inline: 8px !important; }
   .footer-essential-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   .footer-essential-link { min-width: 0; white-space: normal; overflow-wrap: anywhere; }

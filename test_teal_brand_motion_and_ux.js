@@ -27,13 +27,17 @@ console.log('[TEST 1] Teal Brand Palette, Vector Logos & Flow Ninja Motion...');
 const tokensCss = fs.readFileSync(path.join(__dirname, 'public/css/tikum-tokens.css'), 'utf8');
 const styleCss = fs.readFileSync(path.join(__dirname, 'public/css/style.css'), 'utf8');
 
-// Brand colors
-assert.ok(tokensCss.includes('#006BB6') || styleCss.includes('#006BB6'), 'Brand Teal (#006BB6) token must exist');
-assert.ok(tokensCss.includes('#F6EBDD') || styleCss.includes('#F6EBDD'), 'Warm Beige (#F6EBDD) canvas token must exist');
-assert.ok(tokensCss.includes('#E05A2B') || styleCss.includes('#E05A2B'), 'Signature Coral (#E05A2B) CTA token must exist');
+// Brand colors (Phase 3B global approved dark palette)
+assert.ok(tokensCss.includes('#15365B'), 'Primary Blue (#15365B) token must exist');
+assert.ok(tokensCss.includes('#172333'), 'Midnight Navy (#172333) canvas token must exist');
+assert.ok(tokensCss.includes('#24364D'), 'Surface (#24364D) token must exist');
+assert.ok(tokensCss.includes('#E36F45'), 'Terracotta (#E36F45) CTA token must exist');
+assert.ok(tokensCss.includes('#F3EBDD'), 'Warm Sand (#F3EBDD) accent token must exist');
 
-// Dual-tone SVG vector assets
+// Brand & legacy SVG vector assets
 const requiredSvgs = [
+  'public/images/tikum-brand-horizontal.svg',
+  'public/images/tikum-brand-symbol.svg',
   'public/images/tikum-symbol.svg',
   'public/images/tikum-horizontal.svg',
   'public/images/tikum-horizontal-light.svg',
@@ -72,7 +76,7 @@ const indexHtml = fs.readFileSync(path.join(__dirname, 'public/index.html'), 'ut
 
 // Header structure
 assert.ok(indexHtml.includes('id="appTopbar"'), 'index.html must contain #appTopbar');
-assert.ok(indexHtml.includes('tikum-horizontal.svg'), 'index.html must use tikum-horizontal.svg in topbar');
+assert.ok(indexHtml.includes('tikum-brand-horizontal.svg'), 'index.html must use tikum-brand-horizontal.svg in topbar');
 
 // Max 4 primary center links
 const navLinksMatch = indexHtml.match(/<ul class="topbar-nav-links">([\s\S]*?)<\/ul>/i);
