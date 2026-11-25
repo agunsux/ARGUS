@@ -17,7 +17,7 @@ const { IPaymuProvider, IPAYMU_STATUS } = require('./IPaymuProvider');
 class PaymentManager {
   constructor() {
     this.providers = new Map();
-    let rawDefault = (process.env.DEFAULT_PAYMENT_PROVIDER || 'doku').toLowerCase();
+    let rawDefault = (process.env.DEFAULT_PAYMENT_PROVIDER || process.env.PAYMENT_PROVIDER || 'doku').toLowerCase();
     // iPaymu is frozen for new transactions; enforce doku as default
     if (rawDefault === 'ipaymu') {
       rawDefault = 'doku';

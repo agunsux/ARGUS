@@ -562,6 +562,7 @@ class PostgresMoneyRepository extends MoneyRepository {
         money_state = EXCLUDED.money_state,
         provider_transaction_id = COALESCE(EXCLUDED.provider_transaction_id, financial_payments.provider_transaction_id),
         provider_reference = COALESCE(EXCLUDED.provider_reference, financial_payments.provider_reference),
+        metadata = financial_payments.metadata || EXCLUDED.metadata,
         paid_at = COALESCE(EXCLUDED.paid_at, financial_payments.paid_at),
         updated_at = NOW()
       RETURNING *;
@@ -618,7 +619,103 @@ class PostgresMoneyRepository extends MoneyRepository {
         return this.fallbackRepo.getPaymentByOrderId(orderId, txContext);
       }
     }
-    const res = await this._exec('SELECT * FROM financial_payments WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1', [orderId], txContext);
+    const res = await this._exec('SELECT * FROM financial_payments WHERE order_id = $1 ORDER BY updated_at DESC, created_at DESC LIMIT 1', [orderId], txContext);
+    return res.rows[0] || null;
+  }
+
+  async getPaymentByOrderAndProviderRef(orderId, providerReference, txContext = null) {
+    if (!orderId || !providerReference) return null;
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.getPaymentByOrderAndProviderRef(orderId, providerReference, txContext);
+      }
+    }
+    const sql = `
+      SELECT * FROM financial_payments
+      WHERE order_id = $1
+        AND (
+          provider_reference = $2 OR
+          provider_transaction_id = $2 OR
+          metadata->>'invoice_number' = $2 OR
+          metadata->>'invoiceNumber' = $2 OR
+          metadata->>'provider_reference' = $2
+        )
+      ORDER BY COALESCE(paid_at, updated_at, created_at) DESC
+      LIMIT 1;
+    `;
+    const res = await this._exec(sql, [orderId, providerReference], txContext);
+    return res.rows[0] || null;
+  }
+
+  async getSettledPaymentByOrderAndProviderRef(orderId, providerReference, txContext = null) {
+    if (!orderId || !providerReference) return null;
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.getSettledPaymentByOrderAndProviderRef(orderId, providerReference, txContext);
+      }
+    }
+    const sql = `
+      SELECT * FROM financial_payments
+      WHERE order_id = $1
+        AND UPPER(status) IN ('SETTLED', 'PAID', 'ESCROW_HELD', 'CAPTURED_PLATFORM_SETTLEMENT')
+        AND (
+          provider_reference = $2 OR
+          provider_transaction_id = $2 OR
+          metadata->>'invoice_number' = $2 OR
+          metadata->>'invoiceNumber' = $2 OR
+          metadata->>'provider_reference' = $2
+        )
+      ORDER BY COALESCE(paid_at, updated_at, created_at) DESC
+      LIMIT 1;
+    `;
+    const res = await this._exec(sql, [orderId, providerReference], txContext);
+    return res.rows[0] || null;
+  }
+
+  async getPaymentByInvoiceOrRef(ref, txContext = null) {
+    if (!ref) return null;
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.getPaymentByInvoiceOrRef(ref, txContext);
+      }
+    }
+    const sql = `
+      SELECT * FROM financial_payments
+      WHERE provider_reference = $1
+         OR provider_transaction_id = $1
+         OR metadata->>'invoice_number' = $1
+         OR metadata->>'invoiceNumber' = $1
+      ORDER BY updated_at DESC, created_at DESC
+      LIMIT 1;
+    `;
+    const res = await this._exec(sql, [ref], txContext);
+    return res.rows[0] || null;
+  }
+
+  async getPaymentByIdempotencyKey(idempotencyKey, txContext = null) {
+    if (!idempotencyKey) return null;
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.getPaymentByIdempotencyKey(idempotencyKey, txContext);
+      }
+    }
+    const res = await this._exec('SELECT * FROM financial_payments WHERE idempotency_key = $1 LIMIT 1;', [idempotencyKey], txContext);
     return res.rows[0] || null;
   }
 
@@ -659,11 +756,38 @@ class PostgresMoneyRepository extends MoneyRepository {
           money_state = $2::varchar,
           paid_at = CASE WHEN $2::varchar IN ('PAID', 'ESCROW_HELD', 'SETTLED') THEN COALESCE(paid_at, NOW()) ELSE paid_at END,
           provider_transaction_id = COALESCE($3, provider_transaction_id),
+          metadata = COALESCE(metadata, '{}'::jsonb) || COALESCE($4::jsonb, '{}'::jsonb),
           updated_at = NOW()
       WHERE id = $1 OR internal_payment_id = $1
       RETURNING *;
     `;
-    const res = await this._exec(sql, [paymentId, status, metadata.provider_transaction_id || null], txContext);
+    const res = await this._exec(sql, [
+      paymentId,
+      status,
+      metadata.provider_transaction_id || null,
+      JSON.stringify(metadata.metadata || {})
+    ], txContext);
+    return res.rows[0] || null;
+  }
+
+  async updatePaymentMetadata(paymentId, metadata = {}, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.updatePaymentMetadata(paymentId, metadata, txContext);
+      }
+    }
+    const sql = `
+      UPDATE financial_payments
+      SET metadata = COALESCE(metadata, '{}'::jsonb) || COALESCE($2::jsonb, '{}'::jsonb),
+          updated_at = NOW()
+      WHERE id = $1 OR internal_payment_id = $1 OR provider_reference = $1
+      RETURNING *;
+    `;
+    const res = await this._exec(sql, [paymentId, JSON.stringify(metadata || {})], txContext);
     return res.rows[0] || null;
   }
 
@@ -699,6 +823,36 @@ class PostgresMoneyRepository extends MoneyRepository {
     ];
     const res = await this._exec(sql, params, txContext);
     return res.rows[0];
+  }
+
+  async updatePaymentAttemptStatus(attemptId, status, extra = {}, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.updatePaymentAttemptStatus(attemptId, status, extra, txContext);
+      }
+    }
+    const sql = `
+      UPDATE financial_payment_attempts
+      SET status = $2::varchar,
+          provider_ref = COALESCE($3, provider_ref),
+          error_code = COALESCE($4, error_code),
+          error_message = COALESCE($5, error_message),
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING *;
+    `;
+    const res = await this._exec(sql, [
+      attemptId,
+      status,
+      extra.provider_ref || null,
+      extra.error_code || null,
+      extra.error_message || null
+    ], txContext);
+    return res.rows[0] || null;
   }
 
   // Webhook Deduplication (Database-Enforced Replay Proof & Safe Failed-Retry Reclaim)
@@ -1469,6 +1623,23 @@ class PostgresMoneyRepository extends MoneyRepository {
   }
 
   // Idempotency
+  async claimIdempotency(key, scope, payload, txContext = null) {
+    if (!txContext?.client) throw new Error('Idempotency claim requires a database transaction');
+    const result = await this._exec(
+      `INSERT INTO financial_idempotency_records (key, scope, status, response_payload)
+       VALUES ($1, $2, 'PENDING', $3::jsonb)
+       ON CONFLICT (key) DO UPDATE SET
+         status = 'PENDING',
+         scope = EXCLUDED.scope,
+         response_payload = EXCLUDED.response_payload,
+         completed_at = NULL
+       WHERE financial_idempotency_records.status = 'FAILED_RETRYABLE'
+       RETURNING key`,
+      [key, scope, JSON.stringify(payload)], txContext
+    );
+    return result.rows.length === 1;
+  }
+
   async checkIdempotency(key, scope, txContext = null) {
     if (!txContext?.client) {
       await this.ensureInitialized();
@@ -1497,11 +1668,35 @@ class PostgresMoneyRepository extends MoneyRepository {
       INSERT INTO financial_idempotency_records (key, scope, status, response_payload, completed_at)
       VALUES ($1, $2, 'COMPLETED', $3, NOW())
       ON CONFLICT (key) DO UPDATE SET
+        status = 'COMPLETED',
         response_payload = EXCLUDED.response_payload,
         completed_at = NOW()
       RETURNING *;
     `;
     const res = await this._exec(sql, [key, scope, JSON.stringify(responsePayload || {})], txContext);
+    return res.rows[0];
+  }
+
+  async markIdempotencyRetryable(key, scope, payload = {}, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MoneyRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.markIdempotencyRetryable(key, scope, payload, txContext);
+      }
+    }
+    const sql = `
+      INSERT INTO financial_idempotency_records (key, scope, status, response_payload, completed_at)
+      VALUES ($1, $2, 'FAILED_RETRYABLE', $3::jsonb, NULL)
+      ON CONFLICT (key) DO UPDATE SET
+        status = 'FAILED_RETRYABLE',
+        response_payload = COALESCE(financial_idempotency_records.response_payload, '{}'::jsonb) || COALESCE(EXCLUDED.response_payload, '{}'::jsonb),
+        completed_at = NULL
+      RETURNING *;
+    `;
+    const res = await this._exec(sql, [key, scope, JSON.stringify(payload || {})], txContext);
     return res.rows[0];
   }
 

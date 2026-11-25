@@ -1151,18 +1151,23 @@ router.get('/admin/payments/reconciliation', requireAdmin, (req, res) => {
  */
 router.post(['/admin/payments/release', '/v1/payments/release'], requireAdmin, async (req, res) => {
   try {
-    const { orderId } = req.body;
+    const { orderId, authorizationId, overrideSettlement, override_settlement } = req.body;
     if (!orderId) {
       return res.status(400).json({ success: false, error: 'orderId is required' });
     }
     const actorId = req.user?.id || req.body.actorId || 'admin-argus';
-    const result = await PaymentService.executeRelease({ orderId, actorId });
+    const result = await PaymentService.executeRelease({
+      orderId,
+      actorId,
+      authorizationId: authorizationId || null,
+      overrideSettlement: overrideSettlement ?? override_settlement ?? null
+    });
     res.json({
       success: true,
       release: result
     });
   } catch (err) {
-    const statusCode = err.message && err.message.includes('ARGUS_RELEASE_BLOCKED') ? 422 : 500;
+    const statusCode = err.status || err.statusCode || (err.message && err.message.includes('ARGUS_RELEASE_BLOCKED') ? 422 : 500);
     res.status(statusCode).json({
       success: false,
       error: err.message,

@@ -26,9 +26,15 @@ class MoneyRepository {
   async createPayment(paymentData, txContext = null) { throw new Error('Not implemented'); }
   async getPaymentById(paymentId, txContext = null) { throw new Error('Not implemented'); }
   async getPaymentByOrderId(orderId, txContext = null) { throw new Error('Not implemented'); }
+  async getPaymentByOrderAndProviderRef(orderId, providerReference, txContext = null) { throw new Error('Not implemented'); }
+  async getSettledPaymentByOrderAndProviderRef(orderId, providerReference, txContext = null) { throw new Error('Not implemented'); }
+  async getPaymentByInvoiceOrRef(ref, txContext = null) { throw new Error('Not implemented'); }
+  async getPaymentByIdempotencyKey(idempotencyKey, txContext = null) { throw new Error('Not implemented'); }
   async getLatestSettledPaymentByOrderId(orderId, txContext = null) { throw new Error('Not implemented'); }
   async updatePaymentStatus(paymentId, status, metadata = {}, txContext = null) { throw new Error('Not implemented'); }
+  async updatePaymentMetadata(paymentId, metadata = {}, txContext = null) { throw new Error('Not implemented'); }
   async recordPaymentAttempt(attemptData, txContext = null) { throw new Error('Not implemented'); }
+  async updatePaymentAttemptStatus(attemptId, status, extra = {}, txContext = null) { throw new Error('Not implemented'); }
 
   // Webhooks (Replay-Proof & Retry-Safe)
   async recordWebhook(webhookData, txContext = null) { throw new Error('Not implemented'); }
@@ -71,7 +77,9 @@ class MoneyRepository {
 
   // Idempotency
   async checkIdempotency(key, scope, txContext = null) { throw new Error('Not implemented'); }
+  async claimIdempotency(key, scope, payload, txContext = null) { throw new Error('Not implemented'); }
   async saveIdempotency(key, scope, responsePayload, txContext = null) { throw new Error('Not implemented'); }
+  async markIdempotencyRetryable(key, scope, payload = {}, txContext = null) { throw new Error('Not implemented'); }
 
   // Transactional Outbox
   async createOutboxEvent(outboxData, txContext = null) { throw new Error('Not implemented'); }

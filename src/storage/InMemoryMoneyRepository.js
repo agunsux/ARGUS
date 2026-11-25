@@ -254,30 +254,101 @@ class InMemoryMoneyRepository extends MoneyRepository {
   // Payments
   async createPayment(paymentData, txContext = null) {
     const id = paymentData.id || `pay-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const existing = this.payments.get(id);
+    const mergedMetadata = {
+      ...(existing?.metadata || {}),
+      ...(paymentData.metadata || {})
+    };
     const payment = {
+      ...(existing || {}),
       ...paymentData,
       id,
-      internal_payment_id: paymentData.internal_payment_id || id,
-      status: paymentData.status || 'PAYMENT_PENDING',
-      created_at: paymentData.created_at || new Date().toISOString(),
+      internal_payment_id: paymentData.internal_payment_id || existing?.internal_payment_id || id,
+      provider_transaction_id: paymentData.provider_transaction_id ?? existing?.provider_transaction_id ?? null,
+      provider_reference: paymentData.provider_reference ?? existing?.provider_reference ?? null,
+      status: paymentData.status || existing?.status || 'PAYMENT_PENDING',
+      money_state: paymentData.money_state || paymentData.status || existing?.money_state || 'PAYMENT_PENDING',
+      metadata: mergedMetadata,
+      created_at: paymentData.created_at || existing?.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
     this.payments.set(id, payment);
-    return { ...payment };
+    return { ...payment, metadata: { ...payment.metadata } };
   }
 
   async getPaymentById(paymentId, txContext = null) {
     for (const p of this.payments.values()) {
       if (p.id === paymentId || p.internal_payment_id === paymentId || p.provider_reference === paymentId) {
-        return { ...p };
+        return { ...p, metadata: p.metadata ? { ...p.metadata } : {} };
       }
     }
     return null;
   }
 
   async getPaymentByOrderId(orderId, txContext = null) {
+    const matches = Array.from(this.payments.values())
+      .filter(p => p.order_id === orderId)
+      .sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0));
+    return matches[0] ? { ...matches[0], metadata: matches[0].metadata ? { ...matches[0].metadata } : {} } : null;
+  }
+
+  async getPaymentByOrderAndProviderRef(orderId, providerReference, txContext = null) {
+    if (!orderId || !providerReference) return null;
     for (const p of this.payments.values()) {
-      if (p.order_id === orderId) return { ...p };
+      if (p.order_id !== orderId) continue;
+      if (
+        p.provider_reference === providerReference ||
+        p.provider_transaction_id === providerReference ||
+        p.metadata?.invoice_number === providerReference ||
+        p.metadata?.invoiceNumber === providerReference ||
+        p.metadata?.provider_reference === providerReference
+      ) {
+        return { ...p, metadata: p.metadata ? { ...p.metadata } : {} };
+      }
+    }
+    return null;
+  }
+
+  async getSettledPaymentByOrderAndProviderRef(orderId, providerReference, txContext = null) {
+    if (!orderId || !providerReference) return null;
+    const settledStatuses = new Set(['SETTLED', 'PAID', 'ESCROW_HELD', 'CAPTURED_PLATFORM_SETTLEMENT']);
+    for (const p of this.payments.values()) {
+      if (p.order_id !== orderId) continue;
+      if (!settledStatuses.has(String(p.status || '').toUpperCase())) continue;
+      if (
+        p.provider_reference === providerReference ||
+        p.provider_transaction_id === providerReference ||
+        p.metadata?.invoice_number === providerReference ||
+        p.metadata?.invoiceNumber === providerReference ||
+        p.metadata?.provider_reference === providerReference
+      ) {
+        return { ...p, metadata: p.metadata ? { ...p.metadata } : {} };
+      }
+    }
+    return null;
+  }
+
+  async getPaymentByInvoiceOrRef(ref, txContext = null) {
+    if (!ref) return null;
+    for (const p of this.payments.values()) {
+      if (
+        p.provider_reference === ref ||
+        p.provider_transaction_id === ref ||
+        p.metadata?.invoice_number === ref ||
+        p.metadata?.invoiceNumber === ref
+      ) {
+        return { ...p, metadata: p.metadata ? { ...p.metadata } : {} };
+      }
+    }
+    return null;
+  }
+
+  async getPaymentByIdempotencyKey(idempotencyKey, txContext = null) {
+    if (!idempotencyKey) return null;
+    for (const p of this.payments.values()) {
+      if (p.idempotency_key === idempotencyKey) {
+        return { ...p, metadata: p.metadata ? { ...p.metadata } : {} };
+      }
     }
     return null;
   }
@@ -287,7 +358,7 @@ class InMemoryMoneyRepository extends MoneyRepository {
     const matches = Array.from(this.payments.values())
       .filter(p => p.order_id === orderId && settledStatuses.has(String(p.status || '').toUpperCase()))
       .sort((a, b) => new Date(b.paid_at || b.updated_at || b.created_at || 0) - new Date(a.paid_at || a.updated_at || a.created_at || 0));
-    return matches[0] ? { ...matches[0] } : null;
+    return matches[0] ? { ...matches[0], metadata: matches[0].metadata ? { ...matches[0].metadata } : {} } : null;
   }
 
   async updatePaymentStatus(paymentId, status, metadata = {}, txContext = null) {
@@ -299,8 +370,28 @@ class InMemoryMoneyRepository extends MoneyRepository {
           p.paid_at = p.paid_at || new Date().toISOString();
         }
         p.updated_at = new Date().toISOString();
-        Object.assign(p, metadata);
-        return { ...p };
+        if (metadata && typeof metadata === 'object') {
+          const { metadata: nestedMeta, ...topFields } = metadata;
+          Object.assign(p, topFields);
+          if (nestedMeta && typeof nestedMeta === 'object') {
+            p.metadata = { ...(p.metadata || {}), ...nestedMeta };
+          }
+        }
+        return { ...p, metadata: p.metadata ? { ...p.metadata } : {} };
+      }
+    }
+    return null;
+  }
+
+  async updatePaymentMetadata(paymentId, metadata = {}, txContext = null) {
+    for (const p of this.payments.values()) {
+      if (p.id === paymentId || p.internal_payment_id === paymentId || p.provider_reference === paymentId) {
+        p.metadata = { ...(p.metadata || {}), ...(metadata || {}) };
+        if (metadata?.last_payment_attempt_status !== undefined) {
+          p.last_payment_attempt_status = metadata.last_payment_attempt_status;
+        }
+        p.updated_at = new Date().toISOString();
+        return { ...p, metadata: { ...p.metadata } };
       }
     }
     return null;
@@ -308,9 +399,20 @@ class InMemoryMoneyRepository extends MoneyRepository {
 
   async recordPaymentAttempt(attemptData, txContext = null) {
     const id = attemptData.id || `att-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-    const attempt = { ...attemptData, id, created_at: new Date().toISOString() };
+    const attempt = { ...attemptData, id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
     this.attempts.set(id, attempt);
-    return attempt;
+    return { ...attempt };
+  }
+
+  async updatePaymentAttemptStatus(attemptId, status, extra = {}, txContext = null) {
+    const attempt = this.attempts.get(attemptId);
+    if (!attempt) return null;
+    attempt.status = status;
+    if (extra.provider_ref !== undefined) attempt.provider_ref = extra.provider_ref;
+    if (extra.error_code !== undefined) attempt.error_code = extra.error_code;
+    if (extra.error_message !== undefined) attempt.error_message = extra.error_message;
+    attempt.updated_at = new Date().toISOString();
+    return { ...attempt };
   }
 
   // Webhooks
@@ -721,6 +823,20 @@ class InMemoryMoneyRepository extends MoneyRepository {
   }
 
   // Idempotency
+  async claimIdempotency(key, scope, payload, txContext = null) {
+    const existing = this.idempotency.get(key);
+    if (existing && existing.status !== 'FAILED_RETRYABLE') return false;
+    this.idempotency.set(key, {
+      key,
+      scope,
+      status: 'PENDING',
+      response_payload: payload,
+      created_at: existing?.created_at || new Date().toISOString(),
+      completed_at: null
+    });
+    return true;
+  }
+
   async checkIdempotency(key, scope, txContext = null) {
     const record = this.idempotency.get(key);
     if (record && record.scope === scope) return { ...record };
@@ -728,7 +844,29 @@ class InMemoryMoneyRepository extends MoneyRepository {
   }
 
   async saveIdempotency(key, scope, responsePayload, txContext = null) {
-    const record = { key, scope, status: 'COMPLETED', response_payload: responsePayload, created_at: new Date().toISOString(), completed_at: new Date().toISOString() };
+    const existing = this.idempotency.get(key);
+    const record = {
+      key,
+      scope,
+      status: 'COMPLETED',
+      response_payload: responsePayload,
+      created_at: existing?.created_at || new Date().toISOString(),
+      completed_at: new Date().toISOString()
+    };
+    this.idempotency.set(key, record);
+    return { ...record };
+  }
+
+  async markIdempotencyRetryable(key, scope, payload = {}, txContext = null) {
+    const existing = this.idempotency.get(key);
+    const record = {
+      key,
+      scope,
+      status: 'FAILED_RETRYABLE',
+      response_payload: { ...(existing?.response_payload || {}), ...(payload || {}) },
+      created_at: existing?.created_at || new Date().toISOString(),
+      completed_at: null
+    };
     this.idempotency.set(key, record);
     return { ...record };
   }
