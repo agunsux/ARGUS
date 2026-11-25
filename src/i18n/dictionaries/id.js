@@ -1612,7 +1612,12 @@ module.exports = {
     "liveExperiencesEyebrow": "TIKUM · Pengalaman Konser Langsung",
     "liveExperiencesTitle": "Masuk ke Venue Tanpa Was-Was",
     "liveExperiencesSubtitle": "Dari stadion GBK hingga festival besar di Jakarta, Event PIC TIKUM mendampingi serah terima tiket dan penukaran gelang di lokasi acara yang berpartisipasi.",
-    "liveExperiencesCta": "Jelajah Event Aktif"
+    "liveExperiencesCta": "Jelajah Event Aktif",
+    "heroQuickFilterLabel": "Pencarian Cepat:",
+    "quickChipJakarta": "Jakarta",
+    "heroTrustVerified": "Verifikasi Bukti Kepemilikan",
+    "heroTrustPic": "Dukungan Event PIC di Venue",
+    "heroTrustZeroFake": "Zero Fake Inventory & Anti-Duplikasi"
   },
   "dealCreate": {
     "pageTitle": "Buat Tautan Transaksi / Ajukan Listing Tiket",

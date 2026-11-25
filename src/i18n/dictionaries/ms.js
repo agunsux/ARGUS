@@ -1617,7 +1617,12 @@ module.exports = {
     "liveExperiencesEyebrow": "TIKUM · Pengalaman Langsung",
     "liveExperiencesTitle": "Masuk ke Setiap Lokasi dengan Yakin",
     "liveExperiencesSubtitle": "Daripada Stadium GBK ke festival utama Jakarta, PIC Acara TIKUM membantu serahan tiket dan penebusan gelang tangan secara terus di lokasi yang mengambil bahagian.",
-    "liveExperiencesCta": "Teroka Acara Langsung"
+    "liveExperiencesCta": "Teroka Acara Langsung",
+    "heroQuickFilterLabel": "Penapis Popular:",
+    "quickChipJakarta": "Jakarta",
+    "heroTrustVerified": "Pengesahan Bukti Pemilikan",
+    "heroTrustPic": "Sokongan PIC Acara di Lokasi",
+    "heroTrustZeroFake": "Inventori Palsu Sifar & Anti-Penduaan"
   },
   "dealCreate": {
     "pageTitle": "Cipta Pautan Transaksi / Hantar Penyenaraian Tiket",

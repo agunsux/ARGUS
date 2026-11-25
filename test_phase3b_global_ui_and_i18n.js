@@ -53,7 +53,7 @@ async function httpGet(baseUrl, urlPath, headers = {}) {
   }
   console.log('  [PASS] 1. Immutable manifest 17/17 PASS.');
 
-  // 2. Official master SVGs + Legacy 4 SVGs + Homepage PNGs intact
+  // 2. Official master SVGs + Legacy 4 SVGs + Guarded PNG Assets Intact (No Photo Banners in Hero)
   const EXPECTED_MASTER_HASH = 'DFDEA1FCCA5B8B7B5C998916A8C21C36AE2133069AF0FD7A8FC464F7C8EF2754';
   assert.strictEqual(sha256File('public/images/tikum horizonzal logo pinggir.svg'), EXPECTED_MASTER_HASH);
   assert.strictEqual(sha256File('research/tikum horizonzal logo pinggir.svg'), EXPECTED_MASTER_HASH);
@@ -69,10 +69,16 @@ async function httpGet(baseUrl, urlPath, headers = {}) {
   ]) {
     assert.ok(fs.existsSync(path.join(__dirname, rel)), `Missing required asset: ${rel}`);
   }
+  const indexHtmlSrc = fs.readFileSync(path.join(__dirname, 'public/index.html'), 'utf8');
+  const refreshCssSrc = fs.readFileSync(path.join(__dirname, 'public/css/marketplace-refresh.css'), 'utf8');
+  assert.ok(!indexHtmlSrc.includes('heropage2.png') && !indexHtmlSrc.includes('heropage3.png'), 'Homepage HTML must not embed heropage2.png or heropage3.png');
+  assert.ok(!refreshCssSrc.includes('heropage2.png') && !refreshCssSrc.includes('heropage3.png'), 'marketplace-refresh.css must not use heropage2.png or heropage3.png');
+  assert.ok(!indexHtmlSrc.includes('id="liveExperiences"') && !refreshCssSrc.includes('.live-experiences'), 'Live Experiences photo section must be removed');
+  assert.ok(indexHtmlSrc.includes('class="hero-quick-chips"') && indexHtmlSrc.includes('class="hero-trust-strip"'), 'Homepage hero must render search-first quick chips and compact trust strip');
   const brandSvg = fs.readFileSync(path.join(__dirname, 'public/images/tikum-brand-horizontal.svg'), 'utf8');
   assert.ok(brandSvg.includes('fill-rule="evenodd"'), 'Horizontal brand SVG must preserve evenodd counters');
   assert.ok(!brandSvg.includes('#000139'), 'Horizontal brand SVG must be transparent without #000139 box');
-  console.log('  [PASS] 2. Master SVGs, transparent brand derivatives, 4 legacy SVGs, and hero PNGs verified.');
+  console.log('  [PASS] 2. Master SVGs, legacy SVGs, physical PNG files preserved, and photo-free search-first hero verified.');
 
   // 3. Global Approved Dark Palette & Retired Petrol Teal / Off-Palette Exclusion
   const cssFiles = fs.readdirSync(path.join(__dirname, 'public/css')).filter(f => f.endsWith('.css'));

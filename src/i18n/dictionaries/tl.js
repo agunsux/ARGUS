@@ -1617,7 +1617,12 @@ module.exports = {
     "liveExperiencesEyebrow": "TIKUM · Mga Live na Karanasan",
     "liveExperiencesTitle": "Pumasok sa Bawat Venue nang May Kumpiyansa",
     "liveExperiencesSubtitle": "Mula GBK Stadium hanggang sa mga pangunahing festival sa Jakarta, direktang tumutulong ang TIKUM Event PIC sa paglipat ng tiket at pagtubos ng wristband sa mga kalahok na venue.",
-    "liveExperiencesCta": "Tuklasin ang mga Live na Kaganapan"
+    "liveExperiencesCta": "Tuklasin ang mga Live na Kaganapan",
+    "heroQuickFilterLabel": "Mga Sikat na Filter:",
+    "quickChipJakarta": "Jakarta",
+    "heroTrustVerified": "Beripikasyon ng Katibayan ng Pagmamay-ari",
+    "heroTrustPic": "Suporta ng Event PIC sa Venue",
+    "heroTrustZeroFake": "Zero Fake Inventory at Anti-Duplikasyon"
   },
   "dealCreate": {
     "pageTitle": "Gumawa ng Transaction Link / Magsumite ng Ticket Listing",

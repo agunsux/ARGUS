@@ -1655,7 +1655,12 @@
       "liveExperiencesEyebrow": "TIKUM · Pengalaman Konser Langsung",
       "liveExperiencesTitle": "Masuk ke Venue Tanpa Was-Was",
       "liveExperiencesSubtitle": "Dari stadion GBK hingga festival besar di Jakarta, Event PIC TIKUM mendampingi serah terima tiket dan penukaran gelang di lokasi acara yang berpartisipasi.",
-      "liveExperiencesCta": "Jelajah Event Aktif"
+      "liveExperiencesCta": "Jelajah Event Aktif",
+      "heroQuickFilterLabel": "Pencarian Cepat:",
+      "quickChipJakarta": "Jakarta",
+      "heroTrustVerified": "Verifikasi Bukti Kepemilikan",
+      "heroTrustPic": "Dukungan Event PIC di Venue",
+      "heroTrustZeroFake": "Zero Fake Inventory & Anti-Duplikasi"
     },
     "dealCreate": {
       "pageTitle": "Buat Tautan Transaksi / Ajukan Listing Tiket",
@@ -3482,7 +3487,12 @@
       "liveExperiencesEyebrow": "TIKUM · Live Experiences",
       "liveExperiencesTitle": "Enter Every Venue With Confidence",
       "liveExperiencesSubtitle": "From GBK Stadium to major Jakarta festivals, TIKUM Event PIC assists ticket handovers and wristband redemptions directly at participating venues.",
-      "liveExperiencesCta": "Explore Live Events"
+      "liveExperiencesCta": "Explore Live Events",
+      "heroQuickFilterLabel": "Popular Filters:",
+      "quickChipJakarta": "Jakarta",
+      "heroTrustVerified": "Ownership Evidence Verification",
+      "heroTrustPic": "On-Site Event PIC Support",
+      "heroTrustZeroFake": "Zero Fake Inventory & Anti-Duplication"
     },
     "dealCreate": {
       "pageTitle": "Create Transaction Link / Submit Ticket Listing",
@@ -5309,7 +5319,12 @@
       "liveExperiencesEyebrow": "TIKUM · Pengalaman Langsung",
       "liveExperiencesTitle": "Masuk ke Setiap Lokasi dengan Yakin",
       "liveExperiencesSubtitle": "Daripada Stadium GBK ke festival utama Jakarta, PIC Acara TIKUM membantu serahan tiket dan penebusan gelang tangan secara terus di lokasi yang mengambil bahagian.",
-      "liveExperiencesCta": "Teroka Acara Langsung"
+      "liveExperiencesCta": "Teroka Acara Langsung",
+      "heroQuickFilterLabel": "Penapis Popular:",
+      "quickChipJakarta": "Jakarta",
+      "heroTrustVerified": "Pengesahan Bukti Pemilikan",
+      "heroTrustPic": "Sokongan PIC Acara di Lokasi",
+      "heroTrustZeroFake": "Inventori Palsu Sifar & Anti-Penduaan"
     },
     "dealCreate": {
       "pageTitle": "Cipta Pautan Transaksi / Hantar Penyenaraian Tiket",
@@ -7136,7 +7151,12 @@
       "liveExperiencesEyebrow": "TIKUM · Mga Live na Karanasan",
       "liveExperiencesTitle": "Pumasok sa Bawat Venue nang May Kumpiyansa",
       "liveExperiencesSubtitle": "Mula GBK Stadium hanggang sa mga pangunahing festival sa Jakarta, direktang tumutulong ang TIKUM Event PIC sa paglipat ng tiket at pagtubos ng wristband sa mga kalahok na venue.",
-      "liveExperiencesCta": "Tuklasin ang mga Live na Kaganapan"
+      "liveExperiencesCta": "Tuklasin ang mga Live na Kaganapan",
+      "heroQuickFilterLabel": "Mga Sikat na Filter:",
+      "quickChipJakarta": "Jakarta",
+      "heroTrustVerified": "Beripikasyon ng Katibayan ng Pagmamay-ari",
+      "heroTrustPic": "Suporta ng Event PIC sa Venue",
+      "heroTrustZeroFake": "Zero Fake Inventory at Anti-Duplikasyon"
     },
     "dealCreate": {
       "pageTitle": "Gumawa ng Transaction Link / Magsumite ng Ticket Listing",
@@ -8963,7 +8983,12 @@
       "liveExperiencesEyebrow": "TIKUM · ประสบการณ์หน้างานจริง",
       "liveExperiencesTitle": "เข้าสู่ทุกสถานที่จัดงานอย่างมั่นใจ",
       "liveExperiencesSubtitle": "ตั้งแต่สนาม GBK ไปจนถึงเทศกาลใหญ่ในจาการ์ตา เจ้าหน้าที่ TIKUM Event PIC ช่วยดูแลการส่งมอบบัตรและการแลกสายรัดข้อมือโดยตรง ณ สถานที่ที่ร่วมรายการ",
-      "liveExperiencesCta": "สำรวจงานแสดงสด"
+      "liveExperiencesCta": "สำรวจงานแสดงสด",
+      "heroQuickFilterLabel": "ตัวกรองยอดนิยม:",
+      "quickChipJakarta": "จาการ์ตา",
+      "heroTrustVerified": "ตรวจสอบหลักฐานการถือครองบัตร",
+      "heroTrustPic": "ดูแลหน้างานโดย Event PIC ที่สถานที่จริง",
+      "heroTrustZeroFake": "สต็อกปลอมเป็นศูนย์ & ป้องกันบัตรซ้ำ"
     },
     "dealCreate": {
       "pageTitle": "สร้างลิงก์ธุรกรรม / ลงรายการบัตร",

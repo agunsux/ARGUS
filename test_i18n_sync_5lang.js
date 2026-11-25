@@ -25,7 +25,7 @@ assert.strictEqual(clientI18n.resolveInitialLanguage('?lang=invalid', null), 'id
 
 for (const code of CANONICAL_LOCALES) {
   assert(clientI18n.translations[code], `Client translations missing '${code}'`);
-  assert.strictEqual(Object.keys(collectLeaves(clientI18n.translations[code])).length, 1671, `'${code}' must have 1671 keys`);
+  assert.strictEqual(Object.keys(collectLeaves(clientI18n.translations[code])).length, 1676, `'${code}' must have 1676 keys`);
 }
 assert(!clientI18n.translations.fil, 'Non-canonical fil key must not exist in translations');
 assert(!clientI18n.translations['zh-CN'], 'Stale zh-CN dictionary must be removed from client translations');

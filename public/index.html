@@ -357,9 +357,9 @@
         </div>
       </header>
 
-  <!-- SECTION 1: Deep Blue Editorial Hero (Motion + SeatGeek Search + Instant Deal Link) -->
+  <!-- SECTION 1: Clean Centered Search-First Marketplace Hero -->
   <section class="hero-teal-editorial" id="editorialHero">
-    <div style="max-width:1120px; margin:0 auto; text-align:center;">
+    <div class="hero-search-first-shell">
       <div class="hero-eyebrow-pill">
         <span style="color:#E36F45;">●</span> <span data-i18n="spotlight.eyebrow">TIKUM by PT SHINERVA PRAJNA TEJAS • Verified Ticket Marketplace</span>
       </div>
@@ -375,6 +375,25 @@
         <button type="button" class="seatgeek-search-submit-btn" onclick="debounceSearch()" aria-label="Cari">
           <i class="fa-solid fa-arrow-right"></i>
         </button>
+      </div>
+
+      <!-- Quick Filter Chips (Category & Popular Cities) -->
+      <div class="hero-quick-chips" role="group" aria-label="Filter Cepat Event">
+        <span class="hero-quick-chips__label" data-i18n="landing.heroQuickFilterLabel">Pencarian Cepat:</span>
+        <button type="button" class="hero-quick-chip is-active" onclick="applyHeroQuickFilter(this, { category: '', city: '' })" data-i18n="events.allEvents">Semua Event</button>
+        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'MUSIC' })" data-i18n="events.concerts">Konser</button>
+        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'FESTIVAL' })" data-i18n="events.festivals">Festival Musik</button>
+        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'SPORT' })" data-i18n="events.sports">Olahraga</button>
+        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Jakarta' })"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span data-i18n="landing.quickChipJakarta">Jakarta</span></button>
+        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Bandung' })"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span data-i18n="nav.bandung">Bandung</span></button>
+        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Bali' })"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span data-i18n="nav.bali">Bali</span></button>
+      </div>
+
+      <!-- Compact Compliance-Safe Trust Strip -->
+      <div class="hero-trust-strip" role="list" aria-label="Keunggulan Verifikasi TIKUM">
+        <span class="hero-trust-item" role="listitem"><i class="fa-solid fa-file-shield" aria-hidden="true"></i> <span data-i18n="landing.heroTrustVerified">Verifikasi Bukti Kepemilikan</span></span>
+        <span class="hero-trust-item" role="listitem"><i class="fa-solid fa-user-check" aria-hidden="true"></i> <span data-i18n="landing.heroTrustPic">Dukungan Event PIC di Venue</span></span>
+        <span class="hero-trust-item" role="listitem"><i class="fa-solid fa-fingerprint" aria-hidden="true"></i> <span data-i18n="landing.heroTrustZeroFake">Zero Fake Inventory &amp; Anti-Duplikasi</span></span>
       </div>
 
       <!-- Redesigned Agency-Grade Deal-Link Dock -->
@@ -412,15 +431,6 @@
         </div>
       </div>
       <button type="button" class="marquee-toggle" id="marqueeToggle" aria-pressed="false" aria-label="Pause event highlights">Pause</button>
-    </div>
-  </section>
-
-  <section class="live-experiences" id="liveExperiences" aria-labelledby="liveExperiencesTitle" data-reveal>
-    <div class="live-experiences__content">
-      <p class="live-experiences__eyebrow" data-i18n="landing.liveExperiencesEyebrow">TIKUM · Live Experiences</p>
-      <h2 id="liveExperiencesTitle" data-i18n="landing.liveExperiencesTitle">Masuk ke Venue Tanpa Was-Was</h2>
-      <p data-i18n="landing.liveExperiencesSubtitle">Dari stadion GBK hingga festival besar di Jakarta, Event PIC TIKUM mendampingi serah terima tiket dan penukaran gelang di lokasi acara yang berpartisipasi.</p>
-      <a class="live-experiences__link" href="#unifiedSection" data-i18n="landing.liveExperiencesCta">Jelajah Event Aktif</a>
     </div>
   </section>
 
@@ -852,6 +862,26 @@
       });
       renderAllSections();
       const target = document.getElementById('upcoming');
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function applyHeroQuickFilter(el, opts = {}) {
+      const nextCat = opts.category !== undefined ? opts.category : currentCategory;
+      currentCategory = opts.city !== undefined && opts.category === undefined ? '' : (nextCat || '');
+      const citySel = document.getElementById('cityFilter');
+      if (citySel) {
+        if (opts.city !== undefined) {
+          citySel.value = opts.city;
+        } else if (opts.category !== undefined) {
+          citySel.value = '';
+        }
+      }
+      document.querySelectorAll('.hero-quick-chip').forEach(btn => btn.classList.toggle('is-active', btn === el));
+      document.querySelectorAll('.filter-pills .pill').forEach(p => {
+        p.classList.toggle('active', (p.dataset.category || '') === currentCategory);
+      });
+      renderAllSections();
+      const target = document.getElementById('upcoming') || document.getElementById('mainContent');
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 

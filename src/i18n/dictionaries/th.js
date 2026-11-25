@@ -1617,7 +1617,12 @@ module.exports = {
     "liveExperiencesEyebrow": "TIKUM · ประสบการณ์หน้างานจริง",
     "liveExperiencesTitle": "เข้าสู่ทุกสถานที่จัดงานอย่างมั่นใจ",
     "liveExperiencesSubtitle": "ตั้งแต่สนาม GBK ไปจนถึงเทศกาลใหญ่ในจาการ์ตา เจ้าหน้าที่ TIKUM Event PIC ช่วยดูแลการส่งมอบบัตรและการแลกสายรัดข้อมือโดยตรง ณ สถานที่ที่ร่วมรายการ",
-    "liveExperiencesCta": "สำรวจงานแสดงสด"
+    "liveExperiencesCta": "สำรวจงานแสดงสด",
+    "heroQuickFilterLabel": "ตัวกรองยอดนิยม:",
+    "quickChipJakarta": "จาการ์ตา",
+    "heroTrustVerified": "ตรวจสอบหลักฐานการถือครองบัตร",
+    "heroTrustPic": "ดูแลหน้างานโดย Event PIC ที่สถานที่จริง",
+    "heroTrustZeroFake": "สต็อกปลอมเป็นศูนย์ & ป้องกันบัตรซ้ำ"
   },
   "dealCreate": {
     "pageTitle": "สร้างลิงก์ธุรกรรม / ลงรายการบัตร",
