@@ -42,6 +42,31 @@ const PRODUCTION_SAFETY_GATES = {
 };
 
 class PaymentService {
+  static async verifyCaptureLedger(order) {
+    if (order.fee_policy_version !== 'V2_DUAL_TIER') return;
+    const { calculateDualTierFees } = require('../../pricing/DualTierFeePolicy');
+    const listing = (state.listings || []).find(item => item.id === order.listing_id);
+    const meta = listing?.metadata || {};
+    const fulfillmentType = listing?.fulfillment_option || listing?.fulfillment_type || meta.fulfillment_option || meta.fulfillment_type || order.fulfillment_type || 'SELLER_MANAGED';
+    const expected = calculateDualTierFees({ ticketPrice: Number(order.ticket_price), quantity: Number(order.quantity || 1), fulfillmentType });
+    const captures = (state.financial_ledger || []).filter(tx => tx.order_id === order.id && (tx.event_type === 'CAPTURE' || tx.source_event === 'CAPTURE'));
+    const matching = captures.some(tx => {
+      const revenue = (tx.entries || []).find(entry => (entry.account || entry.ledger_account) === 'PLATFORM_FEE_REVENUE' && entry.type === 'CREDIT');
+      const description = tx.description || '';
+      return Number(revenue?.amount) === expected.platform_revenue &&
+        description.includes(`Buyer Fee: ${expected.buyer_fee}, Seller Fee: ${expected.seller_fee},`) &&
+        Number(order.buyer_fee) === expected.buyer_fee && Number(order.seller_fee) === expected.seller_fee;
+    });
+    if (!matching) {
+      await recordAuditLog('ORDER', order.id, 'LEDGER_RECONCILIATION_REQUIRED', 'SYSTEM', {
+        code: 'LEDGER_RECONCILIATION_REQUIRED', expected_buyer_fee: expected.buyer_fee,
+        expected_seller_fee: expected.seller_fee, capture_count: captures.length
+      });
+      const err = new Error('Payment captured but its ledger entry requires reconciliation');
+      err.code = 'LEDGER_RECONCILIATION_REQUIRED';
+      throw err;
+    }
+  }
   /**
    * Environment & Sandbox Diagnostic (Safe, zero credential leakage)
    */
@@ -693,6 +718,7 @@ class PaymentService {
             idempotencyKey: `wh-pay-${event.providerRef}`,
             amountPaid: event.amount
           });
+          await this.verifyCaptureLedger(order);
           order.status = 'LATE_PAYMENT_PENDING_REVIEW';
           order.marketplace_status = 'LATE_PAYMENT';
           order.payment_status = 'PAYMENT_CONFIRMED_PROVIDER';
@@ -717,6 +743,7 @@ class PaymentService {
             amountPaid: event.amount,
             isProviderEscrow: supportsEscrowHold
           });
+          await this.verifyCaptureLedger(order);
           order.marketplace_status = 'PAID';
           order.payment_status = 'PAYMENT_CONFIRMED_PROVIDER';
           order.payment_money_state = supportsEscrowHold

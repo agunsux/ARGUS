@@ -3928,10 +3928,13 @@ router.post('/orders/:id/manual-confirm-payment', requireAdmin, async (req, res)
       if (FinancialLedger && typeof FinancialLedger.recordCapture === 'function') {
         await FinancialLedger.recordCapture({
           orderId: order.id,
-          ticketPrice: order.ticket_price || order.price || 0,
+          ticketPrice: order.gross_ticket_value || order.ticket_price || order.price || 0,
           actorId: adminUser.id,
-          buyerPlatformFee: order.buyer_fee || 0,
-          sellerPlatformFee: order.seller_fee || 0
+          buyerFee: order.buyer_fee || 0,
+          sellerFee: order.seller_fee || 0,
+          buyerTax: order.buyer_tax || 0,
+          sellerTax: order.seller_tax_withholding || 0,
+          providerFee: order.payment_processing_fee || 0
         });
       }
     } catch (_) {}

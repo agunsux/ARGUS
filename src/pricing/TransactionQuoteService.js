@@ -15,6 +15,7 @@ const { state, recordAuditLog } = require('../database');
 const { CanonicalFeeEngine, TIKUM_FEE_POLICY_V1 } = require('./CanonicalFeeEngine');
 const { MarketplacePricingEngine } = require('./MarketplacePricingEngine');
 const { TaxEngine } = require('./TaxEngine');
+const { FEE_POLICY_V2, calculateDualTierFees } = require('./DualTierFeePolicy');
 
 const QUOTE_STATUS = {
   ACTIVE: 'ACTIVE',
@@ -82,7 +83,10 @@ class TransactionQuoteService {
       throw err;
     }
 
-    const effectivePolicyVersion = pricingPolicyVersion || 'TIKUM_FEE_POLICY_V1';
+    const effectivePolicyVersion = FEE_POLICY_V2.version;
+    const listing = (state.listings || []).find(l => l.id === listingId);
+    const meta = listing?.metadata || {};
+    const fulfillment = listing?.fulfillment_option || listing?.fulfillment_type || meta.fulfillment_option || meta.fulfillment_type || 'SELLER_MANAGED';
 
     // Resolve seller and seller profile if not provided
     let effectiveSellerId = sellerId;
@@ -101,11 +105,19 @@ class TransactionQuoteService {
     };
 
     // 1. Calculate two-sided platform fees via canonical engine
-    const fees = MarketplacePricingEngine.calculateFees({
+    const calculated = calculateDualTierFees({
       ticketPrice: price,
       quantity: qty,
-      policyVersion: effectivePolicyVersion
+      fulfillmentType: fulfillment
     });
+    const fees = {
+      ...calculated,
+      policy_version: effectivePolicyVersion,
+      currency: FEE_POLICY_V2.currency,
+      gross_ticket_value: calculated.ticket_subtotal,
+      total_platform_fee: calculated.platform_revenue,
+      buyer_rate: FEE_POLICY_V2.tiers[fulfillment].rate_percent / 100
+    };
 
     const grossTicketValue = fees.gross_ticket_value || (price * qty);
 
@@ -176,7 +188,10 @@ class TransactionQuoteService {
       total_tax_amount: totalTaxLiability,
       buyer_subtotal: buyerSubtotal,
       buyer_total: buyerTotal,
+      buyer_total_amount: buyerTotal,
       seller_net_payout: sellerNetPayout,
+      platform_revenue: platformGrossRevenue,
+      fulfillment_option: fulfillment,
       platform_gross_revenue: platformGrossRevenue,
       pricing_breakdown: fees,
       tax_breakdown: taxes,

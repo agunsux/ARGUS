@@ -269,6 +269,9 @@ app.use(express.static(publicDir, sendFileOpts));
 app.use(trustApi);
 
 // Mount Canonical Payment & Webhook Router (DOKU Primary Escrow + Multi-Provider Rails)
+app.get('/api/config/fee-policy', (req, res) => {
+  res.json(require('./pricing/DualTierFeePolicy').FEE_POLICY_V2);
+});
 const paymentRouter = require('./api/paymentRouter');
 app.use('/api', paymentRouter);
 app.use('/webhooks', paymentRouter);

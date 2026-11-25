@@ -100,6 +100,11 @@ async function runFeeTestSuite() {
   console.log('╚══════════════════════════════════════════════════════════════════╝\n');
 
   resetDatabase();
+  const seller = state.users.find(user => user.id === 'seller-1');
+  if (!seller) throw new Error('Expected seller-1 fixture');
+  seller.email_verified = true;
+  seller.phone = seller.phone || '+628111111111';
+  seller.metadata = { ...seller.metadata, city: 'Bandung', payout_bank_name: 'BCA', payout_account_number: '1234567890', identity_doc_ref: 'fixture-identity' };
 
   await new Promise(resolve => {
     server = http.createServer(app);
