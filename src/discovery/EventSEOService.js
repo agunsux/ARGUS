@@ -9,6 +9,7 @@
  */
 
 const { renderFooterHtml } = require('../config/businessProfile');
+const { HEADER_VARIANTS, renderSharedHeadAssets, renderSharedFooterScripts, renderSharedHeader } = require('../ui/sharedHeader');
 const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
 const { CanonicalFeeEngine } = require('../pricing/CanonicalFeeEngine');
 const { PartnerService } = require('../services/partner/PartnerService');
@@ -423,16 +424,18 @@ class EventSEOService {
         (event.metadata && (event.metadata.official_ticket_availability === 'SOLD_OUT' || event.metadata.primary_ticket_status === 'SOLD_OUT'))
       );
       const availBadge = isSoldOut
-        ? `<span class="badge badge-danger" style="font-size:11px; background:#ef4444; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-xmark"></i> Tiket Resmi Habis (Sold Out)</span>`
-        : `<span class="badge badge-slate" style="font-size:11px; background:#475569; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-question"></i> Cek Ketersediaan di Situs Resmi</span>`;
+        ? `<span class="badge badge-danger" style="font-size:11px; background:#ef4444; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-xmark"></i> ${isEn ? 'Official Tickets Sold Out' : 'Tiket Resmi Habis (Sold Out)'}</span>`
+        : `<span class="badge badge-slate" style="font-size:11px; background:#475569; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-circle-question"></i> ${isEn ? 'Check Availability on Official Site' : 'Cek Ketersediaan di Situs Resmi'}</span>`;
 
       let priceHtml = '';
       if (event.min_price) {
-        const priceLabel = isSoldOut ? 'Harga Rilis Resmi (Habis):' : 'Mulai dari';
+        const priceLabel = isSoldOut ? (isEn ? 'Official Release Price (Sold Out):' : 'Harga Rilis Resmi (Habis):') : (isEn ? 'Starting from' : 'Mulai dari');
+        const pricePrefix = isEn ? 'IDR ' : 'Rp ';
+        const priceLocale = isEn ? 'en-US' : 'id-ID';
         priceHtml = `
           <div style="font-size:13.5px; color:#38bdf8; font-weight:700; margin-top:4px;">
-            ${priceLabel} Rp ${event.min_price.toLocaleString('id-ID')}
-            ${event.max_price && event.max_price > event.min_price ? ` - Rp ${event.max_price.toLocaleString('id-ID')}` : ''}
+            ${priceLabel} ${pricePrefix}${event.min_price.toLocaleString(priceLocale)}
+            ${event.max_price && event.max_price > event.min_price ? ` - ${pricePrefix}${event.max_price.toLocaleString(priceLocale)}` : ''}
           </div>
         `;
       }
@@ -444,7 +447,7 @@ class EventSEOService {
               <i class="fa-solid fa-building-circle-check" style="font-size:24px; color:#38bdf8; margin-top:2px;"></i>
               <div>
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:4px;">
-                  <strong style="font-size:16px; color:#f8fafc;">Sumber Tiket Resmi (Primary Provider)</strong>
+                  <strong style="font-size:16px; color:#f8fafc;">${isEn ? 'Official Primary Ticket Source' : 'Sumber Tiket Resmi (Primary Provider)'}</strong>
                   ${availBadge}
                 </div>
                 <div class="text-muted" style="font-size:12.5px; color:#94a3b8;">${providerName}</div>
@@ -453,12 +456,12 @@ class EventSEOService {
             </div>
             <div class="official-action">
               <a href="${event.official_ticket_url}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-outline" style="padding:10px 18px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; border-radius:8px;">
-                ${isSoldOut ? 'Cek Waiting List di Situs Resmi' : 'Buka Halaman Tiket Resmi'} <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                ${isSoldOut ? (isEn ? 'Check Waiting List on Official Site' : 'Cek Waiting List di Situs Resmi') : (isEn ? 'Open Official Ticket Page' : 'Buka Halaman Tiket Resmi')} <i class="fa-solid fa-arrow-up-right-from-square"></i>
               </a>
             </div>
           </div>
           <div style="font-size:11.5px; color:#94a3b8; margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
-            <i class="fa-solid fa-circle-info"></i> Transaksi pembelian berlangsung di platform resmi ${providerName}. Tikum tidak menerbitkan tiket atau memproses pembayaran tiket resmi ini.
+            <i class="fa-solid fa-circle-info"></i> ${isEn ? `Ticket purchases take place on the official ${providerName} platform. Tikum does not issue tickets or process payments for these primary tickets.` : `Transaksi pembelian berlangsung di platform resmi ${providerName}. Tikum tidak menerbitkan tiket atau memproses pembayaran tiket resmi ini.`}
           </div>
         </div>
       `;
@@ -468,8 +471,8 @@ class EventSEOService {
           <div class="official-header" style="display:flex; gap:12px; align-items:center;">
             <i class="fa-solid fa-circle-info" style="font-size:24px; color:#94a3b8;"></i>
             <div>
-              <strong style="font-size:15px; color:#e2e8f0;">Kanal Tiket Resmi Belum Terdaftar</strong>
-              <div class="text-muted" style="font-size:12.5px; color:#94a3b8;">Tikum sedang memverifikasi kanal penjualan tiket resmi dengan promotor terkait. Silakan periksa kembali berkala atau pantau tiket resale di bawah.</div>
+              <strong style="font-size:15px; color:#e2e8f0;">${isEn ? 'Official Ticket Channel Not Yet Registered' : 'Kanal Tiket Resmi Belum Terdaftar'}</strong>
+              <div class="text-muted" style="font-size:12.5px; color:#94a3b8;">${isEn ? 'Tikum is currently verifying official ticket sales channels with the relevant promoter. Please check back regularly or browse verified resale tickets below.' : 'Tikum sedang memverifikasi kanal penjualan tiket resmi dengan promotor terkait. Silakan periksa kembali berkala atau pantau tiket resale di bawah.'}</div>
             </div>
           </div>
         </div>
@@ -521,6 +524,7 @@ class EventSEOService {
   ${(event.event_image || event.poster_url || event.image_url) ? `<meta name="twitter:image" content="${event.event_image || event.poster_url || event.image_url}">` : ''}
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
   
   <script type="application/ld+json">
@@ -528,50 +532,29 @@ class EventSEOService {
   </script>
   <style>
     .event-seo-container { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
-    .event-hero { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 28px; margin-bottom: 24px; }
-    .event-poster { margin: 0 0 20px; border-radius: 10px; overflow: hidden; border: 1px solid #1e293b; background: #0b1120; }
+    .event-hero { background: var(--palette-surface, #24364D); border: 1px solid rgba(203,213,225,0.22); border-radius: 12px; padding: 28px; margin-bottom: 24px; }
+    .event-poster { margin: 0 0 20px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(203,213,225,0.2); background: var(--palette-midnight-navy, #172333); }
     .event-poster img { display: block; width: 100%; height: auto; max-height: 420px; object-fit: cover; }
-    .event-poster figcaption { padding: 8px 12px; font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .event-poster figcaption { padding: 8px 12px; font-size: 10px; color: var(--palette-secondary-text, #CBD5E1); text-transform: uppercase; letter-spacing: 0.05em; }
     .event-poster figcaption a { color: inherit; text-decoration: underline; }
-    .event-meta-strip { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0; color: #94a3b8; font-size: 14px; }
+    .event-meta-strip { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0; color: var(--palette-secondary-text, #CBD5E1); font-size: 14px; }
     .event-meta-item { display: flex; align-items: center; gap: 8px; }
-    .official-ticket-box { background: #131d31; border: 1px solid #2563eb; border-radius: 10px; padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-    .resale-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+    .official-ticket-box { background: var(--palette-primary-blue, #15365B); border: 1px solid rgba(227,111,69,0.5); border-radius: 10px; padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+    .resale-card { background: var(--palette-surface, #24364D); border: 1px solid rgba(203,213,225,0.22); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
     .resale-card.verified-active { border-color: #10b981; }
     .resale-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
-    .listing-pill { background: #1e293b; padding: 12px 18px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .demand-capture-box { background: #1a2333; padding: 18px; border-radius: 8px; margin-top: 14px; }
+    .listing-pill { background: var(--palette-primary-blue, #15365B); padding: 12px 18px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .demand-capture-box { background: var(--palette-primary-blue, #15365B); padding: 18px; border-radius: 8px; margin-top: 14px; }
     .demand-form { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-    .demand-form input { flex: 1; min-width: 220px; padding: 10px 14px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px; }
+    .demand-form input { flex: 1; min-width: 220px; padding: 10px 14px; background: var(--palette-midnight-navy, #172333); border: 1px solid rgba(203,213,225,0.25); color: #fff; border-radius: 6px; }
     .related-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; }
-    .related-card { background: #131d31; border: 1px solid #1e293b; border-radius: 8px; padding: 16px; text-decoration: none; color: inherit; display: block; }
+    .related-card { background: var(--palette-surface, #24364D); border: 1px solid rgba(203,213,225,0.22); border-radius: 8px; padding: 16px; text-decoration: none; color: inherit; display: block; }
     .badge-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
   </style>
 </head>
-<body>
+<body class="dark-mode">
 
-  <!-- Site Header -->
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-          <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle" data-i18n="brand.subtitle">Pasar Tiket Event Terverifikasi</span>
-        </div>
-      </a>
-      <nav class="main-nav">
-        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">Katalog Event</span></a>
-        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> <span data-i18n="nav.offers">Tawaran Tiket</span></a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
-        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="nav.track">Lacak Status</span></a>
-        <div class="nav-controls" style="display: inline-flex; gap: 8px; margin-left: 12px; align-items: center;">
-          <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 12px; font-weight: 700;">ID</button>
-          <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 12px;" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon"></i></button>
-        </div>
-      </nav>
-    </div>
-  </header>
+  ${renderSharedHeader({ variant: HEADER_VARIANTS.MARKETPLACE, activeNav: 'events', locale })}
 
   <main class="event-seo-container">
     ${isPrelaunch ? `
@@ -602,7 +585,7 @@ class EventSEOService {
         return `
           <figure class="event-poster" data-image-status="${event.image_status || (hasVerifiedPoster ? 'VERIFIED_AUTHORIZED_SELLER' : 'FALLBACK_VERIFIED')}">
             ${hasVerifiedPoster ? `
-              <img src="${event.image_url}" alt="${posterAlt}" loading="lazy" decoding="async"
+              <img src="${event.image_url}" alt="${posterAlt}" loading="lazy" decoding="async" style="width:100%; max-width:480px; aspect-ratio:3/4; object-fit:contain; border-radius:8px; display:block; margin:0 auto;"
                    onerror="this.onerror=null; this.src='${fallbackPosterSrc}';">
             ` : `
               <img src="${fallbackPosterSrc}" alt="${posterAlt} — Tikum Verified Fallback" loading="lazy" decoding="async" style="width:100%; max-width:480px; aspect-ratio:3/4; object-fit:contain; border-radius:8px; display:block; margin:0 auto;">
@@ -662,7 +645,7 @@ class EventSEOService {
         ${(event.admission_protocol && event.admission_protocol.description) || (event.metadata && event.metadata.admission_protocol && event.metadata.admission_protocol.description) || (hasEventPic ? 'Verifikasi tiket digital dan fisik di gate acara bersama Event PIC Tikum.' : 'Verifikasi tiket elektronik dan kepatuhan identitas sesuai ketentuan resmi promotor dan penyedia tiket primer. Layanan PIC venue TIKUM belum dijadwalkan untuk event ini.')}
       </p>
       <div style="font-size: 11px; color: #64748b; margin-top: 6px; border-top: 1px solid #1e293b; padding-top: 6px;">
-        <em>${(event.admission_protocol && event.admission_protocol.verification_disclaimer) || (event.metadata && event.metadata.admission_protocol && event.metadata.admission_protocol.verification_disclaimer) || (hasEventPic ? 'Verifikasi fisik gerbang memvalidasi kepemilikan dan integritas tiket, namun tidak menggantikan validasi kriptografis langsung dari promotor penerbit tiket.' : 'Layanan PIC lapangan TIKUM belum dijadwalkan untuk event ini. Ketentuan pemindahtanganan/resale sepenuhnya tunduk pada kebijakan promotor dan penyedia tiket resmi.')}</em>
+        <em>${(event.admission_protocol && event.admission_protocol.verification_disclaimer) || (event.metadata && event.metadata.admission_protocol && event.metadata.admission_protocol.verification_disclaimer) || (hasEventPic ? (isEn ? 'Physical gate verification validates ticket authenticity and possession, but does not replace direct promoter cryptographic validation.' : 'Verifikasi fisik gerbang memvalidasi kepemilikan dan integritas tiket, namun tidak menggantikan validasi kriptografis langsung dari promotor penerbit tiket.') : (isEn ? 'Tikum on-site PIC service is not currently scheduled for this event. Transfer and resale terms remain subject to official promoter policies.' : 'Layanan PIC lapangan TIKUM belum dijadwalkan untuk event ini. Ketentuan pemindahtanganan/resale sepenuhnya tunduk pada kebijakan promotor dan penyedia tiket resmi.'))}</em>
       </div>
     </section>
 
@@ -675,8 +658,8 @@ class EventSEOService {
           <p style="font-size: 12.5px; color: #94a3b8; line-height: 1.5; margin: 0;">Ya. Setiap tiket sekunder diverifikasi identitas dan barcode kepemilikannya. Dana Anda tersimpan aman di rekening escrow hingga Anda sukses masuk gerbang acara.</p>
         </div>
         <div style="background: #0f172a; border: 1px solid #1e293b; padding: 16px; border-radius: 10px;">
-          <h4 style="font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: #f8fafc;">Bagaimana peran staf PIC Tikum di lokasi?</h4>
-          <p style="font-size: 12.5px; color: #94a3b8; line-height: 1.5; margin: 0;">Pada event dengan pendampingan aktif, staf operasional (Event PIC Tikum) siap mendampingi pembeli di sekitar venue jika terjadi hambatan saat penukaran gelang atau scanning barcode turnstile.</p>
+          <h4 style="font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: #f8fafc;">${isEn ? 'What is the role of Tikum on-site PIC staff?' : 'Bagaimana peran staf PIC Tikum di lokasi?'}</h4>
+          <p style="font-size: 12.5px; color: #94a3b8; line-height: 1.5; margin: 0;">${isEn ? 'For events with active support, Tikum field operations staff (Event PIC) assist buyers on-site if issues arise during physical wristband exchange or turnstile barcode scanning.' : 'Pada event dengan pendampingan aktif, staf operasional (Event PIC Tikum) siap mendampingi pembeli di sekitar venue jika terjadi hambatan saat penukaran gelang atau scanning barcode turnstile.'}</p>
         </div>
       </div>
     </section>
@@ -687,7 +670,7 @@ class EventSEOService {
 
   ${renderFooterHtml(locale)}
 
-  <script src="/js/i18n.js"></script>
+  ${renderSharedFooterScripts()}
 
   <script>
     async function handleDemandSubmit(e, eventId) {
@@ -754,12 +737,25 @@ class EventSEOService {
           const sellerId = el.getAttribute('data-seller-id');
           const listingId = el.getAttribute('data-listing-id');
           if (sellerId && sellerId === userId) {
-            el.innerHTML = '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">' +
-              '<span class="badge badge-warning" style="font-size:11px; font-weight:700;"><i class="fa-solid fa-store"></i> Ini Listing Anda (Mode Penjual)</span>' +
-              '<button type="button" class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText(window.location.origin + \'/deal/\' + \'' + listingId + '\'); alert(\'Link Deal Room untuk pembeli berhasil disalin!\');" style="font-size:12px; font-weight:600; cursor:pointer;">' +
-                '<i class="fa-solid fa-copy"></i> Salin Link untuk Pembeli' +
-              '</button>' +
-            '</div>';
+            el.textContent = '';
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;';
+            const badge = document.createElement('span');
+            badge.className = 'badge badge-warning';
+            badge.style.cssText = 'font-size:11px; font-weight:700;';
+            badge.innerHTML = '<i class="fa-solid fa-store"></i> Ini Listing Anda (Mode Penjual)';
+            const copyBtn = document.createElement('button');
+            copyBtn.type = 'button';
+            copyBtn.className = 'btn btn-sm btn-secondary';
+            copyBtn.style.cssText = 'font-size:12px; font-weight:600; cursor:pointer;';
+            copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i> Salin Link untuk Pembeli';
+            copyBtn.addEventListener('click', () => {
+              navigator.clipboard.writeText(window.location.origin + '/deal/' + listingId);
+              alert('Link Deal Room untuk pembeli berhasil disalin!');
+            });
+            wrap.appendChild(badge);
+            wrap.appendChild(copyBtn);
+            el.appendChild(wrap);
           }
         });
       } catch (_) {}

@@ -1,24 +1,28 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arsip Event Selesai | TIKUM — Pasar Tiket Event Terverifikasi</title>
+  <title data-i18n="pastEvents.pageTitle">Arsip Event Selesai | TIKUM — Pasar Tiket Event Terverifikasi</title>
   <meta name="description" content="Arsip resmi event konser, musik, dan hiburan yang telah selesai atau dibatalkan di Indonesia. Riwayat faktual sumber promotor terverifikasi PT SHINERVA PRAJNA TEJAS.">
   <link rel="canonical" href="https://tikum.app/past-events">
-  <link rel="icon" type="image/svg+xml" href="/assets/tikum-favicon.svg">
-  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" type="image/svg+xml" href="/images/tikum-brand-symbol.svg">
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/tikum-tokens.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/marketplace-refresh.css">
+  <link rel="stylesheet" href="/css/header-shared.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --bg-dark: #0A0D14;
-      --card-bg: #121824;
-      --card-border: #1F2937;
-      --text-main: #F3F4F6;
-      --text-muted: #9CA3AF;
-      --primary: #E05A3A;
-      --accent: #38BDF8;
-      --completed: #6B7280;
+      --bg-dark: #172333;
+      --card-bg: #24364D;
+      --card-border: rgba(243, 235, 221, 0.16);
+      --text-main: #FFFFFF;
+      --text-muted: #CBD5E1;
+      --primary: #E36F45;
+      --accent: #F3EBDD;
+      --completed: #94A3B8;
       --cancelled: #EF4444;
     }
     body {
@@ -264,7 +268,7 @@
     <aside id="appSidebar" class="app-sidebar" aria-label="Navigasi Utama">
       <div class="sidebar-brand-header">
         <a href="/" class="sidebar-brand-link">
-          <img src="/assets/tikum-mark-2color.svg" width="30" height="30" alt="Tikum Logo">
+          <img src="/images/tikum-brand-symbol.svg" width="32" height="32" alt="Tikum Logo">
           <div class="sidebar-brand-text">
             <div class="sidebar-brand-title">TIKUM</div>
             <div class="sidebar-brand-sub">by PT Shinerva Prajna Tejas</div>
@@ -374,13 +378,16 @@
     <!-- Main Content Wrapper -->
     <div id="appMainWrapper">
       <!-- Zero-Overlap 64px Slim Topbar -->
-      <header id="appTopbar" class="app-topbar">
+      <header id="appTopbar" class="app-topbar tikum-shared-header" data-header-variant="marketplace">
         <div class="topbar-left">
           <button type="button" id="sidebarToggleMobile" class="topbar-hamburger-btn" aria-label="Buka Menu Navigasi">
             <i class="fa-solid fa-bars"></i>
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <img src="/images/tikum-horizontal.svg" width="130" height="32" alt="Tikum">
+            <span class="tikum-logo-slot" aria-label="TIKUM">
+              <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="Tikum">
+            </span>
+            <div class="brand-title">Tikum</div>
           </a>
         </div>
 
@@ -391,14 +398,14 @@
             <li><a href="/offers?category=FESTIVAL" class="topbar-nav-link" data-i18n="nav.festivals">Festival</a></li>
             <li class="city-dropdown-wrap">
               <a href="javascript:void(0)" class="topbar-nav-link" aria-haspopup="true">
-                <span>Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
+                <span data-i18n="nav.cities">Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
               </a>
               <div class="city-dropdown-menu">
-                <a href="/offers?city=Jakarta" class="city-dropdown-item">Jakarta</a>
-                <a href="/offers?city=Bandung" class="city-dropdown-item">Bandung</a>
-                <a href="/offers?city=Surabaya" class="city-dropdown-item">Surabaya</a>
-                <a href="/offers?city=Bali" class="city-dropdown-item">Bali</a>
-                <a href="/offers" class="city-dropdown-item">Semua Kota</a>
+                <a href="/offers?city=Jakarta" class="city-dropdown-item" data-i18n="nav.jakarta">Jakarta</a>
+                <a href="/offers?city=Bandung" class="city-dropdown-item" data-i18n="nav.bandung">Bandung</a>
+                <a href="/offers?city=Surabaya" class="city-dropdown-item" data-i18n="nav.surabaya">Surabaya</a>
+                <a href="/offers?city=Bali" class="city-dropdown-item" data-i18n="nav.bali">Bali</a>
+                <a href="/offers" class="city-dropdown-item" data-i18n="nav.allCities">Semua Kota</a>
               </div>
             </li>
           </ul>
@@ -406,10 +413,10 @@
         </div>
 
         <div class="topbar-right">
-          <a href="/deal" class="btn-topbar-deal" data-i18n="nav.dealRoomLookup">Buka Deal</a>
+          <a href="/deal" class="btn-topbar-deal"><i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11.5px; opacity:0.85;"></i> <span data-i18n="nav.dealRoomLookup">Buka Deal</span></a>
           <a href="/deal/create" class="btn-topbar-seller"><i class="fa-solid fa-plus"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
           <div id="authHeaderContainer">
-            <button id="btnLoginSignUp" class="btn-auth-header" onclick="if(typeof openAuthModal==='function') openAuthModal(); else window.location.href='/login';" aria-label="Login / Sign Up" data-i18n="auth.signInSignUp" style="height:38px; padding:0 14px; font-size:13.5px; border-radius:8px;">Masuk / Daftar</button>
+            <button id="btnLoginSignUp" class="btn-auth-header" onclick="if(typeof openAuthModal==='function') openAuthModal(); else window.location.href='/login';" aria-label="Login / Sign Up" data-i18n="nav.signIn">Masuk</button>
           </div>
           <button class="lang-toggle-btn lang-switcher-pill" onclick="if(window.TikumI18n) window.TikumI18n.toggleLang(); else if(typeof toggleLang==='function') toggleLang();" id="langToggle" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
             <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>
@@ -420,7 +427,7 @@
   <!-- Main Archive Header -->
   <div class="archive-header">
     <div class="archive-badge"><i class="fa-solid fa-box-archive"></i> Arsip Historis Terverifikasi</div>
-    <h1 class="archive-title">Arsip Event Selesai &amp; Dibatalkan</h1>
+    <h1 class="archive-title" data-i18n="pastEvents.pageTitle">Arsip Event Selesai &amp; Dibatalkan</h1>
     <p class="archive-subtitle">
       Koleksi permanen event resmi di Indonesia yang tanggal pelaksanaannya telah berlalu atau mengalami pembatalan resmi. Seluruh data faktual, atribusi sumber, dan dokumentasi turnstile venue tetap dilindungi dan dapat diakses publik. Transaksi resale baru dan pembelian tiket ditutup secara otomatis demi perlindungan konsumen.
     </p>
@@ -432,14 +439,14 @@
         <input type="text" id="searchPastInput" class="search-input" placeholder="Cari artis, nama event, venue, atau promotor..." oninput="debounceSearch()">
       </div>
       <select id="categoryFilter" class="filter-select" onchange="loadArchivedEvents()">
-        <option value="">Semua Kategori</option>
+        <option value="" data-i18n="pastEvents.categoryAll">Semua Kategori</option>
         <option value="CONCERT">Konser &amp; Musik</option>
         <option value="COMEDY">Stand Up Comedy</option>
-        <option value="FESTIVAL">Festival Musik</option>
-        <option value="SPORTS">Olahraga</option>
+        <option value="FESTIVAL" data-i18n="pastEvents.categoryFestival">Festival Musik</option>
+        <option value="SPORTS" data-i18n="pastEvents.categorySports">Olahraga</option>
       </select>
       <select id="cityFilter" class="filter-select" onchange="loadArchivedEvents()">
-        <option value="">Semua Kota</option>
+        <option value="" data-i18n="nav.allCities">Semua Kota</option>
         <option value="Jakarta">Jakarta</option>
         <option value="Bandung">Bandung</option>
         <option value="Surabaya">Surabaya</option>
@@ -473,8 +480,10 @@
       <footer id="appFooter" class="app-footer site-footer">
         <div class="footer-tier-1">
           <div class="footer-col-brand">
+            <div style="margin-bottom: 14px;">
+              <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img footer-logo-light" width="196" height="42" alt="TIKUM">
+            </div>
             <h3>
-              <img src="/assets/tikum-mark-2color.svg" width="22" height="22" alt="Tikum">
               <span>TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
             </h3>
             <p data-i18n="footer.aboutBrand">
@@ -494,7 +503,7 @@
               <a href="mailto:support@tikum.app">support@tikum.app</a>
             </div>
             <div class="footer-contact-item">
-              <strong data-i18n="footer.phoneAndWa">WhatsApp Resmi:</strong>
+              <strong data-i18n="footer.phoneAndWa">WhatsApp:</strong>
               <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer">+62 812-9992-7378</a>
             </div>
             <div class="footer-contact-item">
@@ -577,13 +586,14 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const events = data.events || [];
+        const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
 
         if (!events.length) {
           grid.innerHTML = `
             <div class="empty-state">
               <i class="fa-solid fa-box-open"></i>
-              <h3>Tidak ada event arsip yang cocok</h3>
-              <p>Coba gunakan kata kunci pencarian yang lebih umum atau sesuaikan filter Anda.</p>
+              <h3>${isEn ? 'No archived events match' : 'Tidak ada event arsip yang cocok'}</h3>
+              <p>${isEn ? 'Try using more general keywords or adjust your filters.' : 'Coba gunakan kata kunci pencarian yang lebih umum atau sesuaikan filter Anda.'}</p>
             </div>
           `;
           return;
@@ -592,7 +602,7 @@
         grid.innerHTML = events.map(e => {
           const isCancelled = (e.status || e.lifecycle_status || '').toUpperCase() === 'CANCELLED';
           const badgeClass = isCancelled ? 'status-badge cancelled' : 'status-badge past';
-          const badgeText = isCancelled ? 'DIBATALKAN' : 'SELESAI';
+          const badgeText = isCancelled ? (isEn ? 'CANCELLED' : 'DIBATALKAN') : (isEn ? 'CONCLUDED' : 'SELESAI');
           const title = escapeHtml(e.title || e.canonical_name || e.name || 'Event');
           const venue = escapeHtml(e.venue_name || e.venue || 'Venue');
           const cityStr = escapeHtml(e.city || e.venue_city || '');
@@ -613,11 +623,11 @@
                 <h3 class="event-title">${title}</h3>
                 <div class="event-venue"><i class="fa-solid fa-location-dot"></i> ${loc}</div>
                 <div class="archive-notice">
-                  <i class="fa-solid fa-lock"></i> <strong>Event ${badgeText.toLowerCase()}:</strong> Penjualan &amp; transaksi resale ditutup permanen.
+                  <i class="fa-solid fa-lock"></i> <strong>Event ${badgeText.toLowerCase()}:</strong> ${isEn ? 'Sales & resale transactions permanently closed.' : 'Penjualan &amp; transaksi resale ditutup permanen.'}
                 </div>
                 <div class="card-actions">
-                  <a href="/events/${slug}" class="btn-detail">Detail Histori →</a>
-                  <button type="button" class="btn-closed" disabled>Pembelian Ditutup</button>
+                  <a href="/events/${slug}" class="btn-detail">${isEn ? 'History Details →' : 'Detail Histori →'}</a>
+                  <button type="button" class="btn-closed" disabled>${isEn ? 'Purchases Closed' : 'Pembelian Ditutup'}</button>
                 </div>
               </div>
             </article>
@@ -684,6 +694,8 @@
     document.addEventListener('DOMContentLoaded', initAppShell);
   </script>
 
+  <script src="/js/i18n.js"></script>
+  <script src="/js/header-shared.js"></script>
   <script src="/js/motion.js"></script>
 </body>
 </html>

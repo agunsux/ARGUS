@@ -21,30 +21,23 @@ const { TechnicalSEOService } = require('../seo/TechnicalSEOService');
 const { StructuredDataFactory } = require('../seo/StructuredDataFactory');
 const { renderFooterHtml } = require('../config/businessProfile');
 const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
+const { HEADER_VARIANTS, renderSharedHeadAssets, renderSharedFooterScripts, renderSharedHeader, resolveRequestLocale } = require('../ui/sharedHeader');
 
-// Common navigation header HTML helper
-function renderNavHeader(activeSection = '') {
-  return `
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-          <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle">Event Discovery &amp; Verified Marketplace</span>
-        </div>
-      </a>
-      <nav class="main-nav">
-        <a href="/events" class="nav-link ${activeSection === 'events' ? 'active' : ''}"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">Katalog Event</span></a>
-        <a href="/venues" class="nav-link ${activeSection === 'venues' ? 'active' : ''}"><i class="fa-solid fa-building"></i> <span data-i18n="venue.directoryTitle">Venue</span></a>
-        <a href="/cities" class="nav-link ${activeSection === 'cities' ? 'active' : ''}"><i class="fa-solid fa-city"></i> <span data-i18n="events.cityLabel">Kota</span></a>
-        <a href="/blog" class="nav-link ${activeSection === 'blog' ? 'active' : ''}"><i class="fa-solid fa-newspaper"></i> <span data-i18n="nav.blog">Panduan</span></a>
-        <a href="/how-it-works" class="nav-link ${activeSection === 'trust' ? 'active' : ''}"><i class="fa-solid fa-shield-check"></i> <span data-i18n="footer.how">Cara Kerja</span></a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
-        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700; margin-left: 8px;">ID</button>
-      </nav>
-    </div>
-  </header>`;
+// Common navigation header HTML helper (6-variant shared header)
+function renderNavHeader(activeSection = '', locale = 'id') {
+  return renderSharedHeader({
+    variant: HEADER_VARIANTS.PUBLIC,
+    activeNav: activeSection || 'events',
+    locale,
+    links: [
+      { href: '/events', icon: 'fa-calendar-days', key: 'nav.events', label: 'Katalog Event', active: activeSection === 'events' },
+      { href: '/venues', icon: 'fa-building', key: 'common.venue', label: 'Venue', active: activeSection === 'venues' },
+      { href: '/cities', icon: 'fa-city', key: 'events.cityLabel', label: 'Kota', active: activeSection === 'cities' },
+      { href: '/blog', icon: 'fa-newspaper', key: 'nav.blog', label: 'Panduan', active: activeSection === 'blog' },
+      { href: '/how-it-works', icon: 'fa-circle-nodes', key: 'footer.how', label: 'Cara Kerja', active: activeSection === 'trust' },
+      { href: '/create', icon: 'fa-plus-circle', key: 'nav.sellTicket', label: 'Jual Tiket', cta: true }
+    ]
+  });
 }
 
 // -------------------------------------------------------------
@@ -84,16 +77,17 @@ router.get('/venues', (req, res) => {
   `).join('');
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${resolveRequestLocale(req)}" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets(resolveRequestLocale(req))}
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  ${renderNavHeader('venues')}
+  ${renderNavHeader('venues', resolveRequestLocale(req))}
   <main class="container" style="padding-top:40px; padding-bottom:60px;">
     <div style="text-align:center; max-width:800px; margin:0 auto 36px;">
       <div class="hero-pill"><i class="fa-solid fa-building"></i> DIREKTORI VENUE INDONESIA</div>
@@ -104,8 +98,8 @@ router.get('/venues', (req, res) => {
       ${cardsHtml}
     </div>
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(resolveRequestLocale(req))}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -157,16 +151,17 @@ router.get('/venues/:slug', (req, res) => {
   `;}).join('');
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${resolveRequestLocale(req)}" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets(resolveRequestLocale(req))}
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  ${renderNavHeader('venues')}
+  ${renderNavHeader('venues', resolveRequestLocale(req))}
   <main class="container" style="padding-top:40px; padding-bottom:60px; max-width:900px;">
     <div style="margin-bottom:24px;">
       <a href="/venues" style="color:#38bdf8; text-decoration:none; font-size:14px;"><i class="fa-solid fa-arrow-left"></i> Kembali ke Daftar Venue</a>
@@ -188,8 +183,8 @@ router.get('/venues/:slug', (req, res) => {
       ${eventsHtml}
     </div>
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(resolveRequestLocale(req))}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -232,16 +227,17 @@ router.get('/artists', (req, res) => {
   `).join('');
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${resolveRequestLocale(req)}" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets(resolveRequestLocale(req))}
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  ${renderNavHeader('events')}
+  ${renderNavHeader('events', resolveRequestLocale(req))}
   <main class="container" style="padding-top:40px; padding-bottom:60px;">
     <div style="text-align:center; max-width:800px; margin:0 auto 36px;">
       <div class="hero-pill"><i class="fa-solid fa-guitar"></i> LINEUP MUSISI &amp; ARTIS</div>
@@ -252,8 +248,8 @@ router.get('/artists', (req, res) => {
       ${cardsHtml}
     </div>
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(resolveRequestLocale(req))}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -305,16 +301,17 @@ router.get('/artists/:slug', (req, res) => {
   `;}).join('');
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${resolveRequestLocale(req)}" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets(resolveRequestLocale(req))}
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  ${renderNavHeader('events')}
+  ${renderNavHeader('events', resolveRequestLocale(req))}
   <main class="container" style="padding-top:40px; padding-bottom:60px; max-width:900px;">
     <div style="margin-bottom:24px;">
       <a href="/artists" style="color:#38bdf8; text-decoration:none; font-size:14px;"><i class="fa-solid fa-arrow-left"></i> Kembali ke Daftar Musisi</a>
@@ -335,8 +332,8 @@ router.get('/artists/:slug', (req, res) => {
       ${eventsHtml}
     </div>
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(resolveRequestLocale(req))}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -379,16 +376,17 @@ router.get('/cities', (req, res) => {
   `).join('');
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${resolveRequestLocale(req)}" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets(resolveRequestLocale(req))}
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  ${renderNavHeader('cities')}
+  ${renderNavHeader('cities', resolveRequestLocale(req))}
   <main class="container" style="padding-top:40px; padding-bottom:60px;">
     <div style="text-align:center; max-width:800px; margin:0 auto 36px;">
       <div class="hero-pill"><i class="fa-solid fa-city"></i> KOTA DESTINASI EVENT</div>
@@ -399,8 +397,8 @@ router.get('/cities', (req, res) => {
       ${cardsHtml}
     </div>
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(resolveRequestLocale(req))}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -448,16 +446,17 @@ router.get('/cities/:slug', (req, res) => {
   `).join('');
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${resolveRequestLocale(req)}" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets(resolveRequestLocale(req))}
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  ${renderNavHeader('cities')}
+  ${renderNavHeader('cities', resolveRequestLocale(req))}
   <main class="container" style="padding-top:40px; padding-bottom:60px; max-width:900px;">
     <div style="margin-bottom:24px;">
       <a href="/cities" style="color:#38bdf8; text-decoration:none; font-size:14px;"><i class="fa-solid fa-arrow-left"></i> Kembali ke Daftar Kota</a>
@@ -478,8 +477,8 @@ router.get('/cities/:slug', (req, res) => {
       ${eventsHtml}
     </div>
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(resolveRequestLocale(req))}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -553,16 +552,17 @@ router.get('/categories/:slug', (req, res) => {
   `).join('');
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${resolveRequestLocale(req)}" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets(resolveRequestLocale(req))}
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  ${renderNavHeader('events')}
+  ${renderNavHeader('events', resolveRequestLocale(req))}
   <main class="container" style="padding-top:40px; padding-bottom:60px; max-width:900px;">
     <div style="margin-bottom:24px;">
       <a href="/events" style="color:#38bdf8; text-decoration:none; font-size:14px;"><i class="fa-solid fa-arrow-left"></i> Kembali ke Katalog Event</a>
@@ -583,8 +583,8 @@ router.get('/categories/:slug', (req, res) => {
       ${eventsHtml}
     </div>
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(resolveRequestLocale(req))}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 

@@ -219,16 +219,18 @@ router.get(['/v1/payments/ipaymu/config', '/payments/ipaymu/config'], (req, res)
       success: true,
       provider: 'ipaymu',
       tier: 'TIER_1B',
-      is_available: true,
+      is_available: false,
+      is_frozen: true,
       is_configured: Boolean(process.env.IPAYMU_API_KEY && process.env.IPAYMU_VA),
       is_production: ipaymu.isProduction,
       mode: ipaymu.mode,
-      status: status.status,
+      status: 'FROZEN',
+      message: 'iPaymu payment gateway is FROZEN for new transactions; historical transactions remain readable.',
       virtual_account_configured: hasVa,
       virtual_account_masked: maskedVa,
       webhook_url: process.env.IPAYMU_WEBHOOK_URL || 'https://tikum.app/api/v1/payments/webhook/ipaymu',
-      supported_channels: ipaymu.getSupportedChannels(),
-      default_channel: 'IPAYMU_REDIRECT'
+      supported_channels: [],
+      default_channel: null
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -406,6 +408,12 @@ router.post('/v1/payments/create', async (req, res) => {
     }
 
     const targetProvider = (providerName || req.query.provider || paymentManager.defaultProvider || 'doku').toLowerCase();
+    if (targetProvider === 'ipaymu') {
+      return res.status(400).json({
+        error: 'iPaymu payment gateway is FROZEN for new transactions. DOKU is the active gateway.',
+        code: 'PAYMENT_PROVIDER_FROZEN'
+      });
+    }
     const providerInstance = paymentManager.getProvider(targetProvider);
     const providerSupportsHold = providerInstance ? Boolean(providerInstance.getCapabilities?.().hold) : false;
     const effectiveRequiresEscrow = (requiresEscrow !== undefined && requiresEscrow !== null)

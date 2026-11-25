@@ -1,29 +1,33 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Penjual — TIKUM</title>
   <meta name="description" content="Kelola listing tiket, tawaran masuk, pengiriman pesanan, kesiapan hari-H, dan status pencairan dana penjual di TIKUM.">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="/images/tikum-brand-symbol.svg">
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/tikum-tokens.css">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard-dark.css">
+  <link rel="stylesheet" href="/css/header-shared.css">
   <style>
     :root {
-      --bg-page: #F7F6F2;
-      --card-bg: #FFFFFF;
-      --text-main: #18181B;
-      --text-muted: #52525B;
-      --border-color: #E4E4E7;
-      --primary: #059669;
-      --primary-hover: #047857;
-      --primary-soft: #ECFDF5;
+      --bg-page: #172333;
+      --card-bg: #24364D;
+      --text-main: #FFFFFF;
+      --text-muted: #CBD5E1;
+      --border-color: rgba(243, 235, 221, 0.16);
+      --primary: #E36F45;
+      --primary-hover: #15365B;
+      --primary-soft: rgba(21, 54, 91, 0.45);
       --warning: #D97706;
-      --warning-soft: #FFFBEB;
+      --warning-soft: rgba(217, 119, 6, 0.16);
       --danger: #DC2626;
-      --danger-soft: #FEF2F2;
-      --info: #2563EB;
-      --info-soft: #EFF6FF;
+      --danger-soft: rgba(220, 38, 38, 0.16);
+      --info: #38BDF8;
+      --info-soft: rgba(21, 54, 91, 0.55);
     }
 
     body {
@@ -67,7 +71,7 @@
 
     .role-switcher {
       display: inline-flex;
-      background: #F4F4F5;
+      background: #172333;
       padding: 4px;
       border-radius: 10px;
       border: 1px solid var(--border-color);
@@ -88,9 +92,9 @@
     }
 
     .role-switch-btn.active {
-      background: var(--card-bg);
-      color: var(--primary);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      background: #15365B;
+      color: #F3EBDD;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
 
     .header-right {
@@ -105,7 +109,8 @@
       align-items: center;
       gap: 8px;
       padding: 6px 12px;
-      background: #F4F4F5;
+      background: #15365B;
+      color: #FFFFFF;
       border-radius: 999px;
       font-size: 13px;
       font-weight: 600;
@@ -122,11 +127,11 @@
       text-transform: uppercase;
       letter-spacing: 0.4px;
     }
-    .badge-success { background: var(--primary-soft); color: var(--primary); border: 1px solid #A7F3D0; }
-    .badge-warning { background: var(--warning-soft); color: var(--warning); border: 1px solid #FDE68A; }
-    .badge-danger { background: var(--danger-soft); color: var(--danger); border: 1px solid #FECACA; }
-    .badge-info { background: var(--info-soft); color: var(--info); border: 1px solid #BFDBFE; }
-    .badge-neutral { background: #F4F4F5; color: #52525B; border: 1px solid #E4E4E7; }
+    .badge-success { background: rgba(16, 185, 129, 0.16); color: #6EE7B7; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .badge-warning { background: rgba(245, 158, 11, 0.16); color: #FCD34D; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .badge-danger { background: rgba(239, 68, 68, 0.16); color: #FCA5A5; border: 1px solid rgba(239, 68, 68, 0.35); }
+    .badge-info { background: rgba(56, 189, 248, 0.16); color: #7DD3FC; border: 1px solid rgba(56, 189, 248, 0.35); }
+    .badge-neutral { background: #15365B; color: #CBD5E1; border: 1px solid rgba(243, 235, 221, 0.16); }
 
     .dash-container {
       max-width: 1200px;
@@ -184,8 +189,8 @@
     }
 
     .nav-tab.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
+      color: #F3EBDD;
+      border-bottom-color: #E36F45;
     }
 
     .kpi-grid {
@@ -271,7 +276,7 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 14px;
-      background: #FAFAFA;
+      background: rgba(21, 54, 91, 0.45);
     }
 
     .item-main h4 {
@@ -308,12 +313,12 @@
       border: 1px solid transparent;
       transition: all 0.15s;
     }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-outline { background: #fff; color: var(--text-main); border-color: var(--border-color); }
-    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
-    .btn-danger-outline { background: #fff; color: var(--danger); border-color: #FECACA; }
-    .btn-danger-outline:hover { background: var(--danger-soft); }
+    .btn-primary { background: #E36F45; color: #172333; border-color: #E36F45; }
+    .btn-primary:hover { background: #F3EBDD; color: #172333; }
+    .btn-outline { background: #15365B; color: #FFFFFF; border-color: rgba(243, 235, 221, 0.25); }
+    .btn-outline:hover { background: #24364D; border-color: #E36F45; color: #F3EBDD; }
+    .btn-danger-outline { background: rgba(220, 38, 38, 0.14); color: #FCA5A5; border-color: rgba(248, 113, 113, 0.45); }
+    .btn-danger-outline:hover { background: rgba(220, 38, 38, 0.25); color: #FFFFFF; }
 
     .empty-box {
       text-align: center;
@@ -340,19 +345,19 @@
       flex-wrap: wrap;
     }
     .alert-unavailable {
-      background: var(--danger-soft);
-      border: 1px solid #FECACA;
-      color: #991B1B;
+      background: rgba(220, 38, 38, 0.16);
+      border: 1px solid rgba(248, 113, 113, 0.4);
+      color: #FCA5A5;
     }
     .alert-pilot {
-      background: var(--warning-soft);
-      border: 1px solid #FDE68A;
-      color: #92400E;
+      background: rgba(217, 119, 6, 0.18);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      color: #FDE68A;
     }
     .alert-onboarding {
-      background: var(--primary-soft);
-      border: 1px solid #A7F3D0;
-      color: #065F46;
+      background: rgba(21, 54, 91, 0.65);
+      border: 1px solid rgba(243, 235, 221, 0.24);
+      color: #F3EBDD;
     }
 
     .tab-pane { display: none; }
@@ -367,12 +372,16 @@
 </head>
 <body>
 
-  <header class="dash-header">
+  <header class="site-header dash-header tikum-shared-header" data-header-variant="seller-dashboard">
     <div class="dash-header-inner">
-      <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; min-width:0;">
+        <button type="button" class="tikum-mobile-toggle" aria-controls="tikumDashDrawer" aria-expanded="false" aria-label="Buka Menu Navigasi">
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
         <a href="/" class="brand-link">
-          <img src="/assets/tikum-mark-2color.svg" width="28" height="28" alt="TIKUM">
-          <span>TIKUM</span>
+          <span class="tikum-logo-slot tikum-logo-slot--dash" aria-label="TIKUM">
+            <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="TIKUM">
+          </span>
         </a>
         <div class="role-switcher" aria-label="Pengalih Mode Dashboard">
           <a href="/app/buyer" class="role-switch-btn">
@@ -497,7 +506,7 @@
         </div>
         <div class="kpi-card">
           <div class="kpi-label"><span>Tier Kepercayaan</span> <i class="fa-solid fa-medal" style="color:var(--primary);"></i></div>
-          <div class="kpi-value" id="kpiTrustTier" style="font-size:20px;">NEW</div>
+          <div class="kpi-value" id="kpiTrustTier" style="font-size:clamp(15px, 1.4vw, 18px); overflow-wrap:anywhere;">NEW</div>
           <div class="kpi-foot" id="kpiKycFoot">KYC: UNVERIFIED</div>
         </div>
       </div>
@@ -1030,6 +1039,30 @@
 
     loadSellerDashboard();
   </script>
+  <div id="tikumDashDrawer" class="tikum-mobile-drawer" aria-label="Mobile Navigation">
+    <div class="tikum-mobile-drawer__backdrop"></div>
+    <div class="tikum-mobile-drawer__panel">
+      <div class="tikum-mobile-drawer__head">
+        <a href="/" class="brand-link" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">
+          <span class="tikum-logo-slot tikum-logo-slot--dash" aria-label="TIKUM">
+            <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="TIKUM">
+          </span>
+        </a>
+        <button type="button" class="tikum-header-control" data-drawer-close aria-label="Tutup Menu">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="tikum-mobile-drawer__links">
+        <a href="/events" class="tikum-mobile-drawer__link"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> <span data-i18n="nav.events">Katalog Event</span></a>
+        <a href="/offers" class="tikum-mobile-drawer__link"><i class="fa-solid fa-handshake" aria-hidden="true"></i> <span data-i18n="nav.offers">Tawaran Tiket</span></a>
+        <a href="/track" class="tikum-mobile-drawer__link"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> <span data-i18n="nav.track">Lacak</span></a>
+        <a href="/app/buyer" class="tikum-mobile-drawer__link"><i class="fa-solid fa-ticket" aria-hidden="true"></i> <span data-i18n="nav.buyerDashboard">Dasbor Pembeli</span></a>
+        <a href="/app/seller" class="tikum-mobile-drawer__link active"><i class="fa-solid fa-store" aria-hidden="true"></i> <span data-i18n="nav.sellerDashboard">Dasbor Penjual</span></a>
+        <a href="/create" class="tikum-mobile-drawer__link"><i class="fa-solid fa-plus-circle" aria-hidden="true"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
+      </div>
+    </div>
+  </div>
   <script src="/js/i18n.js"></script>
+  <script src="/js/header-shared.js"></script>
 </body>
 </html>

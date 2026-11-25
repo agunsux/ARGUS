@@ -30,6 +30,7 @@ const { GoersAdapter } = require('./adapters/GoersAdapter');
 const { EventIngestionPipeline } = require('./EventIngestionPipeline');
 const { OfficialSourceSnapshotStore } = require('./OfficialSourceSnapshotStore');
 const { TechnicalSEOService } = require('../seo/TechnicalSEOService');
+const { isUnverifiedLead, checkCatalogBatch, normalizeProviderKey } = require('./CatalogSafety');
 
 class DailyCatalogRefreshService {
   constructor(options = {}) {
@@ -91,12 +92,15 @@ class DailyCatalogRefreshService {
     // 1. Authoritative Clock (Asia/Jakarta)
     const asOfInput = options.asOfDate || process.env.SIMULATE_NOW || new Date();
     const now = (asOfInput instanceof Date) ? asOfInput : new Date(asOfInput);
-    const asOfDateStr = now.toISOString().substring(0, 10);
+    const wibDate = date => new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(date);
+    const asOfDateStr = wibDate(now);
 
     const windowStartDate = new Date(now);
     const windowEndDate = new Date(now.getTime() + this.discoveryWindowDays * 24 * 60 * 60 * 1000);
-    const windowStartStr = windowStartDate.toISOString().substring(0, 10);
-    const windowEndStr = windowEndDate.toISOString().substring(0, 10);
+    const windowStartStr = wibDate(windowStartDate);
+    const windowEndStr = wibDate(windowEndDate);
 
     const telemetry = {
       run_id: runId,
@@ -133,7 +137,7 @@ class DailyCatalogRefreshService {
       const allEvents = canonicalRegistry.getAllEvents();
       telemetry.events_evaluated = allEvents.length;
 
-      for (const ev of allEvents) {
+      const archivePastEvents = () => { for (const ev of allEvents) {
         const isPast = !EventTemporalLifecycleEngine.isEventUpcoming(ev, now);
         const prevStatus = ev.status;
         const prevArchiveStatus = ev.archive_status;
@@ -158,7 +162,7 @@ class DailyCatalogRefreshService {
             new_status: 'COMPLETED'
           });
         }
-      }
+      } };
 
       // -----------------------------------------------------------------------
       // STEP 2: DISCOVERY SOURCE 1 — LOKET.COM (API + SNAPSHOT)
@@ -176,8 +180,30 @@ class DailyCatalogRefreshService {
       telemetry.sources.loket.discovered_count = rawLoketEvents.length;
       telemetry.events_discovered += rawLoketEvents.length;
 
+      const previousActive = allEvents.filter(e => {
+        const date = String(e.start_date || e.start_datetime || '').substring(0, 10);
+        return !isUnverifiedLead(e) && EventTemporalLifecycleEngine.isEventUpcoming(e, now) &&
+          date >= windowStartStr && date <= windowEndStr &&
+          normalizeProviderKey(e.official_ticketing_provider || e.source_name || e.source) === 'loket';
+      }).length;
+      const incomingIds = new Set(rawLoketEvents.filter(item => {
+        const date = item.start_date || (item.start_datetime && item.start_datetime.substring(0, 10));
+        return !isUnverifiedLead(item) && date && date >= windowStartStr && date <= windowEndStr && this.evaluatePriceEligibility(item).qualified;
+      }).map(item => item.source_event_id || item.id || item.slug || `${item.title || item.name}|${item.venue_name || item.venue}|${item.start_date}`));
+      Object.assign(telemetry, checkCatalogBatch(previousActive, incomingIds.size, 'daily_loket_refresh'));
+      if (telemetry.circuit_breaker_tripped) {
+        telemetry.status = 'CIRCUIT_BREAKER_TRIPPED';
+        telemetry.completed_at = new Date().toISOString();
+        telemetry.duration_ms = Date.now() - startTime;
+        this.lastRun = telemetry;
+        this.runHistory.unshift(telemetry);
+        return telemetry;
+      }
+      archivePastEvents();
+
       // Filter and qualify Loket events
       for (const item of rawLoketEvents) {
+        if (isUnverifiedLead(item)) continue;
         const itemDate = item.start_date || (item.start_datetime ? item.start_datetime.substring(0, 10) : null);
         if (!itemDate) continue;
 

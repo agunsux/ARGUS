@@ -436,8 +436,8 @@ export const useApp = () => useContext(AppContext);
 
 // --- 5. MAIN BATON HOMEPAGE COMPONENT ---
 export default function BatonHomepage() {
-  // Theme state: dark mode is DEFAULT
-  const [theme, setTheme] = useState('dark');
+  // Dark-only theme locked (Phase 3B global dark palette)
+  const theme = 'dark';
   // Language state: Indonesian (ID) is DEFAULT
   const [lang, setLang] = useState('id');
   
@@ -449,21 +449,15 @@ export default function BatonHomepage() {
   // Mobile Navigation state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Sync theme with HTML document
+  // Enforce dark-only class on HTML document
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-      root.classList.remove('light');
-    } else {
-      root.classList.remove('dark');
-      root.classList.add('light');
-    }
-  }, [theme]);
+    root.classList.add('dark');
+    root.classList.remove('light');
+    root.setAttribute('data-theme', 'dark');
+  }, []);
 
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
-  };
+  const toggleTheme = () => {};
 
   const toggleLang = (target) => {
     if (target) setLang(target);
@@ -635,20 +629,6 @@ export default function BatonHomepage() {
                 </button>
               </div>
 
-              {/* Theme Toggle Button */}
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className={`p-2 rounded-xl border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
-                  theme === 'dark'
-                    ? 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-zinc-100 hover:border-zinc-700'
-                    : 'bg-white border-zinc-200 text-zinc-700 hover:text-zinc-950 hover:border-zinc-300 shadow-sm'
-                }`}
-                aria-label={theme === 'dark' ? "Switch to light mode" : "Switch to dark mode"}
-              >
-                {theme === 'dark' ? <SunIcon className="w-4 h-4 text-amber-400" /> : <MoonIcon className="w-4 h-4 text-zinc-700" />}
-              </button>
-
               {/* Login Ghost Button */}
               <button
                 type="button"
@@ -678,17 +658,6 @@ export default function BatonHomepage() {
 
             {/* Mobile Hamburger Button */}
             <div className="flex items-center gap-2 md:hidden">
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className={`p-2 rounded-lg border ${
-                  theme === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-300' : 'bg-white border-zinc-200 text-zinc-700'
-                }`}
-                aria-label="Toggle theme"
-              >
-                {theme === 'dark' ? <SunIcon className="w-4 h-4 text-amber-400" /> : <MoonIcon className="w-4 h-4" />}
-              </button>
-
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -1470,7 +1439,7 @@ export default function BatonHomepage() {
                   <div>Jl. Pasirluyu No. 79</div>
                   <div>Bandung 40254, Indonesia</div>
                   <div>Email: <a href="mailto:support@tikum.app" className="text-emerald-400">support@tikum.app</a></div>
-                  <div>WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" className="text-emerald-400">081299927378</a></div>
+                  <div>WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" className="text-emerald-400">+62 812-9992-7378</a></div>
                 </div>
               </div>
             </div>

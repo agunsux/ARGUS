@@ -79,22 +79,21 @@ class EventLifecycleService {
    */
   static isEventPast(event, now = null) {
     if (!event) return false;
-    const rawStatus = (event.lifecycle_status || event.status || '').toUpperCase();
-    if (rawStatus === 'PAST' || rawStatus === 'ARCHIVED' || rawStatus === 'COMPLETED' || rawStatus === 'CANCELLED') {
-      return true;
-    }
-
     const eventDate = event.event_date || event.start_date || event.date;
     const endDate = event.end_date || null;
     return this.isPastEvent(eventDate, endDate, now);
   }
 
   /**
-   * Filters out concluded events for active discovery surfaces.
+   * Filters out concluded and cancelled events for active discovery surfaces.
    */
   static filterActiveEvents(events, now = null) {
     if (!Array.isArray(events)) return [];
-    return events.filter(e => !this.isEventPast(e, now));
+    return events.filter(e => {
+      const rawStatus = (e.lifecycle_status || e.status || '').toUpperCase();
+      if (rawStatus === 'CANCELLED' || rawStatus === 'DELETED') return false;
+      return !this.isEventPast(e, now);
+    });
   }
 
   /**
@@ -264,7 +263,23 @@ class EventLifecycleService {
 
     if (city && city.trim()) {
       const c = city.trim().toLowerCase();
-      pastList = pastList.filter(e => (e.city || '').toLowerCase().includes(c));
+      if (c === 'jakarta' || c === 'jabodetabek' || c === 'jakarta (jabodetabek)') {
+        pastList = pastList.filter(e =>
+          e.metro_area === 'JABODETABEK' ||
+          (e.city || '').toLowerCase().includes('jakarta') ||
+          (e.city || '').toLowerCase().includes('tangerang') ||
+          (e.city || '').toLowerCase().includes('bogor') ||
+          (e.city || '').toLowerCase().includes('depok') ||
+          (e.city || '').toLowerCase().includes('bekasi') ||
+          (e.venue || '').toLowerCase().includes('ice bsd') ||
+          (e.venue || '').toLowerCase().includes('sicc')
+        );
+      } else {
+        pastList = pastList.filter(e =>
+          (e.city || '').toLowerCase().includes(c) ||
+          (e.metro_area || '').toLowerCase() === c
+        );
+      }
     }
 
     if (year && year.trim()) {

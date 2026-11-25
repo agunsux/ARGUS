@@ -26,6 +26,14 @@ const { PromoterImportService, MAX_CSV_BYTES } = require('./PromoterImportServic
 const { discoverySignalService, SIGNAL_STATUS } = require('./EventDiscoverySignalService');
 const { state, recordAuditLog } = require('../database');
 const { renderFooterHtml } = require('../config/businessProfile');
+const {
+  HEADER_VARIANTS,
+  renderSharedHeadAssets,
+  renderSharedFooterScripts,
+  renderSharedHeader,
+  resolveRequestLocale: resolveSharedLocale
+} = require('../ui/sharedHeader');
+const { t, formatCurrency } = require('../i18n');
 const { cityRegistry, CityRegistry } = require('./CityRegistry');
 const { eventPolicyRegistry, POLICY_STATUS, RISK_TIER, PRIMARY_PARTNER } = require('./EventPolicyRegistry');
 const { EventLifecycleService } = require('./EventLifecycleService');
@@ -33,21 +41,15 @@ const { PrimaryEventScannerService } = require('./PrimaryEventScannerService');
 const { SeoBlogEngine } = require('../blog/SeoBlogEngine');
 
 function resolveRequestLocale(req) {
-  if (!req) return 'id';
-  if (req.query && (req.query.lang || req.query.locale)) {
-    const q = (req.query.lang || req.query.locale).toLowerCase();
-    if (q === 'en' || q.startsWith('en-')) return 'en';
-    if (q === 'id' || q.startsWith('id-')) return 'id';
-  }
-  if (req.headers && req.headers.cookie) {
-    const match = req.headers.cookie.match(/(?:^|;\s*)tikum_lang=([^;]+)/);
-    if (match && match[1]) {
-      const c = decodeURIComponent(match[1]).toLowerCase();
-      if (c === 'en' || c.startsWith('en-')) return 'en';
-      if (c === 'id' || c.startsWith('id-')) return 'id';
-    }
-  }
-  return 'id';
+  return resolveSharedLocale(req);
+}
+
+function esc(v) {
+  return String(v || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 const { PopularityEngine } = require('./PopularityEngine');
 const { EventTemporalLifecycleEngine, LIFECYCLE_STATUS, HOMEPAGE_EVENT_GRACE_DAYS } = require('./EventTemporalLifecycleEngine');
@@ -281,30 +283,11 @@ router.get('/events/archive', (req, res) => {
   <meta name="description" content="${isEn ? 'Archive and documentation of completed music concerts, festivals, and live events in Indonesia. All verified historical data remains publicly accessible on Tikum.' : 'Arsip dan dokumentasi konser musik, festival, dan acara langsung yang telah selesai di Indonesia. Seluruh data historis terverifikasi tetap dapat diakses publik di Tikum.'}">
   <link rel="canonical" href="https://tikum.app/events/archive">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-          <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle" data-i18n="brand.subtitle">Pasar Tiket Event Terverifikasi</span>
-        </div>
-      </a>
-      <nav class="main-nav">
-        <a href="/events" class="nav-link active"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">Katalog Event</span></a>
-        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> <span data-i18n="nav.offers">Tawaran Tiket</span></a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
-        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="nav.track">Lacak Status</span></a>
-        <div class="nav-controls" style="display: inline-flex; gap: 8px; margin-left: 12px; align-items: center;">
-          <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 12px; font-weight: 700;">ID</button>
-          <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 12px;" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon"></i></button>
-        </div>
-      </nav>
-    </div>
-  </header>
+<body class="dark-mode">
+  ${renderSharedHeader({ variant: HEADER_VARIANTS.MARKETPLACE, activeNav: 'events', locale })}
 
   <main class="container" style="padding-top:40px; padding-bottom:60px;">
     <div style="text-align:center; max-width:700px; margin:0 auto 24px;">
@@ -354,7 +337,7 @@ router.get('/events/archive', (req, res) => {
   </main>
 
   ${renderFooterHtml(locale)}
-  <script src="/js/i18n.js"></script>
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -465,6 +448,7 @@ router.get('/events/:slug', (req, res, next) => {
 function deduplicateAndEnrichPublicEvents(events) {
   const dedupedPublicEvents = [];
   for (const rawCandidate of events) {
+    if (require('./CatalogSafety').isUnverifiedLead(rawCandidate)) continue;
     const resolvedImg = EventVisualProvenanceService.resolveCatalogEventImageProvenance(rawCandidate, rawCandidate.metadata || {});
     const candidate = { ...rawCandidate, ...resolvedImg };
     const dupMatch = EventDeduplicationService.findDuplicateCandidate(candidate, dedupedPublicEvents);
@@ -496,11 +480,45 @@ router.get('/events', (req, res) => {
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
   res.setHeader('Vary', 'Cookie, Accept-Language');
 
-  let allEvents = canonicalRegistry.getAllEvents();
+  let allEvents = canonicalRegistry.getAllEvents().filter(e => !require('./CatalogSafety').isUnverifiedLead(e));
   const showAllOrPast = include_past === 'true' || scope === 'all';
   const now = (req.query?.now || req.headers?.['x-simulate-clock'] || (process.env.NODE_ENV === 'test' && process.env.SIMULATE_NOW))
     ? new Date(req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
     : new Date();
+
+  // If canonicalRegistry is empty (e.g. serverless Vercel memory), fallback to verified eventPolicyRegistry
+  if (allEvents.length === 0) {
+    const policyEvents = eventPolicyRegistry.getAllEvents({ publicOnly: true,
+      city,
+      category,
+      sort: 'hype'
+    });
+    const activePolicy = showAllOrPast ? policyEvents : EventLifecycleService.filterActiveEvents(policyEvents, now);
+    allEvents = activePolicy.map(pe => ({
+      id: pe.id,
+      event_id: pe.id,
+      title: pe.event_name,
+      canonical_name: pe.event_name,
+      name: pe.event_name,
+      category: pe.category,
+      event_type: pe.category,
+      venue_name: pe.venue,
+      venue: pe.venue,
+      city: pe.city,
+      metro_area: pe.metro_area,
+      start_date: pe.event_date,
+      date: pe.event_date,
+      min_price: pe.starting_price_idr,
+      price_min: pe.starting_price_idr,
+      price_range_idr: pe.price_range_idr,
+      promoter: pe.promoter_name,
+      official_ticket_url: pe.policy_source_url,
+      image_url: pe.image_url,
+      status: 'ON_SALE',
+      ticket_status: 'ON_SALE',
+      verification_status: 'VERIFIED'
+    }));
+  }
 
   const searchTerm = (q || req.query.search || '').trim();
   if (searchTerm) {
@@ -639,17 +657,17 @@ router.get('/events', (req, res) => {
     const isSoldOut = e.primary_ticket_status === 'SOLD_OUT' || e.official_ticket_availability === 'SOLD_OUT' || e.status === 'SOLD_OUT';
     const isPresale = !isSoldOut && (e.primary_ticket_status === 'PRESALE' || (Array.isArray(e.price_tiers) && e.price_tiers.some(t => /presale/i.test(t.name))));
     const statusBadge = isSoldOut
-      ? `<span class="badge" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4); font-size:11px; padding:3px 8px; font-weight:700;"><i class="fa-solid fa-fire"></i> SOLD OUT</span>`
+      ? `<span class="badge" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4); font-size:11px; padding:3px 8px; font-weight:700;"><i class="fa-solid fa-fire"></i> <span data-i18n="discovery.badgeSoldOut">${esc(t('discovery.badgeSoldOut', locale))}</span></span>`
       : (isPresale
-        ? `<span class="badge" style="background:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); font-size:11px; padding:3px 8px; font-weight:700;"><i class="fa-solid fa-bolt"></i> PRESALE</span>`
-        : `<span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); font-size:11px; padding:3px 8px; font-weight:700;"><i class="fa-solid fa-circle-check"></i> ON SALE</span>`);
+        ? `<span class="badge" style="background:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); font-size:11px; padding:3px 8px; font-weight:700;"><i class="fa-solid fa-bolt"></i> <span data-i18n="discovery.badgePresale">${esc(t('discovery.badgePresale', locale))}</span></span>`
+        : `<span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); font-size:11px; padding:3px 8px; font-weight:700;"><i class="fa-solid fa-circle-check"></i> <span data-i18n="discovery.badgeOnSale">${esc(t('discovery.badgeOnSale', locale))}</span></span>`);
 
     return `
       <div class="event-card-item" data-event-id="${e.event_id}" data-ticket-status="${isSoldOut ? 'SOLD_OUT' : (isPresale ? 'PRESALE' : 'ON_SALE')}" style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
         <div>
-          <div class="catalog-card-media" style="position:relative; aspect-ratio:16/9; max-height:190px; margin:-20px -20px 14px -20px; border-bottom:1px solid #1e293b; overflow:hidden; background:#0b1120;">
+          <div class="catalog-card-media" style="position:relative; aspect-ratio:3/4; margin:-20px -20px 14px -20px; border-bottom:1px solid #1e293b; overflow:hidden; background:#0b1120;">
             ${hasVerifiedImg ? `
-              <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='/api/discovery/events/${e.event_id || e.id}/poster.svg';" />
+              <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:contain; display:block;" onerror="this.onerror=null; this.src='/api/discovery/events/${e.event_id || e.id}/poster.svg';" />
             ` : `
               <img src="/api/discovery/events/${e.event_id || e.id}/poster.svg" alt="${altText} — Tikum Verified Fallback" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" />
             `}
@@ -665,18 +683,18 @@ router.get('/events', (req, res) => {
           <div style="font-size:13px; color:#94a3b8; margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
             <div><i class="fa-solid fa-calendar-day" style="color:#64748b; width:16px;"></i> ${e.start_date || e.date}</div>
             <div><i class="fa-solid fa-building" style="color:#64748b; width:16px;"></i> ${e.venue_name}</div>
-            <div style="color:#cbd5e1; font-weight:600;"><i class="fa-solid fa-tag" style="color:#38bdf8; width:16px;"></i> Resmi mulai Rp ${Number(e.min_price || 500000).toLocaleString('id-ID')}</div>
+            <div style="color:#cbd5e1; font-weight:600;"><i class="fa-solid fa-tag" style="color:#38bdf8; width:16px;"></i> <span data-i18n="discovery.officialFrom">${esc(t('discovery.officialFrom', locale))}</span> ${formatCurrency(Number(e.min_price || 500000), locale)}</div>
           </div>
         </div>
         <div style="border-top:1px solid #1e293b; padding-top:14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
           <div>
-            ${activeListings.length > 0 ? 
-              `<span style="color:#10b981; font-weight:700; font-size:12px;"><i class="fa-solid fa-ticket"></i> ${activeListings.length} Tiket Resale (Rp ${minPrice.toLocaleString('id-ID')})</span>` : 
-              `<span style="color:#64748b; font-size:12px;"><i class="fa-solid fa-ticket"></i> Belum ada tiket resale</span>`}
+            ${activeListings.length > 0 ?
+              `<span style="color:#10b981; font-weight:700; font-size:12px;"><i class="fa-solid fa-ticket"></i> ${esc(t('discovery.resaleTicketsCount', locale).replace('{count}', activeListings.length).replace('{price}', formatCurrency(minPrice, locale)))}</span>` :
+              `<span style="color:#64748b; font-size:12px;"><i class="fa-solid fa-ticket"></i> <span data-i18n="discovery.noResaleYet">${esc(t('discovery.noResaleYet', locale))}</span></span>`}
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
-            ${officialUrl ? `<a href="${officialUrl}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-sm btn-secondary" style="font-size:11px; padding:5px 8px;">Sumber Resmi</a>` : ''}
-            <a href="/events/${e.slug}" class="btn btn-sm btn-primary">Lihat Event</a>
+            ${officialUrl ? `<a href="${officialUrl}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-sm btn-secondary" style="font-size:11px; padding:5px 8px;" data-i18n="events.officialSource">${esc(t('events.officialSource', locale))}</a>` : ''}
+            <a href="/events/${e.slug}" class="btn btn-sm btn-primary" data-i18n="discovery.viewEventCta">${esc(t('discovery.viewEventCta', locale))}</a>
           </div>
         </div>
       </div>
@@ -688,41 +706,22 @@ router.get('/events', (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${isEn ? 'Indonesia Event Catalog — Discover Concert Schedules, Sports &amp; Verified Tickets | Tikum' : 'Katalog Event Indonesia — Temukan Jadwal Konser, Olahraga &amp; Tiket Terverifikasi | Tikum'}</title>
-  <meta name="description" content="${isEn ? 'Explore all music concerts, festivals, sports, and live shows across Indonesia. Get official ticket information and verified ticket resale at Tikum.' : 'Eksplorasi seluruh event musik, festival, sepak bola, basket, dan pertunjukan di Jakarta, Bandung, Surabaya, dan Bali. Dapatkan informasi tiket resmi dan transfer tiket terverifikasi di Tikum.'}">
+  <title>${esc(t('discovery.catalogPageTitle', locale))}</title>
+  <meta name="description" content="${esc(t('discovery.catalogMetaDesc', locale))}">
   <link rel="canonical" href="https://tikum.app/events">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-          <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle" data-i18n="brand.subtitle">Pasar Tiket Event Terverifikasi</span>
-        </div>
-      </a>
-      <nav class="main-nav">
-        <a href="/events" class="nav-link active"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">Katalog Event</span></a>
-        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> <span data-i18n="nav.offers">Tawaran Tiket</span></a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
-        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="nav.track">Lacak Status</span></a>
-        <div class="nav-controls" style="display: inline-flex; gap: 8px; margin-left: 12px; align-items: center;">
-          <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 12px; font-weight: 700;">ID</button>
-          <button id="btnThemeToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleTheme() : null" style="padding: 4px 10px; font-size: 12px;" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon"></i></button>
-        </div>
-      </nav>
-    </div>
-  </header>
+<body class="dark-mode">
+  ${renderSharedHeader({ variant: HEADER_VARIANTS.MARKETPLACE, activeNav: 'events', locale })}
 
   <main class="container" style="padding-top:40px; padding-bottom:60px;">
     <div style="text-align:center; max-width:700px; margin:0 auto 24px;">
-      <div class="hero-pill" data-i18n="discovery.heroPill"><i class="fa-solid fa-compass"></i> INDONESIA EVENT DISCOVERY REGISTRY</div>
-      <h1 style="font-size:32px; font-weight:800; letter-spacing:-0.5px; margin:14px 0;" data-i18n="discovery.heroTitle">Temukan Acara Langsung &amp; Akses Tiket Terpercaya</h1>
+      <div class="hero-pill"><i class="fa-solid fa-compass"></i> <span data-i18n="discovery.heroPill">${esc(t('discovery.heroPill', locale))}</span></div>
+      <h1 style="font-size:32px; font-weight:800; letter-spacing:-0.5px; margin:14px 0;" data-i18n="discovery.heroTitle">${esc(t('discovery.heroTitle', locale))}</h1>
       <p style="color:#94a3b8; font-size:15px;" data-i18n="discovery.heroSubtitle">
-        Pusat direktori event terverifikasi dari berbagai kanal resmi promotor, venue, dan federasi di Indonesia.
+        ${esc(t('discovery.heroSubtitle', locale))}
       </p>
     </div>
 
@@ -730,25 +729,25 @@ router.get('/events', (req, res) => {
     <div style="background:rgba(30,41,59,0.7); border:1px solid #334155; border-radius:10px; padding:12px 18px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
       <div style="font-size:13px; color:#cbd5e1; display:flex; align-items:center; gap:8px;">
         <i class="fa-solid fa-shield-halved" style="color:#38bdf8;"></i>
-        <span><strong>Pasar Sekunder &amp; Panduan:</strong> Pelajari skema biaya 6%, proteksi escrow, atau telusuri simulasi checkout Tikum.</span>
+        <span><strong data-i18n="discovery.secondaryGuideBannerTitle">${esc(t('discovery.secondaryGuideBannerTitle', locale))}</strong> <span data-i18n="discovery.secondaryGuideBannerDesc">${esc(t('discovery.secondaryGuideBannerDesc', locale))}</span></span>
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
-        <a href="/panduan-pembeli" class="btn btn-sm btn-secondary" style="font-size:12px; padding:6px 12px; text-decoration:none;"><i class="fa-solid fa-book-open"></i> Panduan Pembeli</a>
-        <a href="/pay" class="btn btn-sm btn-primary" style="font-size:12px; padding:6px 12px; text-decoration:none;"><i class="fa-solid fa-cash-register"></i> Simulasi Checkout</a>
+        <a href="/panduan-pembeli" class="btn btn-sm btn-secondary" style="font-size:12px; padding:6px 12px; text-decoration:none;"><i class="fa-solid fa-book-open"></i> <span data-i18n="nav.buyerGuide">${esc(t('nav.buyerGuide', locale))}</span></a>
+        <a href="/pay" class="btn btn-sm btn-primary" style="font-size:12px; padding:6px 12px; text-decoration:none;"><i class="fa-solid fa-cash-register"></i> <span data-i18n="discovery.checkoutSimulation">${esc(t('discovery.checkoutSimulation', locale))}</span></a>
       </div>
     </div>
 
     <!-- Catalog Tabs: Upcoming vs Archive -->
     <div style="display:flex; justify-content:center; gap:12px; margin-bottom:24px;">
-      <a href="/events" class="btn btn-primary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-calendar-days"></i> Event Mendatang</a>
-      <a href="/events/archive" class="btn btn-secondary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-box-archive"></i> Arsip Event Selesai</a>
+      <a href="/events" class="btn btn-primary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="events.upcomingEvents">${esc(t('events.upcomingEvents', locale))}</span></a>
+      <a href="/events/archive" class="btn btn-secondary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-box-archive"></i> <span data-i18n="discovery.concludedArchiveTab">${esc(t('discovery.concludedArchiveTab', locale))}</span></a>
     </div>
 
     <!-- Search & Filter Form -->
     <form method="GET" action="/events" style="background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:18px; margin-bottom:30px; display:flex; gap:12px; flex-wrap:wrap;">
-      <input type="text" name="q" value="${q || ''}" placeholder="Cari nama event, musisi, atau tempat..." data-i18n="discovery.searchPlaceholder" class="form-control" style="flex:2; min-width:200px;" />
+      <input type="text" name="q" value="${q || ''}" placeholder="${esc(t('discovery.searchPlaceholder', locale))}" data-i18n="discovery.searchPlaceholder" class="form-control" style="flex:2; min-width:200px;" />
       <select name="city" class="form-control" style="flex:1; min-width:130px;">
-        <option value="" data-i18n="discovery.allCities">Semua Kota</option>
+        <option value="" data-i18n="discovery.allCities">${esc(t('discovery.allCities', locale))}</option>
         <option value="Jakarta" ${city === 'Jakarta' ? 'selected' : ''}>Jakarta</option>
         <option value="Tangerang" ${city === 'Tangerang' ? 'selected' : ''}>Tangerang</option>
         <option value="Bandung" ${city === 'Bandung' ? 'selected' : ''}>Bandung</option>
@@ -757,41 +756,41 @@ router.get('/events', (req, res) => {
         <option value="Yogyakarta" ${city === 'Yogyakarta' ? 'selected' : ''}>Yogyakarta</option>
       </select>
       <select name="category" class="form-control" style="flex:1; min-width:130px;">
-        <option value="" data-i18n="discovery.allCategories">Semua Kategori</option>
-        <option value="CONCERT" ${category === 'CONCERT' ? 'selected' : ''}>Konser</option>
-        <option value="FESTIVAL" ${category === 'FESTIVAL' ? 'selected' : ''}>Festival</option>
-        <option value="COMEDY" ${category === 'COMEDY' ? 'selected' : ''}>Stand-Up Comedy</option>
-        <option value="SPORTS" ${category === 'SPORTS' ? 'selected' : ''}>Olahraga</option>
-        <option value="THEATER" ${category === 'THEATER' ? 'selected' : ''}>Teater</option>
+        <option value="" data-i18n="discovery.allCategories">${esc(t('discovery.allCategories', locale))}</option>
+        <option value="CONCERT" ${category === 'CONCERT' ? 'selected' : ''} data-i18n="events.concerts">${esc(t('events.concerts', locale))}</option>
+        <option value="FESTIVAL" ${category === 'FESTIVAL' ? 'selected' : ''} data-i18n="discovery.catFestival">${esc(t('discovery.catFestival', locale))}</option>
+        <option value="COMEDY" ${category === 'COMEDY' ? 'selected' : ''} data-i18n="discovery.catComedy">${esc(t('discovery.catComedy', locale))}</option>
+        <option value="SPORTS" ${category === 'SPORTS' ? 'selected' : ''} data-i18n="nav.sports">${esc(t('nav.sports', locale))}</option>
+        <option value="THEATER" ${category === 'THEATER' ? 'selected' : ''} data-i18n="nav.theater">${esc(t('nav.theater', locale))}</option>
       </select>
-      <select name="price_range" class="form-control" style="flex:1; min-width:150px;">
-        <option value="">Semua Harga (&gt;= Rp 500rb)</option>
-        <option value="500k-1m" ${price_range === '500k-1m' ? 'selected' : ''}>Rp 500rb - 1 Juta</option>
-        <option value="1m-2m" ${price_range === '1m-2m' ? 'selected' : ''}>Rp 1 Juta - 2 Juta</option>
-        <option value="2m_plus" ${price_range === '2m_plus' ? 'selected' : ''}>&gt; Rp 2 Juta</option>
+      <select name="price_range" class="form-control" style="flex:1; min-width:195px;">
+        <option value="" data-i18n="discovery.priceAll">${esc(t('discovery.priceAll', locale))}</option>
+        <option value="500k-1m" ${price_range === '500k-1m' ? 'selected' : ''} data-i18n="discovery.price500kTo1m">${esc(t('discovery.price500kTo1m', locale))}</option>
+        <option value="1m-2m" ${price_range === '1m-2m' ? 'selected' : ''} data-i18n="discovery.price1mTo2m">${esc(t('discovery.price1mTo2m', locale))}</option>
+        <option value="2m_plus" ${price_range === '2m_plus' ? 'selected' : ''} data-i18n="discovery.priceOver2m">${esc(t('discovery.priceOver2m', locale))}</option>
       </select>
       <select name="ticket_status" class="form-control" style="flex:1; min-width:130px;">
-        <option value="">Semua Status Tiket</option>
-        <option value="ON_SALE" ${ticket_status === 'ON_SALE' ? 'selected' : ''}>Tersedia (On Sale)</option>
-        <option value="SOLD_OUT" ${ticket_status === 'SOLD_OUT' ? 'selected' : ''}>Habis (Sold Out)</option>
-        <option value="PRESALE" ${ticket_status === 'PRESALE' ? 'selected' : ''}>Presale</option>
+        <option value="" data-i18n="discovery.ticketStatusAll">${esc(t('discovery.ticketStatusAll', locale))}</option>
+        <option value="ON_SALE" ${ticket_status === 'ON_SALE' ? 'selected' : ''} data-i18n="discovery.ticketStatusOnSale">${esc(t('discovery.ticketStatusOnSale', locale))}</option>
+        <option value="SOLD_OUT" ${ticket_status === 'SOLD_OUT' ? 'selected' : ''} data-i18n="discovery.ticketStatusSoldOut">${esc(t('discovery.ticketStatusSoldOut', locale))}</option>
+        <option value="PRESALE" ${ticket_status === 'PRESALE' ? 'selected' : ''} data-i18n="discovery.ticketStatusPresale">${esc(t('discovery.ticketStatusPresale', locale))}</option>
       </select>
       <select name="date_range" class="form-control" style="flex:1; min-width:130px;">
-        <option value="">Semua Tanggal</option>
-        <option value="weekend" ${date_range === 'weekend' ? 'selected' : ''}>Akhir Pekan Ini</option>
-        <option value="this_month" ${date_range === 'this_month' ? 'selected' : ''}>Bulan Ini</option>
-        <option value="next_month" ${date_range === 'next_month' ? 'selected' : ''}>Bulan Depan</option>
+        <option value="" data-i18n="discovery.dateAll">${esc(t('discovery.dateAll', locale))}</option>
+        <option value="weekend" ${date_range === 'weekend' ? 'selected' : ''} data-i18n="discovery.dateWeekend">${esc(t('discovery.dateWeekend', locale))}</option>
+        <option value="this_month" ${date_range === 'this_month' ? 'selected' : ''} data-i18n="events.thisMonth">${esc(t('events.thisMonth', locale))}</option>
+        <option value="next_month" ${date_range === 'next_month' ? 'selected' : ''} data-i18n="discovery.dateNextMonth">${esc(t('discovery.dateNextMonth', locale))}</option>
       </select>
-      <button type="submit" class="btn btn-cyan"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="discovery.filter">Filter</span></button>
+      <button type="submit" class="btn btn-cyan"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="discovery.filter">${esc(t('discovery.filter', locale))}</span></button>
     </form>
 
     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">
-      ${itemsHtml.length > 0 ? itemsHtml : `<div style="grid-column:1/-1; text-align:center; padding:60px; color:#64748b;" data-i18n="discovery.noFilterResults">Tidak ada event yang sesuai dengan filter pencarian.</div>`}
+      ${itemsHtml.length > 0 ? itemsHtml : `<div style="grid-column:1/-1; text-align:center; padding:60px; color:#64748b;" data-i18n="discovery.noFilterResults">${esc(t('discovery.noFilterResults', locale))}</div>`}
     </div>
   </main>
 
   ${renderFooterHtml(locale)}
-  <script src="/js/i18n.js"></script>
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -859,7 +858,7 @@ router.get(['/promoters', '/promoters/apmi'], (req, res) => {
   }).join('');
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${locale}" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -867,27 +866,11 @@ router.get(['/promoters', '/promoters/apmi'], (req, res) => {
   <meta name="description" content="Arsip direktori resmi asosiasi promotor musik Indonesia (APMI). Jelajahi daftar promotor resmi, festival musik, dan jadwal konser terverifikasi di Indonesia.">
   <link rel="canonical" href="https://tikum.app/promoters/apmi">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-          <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle">Event Discovery &amp; Verified Marketplace</span>
-        </div>
-      </a>
-      <nav class="main-nav">
-        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
-        <a href="/promoters/apmi" class="nav-link active"><i class="fa-solid fa-users"></i> Promotor APMI</a>
-        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> Tawaran Tiket</a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Jual Tiket</a>
-        <a href="/track" class="nav-link"><i class="fa-solid fa-magnifying-glass"></i> Lacak Status</a>
-      </nav>
-    </div>
-  </header>
+<body class="dark-mode">
+  ${renderSharedHeader({ variant: HEADER_VARIANTS.PUBLIC, activeNav: 'events', locale })}
 
   <main class="container" style="padding-top:40px; padding-bottom:60px;">
     <div style="text-align:center; max-width:800px; margin:0 auto 36px;">
@@ -909,7 +892,7 @@ router.get(['/promoters', '/promoters/apmi'], (req, res) => {
   </main>
 
   ${renderFooterHtml(locale)}
-  <script src="/js/i18n.js"></script>
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -951,7 +934,7 @@ router.get('/promoters/apmi/:slug', (req, res) => {
   `).join('') : `<div style="text-align:center; padding:40px; color:#64748b; background:#131d31; border-radius:10px;">Belum ada jadwal konser aktif dari promotor ini di kalender terverifikasi.</div>`;
 
   const html = `<!DOCTYPE html>
-<html lang="id">
+<html lang="${locale}" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -959,26 +942,11 @@ router.get('/promoters/apmi/:slug', (req, res) => {
   <meta name="description" content="Profil resmi ${promoter.name} (${promoter.legal_name}), anggota Asosiasi Promotor Musik Indonesia (APMI). Lihat rekam jejak festival dan jadwal konser terverifikasi.">
   <link rel="canonical" href="https://tikum.app/promoters/apmi/${promoter.slug}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-          <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle">Event Discovery &amp; Verified Marketplace</span>
-        </div>
-      </a>
-      <nav class="main-nav">
-        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
-        <a href="/promoters/apmi" class="nav-link active"><i class="fa-solid fa-users"></i> Promotor APMI</a>
-        <a href="/offers" class="nav-link"><i class="fa-solid fa-handshake"></i> Tawaran Tiket</a>
-        <a href="/create" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Jual Tiket</a>
-      </nav>
-    </div>
-  </header>
+<body class="dark-mode">
+  ${renderSharedHeader({ variant: HEADER_VARIANTS.PUBLIC, activeNav: 'events', locale })}
 
   <main class="container" style="padding-top:40px; padding-bottom:60px; max-width:900px;">
     <div style="margin-bottom:24px;">
@@ -1019,7 +987,7 @@ router.get('/promoters/apmi/:slug', (req, res) => {
   </main>
 
   ${renderFooterHtml(locale)}
-  <script src="/js/i18n.js"></script>
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 
@@ -1055,7 +1023,7 @@ function handleGetEvents(req, res) {
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
 
-  let allEvents = canonicalRegistry.getAllEvents();
+  let allEvents = canonicalRegistry.getAllEvents().filter(e => !require('./CatalogSafety').isUnverifiedLead(e));
   const showAllOrPast = include_past === 'true' || scope === 'all' || req.query.include_archived === 'true';
   const now = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
     ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
@@ -1317,10 +1285,13 @@ router.get('/api/discovery/event-policy-registry', (req, res) => {
 router.get('/api/discovery/events-qualified', (req, res) => {
   const minPrice = parseInt(req.query.min_price || '300000', 10);
   const includePast = req.query.include_past === 'true' || req.query.status === 'PAST';
-  let events = eventPolicyRegistry.getAllEvents({
+  let events = eventPolicyRegistry.getQualifiedEvents({
     ...req.query,
-    min_price: minPrice
+    minPrice,
+    sort: req.query.sort || 'hype',
+    includePast
   });
+  events = events.filter(e => !require('./CatalogSafety').isUnverifiedLead(e));
   if (!includePast) {
     events = EventLifecycleService.filterActiveEvents(events, req.query.now);
   }
@@ -1444,7 +1415,37 @@ function handleGetArchivedEvents(req, res) {
     ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
     : new Date();
 
-  const allEvents = canonicalRegistry.getAllEvents();
+  let allEvents = canonicalRegistry.getAllEvents();
+  if (allEvents.length === 0) {
+    const pastRes = EventLifecycleService.getPastEvents({
+      page: req.query.page,
+      limit: req.query.limit,
+      q: req.query.q,
+      category: req.query.category,
+      city: req.query.city,
+      year: req.query.year,
+      now
+    });
+    const mapped = (pastRes.events || []).map(e => ({
+      ...e,
+      is_past: true,
+      resale_available: false,
+      resale_inventory_count: 0,
+      purchasing_enabled: false,
+      lifecycle_status: 'PAST'
+    }));
+    return res.json({
+      success: true,
+      total: pastRes.total,
+      count: mapped.length,
+      events: mapped,
+      data: mapped,
+      page: pastRes.page,
+      limit: pastRes.limit,
+      total_pages: pastRes.total_pages
+    });
+  }
+
   let archived = allEvents.filter(e => {
     return e.archive_status === 'ARCHIVED' ||
       e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS' ||
@@ -1572,6 +1573,7 @@ router.get('/api/events/home-feed', (req, res) => {
 
   // Filter canonical events through strict temporal & verification gates (Zero Duplicates + H+2 Gate)
   let allEvents = canonicalRegistry.getAllEvents().filter(e => {
+    if (require('./CatalogSafety').isUnverifiedLead(e)) return false;
     const evStatus = (e.status || '').toUpperCase();
     const evLifecycle = (e.lifecycle_status || '').toUpperCase();
     if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
@@ -1597,6 +1599,51 @@ router.get('/api/events/home-feed', (req, res) => {
 
   // Guarantee 1 concert = 1 canonical homepage card (Zero Duplicate Guarantee + Image Priority Preservation)
   allEvents = deduplicateAndEnrichPublicEvents(allEvents);
+
+  // If canonicalRegistry is empty (e.g. serverless Vercel memory), federate from verified eventPolicyRegistry
+  if (allEvents.length === 0) {
+    const policyEvents = eventPolicyRegistry.getAllEvents({ publicOnly: true,
+      city,
+      category,
+      sort: 'hype'
+    });
+    const activePolicy = EventLifecycleService.filterActiveEvents(policyEvents, now);
+    allEvents = activePolicy.map(pe => ({
+      id: pe.id,
+      event_id: pe.id,
+      title: pe.event_name,
+      canonical_name: pe.event_name,
+      name: pe.event_name,
+      category: pe.category,
+      category_group: (pe.category === 'CONCERT' || pe.category === 'KPOP') ? 'MUSIC' : (pe.category === 'SPORTS' ? 'SPORTS' : (pe.category === 'STANDUP_COMEDY' ? 'SHOWS_COMEDY' : 'FESTIVALS_EXPERIENCES')),
+      venue_name: pe.venue,
+      venue: pe.venue,
+      city: pe.city,
+      metro_area: pe.metro_area,
+      start_date: pe.event_date,
+      date: pe.event_date,
+      event_start_at: `${pe.event_date}T19:00:00+07:00`,
+      min_price: pe.starting_price_idr,
+      max_price: pe.starting_price_idr * 3,
+      price_range_idr: pe.price_range_idr,
+      promoter: pe.promoter_name,
+      official_ticket_url: pe.policy_source_url,
+      image_url: pe.image_url,
+      is_fallback: false,
+      verification_status: 'VERIFIED',
+      verification_tier: 'TIER_A_DOUBLE_OFFICIAL',
+      popularity_score: pe.hype_score,
+      demand_score: pe.hype_score,
+      hype_score: pe.hype_score,
+      fanbase_tier: pe.fanbase_tier,
+      hype_label: pe.hype_label,
+      status: 'ON_SALE',
+      ticket_status: 'ON_SALE',
+      official_ticket_status: 'ON_SALE',
+      homepage_visibility: true,
+      country: 'Indonesia'
+    }));
+  }
 
   // Country filter if supplied
   if (country && country.trim()) {

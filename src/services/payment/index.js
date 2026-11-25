@@ -17,7 +17,12 @@ const { IPaymuProvider, IPAYMU_STATUS } = require('./IPaymuProvider');
 class PaymentManager {
   constructor() {
     this.providers = new Map();
-    this.defaultProvider = (process.env.DEFAULT_PAYMENT_PROVIDER || 'doku').toLowerCase();
+    let rawDefault = (process.env.DEFAULT_PAYMENT_PROVIDER || 'doku').toLowerCase();
+    // iPaymu is frozen for new transactions; enforce doku as default
+    if (rawDefault === 'ipaymu') {
+      rawDefault = 'doku';
+    }
+    this.defaultProvider = rawDefault;
 
     // Register primary and backup production providers
     this.registerProvider(new DokuPaymentProvider());
@@ -60,7 +65,11 @@ class PaymentManager {
     if (!this.hasProvider(name)) {
       throw new Error(`Cannot set unknown provider '${name}' as default`);
     }
-    this.defaultProvider = name.toLowerCase();
+    const lower = name.toLowerCase();
+    if (lower === 'ipaymu') {
+      throw new Error("Cannot set frozen provider 'ipaymu' as default. DOKU is the active gateway.");
+    }
+    this.defaultProvider = lower;
   }
 
   /**
@@ -69,16 +78,18 @@ class PaymentManager {
   getAvailablePaymentMethods() {
     const list = [];
     for (const [name, provider] of this.providers.entries()) {
+      const isFrozen = name === 'ipaymu';
       list.push({
         provider: name,
         country: provider.getCountry(),
         countries: provider.getSupportedCountries ? provider.getSupportedCountries() : [provider.getCountry()],
         currencies: provider.getSupportedCurrencies ? provider.getSupportedCurrencies() : ['IDR'],
-        status: provider.getStatus ? provider.getStatus().status : 'UNKNOWN',
-        is_verified: provider.getStatus ? provider.getStatus().isVerified : false,
-        health: provider.getHealth ? provider.getHealth() : { status: 'ACTIVE' },
+        status: isFrozen ? 'FROZEN' : (provider.getStatus ? provider.getStatus().status : 'UNKNOWN'),
+        is_verified: isFrozen ? false : (provider.getStatus ? provider.getStatus().isVerified : false),
+        is_frozen: isFrozen,
+        health: isFrozen ? { status: 'FROZEN', message: 'Gateway frozen for new transactions; historical transactions remain readable.' } : (provider.getHealth ? provider.getHealth() : { status: 'ACTIVE' }),
         capabilities: provider.getCapabilities ? provider.getCapabilities() : null,
-        channels: provider.getSupportedChannels()
+        channels: isFrozen ? [] : provider.getSupportedChannels()
       });
     }
     return list;

@@ -18,56 +18,40 @@ const router = express.Router();
 const { TechnicalSEOService } = require('../seo/TechnicalSEOService');
 const { StructuredDataFactory } = require('../seo/StructuredDataFactory');
 const { renderFooterHtml } = require('../config/businessProfile');
+const {
+  HEADER_VARIANTS,
+  renderSharedHeadAssets,
+  renderSharedFooterScripts,
+  renderSharedHeader,
+  resolveRequestLocale
+} = require('../ui/sharedHeader');
 
 function resolveRequestLang(req) {
-  if (!req) return 'id';
-  if (req.query && (req.query.lang || req.query.locale)) {
-    const q = (req.query.lang || req.query.locale).toLowerCase();
-    if (q === 'en' || q.startsWith('en-')) return 'en';
-    if (q === 'id' || q.startsWith('id-')) return 'id';
-  }
-  if (req.headers && req.headers.cookie) {
-    const match = req.headers.cookie.match(/(?:^|;\s*)(?:tikum_locale|tikum_lang)=([^;]+)/);
-    if (match && match[1]) {
-      const c = decodeURIComponent(match[1]).toLowerCase();
-      if (c === 'en' || c.startsWith('en-')) return 'en';
-      if (c === 'id' || c.startsWith('id-')) return 'id';
-    }
-  }
-  return 'id';
+  return resolveRequestLocale(req);
 }
 
 function renderTrustNavHeader(activePath = '', lang = 'id') {
-  const isEn = lang === 'en';
-  return `
-  <header class="site-header">
-    <div class="header-container">
-      <a href="/" class="brand">
-        <div class="brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-          <div class="brand-title">Tikum</div>
-          <span class="brand-subtitle" data-i18n="brand.subtitle">${isEn ? 'Verified Event Ticket Marketplace' : 'Pasar Tiket Event Terverifikasi'}</span>
-        </div>
-      </a>
-      <nav class="main-nav">
-        <a href="/events" class="nav-link"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">${isEn ? 'Events' : 'Katalog Event'}</span></a>
-        <a href="/blog" class="nav-link ${activePath === '/blog' ? 'active' : ''}"><i class="fa-solid fa-newspaper"></i> <span data-i18n="nav.blog">Blog</span></a>
-        <a href="/how-it-works" class="nav-link ${activePath === '/how-it-works' ? 'active' : ''}"><i class="fa-solid fa-circle-nodes"></i> <span data-i18n="footer.how">${isEn ? 'How It Works' : 'Cara Kerja'}</span></a>
-        <a href="/buyer-protection" class="nav-link ${activePath === '/buyer-protection' ? 'active' : ''}"><i class="fa-solid fa-shield-heart"></i> <span data-i18n="footer.buyerProt">${isEn ? 'Buyer Protection' : 'Perlindungan Pembeli'}</span></a>
-        <a href="/ticket-verification" class="nav-link ${activePath === '/ticket-verification' ? 'active' : ''}"><i class="fa-solid fa-qrcode"></i> <span data-i18n="footer.verifInfo">${isEn ? 'Ticket Verification' : 'Verifikasi Tiket'}</span></a>
-        <a href="/escrow" class="nav-link ${activePath === '/escrow' ? 'active' : ''}"><i class="fa-solid fa-lock"></i> <span data-i18n="escrow.title">${isEn ? 'Platform Holding' : 'Penahanan Dana'}</span></a>
-        <a href="/disputes" class="nav-link ${activePath === '/disputes' ? 'active' : ''}"><i class="fa-solid fa-scale-balanced"></i> <span data-i18n="disputes.title">${isEn ? 'Dispute Resolution' : 'Resolusi Sengketa'}</span></a>
-        <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 4px 10px; font-size: 11px; font-weight: 700; margin-left: 8px;">${lang.toUpperCase()}</button>
-      </nav>
-    </div>
-  </header>`;
+  const isEn = lang !== 'id';
+  return renderSharedHeader({
+    variant: HEADER_VARIANTS.PUBLIC,
+    activeNav: activePath === '/blog' ? 'blog' : 'trust',
+    locale: lang,
+    links: [
+      { href: '/events', icon: 'fa-calendar-days', key: 'nav.events', label: isEn ? 'Events' : 'Katalog Event' },
+      { href: '/blog', icon: 'fa-newspaper', key: 'nav.blog', label: 'Blog', active: activePath === '/blog' },
+      { href: '/how-it-works', icon: 'fa-circle-nodes', key: 'footer.how', label: isEn ? 'How It Works' : 'Cara Kerja', active: activePath === '/how-it-works' },
+      { href: '/buyer-protection', icon: 'fa-shield-heart', key: 'footer.buyerProt', label: isEn ? 'Buyer Protection' : 'Perlindungan Pembeli', active: activePath === '/buyer-protection' },
+      { href: '/ticket-verification', icon: 'fa-qrcode', key: 'footer.verifInfo', label: isEn ? 'Ticket Verification' : 'Verifikasi Tiket', active: activePath === '/ticket-verification' },
+      { href: '/create', icon: 'fa-plus-circle', key: 'nav.sellTicket', label: isEn ? 'Sell Ticket' : 'Jual Tiket', cta: true }
+    ]
+  });
 }
 
 function renderTrustLayout({ lang = 'id', title, description, canonicalPath, h1, subtitle, breadcrumbs, faqPairs = [], contentHtml }) {
-  const isEn = lang === 'en';
+  const isEn = lang !== 'id';
   const breadcrumbJsonLd = StructuredDataFactory.createBreadcrumbSchema(breadcrumbs);
   const faqJsonLd = faqPairs.length > 0 ? StructuredDataFactory.createFAQSchema(faqPairs) : null;
-  const jsonLd = faqJsonLd ? [breadcrumbJsonLd, faqJsonLd] : breadcrumbJsonLd;
+  const jsonLd = faqPairs.length > 0 ? [breadcrumbJsonLd, faqJsonLd] : breadcrumbJsonLd;
 
   const headMeta = TechnicalSEOService.renderHeadMeta({
     title,
@@ -77,13 +61,13 @@ function renderTrustLayout({ lang = 'id', title, description, canonicalPath, h1,
   });
 
   const faqSectionHtml = faqPairs.length > 0 ? `
-    <section style="margin-top:40px; background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:32px;">
-      <h2 style="font-size:22px; font-weight:800; color:#f8fafc; margin-bottom:20px;"><i class="fa-solid fa-circle-question" style="color:#38bdf8;"></i> ${isEn ? 'Frequently Asked Questions (FAQ)' : 'Pertanyaan yang Sering Diajukan (FAQ)'}</h2>
+    <section style="margin-top:40px; background:var(--palette-surface, #24364D); border:1px solid rgba(203,213,225,0.22); border-radius:14px; padding:32px;">
+      <h2 style="font-size:22px; font-weight:800; color:var(--palette-soft-white, #FFFFFF); margin-bottom:20px;"><i class="fa-solid fa-circle-question" style="color:var(--palette-terracotta, #E36F45);"></i> ${isEn ? 'Frequently Asked Questions (FAQ)' : 'Pertanyaan yang Sering Diajukan (FAQ)'}</h2>
       <div style="display:flex; flex-direction:column; gap:16px;">
         ${faqPairs.map(pair => `
-          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:20px;">
-            <h3 style="font-size:16px; font-weight:700; color:#f8fafc; margin:0 0 8px;">${pair.q}</h3>
-            <p style="font-size:14px; color:#cbd5e1; line-height:1.6; margin:0;">${pair.a}</p>
+          <div style="background:var(--palette-midnight-navy, #172333); border:1px solid rgba(203,213,225,0.2); border-radius:10px; padding:20px;">
+            <h3 style="font-size:16px; font-weight:700; color:var(--palette-soft-white, #FFFFFF); margin:0 0 8px;">${pair.q}</h3>
+            <p style="font-size:14px; color:var(--palette-secondary-text, #CBD5E1); line-height:1.6; margin:0;">${pair.a}</p>
           </div>
         `).join('')}
       </div>
@@ -91,42 +75,43 @@ function renderTrustLayout({ lang = 'id', title, description, canonicalPath, h1,
   ` : '';
 
   return `<!DOCTYPE html>
-<html lang="${lang}">
+<html lang="${lang}" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${headMeta}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
+<body class="dark-mode">
   ${renderTrustNavHeader(canonicalPath, lang)}
   <main class="container" style="padding-top:40px; padding-bottom:60px; max-width:920px;">
-    <nav style="font-size:13px; color:#64748b; margin-bottom:20px;">
-      <a href="/" style="color:#94a3b8; text-decoration:none;" data-i18n="nav.home">${isEn ? 'Home' : 'Beranda'}</a> &rsaquo;
-      <span style="color:#f8fafc;">${breadcrumbs[breadcrumbs.length - 1].name}</span>
+    <nav style="font-size:13px; color:var(--palette-secondary-text, #CBD5E1); margin-bottom:20px;">
+      <a href="/" style="color:var(--palette-warm-sand, #F3EBDD); text-decoration:none;" data-i18n="nav.home">${isEn ? 'Home' : 'Beranda'}</a> &rsaquo;
+      <span style="color:var(--palette-soft-white, #FFFFFF);">${breadcrumbs[breadcrumbs.length - 1].name}</span>
     </nav>
 
-    <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:36px; margin-bottom:30px;">
+    <div style="background:var(--palette-surface, #24364D); border:1px solid rgba(203,213,225,0.22); border-radius:14px; padding:36px; margin-bottom:30px;">
       <div class="hero-pill" data-i18n="trust.badge"><i class="fa-solid fa-shield-halved"></i> TRUST &amp; SAFETY INFRASTRUCTURE</div>
-      <h1 style="font-size:32px; font-weight:800; color:#f8fafc; margin:14px 0 8px;">${h1}</h1>
-      <p style="color:#94a3b8; font-size:16px; line-height:1.6;">${subtitle}</p>
+      <h1 style="font-size:32px; font-weight:800; color:var(--palette-soft-white, #FFFFFF); margin:14px 0 8px;">${h1}</h1>
+      <p style="color:var(--palette-secondary-text, #CBD5E1); font-size:16px; line-height:1.6;">${subtitle}</p>
     </div>
 
     ${contentHtml}
     ${faqSectionHtml}
 
-    <div style="margin-top:40px; background:#0f172a; border:1px solid #0284c7; border-radius:12px; padding:28px; text-align:center;">
-      <h3 style="font-size:20px; font-weight:800; color:#f8fafc; margin-bottom:8px;" data-i18n="trust.readyHeading">${isEn ? 'Ready to Explore Verified Tickets?' : 'Siap Menjelajahi Tiket Terverifikasi?'}</h3>
-      <p style="color:#94a3b8; font-size:14px; margin-bottom:20px;" data-i18n="trust.readySubtitle">${isEn ? 'Find your favorite event tickets or sell safely with escrow protection.' : 'Temukan event favorit Anda atau jual tiket secara aman tanpa khawatir penipuan.'}</p>
+    <div style="margin-top:40px; background:var(--palette-primary-blue, #15365B); border:1px solid rgba(227,111,69,0.55); border-radius:12px; padding:28px; text-align:center;">
+      <h3 style="font-size:20px; font-weight:800; color:var(--palette-soft-white, #FFFFFF); margin-bottom:8px;" data-i18n="trust.readyHeading">${isEn ? 'Ready to Explore Verified Tickets?' : 'Siap Menjelajahi Tiket Terverifikasi?'}</h3>
+      <p style="color:var(--palette-secondary-text, #CBD5E1); font-size:14px; margin-bottom:20px;" data-i18n="trust.readySubtitle">${isEn ? 'Find your favorite event tickets or sell safely with escrow protection.' : 'Temukan event favorit Anda atau jual tiket secara aman tanpa khawatir penipuan.'}</p>
       <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
-        <a href="/events" class="btn btn-primary"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="events.title">${isEn ? 'Browse Event Catalog' : 'Lihat Katalog Event'}</span></a>
+        <a href="/events" class="btn btn-primary"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav.events">${isEn ? 'Browse Event Catalog' : 'Lihat Katalog Event'}</span></a>
         <a href="/create" class="btn btn-secondary"><i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicket">${isEn ? 'Sell My Ticket' : 'Jual Tiket Saya'}</span></a>
       </div>
     </div>
   </main>
-  ${renderFooterHtml()}
-  <script src="/js/i18n.js"></script>
+  ${renderFooterHtml(lang)}
+  ${renderSharedFooterScripts()}
 </body>
 </html>`;
 }
@@ -277,26 +262,26 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
     <div style="display:flex; flex-direction:column; gap:24px;">
 
       <!-- 1. Legal Entity & Brand Profile -->
-      <div style="background:#131d31; border:1px solid #10b981; border-radius:14px; padding:28px;">
+      <div style="background:#24364D; border:1px solid #E36F45; border-radius:14px; padding:28px;">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-          <span style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; letter-spacing:0.5px; text-transform:uppercase;">Official Business Identity</span>
-          <span style="color:#64748b; font-size:13px;">TIKUM — Operated by PT SHINERVA PRAJNA TEJAS</span>
+          <span style="background:rgba(227,111,69,0.15); color:#E36F45; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; letter-spacing:0.5px; text-transform:uppercase;">Official Business Identity</span>
+          <span style="color:#CBD5E1; font-size:13px;">TIKUM — Operated by PT SHINERVA PRAJNA TEJAS</span>
         </div>
-        <h2 style="color:#f8fafc; font-size:22px; font-weight:800; margin:0 0 10px;">Operator &amp; Brand Relationship</h2>
+        <h2 style="color:#FFFFFF; font-size:22px; font-weight:800; margin:0 0 10px;">Operator &amp; Brand Relationship</h2>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 16px;">
           <strong>TIKUM</strong> is a secondary ticket marketplace brand operated under <strong>PT SHINERVA PRAJNA TEJAS</strong>, an Indonesian corporate entity dedicated to building transparent, secure secondary ticketing infrastructure.
         </p>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; background:#0f172a; border:1px solid #172333; border-radius:10px; padding:18px;">
           <div>
-            <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Registered Business Address:</div>
-            <div style="color:#f8fafc; font-size:13px; font-weight:600;">PT SHINERVA PRAJNA TEJAS</div>
+            <div style="font-size:12px; color:#CBD5E1; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Registered Business Address:</div>
+            <div style="color:#FFFFFF; font-size:13px; font-weight:600;">PT SHINERVA PRAJNA TEJAS</div>
             <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Jl. Pasirluyu No. 79<br>Bandung 40254, Indonesia</div>
           </div>
           <div>
-            <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Official Support &amp; Hours:</div>
+            <div style="font-size:12px; color:#CBD5E1; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Official Support &amp; Hours:</div>
             <div style="color:#cbd5e1; font-size:13px; line-height:1.6;">
-              Email: <a href="mailto:support@tikum.app" style="color:#38bdf8; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
-              Phone / WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
+              Email: <a href="mailto:support@tikum.app" style="color:#F3EBDD; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
+              WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#E36F45; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
               Operating Hours: Monday – Sunday: 09:00 – 21:00 WIB
             </div>
           </div>
@@ -304,22 +289,22 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
       </div>
 
       <!-- 2. Products & Services -->
-      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
-        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-list-check" style="color:#38bdf8;"></i> Products &amp; Services</h2>
+      <div style="background:#24364D; border:1px solid #172333; border-radius:14px; padding:28px;">
+        <h2 style="color:#FFFFFF; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-list-check" style="color:#F3EBDD;"></i> Products &amp; Services</h2>
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
-          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
-            <h3 style="color:#38bdf8; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-ticket"></i> 1. Secondary Ticket Marketplace</h3>
+          <div style="background:#0f172a; border:1px solid #172333; border-radius:10px; padding:18px;">
+            <h3 style="color:#F3EBDD; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-ticket"></i> 1. Secondary Ticket Marketplace</h3>
             <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
               Fan-to-fan resale marketplace for verified tickets to concerts, sporting events, and festivals in Indonesia. Buyers gain access to sold-out events safely without the risks of direct social media transactions.
             </p>
           </div>
-          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
-            <h3 style="color:#10b981; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> 2. Ticket Verification &amp; Anti-Duplication</h3>
+          <div style="background:#0f172a; border:1px solid #172333; border-radius:10px; padding:18px;">
+            <h3 style="color:#E36F45; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> 2. Ticket Verification &amp; Anti-Duplication</h3>
             <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
               Every listing undergoes rigorous provenance checks against official booking proofs and SHA-256 barcode hashing to prevent duplicate sales across multiple buyers.
             </p>
           </div>
-          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+          <div style="background:#0f172a; border:1px solid #172333; border-radius:10px; padding:18px;">
             <h3 style="color:#f59e0b; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-user-shield"></i> 3. On-Site Coordination (Select Events)</h3>
             <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
               For confirmed eligible events, Tikum coordinates on-site Event PIC representatives during venue gate hours to assist buyers with wristband exchange and turnstile scanner verification.
@@ -329,34 +314,34 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
       </div>
 
       <!-- 3. How It Works -->
-      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
-        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-circle-nodes" style="color:#10b981;"></i> How Tikum Works for Buyers</h2>
+      <div style="background:#24364D; border:1px solid #172333; border-radius:14px; padding:28px;">
+        <h2 style="color:#FFFFFF; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-circle-nodes" style="color:#E36F45;"></i> How Tikum Works for Buyers</h2>
         <div style="display:flex; flex-direction:column; gap:14px;">
           <div style="display:flex; gap:14px; align-items:flex-start;">
-            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">1</div>
+            <div style="background:#15365B; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">1</div>
             <div>
-              <strong style="color:#f8fafc; font-size:14px;">Discover Event &amp; Verified Tickets:</strong>
-              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Browse live events on the <a href="/events" style="color:#38bdf8;">Events Catalog</a>. All listed events feature validated dates, venues, and official promoter sources.</div>
+              <strong style="color:#FFFFFF; font-size:14px;">Discover Event &amp; Verified Tickets:</strong>
+              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Browse live events on the <a href="/events" style="color:#F3EBDD;">Events Catalog</a>. All listed events feature validated dates, venues, and official promoter sources.</div>
             </div>
           </div>
           <div style="display:flex; gap:14px; align-items:flex-start;">
-            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">2</div>
+            <div style="background:#15365B; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">2</div>
             <div>
-              <strong style="color:#f8fafc; font-size:14px;">Choose Buy Now or Make an Offer:</strong>
+              <strong style="color:#FFFFFF; font-size:14px;">Choose Buy Now or Make an Offer:</strong>
               <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Buy instantly at the listing price or submit a structured offer (min. 50% of listing price) without messy social media negotiation.</div>
             </div>
           </div>
           <div style="display:flex; gap:14px; align-items:flex-start;">
-            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">3</div>
+            <div style="background:#15365B; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">3</div>
             <div>
-              <strong style="color:#f8fafc; font-size:14px;">Transparent Checkout &amp; Platform-Held Protection:</strong>
-              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Review transparent price breakdown on <a href="/pay" style="color:#38bdf8;">Checkout (/pay)</a>. Funds are held under platform administrative custody (platform-held) and never disbursed to the seller until after event admission.</div>
+              <strong style="color:#FFFFFF; font-size:14px;">Transparent Checkout &amp; Platform-Held Protection:</strong>
+              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Review transparent price breakdown on <a href="/pay" style="color:#F3EBDD;">Checkout (/pay)</a>. Funds are held under platform administrative custody (platform-held) and never disbursed to the seller until after event admission.</div>
             </div>
           </div>
           <div style="display:flex; gap:14px; align-items:flex-start;">
-            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">4</div>
+            <div style="background:#15365B; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">4</div>
             <div>
-              <strong style="color:#f8fafc; font-size:14px;">Ticket Handover &amp; Gate Entry:</strong>
+              <strong style="color:#FFFFFF; font-size:14px;">Ticket Handover &amp; Gate Entry:</strong>
               <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Receive official e-ticket PDF or coordinate wristband pickup. Scan through official turnstiles with confidence.</div>
             </div>
           </div>
@@ -364,8 +349,8 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
       </div>
 
       <!-- 4. Transparent Pricing Policy -->
-      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;" id="pricing-details">
-        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 8px;"><i class="fa-solid fa-tags" style="color:#f59e0b;"></i> Transparent Pricing &amp; Fee Policy (V1)</h2>
+      <div style="background:#24364D; border:1px solid #172333; border-radius:14px; padding:28px;" id="pricing-details">
+        <h2 style="color:#FFFFFF; font-size:20px; font-weight:800; margin:0 0 8px;"><i class="fa-solid fa-tags" style="color:#f59e0b;"></i> Transparent Pricing &amp; Fee Policy (V1)</h2>
         <p style="color:#94a3b8; font-size:13px; margin:0 0 16px;">Tikum enforces single-source deterministic fee rules across the platform with zero hidden markups.</p>
         <div style="overflow-x:auto;">
           <table style="width:100%; border-collapse:collapse; font-size:13px; color:#cbd5e1; text-align:left;">
@@ -377,28 +362,28 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
               </tr>
             </thead>
             <tbody>
-              <tr style="border-bottom:1px solid #1e293b;">
-                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Buyer Platform Fee</td>
-                <td style="padding:10px 12px; color:#38bdf8; font-weight:700;">6% (Min Rp 35k, Max Rp 300k)</td>
+              <tr style="border-bottom:1px solid #172333;">
+                <td style="padding:10px 12px; font-weight:700; color:#FFFFFF;">Buyer Platform Fee</td>
+                <td style="padding:10px 12px; color:#F3EBDD; font-weight:700;">6% (Min Rp 35k, Max Rp 300k)</td>
                 <td style="padding:10px 12px;">Covers platform-held payment protection, ticket verification, and dispute resolution.</td>
               </tr>
-              <tr style="border-bottom:1px solid #1e293b;">
-                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Seller Service Fee</td>
-                <td style="padding:10px 12px; color:#10b981; font-weight:700;">6% (Min Rp 35k, Max Rp 300k)</td>
+              <tr style="border-bottom:1px solid #172333;">
+                <td style="padding:10px 12px; font-weight:700; color:#FFFFFF;">Seller Service Fee</td>
+                <td style="padding:10px 12px; color:#E36F45; font-weight:700;">6% (Min Rp 35k, Max Rp 300k)</td>
                 <td style="padding:10px 12px;">Deducted from sales proceeds only upon successful order completion.</td>
               </tr>
-              <tr style="border-bottom:1px solid #1e293b;">
-                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Listing Fee</td>
-                <td style="padding:10px 12px; color:#10b981; font-weight:700;">Rp 0 (Free)</td>
+              <tr style="border-bottom:1px solid #172333;">
+                <td style="padding:10px 12px; font-weight:700; color:#FFFFFF;">Listing Fee</td>
+                <td style="padding:10px 12px; color:#E36F45; font-weight:700;">Rp 0 (Free)</td>
                 <td style="padding:10px 12px;">Sellers can list tickets with zero upfront charges.</td>
               </tr>
-              <tr style="border-bottom:1px solid #1e293b;">
-                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Minimum Listing Price</td>
+              <tr style="border-bottom:1px solid #172333;">
+                <td style="padding:10px 12px; font-weight:700; color:#FFFFFF;">Minimum Listing Price</td>
                 <td style="padding:10px 12px;">Rp 500,000 / ticket</td>
                 <td style="padding:10px 12px;">Ensures curated high-standard event inventory during the pilot phase.</td>
               </tr>
               <tr>
-                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Seller Markup Cap</td>
+                <td style="padding:10px 12px; font-weight:700; color:#FFFFFF;">Seller Markup Cap</td>
                 <td style="padding:10px 12px; color:#f59e0b; font-weight:700;">Max +30% above Face Value</td>
                 <td style="padding:10px 12px;">Eliminates predatory scalping and ensures fair ticket access.</td>
               </tr>
@@ -408,29 +393,29 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
       </div>
 
       <!-- 5. Checkout & Payment Availability Status -->
-      <div style="background:#131d31; border:1px solid #0284c7; border-radius:14px; padding:28px;">
+      <div style="background:#24364D; border:1px solid #15365B; border-radius:14px; padding:28px;">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-          <span style="background:rgba(2,132,199,0.2); color:#38bdf8; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; text-transform:uppercase;">Demonstration Checkout Mode</span>
+          <span style="background:rgba(2,132,199,0.2); color:#F3EBDD; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; text-transform:uppercase;">Demonstration Checkout Mode</span>
         </div>
-        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 10px;"><i class="fa-solid fa-cash-register" style="color:#38bdf8;"></i> Checkout &amp; Payment Availability</h2>
+        <h2 style="color:#FFFFFF; font-size:20px; font-weight:800; margin:0 0 10px;"><i class="fa-solid fa-cash-register" style="color:#F3EBDD;"></i> Checkout &amp; Payment Availability</h2>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 16px;">
-          Tikum provides an itemized, transparent checkout experience at <a href="/pay" style="color:#38bdf8; font-weight:700;">/pay</a>. During the current launch preparation phase, the platform operates in <strong>demonstration mode</strong> pending merchant onboarding verification with our payment gateway partner Xendit (PT Sinar Digital Terdepan).
+          Tikum provides an itemized, transparent checkout experience at <a href="/pay" style="color:#F3EBDD; font-weight:700;">/pay</a>. During the current launch preparation phase, the platform operates in <strong>demonstration mode</strong> pending merchant onboarding verification with our payment gateway partner Xendit (PT Sinar Digital Terdepan).
         </p>
-        <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:16px; font-size:13px; color:#cbd5e1; line-height:1.6;">
+        <div style="background:#0f172a; border:1px solid #172333; border-radius:10px; padding:16px; font-size:13px; color:#cbd5e1; line-height:1.6;">
           <strong style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> Notice for Reviewers &amp; Visitors:</strong><br>
           Demonstration items on checkout are explicitly labeled <code style="color:#f59e0b;">DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN</code> with illustrative prices (<code style="color:#f59e0b;">Harga ilustratif — bukan penawaran tiket aktif</code>). No real credit card, bank account, or wallet deductions occur in demo mode.
         </div>
       </div>
 
       <!-- 6. Refund & Dispute Policies -->
-      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
-        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-rotate-left" style="color:#f43f5e;"></i> Refund &amp; Dispute Policy Summary</h2>
+      <div style="background:#24364D; border:1px solid #172333; border-radius:14px; padding:28px;">
+        <h2 style="color:#FFFFFF; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-rotate-left" style="color:#f43f5e;"></i> Refund &amp; Dispute Policy Summary</h2>
         <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0 0 16px;">
-          Transactions are backed by Tikum's official <a href="/refund-policy" style="color:#38bdf8;">Refund Policy</a>. In the event of a turnstile issue, buyers are protected:
+          Transactions are backed by Tikum's official <a href="/refund-policy" style="color:#F3EBDD;">Refund Policy</a>. In the event of a turnstile issue, buyers are protected:
         </p>
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
-          <div style="background:#0f172a; border-left:4px solid #10b981; border-radius:8px; padding:16px;">
-            <strong style="color:#10b981; font-size:14px; display:block; margin-bottom:6px;">Eligible for 100% Refund:</strong>
+          <div style="background:#0f172a; border-left:4px solid #E36F45; border-radius:8px; padding:16px;">
+            <strong style="color:#E36F45; font-size:14px; display:block; margin-bottom:6px;">Eligible for 100% Refund:</strong>
             <ul style="color:#cbd5e1; font-size:12.5px; line-height:1.6; margin:0; padding-left:18px;">
               <li>Ticket barcode verified rejected/invalid by official gate scanner.</li>
               <li>Seller fails to deliver ticket or fails to attend agreed handoff (seller no-show).</li>
@@ -450,8 +435,8 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
       </div>
 
       <!-- 7. Quick Links Navigation -->
-      <div style="background:#0f172a; border:1px solid #1e293b; border-radius:14px; padding:24px; text-align:center;">
-        <h3 style="color:#f8fafc; font-size:18px; font-weight:800; margin:0 0 12px;">Quick Navigation</h3>
+      <div style="background:#0f172a; border:1px solid #172333; border-radius:14px; padding:24px; text-align:center;">
+        <h3 style="color:#FFFFFF; font-size:18px; font-weight:800; margin:0 0 12px;">Quick Navigation</h3>
         <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
           <a href="/" class="btn btn-secondary btn-sm"><i class="fa-solid fa-house"></i> Home</a>
           <a href="/events" class="btn btn-secondary btn-sm"><i class="fa-solid fa-calendar-days"></i> Events Catalog</a>
@@ -467,26 +452,26 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
     <div style="display:flex; flex-direction:column; gap:24px;">
 
       <!-- 1. Identitas & Legalitas Usaha -->
-      <div style="background:#131d31; border:1px solid #10b981; border-radius:14px; padding:28px;">
+      <div style="background:#24364D; border:1px solid #E36F45; border-radius:14px; padding:28px;">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-          <span style="background:rgba(16,185,129,0.15); color:#10b981; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; letter-spacing:0.5px; text-transform:uppercase;">Identitas Resmi Badan Usaha</span>
-          <span style="color:#64748b; font-size:13px;">TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
+          <span style="background:rgba(227,111,69,0.15); color:#E36F45; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; letter-spacing:0.5px; text-transform:uppercase;">Identitas Resmi Badan Usaha</span>
+          <span style="color:#CBD5E1; font-size:13px;">TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
         </div>
-        <h2 style="color:#f8fafc; font-size:22px; font-weight:800; margin:0 0 10px;">Badan Usaha &amp; Hubungan Brand</h2>
+        <h2 style="color:#FFFFFF; font-size:22px; font-weight:800; margin:0 0 10px;">Badan Usaha &amp; Hubungan Brand</h2>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 16px;">
           <strong>TIKUM</strong> adalah brand pasar tiket sekunder terverifikasi (secondary ticket marketplace) yang dioperasikan secara sah di bawah <strong>PT SHINERVA PRAJNA TEJAS</strong>. Kami berkomitmen menyediakan ekosistem transaksi tiket yang aman, adil, dan transparan di Indonesia.
         </p>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; background:#0f172a; border:1px solid #172333; border-radius:10px; padding:18px;">
           <div>
-            <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Alamat Kantor Operasional &amp; Terdaftar:</div>
-            <div style="color:#f8fafc; font-size:13px; font-weight:600;">PT SHINERVA PRAJNA TEJAS</div>
+            <div style="font-size:12px; color:#CBD5E1; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Alamat Kantor Operasional &amp; Terdaftar:</div>
+            <div style="color:#FFFFFF; font-size:13px; font-weight:600;">PT SHINERVA PRAJNA TEJAS</div>
             <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Jl. Pasirluyu No. 79<br>Bandung 40254, Indonesia</div>
           </div>
           <div>
-            <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Kontak &amp; Jam Layanan Dukungan:</div>
+            <div style="font-size:12px; color:#CBD5E1; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Kontak &amp; Jam Layanan Dukungan:</div>
             <div style="color:#cbd5e1; font-size:13px; line-height:1.6;">
-              Email Resmi: <a href="mailto:support@tikum.app" style="color:#38bdf8; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
-              Telepon / WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378 (081299927378)</a><br>
+              Email Resmi: <a href="mailto:support@tikum.app" style="color:#F3EBDD; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
+              WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#E36F45; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
               Jam Operasional: Senin – Minggu: 09:00 – 21:00 WIB
             </div>
           </div>
@@ -494,22 +479,22 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
       </div>
 
       <!-- 2. Kategori Produk & Layanan -->
-      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
-        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-list-check" style="color:#38bdf8;"></i> Produk &amp; Layanan TIKUM</h2>
+      <div style="background:#24364D; border:1px solid #172333; border-radius:14px; padding:28px;">
+        <h2 style="color:#FFFFFF; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-list-check" style="color:#F3EBDD;"></i> Produk &amp; Layanan TIKUM</h2>
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
-          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
-            <h3 style="color:#38bdf8; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-ticket"></i> 1. Pasar Resale Tiket Sekunder</h3>
+          <div style="background:#0f172a; border:1px solid #172333; border-radius:10px; padding:18px;">
+            <h3 style="color:#F3EBDD; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-ticket"></i> 1. Pasar Resale Tiket Sekunder</h3>
             <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
               Fasilitasi jual-beli tiket event sekunder resmi antar-penggemar (fan-to-fan) untuk penikmat konser, festival musik, olahraga, dan pertunjukan berbayar yang berhalangan hadir.
             </p>
           </div>
-          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
-            <h3 style="color:#10b981; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> 2. Verifikasi Keabsahan Tiket &amp; Hashing</h3>
+          <div style="background:#0f172a; border:1px solid #172333; border-radius:10px; padding:18px;">
+            <h3 style="color:#E36F45; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-shield-check"></i> 2. Verifikasi Keabsahan Tiket &amp; Hashing</h3>
             <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
               Pemeriksaan dokumen kepemilikan tiket resmi dan penerapan validasi hash barcode SHA-256 untuk mencegah tiket yang sama didaftarkan atau dijual ganda ke beberapa orang.
             </p>
           </div>
-          <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:18px;">
+          <div style="background:#0f172a; border:1px solid #172333; border-radius:10px; padding:18px;">
             <h3 style="color:#f59e0b; font-size:16px; font-weight:700; margin:0 0 8px;"><i class="fa-solid fa-user-shield"></i> 3. Pendampingan Lapangan (Event Terpilih)</h3>
             <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0;">
               Untuk event terpilih yang telah terkonfirmasi, koordinator lapangan (Event PIC) TIKUM disiagakan di area venue pada jam operasional gerbang (gate hours) untuk membantu asistensi turnstile scanner.
@@ -519,34 +504,34 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
       </div>
 
       <!-- 3. Alur Kerja Bagi Pembeli -->
-      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
-        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-circle-nodes" style="color:#10b981;"></i> Cara Kerja Pasar Tiket Bagi Pembeli</h2>
+      <div style="background:#24364D; border:1px solid #172333; border-radius:14px; padding:28px;">
+        <h2 style="color:#FFFFFF; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-circle-nodes" style="color:#E36F45;"></i> Cara Kerja Pasar Tiket Bagi Pembeli</h2>
         <div style="display:flex; flex-direction:column; gap:14px;">
           <div style="display:flex; gap:14px; align-items:flex-start;">
-            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">1</div>
+            <div style="background:#15365B; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">1</div>
             <div>
-              <strong style="color:#f8fafc; font-size:14px;">Pilih Acara &amp; Tiket Terverifikasi:</strong>
-              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Temukan konser atau pertandingan di <a href="/events" style="color:#38bdf8;">Katalog Event</a>. Seluruh data event divalidasi langsung dari pengumuman resmi promotor.</div>
+              <strong style="color:#FFFFFF; font-size:14px;">Pilih Acara &amp; Tiket Terverifikasi:</strong>
+              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Temukan konser atau pertandingan di <a href="/events" style="color:#F3EBDD;">Katalog Event</a>. Seluruh data event divalidasi langsung dari pengumuman resmi promotor.</div>
             </div>
           </div>
           <div style="display:flex; gap:14px; align-items:flex-start;">
-            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">2</div>
+            <div style="background:#15365B; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">2</div>
             <div>
-              <strong style="color:#f8fafc; font-size:14px;">Pilih Beli Langsung (Buy Now) atau Ajukan Tawaran (Make Offer):</strong>
+              <strong style="color:#FFFFFF; font-size:14px;">Pilih Beli Langsung (Buy Now) atau Ajukan Tawaran (Make Offer):</strong>
               <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Beli langsung pada harga penjual atau tawar harga secara adil (minimal 50% dari harga listing) tanpa obrolan bebas di luar platform.</div>
             </div>
           </div>
           <div style="display:flex; gap:14px; align-items:flex-start;">
-            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">3</div>
+            <div style="background:#15365B; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">3</div>
             <div>
-              <strong style="color:#f8fafc; font-size:14px;">Rincian Harga Transparan di Checkout &amp; Perlindungan Platform-Held:</strong>
-              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Cek rincian harga di <a href="/pay" style="color:#38bdf8;">Halaman Checkout (/pay)</a>. Dana pembayaran Anda ditahan aman dalam sistem internal platform (platform-held) dan tidak diserahkan ke penjual sebelum acara berhasil dimasuki.</div>
+              <strong style="color:#FFFFFF; font-size:14px;">Rincian Harga Transparan di Checkout &amp; Perlindungan Platform-Held:</strong>
+              <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Cek rincian harga di <a href="/pay" style="color:#F3EBDD;">Halaman Checkout (/pay)</a>. Dana pembayaran Anda ditahan aman dalam sistem internal platform (platform-held) dan tidak diserahkan ke penjual sebelum acara berhasil dimasuki.</div>
             </div>
           </div>
           <div style="display:flex; gap:14px; align-items:flex-start;">
-            <div style="background:#0284c7; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">4</div>
+            <div style="background:#15365B; color:#fff; font-weight:800; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">4</div>
             <div>
-              <strong style="color:#f8fafc; font-size:14px;">Serah Terima Tiket &amp; Masuk Gate Acara:</strong>
+              <strong style="color:#FFFFFF; font-size:14px;">Serah Terima Tiket &amp; Masuk Gate Acara:</strong>
               <div style="color:#cbd5e1; font-size:13px; line-height:1.5;">Terima e-voucher PDF resmi atau lakukan penukaran wristband fisik. Masuki gerbang turnstile dengan rasa tenang didukung jaminan refund jika tiket terbukti tidak valid.</div>
             </div>
           </div>
@@ -554,8 +539,8 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
       </div>
 
       <!-- 4. Struktur Biaya Resmi -->
-      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;" id="pricing-details">
-        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 8px;"><i class="fa-solid fa-tags" style="color:#f59e0b;"></i> Struktur Harga &amp; Biaya Resmi (Tikum Fee Policy V1)</h2>
+      <div style="background:#24364D; border:1px solid #172333; border-radius:14px; padding:28px;" id="pricing-details">
+        <h2 style="color:#FFFFFF; font-size:20px; font-weight:800; margin:0 0 8px;"><i class="fa-solid fa-tags" style="color:#f59e0b;"></i> Struktur Harga &amp; Biaya Resmi (Tikum Fee Policy V1)</h2>
         <p style="color:#94a3b8; font-size:13px; margin:0 0 16px;">Semua rincian biaya terbuka dan dihitung secara deterministik tanpa biaya siluman.</p>
         <div style="overflow-x:auto;">
           <table style="width:100%; border-collapse:collapse; font-size:13px; color:#cbd5e1; text-align:left;">
@@ -567,28 +552,28 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
               </tr>
             </thead>
             <tbody>
-              <tr style="border-bottom:1px solid #1e293b;">
-                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Biaya Platform Pembeli (Buyer Fee)</td>
-                <td style="padding:10px 12px; color:#38bdf8; font-weight:700;">6% (Min. Rp35.000, Maks. Rp300.000)</td>
+              <tr style="border-bottom:1px solid #172333;">
+                <td style="padding:10px 12px; font-weight:700; color:#FFFFFF;">Biaya Platform Pembeli (Buyer Fee)</td>
+                <td style="padding:10px 12px; color:#F3EBDD; font-weight:700;">6% (Min. Rp35.000, Maks. Rp300.000)</td>
                 <td style="padding:10px 12px;">Perlindungan pembayaran platform-held, validasi bukti tiket, dan penanganan sengketa.</td>
               </tr>
-              <tr style="border-bottom:1px solid #1e293b;">
-                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Biaya Layanan Penjual (Seller Fee)</td>
-                <td style="padding:10px 12px; color:#10b981; font-weight:700;">6% (Min. Rp35.000, Maks. Rp300.000)</td>
+              <tr style="border-bottom:1px solid #172333;">
+                <td style="padding:10px 12px; font-weight:700; color:#FFFFFF;">Biaya Layanan Penjual (Seller Fee)</td>
+                <td style="padding:10px 12px; color:#E36F45; font-weight:700;">6% (Min. Rp35.000, Maks. Rp300.000)</td>
                 <td style="padding:10px 12px;">Dipotong dari hasil penjualan saat pencairan dana pasca-acara selesai.</td>
               </tr>
-              <tr style="border-bottom:1px solid #1e293b;">
-                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Biaya Pasang Listing (Seller)</td>
-                <td style="padding:10px 12px; color:#10b981; font-weight:700;">Rp 0 (Gratis)</td>
+              <tr style="border-bottom:1px solid #172333;">
+                <td style="padding:10px 12px; font-weight:700; color:#FFFFFF;">Biaya Pasang Listing (Seller)</td>
+                <td style="padding:10px 12px; color:#E36F45; font-weight:700;">Rp 0 (Gratis)</td>
                 <td style="padding:10px 12px;">Penjual mendaftarkan tiket tanpa biaya awal di muka.</td>
               </tr>
-              <tr style="border-bottom:1px solid #1e293b;">
-                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Batas Harga Minimum Listing</td>
+              <tr style="border-bottom:1px solid #172333;">
+                <td style="padding:10px 12px; font-weight:700; color:#FFFFFF;">Batas Harga Minimum Listing</td>
                 <td style="padding:10px 12px;">Rp 500.000 / tiket</td>
                 <td style="padding:10px 12px;">Memastikan standar kurasi tiket pada fase pilot operasional.</td>
               </tr>
               <tr>
-                <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">Batas Markup Penjual</td>
+                <td style="padding:10px 12px; font-weight:700; color:#FFFFFF;">Batas Markup Penjual</td>
                 <td style="padding:10px 12px; color:#f59e0b; font-weight:700;">Maksimal +30% dari Face Value</td>
                 <td style="padding:10px 12px;">Mencegah praktik calo liar dan menjaga harga tiket tetap wajar.</td>
               </tr>
@@ -598,29 +583,29 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
       </div>
 
       <!-- 5. Status Kesiapan Checkout & Pembayaran -->
-      <div style="background:#131d31; border:1px solid #0284c7; border-radius:14px; padding:28px;">
+      <div style="background:#24364D; border:1px solid #15365B; border-radius:14px; padding:28px;">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-          <span style="background:rgba(2,132,199,0.2); color:#38bdf8; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; text-transform:uppercase;">Status Mode Demonstrasi Checkout</span>
+          <span style="background:rgba(2,132,199,0.2); color:#F3EBDD; font-weight:800; font-size:11px; padding:4px 10px; border-radius:6px; text-transform:uppercase;">Status Mode Demonstrasi Checkout</span>
         </div>
-        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 10px;"><i class="fa-solid fa-cash-register" style="color:#38bdf8;"></i> Alur Checkout &amp; Ketersediaan Pembayaran</h2>
+        <h2 style="color:#FFFFFF; font-size:20px; font-weight:800; margin:0 0 10px;"><i class="fa-solid fa-cash-register" style="color:#F3EBDD;"></i> Alur Checkout &amp; Ketersediaan Pembayaran</h2>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.7; margin:0 0 16px;">
-          Halaman checkout resmi dapat diakses publik di <a href="/pay" style="color:#38bdf8; font-weight:700;">/pay</a>. Saat ini, sistem pembayaran TIKUM beroperasi dalam <strong>tahap verifikasi merchant payment gateway resmi dengan Xendit (PT Sinar Digital Terdepan)</strong>.
+          Halaman checkout resmi dapat diakses publik di <a href="/pay" style="color:#F3EBDD; font-weight:700;">/pay</a>. Saat ini, sistem pembayaran TIKUM beroperasi dalam <strong>tahap verifikasi merchant payment gateway resmi dengan Xendit (PT Sinar Digital Terdepan)</strong>.
         </p>
-        <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:16px; font-size:13px; color:#cbd5e1; line-height:1.6;">
+        <div style="background:#0f172a; border:1px solid #172333; border-radius:10px; padding:16px; font-size:13px; color:#cbd5e1; line-height:1.6;">
           <strong style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> Keterangan untuk Reviewer Merchant &amp; Pengguna:</strong><br>
           Item demonstrasi pada halaman checkout ditandai dengan label <code style="color:#f59e0b;">DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN</code> dan harga ilustratif (<code style="color:#f59e0b;">Harga ilustratif — bukan penawaran tiket aktif</code>). Tidak ada pemotongan saldo nyata, penagihan kartu kredit/debit, atau pesanan palsu yang diproses dalam mode demonstrasi ini.
         </div>
       </div>
 
       <!-- 6. Ringkasan Kebijakan Refund & Sengketa -->
-      <div style="background:#131d31; border:1px solid #1e293b; border-radius:14px; padding:28px;">
-        <h2 style="color:#f8fafc; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-rotate-left" style="color:#f43f5e;"></i> Ringkasan Kebijakan Pengembalian Dana (Refund Policy)</h2>
+      <div style="background:#24364D; border:1px solid #172333; border-radius:14px; padding:28px;">
+        <h2 style="color:#FFFFFF; font-size:20px; font-weight:800; margin:0 0 12px;"><i class="fa-solid fa-rotate-left" style="color:#f43f5e;"></i> Ringkasan Kebijakan Pengembalian Dana (Refund Policy)</h2>
         <p style="color:#cbd5e1; font-size:13px; line-height:1.6; margin:0 0 16px;">
-          Setiap transaksi dilindungi oleh <a href="/refund-policy" style="color:#38bdf8;">Kebijakan Pengembalian Dana (Refund Policy)</a> resmi Tikum:
+          Setiap transaksi dilindungi oleh <a href="/refund-policy" style="color:#F3EBDD;">Kebijakan Pengembalian Dana (Refund Policy)</a> resmi Tikum:
         </p>
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
-          <div style="background:#0f172a; border-left:4px solid #10b981; border-radius:8px; padding:16px;">
-            <strong style="color:#10b981; font-size:14px; display:block; margin-bottom:6px;">Kondisi Berhak Refund Penuh:</strong>
+          <div style="background:#0f172a; border-left:4px solid #E36F45; border-radius:8px; padding:16px;">
+            <strong style="color:#E36F45; font-size:14px; display:block; margin-bottom:6px;">Kondisi Berhak Refund Penuh:</strong>
             <ul style="color:#cbd5e1; font-size:12.5px; line-height:1.6; margin:0; padding-left:18px;">
               <li>Barcode tiket terbukti ditolak oleh scanner turnstile di pintu masuk venue resmi.</li>
               <li>Penjual gagal menyerahkan tiket atau tidak hadir saat penukaran fisik (seller no-show).</li>
@@ -640,8 +625,8 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
       </div>
 
       <!-- 7. Tautan Navigasi Cepat -->
-      <div style="background:#0f172a; border:1px solid #1e293b; border-radius:14px; padding:24px; text-align:center;">
-        <h3 style="color:#f8fafc; font-size:18px; font-weight:800; margin:0 0 12px;">Navigasi Cepat TIKUM</h3>
+      <div style="background:#0f172a; border:1px solid #172333; border-radius:14px; padding:24px; text-align:center;">
+        <h3 style="color:#FFFFFF; font-size:18px; font-weight:800; margin:0 0 12px;">Navigasi Cepat TIKUM</h3>
         <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
           <a href="/" class="btn btn-secondary btn-sm"><i class="fa-solid fa-house"></i> Beranda</a>
           <a href="/events" class="btn btn-secondary btn-sm"><i class="fa-solid fa-calendar-days"></i> Katalog Event</a>
@@ -1014,7 +999,7 @@ router.get('/about', (req, res) => {
             <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Official Contact &amp; Support:</div>
             <div style="color:#cbd5e1; font-size:13px; line-height:1.6;">
               Email: <a href="mailto:support@tikum.app" style="color:#38bdf8; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
-              Phone / WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
+              WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
               Operating Hours: Monday – Sunday: 09:00 – 21:00 WIB
             </div>
           </div>
@@ -1073,7 +1058,7 @@ router.get('/about', (req, res) => {
             <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Kontak Resmi &amp; Jam Layanan:</div>
             <div style="color:#cbd5e1; font-size:13px; line-height:1.6;">
               Email: <a href="mailto:support@tikum.app" style="color:#38bdf8; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
-              Telepon / WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
+              WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
               Jam Layanan: Senin – Minggu: 09:00 – 21:00 WIB
             </div>
           </div>

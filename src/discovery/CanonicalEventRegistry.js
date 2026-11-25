@@ -204,6 +204,7 @@ class CanonicalEventRegistry {
 
     // Construct Canonical Event Model conforming to Part 6 & P0 Invariants
     const canonicalEvent = {
+      verification_state: eventData.verification_state || null,
       event_id: eventId,
       id: eventId, // compatibility with existing marketplace queries
       slug: slug,
@@ -2073,7 +2074,7 @@ class CanonicalEventRegistry {
 
     // Default active upcoming hero concerts: strictly qualified (lowest official tier >= 500k)
     // King Nassar is excluded due to Rp 350.000 Tribun Regular tier.
-    return [btsHero, morganJayHero, efestaphoriaHero, mcrHero, gnrHero];
+    return [btsHero, bigbangHero, efestaphoriaHero, morganJayHero, mcrHero, gnrHero];
   }
 
   getAllEvents() {

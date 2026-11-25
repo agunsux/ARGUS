@@ -1,23 +1,13 @@
 /**
- * TIKUM DESIGN TOKENS (Single Source of Truth)
+ * TIKUM DESIGN TOKENS (Single Source of Truth — Dark Mode Canonical)
  *
  * Design Direction:
- * - Feeling: calm, warm, trustworthy (Fintech safety meets ticketing energy)
- * - References: Bank Jago (warmth, generous whitespace) & TickPick (all-in pricing, scanability)
- * - Rules: Terracotta <= 10% screen area, all text passes WCAG AA contrast
- *
- * Tokens Specification:
- * - Primary Action: Terracotta (#B8472F)
- * - Background: Warm Sand (#FAF6F2)
- * - Cards & Surfaces: Pure White (#FFFFFF)
- * - Ink: Deep charcoal (#2B2724)
- * - Trust / Verification: Deep Forest Green (#2F7D5B)
- * - Accent / Highlight: Warm Amber (#F2A33A)
- * - Error: Deep Crimson (#A3162A)
+ * - Dark-Mode-Only Fintech Trust + Live Event Energy
+ * - Approved brand colors are centralized below; semantic status colors are separate.
  */
 
 /* ==========================================================================
-   SELF-HOSTED FONTS: Plus Jakarta Sans (500 & 700 only, subset latin)
+   SELF-HOSTED FONTS: Plus Jakarta Sans (500 & 700, subset latin)
    ========================================================================== */
 @font-face {
   font-family: 'Plus Jakarta Sans';
@@ -37,39 +27,136 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-:root {
-  /* ==========================================================================
-     TIKUM DEEP TEAL & WARM CREAM BRAND PALETTE (Single Source of Truth)
-     ========================================================================== */
-  --tikum-teal-950: #092630; /* deep footer & hero shadow base */
-  --tikum-teal-900: #0E3B4A; /* editorial hero & Two-Way Protection section */
-  --tikum-teal-700: #124E61; /* primary signature brand teal */
-  --tikum-teal-100: #E4F1F4; /* soft teal pill/badge tint on light canvas */
-  --tikum-cream-50: #FAF8F4; /* main light browsing canvas — warm, calm, premium */
-  --tikum-cream-100: #F2EDE4; /* subtle secondary light surface / muted cards */
-  --tikum-surface: #FFFFFF; /* crisp elevated event & form cards */
-  --tikum-cream-text: #FAF1E2; /* warm cream typography on dark teal sections */
-  --tikum-coral-500: #DA674E; /* signature center-dot coral — primary high-conversion CTAs */
-  --tikum-coral-600: #C2533B; /* CTA hover state */
-  --tikum-ink-900: #0E222A; /* high-contrast primary ink on light canvas, WCAG AAA */
-  --tikum-ink-600: #4A606A; /* secondary muted ink on light canvas, WCAG AA >= 4.5:1 */
-  --tikum-trust-green: #179A6B; /* Event PIC / verified evidence badges */
-  --tikum-border: rgba(18, 78, 97, 0.12); /* clean hairline borders on light surfaces */
+:root,
+html[data-theme="dark"],
+body.dark-mode {
+  color-scheme: dark;
 
-  /* Aliases for backwards compatibility */
-  --color-brand-primary: var(--tikum-coral-500);
-  --color-brand-teal: var(--tikum-teal-700);
-  --color-brand-teal-deep: var(--tikum-teal-900);
-  --color-canvas: var(--tikum-cream-50);
-  --color-surface-card: var(--tikum-surface);
-  --terra-600: var(--tikum-coral-500);
-  --terra-700: var(--tikum-coral-600);
-  --terra-100: var(--tikum-teal-100);
-  --sand-50: var(--tikum-cream-50);
-  --surface: var(--tikum-surface);
-  --ink-900: var(--tikum-ink-900);
-  --ink-700: var(--tikum-ink-600);
-  --ok-600: var(--tikum-trust-green);
+  --palette-primary-blue: #15365B;
+  --palette-midnight-navy: #172333;
+  --palette-surface: #24364D;
+  --palette-soft-white: #FFFFFF;
+  --palette-secondary-text: #CBD5E1;
+  --palette-terracotta: #E36F45;
+  --palette-warm-sand: #F3EBDD;
+
+  /* Canonical Dark Mode Surface Hierarchy (Strictly Approved 7-Color Brand System) */
+  --theme-canvas: var(--palette-midnight-navy);
+  --theme-secondary: var(--palette-primary-blue);
+  --theme-elevated: var(--palette-surface);
+  --theme-brand-surface: var(--palette-primary-blue);
+  --theme-card: var(--palette-surface);
+  --theme-card-elevated: var(--palette-surface);
+  --theme-input: var(--palette-midnight-navy);
+  --theme-text: var(--palette-soft-white);
+  --theme-text-warm: var(--palette-warm-sand);
+  --theme-muted: var(--palette-secondary-text);
+  --theme-dim: var(--palette-secondary-text);
+  --theme-border: rgba(203, 213, 225, 0.22);
+  --theme-border-strong: rgba(203, 213, 225, 0.38);
+
+  /* Brand Surface & Section Aliases */
+  --brand-canvas: var(--palette-midnight-navy);
+  --brand-surface: var(--palette-primary-blue);
+  --brand-card: var(--palette-surface);
+  --brand-text: var(--palette-soft-white);
+  --brand-sand: var(--palette-warm-sand);
+  --brand-text-muted: var(--palette-secondary-text);
+  --brand-accent: var(--palette-terracotta);
+
+  /* Shared Header Tokens (6 Variants) */
+  --header-surface: rgba(23, 35, 51, 0.95);
+  --header-surface-solid: var(--palette-midnight-navy);
+  --header-surface-elevated: var(--palette-surface);
+  --header-ink: var(--palette-soft-white);
+  --header-ink-warm: var(--palette-warm-sand);
+  --header-muted: var(--palette-secondary-text);
+  --header-accent: var(--palette-terracotta);
+  --header-accent-hover: var(--palette-terracotta);
+  --header-blue: var(--palette-primary-blue);
+  --header-border: rgba(203, 213, 225, 0.22);
+
+  /* Brand Identity Tokens */
+  --tikum-beige: var(--palette-warm-sand);
+  --tikum-navy: var(--palette-midnight-navy);
+  --tikum-blue: var(--palette-primary-blue);
+  --tikum-blue-light: var(--palette-secondary-text);
+  --tikum-terracotta: var(--palette-terracotta);
+  --tikum-terracotta-ink: var(--palette-warm-sand);
+  --knicks-navy-950: var(--palette-midnight-navy);
+  --knicks-navy-900: var(--palette-midnight-navy);
+  --knicks-navy-800: var(--palette-primary-blue);
+  --knicks-blue-600: var(--palette-primary-blue);
+  --knicks-blue-hover: var(--palette-surface);
+  --knicks-blue-soft: rgba(21, 54, 91, 0.45);
+  --knicks-terracotta-500: var(--palette-terracotta);
+  --knicks-terracotta-hover: var(--palette-terracotta);
+  --knicks-terracotta-soft: rgba(227, 111, 69, 0.2);
+
+  /* Editorial & Structural Surface Aliases (Dark Mode Only) */
+  --fn-white: var(--palette-surface);
+  --fn-canvas: var(--palette-midnight-navy);
+  --fn-surface-soft: var(--palette-primary-blue);
+  --fn-ink-900: var(--palette-soft-white);
+  --fn-ink-600: var(--palette-secondary-text);
+  --fn-on-dark: var(--palette-soft-white);
+  --fn-on-dark-muted: var(--palette-secondary-text);
+  --fn-border-light: rgba(203, 213, 225, 0.2);
+  --fn-border-dark: rgba(255, 255, 255, 0.16);
+
+  --tikum-teal-950: var(--palette-midnight-navy);
+  --tikum-teal-900: var(--palette-midnight-navy);
+  --tikum-teal-700: var(--palette-primary-blue);
+  --tikum-teal-100: rgba(21, 54, 91, 0.42);
+  --tikum-cream-50: var(--palette-midnight-navy);
+  --tikum-cream-100: var(--palette-surface);
+  --tikum-surface: var(--palette-surface);
+  --tikum-cream-text: var(--palette-warm-sand);
+  --tikum-coral-500: var(--palette-terracotta);
+  --tikum-coral-600: var(--palette-terracotta);
+  --tikum-ink-900: var(--palette-soft-white);
+  --tikum-ink-600: var(--palette-secondary-text);
+  --tikum-trust-green: #10B981;
+  --tikum-trust-green-light: #34D399;
+  --tikum-border: rgba(203, 213, 225, 0.24);
+
+  /* Semantic Status Colors (Preserved for escrow, trust & alerts) */
+  --ok-600: #10B981;
+  --ok-soft: rgba(16, 185, 129, 0.18);
+  --amber-500: #F59E0B;
+  --warning: #FDE68A;
+  --warning-soft: rgba(245, 158, 11, 0.18);
+  --danger-600: #EF4444;
+  --danger: #FCA5A5;
+  --danger-soft: rgba(239, 68, 68, 0.18);
+  --info: var(--palette-warm-sand);
+  --info-soft: rgba(21, 54, 91, 0.45);
+
+  /* Legacy & Page Variable Bridges (All Dark Mode) */
+  --color-brand-primary: var(--palette-terracotta);
+  --color-brand-teal: var(--palette-primary-blue);
+  --color-brand-teal-deep: var(--palette-midnight-navy);
+  --color-canvas: var(--theme-canvas);
+  --color-surface-card: var(--theme-card);
+  --terra-600: var(--palette-terracotta);
+  --terra-700: var(--palette-terracotta);
+  --terra-100: rgba(227, 111, 69, 0.18);
+  --sand-50: var(--theme-canvas);
+  --surface: var(--theme-card);
+  --surface-subtle: var(--palette-primary-blue);
+  --ink-900: var(--theme-text);
+  --ink-700: var(--theme-muted);
+  --ink-500: var(--theme-dim);
+  --line-300: var(--theme-border);
+  --line-100: var(--palette-surface);
+  --bg-page: var(--theme-canvas);
+  --card-bg: var(--theme-card);
+  --text-main: var(--theme-text);
+  --text-muted: var(--theme-muted);
+  --border-color: var(--theme-border);
+  --primary: var(--palette-primary-blue);
+  --primary-hover: var(--palette-surface);
+  --primary-soft: rgba(21, 54, 91, 0.45);
 
   /* Fluid Typography */
   --font-display: 'Bricolage Grotesque', 'Plus Jakarta Sans', -apple-system, sans-serif;
@@ -87,9 +174,7 @@
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.65;
 
-  /* ==========================================================================
-     SHAPE & 8-PT SPATIAL SYSTEM
-     ========================================================================== */
+  /* Shape & 8-pt Spatial System */
   --space-2:  2px;
   --space-4:  4px;
   --space-8:  8px;
@@ -103,14 +188,14 @@
   --space-64: 64px;
 
   /* Radii */
-  --radius-sm:   8px;    /* Badges, small pills, tags */
-  --radius-card: 12px;   /* Cards, form inputs, modals */
-  --radius-pill: 999px;  /* Filter chips, primary CTA pills */
+  --radius-sm:   8px;
+  --radius-card: 12px;
+  --radius-pill: 999px;
 
-  /* Elevation: EXACTLY ONE SOFT SHADOW TOKEN */
-  --shadow-soft: 0 1px 2px rgba(43, 39, 36, 0.04), 0 8px 24px rgba(43, 39, 36, 0.06);
+  /* Elevation */
+  --shadow-soft: 0 2px 6px rgba(3, 8, 20, 0.35), 0 12px 30px rgba(3, 8, 20, 0.45);
 
-  /* Motion: 150-200ms ease-out (opacity & transform only) */
+  /* Motion */
   --transition-fast: 160ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-base: 180ms cubic-bezier(0.16, 1, 0.3, 1);
 

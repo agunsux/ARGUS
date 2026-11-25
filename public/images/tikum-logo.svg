@@ -2,17 +2,14 @@
   <!-- Rounded Deep Teal Tile Background -->
   <rect width="160" height="160" rx="36" fill="#124E61" />
   
-  <!-- Centered Symbol (Scale 0.75, offset x=42.5, y=20) -->
   <g transform="translate(42.5, 20) scale(0.75)">
-    <circle cx="28" cy="32" r="10.5" fill="#FAF1E2" />
-    <path d="M 12 76 C 12 56, 26 48, 38 52 C 43 53.6, 46 58, 46 64 C 46 72, 38 76, 24 76 Z" fill="#FAF1E2" />
-    <circle cx="72" cy="32" r="10.5" fill="#FAF1E2" />
-    <path d="M 88 76 C 88 56, 74 48, 62 52 C 57 53.6, 54 58, 54 64 C 54 72, 62 76, 76 76 Z" fill="#FAF1E2" />
-    <circle cx="50" cy="45" r="9" fill="#DA674E" />
-    <path d="M 32 82 C 42 85, 58 85, 68 82 C 70 81.5, 71 83.5, 69 84.5 C 57 89, 43 89, 31 84.5 C 29 83.5, 30 81.5, 32 82 Z" fill="#FAF1E2" opacity="0.4" />
+    <circle cx="28" cy="32" r="10.5" fill="#FFFFFF" />
+    <path d="M 12 76 C 12 56, 26 48, 38 52 C 43 53.6, 46 58, 46 64 C 46 72, 38 76, 24 76 Z" fill="#FFFFFF" />
+    <circle cx="72" cy="32" r="10.5" fill="#FFFFFF" />
+    <path d="M 88 76 C 88 56, 74 48, 62 52 C 57 53.6, 54 58, 54 64 C 54 72, 62 76, 76 76 Z" fill="#FFFFFF" />
+    <circle cx="50" cy="45" r="9" fill="#E05A2B" />
   </g>
   
   <!-- Stacked Wordmark -->
-  <text x="80" y="128" font-family="'Bricolage Grotesque', 'Plus Jakarta Sans', -apple-system, sans-serif" font-size="26" font-weight="800" letter-spacing="2" fill="#FAF1E2" text-anchor="middle">TIKUM</text>
-  <circle cx="132" cy="121" r="3.5" fill="#DA674E" />
+  <text x="80" y="128" font-family="'Bricolage Grotesque', 'Plus Jakarta Sans', -apple-system, sans-serif" font-size="26" font-weight="800" letter-spacing="2" fill="#FFFFFF" text-anchor="middle">TIKUM</text>
 </svg>

@@ -1,16 +1,21 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
   <title>TIKUM Operations Console — Admin Sign In</title>
+  <link rel="icon" type="image/svg+xml" href="/images/tikum-brand-symbol.svg">
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/tikum-tokens.css">
+  <link rel="stylesheet" href="/css/header-shared.css">
   <style>
     :root {
-      --bg: #0b1120;
-      --panel: #0f172a;
-      --border: #1e293b;
-      --text: #e2e8f0;
+      --bg: #172333;
+      --panel: #24364D;
+      --border: rgba(243, 235, 221, 0.16);
+      --text: #FFFFFF;
       --muted: #94a3b8;
       --accent: #38bdf8;
       --danger: #f87171;
@@ -124,11 +129,11 @@
 </head>
 <body>
   <div style="position: absolute; top: 16px; right: 20px;">
-    <button id="langToggle" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="background:#1e293b; border:1px solid #334155; color:#38bdf8; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;" title="Switch Language">ID</button>
+    <button id="langToggle" type="button" class="lang-toggle-btn tikum-lang-btn" title="Switch Language">ID</button>
   </div>
   <main class="login-card">
     <div class="brand">
-      <div class="brand-badge">&#128737;</div>
+      <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="165" height="36" alt="TIKUM" style="height:36px;width:auto;display:block;margin:0 auto 10px;">
       <h1 data-i18n="admin.consoleTitle">TIKUM OPERATIONS CONTROL</h1>
       <p data-i18n="admin.consoleSubtitle">Admin Sign In</p>
     </div>
@@ -230,5 +235,6 @@
       });
     })();
   </script>
+  <script src="/js/header-shared.js"></script>
 </body>
 </html>

@@ -1,24 +1,20 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#FAF6F2">
+  <script src="/js/theme.js"></script>
+  <meta name="theme-color" content="#172333">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Tikum — Verified Ticket Marketplace by Shinerva</title>
   <meta name="description" content="Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli. Platform penemuan event berbayar dan bertiket di Indonesia dengan verifikasi sumber resmi.">
   <link rel="canonical" href="https://tikum.app/">
   <link rel="alternate" hreflang="id" href="https://tikum.app/">
   <link rel="alternate" hreflang="en" href="https://tikum.app/?lang=en">
-  <link rel="alternate" hreflang="zh-CN" href="https://tikum.app/?lang=zh-CN">
-  <link rel="alternate" hreflang="ja" href="https://tikum.app/?lang=ja">
-  <link rel="alternate" hreflang="ko" href="https://tikum.app/?lang=ko">
-  <link rel="alternate" hreflang="es" href="https://tikum.app/?lang=es">
-  <link rel="alternate" hreflang="pt-BR" href="https://tikum.app/?lang=pt-BR">
-  <link rel="alternate" hreflang="fr" href="https://tikum.app/?lang=fr">
-  <link rel="alternate" hreflang="ar" href="https://tikum.app/?lang=ar">
-  <link rel="alternate" hreflang="hi" href="https://tikum.app/?lang=hi">
+  <link rel="alternate" hreflang="ms" href="https://tikum.app/?lang=ms">
+  <link rel="alternate" hreflang="tl" href="https://tikum.app/?lang=tl">
+  <link rel="alternate" hreflang="th" href="https://tikum.app/?lang=th">
   <link rel="alternate" hreflang="x-default" href="https://tikum.app/">
 
   <!-- OpenGraph / Facebook -->
@@ -33,11 +29,14 @@
   <meta name="twitter:title" content="TIKUM — Pasar Tiket Event Terverifikasi | by Shinerva">
   <meta name="twitter:description" content="Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli.">
 
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="/images/tikum-brand-symbol.svg">
   <link rel="apple-touch-icon" href="/assets/tikum-maskable.svg">
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/tikum-tokens.css">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/marketplace-refresh.css">
+  <link rel="stylesheet" href="/css/header-shared.css">
 
   <!-- Schema.org Structured Data -->
   <script type="application/ld+json">
@@ -182,7 +181,9 @@
     <aside id="appSidebar" class="app-sidebar" aria-label="Navigasi Utama">
       <div class="sidebar-brand-header">
         <a href="/" class="sidebar-brand-link">
-          <img src="/images/tikum-symbol.svg" width="30" height="30" alt="Tikum Logo">
+          <span class="tikum-symbol-slot">
+            <img src="/images/tikum-brand-symbol.svg" class="tikum-logo-img" width="36" height="36" alt="Tikum Logo">
+          </span>
           <div class="sidebar-brand-text">
             <div class="sidebar-brand-title">TIKUM</div>
             <div class="sidebar-brand-sub">by PT Shinerva Prajna Tejas</div>
@@ -310,31 +311,34 @@
     <!-- Main Content Wrapper -->
     <div id="appMainWrapper">
       <!-- Zero-Overlap 64px Slim Topbar -->
-      <header id="appTopbar" class="app-topbar">
+      <header id="appTopbar" class="app-topbar tikum-shared-header" data-header-variant="public">
         <div class="topbar-left">
           <button type="button" id="sidebarToggleMobile" class="topbar-hamburger-btn" aria-label="Buka Menu Navigasi">
             <i class="fa-solid fa-bars"></i>
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <img src="/images/tikum-horizontal.svg" height="32" alt="Tikum" style="height:32px; width:auto; aspect-ratio:220/52; display:block;">
+            <span class="tikum-logo-slot">
+              <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" height="42" width="196" alt="Tikum">
+            </span>
+            <div class="brand-title">Tikum</div>
           </a>
         </div>
 
         <div class="topbar-center">
           <ul class="topbar-nav-links">
-            <li><a href="/offers?category=CONCERT" class="topbar-nav-link" data-i18n="nav.concerts">Konser &amp; Musik</a></li>
-            <li><a href="/offers?category=SPORTS" class="topbar-nav-link" data-i18n="nav.sports">Olahraga</a></li>
-            <li><a href="/offers?category=FESTIVAL" class="topbar-nav-link" data-i18n="nav.festivals">Festival</a></li>
+            <li><a href="/offers" class="topbar-nav-link" data-i18n="nav.buyTickets">Jelajahi Event</a></li>
+            <li><a href="/how-it-works" class="topbar-nav-link" data-i18n="footer.how">Cara Kerja</a></li>
+            <li><a href="/faq" class="topbar-nav-link" data-i18n="footer.faq">Bantuan</a></li>
             <li class="city-dropdown-wrap">
               <a href="javascript:void(0)" class="topbar-nav-link" aria-haspopup="true">
-                <span>Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
+                <span data-i18n="nav.cities">Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
               </a>
               <div class="city-dropdown-menu">
-                <a href="/offers?city=Jakarta" class="city-dropdown-item">Jakarta</a>
-                <a href="/offers?city=Bandung" class="city-dropdown-item">Bandung</a>
-                <a href="/offers?city=Surabaya" class="city-dropdown-item">Surabaya</a>
-                <a href="/offers?city=Bali" class="city-dropdown-item">Bali</a>
-                <a href="/offers" class="city-dropdown-item">Semua Kota</a>
+                <a href="/offers?city=Jakarta" class="city-dropdown-item" data-i18n="events.jakartaJabodetabek">Jakarta (Jabodetabek)</a>
+                <a href="/offers?city=Bandung" class="city-dropdown-item" data-i18n="nav.bandung">Bandung</a>
+                <a href="/offers?city=Surabaya" class="city-dropdown-item" data-i18n="nav.surabaya">Surabaya</a>
+                <a href="/offers?city=Bali" class="city-dropdown-item" data-i18n="nav.bali">Bali</a>
+                <a href="/offers" class="city-dropdown-item" data-i18n="nav.allCities">Semua Kota</a>
               </div>
             </li>
           </ul>
@@ -342,60 +346,96 @@
         </div>
 
         <div class="topbar-right">
-          <a href="/deal" class="btn-topbar-deal" data-i18n="nav.dealRoomLookup">Buka Deal</a>
+          <a href="/deal" class="btn-topbar-deal"><i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11.5px; opacity:0.85;"></i> <span data-i18n="nav.dealRoomLookup">Buka Deal</span></a>
           <a href="/deal/create" class="btn-topbar-seller"><i class="fa-solid fa-plus"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
           <div id="authHeaderContainer">
-            <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up" data-i18n="auth.signInSignUp" style="height:38px; padding:0 14px; font-size:13.5px; border-radius:8px;">Masuk / Daftar</button>
+            <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up" data-i18n="nav.signIn">Masuk</button>
           </div>
-          <button class="select-filter" onclick="toggleTheme()" id="themeToggle" title="Toggle Theme" style="display:none; padding:6px 10px; height:36px;">
-            <i class="fa-solid fa-sun" id="themeIcon"></i>
-          </button>
           <button class="lang-toggle-btn lang-switcher-pill" onclick="toggleLang()" id="langToggle" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
             <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>
           </button>
         </div>
       </header>
 
-  <!-- SECTION 1: Deep Teal Editorial Hero (Motion + SeatGeek Search + Instant Deal Link) -->
-  <section class="hero-teal-editorial" id="editorialHero" data-reveal>
-    <div style="max-width:1120px; margin:0 auto; text-align:center;">
-      <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.1); border:1px solid rgba(250,241,226,0.2); border-radius:999px; padding:6px 16px; font-size:12.5px; font-weight:700; color:#FAF1E2; margin-bottom:20px; text-transform:uppercase; letter-spacing:0.5px;">
-        <span style="color:#DA674E;">●</span> <span data-i18n="spotlight.eyebrow">TIKUM by PT SHINERVA PRAJNA TEJAS • Verified Ticket Marketplace</span>
+  <!-- SECTION 1: Clean Centered Search-First Marketplace Hero -->
+  <section class="hero-teal-editorial" id="editorialHero">
+    <div class="hero-search-first-shell">
+      <div class="hero-eyebrow-pill">
+        <span style="color:#E36F45;">●</span> <span data-i18n="spotlight.eyebrow">TIKUM by PT SHINERVA PRAJNA TEJAS • Verified Ticket Marketplace</span>
       </div>
       <h1 class="hero-editorial-h1" data-i18n="landing.editorialHeroTitle">Beli &amp; Jual Tiket Konser Tanpa Was-Was.</h1>
       <p class="hero-editorial-sub" data-i18n="landing.editorialHeroSubtitle">
-        Jelajahi konser tanpa wajib login, cek biaya transparan di muka, dan serah terima aman dengan saksi fisik Event PIC di venue.
+        Temukan event, jelajahi tiket, dan dapatkan dukungan saat dibutuhkan. Event PIC tersedia di venue yang berpartisipasi.
       </p>
 
       <!-- SeatGeek Large Search Bar -->
       <div class="seatgeek-search-box">
         <i class="fa-solid fa-magnifying-glass seatgeek-search-icon"></i>
-        <input type="search" id="searchInput" class="seatgeek-search-input" placeholder="Cari konser, artis, GBK, JIS, atau kota..." data-i18n-placeholder="landing.searchPlaceholder" oninput="debounceSearch()">
+        <input type="search" id="searchInput" class="seatgeek-search-input" aria-label="Cari event, artis, venue, atau kota" placeholder="Cari konser, artis, GBK, JIS, atau kota..." data-i18n-placeholder="landing.searchPlaceholder" oninput="debounceSearch()">
+        <button type="button" class="seatgeek-search-submit-btn" onclick="debounceSearch()" aria-label="Cari">
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
       </div>
 
-      <!-- Instant Deal Link Bar -->
-      <div class="instant-deal-bar">
-        <div style="display:flex; align-items:center; gap:8px; text-align:left;">
-          <i class="fa-solid fa-bolt" style="color:#DA674E;"></i>
-          <span data-i18n="landing.instantDealNotice">Sudah deal di X / TikTok? Tempel Link atau Kode Deal di sini</span>
+      <!-- Quick Filter Chips (Category & Popular Cities) -->
+      <div class="hero-quick-chips" role="group" aria-label="Filter Cepat Event">
+        <span class="hero-quick-chips__label" data-i18n="landing.heroQuickFilterLabel">Pencarian Cepat:</span>
+        <button type="button" class="hero-quick-chip is-active" onclick="applyHeroQuickFilter(this, { category: '', city: '' })" data-i18n="events.allEvents">Semua Event</button>
+        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'MUSIC' })" data-i18n="events.concerts">Konser</button>
+        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'FESTIVAL' })" data-i18n="events.festivals">Festival Musik</button>
+        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'SPORT' })" data-i18n="events.sports">Olahraga</button>
+        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Jakarta' })"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span data-i18n="landing.quickChipJakarta">Jakarta</span></button>
+        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Bandung' })"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span data-i18n="nav.bandung">Bandung</span></button>
+        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Bali' })"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span data-i18n="nav.bali">Bali</span></button>
+      </div>
+
+      <!-- Compact Compliance-Safe Trust Strip -->
+      <div class="hero-trust-strip" role="list" aria-label="Keunggulan Verifikasi TIKUM">
+        <span class="hero-trust-item" role="listitem"><i class="fa-solid fa-file-shield" aria-hidden="true"></i> <span data-i18n="landing.heroTrustVerified">Verifikasi Bukti Kepemilikan</span></span>
+        <span class="hero-trust-item" role="listitem"><i class="fa-solid fa-user-check" aria-hidden="true"></i> <span data-i18n="landing.heroTrustPic">Dukungan Event PIC di Venue</span></span>
+        <span class="hero-trust-item" role="listitem"><i class="fa-solid fa-fingerprint" aria-hidden="true"></i> <span data-i18n="landing.heroTrustZeroFake">Zero Fake Inventory &amp; Anti-Duplikasi</span></span>
+      </div>
+
+      <!-- Redesigned Agency-Grade Deal-Link Dock -->
+      <div class="hero-deal-dock instant-deal-bar">
+        <div class="hero-deal-caption">
+          <span class="hero-deal-caption-text" data-i18n="landing.instantDealNotice">Sudah deal di X, TikTok, IG, atau FB? Amankan transaksinya di sini:</span>
         </div>
-        <a href="/deal" class="instant-deal-btn" data-i18n="landing.openDealRoomBtn">Buka Deal Room →</a>
+        <form class="hero-deal-form" id="heroDealForm" onsubmit="handleHeroDealSubmit(event)">
+          <div class="hero-deal-input-wrapper">
+            <svg class="hero-deal-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            <input type="text" id="heroDealInput" class="hero-deal-input" placeholder="Tempel link tikum.app/deal/... atau kode deal..." data-i18n-placeholder="landing.instantDealPlaceholder" autocomplete="off" spellcheck="false">
+          </div>
+          <button type="submit" class="hero-deal-submit-btn">
+            <span data-i18n="landing.openDealRoomBtn">Buka Deal →</span>
+          </button>
+        </form>
       </div>
 
       <!-- Equal-Weight Dual Hero CTAs -->
       <div class="hero-dual-cta-group">
         <a href="#unifiedDiscovery" class="btn-hero-coral" data-i18n="landing.heroCtaExplore">
-          <i class="fa-solid fa-ticket"></i> <span>Jelajah Tiket</span>
+          <i class="fa-solid fa-ticket"></i> <span data-i18n="nav.exploreTickets">Jelajah Tiket</span>
         </a>
         <a href="/deal/create" class="btn-hero-outline" data-i18n="landing.heroCtaSell">
-          <i class="fa-solid fa-plus-circle"></i> <span>Jual Tiket Sekarang</span>
+          <i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicketsNow">Jual Tiket Sekarang</span>
         </a>
       </div>
+
+      <div class="flow-marquee-wrapper" aria-label="Event highlights">
+        <div class="flow-marquee-track" id="eventMarquee">
+          <div class="flow-marquee-content"><span class="flow-marquee-item">Poster event mendatang belum tersedia.</span></div>
+        </div>
+      </div>
+      <button type="button" class="marquee-toggle" id="marqueeToggle" aria-pressed="false" aria-label="Pause event highlights">Pause</button>
     </div>
   </section>
 
-  <!-- SECTION 2: ONE Unified Event Discovery Grid (Warm Cream Canvas — Zero Redundancy!) -->
-  <section class="unified-discovery-section" id="unifiedSection" style="background:#FAF8F4; padding:64px 24px 80px;">
+  <!-- SECTION 2: ONE Unified Event Discovery Grid (Dark Canvas Canonical) -->
+  <section class="unified-discovery-section" id="unifiedSection" style="background:var(--theme-canvas, #0B1220); padding:64px 24px 80px;">
     <div style="max-width:1160px; margin:0 auto;">
       <section id="heroFeature" class="ln-hero-feature" style="display:none;"></section>
 
@@ -404,16 +444,16 @@
         <div class="filter-pills" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
           <div class="pill active" data-category="" onclick="setCategory(this, '')" data-i18n="events.allEvents">Semua Event</div>
           <div class="pill" data-category="MUSIC" onclick="setCategory(this, 'MUSIC')" data-i18n="events.concerts">Konser &amp; Musik</div>
-          <div class="pill" data-category="KPOP" onclick="setCategory(this, 'KPOP')">K-Pop</div>
+          <div class="pill" data-category="KPOP" onclick="setCategory(this, 'KPOP')" data-i18n="events.kpop">K-Pop</div>
           <div class="pill" data-category="FESTIVAL" onclick="setCategory(this, 'FESTIVAL')" data-i18n="events.festivals">Festival</div>
           <div class="pill" data-category="SPORT" onclick="setCategory(this, 'SPORT')" data-i18n="events.sports">Olahraga</div>
           <div class="pill" data-category="COMEDY" onclick="setCategory(this, 'COMEDY')" data-i18n="events.comedy">Stand Up Comedy</div>
           <a href="/past-events" class="pill" style="text-decoration:none; color:inherit; display:inline-flex; align-items:center; gap:4px;" data-i18n="events.pastEvents">Arsip Selesai <i class="fa-solid fa-arrow-right" style="font-size:11px;"></i></a>
         </div>
-        <div class="filters-row-selects" style="display:flex; gap:10px; margin-top:12px;">
-          <select id="cityFilter" class="select-filter" onchange="renderAllSections()" style="background:#FFFFFF; border:1px solid rgba(18,78,97,0.18); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:#0E222A;">
+        <div class="filters-row-selects" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:12px;">
+          <select id="cityFilter" class="select-filter" onchange="renderAllSections()" style="background:var(--theme-card, #1B2A40); border:1px solid var(--theme-border, #344358); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:var(--theme-text, #F8FAFC);">
             <option value="" data-i18n="events.allCities">Semua Kota</option>
-            <option value="Jakarta">Jakarta</option>
+            <option value="Jakarta" data-i18n="events.jakartaJabodetabek">Jakarta (Jabodetabek)</option>
             <option value="Bandung">Bandung</option>
             <option value="Surabaya">Surabaya</option>
             <option value="Bali">Bali</option>
@@ -422,11 +462,16 @@
             <option value="Medan">Medan</option>
             <option value="Makassar">Makassar</option>
           </select>
-          <select id="dateFilter" class="select-filter" onchange="renderAllSections()" style="background:#FFFFFF; border:1px solid rgba(18,78,97,0.18); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:#0E222A;">
+          <select id="dateFilter" class="select-filter" onchange="renderAllSections()" style="background:var(--theme-card, #1B2A40); border:1px solid var(--theme-border, #344358); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:var(--theme-text, #F8FAFC);">
             <option value="" data-i18n="events.allDates">Semua Waktu</option>
             <option value="week" data-i18n="events.thisWeek">Minggu Ini</option>
             <option value="month" data-i18n="events.thisMonth">Bulan Ini</option>
             <option value="3months" data-i18n="events.next3Months">3 Bulan Ke Depan</option>
+          </select>
+          <select id="sortFilter" class="select-filter" onchange="renderAllSections()" style="background:var(--theme-card, #1B2A40); border:1px solid var(--theme-border, #344358); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:var(--theme-text, #F8FAFC);">
+            <option value="hype" data-i18n="events.sortHype">Urutkan: Paling Hype</option>
+            <option value="date" data-i18n="events.sortDate">Urutkan: Tanggal Terdekat</option>
+            <option value="price_asc" data-i18n="events.sortPriceAsc">Harga: Terendah</option>
           </select>
         </div>
       </div>
@@ -439,21 +484,21 @@
   <!-- SECTION 3: "Perlindungan Dua Arah" Bento Showcase (Deep Teal Editorial Section) -->
   <section class="two-way-protection-section" id="twoWayProtection" data-reveal>
     <div style="max-width:1120px; margin:0 auto; text-align:center; margin-bottom:36px;">
-      <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(250,241,226,0.18); border-radius:999px; padding:6px 16px; font-size:12.5px; font-weight:700; color:#FAF1E2; margin-bottom:14px; text-transform:uppercase;">
-        <i class="fa-solid fa-shield-halved" style="color:#DA674E;"></i> <span>Standar Keamanan Transaksi Sekunder</span>
+      <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(243,235,221,0.18); border-radius:999px; padding:6px 16px; font-size:12.5px; font-weight:700; color:#FFFFFF; margin-bottom:14px; text-transform:uppercase;">
+        <i class="fa-solid fa-shield-halved" style="color:#E36F45;"></i> <span data-i18n="landing.twoWayProtectionEyebrow">Standar Keamanan Transaksi Sekunder</span>
       </div>
-      <h2 class="font-display" style="font-size:clamp(1.85rem, 3vw, 2.6rem); font-weight:700; color:#FAF1E2; margin:0 0 12px;" data-i18n="landing.twoWayHeadline">
+      <h2 class="font-display" style="font-size:clamp(1.85rem, 3vw, 2.6rem); font-weight:700; color:#FFFFFF; margin:0 0 12px;" data-i18n="landing.twoWayHeadline">
         Perlindungan Dua Arah — Adil untuk Pembeli &amp; Penjual Jujur.
       </h2>
-      <p style="font-size:16px; color:rgba(250,241,226,0.8); max-width:720px; margin:0 auto;" data-i18n="landing.twoWaySubtitle">
+      <p style="font-size:16px; color:#CBD5E1; max-width:720px; margin:0 auto;" data-i18n="landing.twoWaySubtitle">
         Sistem resale yang berimbang tanpa spekulasi, dilengkapi saksi fisik dan bukti transaksi yang objektif.
       </p>
     </div>
 
     <!-- Authentic Founder Origin Quote Card -->
     <div class="founder-quote-glass" data-reveal>
-      <div style="font-size:24px; color:#DA674E; margin-bottom:12px;"><i class="fa-solid fa-quote-left"></i></div>
-      <blockquote style="margin:0 0 16px; font-size:16.5px; line-height:1.7; color:#FAF1E2; font-style:italic;" data-i18n="landing.founderQuoteText">
+      <div style="font-size:24px; color:#E36F45; margin-bottom:12px;"><i class="fa-solid fa-quote-left"></i></div>
+      <blockquote style="margin:0 0 16px; font-size:16.5px; line-height:1.7; color:#F7FAFF; font-style:italic;" data-i18n="landing.founderQuoteText">
         TIKUM lahir dari pengalaman nyata: menjual 2 tiket konser bersebelahan dari pembelian yang sama di platform resale global, namun hanya dibayar 1 karena klaim 'invalid' sepihak tanpa bukti lapangan, potongan biaya selangit, dan CS yang tidak membantu. Kami membangun TIKUM agar transaksi tiket sekunder punya saksi objektif dan bukti yang adil bagi kedua belah pihak.
       </blockquote>
       <div style="font-size:14px; font-weight:700; color:rgba(250,241,226,0.9);" data-i18n="landing.founderQuoteRole">
@@ -488,7 +533,7 @@
 
       <!-- Card 2: Untuk Penjual Jujur & Jastip -->
       <div class="bento-card-flow" data-reveal data-stagger="2">
-        <h3><i class="fa-solid fa-store" style="color:#DA674E;"></i> <span data-i18n="landing.twoWaySellerTitle">Untuk Penjual Jujur &amp; Jastip</span></h3>
+        <h3><i class="fa-solid fa-store" style="color:#E36F45;"></i> <span data-i18n="landing.twoWaySellerTitle">Untuk Penjual Jujur &amp; Jastip</span></h3>
         <ul class="bento-feature-list">
           <li class="bento-feature-item">
             <i class="fa-solid fa-circle-check bento-check-icon"></i>
@@ -519,7 +564,7 @@
   <section class="flow-rail-section" id="howItWorks" data-reveal>
     <div style="max-width:1160px; margin:0 auto; text-align:center; margin-bottom:40px;">
       <div style="display:inline-flex; align-items:center; gap:8px; background:var(--tikum-teal-100); border-radius:999px; padding:6px 16px; font-size:12.5px; font-weight:700; color:var(--tikum-teal-700); margin-bottom:12px; text-transform:uppercase;">
-        <i class="fa-solid fa-route"></i> <span>Alur Transaksi Bertahap</span>
+        <i class="fa-solid fa-route"></i> <span data-i18n="landing.workflowBadge">Alur Transaksi Bertahap</span>
       </div>
       <h2 class="font-display" style="font-size:clamp(1.85rem, 3vw, 2.6rem); font-weight:700; color:var(--tikum-ink-900); margin:0 0 10px;" data-i18n="landing.flowRailHeading">
         Alur 5 Langkah Transaksi Aman
@@ -565,59 +610,59 @@
         <strong style="color:var(--tikum-ink-900); font-size:15px; display:block; margin-bottom:3px;" data-i18n="landing.feeSummaryBarTitle">Transparansi Biaya Pilot Layanan</strong>
         <span style="font-size:13.5px; color:var(--tikum-ink-600); line-height:1.5;" data-i18n="landing.feeSummaryBarDesc">Tarif Pilot 6% sisi pembeli + 6% sisi penjual (min. Rp35.000, maks. Rp500.000 per sisi). Persentase efektif dapat berbeda untuk tiket dengan nominal lebih rendah.</span>
       </div>
-      <a href="/pay" style="color:var(--tikum-coral-500); font-weight:700; text-decoration:none; font-size:13.5px; white-space:nowrap;">Detail Biaya →</a>
+      <a href="/pay" style="color:var(--tikum-coral-500); font-weight:700; text-decoration:none; font-size:13.5px; white-space:nowrap;" data-i18n="landing.feeDetailsLink">Detail Biaya →</a>
     </div>
   </section>
 
   <!-- SECTION 5: 3 Panduan Konser Terbaru + Bold Closing CTA -->
-  <section class="landing-section" id="featuredBlog" style="background:#FAF8F4; padding:56px 24px 72px;" data-reveal>
+  <section class="landing-section" id="featuredBlog" style="background:var(--theme-canvas, #172333); padding:56px 24px 72px;" data-reveal>
     <div style="max-width:1160px; margin:0 auto;">
       <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:28px; flex-wrap:wrap; gap:12px;">
         <div>
-          <div style="font-size:12px; font-weight:800; text-transform:uppercase; color:var(--tikum-teal-700); letter-spacing:0.8px; margin-bottom:4px;">EDUKASI &amp; TIPS</div>
-          <h2 class="font-display" style="font-size:26px; font-weight:700; color:var(--tikum-ink-900); margin:0;" data-i18n="landing.blogStripHeading">Panduan &amp; Edukasi Konser Terbaru</h2>
+          <div style="font-size:12px; font-weight:800; text-transform:uppercase; color:var(--palette-warm-sand, #F3EBDD); letter-spacing:0.8px; margin-bottom:4px;" data-i18n="blog.kicker">EDUKASI &amp; TIPS</div>
+          <h2 class="font-display" style="font-size:26px; font-weight:700; color:var(--theme-text, #FFFFFF); margin:0;" data-i18n="landing.blogStripHeading">Panduan &amp; Edukasi Konser Terbaru</h2>
         </div>
-        <a href="/blog" style="color:var(--tikum-teal-700); font-weight:700; text-decoration:none; font-size:14px;">Lihat Seluruh Artikel →</a>
+        <a href="/blog" style="color:var(--palette-warm-sand, #F3EBDD); font-weight:700; text-decoration:none; font-size:14px;" data-i18n="blog.allArticles">Lihat Seluruh Artikel →</a>
       </div>
 
       <div class="featured-blog-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:24px; margin-bottom:56px;">
-        <article class="blog-preview-card" style="background:#FFFFFF; border:1px solid var(--tikum-border); border-radius:18px; padding:24px; box-shadow:0 4px 16px rgba(14,59,74,0.04);">
-          <div style="font-size:11.5px; font-weight:700; color:#DA674E; text-transform:uppercase; margin-bottom:8px;">PANDUAN PEMBELI</div>
-          <h3 style="font-size:18px; font-weight:700; color:#0E222A; margin:0 0 10px; line-height:1.35;">
-            <a href="/blog/panduan-serah-terima-tiket-aman-dua-tahap-perlindungan-escrow" style="color:inherit; text-decoration:none;">Panduan Serah Terima Tiket Aman Dua Tahap &amp; Bukti Lapangan</a>
+        <article class="blog-preview-card" style="background:var(--theme-card, #24364D); border:1px solid var(--theme-border, rgba(243,235,221,0.16)); border-radius:18px; padding:24px; box-shadow:0 8px 24px rgba(0,0,0,0.22);">
+          <div style="font-size:11.5px; font-weight:700; color:#E36F45; text-transform:uppercase; margin-bottom:8px;" data-i18n="blog.buyerGuideKicker">PANDUAN PEMBELI</div>
+          <h3 style="font-size:18px; font-weight:700; color:var(--theme-text, #FFFFFF); margin:0 0 10px; line-height:1.35;">
+            <a href="/blog/panduan-serah-terima-tiket-aman-dua-tahap-perlindungan-escrow" style="color:inherit; text-decoration:none;" data-i18n="blog.post1Title">Panduan Serah Terima Tiket Aman Dua Tahap &amp; Bukti Lapangan</a>
           </h3>
-          <p style="font-size:13.5px; color:#4A606A; margin:0 0 16px; line-height:1.55;">
+          <p style="font-size:13.5px; color:var(--theme-muted, #CBD5E1); margin:0 0 16px; line-height:1.55;" data-i18n="blog.post1Snippet">
             Memahami alur verifikasi bukti kepemilikan tahap A dan asistensi Event PIC di titik kumpul venue sebelum konser dimulai.
           </p>
-          <a href="/blog/panduan-serah-terima-tiket-aman-dua-tahap-perlindungan-escrow" style="color:#124E61; font-weight:700; font-size:13px; text-decoration:none;">Baca Panduan →</a>
+          <a href="/blog/panduan-serah-terima-tiket-aman-dua-tahap-perlindungan-escrow" style="color:var(--palette-warm-sand, #F3EBDD); font-weight:700; font-size:13px; text-decoration:none;" data-i18n="blog.readGuide">Baca Panduan →</a>
         </article>
 
-        <article class="blog-preview-card" style="background:#FFFFFF; border:1px solid var(--tikum-border); border-radius:18px; padding:24px; box-shadow:0 4px 16px rgba(14,59,74,0.04);">
-          <div style="font-size:11.5px; font-weight:700; color:#DA674E; text-transform:uppercase; margin-bottom:8px;">TIPS KEAMANAN</div>
-          <h3 style="font-size:18px; font-weight:700; color:#0E222A; margin:0 0 10px; line-height:1.35;">
-            <a href="/blog/cara-aman-beli-tiket-konser-second-resale" style="color:inherit; text-decoration:none;">Cara Aman Jual Beli Tiket Konser di Medsos (X &amp; TikTok)</a>
+        <article class="blog-preview-card" style="background:var(--theme-card, #24364D); border:1px solid var(--theme-border, rgba(243,235,221,0.16)); border-radius:18px; padding:24px; box-shadow:0 8px 24px rgba(0,0,0,0.22);">
+          <div style="font-size:11.5px; font-weight:700; color:#E36F45; text-transform:uppercase; margin-bottom:8px;" data-i18n="blog.securityTipsKicker">TIPS KEAMANAN</div>
+          <h3 style="font-size:18px; font-weight:700; color:var(--theme-text, #FFFFFF); margin:0 0 10px; line-height:1.35;">
+            <a href="/blog/cara-aman-beli-tiket-konser-second-resale" style="color:inherit; text-decoration:none;" data-i18n="blog.post2Title">Cara Aman Jual Beli Tiket Konser di Medsos (X &amp; TikTok)</a>
           </h3>
-          <p style="font-size:13.5px; color:#4A606A; margin:0 0 16px; line-height:1.55;">
+          <p style="font-size:13.5px; color:var(--theme-muted, #CBD5E1); margin:0 0 16px; line-height:1.55;" data-i18n="blog.post2Snippet">
             Menghindari penipuan tiket di media sosial dengan mengalihkan transaksi ke ruang deal terverifikasi TIKUM.
           </p>
-          <a href="/blog/cara-aman-beli-tiket-konser-second-resale" style="color:#124E61; font-weight:700; font-size:13px; text-decoration:none;">Baca Panduan →</a>
+          <a href="/blog/cara-aman-beli-tiket-konser-second-resale" style="color:var(--palette-warm-sand, #F3EBDD); font-weight:700; font-size:13px; text-decoration:none;" data-i18n="blog.readGuide">Baca Panduan →</a>
         </article>
 
-        <article class="blog-preview-card" style="background:#FFFFFF; border:1px solid var(--tikum-border); border-radius:18px; padding:24px; box-shadow:0 4px 16px rgba(14,59,74,0.04);">
-          <div style="font-size:11.5px; font-weight:700; color:#DA674E; text-transform:uppercase; margin-bottom:8px;">OPERASIONAL VENUE</div>
-          <h3 style="font-size:18px; font-weight:700; color:#0E222A; margin:0 0 10px; line-height:1.35;">
-            <a href="/blog/panduan-penukaran-wristband-tiket-konser-jakarta" style="color:inherit; text-decoration:none;">Aturan Penukaran Wristband &amp; Bukti Resmi di GBK &amp; JIS</a>
+        <article class="blog-preview-card" style="background:var(--theme-card, #24364D); border:1px solid var(--theme-border, rgba(243,235,221,0.16)); border-radius:18px; padding:24px; box-shadow:0 8px 24px rgba(0,0,0,0.22);">
+          <div style="font-size:11.5px; font-weight:700; color:#E36F45; text-transform:uppercase; margin-bottom:8px;" data-i18n="blog.venueOpsKicker">OPERASIONAL VENUE</div>
+          <h3 style="font-size:18px; font-weight:700; color:var(--theme-text, #FFFFFF); margin:0 0 10px; line-height:1.35;">
+            <a href="/blog/panduan-penukaran-wristband-tiket-konser-jakarta" style="color:inherit; text-decoration:none;" data-i18n="blog.post3Title">Aturan Penukaran Wristband &amp; Bukti Resmi di GBK &amp; JIS</a>
           </h3>
-          <p style="font-size:13.5px; color:#4A606A; margin:0 0 16px; line-height:1.55;">
+          <p style="font-size:13.5px; color:var(--theme-muted, #CBD5E1); margin:0 0 16px; line-height:1.55;" data-i18n="blog.post3Snippet">
             Prosedur penukaran gelang konser bertiket dengan pendampingan saksi fisik di venue acara.
           </p>
-          <a href="/blog/panduan-penukaran-wristband-tiket-konser-jakarta" style="color:#124E61; font-weight:700; font-size:13px; text-decoration:none;">Baca Panduan →</a>
+          <a href="/blog/panduan-penukaran-wristband-tiket-konser-jakarta" style="color:var(--palette-warm-sand, #F3EBDD); font-weight:700; font-size:13px; text-decoration:none;" data-i18n="blog.readGuide">Baca Panduan →</a>
         </article>
       </div>
 
-      <!-- High-Impact Deep Teal Closing CTA Card -->
-      <div class="closing-cta-card" style="background:var(--tikum-teal-900); background-image:radial-gradient(circle at 80% 20%, rgba(18,78,97,0.7) 0%, #0E3B4A 70%); border-radius:24px; padding:48px 36px; text-align:center; color:#FAF1E2;" data-reveal>
-        <h2 class="font-display" style="font-size:clamp(1.75rem, 3vw, 2.4rem); font-weight:700; color:#FAF1E2; margin:0 0 12px;" data-i18n="landing.closingCtaHeading">
+      <!-- High-Impact Deep Blue Closing CTA Card -->
+      <div class="closing-cta-card" style="background:var(--palette-primary-blue, #15365B); background-image:radial-gradient(circle at 80% 20%, rgba(227,111,69,0.22) 0%, #172333 75%); border:1px solid rgba(243,235,221,0.16); border-radius:24px; padding:48px 36px; text-align:center; color:#FFFFFF;" data-reveal>
+        <h2 class="font-display" style="font-size:clamp(1.75rem, 3vw, 2.4rem); font-weight:700; color:#F7FAFF; margin:0 0 12px;" data-i18n="landing.closingCtaHeading">
           Punya Tiket Nganggur atau Sudah Deal di X / TikTok?
         </h2>
         <p style="font-size:16px; color:rgba(250,241,226,0.85); max-width:620px; margin:0 auto 28px; line-height:1.6;" data-i18n="landing.closingCtaSub">
@@ -640,7 +685,9 @@
         <div class="footer-tier-1">
           <div class="footer-col-brand">
             <div style="margin-bottom: 14px;">
-              <img src="/images/tikum-horizontal-light.svg" class="footer-logo-light" height="30" alt="TIKUM">
+              <span class="tikum-logo-slot tikum-logo-slot--footer">
+                <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" height="40" width="186" alt="TIKUM">
+              </span>
             </div>
             <h3>
               <span>TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
@@ -662,7 +709,7 @@
               <a href="mailto:support@tikum.app">support@tikum.app</a>
             </div>
             <div class="footer-contact-item">
-              <strong data-i18n="footer.phoneAndWa">WhatsApp Resmi:</strong>
+              <strong data-i18n="footer.phoneAndWa">WhatsApp:</strong>
               <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer">+62 812-9992-7378</a>
             </div>
             <div class="footer-contact-item">
@@ -706,23 +753,23 @@
   <nav class="mobile-bottom-nav" aria-label="Navigasi Seluler">
     <a href="/" class="mobile-nav-item active">
       <i class="fa-solid fa-house"></i>
-      <span>Beranda</span>
+      <span data-i18n="nav.mobileHome">Beranda</span>
     </a>
     <a href="#upcoming" class="mobile-nav-item" onclick="applyNavCategory('MUSIC'); return false;">
       <i class="fa-solid fa-music"></i>
-      <span>Konser</span>
+      <span data-i18n="nav.mobileConcerts">Konser</span>
     </a>
     <button type="button" class="mobile-nav-item" onclick="focusSearch()">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <span>Cari</span>
+      <span data-i18n="nav.mobileSearch">Cari</span>
     </button>
     <a href="/track" class="mobile-nav-item">
       <i class="fa-solid fa-ticket"></i>
-      <span>Tiket</span>
+      <span data-i18n="nav.mobileTickets">Tiket</span>
     </a>
     <button type="button" class="mobile-nav-item" onclick="handleMobileAccountClick()">
       <i class="fa-solid fa-user"></i>
-      <span>Akun</span>
+      <span data-i18n="nav.mobileAccount">Akun</span>
     </button>
   </nav>
 
@@ -796,25 +843,6 @@
     let currentCategory = '';
     let searchTimeout = null;
 
-    // Theme initialization (Dark mode default to match Verified Concert Hero; user preference stored in localStorage)
-    document.addEventListener('DOMContentLoaded', () => {
-      const savedTheme = localStorage.getItem('tikum_theme');
-      const icon = document.querySelector('#themeToggle i');
-      if (savedTheme === 'light') {
-        document.body.classList.remove('dark-mode');
-        if (icon) {
-          icon.classList.remove('fa-sun');
-          icon.classList.add('fa-moon');
-        }
-      } else {
-        document.body.classList.add('dark-mode');
-        if (icon) {
-          icon.classList.remove('fa-moon');
-          icon.classList.add('fa-sun');
-        }
-      }
-    });
-
     // Nav shortcut: apply a category filter and scroll to the listings.
     function applyNavCategory(cat) {
       currentCategory = cat || '';
@@ -836,6 +864,26 @@
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
+    function applyHeroQuickFilter(el, opts = {}) {
+      const nextCat = opts.category !== undefined ? opts.category : currentCategory;
+      currentCategory = opts.city !== undefined && opts.category === undefined ? '' : (nextCat || '');
+      const citySel = document.getElementById('cityFilter');
+      if (citySel) {
+        if (opts.city !== undefined) {
+          citySel.value = opts.city;
+        } else if (opts.category !== undefined) {
+          citySel.value = '';
+        }
+      }
+      document.querySelectorAll('.hero-quick-chip').forEach(btn => btn.classList.toggle('is-active', btn === el));
+      document.querySelectorAll('.filter-pills .pill').forEach(p => {
+        p.classList.toggle('active', (p.dataset.category || '') === currentCategory);
+      });
+      renderAllSections();
+      const target = document.getElementById('upcoming') || document.getElementById('mainContent');
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     function focusSearch() {
       const el = document.getElementById('searchInput');
       if (el) {
@@ -852,21 +900,6 @@
       }
     }
 
-    function toggleTheme() {
-      document.body.classList.toggle('dark-mode');
-      const isDark = document.body.classList.contains('dark-mode');
-      localStorage.setItem('tikum_theme', isDark ? 'dark' : 'light');
-      const icon = document.querySelector('#themeToggle i');
-      if (!icon) return;
-      if (isDark) {
-        icon.classList.remove('fa-moon');
-        icon.classList.add('fa-sun');
-      } else {
-        icon.classList.remove('fa-sun');
-        icon.classList.add('fa-moon');
-      }
-    }
-
     function toggleLang() {
       if (window.TikumI18n && typeof window.TikumI18n.toggleLang === 'function') {
         window.TikumI18n.toggleLang();
@@ -876,6 +909,19 @@
     function debounceSearch() {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => renderAllSections(), 300);
+    }
+
+    function handleHeroDealSubmit(event) {
+      if (event) event.preventDefault();
+      const input = document.getElementById('heroDealInput');
+      const raw = (input && input.value ? input.value : '').trim();
+      if (!raw) {
+        window.location.href = '/deal';
+        return;
+      }
+      const match = raw.match(/(?:deal\/|^)([a-zA-Z0-9_\-]+)\/?$/i);
+      const dealId = match ? match[1] : raw;
+      window.location.href = '/deal/' + encodeURIComponent(dealId);
     }
 
     function setCategory(el, cat) {
@@ -921,6 +967,41 @@
         }
       }
 
+      // Fail-safe discovery tier: /api/discovery/events-qualified
+      if (!allEvents.length) {
+        try {
+          const res = await fetch('/api/discovery/events-qualified?sort=hype', { headers: { Accept: 'application/json' } });
+          const data = await res.json();
+          if (data && data.events && data.events.length) {
+            allEvents = data.events.map(pe => ({
+              ...pe,
+              id: pe.id,
+              event_id: pe.id,
+              title: pe.event_name,
+              canonical_name: pe.event_name,
+              name: pe.event_name,
+              start_date: pe.event_date,
+              date: pe.event_date,
+              venue_name: pe.venue,
+              venue: pe.venue,
+              city: pe.city,
+              metro_area: pe.metro_area,
+              category: pe.category,
+              min_price: pe.starting_price_idr,
+              price_min: pe.starting_price_idr,
+              price_range_idr: pe.price_range_idr,
+              official_ticket_url: pe.policy_source_url,
+              image_url: pe.image_url,
+              verification_status: 'VERIFIED',
+              ticket_status: 'ON_SALE',
+              status: 'ON_SALE'
+            }));
+          }
+        } catch (err) {
+          console.error('Failed fetching qualified events fallback:', err);
+        }
+      }
+
       renderAllSections();
     }
 
@@ -931,8 +1012,10 @@
       if (data && data.generated_at) {
         el.style.display = 'flex';
         const d = new Date(data.generated_at);
-        const timeStr = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        textEl.textContent = `Katalog Aktif • Dimuat ${timeStr} WIB`;
+        const tag = window.TikumI18n && window.TikumI18n.getLocaleTag ? window.TikumI18n.getLocaleTag() : 'id-ID';
+        const timeStr = d.toLocaleTimeString(tag, { hour: '2-digit', minute: '2-digit' });
+        const prefix = window.TikumI18n ? window.TikumI18n.t('nav.featuredEvents', 'Katalog Aktif') : 'Katalog Aktif';
+        textEl.textContent = `${prefix} • ${timeStr} WIB`;
       }
     }
 
@@ -940,22 +1023,41 @@
       const q = (document.getElementById('searchInput').value || '').toLowerCase();
       const city = (document.getElementById('cityFilter').value || '').toLowerCase();
       const dateF = document.getElementById('dateFilter').value;
+      const sortF = document.getElementById('sortFilter') ? document.getElementById('sortFilter').value : 'hype';
       const now = Date.now();
 
-      return allEvents.filter(e => {
+      let list = allEvents.filter(e => {
         // Search
         if (q) {
           const haystack = [
-            e.title, e.canonical_name, e.venue_name, e.city,
+            e.title, e.canonical_name, e.name, e.venue_name, e.venue, e.city,
             Array.isArray(e.artists) ? e.artists.join(' ') : e.artist
           ].filter(Boolean).join(' ').toLowerCase();
           if (!haystack.includes(q)) return false;
         }
 
-        // City
+        // City (with Jakarta = Jabodetabek Normalization)
         if (city && city !== 'semua') {
           const evCity = (e.city || e.venue_city || '').toLowerCase();
-          if (!evCity.includes(city)) return false;
+          const evMetro = (e.metro_area || '').toLowerCase();
+          const evVenue = (e.venue || e.venue_name || '').toLowerCase();
+          if (city === 'jakarta' || city === 'jabodetabek') {
+            const isJabo = evMetro === 'jabodetabek' ||
+              evCity.includes('jakarta') ||
+              evCity.includes('tangerang') ||
+              evCity.includes('bogor') ||
+              evCity.includes('depok') ||
+              evCity.includes('bekasi') ||
+              evVenue.includes('ice bsd') ||
+              evVenue.includes('sicc') ||
+              evVenue.includes('senayan') ||
+              evVenue.includes('gbk') ||
+              evVenue.includes('kemayoran') ||
+              evVenue.includes('jis');
+            if (!isJabo) return false;
+          } else {
+            if (!evCity.includes(city) && !evMetro.includes(city)) return false;
+          }
         }
 
         // Category
@@ -968,7 +1070,7 @@
           } else if (currentCategory === 'HIBURAN') {
             if (!evCat.includes('THEATER') && !evCat.includes('MUSICAL') && !evCat.includes('FAMILY') && !evCat.includes('OTHER') && !evCat.includes('FESTIVAL')) return false;
           } else if (currentCategory === 'KPOP') {
-            if (!evCat.includes('KPOP') && !evCat.includes('K-POP') && !evTitle.includes('KPOP') && !evTitle.includes('K-POP') && !evTitle.includes('BTS') && !evTitle.includes('BIGBANG')) return false;
+            if (!evCat.includes('KPOP') && !evCat.includes('K-POP') && !evTitle.includes('KPOP') && !evTitle.includes('K-POP') && !evTitle.includes('BTS') && !evTitle.includes('BIGBANG') && !evTitle.includes('SEVENTEEN')) return false;
           } else if (currentCategory === 'FESTIVAL') {
             if (!evCat.includes('FESTIVAL') && !evCat.includes('FEST') && !evTitle.includes('FESTIVAL') && !evTitle.includes('FEST')) return false;
           } else if (currentCategory === 'MUSIC' || currentCategory === 'CONCERT') {
@@ -991,6 +1093,18 @@
 
         return true;
       });
+
+      // Sorting
+      if (sortF === 'date') {
+        list.sort((a, b) => (a.date || a.start_date || '9999').localeCompare(b.date || b.start_date || '9999'));
+      } else if (sortF === 'price_asc') {
+        list.sort((a, b) => (a.min_price || a.price_min || a.starting_price_idr || 0) - (b.min_price || b.price_min || b.starting_price_idr || 0));
+      } else {
+        // default: hype
+        list.sort((a, b) => (b.hype_score || b.demand_score || b.popularity_score || 0) - (a.hype_score || a.demand_score || a.popularity_score || 0));
+      }
+
+      return list;
     }
 
     function formatRupiah(num) {
@@ -1064,6 +1178,7 @@
     }
 
     function renderPosterMedia(e, categoryLabel, statusText, radarBadge, isPriority = false) {
+      const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
       let img = e.image_url;
       if (!img || img === 'null' || img === 'undefined' || e.image_status === 'BROKEN') {
         const cat = (e.category || categoryLabel || '').toUpperCase();
@@ -1088,19 +1203,23 @@
           <div class="poster-fallback-title">${title}</div>
           <div class="poster-fallback-meta">${escapeHtml(categoryLabel)}${venue ? ' · ' + venue : ''}</div>
           <div class="poster-fallback-verified">
-            <i class="fa-solid fa-shield-check" style="color: #34D399; font-size: 10px;"></i> Poster Resmi Belum Tersedia · Sumber Terverifikasi
+            <i class="fa-solid fa-shield-check" style="color: #34D399; font-size: 10px;"></i> ${t('events.posterUnavailableVerified', 'Poster Resmi Belum Tersedia · Sumber Terverifikasi')}
           </div>
         </div>
       `;
 
       let tierBadge = '';
       if (e.has_venue_assist || e.has_pic || e.venue_assist_status === 'PIC_AVAILABLE' || e.venue_assist_status === 'PIC_ON_SITE' || e.wristband_redemption_required) {
-        tierBadge = `<div class="card-tier-badge tier-pic"><i class="fa-solid fa-user-check"></i> Event PIC</div>`;
+        tierBadge = `<div class="card-tier-badge tier-pic"><i class="fa-solid fa-user-check"></i> ${t('events.tierPic', 'Event PIC')}</div>`;
       } else if (e.risk_tier === 'TIER_A_DIGITAL' || e.transfer_allowed) {
-        tierBadge = `<div class="card-tier-badge tier-digital"><i class="fa-solid fa-mobile-screen"></i> Transfer Digital</div>`;
+        tierBadge = `<div class="card-tier-badge tier-digital"><i class="fa-solid fa-mobile-screen"></i> ${t('events.tierDigital', 'Transfer Digital')}</div>`;
       } else {
-        tierBadge = `<div class="card-tier-badge tier-unverified"><i class="fa-solid fa-clock"></i> Kebijakan Ditinjau</div>`;
+        tierBadge = `<div class="card-tier-badge tier-unverified"><i class="fa-solid fa-clock"></i> ${t('events.tierUnderReview', 'Kebijakan Ditinjau')}</div>`;
       }
+
+      const hypeBadge = e.hype_label
+        ? `<div class="card-hype-pill">${escapeHtml(e.hype_label)}</div>`
+        : '';
 
       if (img) {
         return `
@@ -1112,6 +1231,7 @@
             <div class="poster-scrim"></div>
             <div class="card-category-pill">${categoryLabel}</div>
             ${tierBadge}
+            ${hypeBadge}
             <div class="ln-badge ln-badge--status">${statusText}</div>
             ${radarBadge}
           </div>
@@ -1124,6 +1244,7 @@
             </div>
             <div class="card-category-pill">${categoryLabel}</div>
             ${tierBadge}
+            ${hypeBadge}
             <div class="ln-badge ln-badge--status">${statusText}</div>
             ${radarBadge}
           </div>
@@ -1134,14 +1255,14 @@
     function resolveCategoryLabel(e) {
       const cat = (e.category || e.category_group || e.event_type || '').toUpperCase();
       const title = (e.title || e.canonical_name || e.name || '').toUpperCase();
-      const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
-      if (cat.includes('KPOP') || cat.includes('K-POP') || title.includes('BTS') || title.includes('BIGBANG')) return 'K-Pop';
-      if (cat.includes('FESTIVAL') || title.includes('FESTIVAL') || title.includes('FEST')) return 'Festival';
-      if (cat.includes('SPORT') || cat.includes('BADMINTON') || cat.includes('FOOTBALL')) return isEn ? 'Sports' : 'Olahraga';
-      if (cat.includes('COMEDY') || cat.includes('SHOWS_COMEDY') || cat.includes('STANDUP')) return 'Stand Up Comedy';
-      if (cat.includes('EXHIBITION') || cat.includes('PAMERAN')) return isEn ? 'Exhibitions' : 'Pameran';
-      if (cat.includes('THEATER') || cat.includes('FAMILY') || cat.includes('BUSINESS')) return isEn ? 'Other Entertainment' : 'Hiburan Lainnya';
-      return isEn ? 'Concerts' : 'Konser';
+      const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
+      if (cat.includes('KPOP') || cat.includes('K-POP') || title.includes('BTS') || title.includes('BIGBANG')) return t('events.kpop', 'K-Pop');
+      if (cat.includes('FESTIVAL') || title.includes('FESTIVAL') || title.includes('FEST')) return t('events.festivals', 'Festival');
+      if (cat.includes('SPORT') || cat.includes('BADMINTON') || cat.includes('FOOTBALL')) return t('events.sports', 'Olahraga');
+      if (cat.includes('COMEDY') || cat.includes('SHOWS_COMEDY') || cat.includes('STANDUP')) return t('events.comedy', 'Stand Up Comedy');
+      if (cat.includes('EXHIBITION') || cat.includes('PAMERAN')) return t('events.exhibitions', 'Pameran');
+      if (cat.includes('THEATER') || cat.includes('FAMILY') || cat.includes('BUSINESS')) return t('events.entertainment', 'Hiburan Lainnya');
+      return t('events.concerts', 'Konser');
     }
 
     const TIKUM_WHATSAPP_NUMBER = '6281299927378';
@@ -1170,11 +1291,13 @@
       }
       const title = eventTitle || 'Event';
       const eventUrl = window.location.origin + '/events/' + encodeURIComponent(eventSlug);
-      const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
+      const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
       if (isValidSupportPhone(TIKUM_WHATSAPP_NUMBER)) {
-        const text = isEn
-          ? `Hello TIKUM, I am interested in verified resale tickets for: ${title} (${eventUrl}). Please notify me when a verified seller is available.`
-          : `Halo TIKUM, saya tertarik jika ada tiket resale terverifikasi untuk event: ${title} (${eventUrl}). Mohon berkabar jika ada penjual terverifikasi.`;
+        const template = t(
+          'events.waitlistMessage',
+          'Halo TIKUM, saya tertarik jika ada tiket resale terverifikasi untuk event: {title} ({url}). Mohon berkabar jika ada penjual terverifikasi.'
+        );
+        const text = template.replace('{title}', title).replace('{url}', eventUrl);
         const waUrl = `https://wa.me/${TIKUM_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
         window.open(waUrl, '_blank', 'noopener,noreferrer');
       } else {
@@ -1197,7 +1320,6 @@
       const verifDate = e.verified_at || '';
       const categoryLabel = resolveCategoryLabel(e);
       const isPriority = Boolean(opts && opts.priority);
-      const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
       const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
       const fmtCur = (amount) => (window.TikumI18n ? window.TikumI18n.formatCurrency(amount, 'IDR') : formatRupiah(amount));
 
@@ -1220,7 +1342,7 @@
       } else {
         const officialPrice = e.primary_price_min || e.min_price;
         priceLabel = t('events.officialPromoterPrice', 'Harga resmi promotor');
-        priceDisplay = officialPrice ? (isEn ? `From ${fmtCur(officialPrice)}` : `Mulai ${fmtCur(officialPrice)}`) : 'TBA';
+        priceDisplay = officialPrice ? `${t('events.fromPrice', 'Mulai')} ${fmtCur(officialPrice)}` : 'TBA';
         resaleCue = `<div class="card-resale-empty-cue" data-i18n="events.noResaleTickets"><i class="fa-solid fa-circle-info"></i> ${t('events.noResaleTickets', 'Belum ada tiket resale di TIKUM')}</div>`;
         waitlistBtn = `<button type="button" class="btn-waitlist" onclick="handleWaitlistClick(event, '${escapeHtml(title)}', '${escapeHtml(slug)}')" data-i18n="events.notifyWhenAvailable"><i class="fa-brands fa-whatsapp"></i> ${t('events.notifyWhenAvailable', 'Kabari Saya Saat Tiket Ada')}</button>`;
       }
@@ -1330,6 +1452,7 @@
             <h2 class="ln-section-title">${title}</h2>
             ${lead ? `<p class="ln-section-lead">${lead}</p>` : ''}
           </div>
+          ${opts.anchor === 'trendingHypeRail' ? '<div class="rail-controls"><button type="button" data-rail-direction="-1" aria-label="Previous events">←</button><button type="button" data-rail-direction="1" aria-label="Next events">→</button></div>' : ''}
           <div class="ln-rail">
             ${cards}
           </div>
@@ -1372,25 +1495,38 @@
       const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
 
       if (!filtered.length) {
-        main.innerHTML = '<div class="ln-rail ln-empty" style="text-align:center; padding:48px 20px; background:#FFFFFF; border-radius:20px; border:1px solid rgba(18,78,97,0.12); margin-top:24px;"><i class="fa-solid fa-magnifying-glass" style="font-size:28px; color:var(--tikum-teal-700); margin-bottom:12px; display:block;"></i><h3 style="font-size:18px; font-weight:700; color:var(--tikum-ink-900); margin-bottom:8px;">' + t('discoveryRails.emptySearch', 'Tidak ada event terverifikasi yang sesuai dengan pencarian Anda.') + '</h3><p style="font-size:14px; color:var(--tikum-ink-600); margin:0;">Coba ganti kata kunci atau pilih kota lain.</p></div>';
+        main.innerHTML = '<div class="ln-rail ln-empty" style="text-align:center; padding:48px 20px; background:var(--theme-card, #1B2A40); border-radius:20px; border:1px solid var(--theme-border, #344358); margin-top:24px;"><i class="fa-solid fa-magnifying-glass" style="font-size:28px; color:var(--header-blue, #84C7F5); margin-bottom:12px; display:block;"></i><h3 style="font-size:18px; font-weight:700; color:var(--theme-text, #F8FAFC); margin-bottom:8px;">' + t('discoveryRails.emptySearch', 'Tidak ada event terverifikasi yang sesuai dengan pencarian Anda.') + '</h3><p style="font-size:14px; color:var(--theme-muted, #B6C2D1); margin:0;">' + t('discoveryRails.emptySearchSub', 'Coba ganti kata kunci atau pilih kota lain.') + '</p></div>';
         return;
       }
 
-      const title = filtersActive
-        ? t('discoveryRails.searchResultsTitle', 'Hasil Pencarian')
-        : t('landing.unifiedDiscoveryTitle', 'Event Populer & Terbaru');
-      const lead = filtersActive
-        ? filtered.length + ' ' + t('discoveryRails.searchResultsLead', 'event terverifikasi ditemukan')
-        : t('landing.unifiedDiscoverySubtitle', 'Pilihan konser resmi, festival, dan pertandingan olahraga dengan verifikasi ketersediaan tiket resale.');
+      if (filtersActive) {
+        const title = t('discoveryRails.searchResultsTitle', 'Hasil Pencarian');
+        const lead = filtered.length + ' ' + t('discoveryRails.searchResultsLead', 'event terverifikasi ditemukan');
+        main.innerHTML = [
+          renderGridSection(title, lead, filtered, { anchor: 'unifiedDiscovery', priority: true }),
+          renderAttribution()
+        ].join('');
+      } else {
+        const topHype = [...filtered]
+          .sort((a, b) => (b.hype_score || b.demand_score || b.popularity_score || 0) - (a.hype_score || a.demand_score || a.popularity_score || 0))
+          .slice(0, 6);
 
-      main.innerHTML = [
-        renderGridSection(title, lead, filtered, { anchor: 'unifiedDiscovery' }),
-        renderAttribution()
-      ].join('');
+        const hypeTitle = t('landing.trendingHypeTitle', 'Sedang Hype — 3 Bulan Ke Depan');
+        const hypeLead = t('landing.trendingHypeSubtitle', 'Pilihan konser megabintang, festival besar, dan turnamen olahraga dengan antusiasme tertinggi.');
+
+        const gridTitle = t('landing.unifiedDiscoveryTitle', 'Katalog Event Terverifikasi');
+        const gridLead = t('landing.unifiedDiscoverySubtitle', 'Pilihan konser resmi, festival, dan tiket pertandingan olahraga dengan verifikasi kepemilikan.');
+
+        main.innerHTML = [
+          renderRail(hypeTitle, hypeLead, topHype, { anchor: 'trendingHypeRail', priority: true }),
+          renderGridSection(gridTitle, gridLead, filtered, { anchor: 'unifiedDiscovery' }),
+          renderAttribution()
+        ].join('');
+      }
 
       if (window.refreshTikumReveals) window.refreshTikumReveals();
       if (window.TikumI18n && typeof window.TikumI18n.setLang === 'function') {
-        window.TikumI18n.setLang(window.TikumI18n.getLang());
+        window.TikumI18n.setLang(window.TikumI18n.getLang(), { silent: true });
       }
     }
 
@@ -1443,8 +1579,9 @@
           </div>
         `;
       } else {
+        const signInText = window.TikumI18n ? window.TikumI18n.t('nav.signIn', 'Masuk') : 'Masuk';
         container.innerHTML = `
-          <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up">Masuk / Daftar</button>
+          <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up" data-i18n="nav.signIn">${signInText}</button>
         `;
       }
     }
@@ -1550,11 +1687,18 @@
       }
     }
 
-    window.addEventListener('tikum:languageChanged', function(e) {
-      const heroEvent = (homeFeed && homeFeed.sections && homeFeed.sections.hero) || allEvents[0];
-      renderHeroFeature(heroEvent);
-      renderAllSections();
-      if (homeFeed) updateFreshnessBadge(homeFeed);
+    let _handlingHomeLocaleChange = false;
+    window.addEventListener('tikum:locale-change', function() {
+      if (_handlingHomeLocaleChange) return;
+      _handlingHomeLocaleChange = true;
+      try {
+        const heroEvent = (homeFeed && homeFeed.sections && homeFeed.sections.hero) || allEvents[0];
+        renderHeroFeature(heroEvent);
+        renderAllSections();
+        if (homeFeed) updateFreshnessBadge(homeFeed);
+      } finally {
+        _handlingHomeLocaleChange = false;
+      }
     });
 
     // Init
@@ -1567,6 +1711,7 @@
     });
   </script>
   <script src="/js/i18n.js"></script>
+  <script src="/js/header-shared.js"></script>
 
   <script>
     function syncTopbarSearch(val) {

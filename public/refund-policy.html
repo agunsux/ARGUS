@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,10 +19,13 @@
   <meta name="twitter:title" content="Kebijakan Pengembalian Dana — Tikum | by Shinerva">
   <meta name="twitter:description" content="Ketentuan resmi pengembalian dana (refund policy) Tikum.">
 
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="/images/tikum-brand-symbol.svg">
   <link rel="manifest" href="/manifest.json">
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/tikum-tokens.css">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/header-shared.css">
 </head>
 <body>
 
@@ -33,7 +36,7 @@
     <aside id="appSidebar" class="app-sidebar" aria-label="Navigasi Utama">
       <div class="sidebar-brand-header">
         <a href="/" class="sidebar-brand-link">
-          <img src="/assets/tikum-mark-2color.svg" width="30" height="30" alt="Tikum Logo">
+          <img src="/images/tikum-brand-symbol.svg" width="32" height="32" alt="Tikum Logo">
           <div class="sidebar-brand-text">
             <div class="sidebar-brand-title">TIKUM</div>
             <div class="sidebar-brand-sub">by PT Shinerva Prajna Tejas</div>
@@ -143,14 +146,16 @@
     <!-- Main Content Wrapper -->
     <div id="appMainWrapper">
       <!-- Zero-Overlap 64px Slim Topbar -->
-      <header id="appTopbar" class="app-topbar">
+      <header id="appTopbar" class="app-topbar tikum-shared-header" data-header-variant="public">
         <div class="topbar-left">
           <button type="button" id="sidebarToggleMobile" class="topbar-hamburger-btn" aria-label="Buka Menu Navigasi">
             <i class="fa-solid fa-bars"></i>
           </button>
           <a href="/" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-            <img src="/assets/tikum-mark-2color.svg" width="28" height="28" alt="Tikum">
-            <span style="font-weight:800; font-size:17px; color:#FFF; letter-spacing:0.5px;">Tikum</span>
+            <span class="tikum-logo-slot" aria-label="TIKUM">
+              <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="Tikum">
+            </span>
+            <div class="brand-title">Tikum</div>
           </a>
         </div>
 
@@ -165,9 +170,6 @@
           <a href="/create" class="ln-btn ln-btn-primary" style="padding:8px 16px; font-size:13px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
             <i class="fa-solid fa-plus"></i> <span data-i18n="nav.submitListing">+ Buat Deal</span>
           </a>
-          <button class="select-filter" onclick="if(window.TikumI18n) window.TikumI18n.toggleTheme();" id="themeToggle" title="Toggle Theme" style="padding:6px 10px; height:36px; display:inline-flex; align-items:center; justify-content:center;">
-            <i class="fa-solid fa-sun" id="themeIcon"></i>
-          </button>
           <button class="lang-toggle-btn lang-switcher-pill" onclick="if(window.TikumI18n) window.TikumI18n.toggleLang();" id="langToggle" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
             <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>
           </button>
@@ -259,7 +261,7 @@
       </p>
       <ul style="color: var(--text-muted); margin-left: 20px; margin-top: 8px;">
         <li>Email: <a href="mailto:support@tikum.app" style="color: var(--cyan);">support@tikum.app</a></li>
-        <li>WhatsApp Hotline / Telepon: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399;">+62 812-9992-7378 (081299927378)</a></li>
+        <li>WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399;">+62 812-9992-7378</a></li>
         <li>Jam Layanan Customer Support: Senin - Minggu 09:00 - 21:00 WIB (WhatsApp &amp; Email)</li>
         <li>Alamat Korespondensi: <strong>PT SHINERVA PRAJNA TEJAS</strong>, Jl. Pasirluyu No. 79, Bandung 40254, Indonesia</li>
       </ul>
@@ -350,7 +352,7 @@
         </p>
         <ul style="color: var(--text-muted); margin-left: 20px; margin-top: 8px;">
           <li>Email: <a href="mailto:support@tikum.app" style="color: var(--cyan);">support@tikum.app</a></li>
-          <li>WhatsApp Hotline: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399;">+62 812-9992-7378 (081299927378)</a></li>
+          <li>WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color: #34d399;">+62 812-9992-7378</a></li>
           <li>Support Hours: Monday - Sunday 09:00 - 21:00 WIB (WhatsApp &amp; Email)</li>
           <li>Mailing Address: <strong>PT SHINERVA PRAJNA TEJAS</strong>, Jl. Pasirluyu No. 79, Bandung 40254, Indonesia</li>
         </ul>
@@ -384,8 +386,10 @@
       <footer id="appFooter" class="app-footer site-footer">
         <div class="footer-tier-1">
           <div class="footer-col-brand">
+            <div style="margin-bottom: 14px;">
+              <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img footer-logo-light" width="196" height="42" alt="TIKUM">
+            </div>
             <h3>
-              <img src="/assets/tikum-mark-2color.svg" width="22" height="22" alt="Tikum">
               <span>TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
             </h3>
             <p data-i18n="footer.aboutBrand">
@@ -405,7 +409,7 @@
               <a href="mailto:support@tikum.app">support@tikum.app</a>
             </div>
             <div class="footer-contact-item">
-              <strong data-i18n="footer.phoneAndWa">WhatsApp Resmi:</strong>
+              <strong data-i18n="footer.phoneAndWa">WhatsApp:</strong>
               <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer">+62 812-9992-7378</a>
             </div>
             <div class="footer-contact-item">
@@ -492,6 +496,7 @@
 
     document.addEventListener('DOMContentLoaded', initAppShell);
   </script>
-
+  <script src="/js/i18n.js"></script>
+  <script src="/js/header-shared.js"></script>
 </body>
 </html>
