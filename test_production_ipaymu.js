@@ -41,7 +41,7 @@ async function verifyProduction() {
     // Check canonical business info
     assert.ok(res.body.includes('PT SHINERVA PRAJNA TEJAS') || res.body.includes('SHINERVA HQ') || res.body.includes('Shinerva'), `Missing Shinerva entity on ${r}`);
     assert.ok(res.body.includes('support@tikum.app'), `Missing support@tikum.app on ${r}`);
-    assert.ok(res.body.includes('081299927378'), `Missing 081299927378 on ${r}`);
+    assert.ok(res.body.includes('+62 812-9992-7378'), `Missing +62 812-9992-7378 on ${r}`);
     assert.ok(res.body.includes('Jl. Pasirluyu No. 79'), `Missing Pasirluyu on ${r}`);
     assert.ok(res.body.includes('Bandung 40254'), `Missing Bandung 40254 on ${r}`);
     assert.ok(res.body.includes('Indonesia'), `Missing Indonesia on ${r}`);
@@ -57,7 +57,7 @@ async function verifyProduction() {
     for (const p of placeholders) {
       assert.strictEqual(res.body.includes(p), false, `Found placeholder ${p} on ${r}`);
     }
-    console.log(`  -> Checked: SHINERVA HQ, support@tikum.app, 081299927378, Jl. Pasirluyu No. 79, Bandung 40254, Indonesia (ALL PRESENT & VERIFIED)`);
+    console.log(`  -> Checked: SHINERVA HQ, support@tikum.app, +62 812-9992-7378, Jl. Pasirluyu No. 79, Bandung 40254, Indonesia (ALL PRESENT & VERIFIED)`);
   }
 
   // Check /api/business-profile

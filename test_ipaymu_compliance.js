@@ -122,8 +122,8 @@ async function runTests() {
         assert.ok(html.includes('support@tikum.app'), `Missing support@tikum.app in ${route}`);
         assert.ok(html.includes('mailto:support@tikum.app'), `Missing mailto:support@tikum.app in ${route}`);
       });
-      check(`Route ${route} contains exact phone & WhatsApp link "081299927378"`, () => {
-        assert.ok(html.includes('081299927378'), `Missing 081299927378 text in ${route}`);
+      check(`Route ${route} contains formatted WhatsApp number and link`, () => {
+        assert.ok(html.includes('+62 812-9992-7378'), `Missing +62 812-9992-7378 text in ${route}`);
         assert.ok(html.includes('https://wa.me/6281299927378'), `Missing wa.me link in ${route}`);
       });
       check(`Route ${route} contains exact address "Jl. Pasirluyu No. 79, Bandung 40254, Indonesia"`, () => {
@@ -151,7 +151,7 @@ async function runTests() {
       assert.strictEqual(homeRes.statusCode, 200);
       assert.ok(homeRes.body.includes('PT SHINERVA PRAJNA TEJAS') || homeRes.body.includes('SHINERVA HQ'));
       assert.ok(homeRes.body.includes('support@tikum.app'));
-      assert.ok(homeRes.body.includes('081299927378'));
+      assert.ok(homeRes.body.includes('+62 812-9992-7378'));
       assert.ok(homeRes.body.includes('Jl. Pasirluyu No. 79'));
       assert.ok(homeRes.body.includes('Bandung 40254'));
       assert.ok(homeRes.body.includes('Indonesia'));
@@ -210,7 +210,7 @@ async function runTests() {
       assert.ok(refundHtml.includes('Alur &amp; Prosedur Pengajuan Sengketa'));
       assert.ok(refundHtml.includes('Mekanisme &amp; Durasi Pencairan Pengembalian Dana'));
       assert.ok(refundHtml.includes('support@tikum.app'));
-      assert.ok(refundHtml.includes('081299927378'));
+      assert.ok(refundHtml.includes('+62 812-9992-7378'));
     });
 
     // Test 11: Content Verification for Contact Page
@@ -218,7 +218,7 @@ async function runTests() {
     check('Contact page clearly displays all canonical contact channels and support steps', () => {
       assert.ok(contactHtml.includes('PT SHINERVA PRAJNA TEJAS') || contactHtml.includes('SHINERVA HQ'));
       assert.ok(contactHtml.includes('support@tikum.app'));
-      assert.ok(contactHtml.includes('081299927378'));
+      assert.ok(contactHtml.includes('+62 812-9992-7378'));
       assert.ok(contactHtml.includes('Jl. Pasirluyu No. 79'));
       assert.ok(contactHtml.includes('Bandung 40254'));
       assert.ok(contactHtml.includes('Indonesia'));
@@ -265,7 +265,7 @@ async function runTests() {
       assert.strictEqual(eventsRes.statusCode, 200);
       assert.ok(eventsRes.body.includes('PT SHINERVA PRAJNA TEJAS') || eventsRes.body.includes('SHINERVA HQ'));
       assert.ok(eventsRes.body.includes('support@tikum.app'));
-      assert.ok(eventsRes.body.includes('081299927378'));
+      assert.ok(eventsRes.body.includes('+62 812-9992-7378'));
       assert.ok(eventsRes.body.includes('Jl. Pasirluyu No. 79'));
       assert.ok(eventsRes.body.includes('Bandung 40254'));
       assert.ok(eventsRes.body.includes('href="/faq"'));

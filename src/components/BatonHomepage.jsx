@@ -1439,7 +1439,7 @@ export default function BatonHomepage() {
                   <div>Jl. Pasirluyu No. 79</div>
                   <div>Bandung 40254, Indonesia</div>
                   <div>Email: <a href="mailto:support@tikum.app" className="text-emerald-400">support@tikum.app</a></div>
-                  <div>WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" className="text-emerald-400">081299927378</a></div>
+                  <div>WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" className="text-emerald-400">+62 812-9992-7378</a></div>
                 </div>
               </div>
             </div>

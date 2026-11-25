@@ -30,6 +30,7 @@ const businessProfile = {
   email: 'support@tikum.app',
   phone: '081299927378',
   whatsappNumber: '081299927378',
+  whatsappDisplayNumber: '+62 812-9992-7378',
   whatsappUrl: 'https://wa.me/6281299927378',
   emailUrl: 'mailto:support@tikum.app',
 
@@ -124,7 +125,7 @@ function renderFooterHtml(lang = 'id') {
           </div>
           <div>
             <span style="color: var(--palette-secondary-text, #CBD5E1);">WhatsApp:</span>
-            <a href="${businessProfile.whatsappUrl}" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none; margin-left: 6px;"><i class="fa-brands fa-whatsapp"></i> ${businessProfile.phone}</a>
+            <a href="${businessProfile.whatsappUrl}" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none; margin-left: 6px;"><i class="fa-brands fa-whatsapp"></i> ${businessProfile.whatsappDisplayNumber}</a>
           </div>
           <div style="color: var(--palette-secondary-text, #CBD5E1); font-size: 12px; margin-top: 4px;" data-i18n="footer.supportHoursValue">
             ${isEn ? 'Operating Hours: Monday – Sunday: 09:00 – 21:00 WIB' : 'Jam Operasional: Senin – Minggu: 09:00 – 21:00 WIB'}

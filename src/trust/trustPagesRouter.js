@@ -281,7 +281,7 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
             <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Official Support &amp; Hours:</div>
             <div style="color:#cbd5e1; font-size:13px; line-height:1.6;">
               Email: <a href="mailto:support@tikum.app" style="color:#38bdf8; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
-              Phone / WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
+              WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
               Operating Hours: Monday – Sunday: 09:00 – 21:00 WIB
             </div>
           </div>
@@ -471,7 +471,7 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
             <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Kontak &amp; Jam Layanan Dukungan:</div>
             <div style="color:#cbd5e1; font-size:13px; line-height:1.6;">
               Email Resmi: <a href="mailto:support@tikum.app" style="color:#38bdf8; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
-              Telepon / WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378 (081299927378)</a><br>
+              WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
               Jam Operasional: Senin – Minggu: 09:00 – 21:00 WIB
             </div>
           </div>
@@ -999,7 +999,7 @@ router.get('/about', (req, res) => {
             <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Official Contact &amp; Support:</div>
             <div style="color:#cbd5e1; font-size:13px; line-height:1.6;">
               Email: <a href="mailto:support@tikum.app" style="color:#38bdf8; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
-              Phone / WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
+              WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
               Operating Hours: Monday – Sunday: 09:00 – 21:00 WIB
             </div>
           </div>
@@ -1058,7 +1058,7 @@ router.get('/about', (req, res) => {
             <div style="font-size:12px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:4px;">Kontak Resmi &amp; Jam Layanan:</div>
             <div style="color:#cbd5e1; font-size:13px; line-height:1.6;">
               Email: <a href="mailto:support@tikum.app" style="color:#38bdf8; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
-              Telepon / WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
+              WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:none; font-weight:600;">+62 812-9992-7378</a><br>
               Jam Layanan: Senin – Minggu: 09:00 – 21:00 WIB
             </div>
           </div>

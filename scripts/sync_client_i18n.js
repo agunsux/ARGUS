@@ -126,7 +126,7 @@ function sync(options = {}) {
   const before = clientContent.slice(0, startIdx + START_MARKER.length);
   const after = clientContent.slice(endIdx);
   const generatedBlock = `\n  const translations = {\n${entries.join(',\n')}\n  };\n  `;
-  const updatedContent = before + generatedBlock + after;
+  const updatedContent = (before + generatedBlock + after).replace(/\r\n?/g, '\n');
 
   // Validate syntax in memory before touching disk
   new vm.Script(updatedContent, { filename: 'public/js/i18n.js' });

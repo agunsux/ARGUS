@@ -25,6 +25,10 @@ assert.strictEqual(clientI18n.resolveInitialLanguage('?lang=invalid', null), 'id
 
 for (const code of CANONICAL_LOCALES) {
   assert(clientI18n.translations[code], `Client translations missing '${code}'`);
+  const serverDict = require(`./src/i18n/dictionaries/${code}`);
+  assert.strictEqual(serverDict.footer.phoneAndWa, 'WhatsApp:');
+  assert.strictEqual(serverDict.support.phoneLabel, 'WhatsApp:');
+  assert.deepStrictEqual(clientI18n.translations[code], serverDict, `Client/server values must match for ${code}`);
   assert.strictEqual(Object.keys(collectLeaves(clientI18n.translations[code])).length, 1676, `'${code}' must have 1676 keys`);
 }
 assert(!clientI18n.translations.fil, 'Non-canonical fil key must not exist in translations');
@@ -38,12 +42,13 @@ for (const l of CANONICAL_LOCALES) {
   fs.writeFileSync(path.join(dictDir, `${l}.js`), `module.exports = { nav: { home: "Home (${l})" } };\n`, 'utf8');
 }
 const mockClientPath = path.join(tmpRoot, 'i18n.js');
-const mockTemplate = '// <I18N_DICTIONARIES_START>\n  const translations = {};\n  // <I18N_DICTIONARIES_END>\n';
+const mockTemplate = '// <I18N_DICTIONARIES_START>\r\n  const translations = {};\r\n  // <I18N_DICTIONARIES_END>\r\n';
 fs.writeFileSync(mockClientPath, mockTemplate, 'utf8');
 
 const res = sync({ dictionariesDir: dictDir, clientI18nPath: mockClientPath });
 assert.strictEqual(res.keyCount, 1);
 const syncedBytes = fs.readFileSync(mockClientPath, 'utf8');
+assert(!syncedBytes.includes('\r'), 'Generated output must use LF even when the template uses CRLF');
 assert(syncedBytes.includes('"tl":'), 'Synced output must include tl');
 
 // Inject empty translation in th and verify sync throws WITHOUT modifying existing bundle
