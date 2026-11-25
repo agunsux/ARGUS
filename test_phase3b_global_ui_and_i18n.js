@@ -43,15 +43,40 @@ async function httpGet(baseUrl, urlPath, headers = {}) {
   console.log('  TIKUM — PHASE 3B GLOBAL DESIGN SYSTEM & 5-LANG RELEASE SUITE');
   console.log('================================================================\n');
 
-  // 1. Immutable manifest check vs git blob b22279f38499299e6fe26dc09aa39c6bc597efbd
+  // 1. Immutable manifest check vs git blob b22279f38499299e6fe26dc09aa39c6bc597efbd + formal 3-file Option A map
   const manifestRaw = execSync('git cat-file -p b22279f38499299e6fe26dc09aa39c6bc597efbd', { encoding: 'utf8' }).trim();
   const manifestObj = JSON.parse(manifestRaw);
   const manifestEntries = Object.entries(manifestObj);
-  assert.strictEqual(manifestEntries.length, 17, `Expected 17 immutable manifest entries, found ${manifestEntries.length}`);
-  for (const [relPath, expectedHash] of manifestEntries) {
-    assert.strictEqual(sha256File(relPath.trim()), expectedHash.toUpperCase(), `Immutable file hash changed: ${relPath}`);
+  assert.strictEqual(manifestEntries.length, 17, `Expected 17 historical manifest entries, found ${manifestEntries.length}`);
+
+  const optionAGov = JSON.parse(fs.readFileSync(path.join(__dirname, 'GOVERNANCE_MANIFEST_OPTION_A.json'), 'utf8'));
+  const optionAUpdates = optionAGov.option_a_authorized_updates || {};
+  const expectedOptionAPaths = [
+    'src/settlement/FinancialLedger.js',
+    'src/services/escrowService.js',
+    'src/services/marketplace/MarketplaceOrderService.js'
+  ].sort();
+  assert.deepStrictEqual(Object.keys(optionAUpdates).sort(), expectedOptionAPaths, 'Option A governance updates must cover ONLY the 3 authorized files');
+
+  let lockedVerified = 0;
+  let optionAVerified = 0;
+  for (const [relPathRaw, historicalHash] of manifestEntries) {
+    const relPath = relPathRaw.trim();
+    const expectedOld = historicalHash.toUpperCase();
+    const actualHash = sha256File(relPath);
+    if (Object.prototype.hasOwnProperty.call(optionAUpdates, relPath)) {
+      const entry = optionAUpdates[relPath];
+      assert.strictEqual(String(entry.old_sha256 || '').toUpperCase(), expectedOld, `Option A old_sha256 mismatch for ${relPath}`);
+      assert.strictEqual(actualHash, String(entry.new_sha256 || '').toUpperCase(), `Option A file hash changed beyond authorized snapshot: ${relPath}`);
+      optionAVerified += 1;
+    } else {
+      assert.strictEqual(actualHash, expectedOld, `Locked immutable file hash changed: ${relPath}`);
+      lockedVerified += 1;
+    }
   }
-  console.log('  [PASS] 1. Immutable manifest 17/17 PASS.');
+  assert.strictEqual(lockedVerified, 14, `Expected 14 locked manifest files, verified ${lockedVerified}`);
+  assert.strictEqual(optionAVerified, 3, `Expected 3 Option A manifest files, verified ${optionAVerified}`);
+  console.log('  [PASS] 1. Governance manifest verified: 14/14 locked + 3/3 Option A authorized hashes PASS.');
 
   // 2. Official master SVGs + Legacy 4 SVGs + Guarded PNG Assets Intact (No Photo Banners in Hero)
   const EXPECTED_MASTER_HASH = 'DFDEA1FCCA5B8B7B5C998916A8C21C36AE2133069AF0FD7A8FC464F7C8EF2754';

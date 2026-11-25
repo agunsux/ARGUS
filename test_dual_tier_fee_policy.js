@@ -18,9 +18,15 @@ for (const [tier, amount, expected] of [
     assert.strictEqual(result.buyer_total_amount, result.seller_net_payout + result.platform_revenue);
   }
 }
-assert.strictEqual(calculateDualTierFees({ ticketPrice: 1000000 }).fulfillment_option, 'SELLER_MANAGED');
-assert.strictEqual(calculateDualTierFees({ ticketPrice: 1000009 }).buyer_fee, 60001);
-assert.throws(() => calculateDualTierFees({ ticketPrice: 1000000, fulfillmentType: 'UNKNOWN' }), /Unknown fulfillment/);
+assert.strictEqual(calculateDualTierFees({ ticketPrice: 1000000, fulfillmentType: 'SELLER_MANAGED' }).fulfillment_option, 'SELLER_MANAGED');
+assert.strictEqual(calculateDualTierFees({ ticketPrice: 1000009, fulfillmentType: 'SELLER_MANAGED' }).buyer_fee, 60001);
+assert.strictEqual(calculateDualTierFees({ ticketPrice: 1000000, fulfillmentType: 'TIKUM_VENUE_PIC' }).fulfillment_option, 'TIKUM_VENUE_PIC');
+for (const invalidType of [undefined, null, '', 'UNKNOWN']) {
+  assert.throws(
+    () => calculateDualTierFees({ ticketPrice: 1000000, fulfillmentType: invalidType }),
+    (err) => err && err.code === 'INVALID_FULFILLMENT_TYPE' && /Unknown fulfillment/.test(err.message)
+  );
+}
 assert.strictEqual(FEE_POLICY_V2.minimum_listing_price, 500000);
 assert.strictEqual(FEE_POLICY_V2.maximum_markup_percent, 30);
-console.log('PASS: isolated V2 fee calculations, tier fallback, per-ticket caps and balance');
+console.log('PASS: isolated V2 fee calculations, explicit fulfillment validation (INVALID_FULFILLMENT_TYPE), per-ticket caps and balance');

@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "branch": "feat/tx-integrity-v2-doku",
+  "historical_manifest_blob": "b22279f38499299e6fe26dc09aa39c6bc597efbd",
+  "locked_count": 14,
+  "option_a_updated_count": 3,
+  "master_svg_expected_sha256": "DFDEA1FCCA5B8B7B5C998916A8C21C36AE2133069AF0FD7A8FC464F7C8EF2754",
+  "master_svg_paths": [
+    "public/images/tikum horizonzal logo pinggir.svg",
+    "research/tikum horizonzal logo pinggir.svg"
+  ],
+  "option_a_authorized_updates": {
+    "src/settlement/FinancialLedger.js": {
+      "old_sha256": "72C2C1013D51B36AFA1CAC8D425368E27740D897737E8C5692E271AD69D2CA1F",
+      "new_sha256": "97E83D46F833D37C3E49DF65C541F9016942A17518F6528F38ABF8E6D4EDD293",
+      "authorized_commit": "2efda7e757e6ca4f83542166e0cf2745985d66da",
+      "reason": "Option A Sub-Phase 1: DB-first balanced double-entry ledger persistence with ACID txContext forwarding"
+    },
+    "src/services/escrowService.js": {
+      "old_sha256": "5D78E62D0CF2C07E0A9475EA53395D9603CDF363B346FC3DD460A8908C3CC2A9",
+      "new_sha256": "AB6D93E31C186DB34E719199B0DF0D1D476A99B12964A83451D1FB54168F649A",
+      "authorized_commit": "2081fd28f0dda6ac09ad1a44fa0e9da4369fa483",
+      "reason": "Option A Sub-Phase 2: Atomic quote-to-order binding, UnitOfWork transaction boundary, unified capture & durable verification"
+    },
+    "src/services/marketplace/MarketplaceOrderService.js": {
+      "old_sha256": "CB40D8BF171D38F28F79E5B568F40BD9CF728999D386B2708F51582BDA7FBB86",
+      "new_sha256": "A1B7FC9F16009B8DC6E8084BC1F7F61F2A5CBC1933A0AB8B3CC8AFDF8943DB76",
+      "authorized_commit": "2081fd28f0dda6ac09ad1a44fa0e9da4369fa483",
+      "reason": "Option A Sub-Phase 2: Explicit fulfillment/policy forwarding and unified PaymentService.handleWebhook callback delegation"
+    }
+  },
+  "locked_manifest_hashes": {
+    "src/settlement/escrow.js": "41853D9FA7B7AE4D8E5FC857CD3D197139AD17F407DDB359474770CA3E952387",
+    "src/settlement/EscrowStateMachine.js": "8FEFD89BF5A53B53B702E6FBEC39ECBA5AA91C397AEC1064ADC0ED577B333857",
+    "src/ownership/ledger.js": "31214883F62E6D2A408E28517C401E9EDDB8F24468C5CEB802E1ED82CA60886A",
+    "src/services/payment/canonicalPaymentTypes.js": "C14E9B5696A8DF06D7EA3B654725CCE28EE608891A41E792FC48105C0A7E97D2",
+    "src/services/payment/DeterministicTestProvider.js": "125DA91501CD21B4C900EF650DBFC257F6A5915AE0B40D05FBEE2E1342C02F52",
+    "src/trust/SellerTrustService.js": "D3D00F1A9CFDC9FFA77CCCE2118CD4EADDC54F96FFC4A365AE7A477EDA6BF2A4",
+    "src/trust/EvidenceService.js": "7AED3665641742CF29074059848E1FE86AE338D7A3488264CD2D042DF1822669",
+    "src/database.js": "9F03419115AB38FF51566154603BEF1AB1DE06C9FFBC65FFAF28279AFCE034C0",
+    "src/api/authRouter.js": "21B5CD3C4F940B42C628F7A36533FA3AF5E44B8FAEA1682DC082AB621F8BAF41",
+    "src/middleware/auth.js": "8C265323A938F95B2FA7DA5F01F7501CACED0BCD8E79400126E27E8833728FB3",
+    "src/discovery/CatalogSafety.js": "4A481906EE99CCBC5BC5F56C024D3D31B2B0E59CC95AD579A6379F78E52D2B6B",
+    "src/discovery/DailyCatalogRefreshService.js": "CF2434E1D90763FDA28EE2D343F62B051BDAA2C6D26C0D7E5D6D3714AE487CD0",
+    "src/discovery/CanonicalEventRegistry.js": "A2AFD4431E46429EF47E2BD645D02473B3B276E7536C03D3110DBA6D10DE663B",
+    "src/discovery/EventTemporalLifecycleEngine.js": "570AC678B2C7B183733472477D2935B2A261CB80476EBAE44D7CF1915B397151"
+  }
+}

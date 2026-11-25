@@ -104,7 +104,30 @@ async function runFeeTestSuite() {
   if (!seller) throw new Error('Expected seller-1 fixture');
   seller.email_verified = true;
   seller.phone = seller.phone || '+628111111111';
+  seller.bank_account_details = seller.bank_account_details || 'BCA 1234567890 a.n. Budi Santoso';
   seller.metadata = { ...seller.metadata, city: 'Bandung', payout_bank_name: 'BCA', payout_account_number: '1234567890', identity_doc_ref: 'fixture-identity' };
+  const { getUserRepository } = require('./src/storage');
+  const userRepo = getUserRepository();
+  if (userRepo && typeof userRepo.updateUser === 'function') {
+    await userRepo.updateUser('seller-1', {
+      email_verified: true,
+      phone: seller.phone,
+      metadata: {
+        city: 'Bandung',
+        payout_bank_name: 'BCA',
+        payout_account_number: '1234567890',
+        identity_doc_ref: 'fixture-identity',
+        seller_profile: {
+          user_id: 'seller-1',
+          kyc_status: 'VERIFIED',
+          nik_hash: 'hash-ktp-budi-327101',
+          payout_bank: 'BCA',
+          payout_account_masked: '1234567890',
+          active_listing_limit: 50
+        }
+      }
+    });
+  }
 
   await new Promise(resolve => {
     server = http.createServer(app);
@@ -285,7 +308,8 @@ async function runFeeTestSuite() {
         seatInfo: 'CAT 1 - Row 5',
         faceValue: 1000000,
         price: 1000000,
-        rawBarcode: 'BC-TAMPER-001'
+        rawBarcode: 'BC-TAMPER-001',
+        fulfillmentType: 'SELLER_MANAGED'
       });
       await ListingService.verifyListing(listingRes.listing.id, 'admin-1', { approved: true });
 
@@ -313,7 +337,8 @@ async function runFeeTestSuite() {
         seatInfo: 'CAT 2 - Row 10',
         faceValue: 500000,
         price: 500000,
-        rawBarcode: 'BC-TAMPER-PAY-001'
+        rawBarcode: 'BC-TAMPER-PAY-001',
+        fulfillmentType: 'SELLER_MANAGED'
       });
       await ListingService.verifyListing(listingRes.listing.id, 'admin-1', { approved: true });
 
@@ -368,7 +393,8 @@ async function runFeeTestSuite() {
         seatInfo: 'VIP - Row 1',
         faceValue: 2000000,
         price: 2000000,
-        rawBarcode: 'BC-REFUND-001'
+        rawBarcode: 'BC-REFUND-001',
+        fulfillmentType: 'SELLER_MANAGED'
       });
       await ListingService.verifyListing(listingRes.listing.id, 'admin-1', { approved: true });
 
@@ -408,7 +434,8 @@ async function runFeeTestSuite() {
         seatInfo: 'CAT 1 - Row 2',
         faceValue: 1000000,
         price: 1000000,
-        rawBarcode: 'BC-LEDGER-REC-001'
+        rawBarcode: 'BC-LEDGER-REC-001',
+        fulfillmentType: 'SELLER_MANAGED'
       });
       await ListingService.verifyListing(listingRes.listing.id, 'admin-1', { approved: true });
 
@@ -443,28 +470,33 @@ async function runFeeTestSuite() {
     });
 
     await asyncTest('20. Every order creation path consumes canonical fee engine (Listing, Quote, Order, Offer)', async () => {
-      // 1. Direct quote
-      const quote = await TransactionQuoteService.generateQuote({
-        ticketPrice: 1000000,
-        buyerId: 'buyer-1'
-      });
-      assert.strictEqual(quote.fee_policy_version, 'TIKUM_FEE_POLICY_V1');
-      assert.strictEqual(quote.buyer_fee, 60000);
-      assert.strictEqual(quote.seller_fee, 60000);
-
-      // 2. Listing creation
+      // 1. Listing creation with explicit fulfillment tier
       const listingRes = await ListingService.createListing({
         sellerId: 'seller-1',
         eventId: 'event-joyland-2026',
         seatInfo: 'CAT 1 - Row 9',
         faceValue: 1000000,
         price: 1000000,
-        rawBarcode: 'BC-CANONICAL-TEST-009'
+        rawBarcode: 'BC-CANONICAL-TEST-009',
+        fulfillmentType: 'SELLER_MANAGED'
       });
       assert.strictEqual(listingRes.listing.pricing.fee_policy_version, 'TIKUM_FEE_POLICY_V1');
       assert.strictEqual(listingRes.listing.pricing.seller_fee, 60000);
       assert.strictEqual(listingRes.listing.pricing.buyer_fee, 60000);
       assert.strictEqual(listingRes.listing.pricing.seller_payout, 940000);
+
+      // 2. Direct quote bound to authoritative listingId (and rejects missing listingId fail-closed)
+      await assert.rejects(
+        () => TransactionQuoteService.generateQuote({ ticketPrice: 1000000, buyerId: 'buyer-1' }),
+        err => err && err.code === 'LISTING_NOT_FOUND'
+      );
+      const quote = await TransactionQuoteService.generateQuote({
+        listingId: listingRes.listing.id,
+        buyerId: 'buyer-1'
+      });
+      assert.strictEqual(quote.fee_policy_version, 'TIKUM_FEE_POLICY_V1');
+      assert.strictEqual(quote.buyer_fee, 60000);
+      assert.strictEqual(quote.seller_fee, 60000);
 
       // 3. Pricing calculate endpoint preview
       const preview = await request('POST', '/api/mvp/pricing/calculate', {
