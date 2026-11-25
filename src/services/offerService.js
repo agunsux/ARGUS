@@ -3,6 +3,7 @@ const { state, recordOfferAuditLog } = require('../database');
 const { LISTING_STATUS } = require('./listingService');
 const { EscrowService } = require('./escrowService');
 const { emailService } = require('./emailService');
+const { TransactionQuoteService } = require('../pricing/TransactionQuoteService');
 
 const OFFER_STATUS = {
   PENDING: 'PENDING',
@@ -604,11 +605,38 @@ class OfferService {
       negotiation.current_turn = null;
       negotiation.updated_at = decidedAt;
 
-      // 2. Create order with custom negotiated amount (2-hour payment deadline)
+      // 2. Create order with verified offer price & explicit durable fulfillment/policy context
+      const listMeta = typeof listing.metadata === 'string'
+        ? (() => { try { return JSON.parse(listing.metadata); } catch (_) { return {}; } })()
+        : (listing.metadata && typeof listing.metadata === 'object' ? listing.metadata : {});
+      const authoritativeFulfillment = listing.fulfillment_type || listMeta.fulfillment_type || listMeta.fulfillment_option || null;
+      if (!['SELLER_MANAGED', 'TIKUM_VENUE_PIC'].includes(authoritativeFulfillment)) {
+        const err = new Error(`Listing '${listing.id}' lacks valid fulfillment_type`);
+        err.code = 'INVALID_FULFILLMENT_TYPE';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      const { PRICING_CONFIG } = require('../config/pricingConfig');
+      const effectivePolicy = offer.pricing_policy_version || listing.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION;
+      const quote = await TransactionQuoteService.generateQuote({
+        listingId: offer.listing_id,
+        ticketPrice: offer.offer_amount,
+        quantity: 1,
+        buyerId: offer.buyer_id,
+        sellerId: listing.seller_id,
+        offerId: offer.id,
+        pricingPolicyVersion: effectivePolicy,
+        ttlMinutes: 120
+      });
+
       const { order, escrow, pricing } = await EscrowService.createOrder({
         buyerId: offer.buyer_id,
         listingId: offer.listing_id,
+        quoteId: quote.id,
+        offerId: offer.id,
         customAmount: offer.offer_amount,
+        policyVersion: effectivePolicy,
         paymentDeadlineHours: 2
       });
 
@@ -1289,11 +1317,38 @@ class OfferService {
       negotiation.current_turn = null;
       negotiation.updated_at = decidedAt;
 
+      const listMeta = typeof listing.metadata === 'string'
+        ? (() => { try { return JSON.parse(listing.metadata); } catch (_) { return {}; } })()
+        : (listing.metadata && typeof listing.metadata === 'object' ? listing.metadata : {});
+      const authoritativeFulfillment = listing.fulfillment_type || listMeta.fulfillment_type || listMeta.fulfillment_option || null;
+      if (!['SELLER_MANAGED', 'TIKUM_VENUE_PIC'].includes(authoritativeFulfillment)) {
+        const err = new Error(`Listing '${listing.id}' lacks valid fulfillment_type`);
+        err.code = 'INVALID_FULFILLMENT_TYPE';
+        err.statusCode = 400;
+        throw err;
+      }
+
       const agreedAmount = offer.counter_amount || offer.offer_amount;
+      const { PRICING_CONFIG } = require('../config/pricingConfig');
+      const effectivePolicy = offer.pricing_policy_version || listing.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION;
+      const quote = await TransactionQuoteService.generateQuote({
+        listingId: offer.listing_id,
+        ticketPrice: agreedAmount,
+        quantity: 1,
+        buyerId: offer.buyer_id,
+        sellerId: listing.seller_id,
+        offerId: offer.id,
+        pricingPolicyVersion: effectivePolicy,
+        ttlMinutes: 120
+      });
+
       const { order, escrow, pricing } = await EscrowService.createOrder({
         buyerId: offer.buyer_id,
         listingId: offer.listing_id,
+        quoteId: quote.id,
+        offerId: offer.id,
         customAmount: agreedAmount,
+        policyVersion: effectivePolicy,
         paymentDeadlineHours: 2
       });
 

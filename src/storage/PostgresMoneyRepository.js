@@ -760,7 +760,7 @@ class PostgresMoneyRepository extends MoneyRepository {
       WHERE provider = $1
         AND provider_event_id = $2
         AND (
-          processing_status IN ('FAILED', 'PROCESSING_FAILED')
+          processing_status IN ('FAILED', 'PROCESSING_FAILED', 'FAILED_RETRYABLE')
           OR (
             processing_status IN ('PENDING', 'PROCESSING')
             AND received_at < NOW() - ($8 * INTERVAL '1 second')

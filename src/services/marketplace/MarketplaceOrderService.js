@@ -142,8 +142,19 @@ class MarketplaceOrderService {
       throw err;
     }
 
-    // 1. Locate reservation
-    const reservation = (state.reservations || []).find(r => r.id === reservationId || r.reservation_id === reservationId);
+    const { getMarketplaceRepository, getMoneyRepository } = require('../../storage');
+    const marketplaceRepo = getMarketplaceRepository();
+    const moneyRepo = getMoneyRepository();
+
+    // 1. Locate reservation (repository first, memory fallback)
+    let reservation = (state.reservations || []).find(r => r.id === reservationId || r.reservation_id === reservationId);
+    if (!reservation && marketplaceRepo && typeof marketplaceRepo.getReservationById === 'function') {
+      reservation = await marketplaceRepo.getReservationById(reservationId);
+      if (reservation) {
+        if (!state.reservations) state.reservations = [];
+        state.reservations.push(reservation);
+      }
+    }
     if (!reservation) {
       const err = new Error(`Reservation '${reservationId}' not found`);
       err.code = 'RESERVATION_NOT_FOUND';
@@ -164,7 +175,8 @@ class MarketplaceOrderService {
       // 4. Idempotency: Check if an order already exists for this reservation
       const existingOrder = (state.orders || []).find(o => o.reservation_id === reservationId);
       if (existingOrder) {
-        const existingEscrow = (state.escrows || []).find(e => e.order_id === existingOrder.id);
+        const existingEscrow = (state.escrows || []).find(e => e.order_id === existingOrder.id) ||
+          (moneyRepo ? await moneyRepo.getEscrowByOrderId(existingOrder.id).catch(() => null) : null);
         return {
           order: existingOrder,
           escrow: existingEscrow,
@@ -188,14 +200,31 @@ class MarketplaceOrderService {
         throw err;
       }
 
-      // 6. Delegate order and escrow creation to authoritative EscrowService
+      // 5b. Validate authoritative persisted listing & fulfillment context
+      const listing = marketplaceRepo
+        ? await marketplaceRepo.getListingById(reservation.listing_id)
+        : (state.listings || []).find(l => l.id === reservation.listing_id);
+      const listMeta = typeof listing?.metadata === 'string'
+        ? (() => { try { return JSON.parse(listing.metadata); } catch (_) { return {}; } })()
+        : (listing?.metadata || {});
+      const authoritativeFulfillment = listing?.fulfillment_type || listMeta.fulfillment_type || listMeta.fulfillment_option || null;
+      if (!listing || !['SELLER_MANAGED', 'TIKUM_VENUE_PIC'].includes(authoritativeFulfillment)) {
+        const err = new Error(`Listing '${reservation.listing_id}' lacks valid fulfillment_type`);
+        err.code = listing ? 'INVALID_FULFILLMENT_TYPE' : 'LISTING_NOT_FOUND';
+        throw err;
+      }
+
+      const effectivePolicy = policyVersion || listing.pricing_policy_version || null;
+
+      // 6. Delegate atomic quote consumption, order, and escrow creation to EscrowService
       const escrowResult = await EscrowService.createOrder({
         buyerId,
         listingId: reservation.listing_id,
         reservationId,
+        quantity: reservation.quantity || 1,
         paymentDeadlineHours,
         quoteId,
-        policyVersion,
+        policyVersion: effectivePolicy,
         taxPolicyVersion
       });
 
@@ -215,6 +244,7 @@ class MarketplaceOrderService {
         reservation_id: reservationId,
         listing_id: order.listing_id,
         ticket_id: order.ticket_id,
+        fulfillment_type: authoritativeFulfillment,
         pricing: order.pricing || pricing,
         marketplace_status: order.marketplace_status
       });
@@ -299,14 +329,11 @@ class MarketplaceOrderService {
 
   /**
    * Processes gateway webhook callback idempotently.
-   *
-   * On SUCCESS: transitions Escrow to ESCROWED, Order to PAID. (PAID != SELLER PAID)
-   * On FAILED: transitions Order to PAYMENT_FAILED, releases inventory back to available.
-   *
-   * @PERSISTENCE_BOUNDARY — state.orders, state.escrows, state.payments, state.listings mutations
+   * Delegates payment capture & durable ledger verification solely to PaymentService.handleWebhook
+   * (no duplicate second EscrowService.recordPayment invocation).
    */
   static async processPaymentCallback({ providerName = 'test_provider', headers = {}, body = {}, rawPayload = null }) {
-    // 1. Delegate signature verification and normalization to PaymentService
+    // 1. Delegate signature verification, single capture, and durable ledger verification to PaymentService
     const webhookResult = await PaymentService.handleWebhook({
       providerName,
       headers,
@@ -325,27 +352,40 @@ class MarketplaceOrderService {
 
     const event = webhookResult.event;
     const orderId = event.orderId;
-    const order = (state.orders || []).find(o => o.id === orderId);
+    const { getMoneyRepository } = require('../../storage');
+    const moneyRepo = getMoneyRepository();
+
+    let order = (state.orders || []).find(o => o.id === orderId);
+    if (!order && moneyRepo) {
+      order = await moneyRepo.getOrderById(orderId);
+      if (order) {
+        if (!state.orders) state.orders = [];
+        state.orders.push(order);
+      }
+    }
     if (!order) {
       const err = new Error(`Order '${orderId}' not found for webhook callback`);
       err.code = 'ORDER_NOT_FOUND';
       throw err;
     }
 
-    // 2. Handle SETTLED (Successful Payment)
-    if (event.status === 'SETTLED') {
-      // Call authoritative EscrowService to lock funds into escrow and update double-entry ledger
-      const paymentResult = await EscrowService.recordPayment({
-        orderId: order.id,
-        providerRef: event.providerRef,
-        idempotencyKey: event.idempotencyKey || event.providerRef,
-        amountPaid: event.amount
-      });
+    // 2. Handle SETTLED / PAID (Already captured and ledger-verified inside PaymentService.handleWebhook)
+    if (event.status === 'SETTLED' || event.status === 'PAID' || event.status === 'SUCCESS') {
+      const captureResult = webhookResult.captureResult || null;
+      const payment = captureResult?.payment || (moneyRepo ? await moneyRepo.getLatestSettledPaymentByOrderId(orderId) : null);
+      const escrow = captureResult?.escrow ||
+        (moneyRepo ? await moneyRepo.getEscrowByOrderId(orderId) : null) ||
+        (state.escrows || []).find(e => e.order_id === orderId);
+      const capturedOrder = captureResult?.order || order;
 
-      order.marketplace_status = MARKETPLACE_ORDER_STATUS.PAID;
+      // Sync marketplace status only after durable capture & verification succeeded
+      const isLate = capturedOrder.status === 'LATE_PAYMENT_PENDING_REVIEW' || escrow?.status === 'HOLDING_FOR_REFUND';
+      capturedOrder.marketplace_status = isLate ? 'LATE_PAYMENT' : MARKETPLACE_ORDER_STATUS.PAID;
+      if (order !== capturedOrder) {
+        order.marketplace_status = capturedOrder.marketplace_status;
+      }
 
-      // Invariant check: Verify seller is NOT paid
-      const escrow = state.escrows.find(e => e.order_id === orderId);
+      // Invariant check: Verify seller is NOT paid upon capture
       if (escrow && escrow.status === ESCROW_STATUS.RELEASED) {
         throw new Error('[FATAL_INVARIANT_BREACH] Escrow prematurely released to seller upon payment capture!');
       }
@@ -358,9 +398,9 @@ class MarketplaceOrderService {
 
       return {
         success: true,
-        status: MARKETPLACE_ORDER_STATUS.PAID,
-        payment: paymentResult.payment,
-        order,
+        status: isLate ? 'LATE_PAYMENT' : MARKETPLACE_ORDER_STATUS.PAID,
+        payment,
+        order: capturedOrder,
         escrow,
         idempotent: false
       };

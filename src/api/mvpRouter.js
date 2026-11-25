@@ -627,6 +627,52 @@ router.post('/events', (req, res) => {
   }
 });
 
+function parseListingMetadata(rawMeta) {
+  if (rawMeta && typeof rawMeta === 'object') return rawMeta;
+  if (typeof rawMeta === 'string') {
+    try { return JSON.parse(rawMeta); } catch (_) { return {}; }
+  }
+  return {};
+}
+
+function hydrateListingFromDbRow(dbl) {
+  if (!dbl) return null;
+  const meta = parseListingMetadata(dbl.metadata);
+  const totalQty = parseInt(dbl.total_quantity ?? meta.total_quantity ?? meta.quantity ?? dbl.quantity ?? 1, 10) || 1;
+  const availQtyRaw = dbl.available_quantity !== undefined ? dbl.available_quantity : meta.available_quantity;
+  const availQty = availQtyRaw !== undefined && availQtyRaw !== null ? parseInt(availQtyRaw, 10) : totalQty;
+  const soldQty = parseInt(dbl.sold_quantity ?? meta.sold_quantity ?? 0, 10) || 0;
+  const reservedQty = parseInt(dbl.reserved_quantity ?? meta.reserved_quantity ?? 0, 10) || 0;
+  const fulfillmentType = dbl.fulfillment_type || meta.fulfillment_type || meta.fulfillment_option || null;
+  return {
+    id: dbl.id,
+    listing_id: dbl.id,
+    ticket_id: dbl.ticket_id,
+    event_id: dbl.canonical_event_id || dbl.event_id,
+    canonical_event_id: dbl.canonical_event_id || dbl.event_id,
+    seller_id: dbl.seller_id,
+    seat_info: dbl.seat_info || meta.seat_info || null,
+    seat_type: dbl.seat_type || meta.seat_type || null,
+    face_value: parseInt(dbl.face_value ?? meta.face_value ?? 0, 10) || 0,
+    price: parseInt(dbl.price, 10),
+    currency: dbl.currency || 'IDR',
+    status: dbl.status,
+    quantity: totalQty,
+    total_quantity: totalQty,
+    available_quantity: availQty,
+    sold_quantity: soldQty,
+    reserved_quantity: reservedQty,
+    fulfillment_type: fulfillmentType,
+    pic_assistance_status: dbl.pic_assistance_status || meta.pic_assistance_status || null,
+    pricing_policy_version: dbl.pricing_policy_version || null,
+    created_at: dbl.created_at,
+    updated_at: dbl.updated_at || null,
+    pricing: dbl.pricing,
+    metadata: meta,
+    user_created_event: Boolean(meta.user_created_event)
+  };
+}
+
 /**
  * Browse active listings with full price transparency
  * GET /api/mvp/listings
@@ -646,20 +692,12 @@ router.get('/listings', async (req, res) => {
     if (dbListings && dbListings.length > 0) {
       if (!state.listings) state.listings = [];
       for (const dbl of dbListings) {
-        if (!state.listings.some(l => l.id === dbl.id)) {
-          state.listings.push({
-            id: dbl.id,
-            ticket_id: dbl.ticket_id,
-            event_id: dbl.canonical_event_id,
-            seller_id: dbl.seller_id,
-            seat_info: dbl.seat_info,
-            face_value: parseInt(dbl.face_value, 10),
-            price: parseInt(dbl.price, 10),
-            status: dbl.status,
-            created_at: dbl.created_at,
-            pricing: dbl.pricing,
-            metadata: dbl.metadata
-          });
+        const hydrated = hydrateListingFromDbRow(dbl);
+        const existingIdx = state.listings.findIndex(l => l.id === dbl.id);
+        if (existingIdx >= 0) {
+          state.listings[existingIdx] = { ...state.listings[existingIdx], ...hydrated };
+        } else {
+          state.listings.push(hydrated);
         }
       }
     }
@@ -671,8 +709,28 @@ router.get('/listings', async (req, res) => {
 
   const listings = ListingService.getActiveListings(eventId);
   // Add transparent pricing calculation to each listing
+  const { calculateDualTierFees } = require('../pricing/DualTierFeePolicy');
+  const { PRICING_CONFIG } = require('../config/pricingConfig');
   const listingsWithPricing = listings.map(l => {
-    const pricing = EscrowService.calculatePricing(l.price);
+    const useV2 = (l.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION) === 'V2_DUAL_TIER' &&
+      (l.fulfillment_type === 'SELLER_MANAGED' || l.fulfillment_type === 'TIKUM_VENUE_PIC');
+    const pricing = useV2
+      ? (() => {
+          const v2 = calculateDualTierFees({ ticketPrice: l.price, quantity: 1, fulfillmentType: l.fulfillment_type });
+          return {
+            ...EscrowService.calculatePricing(l.price),
+            policy_version: 'V2_DUAL_TIER',
+            fee_policy_version: 'V2_DUAL_TIER',
+            fulfillment_option: l.fulfillment_type,
+            platformFee: v2.buyer_fee,
+            buyer_fee: v2.buyer_fee,
+            seller_fee: v2.seller_fee,
+            totalAmount: v2.buyer_total_amount,
+            buyer_total: v2.buyer_total_amount,
+            seller_net_payout: v2.seller_net_payout
+          };
+        })()
+      : EscrowService.calculatePricing(l.price);
     return {
       ...l,
       pricing,
@@ -697,32 +755,26 @@ router.get('/listings', async (req, res) => {
  */
 router.get('/listings/:id', async (req, res) => {
   let listing = state.listings.find(l => l.id === req.params.id);
-  if (!listing) {
-    try {
-      const { getMarketplaceRepository } = require('../storage');
-      const marketplaceRepo = getMarketplaceRepository();
-      const dbListing = await marketplaceRepo.getListingById(req.params.id);
-      if (dbListing) {
-        listing = {
-          id: dbListing.id,
-          ticket_id: dbListing.ticket_id,
-          event_id: dbListing.canonical_event_id,
-          seller_id: dbListing.seller_id,
-          seat_info: dbListing.seat_info,
-          face_value: parseInt(dbListing.face_value, 10),
-          price: parseInt(dbListing.price, 10),
-          status: dbListing.status,
-          created_at: dbListing.created_at,
-          pricing: dbListing.pricing,
-          user_created_event: dbListing.metadata?.user_created_event || false
-        };
-        if (!state.listings) state.listings = [];
-        state.listings.push(listing);
+  let hydratedFromRepo = null;
+  try {
+    const { getMarketplaceRepository } = require('../storage');
+    const marketplaceRepo = getMarketplaceRepository();
+    const dbListing = await marketplaceRepo.getListingById(req.params.id);
+    if (dbListing) {
+      hydratedFromRepo = hydrateListingFromDbRow(dbListing);
+      if (!state.listings) state.listings = [];
+      const idx = state.listings.findIndex(l => l.id === hydratedFromRepo.id);
+      if (idx >= 0) {
+        state.listings[idx] = { ...state.listings[idx], ...hydratedFromRepo };
+        listing = state.listings[idx];
+      } else {
+        state.listings.push(hydratedFromRepo);
+        listing = hydratedFromRepo;
       }
-    } catch (err) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        return res.status(500).json({ error: 'Database unavailable', code: 'DATABASE_ERROR' });
-      }
+    }
+  } catch (err) {
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      return res.status(500).json({ error: 'Database unavailable', code: 'DATABASE_ERROR' });
     }
   }
   if (!listing) {
@@ -773,6 +825,27 @@ router.get('/listings/:id', async (req, res) => {
   }
 
   const { PRELAUNCH_NOTICE_TEXT, getMarketplaceMode } = require('../config/marketplaceMode');
+  const { calculateDualTierFees } = require('../pricing/DualTierFeePolicy');
+  const { PRICING_CONFIG } = require('../config/pricingConfig');
+  const useV2ListingPrice = (listing.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION) === 'V2_DUAL_TIER' &&
+    (listing.fulfillment_type === 'SELLER_MANAGED' || listing.fulfillment_type === 'TIKUM_VENUE_PIC');
+  const detailPricing = useV2ListingPrice
+    ? (() => {
+        const v2 = calculateDualTierFees({ ticketPrice: listing.price, quantity: 1, fulfillmentType: listing.fulfillment_type });
+        return {
+          ...EscrowService.calculatePricing(listing.price),
+          policy_version: 'V2_DUAL_TIER',
+          fee_policy_version: 'V2_DUAL_TIER',
+          fulfillment_option: listing.fulfillment_type,
+          platformFee: v2.buyer_fee,
+          buyer_fee: v2.buyer_fee,
+          seller_fee: v2.seller_fee,
+          totalAmount: v2.buyer_total_amount,
+          buyer_total: v2.buyer_total_amount,
+          seller_net_payout: v2.seller_net_payout
+        };
+      })()
+    : EscrowService.calculatePricing(listing.price);
   res.json({
     success: true,
     marketplace_mode: getMarketplaceMode(),
@@ -780,6 +853,7 @@ router.get('/listings/:id', async (req, res) => {
     prelaunch_notice: isPrelaunch ? PRELAUNCH_NOTICE_TEXT : null,
     listing: {
       id: listing.id,
+      ticket_id: listing.ticket_id,
       status: listing.status,
       is_prelaunch: isPrelaunch,
       is_purchasable: !isPrelaunch && listing.status === 'ACTIVE',
@@ -787,8 +861,16 @@ router.get('/listings/:id', async (req, res) => {
       seat_info: listing.seat_info,
       face_value: listing.face_value,
       price: listing.price,
+      quantity: listing.quantity || 1,
+      total_quantity: listing.total_quantity || listing.quantity || 1,
+      available_quantity: listing.available_quantity !== undefined ? listing.available_quantity : (listing.quantity || 1),
+      sold_quantity: listing.sold_quantity || 0,
+      fulfillment_type: listing.fulfillment_type || listing.metadata?.fulfillment_type || null,
+      pic_assistance_status: listing.pic_assistance_status || listing.metadata?.pic_assistance_status || null,
+      pricing_policy_version: listing.pricing_policy_version || null,
+      metadata: listing.metadata || {},
       seller_notes: listing.seller_notes || null,
-      pricing: EscrowService.calculatePricing(listing.price),
+      pricing: detailPricing,
       created_at: listing.created_at,
       rejection_reason: listing.rejection_reason,
       correction_reason: listing.correction_reason || null,
@@ -1194,9 +1276,21 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       });
     }
 
-    const normalizedFulfillment = (fulfillmentType === 'TIKUM_VENUE_PIC' || fulfillmentType === 'VENUE_PIC')
-      ? 'TIKUM_VENUE_PIC'
-      : 'SELLER_MANAGED';
+    const rawFulfillmentInput = fulfillmentType ?? req.body?.fulfillment_type;
+    const fulfillmentRawNormalized = typeof rawFulfillmentInput === 'string'
+      ? rawFulfillmentInput.trim().toUpperCase()
+      : '';
+    let normalizedFulfillment = null;
+    if (fulfillmentRawNormalized === 'TIKUM_VENUE_PIC' || fulfillmentRawNormalized === 'VENUE_PIC') {
+      normalizedFulfillment = 'TIKUM_VENUE_PIC';
+    } else if (fulfillmentRawNormalized === 'SELLER_MANAGED') {
+      normalizedFulfillment = 'SELLER_MANAGED';
+    } else {
+      return res.status(400).json({
+        error: "Invalid or missing fulfillmentType. Must be explicitly 'SELLER_MANAGED' or 'TIKUM_VENUE_PIC'.",
+        code: 'INVALID_FULFILLMENT_TYPE'
+      });
+    }
 
     let sellerUser = findUser(sellerId);
     if (!sellerUser) {
@@ -1302,6 +1396,7 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       'PRICE_BELOW_MINIMUM',
       'PRICE_EXCEEDS_MARKUP_CAP',
       'INVALID_PRICE',
+      'INVALID_FULFILLMENT_TYPE',
       'VALIDATION_ERROR',
       'EVENT_NOT_FOUND',
       'EVENT_CONCLUDED',
@@ -1660,14 +1755,21 @@ router.post('/buyer/pay', async (req, res) => {
 
     const { orderId, providerRef, idempotencyKey, amountPaid } = req.body;
     if (!orderId || !idempotencyKey) {
-      return res.status(400).json({ error: 'orderId and idempotencyKey are required' });
+      return res.status(400).json({ error: 'orderId and idempotencyKey are required', code: 'VALIDATION_ERROR' });
+    }
+    const parsedAmountPaid = Number(amountPaid);
+    if (!Number.isInteger(parsedAmountPaid) || parsedAmountPaid <= 0) {
+      return res.status(400).json({
+        error: 'Valid positive integer amountPaid is required',
+        code: 'INVALID_PAYMENT_AMOUNT'
+      });
     }
 
     const result = await EscrowService.recordPayment({
       orderId,
       providerRef,
       idempotencyKey,
-      amountPaid
+      amountPaid: parsedAmountPaid
     });
 
     // Synchronize canonical_payments record if present
@@ -1689,6 +1791,7 @@ router.post('/buyer/pay', async (req, res) => {
       message: 'Payment received. Funds securely locked in Escrow.',
       order: result.order,
       escrow: result.escrow,
+      verification: result.verification || null,
       pic_instructions: {
         pic_contact: picAssign ? picAssign.contact_phone : 'TIKUM Ops Hotline',
         venue: venue.name,
@@ -1697,7 +1800,10 @@ router.post('/buyer/pay', async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(400).json({ error: err.message, code: err.code });
+    const statusCode = err.code === 'AMOUNT_MISMATCH' || err.code === 'INVALID_PAYMENT_AMOUNT'
+      ? 400
+      : (err.status || 400);
+    res.status(statusCode).json({ error: err.message, code: err.code });
   }
 });
 
@@ -3077,12 +3183,16 @@ router.post('/pricing/calculate', async (req, res) => {
  * Retrieve quote by ID and inspect lock status
  * GET /api/mvp/pricing/quote/:id
  */
-router.get('/pricing/quote/:id', (req, res) => {
-  const quote = TransactionQuoteService.getQuote(req.params.id);
-  if (!quote) {
-    return res.status(404).json({ error: 'Quote not found', code: 'QUOTE_NOT_FOUND' });
+router.get('/pricing/quote/:id', async (req, res) => {
+  try {
+    const quote = await TransactionQuoteService.getQuoteById(req.params.id);
+    if (!quote) {
+      return res.status(404).json({ error: 'Quote not found', code: 'QUOTE_NOT_FOUND' });
+    }
+    res.json({ success: true, quote });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code || 'QUOTE_LOOKUP_FAILED' });
   }
-  res.json({ success: true, quote });
 });
 
 /**

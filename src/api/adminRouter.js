@@ -3870,34 +3870,24 @@ router.get('/system-settings', requireAdmin, (req, res) => {
 
 /**
  * POST /api/admin/orders/:id/manual-confirm-payment
- * Admin manually confirms buyer payment transfer under manual escrow coordination.
+ * Admin manually confirms buyer payment transfer via unified durable EscrowService + LedgerVerificationService.
  */
 router.post('/orders/:id/manual-confirm-payment', requireAdmin, async (req, res) => {
   const orderId = req.params.id;
   const adminUser = resolveUser(req) || req.user || { id: 'admin-manual', role: 'ADMIN' };
-  const { bank_reference, payment_proof_url, notes } = req.body || {};
+  const { bank_reference, payment_proof_url, notes, amount_paid, amountPaid, idempotency_key } = req.body || {};
 
   try {
-    let order = (state.orders || []).find(o => o.id === orderId);
-    let escrow = (state.escrows || []).find(e => e.order_id === orderId);
-
+    const { getMoneyRepository } = require('../storage');
     const moneyRepo = getMoneyRepository();
-    if (!order && moneyRepo && typeof moneyRepo.getOrderById === 'function') {
-      order = await moneyRepo.getOrderById(orderId);
-      if (order && !state.orders.some(o => o.id === order.id)) {
-        state.orders.push(order);
-      }
+    let order = moneyRepo && typeof moneyRepo.getOrderById === 'function'
+      ? await moneyRepo.getOrderById(orderId)
+      : null;
+    if (!order && (state.orders || []).length > 0 && (!moneyRepo || moneyRepo.degraded)) {
+      order = state.orders.find(o => o.id === orderId) || null;
     }
-
     if (!order) {
       return res.status(404).json({ error: `Order '${orderId}' not found`, code: 'ORDER_NOT_FOUND' });
-    }
-
-    if (!escrow && moneyRepo && typeof moneyRepo.getEscrowByOrderId === 'function') {
-      escrow = await moneyRepo.getEscrowByOrderId(orderId);
-      if (escrow && !state.escrows.some(e => e.id === escrow.id)) {
-        state.escrows.push(escrow);
-      }
     }
 
     if (order.status !== 'PENDING_PAYMENT' && order.status !== 'MANUAL_COORDINATION_PENDING') {
@@ -3907,105 +3897,118 @@ router.post('/orders/:id/manual-confirm-payment', requireAdmin, async (req, res)
       });
     }
 
-    const nowIso = new Date().toISOString();
-    order.status = 'PAID';
-    order.paid_at = nowIso;
-    if (!order.metadata) order.metadata = {};
-    order.metadata.manual_payment_confirmed = true;
-    order.metadata.manual_payment_confirmed_by = adminUser.id;
-    order.metadata.bank_reference = bank_reference || null;
-    order.metadata.payment_proof_url = payment_proof_url || null;
-    order.metadata.notes = notes || null;
-
-    if (escrow) {
-      escrow.status = 'ESCROWED';
-      escrow.locked_at = nowIso;
-      escrow.held_at = nowIso;
+    const expectedTotal = parseInt(order.buyer_total ?? order.total_amount, 10);
+    const suppliedAmount = amount_paid !== undefined ? Number(amount_paid) : (amountPaid !== undefined ? Number(amountPaid) : expectedTotal);
+    if (!Number.isInteger(suppliedAmount) || suppliedAmount <= 0 || suppliedAmount !== expectedTotal) {
+      return res.status(400).json({
+        error: `Confirmed payment amount (${suppliedAmount}) must equal order buyer_total (${expectedTotal})`,
+        code: 'AMOUNT_MISMATCH'
+      });
     }
 
-    // Ledger record using standard capture template
-    try {
-      if (FinancialLedger && typeof FinancialLedger.recordCapture === 'function') {
-        await FinancialLedger.recordCapture({
-          orderId: order.id,
-          ticketPrice: order.gross_ticket_value || order.ticket_price || order.price || 0,
-          actorId: adminUser.id,
-          buyerFee: order.buyer_fee || 0,
-          sellerFee: order.seller_fee || 0,
-          buyerTax: order.buyer_tax || 0,
-          sellerTax: order.seller_tax_withholding || 0,
-          providerFee: order.payment_processing_fee || 0
-        });
-      }
-    } catch (_) {}
-
-    // Audit log
-    if (!state.audit_logs) state.audit_logs = [];
-    state.audit_logs.push({
-      id: `aud-${uuidv4()}`,
-      action: 'ADMIN_MANUAL_PAYMENT_CONFIRMED',
-      performed_by: adminUser.id,
-      entity_type: 'ORDER',
-      entity_id: order.id,
-      metadata: {
-        order_id: order.id,
-        buyer_id: order.buyer_id,
-        seller_id: order.seller_id,
-        amount: order.buyer_total || order.total_amount,
-        bank_reference: bank_reference || null,
-        notes: notes || null
-      },
-      created_at: nowIso
+    const { EscrowService } = require('../services/escrowService');
+    const providerRef = bank_reference || `MANUAL-ADMIN-${orderId}`;
+    const idemKey = idempotency_key || `manual-confirm-${orderId}`;
+    const captureRes = await EscrowService.recordPayment({
+      orderId: order.id,
+      providerRef,
+      idempotencyKey: idemKey,
+      amountPaid: suppliedAmount
     });
 
-    res.status(200).json({
+    const nowIso = new Date().toISOString();
+    const metaUpdate = {
+      ...(order.metadata || {}),
+      manual_payment_confirmed: true,
+      manual_payment_confirmed_by: adminUser.id,
+      bank_reference: bank_reference || null,
+      payment_proof_url: payment_proof_url || null,
+      notes: notes || null
+    };
+    if (moneyRepo && typeof moneyRepo.updateOrderStatus === 'function') {
+      await moneyRepo.updateOrderStatus(order.id, captureRes.order.status, {
+        paid_at: captureRes.order.paid_at || nowIso,
+        metadata: metaUpdate
+      });
+    }
+
+    await recordAuditLog('ORDER', order.id, 'ADMIN_MANUAL_PAYMENT_CONFIRMED', adminUser.id, {
+      order_id: order.id,
+      buyer_id: order.buyer_id,
+      seller_id: order.seller_id,
+      amount: suppliedAmount,
+      bank_reference: bank_reference || null,
+      notes: notes || null,
+      verification: captureRes.verification || null
+    });
+
+    return res.status(200).json({
       success: true,
-      message: 'Pembayaran manual berhasil dikonfirmasi. Dana kini terkunci dalam Escrow TIKUM.',
-      order,
-      escrow
+      message: 'Pembayaran manual berhasil dikonfirmasi dan diverifikasi pada ledger persisten.',
+      order: captureRes.order,
+      escrow: captureRes.escrow,
+      payment: captureRes.payment,
+      verification: captureRes.verification || null
     });
   } catch (err) {
-    res.status(500).json({ error: err.message, code: 'MANUAL_PAYMENT_CONFIRM_FAILED' });
+    const statusCode = err.status || (err.code === 'LEDGER_RECONCILIATION_REQUIRED' ? 409 : 500);
+    return res.status(statusCode).json({
+      error: err.message,
+      code: err.code || 'MANUAL_PAYMENT_CONFIRM_FAILED'
+    });
   }
 });
 
 /**
  * POST /api/admin/orders/:id/manual-release-escrow
- * Admin manually confirms ticket handover / admission and releases escrow to seller.
+ * Admin releases escrow and executes settlement under Maker-Checker financial authorization.
  */
 router.post('/orders/:id/manual-release-escrow', requireAdmin, async (req, res) => {
   const orderId = req.params.id;
   const adminUser = resolveUser(req) || req.user || { id: 'admin-manual', role: 'ADMIN' };
-  const { notes, payout_reference } = req.body || {};
+  const {
+    notes,
+    payout_reference,
+    authorization_id,
+    authorizationId,
+    bank_account,
+    bankAccount,
+    proof_document_url,
+    proofDocumentUrl,
+    idempotency_key
+  } = req.body || {};
 
   try {
-    let order = (state.orders || []).find(o => o.id === orderId);
-    let escrow = (state.escrows || []).find(e => e.order_id === orderId);
-
-    const moneyRepo = getMoneyRepository();
-    if (!order && moneyRepo && typeof moneyRepo.getOrderById === 'function') {
-      order = await moneyRepo.getOrderById(orderId);
-      if (order && !state.orders.some(o => o.id === order.id)) {
-        state.orders.push(order);
-      }
+    const effAuthId = authorization_id || authorizationId;
+    if (!effAuthId) {
+      return res.status(403).json({
+        error: 'Maker-Checker authorization_id is required before releasing escrow.',
+        code: 'AUTHORIZATION_REQUIRED'
+      });
     }
 
+    const { getMoneyRepository } = require('../storage');
+    const moneyRepo = getMoneyRepository();
+    let order = moneyRepo && typeof moneyRepo.getOrderById === 'function'
+      ? await moneyRepo.getOrderById(orderId)
+      : null;
+    if (!order && (state.orders || []).length > 0 && (!moneyRepo || moneyRepo.degraded)) {
+      order = state.orders.find(o => o.id === orderId) || null;
+    }
     if (!order) {
       return res.status(404).json({ error: `Order '${orderId}' not found`, code: 'ORDER_NOT_FOUND' });
     }
 
-    if (!escrow && moneyRepo && typeof moneyRepo.getEscrowByOrderId === 'function') {
-      escrow = await moneyRepo.getEscrowByOrderId(orderId);
-      if (escrow && !state.escrows.some(e => e.id === escrow.id)) {
-        state.escrows.push(escrow);
-      }
+    let escrow = moneyRepo && typeof moneyRepo.getEscrowByOrderId === 'function'
+      ? await moneyRepo.getEscrowByOrderId(orderId)
+      : null;
+    if (!escrow && (state.escrows || []).length > 0 && (!moneyRepo || moneyRepo.degraded)) {
+      escrow = state.escrows.find(e => e.order_id === orderId) || null;
     }
-
     if (!escrow) {
       return res.status(404).json({ error: `Escrow for order '${orderId}' not found`, code: 'ESCROW_NOT_FOUND' });
     }
 
-    // Safety invariants: DISPUTED or FROZEN strictly blocks release
     if (order.status === 'DISPUTED' || escrow.status === 'DISPUTED') {
       return res.status(400).json({ error: 'Cannot release escrow: transaction is in disputed state', code: 'TRANSACTION_IN_DISPUTED_STATE' });
     }
@@ -4013,65 +4016,46 @@ router.post('/orders/:id/manual-release-escrow', requireAdmin, async (req, res) 
       return res.status(400).json({ error: 'Cannot release escrow: transaction is in frozen state', code: 'TRANSACTION_IN_FROZEN_STATE' });
     }
 
-    const nowIso = new Date().toISOString();
-    escrow.status = 'RELEASED';
-    escrow.released_at = nowIso;
+    const { EscrowService } = require('../services/escrowService');
+    const { SettlementService } = require('../services/settlementService');
 
-    order.status = 'SETTLED';
-    order.settled_at = nowIso;
-    if (!order.metadata) order.metadata = {};
-    order.metadata.manual_escrow_released = true;
-    order.metadata.manual_escrow_released_by = adminUser.id;
-    order.metadata.payout_reference = payout_reference || null;
-    order.metadata.notes = notes || null;
-
-    // Update listing and ticket status
-    const listing = (state.listings || []).find(l => l.id === order.listing_id);
-    if (listing) {
-      listing.status = 'SETTLED';
-    }
-    const ticket = (state.tickets || []).find(t => t.id === order.ticket_id);
-    if (ticket) {
-      ticket.status = 'SETTLED';
-    }
-
-    // Ledger record using standard release template
-    try {
-      if (FinancialLedger && typeof FinancialLedger.recordRelease === 'function') {
-        await FinancialLedger.recordRelease({
-          orderId: order.id,
-          amount: escrow.seller_net_payout || escrow.amount || 0,
-          actorId: adminUser.id
-        });
-      }
-    } catch (_) {}
-
-    // Audit log
-    if (!state.audit_logs) state.audit_logs = [];
-    state.audit_logs.push({
-      id: `aud-${uuidv4()}`,
-      action: 'ADMIN_MANUAL_ESCROW_RELEASED',
-      performed_by: adminUser.id,
-      entity_type: 'ESCROW',
-      entity_id: escrow.id,
-      metadata: {
-        order_id: order.id,
-        seller_id: order.seller_id,
-        amount: escrow.seller_net_payout || escrow.amount,
-        payout_reference: payout_reference || null,
-        notes: notes || null
-      },
-      created_at: nowIso
+    const releaseRes = await EscrowService.releaseToSeller(order.id, adminUser.id);
+    const settlementRes = await SettlementService.executeSettlement({
+      orderId: order.id,
+      sellerId: order.seller_id,
+      officerId: adminUser.id,
+      idempotencyKey: idempotency_key || `manual-release-${order.id}`,
+      bankAccount: bank_account || bankAccount || null,
+      bankReferenceNumber: payout_reference || null,
+      proofDocumentUrl: proof_document_url || proofDocumentUrl || null,
+      authorizationId: effAuthId,
+      authorizedBy: adminUser.id
     });
 
-    res.status(200).json({
+    await recordAuditLog('ESCROW', escrow.id, 'ADMIN_MANUAL_ESCROW_RELEASED', adminUser.id, {
+      order_id: order.id,
+      seller_id: order.seller_id,
+      amount: escrow.amount,
+      payout_reference: payout_reference || null,
+      authorization_id: effAuthId,
+      settlement_id: settlementRes.settlement?.id || null,
+      notes: notes || null
+    });
+
+    return res.status(200).json({
       success: true,
-      message: 'Escrow berhasil dirilis ke penjual secara manual.',
-      order,
-      escrow
+      message: 'Escrow dirilis dan settlement dieksekusi melalui jalur otorisasi resmi.',
+      order: releaseRes.order,
+      escrow: releaseRes.escrow,
+      settlement: settlementRes.settlement,
+      idempotent: Boolean(releaseRes.idempotent && settlementRes.idempotent)
     });
   } catch (err) {
-    res.status(500).json({ error: err.message, code: 'MANUAL_ESCROW_RELEASE_FAILED' });
+    const statusCode = err.status || (err.code === 'MISSING_BANK_ACCOUNT' ? 400 : (err.code === 'AUTHORIZATION_REQUIRED' ? 403 : 500));
+    return res.status(statusCode).json({
+      error: err.message,
+      code: err.code || 'MANUAL_ESCROW_RELEASE_FAILED'
+    });
   }
 });
 

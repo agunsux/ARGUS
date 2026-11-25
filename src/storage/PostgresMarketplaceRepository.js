@@ -738,6 +738,66 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     return res.rows[0] || null;
   }
 
+  async updateListing(listingId, updates = {}, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.updateListing(listingId, updates, txContext);
+      }
+    }
+    const current = await this.getListingById(listingId, txContext);
+    if (!current) return null;
+
+    if (updates.fulfillment_type !== undefined) {
+      if (!['SELLER_MANAGED', 'TIKUM_VENUE_PIC'].includes(updates.fulfillment_type)) {
+        const err = new Error(`Invalid fulfillment_type '${updates.fulfillment_type}'`);
+        err.code = 'INVALID_FULFILLMENT_TYPE';
+        err.statusCode = 400;
+        throw err;
+      }
+    }
+
+    let meta = current.metadata || {};
+    if (typeof meta === 'string') {
+      try { meta = JSON.parse(meta); } catch (_) { meta = {}; }
+    }
+    if (updates.metadata && typeof updates.metadata === 'object') {
+      meta = { ...meta, ...updates.metadata };
+    }
+    for (const key of ['face_value', 'seat_info', 'quantity', 'total_quantity', 'available_quantity', 'pic_assistance_status', 'seller_notes', 'evidence_bundle_id', 'fulfillment_type', 'seat_type']) {
+      if (updates[key] !== undefined) meta[key] = updates[key];
+    }
+
+    const newPrice = updates.price !== undefined ? updates.price : current.price;
+    const newStatus = updates.status !== undefined ? updates.status : current.status;
+    const newFulfillment = updates.fulfillment_type !== undefined ? updates.fulfillment_type : (current.fulfillment_type || null);
+    const newPolicy = updates.pricing_policy_version !== undefined ? updates.pricing_policy_version : (current.pricing_policy_version || null);
+
+    const sql = `
+      UPDATE marketplace_listings
+      SET price = $2,
+          status = $3,
+          fulfillment_type = COALESCE($4, fulfillment_type),
+          pricing_policy_version = COALESCE($5, pricing_policy_version),
+          metadata = $6,
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING *;
+    `;
+    const res = await this._exec(sql, [
+      listingId,
+      newPrice,
+      newStatus,
+      newFulfillment,
+      newPolicy,
+      JSON.stringify(meta)
+    ], txContext);
+    return res.rows[0] || null;
+  }
+
   async updateListingStatus(listingId, status, txContext = null) {
     if (!txContext?.client) {
       await this.ensureInitialized();
@@ -1400,6 +1460,7 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
+      if (this.schema) await applyTransactionSchema(client, this.schema);
 
       // 1. Lock the listing row if present in DB to serialize concurrent offers on same listing
       await client.query(
@@ -1614,6 +1675,7 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
+      if (this.schema) await applyTransactionSchema(client, this.schema);
 
       const curRes = await client.query(
         'SELECT * FROM marketplace_offers WHERE id = $1 FOR UPDATE',

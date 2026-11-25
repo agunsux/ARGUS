@@ -50,6 +50,14 @@ function restoreStateSnapshot(snapshotState) {
   state.financial_outbox = snapshotState.financial_outbox;
 }
 
+let inMemoryTxQueue = Promise.resolve();
+
+function serializeInMemoryTx(fn) {
+  const run = inMemoryTxQueue.then(fn, fn);
+  inMemoryTxQueue = run.then(() => undefined, () => undefined);
+  return run;
+}
+
 class UnitOfWork {
   constructor(options = {}) {
     this.connectionString = options.connectionString || process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL;
@@ -149,45 +157,47 @@ class UnitOfWork {
   }
 
   async _runInMemoryTransaction(workFn) {
-    const txId = `uow-mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    return await serializeInMemoryTx(async () => {
+      const txId = `uow-mem-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
-    const snapshotState = captureStateSnapshot();
+      const snapshotState = captureStateSnapshot();
 
-    // Also snapshot in-memory repo maps if accessible
-    const { getMoneyRepository, getMarketplaceRepository } = require('./index');
-    const moneyRepo = getMoneyRepository();
-    const mktRepo = getMarketplaceRepository();
+      // Also snapshot in-memory repo maps if accessible
+      const { getMoneyRepository, getMarketplaceRepository } = require('./index');
+      const moneyRepo = getMoneyRepository();
+      const mktRepo = getMarketplaceRepository();
 
-    const snapshotMoneyMaps = (moneyRepo && typeof moneyRepo._createSnapshot === 'function')
-      ? moneyRepo._createSnapshot()
-      : null;
-    const snapshotMktMaps = (mktRepo && typeof mktRepo._createSnapshot === 'function')
-      ? mktRepo._createSnapshot()
-      : null;
+      const snapshotMoneyMaps = (moneyRepo && typeof moneyRepo._createSnapshot === 'function')
+        ? moneyRepo._createSnapshot()
+        : null;
+      const snapshotMktMaps = (mktRepo && typeof mktRepo._createSnapshot === 'function')
+        ? mktRepo._createSnapshot()
+        : null;
 
-    const txContext = {
-      id: txId,
-      client: null,
-      isPostgres: false,
-      isInMemory: true,
-      startedAt: new Date().toISOString()
-    };
+      const txContext = {
+        id: txId,
+        client: null,
+        isPostgres: false,
+        isInMemory: true,
+        startedAt: new Date().toISOString()
+      };
 
-    try {
-      const result = await workFn(txContext);
-      return result;
-    } catch (err) {
-      restoreStateSnapshot(snapshotState);
+      try {
+        const result = await workFn(txContext);
+        return result;
+      } catch (err) {
+        restoreStateSnapshot(snapshotState);
 
-      if (moneyRepo && typeof moneyRepo._restoreSnapshot === 'function' && snapshotMoneyMaps) {
-        moneyRepo._restoreSnapshot(snapshotMoneyMaps);
+        if (moneyRepo && typeof moneyRepo._restoreSnapshot === 'function' && snapshotMoneyMaps) {
+          moneyRepo._restoreSnapshot(snapshotMoneyMaps);
+        }
+        if (mktRepo && typeof mktRepo._restoreSnapshot === 'function' && snapshotMktMaps) {
+          mktRepo._restoreSnapshot(snapshotMktMaps);
+        }
+
+        throw err;
       }
-      if (mktRepo && typeof mktRepo._restoreSnapshot === 'function' && snapshotMktMaps) {
-        mktRepo._restoreSnapshot(snapshotMktMaps);
-      }
-
-      throw err;
-    }
+    });
   }
 }
 

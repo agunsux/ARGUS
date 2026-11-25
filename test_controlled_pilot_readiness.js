@@ -203,7 +203,8 @@ async function runSuite() {
       faceValue: 1250000,
       price: 1500000,
       rawBarcode: 'SIMULATED-BARCODE-PILOT-PASS-01',
-      evidenceBundleId: 'bdl-seed-1'
+      evidenceBundleId: 'bdl-seed-1',
+      fulfillmentType: 'SELLER_MANAGED'
     });
     await ListingService.verifyListing(listRes.listing.id, 'admin-1', { approved: true });
     listingA = listRes.listing;
@@ -321,7 +322,8 @@ async function runSuite() {
       faceValue: 1250000,
       price: 1500000,
       rawBarcode: 'SIMULATED-BARCODE-PILOT-PASS-02',
-      evidenceBundleId: 'bdl-seed-1'
+      evidenceBundleId: 'bdl-seed-1',
+      fulfillmentType: 'SELLER_MANAGED'
     });
     await ListingService.verifyListing(listResB.listing.id, 'admin-1', { approved: true });
 
@@ -347,7 +349,8 @@ async function runSuite() {
       faceValue: 1250000,
       price: 1500000,
       rawBarcode: 'SIMULATED-BARCODE-PILOT-PASS-03',
-      evidenceBundleId: 'bdl-seed-1'
+      evidenceBundleId: 'bdl-seed-1',
+      fulfillmentType: 'SELLER_MANAGED'
     });
     await ListingService.verifyListing(listResC.listing.id, 'admin-1', { approved: true });
 
@@ -380,7 +383,8 @@ async function runSuite() {
       faceValue: 1250000,
       price: 1500000,
       rawBarcode: 'SIMULATED-BARCODE-PILOT-PASS-04-DUPLICATE',
-      evidenceBundleId: 'bdl-seed-1'
+      evidenceBundleId: 'bdl-seed-1',
+      fulfillmentType: 'SELLER_MANAGED'
     });
     await ListingService.verifyListing(listResD.listing.id, 'admin-1', { approved: true });
 
@@ -495,7 +499,8 @@ async function runSuite() {
       faceValue: 1250000,
       price: 1500000,
       rawBarcode: 'SIMULATED-BARCODE-PILOT-PASS-05',
-      evidenceBundleId: 'bdl-seed-1'
+      evidenceBundleId: 'bdl-seed-1',
+      fulfillmentType: 'SELLER_MANAGED'
     });
     await ListingService.verifyListing(listResE.listing.id, 'admin-1', { approved: true });
 
@@ -537,10 +542,10 @@ async function runSuite() {
   console.log('\n── Section 6: Double-Entry Ledger Solvency & Balancing ──');
 
   await testAsync('6.1 Ledger entries balance mathematically: sum(debit) === sum(credit)', async () => {
-    // Record balanced transaction
+    // Record balanced transaction against an isolated synthetic order ID (avoiding orderA CAPTURE duplicate collision)
     const tx = await FinancialLedger.recordTransaction({
       eventType: FINANCIAL_EVENT_TYPES.CAPTURE,
-      orderId: orderA.id,
+      orderId: 'ord-pilot-ledger-balance-test',
       entries: [
         { account: LEDGER_ACCOUNTS.BUYER_ESCROW_HOLDING, type: 'DEBIT', amount: 1590000 },
         { account: LEDGER_ACCOUNTS.SELLER_PAYABLE_PENDING, type: 'CREDIT', amount: 1500000 },
@@ -558,7 +563,7 @@ async function runSuite() {
       async () => {
         await FinancialLedger.recordTransaction({
           eventType: FINANCIAL_EVENT_TYPES.CAPTURE,
-          orderId: orderA.id,
+          orderId: 'ord-pilot-ledger-unbalanced-test',
           entries: [
             { account: LEDGER_ACCOUNTS.BUYER_ESCROW_HOLDING, type: 'DEBIT', amount: 1590000 },
             { account: LEDGER_ACCOUNTS.SELLER_PAYABLE_PENDING, type: 'CREDIT', amount: 1500000 }

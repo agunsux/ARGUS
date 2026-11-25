@@ -51,27 +51,84 @@ class OrderReleaseMutex {
 
 const releaseMutex = new OrderReleaseMutex();
 
+const VALID_FULFILLMENT_TYPES = new Set(['SELLER_MANAGED', 'TIKUM_VENUE_PIC']);
+
+function parseJsonMeta(rawMeta) {
+  if (rawMeta && typeof rawMeta === 'object') return rawMeta;
+  if (typeof rawMeta === 'string') {
+    try { return JSON.parse(rawMeta); } catch (_) { return {}; }
+  }
+  return {};
+}
+
+function requireValidFulfillmentType(rawValue, listingId = null) {
+  const normalized = typeof rawValue === 'string' ? rawValue.trim().toUpperCase() : '';
+  if (!VALID_FULFILLMENT_TYPES.has(normalized)) {
+    const scope = listingId ? `Listing '${listingId}'` : 'Order';
+    const err = new Error(
+      `${scope} is missing a valid fulfillment_type ('${rawValue}'). Silent SELLER_MANAGED fallback is forbidden.`
+    );
+    err.code = 'INVALID_FULFILLMENT_TYPE';
+    err.status = 400;
+    throw err;
+  }
+  return normalized;
+}
+
 class EscrowService {
   /**
    * Calculate transparent fee breakdown using canonical fee engine.
    * Single source of truth for pricing calculations.
    */
   static calculatePricing(ticketPrice, feePercentage = null, options = {}) {
-    const { CanonicalFeeEngine, TIKUM_FEE_POLICY_V1 } = require('../pricing/CanonicalFeeEngine');
+    const { CanonicalFeeEngine, SUPPORTED_POLICIES } = require('../pricing/CanonicalFeeEngine');
+    const { FEE_POLICY_V2, calculateDualTierFees } = require('../pricing/DualTierFeePolicy');
+    const { PRICING_CONFIG } = require('../config/pricingConfig');
     const { TaxEngine } = require('../pricing/TaxEngine');
 
-    // Canonical default is TIKUM_FEE_POLICY_V1
-    const policyVersion = options.policyVersion || process.env.TIKUM_PRICING_POLICY || 'TIKUM_FEE_POLICY_V1';
+    const policyVersion = options.policyVersion || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION || 'TIKUM_FEE_POLICY_V1';
     const quantity = options.quantity || 1;
     const paymentProcessingFee = options.paymentProcessingFee || 0;
+    const currency = String(options.currency || 'IDR').trim().toUpperCase();
 
-    const fees = CanonicalFeeEngine.calculateTicketFees({
-      ticketPrice,
-      quantity,
-      paymentProcessingFee,
-      currency: options.currency || 'IDR',
-      policyVersion
-    });
+    let fees;
+    if (policyVersion === FEE_POLICY_V2.version) {
+      const tier = requireValidFulfillmentType(options.fulfillmentType);
+      const v2 = calculateDualTierFees({
+        ticketPrice: parseInt(ticketPrice, 10),
+        quantity: parseInt(quantity, 10),
+        fulfillmentType: tier
+      });
+      fees = {
+        ticket_price: v2.ticket_price,
+        quantity: v2.quantity,
+        gross_ticket_value: v2.ticket_subtotal,
+        buyer_fee: v2.buyer_fee,
+        seller_fee: v2.seller_fee,
+        buyer_rate: FEE_POLICY_V2.tiers[tier].rate_percent / 100,
+        total_tikum_fee: v2.platform_revenue,
+        buyer_total: v2.buyer_total_amount + paymentProcessingFee,
+        seller_payout: v2.seller_net_payout,
+        currency,
+        fee_policy_version: FEE_POLICY_V2.version,
+        payment_processing_fee: paymentProcessingFee,
+        buyer_subtotal: v2.buyer_total_amount
+      };
+    } else {
+      if (!Object.prototype.hasOwnProperty.call(SUPPORTED_POLICIES, policyVersion)) {
+        const err = new Error(`Unsupported fee policy version '${policyVersion}'`);
+        err.code = 'UNSUPPORTED_FEE_POLICY_VERSION';
+        err.status = 400;
+        throw err;
+      }
+      fees = CanonicalFeeEngine.calculateTicketFees({
+        ticketPrice,
+        quantity,
+        paymentProcessingFee,
+        currency,
+        policyVersion
+      });
+    }
 
     const taxPolicyVersion = options.taxPolicyVersion || (policyVersion === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : TaxEngine.getDefaultTaxPolicyVersion());
     const taxes = TaxEngine.calculateTax({
@@ -112,67 +169,57 @@ class EscrowService {
   }
 
   /**
-   * Buyer creates an order on a verified active listing
-   * Locks transaction quote, guarantees immutable pricing, and registers escrow.
+   * Buyer creates an order on a verified active listing.
+   * Executes single-use quote binding, inventory reservation, order creation, and escrow setup atomically inside UnitOfWork.
    */
   static async createOrder({
     buyerId,
     listingId,
     reservationId = null,
     customAmount = null,
+    offerId = null,
     paymentDeadlineHours = 2,
     quoteId = null,
     policyVersion = null,
     taxPolicyVersion = null,
     quantity = null,
-    orderQuantity = null
+    orderQuantity = null,
+    currency = null
   }) {
     const { TransactionQuoteService } = require('../pricing/TransactionQuoteService');
+    const { UnitOfWork } = require('../storage/UnitOfWork');
+    const { PRICING_CONFIG } = require('../config/pricingConfig');
+    const { getUserRepository, getMarketplaceRepository, getMoneyRepository } = require('../storage');
+    const userRepo = getUserRepository();
+    const marketplaceRepo = getMarketplaceRepository();
+    const moneyRepo = getMoneyRepository();
 
-    let buyer = state.users.find(u => u.id === buyerId);
+    let buyer = userRepo && typeof userRepo.getUserById === 'function'
+      ? await userRepo.getUserById(buyerId).catch(() => null)
+      : null;
     if (!buyer) {
-      try {
-        const { getUserRepository } = require('../storage');
-        const userRepo = getUserRepository();
-        const dbBuyer = await userRepo.getUserById(buyerId);
-        if (dbBuyer) {
-          if (!state.users) state.users = [];
-          state.users.push(dbBuyer);
-          buyer = dbBuyer;
-        }
-      } catch (err) {
-        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
-      }
+      buyer = (state.users || []).find(u => u.id === buyerId) || null;
     }
     if (!buyer) {
       const err = new Error('Buyer not found');
       err.code = 'BUYER_NOT_FOUND';
+      err.status = 404;
       throw err;
     }
 
-    let listing = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
-    if (!listing) {
-      try {
-        const { getMarketplaceRepository } = require('../storage');
-        const marketplaceRepo = getMarketplaceRepository();
-        const dbListing = await marketplaceRepo.getListingById(listingId);
-        if (dbListing) {
-          if (!state.listings) state.listings = [];
-          state.listings.push(dbListing);
-          listing = dbListing;
-        }
-      } catch (err) {
-        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw err;
-      }
+    let listing = await marketplaceRepo.getListingById(listingId, { strictRepositoryOnly: true });
+    if (!listing && (!marketplaceRepo || marketplaceRepo.degraded)) {
+      listing = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId) || null;
     }
     if (!listing) {
       const err = new Error('Listing not found');
       err.code = 'LISTING_NOT_FOUND';
+      err.status = 404;
       throw err;
     }
 
-    // Anti-Conflict Self-Purchase Prevention: Sellers cannot buy their own listings
-    if (listing.seller_id && listing.seller_id === buyerId) {
+    // Anti-Conflict Self-Purchase Prevention
+    if (listing.seller_id && String(listing.seller_id) === String(buyerId)) {
       const err = new Error('SELF_PURCHASE_FORBIDDEN: Sellers are strictly prohibited from purchasing their own ticket listings.');
       err.code = 'SELF_PURCHASE_FORBIDDEN';
       err.status = 403;
@@ -182,7 +229,12 @@ class EscrowService {
     // Reservation validation if converting from reservation
     let reservation = null;
     if (reservationId) {
-      reservation = (state.reservations || []).find(r => r.id === reservationId || r.reservation_id === reservationId);
+      reservation = typeof marketplaceRepo.getReservationById === 'function'
+        ? await marketplaceRepo.getReservationById(reservationId)
+        : null;
+      if (!reservation) {
+        reservation = (state.reservations || []).find(r => r.id === reservationId || r.reservation_id === reservationId) || null;
+      }
       if (!reservation) {
         const err = new Error(`Reservation '${reservationId}' not found`);
         err.code = 'RESERVATION_NOT_FOUND';
@@ -212,15 +264,16 @@ class EscrowService {
     }
 
     const isListingReservedByThisReservation = reservation && listing.status === LISTING_STATUS.RESERVED && reservation.listing_id === listing.id;
-
     if (listing.status !== LISTING_STATUS.ACTIVE && !isListingReservedByThisReservation) {
       const err = new Error(`Listing is not available for purchase (status: ${listing.status})`);
       err.code = 'LISTING_NOT_ACTIVE';
+      err.status = 409;
       throw err;
     }
 
     // Check event lifecycle trading eligibility
-    const event = (state.events || []).find(e => e.id === listing.event_id || e.event_id === listing.event_id);
+    const listingEventId = listing.canonical_event_id || listing.event_id;
+    const event = (state.events || []).find(e => e.id === listingEventId || e.event_id === listingEventId);
     if (event) {
       const { EventTemporalLifecycleEngine } = require('../discovery/EventTemporalLifecycleEngine');
       const tradeCheck = EventTemporalLifecycleEngine.isEventEligibleForTrading(event);
@@ -231,320 +284,342 @@ class EscrowService {
       }
     }
 
-    const meta = (typeof listing.metadata === 'object' && listing.metadata) ? listing.metadata : {};
-    const totalQty = parseInt(listing.total_quantity || meta.total_quantity || listing.quantity || 1, 10);
-    const availQty = parseInt(listing.available_quantity !== undefined ? listing.available_quantity : (meta.available_quantity !== undefined ? meta.available_quantity : totalQty), 10);
+    const meta = parseJsonMeta(listing.metadata);
+    const fulfillmentType = requireValidFulfillmentType(
+      listing.fulfillment_type || meta.fulfillment_type || meta.fulfillment_option || null,
+      listing.id
+    );
+    const picStatus = listing.pic_assistance_status || meta.pic_assistance_status ||
+      (fulfillmentType === 'TIKUM_VENUE_PIC' ? 'REQUESTED_PENDING_ASSIGNMENT' : 'NONE');
+
+    const totalQty = parseInt(listing.total_quantity ?? meta.total_quantity ?? listing.quantity ?? 1, 10) || 1;
+    const availQtyRaw = listing.available_quantity !== undefined ? listing.available_quantity : meta.available_quantity;
+    const availQty = availQtyRaw !== undefined && availQtyRaw !== null ? parseInt(availQtyRaw, 10) : totalQty;
     const requestedQty = Math.max(1, parseInt(orderQuantity || quantity || 1, 10));
 
     if (availQty < requestedQty && !isListingReservedByThisReservation) {
       const err = new Error(`Hanya tersisa ${availQty} tiket untuk listing ini (diminta: ${requestedQty})`);
       err.code = 'INSUFFICIENT_INVENTORY';
+      err.status = 409;
       throw err;
     }
 
-    // P0 INVENTORY SAFETY: Atomic Reservation via MarketplaceRepository
-    let reservedListing = null;
-    const { getMarketplaceRepository } = require('../storage');
-    const marketplaceRepo = getMarketplaceRepository();
-    if (!isListingReservedByThisReservation && typeof marketplaceRepo.atomicReserveInventory === 'function') {
-      reservedListing = await marketplaceRepo.atomicReserveInventory(listingId, requestedQty);
-      if (reservedListing) {
-        let rMeta = reservedListing.metadata || {};
-        if (typeof rMeta === 'string') {
-          try { rMeta = JSON.parse(rMeta); } catch (_) { rMeta = {}; }
-        }
-        listing.available_quantity = reservedListing.available_quantity !== undefined
-          ? reservedListing.available_quantity
-          : (rMeta.available_quantity !== undefined ? rMeta.available_quantity : 0);
-        listing.reserved_quantity = reservedListing.reserved_quantity !== undefined
-          ? reservedListing.reserved_quantity
-          : (rMeta.reserved_quantity !== undefined ? rMeta.reserved_quantity : requestedQty);
-        listing.status = reservedListing.status;
+    // Authoritative unit price resolution (listing.price or verified persisted offer)
+    let authoritativeUnitPrice = parseInt(listing.price, 10);
+    if (offerId) {
+      const offer = typeof marketplaceRepo.getOfferById === 'function'
+        ? await marketplaceRepo.getOfferById(offerId)
+        : null;
+      if (!offer) {
+        const err = new Error(`Offer '${offerId}' not found`);
+        err.code = 'OFFER_NOT_FOUND';
+        err.status = 404;
+        throw err;
+      }
+      if (String(offer.listing_id) !== String(listing.id) || String(offer.buyer_id) !== String(buyerId)) {
+        const err = new Error('Offer context mismatch with order listing/buyer');
+        err.code = 'QUOTE_CONTEXT_MISMATCH';
+        err.status = 422;
+        throw err;
+      }
+      authoritativeUnitPrice = parseInt(offer.agreed_amount ?? offer.counter_amount ?? offer.offer_amount, 10);
+      if (customAmount !== null && customAmount !== undefined && parseInt(customAmount, 10) !== authoritativeUnitPrice) {
+        const err = new Error('Negotiated offer amount mismatch');
+        err.code = 'PRICE_MISMATCH';
+        err.status = 422;
+        throw err;
+      }
+    } else if (customAmount !== null && customAmount !== undefined) {
+      if (parseInt(customAmount, 10) !== authoritativeUnitPrice) {
+        const err = new Error(`Unverified customAmount (${customAmount}) cannot override authoritative listing price (${authoritativeUnitPrice}) without offerId`);
+        err.code = 'PRICE_MISMATCH';
+        err.status = 422;
+        throw err;
       }
     }
 
-    const effectivePrice = (customAmount !== null && customAmount !== undefined) ? parseInt(customAmount, 10) : listing.price;
+    const expectedCurrency = String(currency || listing.currency || 'IDR').trim().toUpperCase();
+    const expectedPolicyVersion = policyVersion || listing.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION || 'TIKUM_FEE_POLICY_V1';
     const orderId = `ord-${uuidv4()}`;
-
-    // Resolve or generate immutable TransactionQuote
-    let quote;
-    try {
-      if (quoteId) {
-        let quoteObj = TransactionQuoteService.getQuote(quoteId);
-        if (!quoteObj) {
-          quoteObj = await TransactionQuoteService.getQuoteById(quoteId);
-        }
-        quote = TransactionQuoteService.validateQuote(quoteId);
-        await TransactionQuoteService.consumeQuote(quoteId, orderId, buyerId);
-      } else {
-        const effectivePricingPolicy = policyVersion || process.env.TIKUM_PRICING_POLICY || 'TIKUM_FEE_POLICY_V1';
-        const effectiveTaxPolicy = taxPolicyVersion || (effectivePricingPolicy === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : TaxEngine.getDefaultTaxPolicyVersion());
-
-        quote = await TransactionQuoteService.generateQuote({
-          listingId,
-          ticketPrice: effectivePrice,
-          quantity: requestedQty,
-          buyerId,
-          sellerId: listing.seller_id,
-          pricingPolicyVersion: effectivePricingPolicy,
-          taxPolicyVersion: effectiveTaxPolicy,
-          ttlMinutes: paymentDeadlineHours * 60
-        });
-        await TransactionQuoteService.consumeQuote(quote.id, orderId, buyerId);
-      }
-    } catch (quoteErr) {
-      if (reservedListing && typeof marketplaceRepo.atomicReleaseInventory === 'function') {
-        try {
-          await marketplaceRepo.atomicReleaseInventory(listingId, requestedQty);
-        } catch (_) {}
-      }
-      throw quoteErr;
-    }
-
-    const pricing = {
-      ticketPrice: quote.ticket_price,
-      quantity: quote.quantity || requestedQty,
-      gross_ticket_value: quote.gross_ticket_value || (quote.ticket_price * (quote.quantity || requestedQty)),
-      platformFee: quote.buyer_platform_fee,
-      feePercentage: quote.pricing_breakdown?.buyer_rate || 0.06,
-      totalAmount: quote.buyer_total,
-      currency: quote.currency || 'IDR',
-      fee_policy_version: quote.fee_policy_version || 'TIKUM_FEE_POLICY_V1',
-      buyer_fee: quote.buyer_platform_fee,
-      seller_fee: quote.seller_platform_fee,
-      total_platform_fee: quote.total_platform_fee,
-      total_tikum_fee: quote.total_platform_fee,
-      payment_processing_fee: quote.payment_processing_fee || 0,
-      buyer_subtotal: quote.buyer_subtotal || quote.buyer_total,
-      buyer_tax: quote.buyer_tax_amount,
-      seller_tax_withholding: quote.seller_tax_withholding,
-      buyer_total: quote.buyer_total,
-      seller_net_payout: quote.seller_net_payout,
-      seller_payout: quote.seller_net_payout,
-      quote_id: quote.id
-    };
-
-    // Synchronize listing in-memory inventory state (if not already handled by atomicReserveInventory)
-    if (!reservedListing) {
-      const newAvailQty = Math.max(0, availQty - requestedQty);
-      const newResQty = (parseInt(listing.reserved_quantity !== undefined ? listing.reserved_quantity : (meta.reserved_quantity || 0), 10)) + requestedQty;
-
-      listing.total_quantity = totalQty;
-      listing.quantity = totalQty;
-      listing.available_quantity = newAvailQty;
-      listing.reserved_quantity = newResQty;
-
-      if (newAvailQty === 0) {
-        listing.status = LISTING_STATUS.RESERVED;
-      }
-
-      try {
-        if (typeof marketplaceRepo.updateListingInventory === 'function') {
-          await marketplaceRepo.updateListingInventory(listingId, {
-            available_quantity: newAvailQty,
-            reserved_quantity: newResQty,
-            total_quantity: totalQty,
-            status: listing.status
-          });
-        }
-      } catch (_) {}
-    }
-
-    const fulfillmentType = listing.fulfillment_type || meta.fulfillment_type || 'SELLER_MANAGED';
-    const picStatus = listing.pic_assistance_status || meta.pic_assistance_status || (fulfillmentType === 'TIKUM_VENUE_PIC' ? 'REQUESTED_PENDING_ASSIGNMENT' : 'NONE');
-
+    const escrowId = `esc-${uuidv4()}`;
     const paymentDeadline = new Date(Date.now() + paymentDeadlineHours * 60 * 60 * 1000).toISOString();
 
-    const order = {
-      id: orderId,
-      buyer_id: buyerId,
-      listing_id: listingId,
-      seller_id: listing.seller_id,
-      ticket_id: listing.ticket_id,
-      event_id: listing.event_id,
-      fulfillment_type: fulfillmentType,
-      pic_assistance_status: picStatus,
-      // Canonical Immutable Fee Snapshot (Requirement 6)
-      fee_policy_version: quote.fee_policy_version || quote.pricing_breakdown?.policy_version || 'TIKUM_FEE_POLICY_V1',
-      ticket_price: quote.ticket_price,
-      price: quote.ticket_price,
-      quantity: quote.quantity || requestedQty,
-      order_quantity: quote.quantity || requestedQty,
-      gross_ticket_value: quote.gross_ticket_value || (quote.ticket_price * (quote.quantity || requestedQty)),
-      buyer_fee: quote.buyer_fee !== undefined ? quote.buyer_fee : quote.buyer_platform_fee,
-      seller_fee: quote.seller_fee !== undefined ? quote.seller_fee : quote.seller_platform_fee,
-      platform_fee: quote.buyer_platform_fee,
-      payment_processing_fee: quote.payment_processing_fee || 0,
-      buyer_subtotal: quote.buyer_subtotal || (quote.ticket_price + quote.buyer_platform_fee),
-      buyer_total: quote.buyer_total,
-      total_amount: quote.buyer_total,
-      seller_payout: quote.seller_net_payout,
-      seller_net_payout: quote.seller_net_payout,
-      buyer_tax: quote.buyer_tax_amount || 0,
-      seller_tax_withholding: quote.seller_tax_withholding || 0,
-      currency: quote.currency || 'IDR',
-      calculated_at: quote.calculated_at || new Date().toISOString(),
-      quote_id: quote.id,
-      reservation_id: reservationId || null,
-      pricing_policy: quote.fee_policy_version || quote.pricing_breakdown?.policy_version || 'TIKUM_FEE_POLICY_V1',
-      tax_policy: quote.tax_breakdown?.tax_policy_version || 'ZERO-TAX-TEST',
-      status: ORDER_STATUS.PENDING_PAYMENT,
-      payment_deadline: paymentDeadline,
-      expires_at: paymentDeadline,
-      evidence_bundle_id: listing.evidence_bundle_id || null,
-      created_at: new Date().toISOString()
-    };
-    state.orders.push(order);
-
-    // Convert reservation if order created from active reservation
-    if (reservationId) {
-      try {
-        const { ReservationService } = require('./marketplace/ReservationService');
-        await ReservationService.convertReservation(reservationId, orderId);
-      } catch (resErr) {
-        // Log error but order is already recorded
-      }
+    // Generate quote upfront if client did not provide quoteId
+    let activeQuoteId = quoteId;
+    let preQuoteObj = null;
+    if (!activeQuoteId) {
+      const effectiveTaxPolicy = taxPolicyVersion || (expectedPolicyVersion === 'LEGACY-BUYER-10PCT' ? 'ZERO-TAX-TEST' : TaxEngine.getDefaultTaxPolicyVersion());
+      preQuoteObj = await TransactionQuoteService.generateQuote({
+        listingId,
+        ticketPrice: authoritativeUnitPrice,
+        quantity: requestedQty,
+        buyerId,
+        sellerId: listing.seller_id,
+        offerId: offerId || null,
+        pricingPolicyVersion: expectedPolicyVersion,
+        taxPolicyVersion: effectiveTaxPolicy,
+        ttlMinutes: paymentDeadlineHours * 60
+      });
+      activeQuoteId = preQuoteObj.id;
     }
 
-    // Create Escrow account record in PENDING_PAYMENT
-    const escrowId = `esc-${uuidv4()}`;
-    const escrow = {
-      id: escrowId,
-      order_id: orderId,
-      buyer_id: buyerId,
-      seller_id: listing.seller_id,
-      amount: quote.seller_net_payout, // Authoritative net payable owed to seller upon verified admission
-      ticket_price: quote.ticket_price,
-      quantity: quote.quantity || 1,
-      gross_ticket_value: quote.gross_ticket_value || quote.ticket_price,
-      seller_payout: quote.seller_net_payout,
-      seller_net_payout: quote.seller_net_payout,
-      total_paid: quote.buyer_total,
-      buyer_total: quote.buyer_total,
-      buyer_fee: quote.buyer_platform_fee,
-      seller_fee: quote.seller_platform_fee,
-      payment_processing_fee: quote.payment_processing_fee || 0,
-      buyer_tax: quote.buyer_tax_amount,
-      seller_tax_withholding: quote.seller_tax_withholding,
-      fee_policy_version: quote.fee_policy_version || 'TIKUM_FEE_POLICY_V1',
-      quote_id: quote.id,
-      status: ESCROW_STATUS.PENDING_PAYMENT,
-      provider_escrow_id: null,
-      created_at: new Date().toISOString(),
-      released_at: null,
-      refunded_at: null
-    };
-    state.escrows.push(escrow);
+    // Atomic multi-table boundary: consume quote CAS -> reserve inventory -> persist order -> persist escrow
+    const txResult = await UnitOfWork.execute(async (txContext) => {
+      const consumedQuote = await TransactionQuoteService.consumeQuoteForOrder(activeQuoteId, {
+        order_id: orderId,
+        buyer_id: buyerId,
+        listing_id: listingId,
+        quantity: requestedQty,
+        ticket_price: authoritativeUnitPrice,
+        gross_ticket_value: authoritativeUnitPrice * requestedQty,
+        currency: expectedCurrency,
+        fulfillment_option: fulfillmentType,
+        pricing_policy_version: expectedPolicyVersion
+      }, txContext);
 
-    let moneyRepo = null;
-    try {
-      const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
-      moneyRepo = getMoneyRepository();
-      const marketplaceRepo = getMarketplaceRepository();
-      if (marketplaceRepo && listing && !marketplaceRepo.degraded) {
-        const dbListing = await marketplaceRepo.getListingById(listing.id);
-        if (!dbListing && process.env.NODE_ENV === 'production') {
-          const err = new Error(`Listing '${listing.id}' not found in marketplace repository`);
-          err.code = 'LISTING_NOT_FOUND';
-          err.status = 404;
-          throw err;
+      let updatedListingRow = null;
+      if (!isListingReservedByThisReservation) {
+        updatedListingRow = await marketplaceRepo.atomicReserveInventory(listingId, requestedQty, txContext);
+      } else {
+        if (typeof marketplaceRepo.convertReservation === 'function') {
+          await marketplaceRepo.convertReservation(reservationId, txContext);
+        }
+        const memRes = (state.reservations || []).find(r => r.id === reservationId || r.reservation_id === reservationId);
+        if (memRes) {
+          memRes.status = 'CONVERTED';
+          memRes.order_id = orderId;
+          memRes.converted_at = new Date().toISOString();
         }
       }
-      await moneyRepo.createOrder({
+
+      const unitPrice = parseInt(consumedQuote.ticket_price, 10);
+      const quoteQty = parseInt(consumedQuote.quantity || requestedQty, 10);
+      const grossTicketValue = parseInt(consumedQuote.gross_ticket_value ?? (unitPrice * quoteQty), 10);
+      const buyerFee = parseInt(consumedQuote.buyer_fee ?? consumedQuote.buyer_platform_fee ?? 0, 10);
+      const sellerFee = parseInt(consumedQuote.seller_fee ?? consumedQuote.seller_platform_fee ?? 0, 10);
+      const buyerTax = parseInt(consumedQuote.buyer_tax ?? consumedQuote.buyer_tax_amount ?? 0, 10);
+      const sellerTax = parseInt(consumedQuote.seller_tax ?? consumedQuote.seller_tax_withholding ?? 0, 10);
+      const paymentFee = parseInt(consumedQuote.payment_fee ?? consumedQuote.payment_processing_fee ?? 0, 10);
+      const buyerTotal = parseInt(consumedQuote.buyer_total, 10);
+      const sellerNetPayout = parseInt(consumedQuote.seller_payout ?? consumedQuote.seller_net_payout, 10);
+      const quotePolicy = consumedQuote.pricing_policy_version || consumedQuote.fee_policy_version || expectedPolicyVersion;
+      const quoteTaxPolicy = consumedQuote.tax_policy_version || preQuoteObj?.tax_policy_version || TaxEngine.getDefaultTaxPolicyVersion();
+
+      const persistedOrder = await moneyRepo.createOrder({
         id: orderId,
+        idempotency_key: `ord-idem-${orderId}`,
         buyer_id: buyerId,
         seller_id: listing.seller_id,
         listing_id: listingId,
         ticket_id: listing.ticket_id,
-        canonical_event_id: listing.event_id || listing.canonical_event_id,
-        quantity: quote.quantity || requestedQty,
-        order_quantity: quote.quantity || requestedQty,
+        canonical_event_id: listingEventId,
+        quote_id: consumedQuote.quote_id || activeQuoteId,
+        ticket_price: unitPrice,
+        quantity: quoteQty,
+        order_quantity: quoteQty,
+        gross_ticket_value: grossTicketValue,
+        fulfillment_option: fulfillmentType,
         fulfillment_type: fulfillmentType,
         pic_assistance_status: picStatus,
-        gross_amount: quote.ticket_price,
-        buyer_fee: quote.buyer_platform_fee,
-        seller_fee: quote.seller_platform_fee,
-        buyer_tax: quote.buyer_tax_amount || 0,
-        seller_tax_withholding: quote.seller_tax_withholding || 0,
-        seller_payout: quote.seller_net_payout,
-        total_amount: quote.buyer_total,
-        currency: quote.currency || 'IDR',
+        buyer_fee: buyerFee,
+        seller_fee: sellerFee,
+        service_fee: buyerFee + sellerFee,
+        buyer_tax: buyerTax,
+        seller_tax: sellerTax,
+        seller_tax_withholding: sellerTax,
+        payment_processing_fee: paymentFee,
+        buyer_total: buyerTotal,
+        total_amount: buyerTotal,
+        seller_payout: sellerNetPayout,
+        fee_policy_version: quotePolicy,
+        pricing_policy_version: quotePolicy,
+        currency: expectedCurrency,
         status: ORDER_STATUS.PENDING_PAYMENT,
-        pricing_policy_version: quote.fee_policy_version || 'TIKUM_FEE_POLICY_V1',
+        payment_deadline: paymentDeadline,
         expires_at: paymentDeadline
-      });
-      await moneyRepo.createEscrow({
+      }, txContext);
+
+      const persistedEscrow = await moneyRepo.createEscrow({
         id: escrowId,
         order_id: orderId,
         buyer_id: buyerId,
         seller_id: listing.seller_id,
-        amount: quote.seller_net_payout,
-        currency: quote.currency || 'IDR',
+        amount: sellerNetPayout,
+        currency: expectedCurrency,
         status: ESCROW_STATUS.PENDING_PAYMENT,
         held_by: 'TIKUM_INTERNAL_ESCROW'
-      });
-      if (listing.status === LISTING_STATUS.RESERVED || (listing.available_quantity !== undefined && listing.available_quantity <= 0)) {
-        await marketplaceRepo.updateListingStatus(listingId, LISTING_STATUS.RESERVED);
+      }, txContext);
+
+      const pricing = {
+        ticketPrice: unitPrice,
+        quantity: quoteQty,
+        gross_ticket_value: grossTicketValue,
+        platformFee: buyerFee,
+        feePercentage: preQuoteObj?.pricing_breakdown?.buyer_rate || (fulfillmentType === 'TIKUM_VENUE_PIC' && quotePolicy === 'V2_DUAL_TIER' ? 0.09 : 0.06),
+        totalAmount: buyerTotal,
+        currency: expectedCurrency,
+        fee_policy_version: quotePolicy,
+        buyer_fee: buyerFee,
+        seller_fee: sellerFee,
+        total_platform_fee: buyerFee + sellerFee,
+        total_tikum_fee: buyerFee + sellerFee,
+        payment_processing_fee: paymentFee,
+        buyer_subtotal: grossTicketValue + buyerFee,
+        buyer_tax: buyerTax,
+        seller_tax_withholding: sellerTax,
+        buyer_total: buyerTotal,
+        seller_net_payout: sellerNetPayout,
+        seller_payout: sellerNetPayout,
+        quote_id: consumedQuote.quote_id || activeQuoteId
+      };
+
+      const order = {
+        ...persistedOrder,
+        id: orderId,
+        buyer_id: buyerId,
+        listing_id: listingId,
+        seller_id: listing.seller_id,
+        ticket_id: listing.ticket_id,
+        event_id: listingEventId,
+        canonical_event_id: listingEventId,
+        fulfillment_type: fulfillmentType,
+        fulfillment_option: fulfillmentType,
+        pic_assistance_status: picStatus,
+        fee_policy_version: quotePolicy,
+        ticket_price: unitPrice,
+        price: unitPrice,
+        quantity: quoteQty,
+        order_quantity: quoteQty,
+        gross_ticket_value: grossTicketValue,
+        buyer_fee: buyerFee,
+        seller_fee: sellerFee,
+        platform_fee: buyerFee,
+        payment_processing_fee: paymentFee,
+        buyer_subtotal: grossTicketValue + buyerFee,
+        buyer_total: buyerTotal,
+        total_amount: buyerTotal,
+        seller_payout: sellerNetPayout,
+        seller_net_payout: sellerNetPayout,
+        buyer_tax: buyerTax,
+        seller_tax: sellerTax,
+        seller_tax_withholding: sellerTax,
+        currency: expectedCurrency,
+        calculated_at: consumedQuote.created_at || new Date().toISOString(),
+        quote_id: consumedQuote.quote_id || activeQuoteId,
+        reservation_id: reservationId || null,
+        pricing_policy: quotePolicy,
+        tax_policy: quoteTaxPolicy,
+        status: ORDER_STATUS.PENDING_PAYMENT,
+        payment_deadline: paymentDeadline,
+        expires_at: paymentDeadline,
+        evidence_bundle_id: listing.evidence_bundle_id || meta.evidence_bundle_id || null,
+        created_at: persistedOrder.created_at || new Date().toISOString()
+      };
+
+      const escrow = {
+        ...persistedEscrow,
+        id: persistedEscrow.id || escrowId,
+        order_id: orderId,
+        buyer_id: buyerId,
+        seller_id: listing.seller_id,
+        amount: sellerNetPayout,
+        ticket_price: unitPrice,
+        quantity: quoteQty,
+        gross_ticket_value: grossTicketValue,
+        seller_payout: sellerNetPayout,
+        seller_net_payout: sellerNetPayout,
+        total_paid: buyerTotal,
+        buyer_total: buyerTotal,
+        buyer_fee: buyerFee,
+        seller_fee: sellerFee,
+        payment_processing_fee: paymentFee,
+        buyer_tax: buyerTax,
+        seller_tax_withholding: sellerTax,
+        fee_policy_version: quotePolicy,
+        quote_id: consumedQuote.quote_id || activeQuoteId,
+        status: ESCROW_STATUS.PENDING_PAYMENT,
+        provider_escrow_id: null,
+        created_at: persistedEscrow.created_at || new Date().toISOString(),
+        released_at: null,
+        refunded_at: null
+      };
+
+      // Synchronize in-memory state mirrors inside UoW so any rollback reverts state.* cleanly
+      if (!state.orders) state.orders = [];
+      state.orders.push(order);
+      if (!state.escrows) state.escrows = [];
+      state.escrows.push(escrow);
+
+      if (updatedListingRow) {
+        const upMeta = parseJsonMeta(updatedListingRow.metadata);
+        const memListing = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
+        if (memListing) {
+          memListing.available_quantity = updatedListingRow.available_quantity !== undefined
+            ? updatedListingRow.available_quantity
+            : upMeta.available_quantity;
+          memListing.reserved_quantity = updatedListingRow.reserved_quantity !== undefined
+            ? updatedListingRow.reserved_quantity
+            : upMeta.reserved_quantity;
+          memListing.status = updatedListingRow.status;
+        }
       }
-    } catch (repoErr) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL || (moneyRepo && !moneyRepo.degraded)) {
-        throw repoErr;
-      }
-    }
+
+      return { order, escrow, pricing, consumedQuote };
+    });
+
+    const { order, escrow, pricing } = txResult;
 
     await recordAuditLog('ORDER', orderId, 'CREATED', buyerId, {
       listing_id: listingId,
       pricing,
-      quote_id: quote.id,
+      quote_id: order.quote_id,
       custom_amount: customAmount ? pricing.ticketPrice : null
     });
 
-    await recordAuditLog('ESCROW', escrowId, 'CREATED', buyerId, {
+    await recordAuditLog('ESCROW', escrow.id, 'CREATED', buyerId, {
       order_id: orderId,
       status: ESCROW_STATUS.PENDING_PAYMENT,
-      seller_net_payout: quote.seller_net_payout,
-      buyer_total: quote.buyer_total
+      seller_net_payout: order.seller_payout,
+      buyer_total: order.buyer_total
     });
 
     // If listing bought at full price (not negotiated offer), auto-supersede any pending offers
-    if (!customAmount) {
+    if (!customAmount && !offerId) {
       try {
-        const { getMarketplaceRepository } = require('../storage');
-        const marketplaceRepo = getMarketplaceRepository();
         await marketplaceRepo.supersedeOffersForListing(listingId, null, 'Listing purchased at full price', 'SYSTEM');
       } catch (supErr) {
         if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw supErr;
       }
-    }
-    if (!customAmount && state.offers && state.offers.length > 0) {
-      const competingOffers = state.offers.filter(o => o.listing_id === listingId && (o.status === 'PENDING' || o.status === 'COUNTERED'));
-      for (const comp of competingOffers) {
-        comp.status = 'SUPERSEDED';
-        comp.superseded_at = new Date().toISOString();
-        if (state.offer_audit_logs) {
-          state.offer_audit_logs.push({
-            id: `oal-${state.offer_audit_logs.length + 1}`,
-            offer_id: comp.id,
-            actor_id: 'SYSTEM',
-            actor_role: 'SYSTEM',
-            from_status: 'PENDING',
-            to_status: 'SUPERSEDED',
-            ip_address: '127.0.0.1',
-            metadata: JSON.stringify({ reason: 'Listing purchased at full price', order_id: orderId }),
-            created_at: new Date().toISOString()
-          });
-        }
-        if (state.notifications) {
-          state.notifications.push({
-            id: `notif-${uuidv4()}`,
-            user_id: comp.buyer_id,
-            title: 'Tawaran Dibatalkan',
-            message: 'Listing telah terjual ke pembeli lain dengan harga normal. Tawaran Anda dibatalkan.',
-            type: 'OFFER_SUPERSEDED',
-            metadata: { offer_id: comp.id, listing_id: listingId },
-            is_read: false,
-            created_at: new Date().toISOString()
-          });
+      if (state.offers && state.offers.length > 0) {
+        const competingOffers = state.offers.filter(o => o.listing_id === listingId && (o.status === 'PENDING' || o.status === 'COUNTERED'));
+        for (const comp of competingOffers) {
+          comp.status = 'SUPERSEDED';
+          comp.superseded_at = new Date().toISOString();
+          if (state.offer_audit_logs) {
+            state.offer_audit_logs.push({
+              id: `oal-${state.offer_audit_logs.length + 1}`,
+              offer_id: comp.id,
+              actor_id: 'SYSTEM',
+              actor_role: 'SYSTEM',
+              from_status: 'PENDING',
+              to_status: 'SUPERSEDED',
+              ip_address: '127.0.0.1',
+              metadata: JSON.stringify({ reason: 'Listing purchased at full price', order_id: orderId }),
+              created_at: new Date().toISOString()
+            });
+          }
+          if (state.notifications) {
+            state.notifications.push({
+              id: `notif-${uuidv4()}`,
+              user_id: comp.buyer_id,
+              title: 'Tawaran Dibatalkan',
+              message: 'Listing telah terjual ke pembeli lain dengan harga normal. Tawaran Anda dibatalkan.',
+              type: 'OFFER_SUPERSEDED',
+              metadata: { offer_id: comp.id, listing_id: listingId },
+              is_read: false,
+              created_at: new Date().toISOString()
+            });
+          }
         }
       }
     }
@@ -573,210 +648,340 @@ class EscrowService {
   }
 
   /**
-   * Process payment confirmation (idempotent) and transition to ESCROWED
+   * Process payment confirmation atomically inside UnitOfWork with independent durable ledger verification.
    */
-  static async recordPayment({ orderId, providerRef, idempotencyKey, amountPaid, isProviderEscrow }) {
-    let order = (state.orders || []).find(o => o.id === orderId);
-    if (!order) {
-      try {
-        const { getMoneyRepository } = require('../storage');
-        const moneyRepo = getMoneyRepository();
-        const dbOrder = await moneyRepo.getOrderById(orderId);
-        if (dbOrder) {
-          dbOrder.total_amount = parseInt(dbOrder.total_amount, 10);
-          dbOrder.buyer_total = parseInt(dbOrder.buyer_total !== undefined ? dbOrder.buyer_total : dbOrder.total_amount, 10);
-          dbOrder.seller_payout = parseInt(dbOrder.seller_payout || 0, 10);
-          dbOrder.service_fee = parseInt(dbOrder.service_fee || 0, 10);
-          if (!state.orders) state.orders = [];
-          state.orders.push(dbOrder);
-          order = dbOrder;
-        }
-      } catch (e) {
-        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
-      }
+  static async recordPayment({ orderId, providerRef, idempotencyKey, amountPaid, isProviderEscrow, providerFee = 0, currency = null }) {
+    const { UnitOfWork } = require('../storage/UnitOfWork');
+    const { FinancialLedger } = require('../settlement/FinancialLedger');
+    const { LedgerVerificationService } = require('../settlement/LedgerVerificationService');
+    const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
+    const moneyRepo = getMoneyRepository();
+    const marketplaceRepo = getMarketplaceRepository();
+
+    let order = moneyRepo && typeof moneyRepo.getOrderById === 'function'
+      ? await moneyRepo.getOrderById(orderId)
+      : null;
+    if (!order && (!moneyRepo || moneyRepo.degraded)) {
+      order = (state.orders || []).find(o => o.id === orderId) || null;
     }
     if (!order) {
       const err = new Error('Order not found');
       err.code = 'ORDER_NOT_FOUND';
+      err.status = 404;
       throw err;
     }
 
-    // Check idempotency: if payment already recorded in memory or db
-    const existingPayment = (state.payments || []).find(p => p.idempotency_key === idempotencyKey);
-    if (existingPayment) {
-      let escrow = (state.escrows || []).find(e => e.order_id === orderId);
-      return { payment: existingPayment, order, escrow, idempotent: true };
+    const expectedAmount = parseInt(order.buyer_total !== undefined && order.buyer_total !== null ? order.buyer_total : order.total_amount, 10);
+    const parsedAmountPaid = Number(amountPaid);
+    if (!Number.isInteger(parsedAmountPaid) || parsedAmountPaid <= 0) {
+      const err = new Error(`Valid positive integer amountPaid is required (expected ${expectedAmount}, got ${amountPaid})`);
+      err.code = 'INVALID_PAYMENT_AMOUNT';
+      err.status = 400;
+      throw err;
     }
-
-    try {
-      const { getMoneyRepository } = require('../storage');
-      const moneyRepo = getMoneyRepository();
-      const dbPayment = await moneyRepo.getPaymentByOrderId(orderId);
-      if (dbPayment && (dbPayment.idempotency_key === idempotencyKey || (!idempotencyKey && dbPayment.status === 'SETTLED'))) {
-        let escrow = (state.escrows || []).find(e => e.order_id === orderId);
-        return { payment: dbPayment, order, escrow, idempotent: true };
-      }
-    } catch (_) {}
-
-    const expectedAmount = parseInt(order.buyer_total !== undefined ? order.buyer_total : order.total_amount, 10);
-    if (amountPaid && parseInt(amountPaid, 10) !== expectedAmount) {
+    if (parsedAmountPaid !== expectedAmount) {
       const err = new Error(`Payment amount mismatch. Expected ${expectedAmount}, got ${amountPaid}`);
       err.code = 'AMOUNT_MISMATCH';
+      err.status = 400;
+      throw err;
+    }
+    if (currency && order.currency && String(currency).trim().toUpperCase() !== String(order.currency).trim().toUpperCase()) {
+      const err = new Error(`Payment currency mismatch. Expected ${order.currency}, got ${currency}`);
+      err.code = 'CURRENCY_MISMATCH';
+      err.status = 422;
       throw err;
     }
 
-    let escrow = (state.escrows || []).find(e => e.order_id === orderId);
-    if (!escrow) {
-      try {
-        const { getMoneyRepository } = require('../storage');
-        const moneyRepo = getMoneyRepository();
-        const dbEscrow = await moneyRepo.getEscrowByOrderId(orderId);
-        if (dbEscrow) {
-          dbEscrow.amount = parseInt(dbEscrow.amount, 10);
-          if (!state.escrows) state.escrows = [];
-          state.escrows.push(dbEscrow);
-          escrow = dbEscrow;
-        }
-      } catch (e) {
-        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
-      }
-    }
-    if (!escrow) {
-      const err = new Error('Escrow record not found for order');
-      err.code = 'ESCROW_NOT_FOUND';
-      throw err;
+    // Durable idempotency check BEFORE opening write transaction
+    const existingMemPay = idempotencyKey ? (state.payments || []).find(p => p.idempotency_key === idempotencyKey) : null;
+    const existingDbPay = moneyRepo ? await moneyRepo.getPaymentByOrderId(orderId) : null;
+    const matchedSettled = existingDbPay &&
+      String(existingDbPay.status || '').toUpperCase() === 'SETTLED' &&
+      ((idempotencyKey && existingDbPay.idempotency_key === idempotencyKey) || !idempotencyKey);
+
+    if (existingMemPay || matchedSettled) {
+      const verification = await LedgerVerificationService.verifyDurableCapture(orderId, { moneyRepo, marketplaceRepo });
+      const escrow = (moneyRepo ? await moneyRepo.getEscrowByOrderId(orderId) : null) ||
+        (state.escrows || []).find(e => e.order_id === orderId);
+      return {
+        payment: existingDbPay || existingMemPay,
+        order,
+        escrow,
+        verification,
+        idempotent: true
+      };
     }
 
-    // Record Payment
-    const paymentId = `pay-${uuidv4()}`;
-    const payment = {
-      id: paymentId,
-      order_id: orderId,
-      provider_ref: providerRef || `payref-${Date.now()}`,
-      amount: expectedAmount,
-      status: 'SETTLED',
-      idempotency_key: idempotencyKey,
-      created_at: new Date().toISOString()
-    };
-    if (!state.payments) state.payments = [];
-    state.payments.push(payment);
+    const effectiveIdemKey = idempotencyKey || `pay-idem-${orderId}-${Date.now()}`;
+    const effProviderFee = parseInt(providerFee !== undefined && providerFee !== null ? providerFee : (order.payment_processing_fee || 0), 10) || 0;
 
-    const canonical = (state.canonical_payments || []).find(p => p.order_id === orderId);
-    const effProvider = canonical?.provider || order.provider || 'doku';
-    const isEscrow = isProviderEscrow !== undefined
-      ? Boolean(isProviderEscrow)
-      : (effProvider !== 'xendit' && effProvider !== 'midtrans');
-
-    const isLateOrCancelled = order.status === ORDER_STATUS.CANCELLED ||
-      order.status === 'EXPIRED' ||
-      order.status === 'LATE_PAYMENT_PENDING_REVIEW' ||
-      escrow.status === 'EXPIRED' ||
-      escrow.status === 'CANCELLED';
-
-    if (isLateOrCancelled) {
-      order.status = 'LATE_PAYMENT_PENDING_REVIEW';
-      order.late_payment = true;
-      escrow.status = 'HOLDING_FOR_REFUND';
-      escrow.provider_escrow_id = payment.provider_ref ? `prov-hold-${payment.provider_ref}` : null;
-      escrow.escrow_type = 'HOLDING_ACCOUNT';
-      order.payment_money_state = 'LATE_PAYMENT_HELD_FOR_REFUND';
-    } else {
-      // Transition Escrow: PENDING_PAYMENT -> PAID -> ESCROWED / CAPTURED
-      escrow.status = ESCROW_STATUS.ESCROWED;
-      if (isEscrow) {
-        escrow.provider_escrow_id = `prov-esc-${payment.provider_ref}`;
-        escrow.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
-        order.status = ORDER_STATUS.PAID_ESCROWED;
-        order.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
-        order.payment_money_state = 'ESCROW_HELD';
-      } else {
-        escrow.provider_escrow_id = null; // Truthful: No 3rd-party escrow ID on non-escrow rails
-        escrow.escrow_type = 'NONE_PLATFORM_CAPTURED';
-        escrow.internal_simulation = true;
-        order.status = ORDER_STATUS.PAID_PLATFORM_HELD;
-        order.escrow_type = 'NONE_PLATFORM_CAPTURED';
-        order.payment_money_state = 'CAPTURED_PLATFORM_SETTLEMENT';
+    const txOutcome = await UnitOfWork.execute(async (txContext) => {
+      let dbOrder = moneyRepo ? await moneyRepo.getOrderById(orderId, txContext) : null;
+      if (!dbOrder && (!moneyRepo || moneyRepo.degraded)) {
+        dbOrder = (state.orders || []).find(o => o.id === orderId) || null;
+      }
+      if (!dbOrder) {
+        const err = new Error('Order not found');
+        err.code = 'ORDER_NOT_FOUND';
+        err.status = 404;
+        throw err;
       }
 
-      // Invariant I7: Only transition active inventory to SOLD/ESCROWED if payment is on-time.
-      // Late payments after expiry credit holding ledger but NEVER resurrect or mutate released inventory.
-      // Update listing status to SOLD
-      const listing = (state.listings || []).find(l => l.id === order.listing_id);
-      if (listing) {
-        listing.status = LISTING_STATUS.SOLD;
+      let dbEscrow = moneyRepo ? await moneyRepo.getEscrowByOrderId(orderId, txContext) : null;
+      if (!dbEscrow && (!moneyRepo || moneyRepo.degraded)) {
+        dbEscrow = (state.escrows || []).find(e => e.order_id === orderId) || null;
+      }
+      if (!dbEscrow) {
+        const err = new Error('Escrow record not found for order');
+        err.code = 'ESCROW_NOT_FOUND';
+        err.status = 404;
+        throw err;
       }
 
-      // Update ticket owner/status
-      const ticket = (state.tickets || []).find(t => t.id === order.ticket_id);
-      if (ticket) {
-        ticket.status = 'ESCROWED';
+      // Guard inside transaction against duplicate settled payment race
+      const txExistingPay = moneyRepo ? await moneyRepo.getLatestSettledPaymentByOrderId(orderId, txContext) : null;
+      if (txExistingPay) {
+        return { payment: txExistingPay, order: dbOrder, escrow: dbEscrow, alreadyCapturedInTx: true };
       }
-    }
 
-    try {
-      const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
-      const moneyRepo = getMoneyRepository();
-      const marketplaceRepo = getMarketplaceRepository();
+      const canonical = (state.canonical_payments || []).find(p => p.order_id === orderId);
+      const effProvider = canonical?.provider || dbOrder.provider || 'doku';
       const effMethod = canonical?.payment_method || 'QRIS';
+      const isEscrow = isProviderEscrow !== undefined
+        ? Boolean(isProviderEscrow)
+        : (effProvider !== 'xendit' && effProvider !== 'midtrans');
 
-      await moneyRepo.createPayment({
+      const isLateOrCancelled = dbOrder.status === ORDER_STATUS.CANCELLED ||
+        dbOrder.status === 'EXPIRED' ||
+        dbOrder.status === 'LATE_PAYMENT_PENDING_REVIEW' ||
+        dbEscrow.status === 'EXPIRED' ||
+        dbEscrow.status === 'CANCELLED' ||
+        dbEscrow.status === 'HOLDING_FOR_REFUND';
+
+      const paymentId = `pay-${uuidv4()}`;
+      const effectiveProviderRef = providerRef || `payref-${Date.now()}`;
+      const targetMoneyState = isLateOrCancelled
+        ? 'LATE_PAYMENT_HELD_FOR_REFUND'
+        : (isEscrow ? 'ESCROW_HELD' : 'CAPTURED_PLATFORM_SETTLEMENT');
+
+      const persistedPayment = await moneyRepo.createPayment({
         id: paymentId,
+        internal_payment_id: paymentId,
         order_id: orderId,
-        buyer_id: order.buyer_id,
-        seller_id: order.seller_id,
-        currency: order.currency || 'IDR',
+        buyer_id: dbOrder.buyer_id,
+        seller_id: dbOrder.seller_id,
+        currency: dbOrder.currency || 'IDR',
         gross_amount: expectedAmount,
         provider: effProvider,
-        provider_reference: payment.provider_ref,
-        provider_transaction_id: payment.provider_ref,
+        provider_fee: effProviderFee,
+        provider_reference: effectiveProviderRef,
+        provider_transaction_id: effectiveProviderRef,
         status: 'SETTLED',
-        money_state: isEscrow ? 'PAID' : 'CAPTURED_PLATFORM_SETTLEMENT',
+        money_state: targetMoneyState,
         payment_method: effMethod,
-        idempotency_key: idempotencyKey
-      });
-      await moneyRepo.updateOrderStatus(orderId, order.status);
-      await moneyRepo.updateEscrowStatus(orderId, ESCROW_STATUS.ESCROWED, {
-        provider_escrow_id: escrow.provider_escrow_id
-      });
-      if (order.listing_id) {
-        await marketplaceRepo.updateListingStatus(order.listing_id, LISTING_STATUS.SOLD);
-      }
-      if (order.ticket_id) {
-        await marketplaceRepo.updateTicketStatus(order.ticket_id, 'ESCROWED');
-      }
-    } catch (repoErr) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw repoErr;
-      }
-    }
+        idempotency_key: effectiveIdemKey
+      }, txContext);
 
-    await recordAuditLog('PAYMENT', paymentId, 'PROCESSED', order.buyer_id, {
-      order_id: orderId,
-      amount: payment.amount,
-      provider_ref: payment.provider_ref
-    });
+      let targetOrderStatus;
+      let targetEscrowStatus;
+      let targetEscrowProviderId = dbEscrow.provider_escrow_id || null;
+      let escrowType;
 
-    await recordAuditLog('ESCROW', escrow.id, 'FUNDS_LOCKED_IN_ESCROW', 'SYSTEM', {
-      order_id: orderId,
-      amount_held: escrow.amount,
-      provider_escrow_id: escrow.provider_escrow_id
-    });
+      if (isLateOrCancelled) {
+        targetOrderStatus = 'LATE_PAYMENT_PENDING_REVIEW';
+        targetEscrowStatus = 'HOLDING_FOR_REFUND';
+        targetEscrowProviderId = effectiveProviderRef ? `prov-hold-${effectiveProviderRef}` : null;
+        escrowType = 'HOLDING_ACCOUNT';
+      } else {
+        targetEscrowStatus = ESCROW_STATUS.ESCROWED;
+        if (isEscrow) {
+          targetEscrowProviderId = `prov-esc-${effectiveProviderRef}`;
+          escrowType = 'THIRD_PARTY_PROVIDER_ESCROW';
+          targetOrderStatus = ORDER_STATUS.PAID_ESCROWED;
+        } else {
+          targetEscrowProviderId = null;
+          escrowType = 'NONE_PLATFORM_CAPTURED';
+          targetOrderStatus = ORDER_STATUS.PAID_PLATFORM_HELD;
+        }
+      }
 
-    // Record balanced double-entry payment capture in FinancialLedger
-    try {
-      const { FinancialLedger } = require('../settlement/FinancialLedger');
+      const paidNowIso = persistedPayment.paid_at || new Date().toISOString();
+      await moneyRepo.updateOrderStatus(orderId, targetOrderStatus, {
+        paid_at: paidNowIso,
+        late_payment: isLateOrCancelled,
+        escrow_type: escrowType,
+        payment_money_state: targetMoneyState
+      }, txContext);
+
+      await moneyRepo.updateEscrowStatus(orderId, targetEscrowStatus, {
+        provider_escrow_id: targetEscrowProviderId
+      }, txContext);
+
+      // Update inventory ONLY for on-time captures; NEVER resurrect expired/cancelled listing inventory
+      let updatedListingStatus = null;
+      let updatedAvailQty = null;
+      let updatedSoldQty = null;
+      let updatedReservedQty = null;
+
+      if (!isLateOrCancelled && dbOrder.listing_id) {
+        const dbListing = await marketplaceRepo.getListingById(dbOrder.listing_id, txContext);
+        if (dbListing) {
+          const lMeta = parseJsonMeta(dbListing.metadata);
+          const totalQty = parseInt(dbListing.total_quantity ?? lMeta.total_quantity ?? dbListing.quantity ?? 1, 10) || 1;
+          const curAvail = dbListing.available_quantity !== undefined
+            ? parseInt(dbListing.available_quantity, 10)
+            : (lMeta.available_quantity !== undefined ? parseInt(lMeta.available_quantity, 10) : 0);
+          const curRes = dbListing.reserved_quantity !== undefined
+            ? parseInt(dbListing.reserved_quantity, 10)
+            : (lMeta.reserved_quantity !== undefined ? parseInt(lMeta.reserved_quantity, 10) : 0);
+          const curSold = dbListing.sold_quantity !== undefined
+            ? parseInt(dbListing.sold_quantity, 10)
+            : (lMeta.sold_quantity !== undefined ? parseInt(lMeta.sold_quantity, 10) : 0);
+          const ordQty = Math.max(1, parseInt(dbOrder.quantity || 1, 10));
+
+          updatedReservedQty = Math.max(0, curRes - ordQty);
+          updatedSoldQty = curSold + ordQty;
+          updatedAvailQty = Math.max(0, curAvail);
+          updatedListingStatus = updatedAvailQty <= 0 ? LISTING_STATUS.SOLD : LISTING_STATUS.ACTIVE;
+
+          await marketplaceRepo.updateListingInventory(dbOrder.listing_id, {
+            available_quantity: updatedAvailQty,
+            reserved_quantity: updatedReservedQty,
+            sold_quantity: updatedSoldQty,
+            total_quantity: totalQty,
+            status: updatedListingStatus
+          }, txContext);
+        } else {
+          await marketplaceRepo.updateListingStatus(dbOrder.listing_id, LISTING_STATUS.SOLD, txContext);
+          updatedListingStatus = LISTING_STATUS.SOLD;
+        }
+        if (dbOrder.ticket_id) {
+          await marketplaceRepo.updateTicketStatus(dbOrder.ticket_id, 'ESCROWED', null, txContext);
+        }
+      }
+
+      // DB-first Double-Entry CAPTURE — errors propagate cleanly to trigger full UoW rollback
+      const grossTicketVal = parseInt(
+        dbOrder.gross_ticket_value ?? (parseInt(dbOrder.ticket_price, 10) * parseInt(dbOrder.quantity || 1, 10)),
+        10
+      );
+      const buyerFeeVal = parseInt(dbOrder.buyer_fee !== undefined && dbOrder.buyer_fee !== null ? dbOrder.buyer_fee : (dbOrder.platform_fee || 0), 10);
+      const sellerFeeVal = parseInt(dbOrder.seller_fee || 0, 10);
+      const buyerTaxVal = parseInt(dbOrder.buyer_tax || 0, 10);
+      const sellerTaxVal = parseInt(dbOrder.seller_tax !== undefined && dbOrder.seller_tax !== null ? dbOrder.seller_tax : (dbOrder.seller_tax_withholding || 0), 10);
+
       await FinancialLedger.recordPaymentCapture({
         orderId,
-        quoteId: order.quote_id || escrow.quote_id || null,
-        ticketPrice: order.gross_ticket_value || order.ticket_price || escrow.gross_ticket_value || escrow.ticket_price || escrow.amount,
-        platformFee: order.platform_fee || order.buyer_fee || 0,
-        buyerFee: order.buyer_fee !== undefined ? order.buyer_fee : (order.platform_fee || 0),
-        sellerFee: order.seller_fee || 0,
-        buyerTax: order.buyer_tax || 0,
-        sellerTax: order.seller_tax_withholding || 0,
-        actorId: order.buyer_id || 'SYSTEM'
-      });
-    } catch (e) {}
+        quoteId: dbOrder.quote_id || dbEscrow.quote_id || null,
+        ticketPrice: grossTicketVal,
+        platformFee: buyerFeeVal,
+        buyerFee: buyerFeeVal,
+        sellerFee: sellerFeeVal,
+        buyerTax: buyerTaxVal,
+        sellerTax: sellerTaxVal,
+        providerFee: effProviderFee,
+        currency: dbOrder.currency || 'IDR',
+        actorId: dbOrder.buyer_id || 'SYSTEM'
+      }, txContext);
+
+      // Durable Outbox Event atomically in the same UoW boundary
+      await moneyRepo.createOutboxEvent({
+        event_id: `obx-cap-${orderId}`,
+        event_type: isLateOrCancelled ? 'LATE_PAYMENT_HOLD_CAPTURED' : 'PAYMENT_CAPTURED_ESCROW_HELD',
+        aggregate_type: 'ORDER',
+        aggregate_id: orderId,
+        payload: {
+          orderId,
+          paymentId,
+          providerRef: effectiveProviderRef,
+          amount: expectedAmount,
+          orderStatus: targetOrderStatus,
+          escrowStatus: targetEscrowStatus
+        }
+      }, txContext);
+
+      // Sync in-memory mirrors inside UoW so rollback reverts them atomically too
+      const memPayment = {
+        ...persistedPayment,
+        id: paymentId,
+        order_id: orderId,
+        provider_ref: effectiveProviderRef,
+        amount: expectedAmount,
+        status: 'SETTLED',
+        idempotency_key: effectiveIdemKey,
+        created_at: persistedPayment.created_at || paidNowIso
+      };
+      if (!state.payments) state.payments = [];
+      state.payments.push(memPayment);
+
+      const memOrder = (state.orders || []).find(o => o.id === orderId);
+      const targetOrderObj = memOrder || dbOrder;
+      targetOrderObj.status = targetOrderStatus;
+      targetOrderObj.paid_at = paidNowIso;
+      targetOrderObj.escrow_type = escrowType;
+      targetOrderObj.payment_money_state = targetMoneyState;
+      if (isLateOrCancelled) targetOrderObj.late_payment = true;
+      if (!memOrder) {
+        if (!state.orders) state.orders = [];
+        state.orders.push(targetOrderObj);
+      }
+
+      const memEscrow = (state.escrows || []).find(e => e.order_id === orderId);
+      const targetEscrowObj = memEscrow || dbEscrow;
+      targetEscrowObj.status = targetEscrowStatus;
+      targetEscrowObj.provider_escrow_id = targetEscrowProviderId;
+      targetEscrowObj.escrow_type = escrowType;
+      if (!isLateOrCancelled && !isEscrow) targetEscrowObj.internal_simulation = true;
+      if (!memEscrow) {
+        if (!state.escrows) state.escrows = [];
+        state.escrows.push(targetEscrowObj);
+      }
+
+      if (!isLateOrCancelled) {
+        const memListing = (state.listings || []).find(l => l.id === targetOrderObj.listing_id);
+        if (memListing) {
+          if (updatedListingStatus) memListing.status = updatedListingStatus;
+          if (updatedAvailQty !== null) memListing.available_quantity = updatedAvailQty;
+          if (updatedReservedQty !== null) memListing.reserved_quantity = updatedReservedQty;
+          if (updatedSoldQty !== null) memListing.sold_quantity = updatedSoldQty;
+        }
+        const memTicket = (state.tickets || []).find(t => t.id === targetOrderObj.ticket_id);
+        if (memTicket) memTicket.status = 'ESCROWED';
+      }
+
+      return {
+        payment: memPayment,
+        order: targetOrderObj,
+        escrow: targetEscrowObj,
+        alreadyCapturedInTx: false
+      };
+    });
+
+    // Independent durable read-after-write ledger verification BEFORE returning success
+    const verification = await LedgerVerificationService.verifyDurableCapture(orderId, { moneyRepo, marketplaceRepo });
+
+    if (txOutcome.alreadyCapturedInTx) {
+      return {
+        payment: txOutcome.payment,
+        order: txOutcome.order,
+        escrow: txOutcome.escrow,
+        verification,
+        idempotent: true
+      };
+    }
+
+    await recordAuditLog('PAYMENT', txOutcome.payment.id, 'PROCESSED', txOutcome.order.buyer_id, {
+      order_id: orderId,
+      amount: txOutcome.payment.amount,
+      provider_ref: txOutcome.payment.provider_ref
+    });
+
+    await recordAuditLog('ESCROW', txOutcome.escrow.id, 'FUNDS_LOCKED_IN_ESCROW', 'SYSTEM', {
+      order_id: orderId,
+      amount_held: txOutcome.escrow.amount,
+      status: txOutcome.escrow.status,
+      provider_escrow_id: txOutcome.escrow.provider_escrow_id
+    });
 
     // Record PAYMENT, PLATFORM, and TICKET_EVIDENCE attestations in TrustPolicyEngine
     try {
@@ -787,7 +992,7 @@ class EscrowService {
         actorId: 'SYSTEM',
         actorRole: 'system',
         result: 'PASS',
-        metadata: { payment_id: payment.id, amount: payment.amount }
+        metadata: { payment_id: txOutcome.payment.id, amount: txOutcome.payment.amount }
       });
       await TrustPolicyEngine.recordAttestation({
         orderId,
@@ -803,56 +1008,50 @@ class EscrowService {
         actorId: 'SYSTEM',
         actorRole: 'system',
         result: 'PASS',
-        metadata: { ticket_id: order.ticket_id }
+        metadata: { ticket_id: txOutcome.order.ticket_id }
       });
     } catch (e) {}
 
     // Non-blocking secondary effect: Payment successful email (funds locked in Escrow)
-    const buyer = state.users.find(u => u.id === order.buyer_id);
-    const seller = state.users.find(u => u.id === order.seller_id);
-    const event = state.events.find(e => e.id === order.event_id);
-    emailService.sendPaymentSuccessfulEmail({ order, payment, buyer, seller, event });
+    const buyer = (state.users || []).find(u => u.id === txOutcome.order.buyer_id);
+    const seller = (state.users || []).find(u => u.id === txOutcome.order.seller_id);
+    const event = (state.events || []).find(e => e.id === txOutcome.order.event_id);
+    emailService.sendPaymentSuccessfulEmail({ order: txOutcome.order, payment: txOutcome.payment, buyer, seller, event });
 
-    return { payment, order, escrow, idempotent: false };
+    return {
+      payment: txOutcome.payment,
+      order: txOutcome.order,
+      escrow: txOutcome.escrow,
+      verification,
+      idempotent: false
+    };
   }
 
   /**
-   * Release escrow funds to seller (Guarded by TrustPolicyEngine and FinancialLedger)
+   * Release escrow funds to seller (Guarded by TrustPolicyEngine, UnitOfWork, and FinancialLedger)
    */
   static async releaseToSeller(orderId, actorId) {
     const unlock = await releaseMutex.acquire(orderId);
     try {
-      let order = (state.orders || []).find(o => o.id === orderId);
-      if (!order) {
-        try {
-          const { getMoneyRepository } = require('../storage');
-          const moneyRepo = getMoneyRepository();
-          const dbOrder = await moneyRepo.getOrderById(orderId);
-          if (dbOrder) {
-            if (!state.orders) state.orders = [];
-            state.orders.push(dbOrder);
-            order = dbOrder;
-          }
-        } catch (e) {
-          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
-        }
+      const { UnitOfWork } = require('../storage/UnitOfWork');
+      const { FinancialLedger } = require('../settlement/FinancialLedger');
+      const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
+      const marketplaceRepo = getMarketplaceRepository();
+
+      let order = moneyRepo && typeof moneyRepo.getOrderById === 'function'
+        ? await moneyRepo.getOrderById(orderId)
+        : null;
+      if (!order && (!moneyRepo || moneyRepo.degraded)) {
+        order = (state.orders || []).find(o => o.id === orderId) || null;
       }
       if (!order) throw new Error('Order not found');
 
-      let escrow = (state.escrows || []).find(e => e.order_id === orderId);
-      if (!escrow) {
-        try {
-          const { getMoneyRepository } = require('../storage');
-          const moneyRepo = getMoneyRepository();
-          const dbEscrow = await moneyRepo.getEscrowByOrderId(orderId);
-          if (dbEscrow) {
-            if (!state.escrows) state.escrows = [];
-            state.escrows.push(dbEscrow);
-            escrow = dbEscrow;
-          }
-        } catch (e) {
-          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
-        }
+      let escrow = moneyRepo && typeof moneyRepo.getEscrowByOrderId === 'function'
+        ? await moneyRepo.getEscrowByOrderId(orderId)
+        : null;
+      if (!escrow && (!moneyRepo || moneyRepo.degraded)) {
+        escrow = (state.escrows || []).find(e => e.order_id === orderId) || null;
       }
       if (!escrow) throw new Error('Escrow not found');
 
@@ -891,8 +1090,8 @@ class EscrowService {
         throw err;
       }
 
-      // 3. Operational invariant check: Must have confirmed entry verification OR authoritative dispute resolution in seller favor
-      const verification = state.entry_verifications.find(
+      // 3. Operational invariant check
+      const verification = (state.entry_verifications || []).find(
         ev => ev.order_id === orderId && ev.status === 'CONFIRMED'
       );
       const disputeFavorable = (state.disputes || []).some(
@@ -906,7 +1105,7 @@ class EscrowService {
         throw err;
       }
 
-      // 4. CRITICAL TRUST POLICY INVARIANT: Must be authorized by TrustPolicyEngine
+      // 4. TrustPolicyEngine authorization gate
       const { TrustPolicyEngine, AUTHORIZATION_OUTCOME } = require('../trust/TrustPolicyEngine');
       const authDecision = await TrustPolicyEngine.evaluateAuthorization(orderId);
 
@@ -922,73 +1121,18 @@ class EscrowService {
         throw err;
       }
 
-      // 4b. Double-Entry Solvency Assertion (Invariant I3)
-      try {
-        const { FinancialLedger } = require('../settlement/FinancialLedger');
-        if (typeof FinancialLedger.assertSolvency === 'function') {
-          FinancialLedger.assertSolvency();
-        }
-      } catch (solvencyErr) {
-        if (solvencyErr.code === 'LEDGER_UNBALANCED' || solvencyErr.code === 'LEDGER_INSOLVENT') {
-          throw solvencyErr;
-        }
-      }
-
-      // 5. Update states
-      escrow.status = ESCROW_STATUS.RELEASED;
-      escrow.released_at = new Date().toISOString();
-
-      order.status = ORDER_STATUS.SETTLED;
-
-      const listing = state.listings.find(l => l.id === order.listing_id);
-      if (listing) {
-        const ordQty = order.quantity || 1;
-        listing.reserved_quantity = Math.max(0, (listing.reserved_quantity || 0) - ordQty);
-        listing.sold_quantity = (listing.sold_quantity || 0) + ordQty;
-        if ((listing.available_quantity || 0) === 0 && (listing.reserved_quantity || 0) === 0) {
-          listing.status = LISTING_STATUS.SETTLED;
-        }
-      }
-
-      const ticket = state.tickets.find(t => t.id === order.ticket_id);
-      if (ticket) ticket.status = 'SETTLED';
-
-      try {
-        const { getMoneyRepository, getMarketplaceRepository } = require('../storage');
-        const moneyRepo = getMoneyRepository();
-        const marketplaceRepo = getMarketplaceRepository();
-        await moneyRepo.releaseEscrow(orderId, actorId);
-        if (order.listing_id) {
-          await marketplaceRepo.updateListingStatus(order.listing_id, LISTING_STATUS.SETTLED);
-        }
-        if (order.ticket_id) {
-          await marketplaceRepo.updateTicketStatus(order.ticket_id, 'SETTLED');
-        }
-      } catch (repoErr) {
-        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-          throw repoErr;
-        }
-      }
-
-      // 6. State Machine synchronization
-      const { EscrowStateMachine, ESCROW_LIFECYCLE_STATE } = require('../settlement/EscrowStateMachine');
-      if (escrow.state_machine_status && escrow.state_machine_status !== ESCROW_LIFECYCLE_STATE.RELEASED) {
+      // 4b. Double-Entry Solvency Assertion
+      if (typeof FinancialLedger.assertSolvency === 'function') {
         try {
-          await EscrowStateMachine.transition({
-            orderId,
-            targetState: ESCROW_LIFECYCLE_STATE.RELEASED,
-            actorId: actorId || 'SYSTEM',
-            actorRole: 'admin',
-            reason: 'Settlement disbursed to seller following Trust Policy approval',
-            metadata: { authorization_id: authDecision.authorization_id }
-          });
-        } catch (esmErr) {
-          // Keep synchronized
+          FinancialLedger.assertSolvency();
+        } catch (solvencyErr) {
+          if (solvencyErr.code === 'LEDGER_UNBALANCED' || solvencyErr.code === 'LEDGER_INSOLVENT') {
+            throw solvencyErr;
+          }
         }
       }
 
-      // 6b. Provider Hold & Release execution if payment was held on provider rail
-      let providerReleaseResult = null;
+      // 5. Provider Hold & Release execution before marking DB RELEASED if provider rail fails timeout
       const canonical = (state.canonical_payments || []).find(p => p.order_id === orderId);
       const effProvider = (canonical?.provider || order.provider || 'doku').toLowerCase();
       try {
@@ -997,7 +1141,7 @@ class EscrowService {
         if (prov && typeof prov.executeRelease === 'function') {
           const invoiceNumber = canonical?.metadata?.invoiceNumber || canonical?.provider_reference || `INV-DOKU-${orderId}`;
           const originalRequestId = canonical?.metadata?.originalRequestId || canonical?.metadata?.dokuRequestId || canonical?.idempotency_key || `req-${orderId}`;
-          providerReleaseResult = await prov.executeRelease({
+          await prov.executeRelease({
             invoiceNumber,
             amount: canonical?.gross_amount || escrow.amount,
             currency: canonical?.currency || 'IDR',
@@ -1022,37 +1166,97 @@ class EscrowService {
         }
       }
 
-      // 7. Double-Entry Financial Ledger
-      const { FinancialLedger } = require('../settlement/FinancialLedger');
-      let ledgerTx = null;
-      try {
-        ledgerTx = await FinancialLedger.recordDisbursementRelease({
+      // 6. Atomic DB + Double-Entry FinancialLedger RELEASE inside UnitOfWork (no swallowed errors)
+      const releaseResult = await UnitOfWork.execute(async (txContext) => {
+        const dbRelease = await moneyRepo.releaseEscrow(orderId, actorId, null, txContext);
+        if (dbRelease && dbRelease.alreadyReleased) {
+          return { escrow: dbRelease.escrow, order, ledgerTx: null, alreadyReleased: true };
+        }
+
+        if (order.listing_id) {
+          const curListing = await marketplaceRepo.getListingById(order.listing_id, txContext);
+          if (curListing) {
+            const lMeta = parseJsonMeta(curListing.metadata);
+            const curRes = parseInt(curListing.reserved_quantity ?? lMeta.reserved_quantity ?? 0, 10);
+            const curAvail = parseInt(curListing.available_quantity ?? lMeta.available_quantity ?? 0, 10);
+            const curSold = parseInt(curListing.sold_quantity ?? lMeta.sold_quantity ?? 0, 10);
+            const ordQty = parseInt(order.quantity || 1, 10);
+            const nextRes = Math.max(0, curRes - ordQty);
+            const nextSold = curSold + ordQty;
+            if (curAvail <= 0 && nextRes <= 0) {
+              await marketplaceRepo.updateListingInventory(order.listing_id, {
+                reserved_quantity: nextRes,
+                sold_quantity: nextSold,
+                status: LISTING_STATUS.SETTLED
+              }, txContext);
+            }
+          }
+        }
+        if (order.ticket_id) {
+          await marketplaceRepo.updateTicketStatus(order.ticket_id, 'SETTLED', null, txContext);
+        }
+
+        const ledgerTx = await FinancialLedger.recordDisbursementRelease({
           orderId,
           quoteId: order.quote_id || escrow.quote_id || null,
-          sellerAmount: escrow.amount,
+          sellerAmount: parseInt(escrow.amount, 10),
+          currency: order.currency || 'IDR',
           actorId: actorId || 'SYSTEM'
-        });
-      } catch (ledgerErr) {
-        // Safe fallback in lightweight tests
+        }, txContext);
+
+        // Mirror state.* updates inside UoW
+        const memEsc = (state.escrows || []).find(e => e.order_id === orderId) || escrow;
+        memEsc.status = ESCROW_STATUS.RELEASED;
+        memEsc.released_at = new Date().toISOString();
+        const memOrd = (state.orders || []).find(o => o.id === orderId) || order;
+        memOrd.status = ORDER_STATUS.SETTLED;
+
+        const memListing = (state.listings || []).find(l => l.id === order.listing_id);
+        if (memListing) {
+          const ordQty = order.quantity || 1;
+          memListing.reserved_quantity = Math.max(0, (memListing.reserved_quantity || 0) - ordQty);
+          memListing.sold_quantity = (memListing.sold_quantity || 0) + ordQty;
+          if ((memListing.available_quantity || 0) === 0 && (memListing.reserved_quantity || 0) === 0) {
+            memListing.status = LISTING_STATUS.SETTLED;
+          }
+        }
+        const memTicket = (state.tickets || []).find(t => t.id === order.ticket_id);
+        if (memTicket) memTicket.status = 'SETTLED';
+
+        return { escrow: memEsc, order: memOrd, ledgerTx, alreadyReleased: false };
+      });
+
+      const { EscrowStateMachine, ESCROW_LIFECYCLE_STATE } = require('../settlement/EscrowStateMachine');
+      if (releaseResult.escrow.state_machine_status && releaseResult.escrow.state_machine_status !== ESCROW_LIFECYCLE_STATE.RELEASED) {
+        try {
+          await EscrowStateMachine.transition({
+            orderId,
+            targetState: ESCROW_LIFECYCLE_STATE.RELEASED,
+            actorId: actorId || 'SYSTEM',
+            actorRole: 'admin',
+            reason: 'Settlement disbursed to seller following Trust Policy approval',
+            metadata: { authorization_id: authDecision.authorization_id }
+          });
+        } catch (_) {}
       }
 
-      await recordAuditLog('ESCROW', escrow.id, 'FUNDS_RELEASED_TO_SELLER', actorId, {
+      await recordAuditLog('ESCROW', releaseResult.escrow.id, 'FUNDS_RELEASED_TO_SELLER', actorId, {
         order_id: orderId,
-        seller_id: order.seller_id,
-        amount: escrow.amount,
+        seller_id: releaseResult.order.seller_id,
+        amount: releaseResult.escrow.amount,
         authorization_id: authDecision.authorization_id,
-        ledger_transaction_id: ledgerTx?.transaction_id || null,
-        released_at: escrow.released_at
+        ledger_transaction_id: releaseResult.ledgerTx?.transaction_id || null,
+        released_at: releaseResult.escrow.released_at
       });
 
       return {
         success: true,
-        alreadyReleased: false,
-        idempotent: false,
-        escrow,
-        order,
+        alreadyReleased: Boolean(releaseResult.alreadyReleased),
+        idempotent: Boolean(releaseResult.alreadyReleased),
+        escrow: releaseResult.escrow,
+        order: releaseResult.order,
         authorization: authDecision,
-        ledgerTransaction: ledgerTx
+        ledgerTransaction: releaseResult.ledgerTx
       };
     } finally {
       unlock();

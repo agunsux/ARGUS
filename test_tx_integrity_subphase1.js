@@ -24,11 +24,26 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
+const partArgs = process.argv.filter(arg => arg.startsWith('--part='));
+if (partArgs.length > 1 || (partArgs.length === 1 && !/^--part=[1-9]\d*\/[1-9]\d*$/.test(partArgs[0]))) throw new Error('Expected --part=k/n with positive integers');
+const part = partArgs.length ? partArgs[0].slice(7).split('/').map(Number) : null;
+if (part && (!Number.isSafeInteger(part[0]) || !Number.isSafeInteger(part[1]) || part[0] > part[1])) throw new Error('Invalid --part=k/n');
+
 const IS_PG_MODE = process.argv.includes('--pg') ||
   Boolean(process.env.TEST_DATABASE_URL && process.env.TEST_DATABASE_SCHEMA);
 
+const schemaArgs = process.argv.filter(arg => arg.startsWith('--schema='));
+const lifecycleFlags = ['--setup-only', '--keep-schema', '--drop-schema'].filter(flag => process.argv.includes(flag));
+if (schemaArgs.length > 1 || lifecycleFlags.length > 1 || (lifecycleFlags.length && (schemaArgs.length !== 1 || !IS_PG_MODE))) throw new Error('Schema lifecycle flags require --pg and exactly one --schema');
+const requestedSchema = schemaArgs.length ? schemaArgs[0].slice(9) : null;
+if (schemaArgs.length && (!IS_PG_MODE || !/^tx_integrity_subphase1_[a-z0-9_]+$/.test(requestedSchema))) throw new Error('Invalid temporary schema name');
+const setupOnly = lifecycleFlags.includes('--setup-only');
+const keepSchema = lifecycleFlags.includes('--keep-schema');
+const dropSchema = lifecycleFlags.includes('--drop-schema');
+
 let createdSchema = null;
 let setupPool = null;
+let schemaCreated = false;
 
 function loadDatabaseUrlFallback() {
   if (process.env.TEST_DATABASE_URL) return process.env.TEST_DATABASE_URL;
@@ -63,7 +78,7 @@ if (IS_PG_MODE) {
     process.exit(2);
   }
   const uniqueSuffix = `${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-  createdSchema = process.env.TEST_DATABASE_SCHEMA || `tx_integrity_subphase1_${uniqueSuffix}`;
+  createdSchema = requestedSchema || (part ? null : process.env.TEST_DATABASE_SCHEMA) || `tx_integrity_subphase1_${uniqueSuffix}`;
   if (!/^tx_integrity_subphase1_[a-z0-9_]+$/i.test(createdSchema)) {
     console.error(`BLOCKED: unsafe TEST_DATABASE_SCHEMA '${createdSchema}'`);
     process.exit(2);
@@ -109,9 +124,21 @@ async function setupIsolatedSchemaIfNeeded() {
   setupPool = new Pool({ connectionString: connStr, max: 2, ssl: { rejectUnauthorized: false } });
   setupPool.on('error', () => {});
 
+  if (dropSchema) {
+    await setupPool.query(`DROP SCHEMA IF EXISTS "${createdSchema}" CASCADE`);
+    console.log(`Dropped schema ${createdSchema}`);
+    return;
+  }
+  if (keepSchema) {
+    const found = await setupPool.query('SELECT 1 FROM pg_namespace WHERE nspname = $1', [createdSchema]);
+    if (!found.rowCount) throw new Error(`Schema ${createdSchema} does not exist`);
+    return;
+  }
+
   const client = await setupPool.connect();
   try {
     await client.query(`CREATE SCHEMA "${createdSchema}"`);
+    schemaCreated = true;
     await client.query('BEGIN');
     await applyTransactionSchema(client, createdSchema);
     await applySqlFile(client, 'migrations/000_user_and_auth_schema.sql');
@@ -387,16 +414,8 @@ async function runTests() {
   const marketplaceRepo = getMarketplaceRepository();
 
   let passed = 0;
-  async function check(name, fn) {
-    try {
-      await fn();
-      console.log(`  ✓ [PASS] ${name}`);
-      passed += 1;
-    } catch (err) {
-      console.error(`  ✗ [FAIL] ${name}: ${err.message}`);
-      throw err;
-    }
-  }
+  const tests = [];
+  async function check(name, fn) { tests.push({ name, fn }); }
 
   console.log(`\n=== SUB-PHASE 1 TX INTEGRITY SUITE (${IS_PG_MODE ? `POSTGRES SCHEMA: ${createdSchema}` : 'IN-MEMORY'}) ===`);
 
@@ -859,13 +878,30 @@ async function runTests() {
     });
   }
 
+  const start = part ? Math.floor(tests.length * (part[0] - 1) / part[1]) : 0;
+  const end = part ? Math.floor(tests.length * part[0] / part[1]) : tests.length;
+  if (part && part[1] > tests.length) throw new Error('Shard count exceeds test count');
+  const selected = tests.slice(start, end);
+  console.log('  Selected ' + selected.length + '/' + tests.length + ' tests' + (part ? ' (part ' + part.join('/') + ')' : '') + ':');
+  for (const test of selected) console.log('    ' + test.name);
+  for (const test of selected) {
+    try {
+      await test.fn();
+      console.log('  [PASS] ' + test.name);
+      passed += 1;
+    } catch (err) {
+      console.error('  [FAIL] ' + test.name + ': ' + err.message);
+      throw err;
+    }
+  }
+
   console.log(`\nALL SUB-PHASE 1 TESTS PASSED (${passed} checks in ${IS_PG_MODE ? 'POSTGRES' : 'IN-MEMORY'} mode)\n`);
 }
 
 (async () => {
   try {
     await setupIsolatedSchemaIfNeeded();
-    await runTests();
+    if (!setupOnly && !dropSchema) await runTests();
   } catch (err) {
     console.error('SUB-PHASE 1 SUITE FAILED:', err);
     process.exitCode = 1;
@@ -881,13 +917,14 @@ async function runTests() {
     await closeAllSharedPools();
     setMoneyRepository(null);
     setMarketplaceRepository(null);
-    if (createdSchema && setupPool) {
+    if (schemaCreated && setupPool && (!setupOnly || process.exitCode)) {
       try {
         await setupPool.query(`DROP SCHEMA IF EXISTS "${createdSchema}" CASCADE`);
       } catch (dropErr) {
-        console.error(`Warning cleaning up schema ${createdSchema}:`, dropErr.message);
+        console.error(`Error cleaning up schema ${createdSchema}:`, dropErr.message);
+        process.exitCode = 1;
       }
-      try { await setupPool.end(); } catch (_) {}
     }
+    if (setupPool) { try { await setupPool.end(); } catch (_) { process.exitCode = 1; } }
   }
 })();

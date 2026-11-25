@@ -13,12 +13,21 @@ const FEE_POLICY_V2 = Object.freeze({
   })
 });
 
-function calculateDualTierFees({ ticketPrice, quantity = 1, fulfillmentType = 'SELLER_MANAGED' }) {
+function calculateDualTierFees({ ticketPrice, quantity = 1, fulfillmentType }) {
   if (!Number.isSafeInteger(ticketPrice) || ticketPrice <= 0 || !Number.isSafeInteger(quantity) || quantity <= 0) {
     throw new TypeError('ticketPrice and quantity must be positive safe integers');
   }
-  const tier = FEE_POLICY_V2.tiers[fulfillmentType];
-  if (!tier) throw new RangeError(`Unknown fulfillment type: ${fulfillmentType}`);
+  const normalizedFulfillment = typeof fulfillmentType === 'string' ? fulfillmentType.trim() : '';
+  const tier = Object.prototype.hasOwnProperty.call(FEE_POLICY_V2.tiers, normalizedFulfillment)
+    ? FEE_POLICY_V2.tiers[normalizedFulfillment]
+    : null;
+  if (!tier) {
+    const err = new RangeError(`Unknown fulfillment type: ${fulfillmentType}`);
+    err.code = 'INVALID_FULFILLMENT_TYPE';
+    err.status = 400;
+    err.statusCode = 400;
+    throw err;
+  }
   // Integer arithmetic implements Math.round(price * rate / 100) without binary fraction drift.
   const price = BigInt(ticketPrice);
   const unitFee = Number((price * BigInt(tier.rate_percent) + 50n) / 100n);

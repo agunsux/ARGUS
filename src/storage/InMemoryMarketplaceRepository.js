@@ -208,6 +208,46 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     return listing ? { ...listing } : null;
   }
 
+  async updateListing(listingId, updates = {}, txContext = null) {
+    const listing = this.listings.get(listingId);
+    if (!listing) return null;
+    if (updates.fulfillment_type !== undefined) {
+      if (!['SELLER_MANAGED', 'TIKUM_VENUE_PIC'].includes(updates.fulfillment_type)) {
+        const err = new Error(`Invalid fulfillment_type '${updates.fulfillment_type}'`);
+        err.code = 'INVALID_FULFILLMENT_TYPE';
+        err.statusCode = 400;
+        throw err;
+      }
+      listing.fulfillment_type = updates.fulfillment_type;
+      listing.metadata = { ...(listing.metadata || {}), fulfillment_type: updates.fulfillment_type };
+    }
+    if (updates.price !== undefined) listing.price = updates.price;
+    if (updates.face_value !== undefined) listing.face_value = updates.face_value;
+    if (updates.seat_info !== undefined) listing.seat_info = updates.seat_info;
+    if (updates.quantity !== undefined) listing.quantity = updates.quantity;
+    if (updates.total_quantity !== undefined) listing.total_quantity = updates.total_quantity;
+    if (updates.available_quantity !== undefined) listing.available_quantity = updates.available_quantity;
+    if (updates.status !== undefined) listing.status = updates.status;
+    if (updates.pricing_policy_version !== undefined) listing.pricing_policy_version = updates.pricing_policy_version;
+    if (updates.pic_assistance_status !== undefined) listing.pic_assistance_status = updates.pic_assistance_status;
+    if (updates.seller_notes !== undefined) listing.seller_notes = updates.seller_notes;
+    if (updates.evidence_bundle_id !== undefined) listing.evidence_bundle_id = updates.evidence_bundle_id;
+    listing.metadata = {
+      ...(listing.metadata || {}),
+      ...(updates.metadata || {}),
+      ...(updates.face_value !== undefined ? { face_value: updates.face_value } : {}),
+      ...(updates.seat_info !== undefined ? { seat_info: updates.seat_info } : {}),
+      ...(updates.quantity !== undefined ? { quantity: updates.quantity } : {}),
+      ...(updates.total_quantity !== undefined ? { total_quantity: updates.total_quantity } : {}),
+      ...(updates.available_quantity !== undefined ? { available_quantity: updates.available_quantity } : {}),
+      ...(updates.pic_assistance_status !== undefined ? { pic_assistance_status: updates.pic_assistance_status } : {}),
+      ...(updates.seller_notes !== undefined ? { seller_notes: updates.seller_notes } : {}),
+      ...(updates.evidence_bundle_id !== undefined ? { evidence_bundle_id: updates.evidence_bundle_id } : {})
+    };
+    listing.updated_at = new Date().toISOString();
+    return { ...listing };
+  }
+
   async updateListingStatus(listingId, status, txContext = null) {
     const listing = this.listings.get(listingId);
     if (!listing) return null;

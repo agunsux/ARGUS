@@ -14,6 +14,51 @@ const { state, recordAuditLog } = require('../database');
 const { ESCROW_STATUS, ORDER_STATUS } = require('./escrowService');
 const { paymentManager } = require('./payment/index');
 
+class SettlementMutex {
+  constructor() {
+    this.locks = new Map();
+  }
+
+  async acquire(orderId) {
+    while (this.locks.has(orderId)) {
+      await this.locks.get(orderId);
+    }
+    let release;
+    const promise = new Promise(resolve => {
+      release = resolve;
+    });
+    this.locks.set(orderId, promise);
+    return () => {
+      this.locks.delete(orderId);
+      release();
+    };
+  }
+}
+
+const settlementMutex = new SettlementMutex();
+
+function resolveVerifiedSellerBankAccount(providedBankAccount, sellerUser, authorization) {
+  const candidates = [
+    providedBankAccount,
+    authorization?.payout_destination,
+    authorization?.metadata?.bankAccount,
+    sellerUser?.bank_account_details
+  ];
+  if (sellerUser?.metadata && typeof sellerUser.metadata === 'object') {
+    const bankName = sellerUser.metadata.payout_bank_name || '';
+    const acctNum = sellerUser.metadata.payout_account_number || '';
+    if (bankName && acctNum) {
+      candidates.push(`${bankName} ${acctNum}`.trim());
+    }
+  }
+  for (const cand of candidates) {
+    if (typeof cand === 'string' && cand.trim().length > 0) {
+      return cand.trim();
+    }
+  }
+  return null;
+}
+
 class SettlementService {
   /**
    * Execute settlement disbursement to seller account.
@@ -45,198 +90,161 @@ class SettlementService {
       throw err;
     }
 
-    const { FinancialAuthorizationService, AUTHORIZATION_STATUS } = require('../settlement/FinancialAuthorizationService');
-    const authorization = await FinancialAuthorizationService.getAuthorizationById(authorizationId);
+    const unlock = await settlementMutex.acquire(orderId);
+    try {
+      const { getMoneyRepository, getUserRepository } = require('../storage');
+      const moneyRepo = getMoneyRepository();
 
-    if (!authorization) {
-      const err = new Error(`Financial authorization '${authorizationId}' not found`);
-      err.code = 'AUTHORIZATION_NOT_FOUND';
-      err.status = 404;
-      throw err;
-    }
-    if (authorization.status !== AUTHORIZATION_STATUS.APPROVED) {
-      const isConsumed = authorization.status === AUTHORIZATION_STATUS.CONSUMED;
-      const err = new Error(isConsumed
-        ? `Financial authorization '${authorizationId}' has already been consumed and cannot be reused.`
-        : `Financial authorization is not in APPROVED state (current status: ${authorization.status})`);
-      err.code = isConsumed ? 'AUTHORIZATION_ALREADY_CONSUMED' : 'AUTHORIZATION_NOT_APPROVED';
-      err.status = 400;
-      throw err;
-    }
-    if (authorization.order_id !== orderId) {
-      const err = new Error(`Financial authorization order mismatch (${authorization.order_id} !== ${orderId})`);
-      err.code = 'AUTHORIZATION_ORDER_MISMATCH';
-      err.status = 400;
-      throw err;
-    }
-
-    let order = state.orders ? state.orders.find(o => o.id === orderId) : null;
-    if (!order) {
-      try {
-        const { getMoneyRepository } = require('../storage');
-        const moneyRepo = getMoneyRepository();
-        const dbOrder = await moneyRepo.getOrderById(orderId);
-        if (dbOrder) {
-          if (!state.orders) state.orders = [];
-          state.orders.push(dbOrder);
-          order = dbOrder;
+      // Pre-check durable idempotency under order mutex BEFORE mutating or rejecting on consumed auth when racing
+      if (moneyRepo && typeof moneyRepo.getSettlementByOrderId === 'function') {
+        const dbExistingEarly = await moneyRepo.getSettlementByOrderId(orderId);
+        if (dbExistingEarly) {
+          return { settlement: dbExistingEarly, idempotent: true, duplicatePrevented: true };
         }
-      } catch (e) {
-        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
       }
-    }
-    if (!order) throw new Error('Order not found');
-
-    let escrow = state.escrows ? state.escrows.find(e => e.order_id === orderId) : null;
-    if (!escrow) {
-      try {
-        const { getMoneyRepository } = require('../storage');
-        const moneyRepo = getMoneyRepository();
-        const dbEscrow = await moneyRepo.getEscrowByOrderId(orderId);
-        if (dbEscrow) {
-          if (!state.escrows) state.escrows = [];
-          state.escrows.push(dbEscrow);
-          escrow = dbEscrow;
-        }
-      } catch (e) {
-        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+      const existingByIdem = (state.settlements || []).find(s => idempotencyKey && s.idempotency_key === idempotencyKey);
+      if (existingByIdem) {
+        return { settlement: existingByIdem, idempotent: true };
       }
-    }
-    if (!escrow) throw new Error('Escrow not found');
+      const existingByOrderEarly = (state.settlements || []).find(s => s.order_id === orderId);
+      if (existingByOrderEarly) {
+        return { settlement: existingByOrderEarly, idempotent: true, duplicatePrevented: true };
+      }
 
-    if (sellerId && order.seller_id !== sellerId) {
-      const err = new Error('Security violation: seller mismatch for settlement');
-      err.code = 'SELLER_MISMATCH';
-      throw err;
-    }
+      const { FinancialAuthorizationService, AUTHORIZATION_STATUS } = require('../settlement/FinancialAuthorizationService');
+      const authorization = await FinancialAuthorizationService.getAuthorizationById(authorizationId);
 
-    if (officerId) {
-      const officer = state.users ? state.users.find(u => u.id === officerId) : null;
-      if (!officer || !['admin', 'ops', 'super_admin', 'finance', 'finance_operator'].includes((officer.role || '').toLowerCase())) {
-        const err = new Error('Forbidden: settlement requires admin officer');
-        err.code = 'SETTLEMENT_FORBIDDEN';
+      if (!authorization) {
+        const err = new Error(`Financial authorization '${authorizationId}' not found`);
+        err.code = 'AUTHORIZATION_NOT_FOUND';
+        err.status = 404;
         throw err;
       }
-    }
-
-    // 1. Idempotency check (same key)
-    const existing = (state.settlements || []).find(s => s.idempotency_key === idempotencyKey);
-    if (existing) {
-      return { settlement: existing, idempotent: true };
-    }
-
-    // 2. Duplicate settlement prevention per order (different key, same order)
-    const existingForOrder = (state.settlements || []).find(s => s.order_id === orderId);
-    if (existingForOrder) {
-      return { settlement: existingForOrder, idempotent: true, duplicatePrevented: true };
-    }
-
-    try {
-      const { getMoneyRepository } = require('../storage');
-      const moneyRepo = getMoneyRepository();
-      const dbSettlement = await moneyRepo.getSettlementByOrderId(orderId);
-      if (dbSettlement) {
-        return { settlement: dbSettlement, idempotent: true, duplicatePrevented: true };
+      if (authorization.status !== AUTHORIZATION_STATUS.APPROVED) {
+        const isConsumed = authorization.status === AUTHORIZATION_STATUS.CONSUMED;
+        const err = new Error(isConsumed
+          ? `Financial authorization '${authorizationId}' has already been consumed and cannot be reused.`
+          : `Financial authorization is not in APPROVED state (current status: ${authorization.status})`);
+        err.code = isConsumed ? 'AUTHORIZATION_ALREADY_CONSUMED' : 'AUTHORIZATION_NOT_APPROVED';
+        err.status = 400;
+        throw err;
       }
-    } catch (e) {}
+      if (authorization.order_id !== orderId) {
+        const err = new Error(`Financial authorization order mismatch (${authorization.order_id} !== ${orderId})`);
+        err.code = 'AUTHORIZATION_ORDER_MISMATCH';
+        err.status = 400;
+        throw err;
+      }
 
-    // 3. Operational & Trust Gate Invariant: Hold states block settlement
-    if (order.status === 'DISPUTED' || escrow.status === 'DISPUTED') {
-      const err = new Error('Cannot settle: order is in DISPUTED state');
-      err.code = 'TRANSACTION_DISPUTED';
-      throw err;
-    }
+      let order = state.orders ? state.orders.find(o => o.id === orderId) : null;
+      if (!order && moneyRepo) {
+        try {
+          const dbOrder = await moneyRepo.getOrderById(orderId);
+          if (dbOrder) {
+            if (!state.orders) state.orders = [];
+            state.orders.push(dbOrder);
+            order = dbOrder;
+          }
+        } catch (e) {
+          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+        }
+      }
+      if (!order) throw new Error('Order not found');
 
-    // 4. Provider capability resolution
-    const providerName = (order.provider || paymentManager.defaultProvider || 'doku').toLowerCase();
-    let provider = null;
-    try {
-      provider = paymentManager.getProvider(providerName);
-    } catch (e) {}
+      let escrow = state.escrows ? state.escrows.find(e => e.order_id === orderId) : null;
+      if (!escrow && moneyRepo) {
+        try {
+          const dbEscrow = await moneyRepo.getEscrowByOrderId(orderId);
+          if (dbEscrow) {
+            if (!state.escrows) state.escrows = [];
+            state.escrows.push(dbEscrow);
+            escrow = dbEscrow;
+          }
+        } catch (e) {
+          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
+        }
+      }
+      if (!escrow) throw new Error('Escrow not found');
 
-    const caps = provider ? provider.getCapabilities() : { payout: false };
-    const settlementId = `stl-${uuidv4()}`;
-    const effectiveBankAccount = bankAccount || 'BCA 1234567890 (a.n Budi Santoso)';
+      if (sellerId && order.seller_id !== sellerId) {
+        const err = new Error('Security violation: seller mismatch for settlement');
+        err.code = 'SELLER_MISMATCH';
+        throw err;
+      }
 
-    let settlementMode = 'MANUAL_BANK_TRANSFER';
-    let payoutRef = `payout-${Date.now()}`;
-    let isDisbursed = false;
+      if (officerId) {
+        const officer = state.users ? state.users.find(u => u.id === officerId) : null;
+        if (!officer || !['admin', 'ops', 'super_admin', 'finance', 'finance_operator'].includes((officer.role || '').toLowerCase())) {
+          const err = new Error('Forbidden: settlement requires admin officer');
+          err.code = 'SETTLEMENT_FORBIDDEN';
+          throw err;
+        }
+      }
 
-    if (caps.payout) {
-      settlementMode = 'PROVIDER_RAIL_AUTOMATED';
+      // Operational & Trust Gate Invariant: Hold states block settlement
+      if (order.status === 'DISPUTED' || escrow.status === 'DISPUTED') {
+        const err = new Error('Cannot settle: order is in DISPUTED state');
+        err.code = 'TRANSACTION_DISPUTED';
+        throw err;
+      }
+
+      // Resolve authoritative seller bank account — fail closed without dummy fallback
+      let sellerUser = state.users ? state.users.find(u => u.id === order.seller_id) : null;
+      if (!sellerUser) {
+        try {
+          const userRepo = getUserRepository();
+          sellerUser = await userRepo.getUserById(order.seller_id);
+        } catch (_) {}
+      }
+      const effectiveBankAccount = resolveVerifiedSellerBankAccount(bankAccount, sellerUser, authorization);
+      if (!effectiveBankAccount) {
+        const err = new Error(`Missing verified payout bank account for seller '${order.seller_id}' / order '${orderId}'`);
+        err.code = 'MISSING_BANK_ACCOUNT';
+        err.status = 400;
+        throw err;
+      }
+
+      // Provider capability resolution
+      const providerName = (order.provider || paymentManager.defaultProvider || 'doku').toLowerCase();
+      let provider = null;
       try {
-        const payoutResult = await provider.createPayout({
-          orderId,
-          sellerId: order.seller_id,
-          amount: escrow.amount,
-          bankAccount: effectiveBankAccount,
-          idempotencyKey
-        });
-        payoutRef = payoutResult.payoutId || payoutRef;
-        // Invariant: Simulated payouts must NEVER be recorded as actual DISBURSED transactions.
-        isDisbursed = Boolean(payoutResult && payoutResult.status === 'DISBURSED' && !payoutResult.simulated);
-      } catch (payoutErr) {
-        settlementMode = 'FAILED';
-        throw payoutErr;
+        provider = paymentManager.getProvider(providerName);
+      } catch (e) {}
+
+      const caps = provider ? provider.getCapabilities() : { payout: false };
+      const settlementId = `stl-${uuidv4()}`;
+
+      let settlementMode = 'MANUAL_BANK_TRANSFER';
+      let payoutRef = `payout-${Date.now()}`;
+      let isDisbursed = false;
+
+      if (caps.payout) {
+        settlementMode = 'PROVIDER_RAIL_AUTOMATED';
+        try {
+          const payoutResult = await provider.createPayout({
+            orderId,
+            sellerId: order.seller_id,
+            amount: escrow.amount,
+            bankAccount: effectiveBankAccount,
+            idempotencyKey
+          });
+          payoutRef = payoutResult.payoutId || payoutRef;
+          // Invariant: Simulated payouts must NEVER be recorded as actual DISBURSED transactions.
+          isDisbursed = Boolean(payoutResult && payoutResult.status === 'DISBURSED' && !payoutResult.simulated);
+        } catch (payoutErr) {
+          settlementMode = 'FAILED';
+          throw payoutErr;
+        }
+      } else {
+        // Manual bank transfer rail: starts at PENDING_BANK_EXECUTION until explicit verified confirmation
+        settlementMode = 'MANUAL_BANK_TRANSFER';
+        payoutRef = bankReferenceNumber ? String(bankReferenceNumber).trim() : `pending-bank-tx-${Date.now()}`;
+        isDisbursed = false;
       }
-    } else {
-      // Manual bank transfer rail: starts at PENDING_BANK_EXECUTION until explicit verified confirmation
-      settlementMode = 'MANUAL_BANK_TRANSFER';
-      payoutRef = bankReferenceNumber ? String(bankReferenceNumber).trim() : `pending-bank-tx-${Date.now()}`;
-      isDisbursed = false;
-    }
 
-    const canonicalStatus = isDisbursed ? 'DISBURSED' : 'PENDING_BANK_EXECUTION';
+      const canonicalStatus = isDisbursed ? 'DISBURSED' : 'PENDING_BANK_EXECUTION';
+      const effectiveIdemKey = idempotencyKey || `stl-idem-${orderId}`;
 
-    const settlement = {
-      id: settlementId,
-      order_id: orderId,
-      seller_id: order.seller_id,
-      amount: escrow.amount,
-      status: 'EXECUTED',
-      disbursement_status: canonicalStatus,
-      mode: settlementMode,
-      settlement_mode: settlementMode,
-      payout_ref: payoutRef,
-      bank_account: effectiveBankAccount,
-      bank_reference_number: bankReferenceNumber ? String(bankReferenceNumber).trim() : null,
-      proof_document_url: proofDocumentUrl || null,
-      authorization_id: authorizationId || null,
-      authorized_by: authorizedBy || null,
-      idempotency_key: idempotencyKey,
-      executed_at: new Date().toISOString()
-    };
-
-    if (!state.settlements) state.settlements = [];
-    state.settlements.push(settlement);
-
-    // Also populate canonical settlement_records
-    if (!state.settlement_records) state.settlement_records = [];
-    state.settlement_records.push({
-      id: settlementId,
-      order_id: orderId,
-      seller_id: order.seller_id,
-      provider: providerName,
-      amount: escrow.amount,
-      status: canonicalStatus,
-      settlement_mode: settlementMode,
-      payout_ref: payoutRef,
-      bank_account: effectiveBankAccount,
-      bank_reference_number: bankReferenceNumber ? String(bankReferenceNumber).trim() : null,
-      proof_document_url: proofDocumentUrl || null,
-      authorization_id: authorizationId || null,
-      authorized_by: authorizedBy || null,
-      executed_at: settlement.executed_at
-    });
-
-    try {
-      const { DurableFinancialStore } = require('../settlement/DurableFinancialStore');
-      DurableFinancialStore.persist('settlement_records', state.settlement_records);
-    } catch (_) {}
-
-    try {
-      const { getMoneyRepository } = require('../storage');
-      const moneyRepo = getMoneyRepository();
       const repoResult = await moneyRepo.createSettlement({
         id: settlementId,
         order_id: orderId,
@@ -248,26 +256,70 @@ class SettlementService {
         settlement_mode: settlementMode,
         payout_ref: payoutRef,
         bank_account: effectiveBankAccount,
-        idempotency_key: idempotencyKey
+        idempotency_key: effectiveIdemKey
       });
       if (repoResult && repoResult.idempotent) {
         return { settlement: repoResult.settlement, idempotent: true, duplicatePrevented: true };
       }
-    } catch (repoErr) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw repoErr;
-      }
+
+      const settlement = {
+        id: settlementId,
+        order_id: orderId,
+        seller_id: order.seller_id,
+        amount: escrow.amount,
+        status: 'EXECUTED',
+        disbursement_status: canonicalStatus,
+        mode: settlementMode,
+        settlement_mode: settlementMode,
+        payout_ref: payoutRef,
+        bank_account: effectiveBankAccount,
+        bank_reference_number: bankReferenceNumber ? String(bankReferenceNumber).trim() : null,
+        proof_document_url: proofDocumentUrl || null,
+        authorization_id: authorizationId || null,
+        authorized_by: authorizedBy || null,
+        idempotency_key: effectiveIdemKey,
+        executed_at: new Date().toISOString()
+      };
+
+      if (!state.settlements) state.settlements = [];
+      state.settlements.push(settlement);
+
+      // Also populate canonical settlement_records
+      if (!state.settlement_records) state.settlement_records = [];
+      state.settlement_records.push({
+        id: settlementId,
+        order_id: orderId,
+        seller_id: order.seller_id,
+        provider: providerName,
+        amount: escrow.amount,
+        status: canonicalStatus,
+        settlement_mode: settlementMode,
+        payout_ref: payoutRef,
+        bank_account: effectiveBankAccount,
+        bank_reference_number: bankReferenceNumber ? String(bankReferenceNumber).trim() : null,
+        proof_document_url: proofDocumentUrl || null,
+        authorization_id: authorizationId || null,
+        authorized_by: authorizedBy || null,
+        executed_at: settlement.executed_at
+      });
+
+      try {
+        const { DurableFinancialStore } = require('../settlement/DurableFinancialStore');
+        DurableFinancialStore.persist('settlement_records', state.settlement_records);
+      } catch (_) {}
+
+      await recordAuditLog('SETTLEMENT', settlementId, 'EXECUTED', officerId || 'SYSTEM', {
+        order_id: orderId,
+        seller_id: order.seller_id,
+        amount: settlement.amount,
+        payout_ref: settlement.payout_ref,
+        mode: settlementMode
+      });
+
+      return { settlement, idempotent: false };
+    } finally {
+      unlock();
     }
-
-    await recordAuditLog('SETTLEMENT', settlementId, 'EXECUTED', officerId || 'SYSTEM', {
-      order_id: orderId,
-      seller_id: order.seller_id,
-      amount: settlement.amount,
-      payout_ref: settlement.payout_ref,
-      mode: settlementMode
-    });
-
-    return { settlement, idempotent: false };
   }
 
   /**

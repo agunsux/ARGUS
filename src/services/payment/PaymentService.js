@@ -42,30 +42,10 @@ const PRODUCTION_SAFETY_GATES = {
 };
 
 class PaymentService {
-  static async verifyCaptureLedger(order) {
-    if (order.fee_policy_version !== 'V2_DUAL_TIER') return;
-    const { calculateDualTierFees } = require('../../pricing/DualTierFeePolicy');
-    const listing = (state.listings || []).find(item => item.id === order.listing_id);
-    const meta = listing?.metadata || {};
-    const fulfillmentType = listing?.fulfillment_option || listing?.fulfillment_type || meta.fulfillment_option || meta.fulfillment_type || order.fulfillment_type || 'SELLER_MANAGED';
-    const expected = calculateDualTierFees({ ticketPrice: Number(order.ticket_price), quantity: Number(order.quantity || 1), fulfillmentType });
-    const captures = (state.financial_ledger || []).filter(tx => tx.order_id === order.id && (tx.event_type === 'CAPTURE' || tx.source_event === 'CAPTURE'));
-    const matching = captures.some(tx => {
-      const revenue = (tx.entries || []).find(entry => (entry.account || entry.ledger_account) === 'PLATFORM_FEE_REVENUE' && entry.type === 'CREDIT');
-      const description = tx.description || '';
-      return Number(revenue?.amount) === expected.platform_revenue &&
-        description.includes(`Buyer Fee: ${expected.buyer_fee}, Seller Fee: ${expected.seller_fee},`) &&
-        Number(order.buyer_fee) === expected.buyer_fee && Number(order.seller_fee) === expected.seller_fee;
-    });
-    if (!matching) {
-      await recordAuditLog('ORDER', order.id, 'LEDGER_RECONCILIATION_REQUIRED', 'SYSTEM', {
-        code: 'LEDGER_RECONCILIATION_REQUIRED', expected_buyer_fee: expected.buyer_fee,
-        expected_seller_fee: expected.seller_fee, capture_count: captures.length
-      });
-      const err = new Error('Payment captured but its ledger entry requires reconciliation');
-      err.code = 'LEDGER_RECONCILIATION_REQUIRED';
-      throw err;
-    }
+  static async verifyCaptureLedger(orderOrId, txContext = null) {
+    const orderId = typeof orderOrId === 'string' ? orderOrId : orderOrId?.id;
+    const { LedgerVerificationService } = require('../../settlement/LedgerVerificationService');
+    return await LedgerVerificationService.verifyDurableCapture(orderId, { txContext });
   }
   /**
    * Environment & Sandbox Diagnostic (Safe, zero credential leakage)
@@ -521,7 +501,8 @@ class PaymentService {
 
     const existingWebhook = state.provider_webhooks.find(
       w => w.provider === targetProviderName &&
-        (w.provider_event_id === eventId || (w.payload_hash === payloadHash && w.processing_status === 'PROCESSED'))
+        w.processing_status === 'PROCESSED' &&
+        (w.provider_event_id === eventId || w.payload_hash === payloadHash)
     );
     const isLegacyDuplicate = isRefundEvent
       ? (state.processed_webhooks.has(`ref:${event.providerRef}`) || state.processed_webhooks.has(eventId))
@@ -617,207 +598,186 @@ class PaymentService {
     state.processed_webhooks.add(eventId);
     DurableFinancialStore.persist('provider_webhooks', state.provider_webhooks);
 
-    // 5. Domain State Update on Successful Payment Event
-    if (event.status === MONEY_STATE.PAID || event.status === 'SUCCESS' || event.status === 'SETTLED') {
-      const { EscrowService } = require('../escrowService');
-
-      // Update Canonical Payment record
-      if (state.canonical_payments) {
-        const canonical = state.canonical_payments.find(p => p.order_id === event.orderId || p.provider_reference === event.providerRef);
-        if (canonical) {
-          const providerCapabilities = typeof provider.getCapabilities === 'function'
-            ? provider.getCapabilities()
-            : (typeof provider.capabilities === 'function' ? provider.capabilities() : {});
-          // Invariant: Gateway escrow hold capability must NOT be assumed by provider name alone.
-          // It requires contractual hold capability verified directly on the provider instance.
-          const supportsEscrowHold = Boolean(providerCapabilities && providerCapabilities.hold === true);
-
-          if (supportsEscrowHold) {
-            canonical.money_state = MONEY_STATE.ESCROW_HELD;
-            canonical.status = MONEY_STATE.ESCROW_HELD;
-            canonical.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
-            canonical.settlement_status = 'SETTLEMENT_HELD';
-          } else {
-            canonical.money_state = MONEY_STATE.CAPTURED_PLATFORM_SETTLEMENT;
-            canonical.status = MONEY_STATE.PAID;
-            canonical.escrow_type = 'NONE_PLATFORM_CAPTURED';
-            canonical.settlement_status = 'CAPTURED_UNHELD';
-          }
-
-          canonical.paid_at = event.paidAt || new Date().toISOString();
-          canonical.provider_transaction_id = event.providerRef;
-          canonical.provider_fee = event.providerFee || 0;
-          canonical.updated_at = new Date().toISOString();
-
-          PaymentRoutingService.updateAttemptStatus(canonical.internal_payment_id || canonical.id, PAYMENT_ATTEMPT_STATUS.SUCCESS, event.providerRef);
-          DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
-        }
-      }
-
-      // Call authoritative EscrowService to fund escrow and balance double-entry FinancialLedger if order exists
-      let order = state.orders ? state.orders.find(o => o.id === event.orderId) : null;
-      if (!order) {
-        try {
-          const { getMoneyRepository } = require('../../storage');
-          const moneyRepo = getMoneyRepository();
-          const dbOrder = await moneyRepo.getOrderById(event.orderId);
-          if (dbOrder) {
-            if (!state.orders) state.orders = [];
-            state.orders.push(dbOrder);
-            order = dbOrder;
-            const dbEscrow = await moneyRepo.getEscrowByOrderId(event.orderId);
-            if (dbEscrow) {
-              if (!state.escrows) state.escrows = [];
-              state.escrows.push(dbEscrow);
-            }
-          }
-        } catch (e) {
-          if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw e;
-        }
-      }
-
-      // Invariant I2: Server-to-server status inquiry re-query
-      if (targetProviderName !== 'doku' && typeof provider.getPaymentStatus === 'function') {
-        try {
-          const verified = await provider.getPaymentStatus({
-            orderId: event.orderId,
-            providerRef: event.providerRef,
-            invoiceNumber: event.orderId ? `INV-DOKU-${event.orderId}` : event.providerRef
-          });
-          if (verified && !verified.simulated && verified.status !== MONEY_STATE.PAID) {
-            const err = new Error(`Server-to-server status inquiry did not confirm PAID (status: ${verified.status})`);
-            err.code = 'GATEWAY_STATUS_UNCONFIRMED';
-            err.status = 409;
-            throw err;
-          }
-        } catch (inqErr) {
-          if (inqErr.code === 'GATEWAY_STATUS_UNCONFIRMED') throw inqErr;
-        }
-      }
-
-      if (order) {
-        const expectedAmt = parseInt(order.buyer_total !== undefined ? order.buyer_total : order.total_amount, 10);
-        if (event.amount && parseInt(event.amount, 10) !== expectedAmt) {
-          const err = new Error(`Payment amount mismatch. Expected ${expectedAmt}, got ${event.amount}`);
-          err.code = 'AMOUNT_MISMATCH';
-          err.status = 422;
-          throw err;
-        }
-        if (event.currency && order.currency && event.currency.toUpperCase() !== order.currency.toUpperCase()) {
-          const err = new Error(`Payment currency mismatch. Expected ${order.currency}, got ${event.currency}`);
-          err.code = 'CURRENCY_MISMATCH';
-          err.status = 422;
-          throw err;
-        }
-
-        if (order.status === 'EXPIRED' || order.status === 'CANCELLED') {
-          // Invariant I7: Late payments after expiry credited once and routed to review/refund
-          await EscrowService.recordPayment({
-            orderId: event.orderId,
-            providerRef: event.providerRef,
-            idempotencyKey: `wh-pay-${event.providerRef}`,
-            amountPaid: event.amount
-          });
-          await this.verifyCaptureLedger(order);
-          order.status = 'LATE_PAYMENT_PENDING_REVIEW';
-          order.marketplace_status = 'LATE_PAYMENT';
-          order.payment_status = 'PAYMENT_CONFIRMED_PROVIDER';
-          await recordAuditLog('ORDER', order.id, 'LATE_PAYMENT_CAPTURED', 'GATEWAY', {
-            provider: targetProviderName,
-            provider_ref: event.providerRef,
-            amount: event.amount,
-            action: 'FLAGGED_FOR_MANUAL_REVIEW_OR_REFUND'
-          });
-        } else {
-          const providerCapabilities = typeof provider.getCapabilities === 'function'
-            ? provider.getCapabilities()
-            : (typeof provider.capabilities === 'function' ? provider.capabilities() : {});
-          // Invariant: Gateway escrow hold capability must NOT be assumed by provider name alone.
-          // It requires contractual hold capability verified directly on the provider instance.
-          const supportsEscrowHold = Boolean(providerCapabilities && providerCapabilities.hold === true);
-
-          await EscrowService.recordPayment({
-            orderId: event.orderId,
-            providerRef: event.providerRef,
-            idempotencyKey: `wh-pay-${event.providerRef}`,
-            amountPaid: event.amount,
-            isProviderEscrow: supportsEscrowHold
-          });
-          await this.verifyCaptureLedger(order);
-          order.marketplace_status = 'PAID';
-          order.payment_status = 'PAYMENT_CONFIRMED_PROVIDER';
-          order.payment_money_state = supportsEscrowHold
-            ? MONEY_STATE.ESCROW_HELD
-            : MONEY_STATE.CAPTURED_PLATFORM_SETTLEMENT;
-          order.escrow_type = supportsEscrowHold
-            ? 'THIRD_PARTY_PROVIDER_ESCROW'
-            : 'NONE_PLATFORM_CAPTURED';
-        }
-
-        // Strict State Decoupling & Evidence Bundle Slot #5 Recording
-        // Record payment settlement artifact into slot #5 without altering ticket_verification_status or releasing funds
-        const paymentSettlementArtifact = {
-          slot: 5,
-          slot_name: 'paymentSettlementRecord',
-          artifact_type: 'PAYMENT_SETTLEMENT_RECORD',
-          provider: targetProviderName,
-          provider_reference: event.providerRef,
-          order_id: event.orderId,
-          amount: event.amount,
-          currency: event.currency || 'IDR',
-          payment_status: 'PAYMENT_CONFIRMED_PROVIDER',
-          paid_at: event.paidAt || new Date().toISOString(),
-          recorded_at: new Date().toISOString(),
-          payload_hash: payloadHash
-        };
-
-        if (!order.evidence_bundle) {
-          order.evidence_bundle = {};
-        }
-        order.evidence_bundle.slot_5_payment_settlement = paymentSettlementArtifact;
-        order.evidence_bundle.paymentSettlementRecord = paymentSettlementArtifact;
-
-        const bundle = (state.evidence_bundles || []).find(b => (order.evidence_bundle_id && b.id === order.evidence_bundle_id) || (order.ticket_id && b.ticket_id === order.ticket_id));
-        if (bundle) {
-          if (!bundle.artifacts) bundle.artifacts = {};
-          bundle.artifacts.slot_5 = paymentSettlementArtifact;
-          bundle.artifacts.paymentSettlementRecord = paymentSettlementArtifact;
-        }
-      }
-
-      webhookRecord.processing_status = 'PROCESSED';
-      webhookRecord.processed_at = new Date().toISOString();
-      DurableFinancialStore.persist('provider_webhooks', state.provider_webhooks);
-      try {
+    // 5. Domain State Update cleanly guarded so failed processing marks webhook FAILED_RETRYABLE (never stuck PROCESSING)
+    let captureResult = null;
+    try {
+      if (event.status === MONEY_STATE.PAID || event.status === 'SUCCESS' || event.status === 'SETTLED') {
+        const { EscrowService } = require('../escrowService');
         const { getMoneyRepository } = require('../../storage');
         const moneyRepo = getMoneyRepository();
-        await moneyRepo.markWebhookProcessed(targetProviderName, eventId, 'PROCESSED');
-      } catch (repoErr) {
-        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-          throw repoErr;
-        }
-      }
-    } else if (
-      event.status === MONEY_STATE.PAYMENT_FAILED ||
-      event.status === MONEY_STATE.PAYMENT_EXPIRED ||
-      event.status === 'FAILED' ||
-      event.status === 'EXPIRED'
-    ) {
-      const isExpired = event.status === MONEY_STATE.PAYMENT_EXPIRED || event.status === 'EXPIRED';
-      const targetMoneyState = isExpired ? MONEY_STATE.PAYMENT_EXPIRED : MONEY_STATE.PAYMENT_FAILED;
 
-      if (state.canonical_payments) {
-        const canonical = state.canonical_payments.find(p => p.order_id === event.orderId || p.provider_reference === event.providerRef);
-        if (canonical) {
-          canonical.money_state = targetMoneyState;
-          canonical.status = targetMoneyState;
-          canonical.updated_at = new Date().toISOString();
-          DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
+        // Call authoritative EscrowService to fund escrow and balance double-entry FinancialLedger if order exists
+        let order = moneyRepo && typeof moneyRepo.getOrderById === 'function'
+          ? await moneyRepo.getOrderById(event.orderId)
+          : null;
+        if (order) {
+          if (!state.orders) state.orders = [];
+          const ordIdx = state.orders.findIndex(o => o.id === order.id);
+          if (ordIdx >= 0) state.orders[ordIdx] = { ...state.orders[ordIdx], ...order };
+          else state.orders.push(order);
+
+          const dbEscrow = await moneyRepo.getEscrowByOrderId(event.orderId);
+          if (dbEscrow) {
+            if (!state.escrows) state.escrows = [];
+            const escIdx = state.escrows.findIndex(e => e.order_id === order.id);
+            if (escIdx >= 0) state.escrows[escIdx] = { ...state.escrows[escIdx], ...dbEscrow };
+            else state.escrows.push(dbEscrow);
+          }
+        } else if (!moneyRepo || moneyRepo.degraded) {
+          order = state.orders ? state.orders.find(o => o.id === event.orderId) : null;
         }
-      }
-      let order = state.orders ? state.orders.find(o => o.id === event.orderId) : null;
-      if (!order) {
-        try {
+
+        // Invariant I2: Server-to-server status inquiry re-query
+        if (targetProviderName !== 'doku' && typeof provider.getPaymentStatus === 'function') {
+          try {
+            const verified = await provider.getPaymentStatus({
+              orderId: event.orderId,
+              providerRef: event.providerRef,
+              invoiceNumber: event.orderId ? `INV-DOKU-${event.orderId}` : event.providerRef
+            });
+            if (verified && !verified.simulated && verified.status !== MONEY_STATE.PAID) {
+              const err = new Error(`Server-to-server status inquiry did not confirm PAID (status: ${verified.status})`);
+              err.code = 'GATEWAY_STATUS_UNCONFIRMED';
+              err.status = 409;
+              throw err;
+            }
+          } catch (inqErr) {
+            if (inqErr.code === 'GATEWAY_STATUS_UNCONFIRMED') throw inqErr;
+          }
+        }
+
+        if (order) {
+          const expectedAmt = parseInt(order.buyer_total !== undefined ? order.buyer_total : order.total_amount, 10);
+          if (event.amount !== undefined && event.amount !== null && parseInt(event.amount, 10) !== expectedAmt) {
+            const err = new Error(`Payment amount mismatch. Expected ${expectedAmt}, got ${event.amount}`);
+            err.code = 'AMOUNT_MISMATCH';
+            err.status = 422;
+            throw err;
+          }
+          if (event.currency && order.currency && event.currency.toUpperCase() !== order.currency.toUpperCase()) {
+            const err = new Error(`Payment currency mismatch. Expected ${order.currency}, got ${event.currency}`);
+            err.code = 'CURRENCY_MISMATCH';
+            err.status = 422;
+            throw err;
+          }
+
+          const providerCapabilities = typeof provider.getCapabilities === 'function'
+            ? provider.getCapabilities()
+            : (typeof provider.capabilities === 'function' ? provider.capabilities() : {});
+          const supportsEscrowHold = Boolean(providerCapabilities && providerCapabilities.hold === true);
+
+          if (order.status === 'EXPIRED' || order.status === 'CANCELLED') {
+            captureResult = await EscrowService.recordPayment({
+              orderId: event.orderId,
+              providerRef: event.providerRef,
+              idempotencyKey: `wh-pay-${event.providerRef}`,
+              amountPaid: event.amount !== undefined ? event.amount : expectedAmt,
+              providerFee: event.providerFee || 0,
+              currency: event.currency || order.currency || 'IDR'
+            });
+            await this.verifyCaptureLedger(order);
+            order.status = 'LATE_PAYMENT_PENDING_REVIEW';
+            order.marketplace_status = 'LATE_PAYMENT';
+            order.payment_status = 'PAYMENT_CONFIRMED_PROVIDER';
+            await recordAuditLog('ORDER', order.id, 'LATE_PAYMENT_CAPTURED', 'GATEWAY', {
+              provider: targetProviderName,
+              provider_ref: event.providerRef,
+              amount: event.amount,
+              action: 'FLAGGED_FOR_MANUAL_REVIEW_OR_REFUND'
+            });
+          } else {
+            captureResult = await EscrowService.recordPayment({
+              orderId: event.orderId,
+              providerRef: event.providerRef,
+              idempotencyKey: `wh-pay-${event.providerRef}`,
+              amountPaid: event.amount !== undefined ? event.amount : expectedAmt,
+              isProviderEscrow: supportsEscrowHold,
+              providerFee: event.providerFee || 0,
+              currency: event.currency || order.currency || 'IDR'
+            });
+            await this.verifyCaptureLedger(order);
+            order.marketplace_status = 'PAID';
+            order.payment_status = 'PAYMENT_CONFIRMED_PROVIDER';
+            order.payment_money_state = supportsEscrowHold
+              ? MONEY_STATE.ESCROW_HELD
+              : MONEY_STATE.CAPTURED_PLATFORM_SETTLEMENT;
+            order.escrow_type = supportsEscrowHold
+              ? 'THIRD_PARTY_PROVIDER_ESCROW'
+              : 'NONE_PLATFORM_CAPTURED';
+          }
+
+          if (state.canonical_payments) {
+            const canonical = state.canonical_payments.find(p => p.order_id === event.orderId || p.provider_reference === event.providerRef);
+            if (canonical) {
+              if (supportsEscrowHold) {
+                canonical.money_state = MONEY_STATE.ESCROW_HELD;
+                canonical.status = MONEY_STATE.ESCROW_HELD;
+                canonical.escrow_type = 'THIRD_PARTY_PROVIDER_ESCROW';
+                canonical.settlement_status = 'SETTLEMENT_HELD';
+              } else {
+                canonical.money_state = MONEY_STATE.CAPTURED_PLATFORM_SETTLEMENT;
+                canonical.status = MONEY_STATE.PAID;
+                canonical.escrow_type = 'NONE_PLATFORM_CAPTURED';
+                canonical.settlement_status = 'CAPTURED_UNHELD';
+              }
+              canonical.paid_at = event.paidAt || new Date().toISOString();
+              canonical.provider_transaction_id = event.providerRef;
+              canonical.provider_fee = event.providerFee || 0;
+              canonical.updated_at = new Date().toISOString();
+              PaymentRoutingService.updateAttemptStatus(canonical.internal_payment_id || canonical.id, PAYMENT_ATTEMPT_STATUS.SUCCESS, event.providerRef);
+              DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
+            }
+          }
+
+          // Strict State Decoupling & Evidence Bundle Slot #5 Recording
+          const paymentSettlementArtifact = {
+            slot: 5,
+            slot_name: 'paymentSettlementRecord',
+            artifact_type: 'PAYMENT_SETTLEMENT_RECORD',
+            provider: targetProviderName,
+            provider_reference: event.providerRef,
+            order_id: event.orderId,
+            amount: event.amount,
+            currency: event.currency || 'IDR',
+            payment_status: 'PAYMENT_CONFIRMED_PROVIDER',
+            paid_at: event.paidAt || new Date().toISOString(),
+            recorded_at: new Date().toISOString(),
+            payload_hash: payloadHash
+          };
+
+          if (!order.evidence_bundle) {
+            order.evidence_bundle = {};
+          }
+          order.evidence_bundle.slot_5_payment_settlement = paymentSettlementArtifact;
+          order.evidence_bundle.paymentSettlementRecord = paymentSettlementArtifact;
+
+          const bundle = (state.evidence_bundles || []).find(b => (order.evidence_bundle_id && b.id === order.evidence_bundle_id) || (order.ticket_id && b.ticket_id === order.ticket_id));
+          if (bundle) {
+            if (!bundle.artifacts) bundle.artifacts = {};
+            bundle.artifacts.slot_5 = paymentSettlementArtifact;
+            bundle.artifacts.paymentSettlementRecord = paymentSettlementArtifact;
+          }
+        }
+      } else if (
+        event.status === MONEY_STATE.PAYMENT_FAILED ||
+        event.status === MONEY_STATE.PAYMENT_EXPIRED ||
+        event.status === 'FAILED' ||
+        event.status === 'EXPIRED'
+      ) {
+        const isExpired = event.status === MONEY_STATE.PAYMENT_EXPIRED || event.status === 'EXPIRED';
+        const targetMoneyState = isExpired ? MONEY_STATE.PAYMENT_EXPIRED : MONEY_STATE.PAYMENT_FAILED;
+
+        if (state.canonical_payments) {
+          const canonical = state.canonical_payments.find(p => p.order_id === event.orderId || p.provider_reference === event.providerRef);
+          if (canonical) {
+            canonical.money_state = targetMoneyState;
+            canonical.status = targetMoneyState;
+            canonical.updated_at = new Date().toISOString();
+            DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
+          }
+        }
+        let order = state.orders ? state.orders.find(o => o.id === event.orderId) : null;
+        if (!order) {
           const { getMoneyRepository } = require('../../storage');
           const moneyRepo = getMoneyRepository();
           if (moneyRepo && typeof moneyRepo.getOrderById === 'function') {
@@ -827,42 +787,29 @@ class PaymentService {
               state.orders.push(order);
             }
           }
-        } catch (_) {}
-      }
+        }
 
-      if (order) {
-        order.status = isExpired ? 'EXPIRED' : 'CANCELLED';
-        order.marketplace_status = isExpired ? 'PAYMENT_EXPIRED' : 'PAYMENT_FAILED';
-
-        // P0/P1 INVENTORY RECOVERY: Idempotently release reserved ticket inventory on terminal failure or expiration
-        try {
+        if (order) {
+          order.status = isExpired ? 'EXPIRED' : 'CANCELLED';
+          order.marketplace_status = isExpired ? 'PAYMENT_EXPIRED' : 'PAYMENT_FAILED';
           const { EscrowService } = require('../escrowService');
           await EscrowService.releaseInventoryForOrder(order.id, isExpired ? 'GATEWAY_PAYMENT_EXPIRED' : 'GATEWAY_PAYMENT_FAILED');
-        } catch (releaseErr) {
-          console.error(`[PaymentService] Failed to release inventory for order ${order.id}:`, releaseErr.message);
         }
-      }
-      webhookRecord.processing_status = 'PROCESSED';
-      webhookRecord.processed_at = new Date().toISOString();
-      DurableFinancialStore.persist('provider_webhooks', state.provider_webhooks);
-    } else if (isRefundEvent) {
-      const { EscrowService } = require('../escrowService');
+      } else if (isRefundEvent) {
+        const { EscrowService } = require('../escrowService');
 
-      // Update Canonical Payment record
-      if (state.canonical_payments) {
-        const canonical = state.canonical_payments.find(p => p.order_id === event.orderId || p.provider_reference === event.providerRef);
-        if (canonical) {
-          canonical.money_state = MONEY_STATE.REFUNDED;
-          canonical.status = MONEY_STATE.REFUNDED;
-          canonical.refund_status = 'PROVIDER_REFUND_CONFIRMED';
-          canonical.refunded_at = new Date().toISOString();
-          canonical.updated_at = new Date().toISOString();
-          DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
+        if (state.canonical_payments) {
+          const canonical = state.canonical_payments.find(p => p.order_id === event.orderId || p.provider_reference === event.providerRef);
+          if (canonical) {
+            canonical.money_state = MONEY_STATE.REFUNDED;
+            canonical.status = MONEY_STATE.REFUNDED;
+            canonical.refund_status = 'PROVIDER_REFUND_CONFIRMED';
+            canonical.refunded_at = new Date().toISOString();
+            canonical.updated_at = new Date().toISOString();
+            DurableFinancialStore.persist('canonical_payments', state.canonical_payments);
+          }
         }
-      }
 
-      // Authoritative provider confirmation transition in EscrowService
-      try {
         await EscrowService.confirmProviderRefund({
           orderId: event.orderId,
           providerRef: event.providerRef,
@@ -870,24 +817,37 @@ class PaymentService {
           rawPayload: body,
           actorId: `WEBHOOK_${targetProviderName.toUpperCase()}`
         });
-      } catch (confirmErr) {
-        console.error(`[PaymentService] Failed to confirm provider refund via webhook for order ${event.orderId}:`, confirmErr.message);
       }
 
       webhookRecord.processing_status = 'PROCESSED';
       webhookRecord.processed_at = new Date().toISOString();
       DurableFinancialStore.persist('provider_webhooks', state.provider_webhooks);
-    } else {
-      webhookRecord.processing_status = 'PROCESSED';
-      webhookRecord.processed_at = new Date().toISOString();
-      DurableFinancialStore.persist('provider_webhooks', state.provider_webhooks);
-    }
-
-    try {
       const { getMoneyRepository } = require('../../storage');
       const moneyRepo = getMoneyRepository();
-      await moneyRepo.markWebhookProcessed(targetProviderName, eventId, 'PROCESSED');
-    } catch (_) {}
+      if (moneyRepo && typeof moneyRepo.markWebhookProcessed === 'function') {
+        await moneyRepo.markWebhookProcessed(targetProviderName, eventId, 'PROCESSED');
+      }
+    } catch (processingErr) {
+      webhookRecord.processing_status = 'FAILED_RETRYABLE';
+      webhookRecord.error_message = processingErr.message;
+      webhookRecord.processed_at = null;
+      if (state.processed_webhooks) {
+        state.processed_webhooks.delete(eventId);
+        state.processed_webhooks.delete(event.providerRef);
+        state.processed_webhooks.delete(`ref:${event.providerRef}`);
+      }
+      DurableFinancialStore.persist('provider_webhooks', state.provider_webhooks);
+      try {
+        const { getMoneyRepository } = require('../../storage');
+        const moneyRepo = getMoneyRepository();
+        if (moneyRepo && typeof moneyRepo.markWebhookProcessed === 'function') {
+          await moneyRepo.markWebhookProcessed(targetProviderName, eventId, 'FAILED_RETRYABLE', {
+            error_message: processingErr.message
+          });
+        }
+      } catch (_) {}
+      throw processingErr;
+    }
 
     await recordAuditLog('WEBHOOK', eventId, 'PROCESSED', targetProviderName, {
       order_id: event.orderId,
@@ -898,7 +858,8 @@ class PaymentService {
 
     return {
       idempotent: false,
-      event
+      event,
+      captureResult
     };
   }
 
@@ -1197,11 +1158,15 @@ class PaymentService {
   }
 
   /**
-   * Real automated reconciliation comparison (Section 27)
+   * Real automated reconciliation comparison backed directly by durable repositories & LedgerVerificationService.
    */
   static async reconcileTransactions({ date = new Date().toISOString().split('T')[0], providerName = null }) {
-    const targetProviderName = (providerName || paymentManager.defaultProvider || 'doku').toLowerCase();
-    const payments = (state.canonical_payments || []).filter(p => p.provider === targetProviderName);
+    const targetProviderName = providerName ? providerName.toLowerCase() : null;
+    const { getMoneyRepository, getMarketplaceRepository } = require('../../storage');
+    const { LedgerVerificationService } = require('../../settlement/LedgerVerificationService');
+    const moneyRepo = getMoneyRepository();
+    const marketplaceRepo = getMarketplaceRepository();
+
     const reconciliationBatchId = `rec-batch-${Date.now()}`;
     const results = [];
     let variancesFound = 0;
@@ -1210,39 +1175,65 @@ class PaymentService {
       state.payment_reconciliation_logs = [];
     }
 
-    for (const p of payments) {
-      const order = (state.orders || []).find(o => o.id === p.order_id);
-      const escrow = (state.escrows || []).find(e => e.order_id === p.order_id);
+    let orders = [];
+    if (moneyRepo && typeof moneyRepo.listAllOrders === 'function') {
+      orders = await moneyRepo.listAllOrders(500);
+    }
+    if ((!orders || orders.length === 0) && (!moneyRepo || moneyRepo.degraded)) {
+      orders = state.orders || [];
+    }
+
+    const reconciledOrderIds = new Set();
+    for (const order of orders) {
+      reconciledOrderIds.add(order.id);
+      const payment = moneyRepo && typeof moneyRepo.getLatestSettledPaymentByOrderId === 'function'
+        ? (await moneyRepo.getLatestSettledPaymentByOrderId(order.id)) || (await moneyRepo.getPaymentByOrderId(order.id))
+        : (state.canonical_payments || []).find(p => p.order_id === order.id);
+      const escrow = moneyRepo && typeof moneyRepo.getEscrowByOrderId === 'function'
+        ? await moneyRepo.getEscrowByOrderId(order.id)
+        : (state.escrows || []).find(e => e.order_id === order.id);
+
+      const effProvider = (payment?.provider || order.provider || 'doku').toLowerCase();
+      if (targetProviderName && effProvider !== targetProviderName) continue;
+      if (!payment && !['PAID_ESCROWED', 'PAID_PLATFORM_HELD', 'PAID', 'ENTRY_CONFIRMED', 'SETTLED', 'LATE_PAYMENT_PENDING_REVIEW'].includes(order.status)) {
+        continue;
+      }
 
       let status = 'MATCHED';
       let variance = 0;
-      let notes = 'Transactions balanced and matched across ledger';
+      let notes = 'Transactions balanced and matched across repository and durable ledger';
 
-      // Check amount matching
-      const expectedAmount = order ? (order.buyer_total || order.total_amount) : p.gross_amount;
-      if (p.gross_amount !== expectedAmount) {
+      const expectedAmount = Number(order.buyer_total ?? order.total_amount);
+      const paidAmount = payment ? Number(payment.gross_amount ?? payment.amount) : null;
+
+      if (paidAmount !== null && paidAmount !== expectedAmount) {
         status = 'AMOUNT_MISMATCH';
-        variance = p.gross_amount - expectedAmount;
+        variance = paidAmount - expectedAmount;
         variancesFound++;
-        notes = `Amount mismatch: Payment Rp ${p.gross_amount} vs Order Rp ${expectedAmount}`;
-      }
-
-      // Check escrow state alignment
-      if (p.money_state === MONEY_STATE.PAID && escrow && escrow.status === 'PENDING_PAYMENT') {
+        notes = `Amount mismatch: Payment ${paidAmount} vs Order ${expectedAmount}`;
+      } else if (payment && String(payment.status || '').toUpperCase() === 'SETTLED' && escrow && escrow.status === 'PENDING_PAYMENT') {
         status = 'TIKUM_UNPAID_PROVIDER_PAID';
         variancesFound++;
-        notes = 'Provider marked paid but Tikum escrow was still pending payment';
+        notes = 'Provider payment settled but escrow still PENDING_PAYMENT';
+      } else {
+        try {
+          await LedgerVerificationService.verifyDurableCapture(order.id, { moneyRepo, marketplaceRepo });
+        } catch (verifyErr) {
+          status = verifyErr.reason || verifyErr.code || 'LEDGER_RECONCILIATION_REQUIRED';
+          variancesFound++;
+          notes = verifyErr.message;
+        }
       }
 
       const record = {
         id: `rec-${uuidv4()}`,
         batch_id: reconciliationBatchId,
         reconciliation_date: date,
-        provider: targetProviderName,
-        internal_transaction_id: p.id,
-        provider_transaction_id: p.provider_transaction_id,
-        order_id: p.order_id,
-        internal_amount: p.gross_amount,
+        provider: effProvider,
+        internal_transaction_id: payment?.id || null,
+        provider_transaction_id: payment?.provider_transaction_id || payment?.provider_reference || null,
+        order_id: order.id,
+        internal_amount: paidAmount !== null ? paidAmount : expectedAmount,
         status,
         variance,
         notes,
@@ -1257,7 +1248,7 @@ class PaymentService {
 
     return {
       batch_id: reconciliationBatchId,
-      provider: targetProviderName,
+      provider: targetProviderName || (paymentManager.defaultProvider || 'doku').toLowerCase(),
       reconciled_count: results.length,
       variances_found: variancesFound,
       records: results

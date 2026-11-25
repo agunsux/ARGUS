@@ -5,7 +5,13 @@
  * and maximum markup caps across the pilot.
  */
 
+const ACTIVE_FEE_POLICY_VERSION = (() => {
+  const configured = String(process.env.ACTIVE_FEE_POLICY_VERSION || process.env.TIKUM_PRICING_POLICY || 'TIKUM_FEE_POLICY_V1').trim();
+  return ['TIKUM_FEE_POLICY_V1', 'V2_DUAL_TIER'].includes(configured) ? configured : 'TIKUM_FEE_POLICY_V1';
+})();
+
 const PRICING_CONFIG = Object.freeze({
+  ACTIVE_FEE_POLICY_VERSION,
   MIN_LISTING_PRICE_IDR: 500000,
   MAX_MARKUP_PCT: 30,
   PLATFORM_FEE_PCT: 6,

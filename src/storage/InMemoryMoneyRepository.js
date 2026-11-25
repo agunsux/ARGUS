@@ -324,7 +324,9 @@ class InMemoryMoneyRepository extends MoneyRepository {
 
     if (this.webhooks.has(key)) {
       const existing = this.webhooks.get(key);
-      const isFailed = existing.processing_status === 'FAILED' || existing.processing_status === 'PROCESSING_FAILED';
+      const isFailed = existing.processing_status === 'FAILED' ||
+        existing.processing_status === 'PROCESSING_FAILED' ||
+        existing.processing_status === 'FAILED_RETRYABLE';
       const ageMs = Date.now() - new Date(existing.received_at || 0).getTime();
       const isStale = (existing.processing_status === 'PENDING' || existing.processing_status === 'PROCESSING') &&
         ageMs > (staleAfterSeconds * 1000);

@@ -23,6 +23,7 @@ class MarketplaceRepository {
   // Listings
   async createListing(listingData, txContext = null) { throw new Error('Not implemented'); }
   async getListingById(listingId, txContext = null) { throw new Error('Not implemented'); }
+  async updateListing(listingId, updates, txContext = null) { throw new Error('Not implemented'); }
   async updateListingStatus(listingId, status, txContext = null) { throw new Error('Not implemented'); }
   async updateListingInventory(listingId, updates, txContext = null) { throw new Error('Not implemented'); }
   async atomicReserveInventory(listingId, requestedQty = 1, txContext = null) { throw new Error('Not implemented'); }
