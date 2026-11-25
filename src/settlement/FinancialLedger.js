@@ -35,10 +35,17 @@ const FINANCIAL_EVENT_TYPES = {
   ADJUSTMENT: 'ADJUSTMENT'
 };
 
+function canonicalizeLedgerEntries(entries = []) {
+  return entries
+    .map(e => `${e.ledger_account || e.account}:${e.entry_type || e.type}:${Number(e.amount)}`)
+    .sort()
+    .join('|');
+}
+
 class FinancialLedger {
   /**
    * Records a balanced double-entry transaction.
-   * Throws immediately if debits and credits do not balance.
+   * Throws immediately if debits and credits do not balance or DB persistence fails.
    * 
    * @param {Object} params
    * @param {string} params.eventType - One of FINANCIAL_EVENT_TYPES
@@ -47,6 +54,7 @@ class FinancialLedger {
    * @param {string} params.description - Business justification
    * @param {string} params.actorId - Operator or SYSTEM
    * @param {string} [params.currency='IDR']
+   * @param {Object} [txContext=null] - Optional UnitOfWork transaction context
    */
   static async recordTransaction({
     eventType,
@@ -55,8 +63,9 @@ class FinancialLedger {
     entries,
     description,
     actorId = 'SYSTEM',
-    currency = 'IDR'
-  }) {
+    currency = 'IDR',
+    allowIdempotentDuplicate = true
+  }, txContext = null) {
     if (!eventType || !orderId || !Array.isArray(entries) || entries.length < 2) {
       const err = new Error('Ledger transaction requires eventType, orderId, and at least two balancing entries');
       err.code = 'INVALID_LEDGER_TRANSACTION';
@@ -69,33 +78,40 @@ class FinancialLedger {
       throw err;
     }
 
+    const effectiveCurrency = String(currency || 'IDR').trim().toUpperCase();
+
     // 1. Calculate and verify sum(Debits) === sum(Credits)
     let totalDebits = 0;
     let totalCredits = 0;
+    const normalizedEntries = [];
 
     for (const entry of entries) {
-      const amount = parseInt(entry.amount, 10);
-      if (isNaN(amount) || amount <= 0) {
+      const amount = Number(entry.amount);
+      if (!Number.isSafeInteger(amount) || amount <= 0) {
         const err = new Error(`Ledger entry amount must be a positive integer, got: ${entry.amount}`);
         err.code = 'INVALID_ENTRY_AMOUNT';
         throw err;
       }
 
-      if (!LEDGER_ACCOUNTS[entry.account]) {
-        const err = new Error(`Unknown ledger account: '${entry.account}'`);
+      const account = entry.account || entry.ledger_account;
+      if (!LEDGER_ACCOUNTS[account]) {
+        const err = new Error(`Unknown ledger account: '${account}'`);
         err.code = 'UNKNOWN_LEDGER_ACCOUNT';
         throw err;
       }
 
-      if (entry.type === 'DEBIT') {
+      const type = entry.type || entry.entry_type;
+      if (type === 'DEBIT') {
         totalDebits += amount;
-      } else if (entry.type === 'CREDIT') {
+      } else if (type === 'CREDIT') {
         totalCredits += amount;
       } else {
-        const err = new Error(`Entry type must be 'DEBIT' or 'CREDIT', got: '${entry.type}'`);
+        const err = new Error(`Entry type must be 'DEBIT' or 'CREDIT', got: '${type}'`);
         err.code = 'INVALID_ENTRY_TYPE';
         throw err;
       }
+
+      normalizedEntries.push({ account, type, amount });
     }
 
     // Mathematical Double-Entry Balancing Invariant
@@ -118,6 +134,49 @@ class FinancialLedger {
       }
     }
 
+    const { getMoneyRepository } = require('../storage');
+    const moneyRepo = getMoneyRepository();
+    if (!moneyRepo) {
+      const err = new Error('Money repository is required for durable ledger persistence');
+      err.code = 'LEDGER_REPOSITORY_UNAVAILABLE';
+      throw err;
+    }
+
+    // 2. Duplicate CAPTURE / RELEASE idempotency guard per order_id
+    if (eventType === FINANCIAL_EVENT_TYPES.CAPTURE || eventType === FINANCIAL_EVENT_TYPES.RELEASE) {
+      const existingList = typeof moneyRepo.getLedgerTransactionsWithEntriesByOrderId === 'function'
+        ? await moneyRepo.getLedgerTransactionsWithEntriesByOrderId(orderId, eventType, txContext)
+        : (await moneyRepo.getLedgerTransactionsByOrderId(orderId, txContext))
+            .filter(t => (t.event_type || t.source_event) === eventType);
+
+      if (existingList && existingList.length > 0) {
+        const existingTx = existingList[0];
+        const sameTotal = Number(existingTx.total_amount) === totalDebits;
+        const sameCurrency = String(existingTx.currency || 'IDR').toUpperCase() === effectiveCurrency;
+        const existingSig = Array.isArray(existingTx.entries) && existingTx.entries.length > 0
+          ? canonicalizeLedgerEntries(existingTx.entries)
+          : null;
+        const incomingSig = canonicalizeLedgerEntries(normalizedEntries);
+        const sameEntries = existingSig === null || existingSig === incomingSig;
+
+        if (!sameTotal || !sameCurrency || !sameEntries) {
+          const err = new Error(`Conflicting duplicate ledger ${eventType} attempt for order '${orderId}'`);
+          err.code = 'DUPLICATE_LEDGER_CONFLICT';
+          err.status = 409;
+          throw err;
+        }
+
+        if (!allowIdempotentDuplicate) {
+          const err = new Error(`Duplicate ledger ${eventType} transaction for order '${orderId}'`);
+          err.code = 'DUPLICATE_LEDGER_EVENT';
+          err.status = 409;
+          throw err;
+        }
+
+        return { ...existingTx, idempotent: true };
+      }
+    }
+
     const transactionId = `tx-${uuidv4()}`;
     const now = new Date().toISOString();
 
@@ -128,26 +187,48 @@ class FinancialLedger {
       order_id: orderId,
       source_event: eventType,
       event_type: eventType,
-      currency,
+      currency: effectiveCurrency,
       total_amount: totalDebits,
       description,
       actor_id: actorId,
       created_at: now,
-      entries: entries.map((e, index) => ({
+      entries: normalizedEntries.map((e, index) => ({
         entry_id: `${transactionId}-${index + 1}`,
         transaction_id: transactionId,
         quote_id: effectiveQuoteId || null,
         order_id: orderId,
         ledger_account: e.account,
         account: e.account,
+        entry_type: e.type,
         type: e.type,
-        amount: parseInt(e.amount, 10),
-        currency,
+        amount: e.amount,
+        currency: effectiveCurrency,
         source_event: eventType,
         created_at: now
       }))
     };
 
+    // 3. DB-FIRST PERSISTENCE: Never swallow repository failures; throw so UnitOfWork rolls back.
+    await moneyRepo.recordLedgerTransaction({
+      transaction_id: transactionId,
+      order_id: orderId,
+      quote_id: effectiveQuoteId || null,
+      event_type: eventType,
+      source_event: eventType,
+      total_amount: totalDebits,
+      currency: effectiveCurrency,
+      description,
+      actor_id: actorId
+    }, normalizedEntries.map((e, index) => ({
+      entry_id: `${transactionId}-${index + 1}`,
+      transaction_id: transactionId,
+      account: e.account,
+      type: e.type,
+      amount: e.amount,
+      currency: effectiveCurrency
+    })), txContext);
+
+    // 4. Mirror to process memory ONLY after durable repository write succeeds
     if (!state.financial_ledger) {
       state.financial_ledger = [];
     }
@@ -158,39 +239,14 @@ class FinancialLedger {
       DurableFinancialStore.persist('financial_ledger', state.financial_ledger);
     } catch (_) {}
 
-    try {
-      const { getMoneyRepository } = require('../storage');
-      const moneyRepo = getMoneyRepository();
-      await moneyRepo.recordLedgerTransaction({
-        transaction_id: transactionId,
-        order_id: orderId,
-        quote_id: effectiveQuoteId || null,
-        source_event: eventType,
-        total_amount: totalDebits,
-        currency,
-        description,
-        actor_id: actorId
-      }, entries.map((e, index) => ({
-        entry_id: `${transactionId}-${index + 1}`,
-        transaction_id: transactionId,
-        account: e.account,
-        type: e.type,
-        amount: parseInt(e.amount, 10),
-        currency
-      })));
-    } catch (repoErr) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw repoErr;
-      }
-    }
-
     await recordAuditLog('FINANCIAL_LEDGER', transactionId, eventType, actorId, {
       order_id: orderId,
       quote_id: effectiveQuoteId || null,
+      event_type: eventType,
       source_event: eventType,
-      currency,
+      currency: effectiveCurrency,
       total_amount: totalDebits,
-      entries_count: entries.length,
+      entries_count: normalizedEntries.length,
       description
     });
 
@@ -205,8 +261,8 @@ class FinancialLedger {
    * Credits: PLATFORM_FEE_REVENUE (Buyer Fee + Seller Fee)
    * Credits: TAX_PAYABLE (Buyer PPN + Seller PPh 22 Withholding)
    */
-  static async recordCapture(params) {
-    return await this.recordPaymentCapture(params);
+  static async recordCapture(params, txContext = null) {
+    return await this.recordPaymentCapture(params, txContext);
   }
 
   static async recordPaymentCapture({
@@ -219,8 +275,9 @@ class FinancialLedger {
     buyerTax = 0,
     sellerTax = 0,
     providerFee = 0,
+    currency = 'IDR',
     actorId = 'SYSTEM'
-  }) {
+  }, txContext = null) {
     const price = parseInt(ticketPrice, 10);
     const effBuyerFee = buyerFee !== undefined ? parseInt(buyerFee, 10) : (platformFee !== undefined ? parseInt(platformFee, 10) : 0);
     const effSellerFee = sellerFee !== undefined ? parseInt(sellerFee, 10) : 0;
@@ -277,10 +334,11 @@ class FinancialLedger {
       eventType: FINANCIAL_EVENT_TYPES.CAPTURE,
       orderId,
       quoteId,
+      currency,
       actorId,
       description: `Payment captured for order ${orderId}: Buyer Total Rp ${buyerTotal} (Ticket: ${price}, Buyer Fee: ${effBuyerFee}, Seller Fee: ${effSellerFee}, PPN: ${effBuyerTax}, PPh22: ${effSellerTax}, Gateway Fee: ${effProviderFee})`,
       entries
-    });
+    }, txContext);
   }
 
   /**
@@ -288,21 +346,22 @@ class FinancialLedger {
    * Debits: SELLER_PAYABLE_PENDING (Liability cleared)
    * Credits: SETTLEMENT_CLEARING (Cash disbursal clearing)
    */
-  static async recordRelease({ orderId, quoteId = null, amount, sellerAmount, actorId }) {
+  static async recordRelease({ orderId, quoteId = null, amount, sellerAmount, actorId }, txContext = null) {
     return await this.recordDisbursementRelease({
       orderId,
       quoteId,
       sellerAmount: sellerAmount || amount,
       actorId
-    });
+    }, txContext);
   }
 
-  static async recordDisbursementRelease({ orderId, quoteId = null, sellerAmount, actorId }) {
+  static async recordDisbursementRelease({ orderId, quoteId = null, sellerAmount, currency = 'IDR', actorId }, txContext = null) {
     const amount = parseInt(sellerAmount, 10);
     return await this.recordTransaction({
       eventType: FINANCIAL_EVENT_TYPES.RELEASE,
       orderId,
       quoteId,
+      currency,
       actorId,
       description: `Disbursement released to seller for order ${orderId}: Rp ${amount}`,
       entries: [
@@ -317,7 +376,7 @@ class FinancialLedger {
           amount: amount
         }
       ]
-    });
+    }, txContext);
   }
 
   /**
@@ -339,9 +398,10 @@ class FinancialLedger {
     sellerTax = 0,
     providerFee = 0,
     refundProviderFee = false,
+    currency = 'IDR',
     actorId = 'SYSTEM',
     reason = 'ORDER_CANCELLED_REFUND'
-  }) {
+  }, txContext = null) {
     const price = parseInt(ticketPrice, 10);
     const effBuyerFee = buyerFee !== undefined ? parseInt(buyerFee, 10) : (platformFee !== undefined ? parseInt(platformFee, 10) : 0);
     const effSellerFee = sellerFee !== undefined ? parseInt(sellerFee, 10) : 0;
@@ -400,10 +460,11 @@ class FinancialLedger {
       eventType: FINANCIAL_EVENT_TYPES.REFUND,
       orderId,
       quoteId,
+      currency,
       actorId,
       description: `Refund issued to buyer for order ${orderId}: Rp ${buyerTotal}. Reason: ${reason}${effProviderFee > 0 ? ` (Gateway non-refundable fee: Rp ${effProviderFee})` : ''}`,
       entries
-    });
+    }, txContext);
   }
 
   /**

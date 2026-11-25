@@ -10,16 +10,28 @@ const { Pool } = require('pg');
 const { MarketplaceRepository } = require('./MarketplaceRepository');
 const { InMemoryMarketplaceRepository } = require('./InMemoryMarketplaceRepository');
 const { assertTestDatabaseIsolation } = require('./testIsolation');
+const { applyTransactionSchema } = require('./connectionPool');
 
 class PostgresMarketplaceRepository extends MarketplaceRepository {
   constructor(options = {}) {
     super();
     this.connectionString = options.connectionString || process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL;
+    this.schema = options.schema || process.env.TEST_DATABASE_SCHEMA || null;
     this.pool = null;
     this.fallbackRepo = new InMemoryMarketplaceRepository();
     this.degraded = false;
     this.initialized = false;
     this.initPromise = null;
+  }
+
+  _createSnapshot() {
+    return this.degraded ? this.fallbackRepo._createSnapshot() : null;
+  }
+
+  _restoreSnapshot(snap) {
+    if (this.degraded && snap) {
+      this.fallbackRepo._restoreSnapshot(snap);
+    }
   }
 
   async ensureInitialized() {
@@ -73,82 +85,84 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
         await this.pool.query('SELECT NOW()');
         await assertTestDatabaseIsolation(this.pool);
 
-        // Ensure Event PIC assignments table exists
-        await this.pool.query(`
-          CREATE TABLE IF NOT EXISTS event_pic_assignments (
-            id VARCHAR(100) PRIMARY KEY,
-            event_id VARCHAR(100) NOT NULL,
-            venue_id VARCHAR(100) NOT NULL,
-            pic_user_id VARCHAR(100) NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-            event_date DATE,
-            status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
-            contact_phone VARCHAR(50),
-            notes TEXT,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-          );
-          CREATE INDEX IF NOT EXISTS idx_event_pic_assignments_event ON event_pic_assignments (event_id, status);
-          CREATE INDEX IF NOT EXISTS idx_event_pic_assignments_user ON event_pic_assignments (pic_user_id, status);
-
-          CREATE TABLE IF NOT EXISTS buyer_inquiries (
-            id VARCHAR(100) PRIMARY KEY,
-            listing_id VARCHAR(100) NOT NULL,
-            buyer_id VARCHAR(100) NOT NULL,
-            seller_id VARCHAR(100) NOT NULL,
-            event_id VARCHAR(120),
-            ticket_id VARCHAR(100),
-            quantity INTEGER DEFAULT 1,
-            proposed_price BIGINT,
-            message TEXT,
-            buyer_name VARCHAR(150),
-            buyer_email VARCHAR(255),
-            contact_phone VARCHAR(60),
-            follow_up_status VARCHAR(50) NOT NULL DEFAULT 'PENDING_FOLLOWUP',
-            admin_notes TEXT,
-            notification_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
-            notification_error TEXT,
-            metadata JSONB,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-          );
-          CREATE INDEX IF NOT EXISTS idx_buyer_inquiries_listing ON buyer_inquiries (listing_id);
-          CREATE INDEX IF NOT EXISTS idx_buyer_inquiries_buyer ON buyer_inquiries (buyer_id);
-          CREATE INDEX IF NOT EXISTS idx_buyer_inquiries_status ON buyer_inquiries (follow_up_status);
-        `).catch(err => {
-          console.warn('[PostgresMarketplaceRepository] PIC/Inquiry assignments DDL notice:', err.message);
-        });
-
-        // Hydrate state.event_pics for synchronous lookup compatibility
-        try {
-          const picRes = await this.pool.query('SELECT * FROM event_pic_assignments WHERE status = $1', ['ACTIVE']);
-          if (picRes && picRes.rows && picRes.rows.length > 0) {
-            const { state } = require('../database');
-            if (state) {
-              const existingMap = new Map();
-              for (const p of (state.event_pics || [])) existingMap.set(p.id, p);
-              for (const r of picRes.rows) existingMap.set(r.id, r);
-              state.event_pics = Array.from(existingMap.values());
-            }
-          }
-        } catch (_) {}
-        if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEMO_SEEDING === 'true') {
+        // Ensure Event PIC assignments table exists (skip public DDL when running in an isolated test schema)
+        if (!this.schema) {
           await this.pool.query(`
-            INSERT INTO marketplace_tickets (
-              id, seller_id, current_owner_id, canonical_event_id, ticket_type,
-              section, row_id, seat, quantity, face_value, currency,
-              ticket_format, transfer_method, status
-            ) VALUES (
-              'ticket-demo-pestapora', 'seller-1', 'seller-1', 'event-pestapora-2026', 'GENERAL_ADMISSION',
-              'General', 'A', '1', 1, 1250000, 'IDR',
-              'E_TICKET', 'MOBILE_TRANSFER', 'VERIFIED'
-            ) ON CONFLICT (id) DO NOTHING;
+            CREATE TABLE IF NOT EXISTS event_pic_assignments (
+              id VARCHAR(100) PRIMARY KEY,
+              event_id VARCHAR(100) NOT NULL,
+              venue_id VARCHAR(100) NOT NULL,
+              pic_user_id VARCHAR(100) NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+              event_date DATE,
+              status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+              contact_phone VARCHAR(50),
+              notes TEXT,
+              created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_event_pic_assignments_event ON event_pic_assignments (event_id, status);
+            CREATE INDEX IF NOT EXISTS idx_event_pic_assignments_user ON event_pic_assignments (pic_user_id, status);
 
-            INSERT INTO marketplace_listings (
-              id, ticket_id, seller_id, canonical_event_id, price, currency, status
-            ) VALUES (
-              'list-demo-pestapora', 'ticket-demo-pestapora', 'seller-1', 'event-pestapora-2026', 1500000, 'IDR', 'ACTIVE'
-            ) ON CONFLICT (id) DO NOTHING;
-          `);
+            CREATE TABLE IF NOT EXISTS buyer_inquiries (
+              id VARCHAR(100) PRIMARY KEY,
+              listing_id VARCHAR(100) NOT NULL,
+              buyer_id VARCHAR(100) NOT NULL,
+              seller_id VARCHAR(100) NOT NULL,
+              event_id VARCHAR(120),
+              ticket_id VARCHAR(100),
+              quantity INTEGER DEFAULT 1,
+              proposed_price BIGINT,
+              message TEXT,
+              buyer_name VARCHAR(150),
+              buyer_email VARCHAR(255),
+              contact_phone VARCHAR(60),
+              follow_up_status VARCHAR(50) NOT NULL DEFAULT 'PENDING_FOLLOWUP',
+              admin_notes TEXT,
+              notification_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+              notification_error TEXT,
+              metadata JSONB,
+              created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_buyer_inquiries_listing ON buyer_inquiries (listing_id);
+            CREATE INDEX IF NOT EXISTS idx_buyer_inquiries_buyer ON buyer_inquiries (buyer_id);
+            CREATE INDEX IF NOT EXISTS idx_buyer_inquiries_status ON buyer_inquiries (follow_up_status);
+          `).catch(err => {
+            console.warn('[PostgresMarketplaceRepository] PIC/Inquiry assignments DDL notice:', err.message);
+          });
+
+          // Hydrate state.event_pics for synchronous lookup compatibility
+          try {
+            const picRes = await this.pool.query('SELECT * FROM event_pic_assignments WHERE status = $1', ['ACTIVE']);
+            if (picRes && picRes.rows && picRes.rows.length > 0) {
+              const { state } = require('../database');
+              if (state) {
+                const existingMap = new Map();
+                for (const p of (state.event_pics || [])) existingMap.set(p.id, p);
+                for (const r of picRes.rows) existingMap.set(r.id, r);
+                state.event_pics = Array.from(existingMap.values());
+              }
+            }
+          } catch (_) {}
+          if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEMO_SEEDING === 'true') {
+            await this.pool.query(`
+              INSERT INTO marketplace_tickets (
+                id, seller_id, current_owner_id, canonical_event_id, ticket_type,
+                section, row_id, seat, quantity, face_value, currency,
+                ticket_format, transfer_method, status
+              ) VALUES (
+                'ticket-demo-pestapora', 'seller-1', 'seller-1', 'event-pestapora-2026', 'GENERAL_ADMISSION',
+                'General', 'A', '1', 1, 1250000, 'IDR',
+                'E_TICKET', 'MOBILE_TRANSFER', 'VERIFIED'
+              ) ON CONFLICT (id) DO NOTHING;
+
+              INSERT INTO marketplace_listings (
+                id, ticket_id, seller_id, canonical_event_id, price, currency, status
+              ) VALUES (
+                'list-demo-pestapora', 'ticket-demo-pestapora', 'seller-1', 'event-pestapora-2026', 1500000, 'IDR', 'ACTIVE'
+              ) ON CONFLICT (id) DO NOTHING;
+            `);
+          }
         }
         this.initialized = true;
         this.degraded = false;
@@ -169,7 +183,10 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     return this.initPromise;
   }
 
-  async query(text, params = []) {
+  async _exec(text, params = [], txContext = null) {
+    if (txContext && txContext.client) {
+      return await txContext.client.query(text, params);
+    }
     await this.ensureInitialized();
     if (this.degraded) {
       if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
@@ -177,7 +194,27 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       }
       return null;
     }
+    const targetSchema = (txContext && txContext.schema) || this.schema;
+    if (targetSchema) {
+      const client = await this.pool.connect();
+      try {
+        await client.query('BEGIN');
+        await applyTransactionSchema(client, targetSchema);
+        const res = await client.query(text, params);
+        await client.query('COMMIT');
+        return res;
+      } catch (err) {
+        try { await client.query('ROLLBACK'); } catch (_) {}
+        throw err;
+      } finally {
+        client.release();
+      }
+    }
     return await this.pool.query(text, params);
+  }
+
+  async query(text, params = [], txContext = null) {
+    return await this._exec(text, params, txContext);
   }
 
   sanitizeDbError(err) {
@@ -347,11 +384,14 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
+      if (this.schema) {
+        await applyTransactionSchema(client, this.schema);
+      }
       const result = await fn(client);
       await client.query('COMMIT');
       return result;
     } catch (err) {
-      await client.query('ROLLBACK');
+      try { await client.query('ROLLBACK'); } catch (_) {}
       throw err;
     } finally {
       client.release();
@@ -359,20 +399,22 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
   }
 
   // Tickets
-  async createTicket(ticketData) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async createTicket(ticketData, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.createTicket(ticketData, txContext);
       }
-      return this.fallbackRepo.createTicket(ticketData);
     }
 
     try {
       const eventId = ticketData.canonical_event_id || ticketData.event_id;
       const sellerId = ticketData.seller_id || ticketData.original_owner_id;
-      if (sellerId) await this.ensureUserExists(sellerId);
-      if (eventId) await this.ensureEventExists(eventId);
+      if (sellerId) await this.ensureUserExists(sellerId, txContext?.client || null);
+      if (eventId) await this.ensureEventExists(eventId, txContext?.client || null);
 
       const id = ticketData.id || ticketData.ticket_id || `tkt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
       const sql = `
@@ -408,32 +450,36 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
         JSON.stringify(ticketData.metadata || {})
       ];
 
-      const res = await this.query(sql, params);
+      const res = await this._exec(sql, params, txContext);
       return res.rows[0];
     } catch (err) {
       throw this.sanitizeDbError(err);
     }
   }
 
-  async getTicketById(ticketId) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async getTicketById(ticketId, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.getTicketById(ticketId, txContext);
       }
-      return this.fallbackRepo.getTicketById(ticketId);
     }
-    const res = await this.query('SELECT * FROM marketplace_tickets WHERE id = $1', [ticketId]);
+    const res = await this._exec('SELECT * FROM marketplace_tickets WHERE id = $1', [ticketId], txContext);
     return res.rows[0] || null;
   }
 
-  async updateTicketStatus(ticketId, status, lockedBy = null) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async updateTicketStatus(ticketId, status, lockedBy = null, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.updateTicketStatus(ticketId, status, lockedBy, txContext);
       }
-      return this.fallbackRepo.updateTicketStatus(ticketId, status, lockedBy);
     }
     const lockedByStr = typeof lockedBy === 'string' ? lockedBy.slice(0, 64) : (lockedBy?.locked_by ? String(lockedBy.locked_by).slice(0, 64) : null);
     const extraMeta = typeof lockedBy === 'object' && lockedBy !== null ? lockedBy : null;
@@ -447,104 +493,121 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       RETURNING *;
     `;
     try {
-      const res = await this.query(sql, [ticketId, status, lockedByStr, extraMeta ? JSON.stringify(extraMeta) : null]);
+      const res = await this._exec(sql, [ticketId, status, lockedByStr, extraMeta ? JSON.stringify(extraMeta) : null], txContext);
       return res.rows[0] || null;
     } catch (err) {
       throw this.sanitizeDbError(err);
     }
   }
 
-  async createTicketAndListing({ ticketData, listingData }) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async createTicketAndListing({ ticketData, listingData }, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.createTicketAndListing({ ticketData, listingData }, txContext);
       }
-      return this.fallbackRepo.createTicketAndListing({ ticketData, listingData });
     }
 
+    const explicitFulfillment = listingData.fulfillment_type ?? listingData.metadata?.fulfillment_type ?? listingData.metadata?.fulfillment_option ?? null;
+    if (explicitFulfillment !== null && !['SELLER_MANAGED', 'TIKUM_VENUE_PIC'].includes(explicitFulfillment)) {
+      const err = new Error(`Invalid fulfillment_type '${explicitFulfillment}'`);
+      err.code = 'INVALID_FULFILLMENT_TYPE';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const runWithClient = async (client) => {
+      const eventId = ticketData.canonical_event_id || ticketData.event_id || listingData.canonical_event_id || listingData.event_id;
+      const sellerId = ticketData.seller_id || listingData.seller_id;
+
+      // 1. Ensure parent user exists
+      if (sellerId) {
+        await this.ensureUserExists(sellerId, client);
+      }
+
+      // 2. Ensure parent event exists
+      if (eventId) {
+        await this.ensureEventExists(eventId, client);
+      }
+
+      // 3. Insert parent ticket FIRST
+      const ticketId = ticketData.id || ticketData.ticket_id || `tkt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      const ticketSql = `
+        INSERT INTO marketplace_tickets (
+          id, seller_id, current_owner_id, canonical_event_id, ticket_type,
+          section, row_id, seat, quantity, face_value, currency,
+          ticket_format, transfer_method, status, locked_by, barcode_hash, metadata
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        ON CONFLICT (id) DO UPDATE SET
+          status = EXCLUDED.status,
+          current_owner_id = EXCLUDED.current_owner_id,
+          locked_by = EXCLUDED.locked_by,
+          updated_at = NOW()
+        RETURNING *;
+      `;
+      const ticketParams = [
+        ticketId,
+        ticketData.seller_id || ticketData.original_owner_id,
+        ticketData.current_owner_id || ticketData.seller_id || ticketData.original_owner_id,
+        eventId,
+        ticketData.ticket_type || 'GENERAL_ADMISSION',
+        ticketData.section || null,
+        ticketData.row_id || ticketData.row || null,
+        ticketData.seat || null,
+        ticketData.quantity || 1,
+        ticketData.face_value || ticketData.faceValue || 0,
+        ticketData.currency || 'IDR',
+        ticketData.ticket_format || 'E_TICKET',
+        ticketData.transfer_method || 'MOBILE_TRANSFER',
+        ticketData.status || 'VERIFIED',
+        typeof ticketData.locked_by === 'string' ? ticketData.locked_by.slice(0, 64) : null,
+        ticketData.barcode_hash || null,
+        JSON.stringify(ticketData.metadata || {})
+      ];
+      const tktRes = await client.query(ticketSql, ticketParams);
+      const persistedTicket = tktRes.rows[0];
+
+      // 4. Insert child listing SECOND referencing persisted ticket ID
+      const listingId = listingData.id || listingData.listing_id || `list-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      const listingSql = `
+        INSERT INTO marketplace_listings (
+          id, ticket_id, seller_id, canonical_event_id, price, currency,
+          status, expires_at, pricing_policy_version, fulfillment_type, metadata
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ON CONFLICT (id) DO UPDATE SET
+          price = EXCLUDED.price,
+          status = EXCLUDED.status,
+          fulfillment_type = COALESCE(EXCLUDED.fulfillment_type, marketplace_listings.fulfillment_type),
+          updated_at = NOW()
+        RETURNING *;
+      `;
+      const listingParams = [
+        listingId,
+        persistedTicket.id,
+        sellerId,
+        eventId,
+        listingData.price,
+        listingData.currency || 'IDR',
+        listingData.status || 'ACTIVE',
+        listingData.expires_at || null,
+        listingData.pricing_policy_version || 'TIKUM_FEE_POLICY_V1',
+        explicitFulfillment,
+        JSON.stringify(listingData.metadata || {})
+      ];
+      const listRes = await client.query(listingSql, listingParams);
+      const persistedListing = listRes.rows[0];
+
+      return { ticket: persistedTicket, listing: persistedListing };
+    };
+
     try {
-      return await this.withTransaction(async (client) => {
-        const eventId = ticketData.canonical_event_id || ticketData.event_id || listingData.canonical_event_id || listingData.event_id;
-        const sellerId = ticketData.seller_id || listingData.seller_id;
-
-        // 1. Ensure parent user exists
-        if (sellerId) {
-          await this.ensureUserExists(sellerId, client);
-        }
-
-        // 2. Ensure parent event exists
-        if (eventId) {
-          await this.ensureEventExists(eventId, client);
-        }
-
-        // 3. Insert parent ticket FIRST
-        const ticketId = ticketData.id || ticketData.ticket_id || `tkt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-        const ticketSql = `
-          INSERT INTO marketplace_tickets (
-            id, seller_id, current_owner_id, canonical_event_id, ticket_type,
-            section, row_id, seat, quantity, face_value, currency,
-            ticket_format, transfer_method, status, locked_by, barcode_hash, metadata
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-          ON CONFLICT (id) DO UPDATE SET
-            status = EXCLUDED.status,
-            current_owner_id = EXCLUDED.current_owner_id,
-            locked_by = EXCLUDED.locked_by,
-            updated_at = NOW()
-          RETURNING *;
-        `;
-        const ticketParams = [
-          ticketId,
-          ticketData.seller_id || ticketData.original_owner_id,
-          ticketData.current_owner_id || ticketData.seller_id || ticketData.original_owner_id,
-          eventId,
-          ticketData.ticket_type || 'GENERAL_ADMISSION',
-          ticketData.section || null,
-          ticketData.row_id || ticketData.row || null,
-          ticketData.seat || null,
-          ticketData.quantity || 1,
-          ticketData.face_value || ticketData.faceValue || 0,
-          ticketData.currency || 'IDR',
-          ticketData.ticket_format || 'E_TICKET',
-          ticketData.transfer_method || 'MOBILE_TRANSFER',
-          ticketData.status || 'VERIFIED',
-          typeof ticketData.locked_by === 'string' ? ticketData.locked_by.slice(0, 64) : null,
-          ticketData.barcode_hash || null,
-          JSON.stringify(ticketData.metadata || {})
-        ];
-        const tktRes = await client.query(ticketSql, ticketParams);
-        const persistedTicket = tktRes.rows[0];
-
-        // 4. Insert child listing SECOND referencing persisted ticket ID
-        const listingId = listingData.id || listingData.listing_id || `list-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-        const listingSql = `
-          INSERT INTO marketplace_listings (
-            id, ticket_id, seller_id, canonical_event_id, price, currency,
-            status, expires_at, pricing_policy_version, metadata
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-          ON CONFLICT (id) DO UPDATE SET
-            price = EXCLUDED.price,
-            status = EXCLUDED.status,
-            updated_at = NOW()
-          RETURNING *;
-        `;
-        const listingParams = [
-          listingId,
-          persistedTicket.id,
-          sellerId,
-          eventId,
-          listingData.price,
-          listingData.currency || 'IDR',
-          listingData.status || 'ACTIVE',
-          listingData.expires_at || null,
-          listingData.pricing_policy_version || 'TIKUM_FEE_POLICY_V1',
-          JSON.stringify(listingData.metadata || {})
-        ];
-        const listRes = await client.query(listingSql, listingParams);
-        const persistedListing = listRes.rows[0];
-
-        return { ticket: persistedTicket, listing: persistedListing };
-      });
+      if (txContext?.client) {
+        return await runWithClient(txContext.client);
+      }
+      return await this.withTransaction(runWithClient);
     } catch (err) {
       throw this.sanitizeDbError(err);
     }
@@ -576,20 +639,23 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
   }
 
   // Listings
-  async createListing(listingData) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async createListing(listingData, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.createListing(listingData, txContext);
       }
-      return this.fallbackRepo.createListing(listingData);
     }
 
     const eventId = listingData.canonical_event_id || listingData.event_id;
     if (eventId) {
-      const evRes = await this.query(
+      const evRes = await this._exec(
         'SELECT id, lifecycle_status, archive_status, start_date, end_date, end_datetime, timezone FROM canonical_events WHERE id = $1',
-        [eventId]
+        [eventId],
+        txContext
       );
       if (evRes.rows.length > 0) {
         const ev = evRes.rows[0];
@@ -602,12 +668,20 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       }
     }
 
+    const explicitFulfillment = listingData.fulfillment_type ?? listingData.metadata?.fulfillment_type ?? listingData.metadata?.fulfillment_option ?? null;
+    if (explicitFulfillment !== null && !['SELLER_MANAGED', 'TIKUM_VENUE_PIC'].includes(explicitFulfillment)) {
+      const err = new Error(`Invalid fulfillment_type '${explicitFulfillment}'`);
+      err.code = 'INVALID_FULFILLMENT_TYPE';
+      err.statusCode = 400;
+      throw err;
+    }
+
     try {
-      if (listingData.seller_id) await this.ensureUserExists(listingData.seller_id);
-      if (eventId) await this.ensureEventExists(eventId);
+      if (listingData.seller_id) await this.ensureUserExists(listingData.seller_id, txContext?.client || null);
+      if (eventId) await this.ensureEventExists(eventId, txContext?.client || null);
 
       if (listingData.ticket_id) {
-        const tCheck = await this.query('SELECT id FROM marketplace_tickets WHERE id = $1', [listingData.ticket_id]);
+        const tCheck = await this._exec('SELECT id FROM marketplace_tickets WHERE id = $1', [listingData.ticket_id], txContext);
         if (!tCheck || !tCheck.rows || tCheck.rows.length === 0) {
           const err = new Error(`Parent ticket '${listingData.ticket_id}' not found in database.`);
           err.code = 'PARENT_TICKET_MISSING';
@@ -620,11 +694,12 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       const sql = `
         INSERT INTO marketplace_listings (
           id, ticket_id, seller_id, canonical_event_id, price, currency,
-          status, expires_at, pricing_policy_version, metadata
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          status, expires_at, pricing_policy_version, fulfillment_type, metadata
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         ON CONFLICT (id) DO UPDATE SET
           price = EXCLUDED.price,
           status = EXCLUDED.status,
+          fulfillment_type = COALESCE(EXCLUDED.fulfillment_type, marketplace_listings.fulfillment_type),
           updated_at = NOW()
         RETURNING *;
       `;
@@ -638,35 +713,40 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
         listingData.status || 'ACTIVE',
         listingData.expires_at || null,
         listingData.pricing_policy_version || 'TIKUM_FEE_POLICY_V1',
+        explicitFulfillment,
         JSON.stringify(listingData.metadata || {})
       ];
 
-      const res = await this.query(sql, params);
+      const res = await this._exec(sql, params, txContext);
       return res.rows[0];
     } catch (err) {
       throw this.sanitizeDbError(err);
     }
   }
 
-  async getListingById(listingId) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async getListingById(listingId, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.getListingById(listingId, txContext);
       }
-      return this.fallbackRepo.getListingById(listingId);
     }
-    const res = await this.query('SELECT * FROM marketplace_listings WHERE id = $1', [listingId]);
+    const res = await this._exec('SELECT * FROM marketplace_listings WHERE id = $1', [listingId], txContext);
     return res.rows[0] || null;
   }
 
-  async updateListingStatus(listingId, status) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async updateListingStatus(listingId, status, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.updateListingStatus(listingId, status, txContext);
       }
-      return this.fallbackRepo.updateListingStatus(listingId, status);
     }
     const sql = `
       UPDATE marketplace_listings
@@ -674,19 +754,21 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       WHERE id = $1
       RETURNING *;
     `;
-    const res = await this.query(sql, [listingId, status]);
+    const res = await this._exec(sql, [listingId, status], txContext);
     return res.rows[0] || null;
   }
 
-  async updateListingInventory(listingId, updates = {}) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async updateListingInventory(listingId, updates = {}, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.updateListingInventory(listingId, updates, txContext);
       }
-      return this.fallbackRepo.updateListingInventory(listingId, updates);
     }
-    const current = await this.getListingById(listingId);
+    const current = await this.getListingById(listingId, txContext);
     if (!current) return null;
     let meta = current.metadata || {};
     if (typeof meta === 'string') {
@@ -700,31 +782,35 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     if (updates.pic_assistance_status) meta.pic_assistance_status = updates.pic_assistance_status;
 
     const newStatus = updates.status || current.status;
+    const newFulfillment = updates.fulfillment_type || current.fulfillment_type || null;
     const sql = `
       UPDATE marketplace_listings
-      SET status = $2, metadata = $3, updated_at = NOW()
+      SET status = $2, metadata = $3, fulfillment_type = COALESCE($4, fulfillment_type), updated_at = NOW()
       WHERE id = $1
       RETURNING *;
     `;
-    const res = await this.query(sql, [listingId, newStatus, JSON.stringify(meta)]);
+    const res = await this._exec(sql, [listingId, newStatus, JSON.stringify(meta), newFulfillment], txContext);
     return res.rows[0] || null;
   }
 
-  async atomicReserveInventory(listingId, requestedQty = 1) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async atomicReserveInventory(listingId, requestedQty = 1, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.atomicReserveInventory(listingId, requestedQty, txContext);
       }
-      return this.fallbackRepo.atomicReserveInventory(listingId, requestedQty);
     }
 
-    const checkListing = await this.query(
+    const checkListing = await this._exec(
       `SELECT l.id, l.status, l.metadata, l.canonical_event_id, e.lifecycle_status, e.archive_status, e.start_date, e.end_date, e.end_datetime, e.timezone
        FROM marketplace_listings l
        LEFT JOIN canonical_events e ON e.id = l.canonical_event_id
        WHERE l.id = $1`,
-      [listingId]
+      [listingId],
+      txContext
     );
     if (checkListing.rows.length === 0) {
       const err = new Error(`Listing '${listingId}' not found`);
@@ -764,9 +850,9 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
         AND COALESCE((metadata->>'available_quantity')::int, 1) >= $2
       RETURNING *;
     `;
-    const res = await this.query(sql, [listingId, req]);
+    const res = await this._exec(sql, [listingId, req], txContext);
     if (res.rowCount === 0) {
-      const checkRes = await this.query('SELECT id, status, metadata FROM marketplace_listings WHERE id = $1', [listingId]);
+      const checkRes = await this._exec('SELECT id, status, metadata FROM marketplace_listings WHERE id = $1', [listingId], txContext);
       if (checkRes.rowCount === 0) {
         const err = new Error(`Listing '${listingId}' not found`);
         err.code = 'LISTING_NOT_FOUND';
@@ -790,13 +876,15 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     return res.rows[0];
   }
 
-  async atomicReleaseInventory(listingId, quantity = 1) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async atomicReleaseInventory(listingId, quantity = 1, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.atomicReleaseInventory(listingId, quantity, txContext);
       }
-      return this.fallbackRepo.atomicReleaseInventory(listingId, quantity);
     }
     const qty = Math.max(1, parseInt(quantity, 10) || 1);
     const sql = `
@@ -818,7 +906,7 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       WHERE id = $1
       RETURNING *;
     `;
-    const res = await this.query(sql, [listingId, qty]);
+    const res = await this._exec(sql, [listingId, qty], txContext);
     return res.rows[0] || null;
   }
 
@@ -888,19 +976,18 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
     }, ttlMs);
   }
 
-  async createReservation(reservationData, ttlMs = 600000) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async createReservation(reservationData, ttlMs = 600000, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.createReservation(reservationData, ttlMs, txContext);
       }
-      return this.fallbackRepo.createReservation(reservationData, ttlMs);
     }
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-
+    const runWithClient = async (client) => {
       // 1. Lock the listing row exclusively
       const listingRes = await client.query(
         'SELECT * FROM marketplace_listings WHERE id = $1 FOR UPDATE',
@@ -969,65 +1056,67 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
         [ticket.id, reservationData.buyer_id]
       );
 
-      await client.query('COMMIT');
       return resResult.rows[0];
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
+    };
+
+    if (txContext?.client) {
+      return await runWithClient(txContext.client);
     }
+    return await this.withTransaction(runWithClient);
   }
 
-  async getReservationById(reservationId) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async getReservationById(reservationId, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.getReservationById(reservationId, txContext);
       }
-      return this.fallbackRepo.getReservationById(reservationId);
     }
-    const res = await this.query('SELECT * FROM marketplace_reservations WHERE id = $1', [reservationId]);
+    const res = await this._exec('SELECT * FROM marketplace_reservations WHERE id = $1', [reservationId], txContext);
     return res.rows[0] || null;
   }
 
-  async getActiveReservationForListing(listingId) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async getActiveReservationForListing(listingId, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.getActiveReservationForListing(listingId, txContext);
       }
-      return this.fallbackRepo.getActiveReservationForListing(listingId);
     }
     const sql = `
       SELECT * FROM marketplace_reservations
       WHERE listing_id = $1 AND status = 'PENDING' AND expires_at > NOW()
       LIMIT 1;
     `;
-    const res = await this.query(sql, [listingId]);
+    const res = await this._exec(sql, [listingId], txContext);
     return res.rows[0] || null;
   }
 
-  async expireReservation(reservationId) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async expireReservation(reservationId, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.expireReservation(reservationId, txContext);
       }
-      return this.fallbackRepo.expireReservation(reservationId);
     }
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
+    const runWithClient = async (client) => {
       const rRes = await client.query(
         'SELECT * FROM marketplace_reservations WHERE id = $1 FOR UPDATE',
         [reservationId]
       );
       const r = rRes.rows[0];
       if (!r || r.status !== 'PENDING') {
-        await client.query('ROLLBACK');
-        return r;
+        return r || null;
       }
 
       await client.query(
@@ -1043,36 +1132,34 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
         [r.ticket_id]
       );
 
-      await client.query('COMMIT');
       return { ...r, status: 'EXPIRED' };
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
+    };
+
+    if (txContext?.client) {
+      return await runWithClient(txContext.client);
     }
+    return await this.withTransaction(runWithClient);
   }
 
-  async releaseReservation(reservationId, actorId = 'SYSTEM', reason = null) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async releaseReservation(reservationId, actorId = 'SYSTEM', reason = null, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.releaseReservation(reservationId, actorId, reason, txContext);
       }
-      return this.fallbackRepo.releaseReservation(reservationId, actorId, reason);
     }
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
+    const runWithClient = async (client) => {
       const rRes = await client.query(
         'SELECT * FROM marketplace_reservations WHERE id = $1 FOR UPDATE',
         [reservationId]
       );
       const r = rRes.rows[0];
       if (!r || r.status !== 'PENDING') {
-        await client.query('ROLLBACK');
-        return r;
+        return r || null;
       }
 
       await client.query(
@@ -1088,23 +1175,24 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
         [r.ticket_id]
       );
 
-      await client.query('COMMIT');
       return { ...r, status: 'RELEASED' };
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
+    };
+
+    if (txContext?.client) {
+      return await runWithClient(txContext.client);
     }
+    return await this.withTransaction(runWithClient);
   }
 
-  async convertReservation(reservationId) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async convertReservation(reservationId, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.convertReservation(reservationId, txContext);
       }
-      return this.fallbackRepo.convertReservation(reservationId);
     }
     const sql = `
       UPDATE marketplace_reservations
@@ -1112,41 +1200,47 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       WHERE id = $1
       RETURNING *;
     `;
-    const res = await this.query(sql, [reservationId]);
+    const res = await this._exec(sql, [reservationId], txContext);
     return res.rows[0] || null;
   }
 
-  async cancelReservation(reservationId) {
-    return this.expireReservation(reservationId);
+  async cancelReservation(reservationId, txContext = null) {
+    return this.expireReservation(reservationId, txContext);
   }
 
-  async reconcileExpiredReservations() {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async reconcileExpiredReservations(txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.reconcileExpiredReservations(txContext);
       }
-      return this.fallbackRepo.reconcileExpiredReservations();
     }
-    const res = await this.query(
-      "SELECT id FROM marketplace_reservations WHERE status = 'PENDING' AND expires_at <= NOW()"
+    const res = await this._exec(
+      "SELECT id FROM marketplace_reservations WHERE status = 'PENDING' AND expires_at <= NOW()",
+      [],
+      txContext
     );
     const expired = [];
     for (const row of res.rows) {
-      const exp = await this.expireReservation(row.id);
+      const exp = await this.expireReservation(row.id, txContext);
       if (exp) expired.push(exp);
     }
     return expired;
   }
 
   // Deliveries
-  async createDelivery(deliveryData) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async createDelivery(deliveryData, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.createDelivery(deliveryData, txContext);
       }
-      return this.fallbackRepo.createDelivery(deliveryData);
     }
     const id = deliveryData.id || `dlv-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
@@ -1169,41 +1263,47 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       deliveryData.status || 'PENDING',
       deliveryData.notes || null
     ];
-    const res = await this.query(sql, params);
+    const res = await this._exec(sql, params, txContext);
     return res.rows[0];
   }
 
-  async getDeliveryById(deliveryId) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async getDeliveryById(deliveryId, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.getDeliveryById(deliveryId, txContext);
       }
-      return this.fallbackRepo.getDeliveryById(deliveryId);
     }
-    const res = await this.query('SELECT * FROM marketplace_deliveries WHERE id = $1', [deliveryId]);
+    const res = await this._exec('SELECT * FROM marketplace_deliveries WHERE id = $1', [deliveryId], txContext);
     return res.rows[0] || null;
   }
 
-  async getDeliveryByOrderId(orderId) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async getDeliveryByOrderId(orderId, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.getDeliveryByOrderId(orderId, txContext);
       }
-      return this.fallbackRepo.getDeliveryByOrderId(orderId);
     }
-    const res = await this.query('SELECT * FROM marketplace_deliveries WHERE order_id = $1', [orderId]);
+    const res = await this._exec('SELECT * FROM marketplace_deliveries WHERE order_id = $1', [orderId], txContext);
     return res.rows[0] || null;
   }
 
-  async updateDeliveryStatus(deliveryId, status, metadata = {}) {
-    await this.ensureInitialized();
-    if (this.degraded) {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+  async updateDeliveryStatus(deliveryId, status, metadata = {}, txContext = null) {
+    if (!txContext?.client) {
+      await this.ensureInitialized();
+      if (this.degraded) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+          throw new Error('[MarketplaceRepository] Production database is degraded / unavailable.');
+        }
+        return this.fallbackRepo.updateDeliveryStatus(deliveryId, status, metadata, txContext);
       }
-      return this.fallbackRepo.updateDeliveryStatus(deliveryId, status, metadata);
     }
     const sql = `
       UPDATE marketplace_deliveries
@@ -1216,12 +1316,12 @@ class PostgresMarketplaceRepository extends MarketplaceRepository {
       WHERE id = $1
       RETURNING *;
     `;
-    const res = await this.query(sql, [
+    const res = await this._exec(sql, [
       deliveryId,
       status,
       metadata.delivery_reference || null,
       metadata.notes || metadata.failure_reason || null
-    ]);
+    ], txContext);
     return res.rows[0] || null;
   }
 

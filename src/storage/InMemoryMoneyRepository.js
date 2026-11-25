@@ -6,6 +6,18 @@
 
 const { MoneyRepository } = require('./MoneyRepository');
 
+function cloneCollectionValue(val) {
+  return val === undefined ? undefined : JSON.parse(JSON.stringify(val));
+}
+
+function resolveEntriesAndTx(entriesList, txContext) {
+  if (entriesList && !Array.isArray(entriesList) &&
+      (entriesList.isPostgres !== undefined || entriesList.isInMemory !== undefined || entriesList.client !== undefined)) {
+    return { entriesArg: null, resolvedTx: entriesList };
+  }
+  return { entriesArg: entriesList, resolvedTx: txContext };
+}
+
 class InMemoryMoneyRepository extends MoneyRepository {
   constructor() {
     super();
@@ -22,6 +34,51 @@ class InMemoryMoneyRepository extends MoneyRepository {
     this.ledgerEntries = [];
     this.idempotency = new Map();
     this.authorizations = new Map();
+    this.outbox = new Map();
+  }
+
+  _createSnapshot() {
+    const snapMap = (map) => Array.from(map.entries()).map(([k, v]) => [k, cloneCollectionValue(v)]);
+    return {
+      quotes: snapMap(this.quotes),
+      orders: snapMap(this.orders),
+      payments: snapMap(this.payments),
+      attempts: snapMap(this.attempts),
+      webhooks: snapMap(this.webhooks),
+      escrows: snapMap(this.escrows),
+      settlements: snapMap(this.settlements),
+      disputes: snapMap(this.disputes),
+      chargebacks: snapMap(this.chargebacks),
+      ledgerTransactions: snapMap(this.ledgerTransactions),
+      ledgerEntries: cloneCollectionValue(this.ledgerEntries),
+      idempotency: snapMap(this.idempotency),
+      authorizations: snapMap(this.authorizations),
+      outbox: snapMap(this.outbox)
+    };
+  }
+
+  _restoreSnapshot(snap) {
+    if (!snap) return;
+    const restoreMap = (target, entries) => {
+      target.clear();
+      for (const [k, v] of (entries || [])) {
+        target.set(k, cloneCollectionValue(v));
+      }
+    };
+    restoreMap(this.quotes, snap.quotes);
+    restoreMap(this.orders, snap.orders);
+    restoreMap(this.payments, snap.payments);
+    restoreMap(this.attempts, snap.attempts);
+    restoreMap(this.webhooks, snap.webhooks);
+    restoreMap(this.escrows, snap.escrows);
+    restoreMap(this.settlements, snap.settlements);
+    restoreMap(this.disputes, snap.disputes);
+    restoreMap(this.chargebacks, snap.chargebacks);
+    restoreMap(this.ledgerTransactions, snap.ledgerTransactions);
+    this.ledgerEntries = cloneCollectionValue(snap.ledgerEntries || []);
+    restoreMap(this.idempotency, snap.idempotency);
+    restoreMap(this.authorizations, snap.authorizations);
+    restoreMap(this.outbox, snap.outbox);
   }
 
   async init() {
@@ -29,33 +86,122 @@ class InMemoryMoneyRepository extends MoneyRepository {
   }
 
   // Quotes
-  async createQuote(quoteData) {
+  async createQuote(quoteData, txContext = null) {
     const id = quoteData.quote_id || quoteData.id || `quo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const ticketPrice = Number(quoteData.ticket_price ?? quoteData.ticketPrice);
+    const quantity = Number(quoteData.quantity ?? 1);
+    const grossTicketValue = quoteData.gross_ticket_value !== undefined
+      ? Number(quoteData.gross_ticket_value)
+      : (Number.isFinite(ticketPrice) ? ticketPrice * quantity : null);
     const quote = {
       ...quoteData,
       quote_id: id,
       id,
+      gross_ticket_value: grossTicketValue,
+      fulfillment_option: quoteData.fulfillment_option || null,
+      offer_id: quoteData.offer_id || null,
+      consumed_by_order_id: quoteData.consumed_by_order_id || null,
       status: quoteData.status || 'ACTIVE',
-      created_at: new Date().toISOString()
+      created_at: quoteData.created_at || new Date().toISOString()
     };
     this.quotes.set(id, quote);
-    return quote;
+    return { ...quote };
   }
 
-  async getQuoteById(quoteId) {
-    return this.quotes.get(quoteId) || null;
+  async getQuoteById(quoteId, txContext = null) {
+    const q = this.quotes.get(quoteId);
+    return q ? { ...q } : null;
   }
 
-  async consumeQuote(quoteId) {
+  async consumeQuote(quoteId, orderContextOrTx = null, txContext = null) {
+    if (orderContextOrTx && typeof orderContextOrTx === 'object' &&
+        (orderContextOrTx.orderId || orderContextOrTx.order_id || orderContextOrTx.buyerId || orderContextOrTx.buyer_id || orderContextOrTx.listingId || orderContextOrTx.listing_id)) {
+      return await this.consumeQuoteForOrder(quoteId, orderContextOrTx, txContext);
+    }
     const q = this.quotes.get(quoteId);
     if (!q) return null;
+    if (q.status === 'CONSUMED') {
+      const err = new Error(`Transaction quote '${quoteId}' has already been consumed`);
+      err.code = 'QUOTE_ALREADY_CONSUMED';
+      err.status = 409;
+      throw err;
+    }
+    if (q.status === 'EXPIRED' || (q.expires_at && new Date(q.expires_at).getTime() <= Date.now())) {
+      q.status = 'EXPIRED';
+      const err = new Error(`Transaction quote '${quoteId}' has expired`);
+      err.code = 'QUOTE_EXPIRED';
+      err.status = 410;
+      throw err;
+    }
     q.status = 'CONSUMED';
     q.consumed_at = new Date().toISOString();
-    return q;
+    return { ...q };
+  }
+
+  async consumeQuoteForOrder(quoteId, expectedContext = {}, txContext = null) {
+    const q = this.quotes.get(quoteId);
+    if (!q) {
+      const err = new Error(`Transaction quote '${quoteId}' not found`);
+      err.code = 'QUOTE_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
+    if (q.status === 'CONSUMED' || q.consumed_by_order_id) {
+      const err = new Error(`Transaction quote '${quoteId}' has already been consumed by order ${q.consumed_by_order_id || 'unknown'}`);
+      err.code = 'QUOTE_ALREADY_CONSUMED';
+      err.status = 409;
+      throw err;
+    }
+    if (q.status === 'EXPIRED' || (q.expires_at && new Date(q.expires_at).getTime() <= Date.now())) {
+      q.status = 'EXPIRED';
+      const err = new Error(`Transaction quote '${quoteId}' has expired`);
+      err.code = 'QUOTE_EXPIRED';
+      err.status = 410;
+      throw err;
+    }
+    if (q.status !== 'ACTIVE') {
+      const err = new Error(`Transaction quote '${quoteId}' is not active (status: ${q.status})`);
+      err.code = 'QUOTE_NOT_ACTIVE';
+      err.status = 409;
+      throw err;
+    }
+
+    const expBuyer = expectedContext.buyer_id ?? expectedContext.buyerId;
+    const expListing = expectedContext.listing_id ?? expectedContext.listingId;
+    const expQty = expectedContext.quantity;
+    const expPrice = expectedContext.ticket_price ?? expectedContext.ticketPrice;
+    const expGross = expectedContext.gross_ticket_value ?? expectedContext.grossTicketValue;
+    const expCurrency = expectedContext.currency;
+    const expFulfillment = expectedContext.fulfillment_option ?? expectedContext.fulfillmentOption;
+    const expPolicy = expectedContext.pricing_policy_version ?? expectedContext.pricingPolicyVersion ?? expectedContext.fee_policy_version;
+    const expOrderId = expectedContext.order_id ?? expectedContext.orderId ?? null;
+
+    const mismatches = [];
+    if (expBuyer !== undefined && String(q.buyer_id) !== String(expBuyer)) mismatches.push('buyer_id');
+    if (expListing !== undefined && String(q.listing_id) !== String(expListing)) mismatches.push('listing_id');
+    if (expQty !== undefined && Number(q.quantity) !== Number(expQty)) mismatches.push('quantity');
+    if (expPrice !== undefined && Number(q.ticket_price) !== Number(expPrice)) mismatches.push('ticket_price');
+    if (expGross !== undefined && Number(q.gross_ticket_value ?? (q.ticket_price * q.quantity)) !== Number(expGross)) mismatches.push('gross_ticket_value');
+    if (expCurrency !== undefined && String(q.currency || '').toUpperCase() !== String(expCurrency || '').toUpperCase()) mismatches.push('currency');
+    if (expFulfillment !== undefined && q.fulfillment_option !== expFulfillment) mismatches.push('fulfillment_option');
+    if (expPolicy !== undefined && q.pricing_policy_version !== expPolicy) mismatches.push('pricing_policy_version');
+
+    if (mismatches.length > 0) {
+      const err = new Error(`Transaction quote '${quoteId}' does not match order context: ${mismatches.join(', ')}`);
+      err.code = 'QUOTE_CONTEXT_MISMATCH';
+      err.status = 422;
+      err.mismatches = mismatches;
+      throw err;
+    }
+
+    q.status = 'CONSUMED';
+    q.consumed_at = new Date().toISOString();
+    q.consumed_by_order_id = expOrderId;
+    return { ...q };
   }
 
   // Orders
-  async createOrder(orderData) {
+  async createOrder(orderData, txContext = null) {
     const id = orderData.id || `ord-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const order = {
       ...orderData,
@@ -66,11 +212,12 @@ class InMemoryMoneyRepository extends MoneyRepository {
       updated_at: new Date().toISOString()
     };
     this.orders.set(id, order);
-    return order;
+    return { ...order };
   }
 
-  async getOrderById(orderId) {
-    return this.orders.get(orderId) || null;
+  async getOrderById(orderId, txContext = null) {
+    const o = this.orders.get(orderId);
+    return o ? { ...o } : null;
   }
 
   async listOrdersByBuyerId(buyerId) {
@@ -95,56 +242,71 @@ class InMemoryMoneyRepository extends MoneyRepository {
       .slice(0, limit);
   }
 
-  async updateOrderStatus(orderId, status, metadata = {}) {
+  async updateOrderStatus(orderId, status, metadata = {}, txContext = null) {
     const order = this.orders.get(orderId);
     if (!order) return null;
     order.status = status;
     order.updated_at = new Date().toISOString();
     Object.assign(order, metadata);
-    return order;
+    return { ...order };
   }
 
   // Payments
-  async createPayment(paymentData) {
+  async createPayment(paymentData, txContext = null) {
     const id = paymentData.id || `pay-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const payment = {
       ...paymentData,
       id,
       internal_payment_id: paymentData.internal_payment_id || id,
       status: paymentData.status || 'PAYMENT_PENDING',
-      created_at: new Date().toISOString(),
+      created_at: paymentData.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
     this.payments.set(id, payment);
-    return payment;
+    return { ...payment };
   }
 
-  async getPaymentById(paymentId) {
+  async getPaymentById(paymentId, txContext = null) {
     for (const p of this.payments.values()) {
       if (p.id === paymentId || p.internal_payment_id === paymentId || p.provider_reference === paymentId) {
-        return p;
+        return { ...p };
       }
     }
     return null;
   }
 
-  async getPaymentByOrderId(orderId) {
+  async getPaymentByOrderId(orderId, txContext = null) {
     for (const p of this.payments.values()) {
-      if (p.order_id === orderId) return p;
+      if (p.order_id === orderId) return { ...p };
     }
     return null;
   }
 
-  async updatePaymentStatus(paymentId, status, metadata = {}) {
-    const p = await this.getPaymentById(paymentId);
-    if (!p) return null;
-    p.status = status;
-    p.updated_at = new Date().toISOString();
-    Object.assign(p, metadata);
-    return p;
+  async getLatestSettledPaymentByOrderId(orderId, txContext = null) {
+    const settledStatuses = new Set(['SETTLED', 'PAID', 'ESCROW_HELD', 'CAPTURED_PLATFORM_SETTLEMENT']);
+    const matches = Array.from(this.payments.values())
+      .filter(p => p.order_id === orderId && settledStatuses.has(String(p.status || '').toUpperCase()))
+      .sort((a, b) => new Date(b.paid_at || b.updated_at || b.created_at || 0) - new Date(a.paid_at || a.updated_at || a.created_at || 0));
+    return matches[0] ? { ...matches[0] } : null;
   }
 
-  async recordPaymentAttempt(attemptData) {
+  async updatePaymentStatus(paymentId, status, metadata = {}, txContext = null) {
+    for (const p of this.payments.values()) {
+      if (p.id === paymentId || p.internal_payment_id === paymentId || p.provider_reference === paymentId) {
+        p.status = status;
+        p.money_state = status;
+        if (['PAID', 'ESCROW_HELD', 'SETTLED'].includes(status)) {
+          p.paid_at = p.paid_at || new Date().toISOString();
+        }
+        p.updated_at = new Date().toISOString();
+        Object.assign(p, metadata);
+        return { ...p };
+      }
+    }
+    return null;
+  }
+
+  async recordPaymentAttempt(attemptData, txContext = null) {
     const id = attemptData.id || `att-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const attempt = { ...attemptData, id, created_at: new Date().toISOString() };
     this.attempts.set(id, attempt);
@@ -152,38 +314,73 @@ class InMemoryMoneyRepository extends MoneyRepository {
   }
 
   // Webhooks
-  async recordWebhook(webhookData) {
+  async recordWebhook(webhookData, txContext = null) {
     const providerEventId = webhookData.provider_event_id || webhookData.providerEventId;
     const key = `${webhookData.provider}:${providerEventId}`;
+    const targetStatus = webhookData.processing_status || 'PENDING';
+    const staleAfterSeconds = Number.isFinite(Number(webhookData.staleAfterSeconds))
+      ? Math.max(0, Number(webhookData.staleAfterSeconds))
+      : 120;
+
     if (this.webhooks.has(key)) {
       const existing = this.webhooks.get(key);
-      return { id: existing.id, inserted: false, duplicate: true, idempotent: true, record: existing };
+      const isFailed = existing.processing_status === 'FAILED' || existing.processing_status === 'PROCESSING_FAILED';
+      const ageMs = Date.now() - new Date(existing.received_at || 0).getTime();
+      const isStale = (existing.processing_status === 'PENDING' || existing.processing_status === 'PROCESSING') &&
+        ageMs > (staleAfterSeconds * 1000);
+
+      if (isFailed || isStale) {
+        existing.event_type = webhookData.event_type || webhookData.eventType || existing.event_type || 'PAYMENT_EVENT';
+        existing.payload_hash = webhookData.payload_hash || webhookData.payloadHash || existing.payload_hash;
+        existing.signature_status = webhookData.signature_status || existing.signature_status || 'VALID';
+        existing.processing_status = targetStatus;
+        existing.raw_payload = webhookData.raw_payload || webhookData.rawPayload || existing.raw_payload;
+        existing.error_message = null;
+        existing.received_at = new Date().toISOString();
+        existing.processed_at = null;
+        return { id: existing.id, inserted: true, retried: true, duplicate: false, idempotent: false, record: { ...existing } };
+      }
+      return { id: existing.id, inserted: false, duplicate: true, idempotent: true, record: { ...existing } };
     }
+
     const record = {
       ...webhookData,
       id: webhookData.id || `pwh-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       provider_event_id: providerEventId,
-      processing_status: webhookData.processing_status || 'PENDING',
-      received_at: new Date().toISOString()
+      processing_status: targetStatus,
+      error_message: null,
+      received_at: webhookData.received_at || new Date().toISOString(),
+      processed_at: null
     };
     this.webhooks.set(key, record);
-    return { id: record.id, inserted: true, duplicate: false, idempotent: false, record };
+    return { id: record.id, inserted: true, retried: false, duplicate: false, idempotent: false, record: { ...record } };
   }
 
-  async getWebhook(provider, providerEventId) {
-    return this.webhooks.get(`${provider}:${providerEventId}`) || null;
+  async getWebhook(provider, providerEventId, txContext = null) {
+    const w = this.webhooks.get(`${provider}:${providerEventId}`);
+    return w ? { ...w } : null;
   }
 
-  async markWebhookProcessed(provider, providerEventId, status = 'PROCESSED') {
+  async markWebhookProcessed(provider, providerEventId, status = 'PROCESSED', metadataOrTx = null, txContext = null) {
     const w = this.webhooks.get(`${provider}:${providerEventId}`);
     if (!w) return null;
+    const isTxObj = metadataOrTx && (metadataOrTx.isPostgres !== undefined || metadataOrTx.isInMemory !== undefined || metadataOrTx.client !== undefined);
+    const meta = (!isTxObj && typeof metadataOrTx === 'object' && metadataOrTx !== null) ? metadataOrTx : {};
     w.processing_status = status;
-    w.processed_at = new Date().toISOString();
-    return w;
+    if (status === 'PROCESSED') {
+      w.processed_at = new Date().toISOString();
+      w.error_message = null;
+    } else {
+      w.processed_at = null;
+      if (meta.error_message !== undefined) {
+        w.error_message = meta.error_message;
+      }
+    }
+    return { ...w };
   }
 
   // Escrows
-  async createEscrow(escrowData) {
+  async createEscrow(escrowData, txContext = null) {
     const id = escrowData.id || `esc-${escrowData.order_id || Date.now()}`;
     const escrow = {
       ...escrowData,
@@ -191,15 +388,16 @@ class InMemoryMoneyRepository extends MoneyRepository {
       escrow_id: id,
       status: escrowData.status || 'PENDING_PAYMENT',
       dispute_hold: escrowData.dispute_hold === true,
-      created_at: new Date().toISOString(),
+      created_at: escrowData.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
     this.escrows.set(escrowData.order_id, escrow);
-    return escrow;
+    return { ...escrow };
   }
 
-  async getEscrowByOrderId(orderId) {
-    return this.escrows.get(orderId) || null;
+  async getEscrowByOrderId(orderId, txContext = null) {
+    const e = this.escrows.get(orderId);
+    return e ? { ...e } : null;
   }
 
   async listEscrowsByBuyerId(buyerId) {
@@ -220,16 +418,19 @@ class InMemoryMoneyRepository extends MoneyRepository {
       .slice(0, limit);
   }
 
-  async updateEscrowStatus(orderId, status, metadata = {}) {
+  async updateEscrowStatus(orderId, status, metadata = {}, txContext = null) {
     const escrow = this.escrows.get(orderId);
     if (!escrow) return null;
     escrow.status = status;
+    if (status === 'ESCROWED') {
+      escrow.funded_at = escrow.funded_at || new Date().toISOString();
+    }
     escrow.updated_at = new Date().toISOString();
     Object.assign(escrow, metadata);
-    return escrow;
+    return { ...escrow };
   }
 
-  async releaseEscrow(orderIdParam, actorIdParam = 'SYSTEM', reason = null) {
+  async releaseEscrow(orderIdParam, actorIdParam = 'SYSTEM', reason = null, txContext = null) {
     let orderId = orderIdParam;
     let actorId = actorIdParam;
     if (typeof orderIdParam === 'object' && orderIdParam !== null) {
@@ -249,7 +450,7 @@ class InMemoryMoneyRepository extends MoneyRepository {
       throw err;
     }
     if (escrow.status === 'RELEASED') {
-      return { escrow, alreadyReleased: true, idempotent: true };
+      return { escrow: { ...escrow }, alreadyReleased: true, idempotent: true };
     }
 
     escrow.status = 'RELEASED';
@@ -257,35 +458,45 @@ class InMemoryMoneyRepository extends MoneyRepository {
     escrow.released_by = actorId;
     escrow.release_reason = reason;
     escrow.updated_at = new Date().toISOString();
-    return { escrow, alreadyReleased: false, idempotent: false };
+    const order = this.orders.get(orderId);
+    if (order) {
+      order.status = 'SETTLED';
+      order.updated_at = new Date().toISOString();
+    }
+    return { escrow: { ...escrow }, alreadyReleased: false, idempotent: false };
   }
 
-  async refundEscrow(orderId, actorId, reason) {
+  async refundEscrow(orderId, actorId, reason, txContext = null) {
     const escrow = this.escrows.get(orderId);
     if (!escrow) throw new Error(`Escrow for order '${orderId}' not found`);
-    if (escrow.status === 'REFUNDED') return { escrow, alreadyRefunded: true };
+    if (escrow.status === 'REFUNDED') return { escrow: { ...escrow }, alreadyRefunded: true };
 
     escrow.status = 'REFUNDED';
     escrow.refunded_at = new Date().toISOString();
     escrow.refunded_by = actorId;
     escrow.refund_reason = reason;
     escrow.updated_at = new Date().toISOString();
-    return { escrow, alreadyRefunded: false };
+    const order = this.orders.get(orderId);
+    if (order) {
+      order.status = 'REFUNDED';
+      order.updated_at = new Date().toISOString();
+    }
+    return { escrow: { ...escrow }, alreadyRefunded: false };
   }
 
-  async setDisputeHold(orderId, hold = true) {
+  async setDisputeHold(orderId, hold = true, txContext = null) {
     const escrow = this.escrows.get(orderId);
     if (!escrow) return null;
     escrow.dispute_hold = hold;
     if (hold) escrow.status = 'DISPUTED';
     escrow.updated_at = new Date().toISOString();
-    return escrow;
+    return { ...escrow };
   }
 
   // Settlements
-  async createSettlement(settlementData) {
+  async createSettlement(settlementData, txContext = null) {
     if (this.settlements.has(settlementData.order_id)) {
-      return { settlement: this.settlements.get(settlementData.order_id), idempotent: true };
+      return { settlement: { ...this.settlements.get(settlementData.order_id) }, idempotent: true };
     }
     const id = settlementData.id || `stl-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const settlement = {
@@ -296,7 +507,7 @@ class InMemoryMoneyRepository extends MoneyRepository {
       updated_at: new Date().toISOString()
     };
     this.settlements.set(settlementData.order_id, settlement);
-    return { settlement, idempotent: false };
+    return { settlement: { ...settlement }, idempotent: false };
   }
 
   async getSettlementByOrderId(orderId) {
@@ -373,15 +584,46 @@ class InMemoryMoneyRepository extends MoneyRepository {
   }
 
   // Financial Ledger
-  async recordLedgerTransaction(txData, entriesList = null) {
-    const entries = entriesList || txData.entries || [];
-    // Check balanced invariant: sum(debit) === sum(credit)
+  async recordLedgerTransaction(txData, entriesList = null, txContext = null) {
+    const { entriesArg, resolvedTx } = resolveEntriesAndTx(entriesList, txContext);
+    const entries = entriesArg || txData.entries || [];
+    if (!Array.isArray(entries) || entries.length < 2) {
+      const err = new Error('Ledger transaction requires at least two balancing entries');
+      err.code = 'INVALID_LEDGER_TRANSACTION';
+      throw err;
+    }
+
+    const eventType = txData.event_type || txData.eventType || txData.source_event;
+    if (!eventType) {
+      const err = new Error('Ledger transaction requires a non-empty event_type');
+      err.code = 'INVALID_EVENT_TYPE';
+      throw err;
+    }
+    const orderId = txData.order_id || txData.orderId;
+    if (!orderId) {
+      const err = new Error('Ledger transaction requires order_id');
+      err.code = 'INVALID_LEDGER_TRANSACTION';
+      throw err;
+    }
+
+    // Check balanced invariant: sum(debit) === sum(credit) & positive integers
     let totalDebit = 0;
     let totalCredit = 0;
     for (const e of entries) {
-      const amt = parseInt(e.amount, 10);
-      if (e.type === 'DEBIT') totalDebit += amt;
-      else if (e.type === 'CREDIT') totalCredit += amt;
+      const amt = Number(e.amount);
+      const etype = e.type || e.entry_type;
+      if (!Number.isSafeInteger(amt) || amt <= 0) {
+        const err = new Error(`Ledger entry amount must be a positive integer, got: ${e.amount}`);
+        err.code = 'INVALID_ENTRY_AMOUNT';
+        throw err;
+      }
+      if (etype === 'DEBIT') totalDebit += amt;
+      else if (etype === 'CREDIT') totalCredit += amt;
+      else {
+        const err = new Error(`Invalid entry type: ${etype}`);
+        err.code = 'INVALID_ENTRY_TYPE';
+        throw err;
+      }
     }
     if (totalDebit !== totalCredit) {
       const err = new Error(`Double-entry imbalance: totalDebit (${totalDebit}) !== totalCredit (${totalCredit})`);
@@ -389,37 +631,65 @@ class InMemoryMoneyRepository extends MoneyRepository {
       throw err;
     }
 
+    if (eventType === 'CAPTURE' || eventType === 'RELEASE') {
+      for (const existing of this.ledgerTransactions.values()) {
+        if (existing.order_id === orderId && (existing.event_type || existing.source_event) === eventType) {
+          const err = new Error(`Duplicate ledger ${eventType} transaction for order '${orderId}'`);
+          err.code = 'DUPLICATE_LEDGER_EVENT';
+          err.status = 409;
+          throw err;
+        }
+      }
+    }
+
     const txId = txData.transaction_id || txData.transactionId || txData.id || `tx-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const now = new Date().toISOString();
+    const currency = txData.currency || 'IDR';
+
+    const storedEntries = [];
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      const entryId = e.entry_id || `${txId}-${i + 1}`;
+      const account = e.account || e.ledger_account;
+      const entryType = e.type || e.entry_type;
+      const entryObj = {
+        entry_id: entryId,
+        transaction_id: txId,
+        order_id: orderId,
+        ledger_account: account,
+        account,
+        entry_type: entryType,
+        type: entryType,
+        amount: parseInt(e.amount, 10),
+        currency: e.currency || currency,
+        source_event: eventType,
+        created_at: now
+      };
+      this.ledgerEntries.push(entryObj);
+      storedEntries.push({ ...entryObj });
+    }
+
     const tx = {
       ...txData,
       transaction_id: txId,
       id: txId,
+      order_id: orderId,
+      quote_id: txData.quote_id || txData.quoteId || null,
+      event_type: eventType,
+      source_event: eventType,
       total_amount: totalDebit,
-      created_at: new Date().toISOString(),
-      entries
+      currency,
+      description: txData.description || '',
+      actor_id: txData.actor_id || txData.actorId || 'SYSTEM',
+      created_at: now,
+      entries: storedEntries
     };
     this.ledgerTransactions.set(txId, tx);
 
-    for (let i = 0; i < entries.length; i++) {
-      const e = entries[i];
-      const entryId = `${txId}-${i + 1}`;
-      this.ledgerEntries.push({
-        entry_id: entryId,
-        transaction_id: txId,
-        order_id: txData.order_id || txData.orderId,
-        ledger_account: e.account || e.ledger_account,
-        entry_type: e.type || e.entry_type,
-        amount: parseInt(e.amount, 10),
-        currency: e.currency || 'IDR',
-        source_event: txData.event_type || txData.eventType,
-        created_at: tx.created_at
-      });
-    }
-
-    return tx;
+    return { ...tx, entries: storedEntries.map(e => ({ ...e })) };
   }
 
-  async getAccountBalances() {
+  async getAccountBalances(txContext = null) {
     const balances = {};
     for (const e of this.ledgerEntries) {
       if (!balances[e.ledger_account]) balances[e.ledger_account] = 0;
@@ -429,25 +699,89 @@ class InMemoryMoneyRepository extends MoneyRepository {
     return balances;
   }
 
-  async getLedgerTransactionsByOrderId(orderId) {
+  async getLedgerTransactionsByOrderId(orderId, txContext = null) {
+    return await this.getLedgerTransactionsWithEntriesByOrderId(orderId, null, txContext);
+  }
+
+  async getLedgerTransactionsWithEntriesByOrderId(orderId, eventType = null, txContext = null) {
     const res = [];
     for (const tx of this.ledgerTransactions.values()) {
-      if (tx.order_id === orderId) res.push(tx);
+      const txEvent = tx.event_type || tx.source_event;
+      if (tx.order_id === orderId && (!eventType || txEvent === eventType)) {
+        const entries = this.ledgerEntries
+          .filter(e => e.transaction_id === tx.transaction_id)
+          .map(e => ({ ...e }));
+        res.push({ ...tx, entries });
+      }
     }
+    res.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
     return res;
   }
 
   // Idempotency
-  async checkIdempotency(key, scope) {
+  async checkIdempotency(key, scope, txContext = null) {
     const record = this.idempotency.get(key);
-    if (record && record.scope === scope) return record;
+    if (record && record.scope === scope) return { ...record };
     return null;
   }
 
-  async saveIdempotency(key, scope, responsePayload) {
-    const record = { key, scope, status: 'COMPLETED', response_payload: responsePayload, created_at: new Date().toISOString() };
+  async saveIdempotency(key, scope, responsePayload, txContext = null) {
+    const record = { key, scope, status: 'COMPLETED', response_payload: responsePayload, created_at: new Date().toISOString(), completed_at: new Date().toISOString() };
     this.idempotency.set(key, record);
-    return record;
+    return { ...record };
+  }
+
+  // Transactional Outbox
+  async createOutboxEvent(outboxData, txContext = null) {
+    const eventId = outboxData.event_id || outboxData.eventId;
+    if (this.outbox.has(eventId)) {
+      return { ...this.outbox.get(eventId), idempotent: true };
+    }
+    const id = outboxData.id || `obx-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const record = {
+      ...outboxData,
+      id,
+      event_id: eventId,
+      status: outboxData.status || 'PENDING',
+      retry_count: outboxData.retry_count || 0,
+      max_retries: outboxData.max_retries || 5,
+      last_error: outboxData.last_error || null,
+      next_retry_at: outboxData.next_retry_at || new Date().toISOString(),
+      created_at: outboxData.created_at || new Date().toISOString(),
+      processed_at: outboxData.processed_at || null
+    };
+    this.outbox.set(eventId, record);
+    return { ...record };
+  }
+
+  async claimPendingOutboxEvents(batchSize = 10) {
+    const now = Date.now();
+    const list = Array.from(this.outbox.values())
+      .filter(e => e.status === 'PENDING' && new Date(e.next_retry_at || 0).getTime() <= now)
+      .slice(0, batchSize);
+    for (const e of list) {
+      e.status = 'PROCESSING';
+    }
+    return list.map(e => ({ ...e }));
+  }
+
+  async markOutboxEventProcessed(eventId, txContext = null) {
+    const e = this.outbox.get(eventId);
+    if (!e) return null;
+    e.status = 'PROCESSED';
+    e.processed_at = new Date().toISOString();
+    e.last_error = null;
+    return { ...e };
+  }
+
+  async markOutboxEventFailed(eventId, errorMessage, backoffSeconds = 60, txContext = null) {
+    const e = this.outbox.get(eventId);
+    if (!e) return null;
+    e.retry_count = (e.retry_count || 0) + 1;
+    e.last_error = errorMessage;
+    e.status = e.retry_count >= (e.max_retries || 5) ? 'DEAD_LETTER' : 'PENDING';
+    e.next_retry_at = new Date(Date.now() + (backoffSeconds * 1000)).toISOString();
+    return { ...e };
   }
 
   // Financial Dual Authorization (Maker-Checker Gate)
