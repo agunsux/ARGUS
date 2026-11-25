@@ -569,7 +569,7 @@
                     <i class="fa-solid fa-handshake" style="color: #fbbf24;"></i> Opsi B: Transfer Mandiri oleh Penjual
                   </div>
                   <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
-                    Penjual mentransfer e-tiket langsung ke pembeli. Dana tetap di escrow hingga verifikasi turnstile atau bukti serah terima valid.
+                    Penjual mentransfer e-tiket langsung ke pembeli. Status pembayaran dan penyelesaian mengikuti konfirmasi penyedia serta hasil verifikasi serah terima.
                   </div>
                 </div>
               </label>
@@ -601,7 +601,7 @@
                 required
                 oninput="calculateFeePreview()"
               >
-              <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.sellingPriceSub">Harga jual yang Anda tetapkan per tiket (minimal Rp 500.000)</span>
+              <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.sellingPriceSub">Harga listing sebelum potongan Tikum Seller Fee 6% (min. Rp35.000, maks. Rp300.000).</span>
             </div>
           </div>
 
@@ -611,11 +611,11 @@
               <i class="fa-solid fa-calculator"></i> <span data-i18n="create.calcTitle">Kalkulasi Transparan Sistem (Sesuai Backend)</span>
             </div>
             <div class="price-row">
-              <span data-i18n="create.calcSellerTitle">Total Nilai Tiket Kotor:</span>
+              <span data-i18n="create.calcSellerTitle">Harga Jual Anda:</span>
               <span id="calcSellerAmount" class="mono">Rp 0</span>
             </div>
             <div class="price-row">
-              <span data-i18n="pricing.platformServiceFee">Biaya Layanan Platform (Tarif Pilot 6% + 6%, min. Rp35.000, maks. Rp500.000/sisi)</span>
+              <span data-i18n="create.calcFeeTitle">Tikum Seller Fee (6% (minimum Rp35.000 per tiket), maks Rp 300.000):</span>
               <span id="calcFeeAmount" class="mono" style="color: var(--warning);">-Rp 0</span>
             </div>
             <div class="price-row total">
