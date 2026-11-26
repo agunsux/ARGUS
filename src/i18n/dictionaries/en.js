@@ -1438,7 +1438,8 @@ module.exports = {
     "step1ResendCooldown": "(Resend in {sec}s)",
     "step2PdpConsent": "I confirm that the above details are accurate for ticket ownership verification and payout consent under Indonesia PDP Law No. 27/2022.",
     "otherBank": "Other Bank",
-    "serverCreateErr": "Failed to create listing on server"
+    "serverCreateErr": "Failed to create listing on server",
+    "errEventAlreadyPassed": "This event has already passed or been archived and cannot accept new ticket listings."
   },
   "offers": {
     "loading": "Fetching official offers list from Tikum server...",
@@ -1591,7 +1592,16 @@ module.exports = {
     "allInPrefix": "All-in",
     "tierPicShort": "Venue PIC",
     "tierSelfShort": "Seller Transfer",
-    "resaleTicketsSummary": "{count} ticket(s) · Service fee included"
+    "resaleTicketsSummary": "{count} ticket(s) · Service fee included",
+    "sportsHeading": "Verified Sports & Match Tickets",
+    "sportsSubtitle": "Discover verified basketball, badminton, football, and championship sporting events across Indonesia.",
+    "comedyHeading": "Stand-Up Comedy & Special Shows",
+    "comedySubtitle": "Explore verified stand-up comedy specials and national tours backed by protected resale verification.",
+    "emptySportsTitle": "No Upcoming Sports Events Yet",
+    "emptySportsDesc": "Upcoming sports events will appear once official promoter schedules are confirmed. You can also submit an upcoming sports event manually.",
+    "emptyComedyTitle": "No Upcoming Stand-Up Comedy Events Yet",
+    "emptyComedyDesc": "Upcoming stand-up comedy shows will appear once official promoter dates are confirmed. You can also submit an upcoming show manually.",
+    "emptyRegisterCta": "Submit Upcoming Event"
   },
   "prelaunch": {
     "title": "TIKUM is in pre-launch preparation.",

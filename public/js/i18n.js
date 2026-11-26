@@ -1481,7 +1481,8 @@
       "step1ResendCooldown": "(Kirim ulang dalam {sec}d)",
       "step2PdpConsent": "Saya menyatakan data di atas adalah benar untuk verifikasi kepemilikan tiket dan persetujuan pencairan sesuai UU PDP No. 27/2022.",
       "otherBank": "Bank Lainnya",
-      "serverCreateErr": "Gagal membuat listing di server"
+      "serverCreateErr": "Gagal membuat listing di server",
+      "errEventAlreadyPassed": "Event ini sudah lewat atau diarsipkan sehingga tidak dapat menerima listing tiket baru."
     },
     "offers": {
       "loading": "Mengambil daftar tawaran resmi dari server Tikum...",
@@ -1634,7 +1635,16 @@
       "allInPrefix": "All-in",
       "tierPicShort": "PIC Venue",
       "tierSelfShort": "Transfer Mandiri",
-      "resaleTicketsSummary": "{count} tiket · Termasuk biaya layanan"
+      "resaleTicketsSummary": "{count} tiket · Termasuk biaya layanan",
+      "sportsHeading": "Tiket Olahraga & Pertandingan Resmi",
+      "sportsSubtitle": "Temukan jadwal pertandingan basket, bulu tangkis, sepak bola, dan ajang olahraga terverifikasi di Indonesia.",
+      "comedyHeading": "Tiket Stand-Up Comedy & Pertunjukan Spesial",
+      "comedySubtitle": "Jelajahi tur komika nasional dan jadwal pertunjukan stand-up comedy terverifikasi dengan proteksi transaksi.",
+      "emptySportsTitle": "Belum Ada Event Olahraga Mendatang",
+      "emptySportsDesc": "Event olahraga baru akan tampil setelah tanggal dan sumber promotor resmi terkonfirmasi. Anda juga dapat mendaftarkan event olahraga mendatang secara mandiri.",
+      "emptyComedyTitle": "Belum Ada Event Stand-Up Comedy Mendatang",
+      "emptyComedyDesc": "Jadwal tur stand-up comedy baru akan tampil setelah tanggal promotor resmi terkonfirmasi. Anda juga dapat mendaftarkan event mendatang secara mandiri.",
+      "emptyRegisterCta": "Daftarkan Event Mendatang"
     },
     "prelaunch": {
       "title": "TIKUM sedang dalam tahap persiapan peluncuran.",
@@ -3846,7 +3856,8 @@
       "step1ResendCooldown": "(Resend in {sec}s)",
       "step2PdpConsent": "I confirm that the above details are accurate for ticket ownership verification and payout consent under Indonesia PDP Law No. 27/2022.",
       "otherBank": "Other Bank",
-      "serverCreateErr": "Failed to create listing on server"
+      "serverCreateErr": "Failed to create listing on server",
+      "errEventAlreadyPassed": "This event has already passed or been archived and cannot accept new ticket listings."
     },
     "offers": {
       "loading": "Fetching official offers list from Tikum server...",
@@ -3999,7 +4010,16 @@
       "allInPrefix": "All-in",
       "tierPicShort": "Venue PIC",
       "tierSelfShort": "Seller Transfer",
-      "resaleTicketsSummary": "{count} ticket(s) · Service fee included"
+      "resaleTicketsSummary": "{count} ticket(s) · Service fee included",
+      "sportsHeading": "Verified Sports & Match Tickets",
+      "sportsSubtitle": "Discover verified basketball, badminton, football, and championship sporting events across Indonesia.",
+      "comedyHeading": "Stand-Up Comedy & Special Shows",
+      "comedySubtitle": "Explore verified stand-up comedy specials and national tours backed by protected resale verification.",
+      "emptySportsTitle": "No Upcoming Sports Events Yet",
+      "emptySportsDesc": "Upcoming sports events will appear once official promoter schedules are confirmed. You can also submit an upcoming sports event manually.",
+      "emptyComedyTitle": "No Upcoming Stand-Up Comedy Events Yet",
+      "emptyComedyDesc": "Upcoming stand-up comedy shows will appear once official promoter dates are confirmed. You can also submit an upcoming show manually.",
+      "emptyRegisterCta": "Submit Upcoming Event"
     },
     "prelaunch": {
       "title": "TIKUM is in pre-launch preparation.",
@@ -6211,7 +6231,8 @@
       "step1ResendCooldown": "(Hantar semula dalam {sec}s)",
       "step2PdpConsent": "Saya mengesahkan data di atas benar bagi pengesahan pemilikan tiket dan persetujuan pembayaran mengikut Akta PDP No. 27/2022.",
       "otherBank": "Bank Lain",
-      "serverCreateErr": "Gagal mencipta penyenaraian di pelayan"
+      "serverCreateErr": "Gagal mencipta penyenaraian di pelayan",
+      "errEventAlreadyPassed": "Acara ini telah berlalu atau diarkibkan dan tidak boleh menerima penyenaraian tiket baharu."
     },
     "offers": {
       "loading": "Mengambil senarai tawaran rasmi dari pelayan Tikum...",
@@ -6364,7 +6385,16 @@
       "allInPrefix": "All-in",
       "tierPicShort": "PIC Lokasi",
       "tierSelfShort": "Pindahan Penjual",
-      "resaleTicketsSummary": "{count} tiket · Termasuk yuran perkhidmatan"
+      "resaleTicketsSummary": "{count} tiket · Termasuk yuran perkhidmatan",
+      "sportsHeading": "Tiket Sukan & Perlawanan Rasmi",
+      "sportsSubtitle": "Temui jadual perlawanan bola keranjang, badminton, bola sepak dan kejohanan sukan yang disahkan.",
+      "comedyHeading": "Tiket Stand-Up Comedy & Persembahan Khas",
+      "comedySubtitle": "Terokai jelajah stand-up comedy dan persembahan komedi yang disahkan dengan perlindungan transaksi.",
+      "emptySportsTitle": "Tiada Acara Sukan Akan Datang Lagi",
+      "emptySportsDesc": "Acara sukan akan datang akan dipaparkan selepas tarikh rasmi penganjur disahkan. Anda juga boleh mendaftarkan acara sukan secara manual.",
+      "emptyComedyTitle": "Tiada Acara Stand-Up Comedy Akan Datang Lagi",
+      "emptyComedyDesc": "Jadual stand-up comedy akan dipaparkan selepas tarikh rasmi penganjur disahkan. Anda juga boleh mendaftarkan acara secara manual.",
+      "emptyRegisterCta": "Daftar Acara Akan Datang"
     },
     "prelaunch": {
       "title": "TIKUM sedang dalam persiapan prapelancaran.",
@@ -8576,7 +8606,8 @@
       "step1ResendCooldown": "(Ipadala muli sa {sec}s)",
       "step2PdpConsent": "Pinatutunayan kong tama ang mga detalye para sa pag-verify ng pagmamay-ari ng tiket at pagbabayad alinsunod sa PDP Law No. 27/2022.",
       "otherBank": "Ibang Bangko",
-      "serverCreateErr": "Nabigong gawin ang listing sa server"
+      "serverCreateErr": "Nabigong gawin ang listing sa server",
+      "errEventAlreadyPassed": "Tapos na o naka-archive na ang kaganapang ito kaya hindi na maaaring magdagdag ng bagong listing ng tiket."
     },
     "offers": {
       "loading": "Kinukuha ang listahan ng opisyal na alok mula sa Tikum server...",
@@ -8729,7 +8760,16 @@
       "allInPrefix": "All-in",
       "tierPicShort": "Venue PIC",
       "tierSelfShort": "Paglipat ng Nagbebenta",
-      "resaleTicketsSummary": "{count} tiket · Kasama ang bayarin sa serbisyo"
+      "resaleTicketsSummary": "{count} tiket · Kasama ang bayarin sa serbisyo",
+      "sportsHeading": "Mga Beripikadong Tiket sa Palakasan",
+      "sportsSubtitle": "Tuklasin ang mga beripikadong laban sa basketball, badminton, football, at pangunahing torneo ng palakasan.",
+      "comedyHeading": "Stand-Up Comedy at Espesyal na Palabas",
+      "comedySubtitle": "Galugarin ang mga beripikadong tour ng stand-up comedy na may protektadong beripikasyon ng tiket.",
+      "emptySportsTitle": "Wala Pang Paparating na Kaganapang Pampalakasan",
+      "emptySportsDesc": "Lalabas ang mga paparating na kaganapang pampalakasan kapag nakumpirma na ang opisyal na iskedyul ng organizer. Maaari ka ring magrehistro ng paparating na kaganapan nang manu-mano.",
+      "emptyComedyTitle": "Wala Pang Paparating na Palabas ng Stand-Up Comedy",
+      "emptyComedyDesc": "Lalabas ang mga paparating na stand-up comedy show kapag nakumpirma na ang opisyal na petsa ng organizer. Maaari ka ring magrehistro ng paparating na palabas nang manu-mano.",
+      "emptyRegisterCta": "Magrehistro ng Paparating na Kaganapan"
     },
     "prelaunch": {
       "title": "Nasa paghahanda sa pre-launch ang TIKUM.",
@@ -10941,7 +10981,8 @@
       "step1ResendCooldown": "(ส่งอีกครั้งใน {sec} วิ)",
       "step2PdpConsent": "ข้าพเจ้ายืนยันว่าข้อมูลข้างต้นถูกต้องเพื่อใช้ตรวจสอบความเป็นเจ้าของบัตรและอนุมัติการรับเงินตามกฎหมาย PDP ฉบับที่ 27/2022",
       "otherBank": "ธนาคารอื่นๆ",
-      "serverCreateErr": "ไม่สามารถสร้างรายการขายบนเซิร์ฟเวอร์ได้"
+      "serverCreateErr": "ไม่สามารถสร้างรายการขายบนเซิร์ฟเวอร์ได้",
+      "errEventAlreadyPassed": "งานนี้ผ่านไปแล้วหรือถูกเก็บถาวร จึงไม่สามารถสร้างรายการขายบัตรใหม่ได้"
     },
     "offers": {
       "loading": "กำลังดึงรายการข้อเสนออย่างเป็นทางการจากเซิร์ฟเวอร์ Tikum...",
@@ -11094,7 +11135,16 @@
       "allInPrefix": "ราคารวมทั้งหมด",
       "tierPicShort": "PIC หน้างาน",
       "tierSelfShort": "ผู้ขายโอนเอง",
-      "resaleTicketsSummary": "{count} ใบ · รวมค่าบริการแล้ว"
+      "resaleTicketsSummary": "{count} ใบ · รวมค่าบริการแล้ว",
+      "sportsHeading": "บัตรกีฬาและการแข่งขันที่ยืนยันแล้ว",
+      "sportsSubtitle": "ค้นหาตารางการแข่งขันบาสเกตบอล แบดมินตัน ฟุตบอล และรายการกีฬาที่ตรวจสอบแหล่งที่มาแล้ว",
+      "comedyHeading": "สแตนด์อัพคอมเมดี้และการแสดงพิเศษ",
+      "comedySubtitle": "สำรวจทัวร์สแตนด์อัพคอมเมดี้และการแสดงตลกที่ยืนยันแล้วพร้อมระบบคุ้มครองธุรกรรม",
+      "emptySportsTitle": "ยังไม่มีรายการกีฬาที่กำลังจะมาถึง",
+      "emptySportsDesc": "รายการกีฬาใหม่จะแสดงเมื่อผู้จัดงานยืนยันวันและแหล่งที่มาอย่างเป็นทางการแล้ว คุณยังสามารถลงทะเบียนงานที่กำลังจะมาถึงด้วยตนเองได้",
+      "emptyComedyTitle": "ยังไม่มีการแสดงสแตนด์อัพคอมเมดี้ที่กำลังจะมาถึง",
+      "emptyComedyDesc": "ตารางสแตนด์อัพคอมเมดี้จะแสดงเมื่อผู้จัดงานยืนยันวันอย่างเป็นทางการแล้ว คุณยังสามารถลงทะเบียนงานที่กำลังจะมาถึงด้วยตนเองได้",
+      "emptyRegisterCta": "ลงทะเบียนงานที่กำลังจะมาถึง"
     },
     "prelaunch": {
       "title": "TIKUM กำลังเตรียมพร้อมก่อนเปิดตัว",

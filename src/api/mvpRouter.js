@@ -330,11 +330,36 @@ router.get('/auth/me', (req, res) => {
 // PUBLIC & MARKETPLACE ENDPOINTS
 // =============================================================================
 
+let mvpRegistryHydrationPromise = null;
+async function ensureMvpEventsHydrated() {
+  if (process.env.NODE_ENV === 'test') return;
+  if (!Boolean(process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL)) return;
+  try {
+    const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
+    if (!canonicalRegistry._hydratedFromRepo) {
+      if (!mvpRegistryHydrationPromise) {
+        mvpRegistryHydrationPromise = canonicalRegistry.hydrateFromRepository()
+          .then(() => {
+            canonicalRegistry.syncToState(state.events);
+          })
+          .catch(() => {})
+          .finally(() => {
+            mvpRegistryHydrationPromise = null;
+          });
+      }
+      await mvpRegistryHydrationPromise;
+    } else if (canonicalRegistry.getAllEvents().length > 0) {
+      canonicalRegistry.syncToState(state.events);
+    }
+  } catch (_) {}
+}
+
 /**
  * Search & Browse events with filters (Epic 3.6)
  * GET /api/mvp/events
  */
-router.get('/events', (req, res) => {
+router.get('/events', async (req, res) => {
+  await ensureMvpEventsHydrated();
   const hygiene = require('../discovery/CatalogHygienePolicy');
   const { city, category, source, verified, startDate, endDate, include_past, scope } = req.query;
   const q = req.query.q || req.query.search;
@@ -547,14 +572,17 @@ router.post('/events', (req, res) => {
       return res.status(400).json({ error: 'Valid start_date (YYYY-MM-DD) is required', code: 'VALIDATION_ERROR' });
     }
 
-    const ALLOWED_CATEGORIES = ['KONSER', 'STANDUP', 'FESTIVAL', 'OLAHRAGA', 'TEATER', 'LAINNYA'];
-    const catUpper = (category || 'KONSER').toUpperCase().trim();
-    if (!ALLOWED_CATEGORIES.includes(catUpper)) {
+    const hygiene = require('../discovery/CatalogHygienePolicy');
+    const ALLOWED_CATEGORIES = ['CONCERT', 'FESTIVAL', 'SPORTS', 'COMEDY', 'THEATER', 'OTHER'];
+    const rawCat = (category || 'CONCERT').toUpperCase().trim();
+    const catNormalized = hygiene.normalizeCategory(rawCat);
+    if (!ALLOWED_CATEGORIES.includes(catNormalized)) {
       return res.status(400).json({
         error: `Invalid category '${category}'. Allowed: ${ALLOWED_CATEGORIES.join(', ')}`,
         code: 'VALIDATION_ERROR'
       });
     }
+    const catUpper = catNormalized;
 
     // Uniqueness check: prevent duplicate event (same name + venue + date)
     const normKey = `${name.toLowerCase().trim()}::${venue_name.toLowerCase().trim()}::${start_date.trim()}`;
@@ -603,6 +631,8 @@ router.post('/events', (req, res) => {
         venue_gate_authority: 'Promotor / Penyelenggara Acara'
       },
       status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
       source: 'USER_CREATED',
       created_by_user_id: callerId,
       is_verified: false,

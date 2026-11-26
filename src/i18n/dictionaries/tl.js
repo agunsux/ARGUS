@@ -1438,7 +1438,8 @@ module.exports = {
     "step1ResendCooldown": "(Ipadala muli sa {sec}s)",
     "step2PdpConsent": "Pinatutunayan kong tama ang mga detalye para sa pag-verify ng pagmamay-ari ng tiket at pagbabayad alinsunod sa PDP Law No. 27/2022.",
     "otherBank": "Ibang Bangko",
-    "serverCreateErr": "Nabigong gawin ang listing sa server"
+    "serverCreateErr": "Nabigong gawin ang listing sa server",
+    "errEventAlreadyPassed": "Tapos na o naka-archive na ang kaganapang ito kaya hindi na maaaring magdagdag ng bagong listing ng tiket."
   },
   "offers": {
     "loading": "Kinukuha ang listahan ng opisyal na alok mula sa Tikum server...",
@@ -1591,7 +1592,16 @@ module.exports = {
     "allInPrefix": "All-in",
     "tierPicShort": "Venue PIC",
     "tierSelfShort": "Paglipat ng Nagbebenta",
-    "resaleTicketsSummary": "{count} tiket · Kasama ang bayarin sa serbisyo"
+    "resaleTicketsSummary": "{count} tiket · Kasama ang bayarin sa serbisyo",
+    "sportsHeading": "Mga Beripikadong Tiket sa Palakasan",
+    "sportsSubtitle": "Tuklasin ang mga beripikadong laban sa basketball, badminton, football, at pangunahing torneo ng palakasan.",
+    "comedyHeading": "Stand-Up Comedy at Espesyal na Palabas",
+    "comedySubtitle": "Galugarin ang mga beripikadong tour ng stand-up comedy na may protektadong beripikasyon ng tiket.",
+    "emptySportsTitle": "Wala Pang Paparating na Kaganapang Pampalakasan",
+    "emptySportsDesc": "Lalabas ang mga paparating na kaganapang pampalakasan kapag nakumpirma na ang opisyal na iskedyul ng organizer. Maaari ka ring magrehistro ng paparating na kaganapan nang manu-mano.",
+    "emptyComedyTitle": "Wala Pang Paparating na Palabas ng Stand-Up Comedy",
+    "emptyComedyDesc": "Lalabas ang mga paparating na stand-up comedy show kapag nakumpirma na ang opisyal na petsa ng organizer. Maaari ka ring magrehistro ng paparating na palabas nang manu-mano.",
+    "emptyRegisterCta": "Magrehistro ng Paparating na Kaganapan"
   },
   "prelaunch": {
     "title": "Nasa paghahanda sa pre-launch ang TIKUM.",

@@ -229,10 +229,17 @@
               </a>
             </li>
             <li>
-              <a href="/events?category=SPORT" onclick="applyNavCategory('SPORT'); return false;"
+              <a href="/events?category=SPORTS" onclick="applyNavCategory('SPORTS'); return false;"
                 class="sidebar-nav-item">
                 <span class="sidebar-nav-icon"><i class="fa-solid fa-futbol"></i></span>
-                <span class="sidebar-nav-label" data-i18n="nav.sports">Olahraga &amp; Stand-Up</span>
+                <span class="sidebar-nav-label" data-i18n="events.sports">Olahraga</span>
+              </a>
+            </li>
+            <li>
+              <a href="/events?category=COMEDY" onclick="applyNavCategory('COMEDY'); return false;"
+                class="sidebar-nav-item">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-microphone"></i></span>
+                <span class="sidebar-nav-label" data-i18n="events.comedy">Stand-Up Comedy</span>
               </a>
             </li>
             <li>
@@ -419,15 +426,21 @@
           <!-- Quick Filter Chips (Category & Popular Cities) -->
           <div class="hero-quick-chips" role="group" aria-label="Filter Cepat Event">
             <span class="hero-quick-chips__label" data-i18n="landing.heroQuickFilterLabel">Pencarian Cepat:</span>
-            <button type="button" class="hero-quick-chip is-active"
+            <button type="button" class="hero-quick-chip is-active" data-category=""
               onclick="applyHeroQuickFilter(this, { category: '', city: '' })" data-i18n="events.allEvents">Semua
               Event</button>
-            <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'MUSIC' })"
+            <button type="button" class="hero-quick-chip" data-category="CONCERT"
+              onclick="applyHeroQuickFilter(this, { category: 'CONCERT' })"
               data-i18n="events.concerts">Konser</button>
-            <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'FESTIVAL' })"
+            <button type="button" class="hero-quick-chip" data-category="FESTIVAL"
+              onclick="applyHeroQuickFilter(this, { category: 'FESTIVAL' })"
               data-i18n="events.festivals">Festival Musik</button>
-            <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'SPORT' })"
+            <button type="button" class="hero-quick-chip" data-category="SPORTS"
+              onclick="applyHeroQuickFilter(this, { category: 'SPORTS' })"
               data-i18n="events.sports">Olahraga</button>
+            <button type="button" class="hero-quick-chip" data-category="COMEDY"
+              onclick="applyHeroQuickFilter(this, { category: 'COMEDY' })"
+              data-i18n="events.comedy">Stand-Up Comedy</button>
             <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Jakarta' })"><i
                 class="fa-solid fa-location-dot" aria-hidden="true"></i> <span
                 data-i18n="landing.quickChipJakarta">Jakarta</span></button>
@@ -503,16 +516,16 @@
             <div class="filter-pills" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
               <div class="pill active" data-category="" onclick="setCategory(this, '')" data-i18n="events.allEvents">
                 Semua Event</div>
-              <div class="pill" data-category="MUSIC" onclick="setCategory(this, 'MUSIC')" data-i18n="events.concerts">
+              <div class="pill" data-category="CONCERT" onclick="setCategory(this, 'CONCERT')" data-i18n="events.concerts">
                 Konser &amp; Musik</div>
               <div class="pill" data-category="KPOP" onclick="setCategory(this, 'KPOP')" data-i18n="events.kpop">K-Pop
               </div>
               <div class="pill" data-category="FESTIVAL" onclick="setCategory(this, 'FESTIVAL')"
                 data-i18n="events.festivals">Festival</div>
-              <div class="pill" data-category="SPORT" onclick="setCategory(this, 'SPORT')" data-i18n="events.sports">
+              <div class="pill" data-category="SPORTS" onclick="setCategory(this, 'SPORTS')" data-i18n="events.sports">
                 Olahraga</div>
               <div class="pill" data-category="COMEDY" onclick="setCategory(this, 'COMEDY')" data-i18n="events.comedy">
-                Stand Up Comedy</div>
+                Stand-Up Comedy</div>
               <a href="/past-events" class="pill"
                 style="text-decoration:none; color:inherit; display:inline-flex; align-items:center; gap:4px;"
                 data-i18n="events.pastEvents">Arsip Selesai <i class="fa-solid fa-arrow-right"
@@ -1236,7 +1249,7 @@
             .filter(Boolean).join(' ').toUpperCase();
           const evTitle = [e.title, e.canonical_name, e.name, e.artist].filter(Boolean).join(' ').toUpperCase();
           if (currentCategory === 'COMEDY') {
-            if (!evCat.includes('COMEDY') && !evCat.includes('SHOWS_COMEDY') && !evCat.includes('STAND UP') && !evCat.includes('STANDUP')) return false;
+            if (!evCat.includes('COMEDY') && !evCat.includes('SHOWS_COMEDY') && !evCat.includes('STAND UP') && !evCat.includes('STAND_UP') && !evCat.includes('STANDUP') && !evCat.includes('KOMEDI')) return false;
           } else if (currentCategory === 'HIBURAN') {
             if (!evCat.includes('THEATER') && !evCat.includes('MUSICAL') && !evCat.includes('FAMILY') && !evCat.includes('OTHER') && !evCat.includes('FESTIVAL')) return false;
           } else if (currentCategory === 'KPOP') {
@@ -1244,9 +1257,9 @@
           } else if (currentCategory === 'FESTIVAL') {
             if (!evCat.includes('FESTIVAL') && !evCat.includes('FEST') && !evTitle.includes('FESTIVAL') && !evTitle.includes('FEST')) return false;
           } else if (currentCategory === 'MUSIC' || currentCategory === 'CONCERT') {
-            if (!evCat.includes('CONCERT') && !evCat.includes('MUSIC') && !evCat.includes('KPOP') && !evCat.includes('FESTIVAL')) return false;
+            if (!evCat.includes('CONCERT') && !evCat.includes('KONSER') && !evCat.includes('MUSIC') && !evCat.includes('KPOP') && !evCat.includes('FESTIVAL')) return false;
           } else if (currentCategory === 'SPORT' || currentCategory === 'SPORTS') {
-            if (!evCat.includes('SPORT') && !evCat.includes('BADMINTON') && !evCat.includes('BASKETBALL') && !evCat.includes('FOOTBALL')) return false;
+            if (!evCat.includes('SPORT') && !evCat.includes('OLAHRAGA') && !evCat.includes('BADMINTON') && !evCat.includes('BASKETBALL') && !evCat.includes('FOOTBALL')) return false;
           } else if (!evCat.includes(currentCategory)) {
             return false;
           }

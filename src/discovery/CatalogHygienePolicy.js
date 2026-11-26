@@ -36,7 +36,20 @@ function getTodayWibIso(now = new Date()) {
 
 function normalizeCategory(raw) {
   const value = String(raw || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
-  const aliases = { KONSER: 'CONCERT', MUSIC: 'CONCERT', SPORT: 'SPORTS', OLAHRAGA: 'SPORTS', STANDUP: 'COMEDY', STAND_UP: 'COMEDY', STAND_UP_COMEDY: 'COMEDY', KOMEDI: 'COMEDY' };
+  const aliases = {
+    KONSER: 'CONCERT',
+    MUSIC: 'CONCERT',
+    SPORT: 'SPORTS',
+    OLAHRAGA: 'SPORTS',
+    STANDUP: 'COMEDY',
+    STAND_UP: 'COMEDY',
+    STAND_UP_COMEDY: 'COMEDY',
+    STANDUP_COMEDY: 'COMEDY',
+    SHOWS_COMEDY: 'COMEDY',
+    KOMEDI: 'COMEDY',
+    TEATER: 'THEATER',
+    LAINNYA: 'OTHER'
+  };
   return aliases[value] || value;
 }
 

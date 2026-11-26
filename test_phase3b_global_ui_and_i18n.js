@@ -172,8 +172,16 @@ async function httpGet(baseUrl, urlPath, headers = {}) {
       assert.ok(clientI18n.translations[loc].create?.tierLabelPic, `Missing create.tierLabelPic in ${loc}`);
       assert.ok(clientI18n.translations[loc].create?.tierLabelSelf, `Missing create.tierLabelSelf in ${loc}`);
       assert.ok(clientI18n.translations[loc].create?.ticketUnit, `Missing create.ticketUnit in ${loc}`);
+      assert.ok(clientI18n.translations[loc].create?.errEventAlreadyPassed, `Missing create.errEventAlreadyPassed in ${loc}`);
+      assert.ok(clientI18n.translations[loc].discovery?.sportsHeading, `Missing discovery.sportsHeading in ${loc}`);
+      assert.ok(clientI18n.translations[loc].discovery?.comedyHeading, `Missing discovery.comedyHeading in ${loc}`);
+      assert.ok(clientI18n.translations[loc].discovery?.emptySportsTitle, `Missing discovery.emptySportsTitle in ${loc}`);
+      assert.ok(clientI18n.translations[loc].discovery?.emptyComedyTitle, `Missing discovery.emptyComedyTitle in ${loc}`);
     }
+    assert.strictEqual(idKeys.length, 2215, `Expected exact 2215 i18n keys per locale, got ${idKeys.length}`);
     assert.ok(/[\u0E00-\u0E7F]/.test(clientI18n.translations.th.create.calcFeeLabelV2), 'Thai calcFeeLabelV2 must use genuine Thai script');
+    assert.ok(/[\u0E00-\u0E7F]/.test(clientI18n.translations.th.create.errEventAlreadyPassed), 'Thai errEventAlreadyPassed must use genuine Thai script');
+    assert.ok(/[\u0E00-\u0E7F]/.test(clientI18n.translations.th.discovery.sportsHeading), 'Thai sportsHeading must use genuine Thai script');
     assert.ok(!/Transfer Mandiri|Fee pembeli|\/tiket/i.test(clientI18n.translations.th.create.calcFeeLabelV2), 'Thai calcFeeLabelV2 must not leak Indonesian');
     console.log(`  [PASS] 6. 5-language (id/en/ms/tl/th) server+client dictionary parity verified (${idKeys.length} keys each).`);
 

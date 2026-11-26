@@ -758,18 +758,18 @@
         <div class="grid-2">
           <div class="form-group">
             <label for="newEvStartDate" data-i18n="create.newEventDateLabel">Tanggal Mulai Acara *</label>
-            <input type="date" id="newEvStartDate" class="form-control" required min="2026-01-01" max="2026-12-31">
+            <input type="date" id="newEvStartDate" class="form-control" required min="2026-11-26" max="2028-12-31">
           </div>
 
           <div class="form-group">
             <label for="newEvCategory" data-i18n="create.newEventCategoryLabel">Kategori Acara *</label>
             <select id="newEvCategory" class="form-control" required>
-              <option value="KONSER">Concert / Music</option>
-              <option value="STANDUP">Stand-up Comedy</option>
-              <option value="FESTIVAL">Music Festival</option>
-              <option value="OLAHRAGA">Sports</option>
-              <option value="TEATER">Theater &amp; Arts</option>
-              <option value="LAINNYA" data-i18n="create.otherCity">Lainnya</option>
+              <option value="CONCERT" data-i18n="events.concerts">Konser &amp; Musik</option>
+              <option value="FESTIVAL" data-i18n="discovery.catFestival">Festival</option>
+              <option value="SPORTS" data-i18n="events.sports">Olahraga</option>
+              <option value="COMEDY" data-i18n="discovery.catComedy">Stand-Up Comedy</option>
+              <option value="THEATER" data-i18n="nav.theater">Teater &amp; Seni</option>
+              <option value="OTHER" data-i18n="create.otherCity">Lainnya</option>
             </select>
           </div>
         </div>
@@ -908,7 +908,13 @@
       try {
         const res = await fetch('/api/mvp/events');
         const data = await res.json();
-        eventsList = data.events || [];
+        const seen = new Set();
+        eventsList = (data.events || []).filter(ev => {
+          const key = ev && (ev.id || ev.event_id);
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
 
         renderEventsSelectOptions();
 
@@ -1570,6 +1576,9 @@
           if (res.status === 401) {
             window.location.href = '/login?role=seller&next=/deal/create';
             return;
+          }
+          if (data.code === 'EVENT_ALREADY_PASSED') {
+            throw new Error(_t('create.errEventAlreadyPassed', 'Event ini sudah lewat atau diarsipkan sehingga tidak dapat menerima listing tiket baru.'));
           }
           throw new Error(data.message || data.error || _t('create.serverCreateErr', 'Gagal membuat listing di server'));
         }

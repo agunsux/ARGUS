@@ -556,9 +556,9 @@ router.get('/events', (req, res) => {
     allEvents = allEvents.filter(e => (e.city || '').toLowerCase().includes(cTerm));
   }
 
-  if (category && category.trim()) {
-    const catTerm = hygiene.normalizeCategory(category);
-    allEvents = allEvents.filter(e => hygiene.normalizeCategory(e.category || e.event_type) === catTerm);
+  const normalizedCategory = category && category.trim() ? hygiene.normalizeCategory(category) : '';
+  if (normalizedCategory) {
+    allEvents = allEvents.filter(e => hygiene.normalizeCategory(e.category || e.event_type) === normalizedCategory);
   }
 
   // Price range filter (Strict invariant: min >= 500k)
@@ -743,6 +743,45 @@ router.get('/events', (req, res) => {
     `;
   }).join('');
 
+  const langSuffix = req.query.lang ? `&lang=${encodeURIComponent(locale)}` : '';
+  const langQueryOnly = req.query.lang ? `?lang=${encodeURIComponent(locale)}` : '';
+  const heroTitleKey = normalizedCategory === 'SPORTS'
+    ? 'discovery.sportsHeading'
+    : (normalizedCategory === 'COMEDY' ? 'discovery.comedyHeading' : 'discovery.heroTitle');
+  const heroSubtitleKey = normalizedCategory === 'SPORTS'
+    ? 'discovery.sportsSubtitle'
+    : (normalizedCategory === 'COMEDY' ? 'discovery.comedySubtitle' : 'discovery.heroSubtitle');
+
+  const categoryPills = [
+    { code: '', labelKey: 'discovery.allCategories', icon: 'fa-compass', href: `/events${langQueryOnly}` },
+    { code: 'CONCERT', labelKey: 'events.concerts', icon: 'fa-music', href: `/events?category=CONCERT${langSuffix}` },
+    { code: 'FESTIVAL', labelKey: 'discovery.catFestival', icon: 'fa-guitar', href: `/events?category=FESTIVAL${langSuffix}` },
+    { code: 'SPORTS', labelKey: 'events.sports', icon: 'fa-futbol', href: `/events?category=SPORTS${langSuffix}` },
+    { code: 'COMEDY', labelKey: 'discovery.catComedy', icon: 'fa-microphone', href: `/events?category=COMEDY${langSuffix}` }
+  ].map(p => {
+    const isActive = normalizedCategory === p.code;
+    const style = isActive
+      ? 'background:#E36F45; color:#FFFFFF; border:1px solid #E36F45; font-size:13px; font-weight:700; padding:7px 14px; border-radius:999px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;'
+      : 'background:#24364D; color:#CBD5E1; border:1px solid rgba(203,213,225,0.22); font-size:13px; font-weight:600; padding:7px 14px; border-radius:999px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;';
+    return `<a href="${p.href}" class="category-filter-pill${isActive ? ' active' : ''}" data-category="${p.code}" style="${style}"><i class="fa-solid ${p.icon}"></i> <span data-i18n="${p.labelKey}">${esc(t(p.labelKey, locale))}</span></a>`;
+  }).join('\n      ');
+
+  const emptyStateHtml = normalizedCategory === 'SPORTS'
+    ? `<div class="category-empty-state" data-empty-category="SPORTS" style="grid-column:1/-1; text-align:center; padding:48px 24px; background:#24364D; border:1px solid rgba(203,213,225,0.22); border-radius:14px;">
+        <div style="font-size:28px; color:#E36F45; margin-bottom:12px;"><i class="fa-solid fa-futbol"></i></div>
+        <h2 style="font-size:20px; font-weight:700; color:#FFFFFF; margin:0 0 8px 0;" data-i18n="discovery.emptySportsTitle">${esc(t('discovery.emptySportsTitle', locale))}</h2>
+        <p style="color:#CBD5E1; font-size:14px; max-width:540px; margin:0 auto 20px;" data-i18n="discovery.emptySportsDesc">${esc(t('discovery.emptySportsDesc', locale))}</p>
+        <a href="/deal/create?action=newEvent${langSuffix}" class="btn btn-primary" style="text-decoration:none;" data-i18n="discovery.emptyRegisterCta">${esc(t('discovery.emptyRegisterCta', locale))}</a>
+      </div>`
+    : (normalizedCategory === 'COMEDY'
+      ? `<div class="category-empty-state" data-empty-category="COMEDY" style="grid-column:1/-1; text-align:center; padding:48px 24px; background:#24364D; border:1px solid rgba(203,213,225,0.22); border-radius:14px;">
+          <div style="font-size:28px; color:#E36F45; margin-bottom:12px;"><i class="fa-solid fa-microphone"></i></div>
+          <h2 style="font-size:20px; font-weight:700; color:#FFFFFF; margin:0 0 8px 0;" data-i18n="discovery.emptyComedyTitle">${esc(t('discovery.emptyComedyTitle', locale))}</h2>
+          <p style="color:#CBD5E1; font-size:14px; max-width:540px; margin:0 auto 20px;" data-i18n="discovery.emptyComedyDesc">${esc(t('discovery.emptyComedyDesc', locale))}</p>
+          <a href="/deal/create?action=newEvent${langSuffix}" class="btn btn-primary" style="text-decoration:none;" data-i18n="discovery.emptyRegisterCta">${esc(t('discovery.emptyRegisterCta', locale))}</a>
+        </div>`
+      : `<div style="grid-column:1/-1; text-align:center; padding:60px; color:#CBD5E1;" data-i18n="discovery.noFilterResults">${esc(t('discovery.noFilterResults', locale))}</div>`);
+
   const html = `<!DOCTYPE html>
 <html lang="${locale}">
 <head>
@@ -761,16 +800,16 @@ router.get('/events', (req, res) => {
   <main class="container" style="padding-top:40px; padding-bottom:60px;">
     <div style="text-align:center; max-width:700px; margin:0 auto 24px;">
       <div class="hero-pill"><i class="fa-solid fa-compass"></i> <span data-i18n="discovery.heroPill">${esc(t('discovery.heroPill', locale))}</span></div>
-      <h1 style="font-size:32px; font-weight:800; letter-spacing:-0.5px; margin:14px 0;" data-i18n="discovery.heroTitle">${esc(t('discovery.heroTitle', locale))}</h1>
-      <p style="color:#94a3b8; font-size:15px;" data-i18n="discovery.heroSubtitle">
-        ${esc(t('discovery.heroSubtitle', locale))}
+      <h1 style="font-size:32px; font-weight:800; letter-spacing:-0.5px; margin:14px 0;" data-i18n="${heroTitleKey}">${esc(t(heroTitleKey, locale))}</h1>
+      <p style="color:#CBD5E1; font-size:15px;" data-i18n="${heroSubtitleKey}">
+        ${esc(t(heroSubtitleKey, locale))}
       </p>
     </div>
 
     <!-- Buyer Guide & Checkout Simulation Bridge -->
-    <div style="background:rgba(30,41,59,0.7); border:1px solid #334155; border-radius:10px; padding:12px 18px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-      <div style="font-size:13px; color:#cbd5e1; display:flex; align-items:center; gap:8px;">
-        <i class="fa-solid fa-shield-halved" style="color:#38bdf8;"></i>
+    <div style="background:rgba(21,54,91,0.55); border:1px solid rgba(203,213,225,0.22); border-radius:10px; padding:12px 18px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+      <div style="font-size:13px; color:#CBD5E1; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-shield-halved" style="color:#E36F45;"></i>
         <span><strong data-i18n="discovery.secondaryGuideBannerTitle">${esc(t('discovery.secondaryGuideBannerTitle', locale))}</strong> <span data-i18n="discovery.secondaryGuideBannerDesc">${esc(t('discovery.secondaryGuideBannerDesc', locale))}</span></span>
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
@@ -780,14 +819,20 @@ router.get('/events', (req, res) => {
     </div>
 
     <!-- Catalog Tabs: Upcoming vs Archive -->
-    <div style="display:flex; justify-content:center; gap:12px; margin-bottom:24px;">
-      <a href="/events" class="btn btn-primary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="events.upcomingEvents">${esc(t('events.upcomingEvents', locale))}</span></a>
-      <a href="/events/archive" class="btn btn-secondary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-box-archive"></i> <span data-i18n="discovery.concludedArchiveTab">${esc(t('discovery.concludedArchiveTab', locale))}</span></a>
+    <div style="display:flex; justify-content:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
+      <a href="/events${langQueryOnly}" class="btn btn-primary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="events.upcomingEvents">${esc(t('events.upcomingEvents', locale))}</span></a>
+      <a href="/events/archive${langQueryOnly}" class="btn btn-secondary" style="font-size:13px; padding:8px 18px; text-decoration:none;"><i class="fa-solid fa-box-archive"></i> <span data-i18n="discovery.concludedArchiveTab">${esc(t('discovery.concludedArchiveTab', locale))}</span></a>
+    </div>
+
+    <!-- Localized Category Quick Pills -->
+    <div class="discovery-category-pills" style="display:flex; justify-content:center; gap:8px; margin-bottom:22px; flex-wrap:wrap;">
+      ${categoryPills}
     </div>
 
     <!-- Search & Filter Form -->
-    <form method="GET" action="/events" style="background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:18px; margin-bottom:30px; display:flex; gap:12px; flex-wrap:wrap;">
-      <input type="text" name="q" value="${q || ''}" placeholder="${esc(t('discovery.searchPlaceholder', locale))}" data-i18n="discovery.searchPlaceholder" class="form-control" style="flex:2; min-width:200px;" />
+    <form method="GET" action="/events" style="background:#172333; border:1px solid rgba(203,213,225,0.22); border-radius:12px; padding:18px; margin-bottom:30px; display:flex; gap:12px; flex-wrap:wrap;">
+      ${req.query.lang ? `<input type="hidden" name="lang" value="${esc(locale)}" />` : ''}
+      <input type="text" name="q" value="${esc(q || '')}" placeholder="${esc(t('discovery.searchPlaceholder', locale))}" data-i18n="discovery.searchPlaceholder" class="form-control" style="flex:2; min-width:200px;" />
       <select name="city" class="form-control" style="flex:1; min-width:130px;">
         <option value="" data-i18n="discovery.allCities">${esc(t('discovery.allCities', locale))}</option>
         <option value="Jakarta" ${city === 'Jakarta' ? 'selected' : ''}>Jakarta</option>
@@ -799,11 +844,11 @@ router.get('/events', (req, res) => {
       </select>
       <select name="category" class="form-control" style="flex:1; min-width:130px;">
         <option value="" data-i18n="discovery.allCategories">${esc(t('discovery.allCategories', locale))}</option>
-        <option value="CONCERT" ${category === 'CONCERT' ? 'selected' : ''} data-i18n="events.concerts">${esc(t('events.concerts', locale))}</option>
-        <option value="FESTIVAL" ${category === 'FESTIVAL' ? 'selected' : ''} data-i18n="discovery.catFestival">${esc(t('discovery.catFestival', locale))}</option>
-        <option value="COMEDY" ${category === 'COMEDY' ? 'selected' : ''} data-i18n="discovery.catComedy">${esc(t('discovery.catComedy', locale))}</option>
-        <option value="SPORTS" ${category === 'SPORTS' ? 'selected' : ''} data-i18n="nav.sports">${esc(t('nav.sports', locale))}</option>
-        <option value="THEATER" ${category === 'THEATER' ? 'selected' : ''} data-i18n="nav.theater">${esc(t('nav.theater', locale))}</option>
+        <option value="CONCERT" ${normalizedCategory === 'CONCERT' ? 'selected' : ''} data-i18n="events.concerts">${esc(t('events.concerts', locale))}</option>
+        <option value="FESTIVAL" ${normalizedCategory === 'FESTIVAL' ? 'selected' : ''} data-i18n="discovery.catFestival">${esc(t('discovery.catFestival', locale))}</option>
+        <option value="COMEDY" ${normalizedCategory === 'COMEDY' ? 'selected' : ''} data-i18n="discovery.catComedy">${esc(t('discovery.catComedy', locale))}</option>
+        <option value="SPORTS" ${normalizedCategory === 'SPORTS' ? 'selected' : ''} data-i18n="events.sports">${esc(t('events.sports', locale))}</option>
+        <option value="THEATER" ${normalizedCategory === 'THEATER' ? 'selected' : ''} data-i18n="nav.theater">${esc(t('nav.theater', locale))}</option>
       </select>
       <select name="price_range" class="form-control" style="flex:1; min-width:195px;">
         <option value="" data-i18n="discovery.priceAll">${esc(t('discovery.priceAll', locale))}</option>
@@ -827,7 +872,7 @@ router.get('/events', (req, res) => {
     </form>
 
     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">
-      ${itemsHtml.length > 0 ? itemsHtml : `<div style="grid-column:1/-1; text-align:center; padding:60px; color:#64748b;" data-i18n="discovery.noFilterResults">${esc(t('discovery.noFilterResults', locale))}</div>`}
+      ${itemsHtml.length > 0 ? itemsHtml : emptyStateHtml}
     </div>
   </main>
 
@@ -1065,11 +1110,15 @@ function handleGetEvents(req, res) {
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
 
+  const hygiene = require('./CatalogHygienePolicy');
   let allEvents = canonicalRegistry.getAllEvents().filter(e => !require('./CatalogSafety').isUnverifiedLead(e));
   const showAllOrPast = include_past === 'true' || scope === 'all' || req.query.include_archived === 'true';
   const now = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
     ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
     : new Date();
+  if (!showAllOrPast) {
+    allEvents = hygiene.deduplicateEvents(allEvents.filter(e => hygiene.isEligibleForActiveResale(e, hygiene.getTodayWibIso(now))));
+  }
 
   const searchTerm = (q || req.query.search || req.query.query || '').trim();
 
@@ -1629,8 +1678,11 @@ router.get('/api/events/home-feed', (req, res) => {
   const { city, lat, lng, country, category } = req.query;
 
   // Filter canonical events through strict temporal & verification gates (Zero Duplicates + H+2 Gate)
+  const hygiene = require('./CatalogHygienePolicy');
+  const todayWib = hygiene.getTodayWibIso(now);
   let allEvents = canonicalRegistry.getAllEvents().filter(e => {
     if (require('./CatalogSafety').isUnverifiedLead(e)) return false;
+    if (!hygiene.isEligibleForActiveResale(e, todayWib)) return false;
     const evStatus = (e.status || '').toUpperCase();
     const evLifecycle = (e.lifecycle_status || '').toUpperCase();
     if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
