@@ -12,6 +12,8 @@ const { renderFooterHtml } = require('../config/businessProfile');
 const { HEADER_VARIANTS, renderSharedHeadAssets, renderSharedFooterScripts, renderSharedHeader } = require('../ui/sharedHeader');
 const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
 const { CanonicalFeeEngine } = require('../pricing/CanonicalFeeEngine');
+const { calculateDualTierFees } = require('../pricing/DualTierFeePolicy');
+const { PRICING_CONFIG } = require('../config/pricingConfig');
 const { PartnerService } = require('../services/partner/PartnerService');
 const { isPrelaunchListingMode, PRELAUNCH_NOTICE_TEXT } = require('../config/marketplaceMode');
 
@@ -180,7 +182,34 @@ class EventSEOService {
         </div>
       `;
     } else if (activeListings && activeListings.length > 0) {
-      const minPrice = Math.min(...activeListings.map(l => l.price));
+      const computeAllIn = (l) => {
+        const base = Math.max(0, Math.round(l.price || 0));
+        if (base <= 0) return { base: 0, fee: 0, total: 0, tier: 'SELLER_MANAGED', ratePct: 6, isV2: false };
+        const tier = String(l.fulfillment_type || 'SELLER_MANAGED').toUpperCase() === 'TIKUM_VENUE_PIC'
+          ? 'TIKUM_VENUE_PIC'
+          : 'SELLER_MANAGED';
+        const useV2 = (l.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION) === 'V2_DUAL_TIER';
+        if (useV2) {
+          const v2 = calculateDualTierFees({ ticketPrice: base, quantity: 1, fulfillmentType: tier });
+          return {
+            base,
+            fee: v2.buyer_fee,
+            total: v2.buyer_total_amount,
+            tier,
+            ratePct: tier === 'TIKUM_VENUE_PIC' ? 9 : 6,
+            isV2: true
+          };
+        }
+        try {
+          const v1 = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: base, quantity: 1 });
+          return { base, fee: v1.buyer_fee, total: v1.buyer_total, tier, ratePct: 6, isV2: false };
+        } catch (_) {
+          const fee = Math.max(35000, Math.min(Math.round((base * 6) / 100), 300000));
+          return { base, fee, total: base + fee, tier, ratePct: 6, isV2: false };
+        }
+      };
+
+      const minAllInPrice = Math.min(...activeListings.map(l => computeAllIn(l).total));
       const hasEventPic = Boolean(event.has_venue_assist || event.has_pic || event.venue_assist_status === 'PIC_AVAILABLE' || event.venue_assist_status === 'PIC_ON_SITE');
       const gateVerificationText = hasEventPic
         ? `verifikasi fisik Event PIC Tikum di gerbang ${venue}`
@@ -189,62 +218,61 @@ class EventSEOService {
         <div class="resale-card verified-active">
           <div class="badge-row">
             <span class="badge badge-success"><i class="fa-solid fa-shield-check"></i> ${activeListings.length} Tiket Resale Terverifikasi</span>
-            <span class="badge badge-cyan">Mulai Rp ${minPrice.toLocaleString('id-ID')}</span>
+            <span class="badge badge-cyan">All-in mulai Rp ${minAllInPrice.toLocaleString('id-ID')}</span>
           </div>
-          <p class="resale-desc">Setiap tiket dilindungi anti-duplikasi barcode, dana tertahan di rekening escrow, dan ${gateVerificationText}.</p>
+          <p class="resale-desc">Setiap tiket dilindungi anti-duplikasi barcode, dana ditahan secara aman (platform-held settlement hold) melalui mitra pembayaran resmi, dan ${gateVerificationText}.</p>
           <div class="resale-grid">
             ${activeListings.map(l => {
-              const basePrice = Math.max(0, Math.round(l.price || 0));
-              let fee = 0;
-              let totalPrice = basePrice;
-              if (basePrice > 0) {
-                try {
-                  const pricing = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: basePrice, quantity: 1 });
-                  fee = pricing.buyer_fee;
-                  totalPrice = pricing.buyer_total;
-                } catch {
-                  fee = Math.max(10000, Math.min(Math.floor((basePrice * 6) / 100), 300000));
-                  totalPrice = basePrice + fee;
-                }
-              }
+              const calc = computeAllIn(l);
+              const basePrice = calc.base;
+              const fee = calc.fee;
+              const totalPrice = calc.total;
+              const isPicTier = calc.tier === 'TIKUM_VENUE_PIC';
+              const tierLabel = isPicTier ? 'PIC Venue (9%)' : 'Transfer Mandiri (6%)';
+              const feeDescLabel = calc.isV2
+                ? (isPicTier ? 'Biaya TIKUM — PIC Venue (9%, min Rp35rb, maks Rp450rb)' : 'Biaya TIKUM — Transfer Mandiri (6%, min Rp35rb, maks Rp300rb)')
+                : 'Biaya TIKUM (6%, min. Rp35.000, maks. Rp300.000)';
               const section = l.section || l.ticket_type || l.category || 'General Admission';
               const seat = l.seat_info || 'Festival / Free Standing';
-              const hasEventPic = Boolean(event.has_venue_assist || event.has_pic || event.venue_assist_status === 'PIC_AVAILABLE' || event.venue_assist_status === 'PIC_ON_SITE');
-              const picProtectionText = hasEventPic
-                ? 'Dilindungi Rekening Escrow &amp; Event PIC Tikum di Gate'
-                : 'Dilindungi Rekening Escrow &amp; Validasi Gate Turnstile';
+              const picProtectionText = isPicTier || hasEventPic
+                ? 'Platform-Held &amp; Pendampingan Event PIC di Gate'
+                : 'Platform-Held Settlement &amp; Validasi Gate';
               return `
-              <div class="listing-pill" style="display:flex; flex-direction:column; gap:12px; padding:18px; border-radius:12px; background:var(--color-surface, #FFFFFF); border:1px solid var(--color-border, #E5E7EB); box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+              <div class="listing-pill" style="display:flex; flex-direction:column; gap:12px; padding:18px; border-radius:12px; background:var(--palette-surface, #24364D); border:1px solid rgba(203,213,225,0.22); box-shadow:0 6px 20px rgba(0,0,0,0.18);">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
                   <div>
-                    <div style="font-size:15px; font-weight:800; color:var(--color-text-primary, #111827);">${section}</div>
-                    <div style="font-size:12.5px; color:var(--color-text-muted, #6B7280);"><i class="fa-solid fa-chair"></i> ${seat} &nbsp;·&nbsp; <i class="fa-solid fa-ticket"></i> Jumlah: 1 tiket</div>
+                    <div style="font-size:15px; font-weight:800; color:#FFFFFF;">${section}</div>
+                    <div style="font-size:12.5px; color:#CBD5E1;"><i class="fa-solid fa-chair"></i> ${seat} &nbsp;·&nbsp; <i class="fa-solid fa-ticket"></i> Jumlah: ${l.available_quantity || l.quantity || 1} tiket</div>
                   </div>
-                  <span class="badge badge-success" style="font-size:11px; font-weight:700;"><i class="fa-solid fa-user-check"></i> Penjual Terverifikasi</span>
+                  <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                    <span class="badge" style="font-size:11px; font-weight:700; background:${isPicTier ? '#15365B' : '#172333'}; color:#F3EBDD; border:1px solid rgba(203,213,225,0.28);">${tierLabel}</span>
+                    <span class="badge badge-success" style="font-size:11px; font-weight:700;"><i class="fa-solid fa-user-check"></i> Penjual Terverifikasi</span>
+                  </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; background:var(--color-surface-muted, #F8F9FA); padding:12px 14px; border-radius:8px; font-size:12px; border:1px solid var(--color-border-subtle, #F3F4F6);">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(145px, 1fr)); gap:10px; background:var(--palette-midnight-navy, #172333); padding:12px 14px; border-radius:8px; font-size:12px; border:1px solid rgba(203,213,225,0.18);">
                   <div>
-                    <span style="color:var(--color-text-muted, #6B7280); display:block; margin-bottom:2px;">Harga Penjual</span>
-                    <strong style="font-size:13.5px; color:var(--color-text-primary, #111827);">Rp ${basePrice.toLocaleString('id-ID')}</strong>
+                    <span style="color:#CBD5E1; display:block; margin-bottom:2px;">Harga Penjual</span>
+                    <strong style="font-size:13.5px; color:#FFFFFF;">Rp ${basePrice.toLocaleString('id-ID')}</strong>
                   </div>
                   <div>
-                    <span style="color:var(--color-text-muted, #6B7280); display:block; margin-bottom:2px;">Biaya TIKUM (6% (minimum Rp35.000 per tiket))</span>
-                    <strong style="font-size:13.5px; color:var(--color-text-secondary, #4B5563);">Rp ${fee.toLocaleString('id-ID')}</strong>
+                    <span style="color:#CBD5E1; display:block; margin-bottom:2px;">${feeDescLabel}</span>
+                    <strong style="font-size:13.5px; color:#F3EBDD;">Rp ${fee.toLocaleString('id-ID')}</strong>
                   </div>
                   <div>
-                    <span style="color:var(--color-brand-primary, #B8472F); font-weight:700; display:block; margin-bottom:2px;">Total Pembeli (All-In)</span>
-                    <strong style="font-size:15px; font-weight:800; color:var(--color-brand-primary, #B8472F);">Rp ${totalPrice.toLocaleString('id-ID')}</strong>
+                    <span style="color:#E36F45; font-weight:700; display:block; margin-bottom:2px;">Harga All-in Pembeli</span>
+                    <strong style="font-size:15px; font-weight:800; color:#E36F45;">Rp ${totalPrice.toLocaleString('id-ID')}</strong>
+                    <span style="display:block; font-size:10.5px; color:#CBD5E1;">Termasuk biaya layanan</span>
                   </div>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding-top:6px;">
-                  <div style="font-size:11.5px; color:#047857; font-weight:600; display:flex; align-items:center; gap:5px;">
+                  <div style="font-size:11.5px; color:#34d399; font-weight:600; display:flex; align-items:center; gap:5px;">
                     <i class="fa-solid fa-shield-halved"></i> ${picProtectionText}
                   </div>
                   <div class="listing-action-cta" data-listing-id="${l.id}" data-seller-id="${l.seller_id || ''}">
-                    <a href="/deal/${l.id}" class="btn btn-sm btn-primary" style="padding:10px 20px; font-weight:700; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                      <i class="fa-solid fa-ticket"></i> Lihat &amp; Beli Tiket
+                    <a href="/pay/${l.id}" class="btn btn-sm btn-primary" style="padding:10px 20px; font-weight:700; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:#E36F45; color:#FFFFFF; border:none;">
+                      <i class="fa-solid fa-ticket"></i> Beli / Checkout Aman
                     </a>
                   </div>
                 </div>
@@ -341,7 +369,7 @@ class EventSEOService {
 
     if (isPastOrConcluded) {
       officialTicketHtml = `
-        <div class="official-ticket-box" style="opacity:0.8; margin-bottom:14px; border:1px solid #334155; background:#131d31; border-radius:12px; padding:18px;">
+        <div class="official-ticket-box" style="opacity:0.85; margin-bottom:14px; border:1px solid rgba(203,213,225,0.22); background:var(--palette-surface, #24364D); border-radius:12px; padding:18px;">
           <div class="official-header" style="display:flex; gap:12px; align-items:center;">
             <i class="fa-solid fa-clock-rotate-left" style="font-size:24px; color:#94a3b8;"></i>
             <div>
@@ -369,8 +397,8 @@ class EventSEOService {
         }
 
         const affiliateBadge = offer.is_affiliate
-          ? `<span class="badge badge-info" style="font-size:11px; background:#0284c7; color:#fff; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-handshake"></i> Mitra Afiliasi Resmi</span>`
-          : `<span class="badge badge-slate" style="font-size:11px; background:#334155; color:#94a3b8; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Kanal Resmi Penyelenggara</span>`;
+          ? `<span class="badge badge-info" style="font-size:11px; background:#15365B; color:#FFFFFF; border:1px solid rgba(203,213,225,0.3); padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-handshake"></i> Mitra Afiliasi Resmi</span>`
+          : `<span class="badge badge-slate" style="font-size:11px; background:#172333; color:#CBD5E1; border:1px solid rgba(203,213,225,0.22); padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Kanal Resmi Penyelenggara</span>`;
 
         let priceHtml = '';
         if (offer.price_min) {
@@ -387,7 +415,7 @@ class EventSEOService {
           : '';
 
         return `
-          <div class="official-ticket-box" style="margin-bottom:14px; border:1px solid #2563eb; background:#131d31; border-radius:12px; padding:18px;">
+          <div class="official-ticket-box" style="margin-bottom:14px; border:1px solid rgba(203,213,225,0.28); background:var(--palette-surface, #24364D); border-radius:12px; padding:18px;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
               <div class="official-header" style="display:flex; gap:12px; align-items:flex-start;">
                 <i class="fa-solid fa-building-circle-check" style="font-size:24px; color:#38bdf8; margin-top:2px;"></i>

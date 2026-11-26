@@ -361,6 +361,9 @@ html, html[data-theme="dark"], body, body.dark-mode {
   .btn-topbar-seller {
     padding: 6px 8px !important;
     font-size: 11px !important;
+    max-width: 100px;
+    white-space: normal;
+    text-align: center;
   }
 
   .btn-topbar-seller span {

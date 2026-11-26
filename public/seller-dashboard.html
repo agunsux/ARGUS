@@ -385,13 +385,13 @@
         </a>
         <div class="role-switcher" aria-label="Pengalih Mode Dashboard">
           <a href="/app/buyer" class="role-switch-btn">
-            <i class="fa-solid fa-bag-shopping"></i> Mode Pembeli
+            <i class="fa-solid fa-bag-shopping"></i> <span data-i18n="dashboard.modeBuyer">Mode Pembeli</span>
           </a>
           <a href="/app/seller" class="role-switch-btn active">
-            <i class="fa-solid fa-store"></i> Mode Penjual
+            <i class="fa-solid fa-store"></i> <span data-i18n="dashboard.modeSeller">Mode Penjual</span>
           </a>
           <a href="/admin" id="adminConsoleLink" class="role-switch-btn" style="display:none;">
-            <i class="fa-solid fa-shield-halved"></i> Admin Console
+            <i class="fa-solid fa-shield-halved"></i> <span data-i18n="dashboard.adminConsole">Admin Console</span>
           </a>
         </div>
       </div>
@@ -401,11 +401,11 @@
         <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 6px 12px; font-size: 12px; font-weight: 700;">ID</button>
         <div class="user-pill">
           <i class="fa-regular fa-user"></i>
-          <span id="headerUserEmail">Memuat...</span>
+          <span id="headerUserEmail" data-i18n="dashboard.dataLoadingPill">Memuat...</span>
           <span id="headerRoleBadge" class="badge badge-neutral">SELLER</span>
         </div>
         <button id="btnLogout" class="btn btn-danger-outline" title="Keluar dari Sesi">
-          <i class="fa-solid fa-right-from-bracket"></i> Keluar
+          <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="dashboard.logoutBtn">Keluar</span>
         </button>
       </div>
     </div>
@@ -414,55 +414,55 @@
   <main class="dash-container">
     <div class="dash-hero">
       <div>
-        <h1 class="dash-title">Dashboard Penjual</h1>
-        <p class="dash-subtitle">Kelola inventaris listing tiket, respons tawaran pembeli, pengiriman bukti tiket, kesiapan hari-H, dan status pelepasan dana penjualan.</p>
+        <h1 class="dash-title" data-i18n="dashboard.sellerTitle">Dashboard Penjual</h1>
+        <p class="dash-subtitle" data-i18n="dashboard.sellerSubtitle">Kelola inventaris listing tiket, respons tawaran pembeli, pengiriman bukti tiket, kesiapan hari-H, dan status pelepasan dana penjualan.</p>
       </div>
       <div style="text-align:right; font-size:12px; color:var(--text-muted);">
-        <div>Status Data: <strong id="dataStateBadge">MEMUAT...</strong></div>
-        <div>Diperbarui: <span id="dataTimestamp">-</span></div>
+        <div><span data-i18n="dashboard.statusDataLabel">Status Data:</span> <strong id="dataStateBadge" data-i18n="dashboard.dataLoadingBadge">MEMUAT...</strong></div>
+        <div><span data-i18n="dashboard.updatedLabel">Diperbarui:</span> <span id="dataTimestamp">-</span></div>
       </div>
     </div>
 
     <!-- Error / Unavailable Banner -->
     <div id="unavailableBanner" class="alert-banner alert-unavailable" style="display:none;">
       <div>
-        <strong><i class="fa-solid fa-triangle-exclamation"></i> Data Tidak Tersedia (503)</strong>
-        <div id="unavailableMessage" style="font-size:13px; margin-top:4px;">Basis data utama sedang tidak dapat dijangkau. Sistem menolak menampilkan metrik palsu.</div>
+        <strong><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="dashboard.unavailable503Title">Data Tidak Tersedia (503)</span></strong>
+        <div id="unavailableMessage" style="font-size:13px; margin-top:4px;" data-i18n="dashboard.unavailable503Desc">Basis data utama sedang tidak dapat dijangkau. Sistem menolak menampilkan metrik palsu.</div>
       </div>
-      <button class="btn btn-outline" onclick="loadSellerDashboard()"><i class="fa-solid fa-rotate"></i> Coba Lagi</button>
+      <button class="btn btn-outline" onclick="loadSellerDashboard()"><i class="fa-solid fa-rotate"></i> <span data-i18n="dashboard.retryBtn">Coba Lagi</span></button>
     </div>
 
     <!-- Seller Onboarding & KYC Eligibility Banner -->
     <div id="sellerOnboardingBanner" class="alert-banner alert-onboarding" style="display:none; flex-direction:column; align-items:stretch;">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
         <div>
-          <strong><i class="fa-solid fa-shield-halved"></i> Status Onboarding &amp; Kelayakan Penjual (<span id="onboardingStatusBadge">UNVERIFIED</span>)</strong>
-          <div id="onboardingBannerText" style="font-size:13px; margin-top:4px;">Pembuatan listing mewajibkan profil penjual terverifikasi (<code>KYC: VERIFIED</code>). Ajukan verifikasi identitas penjual di bawah ini agar tim Trust &amp; Safety dapat mengaktifkan kuota listing Anda.</div>
+          <strong><i class="fa-solid fa-shield-halved"></i> <span data-i18n="dashboard.onboardingTitle">Status Onboarding &amp; Kelayakan Penjual</span> (<span id="onboardingStatusBadge">UNVERIFIED</span>)</strong>
+          <div id="onboardingBannerText" style="font-size:13px; margin-top:4px;" data-i18n="dashboard.onboardingUnverifiedHtml" data-i18n-html>Pembuatan listing mewajibkan profil penjual terverifikasi (<code>KYC: VERIFIED</code>). Ajukan verifikasi identitas penjual di bawah ini agar tim Trust &amp; Safety dapat mengaktifkan kuota listing Anda.</div>
         </div>
-        <a href="/create" class="btn btn-primary" id="onboardingCreateBtn"><i class="fa-solid fa-plus"></i> Halaman Registrasi Tiket</a>
+        <a href="/create" class="btn btn-primary" id="onboardingCreateBtn"><i class="fa-solid fa-plus"></i> <span data-i18n="dashboard.onboardingLinkBtn">Halaman Registrasi Tiket</span></a>
       </div>
       <form id="sellerOnboardingForm" onsubmit="submitSellerOnboarding(event)" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid #A7F3D0;">
-        <div style="grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:10px;" style="display:grid;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:10px;">
           <div>
-            <label for="onboardName" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Nama Lengkap Sesuai KTP *</label>
-            <input type="text" id="onboardName" required maxlength="120" placeholder="Nama lengkap sesuai KTP" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; box-sizing:border-box;">
+            <label for="onboardName" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;" data-i18n="dashboard.onboardingNameLabel">Nama Lengkap Sesuai KTP *</label>
+            <input type="text" id="onboardName" required maxlength="120" placeholder="-" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; box-sizing:border-box;">
           </div>
           <div>
-            <label for="onboardPhone" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Nomor WhatsApp Aktif *</label>
+            <label for="onboardPhone" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;" data-i18n="dashboard.onboardingPhoneLabel">Nomor WhatsApp Aktif *</label>
             <input type="text" id="onboardPhone" required maxlength="30" placeholder="0812xxxxxxxx" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; box-sizing:border-box;">
           </div>
           <div>
-            <label for="onboardNik4" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">4 Digit Terakhir NIK KTP *</label>
-            <input type="text" id="onboardNik4" required maxlength="4" pattern="[0-9]{4}" placeholder="Contoh: 4821" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; box-sizing:border-box;">
+            <label for="onboardNik4" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;" data-i18n="dashboard.onboardingNikLabel">4 Digit Terakhir NIK KTP *</label>
+            <input type="text" id="onboardNik4" required maxlength="4" pattern="[0-9]{4}" placeholder="4821" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; box-sizing:border-box;">
           </div>
           <div>
-            <label for="onboardPayoutBank" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Bank Rekening Penjual (Opsional)</label>
+            <label for="onboardPayoutBank" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;" data-i18n="dashboard.onboardingBankLabel">Bank Rekening Penjual (Opsional)</label>
             <input type="text" id="onboardPayoutBank" maxlength="60" placeholder="BCA / Mandiri / BNI / BRI" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; box-sizing:border-box;">
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
           <button type="submit" class="btn btn-primary" id="btnSubmitOnboarding">
-            <i class="fa-solid fa-id-card"></i> Ajukan Onboarding &amp; Verifikasi KYC Penjual
+            <i class="fa-solid fa-id-card"></i> <span data-i18n="dashboard.onboardingSubmitBtn">Ajukan Onboarding &amp; Verifikasi KYC Penjual</span>
           </button>
           <span id="onboardingFeedback" style="font-size:13px; font-weight:600;"></span>
         </div>
@@ -472,7 +472,7 @@
     <!-- Loading View -->
     <div id="loadingView" class="section-card" style="text-align:center; padding:48px 20px;">
       <i class="fa-solid fa-circle-notch fa-spin" style="font-size:28px; color:var(--primary); margin-bottom:12px;"></i>
-      <div style="font-weight:700;">Memuat data listing & penjualan asli dari server...</div>
+      <div style="font-weight:700;" data-i18n="dashboard.loadingSellerData">Memuat data listing &amp; penjualan asli dari server...</div>
     </div>
 
     <!-- Main Dashboard Content -->
@@ -480,32 +480,32 @@
       <!-- KPI Overview Cards -->
       <div class="kpi-grid">
         <div class="kpi-card">
-          <div class="kpi-label"><span>Listing Aktif</span> <i class="fa-solid fa-tags" style="color:var(--primary);"></i></div>
+          <div class="kpi-label"><span data-i18n="dashboard.kpiActiveListings">Listing Aktif</span> <i class="fa-solid fa-tags" style="color:var(--primary);"></i></div>
           <div class="kpi-value" id="kpiActiveListings">0</div>
-          <div class="kpi-foot" id="kpiQuotaFoot">Batas kuota: 0 / 2</div>
+          <div class="kpi-foot" id="kpiQuotaFoot">0 / 2</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label"><span>Menunggu Verifikasi</span> <i class="fa-solid fa-hourglass-half" style="color:var(--warning);"></i></div>
+          <div class="kpi-label"><span data-i18n="dashboard.kpiPendingVerif">Menunggu Verifikasi</span> <i class="fa-solid fa-hourglass-half" style="color:var(--warning);"></i></div>
           <div class="kpi-value" id="kpiPendingVerification">0</div>
-          <div class="kpi-foot">Review keaslian tiket</div>
+          <div class="kpi-foot" data-i18n="dashboard.kpiTicketReview">Review keaslian tiket</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label"><span>Tiket Terjual / Reservasi</span> <i class="fa-solid fa-ticket" style="color:var(--info);"></i></div>
+          <div class="kpi-label"><span data-i18n="dashboard.kpiSoldReserved">Tiket Terjual / Reservasi</span> <i class="fa-solid fa-ticket" style="color:var(--info);"></i></div>
           <div class="kpi-value" id="kpiReservedOrSold">0</div>
-          <div class="kpi-foot">Dalam proses / selesai</div>
+          <div class="kpi-foot" data-i18n="dashboard.kpiInProgressDone">Dalam proses / selesai</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label"><span>Tawaran Masuk</span> <i class="fa-solid fa-handshake" style="color:var(--warning);"></i></div>
+          <div class="kpi-label"><span data-i18n="dashboard.kpiIncomingOffers">Tawaran Masuk</span> <i class="fa-solid fa-handshake" style="color:var(--warning);"></i></div>
           <div class="kpi-value" id="kpiPendingOffers">0</div>
-          <div class="kpi-foot">Menunggu keputusan Anda</div>
+          <div class="kpi-foot" data-i18n="dashboard.kpiAwaitDecision">Menunggu keputusan Anda</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label"><span>Perlu Tindakan</span> <i class="fa-solid fa-bell" style="color:var(--danger);"></i></div>
+          <div class="kpi-label"><span data-i18n="dashboard.kpiActionReq">Perlu Tindakan</span> <i class="fa-solid fa-bell" style="color:var(--danger);"></i></div>
           <div class="kpi-value" id="kpiActionRequired">0</div>
-          <div class="kpi-foot">Kirim tiket / respon sengketa</div>
+          <div class="kpi-foot" data-i18n="dashboard.kpiSendOrDispute">Kirim tiket / respon sengketa</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label"><span>Tier Kepercayaan</span> <i class="fa-solid fa-medal" style="color:var(--primary);"></i></div>
+          <div class="kpi-label"><span data-i18n="dashboard.kpiTrustTier">Tier Kepercayaan</span> <i class="fa-solid fa-medal" style="color:var(--primary);"></i></div>
           <div class="kpi-value" id="kpiTrustTier" style="font-size:clamp(15px, 1.4vw, 18px); overflow-wrap:anywhere;">NEW</div>
           <div class="kpi-foot" id="kpiKycFoot">KYC: UNVERIFIED</div>
         </div>
@@ -514,19 +514,19 @@
       <!-- Navigation Tabs -->
       <div class="nav-tabs" role="tablist">
         <button class="nav-tab active" data-tab="listings" onclick="switchTab('listings')">
-          <i class="fa-solid fa-tags"></i> Listing Saya (<span id="tabCountListings">0</span>)
+          <i class="fa-solid fa-tags"></i> <span data-i18n="dashboard.tabListingsLabel">Listing Saya</span> (<span id="tabCountListings">0</span>)
         </button>
         <button class="nav-tab" data-tab="orders" onclick="switchTab('orders')">
-          <i class="fa-solid fa-box-open"></i> Pesanan & Handoff (<span id="tabCountOrders">0</span>)
+          <i class="fa-solid fa-box-open"></i> <span data-i18n="dashboard.tabOrdersHandoffLabel">Pesanan &amp; Handoff</span> (<span id="tabCountOrders">0</span>)
         </button>
         <button class="nav-tab" data-tab="offers" onclick="switchTab('offers')">
-          <i class="fa-solid fa-handshake"></i> Tawaran Masuk (<span id="tabCountOffers">0</span>)
+          <i class="fa-solid fa-handshake"></i> <span data-i18n="dashboard.tabIncomingOffersLabel">Tawaran Masuk</span> (<span id="tabCountOffers">0</span>)
         </button>
         <button class="nav-tab" data-tab="readiness" onclick="switchTab('readiness')">
-          <i class="fa-solid fa-clipboard-check"></i> Trust & Kesiapan Hari-H
+          <i class="fa-solid fa-clipboard-check"></i> <span data-i18n="dashboard.tabReadinessLabel">Trust &amp; Kesiapan Hari-H</span>
         </button>
         <button class="nav-tab" data-tab="settlement" onclick="switchTab('settlement')">
-          <i class="fa-solid fa-vault"></i> Status Pencairan (Read-Only)
+          <i class="fa-solid fa-vault"></i> <span data-i18n="dashboard.tabSettlementLabel">Status Pencairan (Read-Only)</span>
         </button>
       </div>
 
@@ -534,8 +534,8 @@
       <section id="pane-listings" class="tab-pane active">
         <div class="section-card">
           <div class="section-header">
-            <h2 class="section-title"><i class="fa-solid fa-tags" style="color:var(--primary);"></i> Inventaris Listing Tiket Saya</h2>
-            <a href="/create" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Tambah Listing Tiket</a>
+            <h2 class="section-title"><i class="fa-solid fa-tags" style="color:var(--primary);"></i> <span data-i18n="dashboard.sectionListingsTitle">Inventaris Listing Tiket Saya</span></h2>
+            <a href="/create" class="btn btn-primary"><i class="fa-solid fa-plus"></i> <span data-i18n="dashboard.addListingBtn">Tambah Listing Tiket</span></a>
           </div>
           <div id="listingsContainer" class="item-list"></div>
         </div>
@@ -545,7 +545,7 @@
       <section id="pane-orders" class="tab-pane">
         <div class="section-card">
           <div class="section-header">
-            <h2 class="section-title"><i class="fa-solid fa-box-open" style="color:var(--info);"></i> Pesanan Penjualan & Pengiriman Tiket</h2>
+            <h2 class="section-title"><i class="fa-solid fa-box-open" style="color:var(--info);"></i> <span data-i18n="dashboard.sectionSellerOrdersTitle">Pesanan Penjualan &amp; Pengiriman Tiket</span></h2>
           </div>
           <div id="ordersContainer" class="item-list"></div>
         </div>
@@ -555,10 +555,10 @@
       <section id="pane-offers" class="tab-pane">
         <div class="section-card">
           <div class="section-header">
-            <h2 class="section-title"><i class="fa-solid fa-handshake" style="color:var(--warning);"></i> Tawaran Harga dari Pembeli</h2>
+            <h2 class="section-title"><i class="fa-solid fa-handshake" style="color:var(--warning);"></i> <span data-i18n="dashboard.sectionSellerOffersTitle">Tawaran Harga dari Pembeli</span></h2>
           </div>
           <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
-            <i class="fa-solid fa-circle-info"></i> Catatan: Seluruh tawaran harga dan riwayat negosiasi tersimpan secara persisten di database utama (<code>POSTGRESQL</code>) dengan penguncian optimis anti-race condition.
+            <i class="fa-solid fa-circle-info"></i> <span data-i18n="dashboard.offersPersistNote">Catatan: Seluruh tawaran harga dan riwayat negosiasi tersimpan secara persisten di database utama.</span>
           </div>
           <div id="offersContainer" class="item-list"></div>
         </div>
@@ -568,7 +568,7 @@
       <section id="pane-readiness" class="tab-pane">
         <div class="section-card">
           <div class="section-header">
-            <h2 class="section-title"><i class="fa-solid fa-clipboard-check" style="color:var(--primary);"></i> Kesiapan Hari-H & Profil Kepercayaan Penjual</h2>
+            <h2 class="section-title"><i class="fa-solid fa-clipboard-check" style="color:var(--primary);"></i> <span data-i18n="dashboard.sectionReadinessTitle">Kesiapan Hari-H &amp; Profil Kepercayaan Penjual</span></h2>
           </div>
           <div id="readinessChecklistContainer" class="item-list"></div>
         </div>
@@ -578,8 +578,8 @@
       <section id="pane-settlement" class="tab-pane">
         <div class="alert-banner alert-pilot">
           <div>
-            <strong><i class="fa-solid fa-circle-info"></i> Status Otomasi Pembayaran & Pencairan: <span id="settlementModeBadge">UNAVAILABLE_PILOT_MODE</span></strong>
-            <div id="settlementPilotNotice" style="font-size:13px; margin-top:4px;">
+            <strong><i class="fa-solid fa-circle-info"></i> <span data-i18n="dashboard.settlementBannerTitle">Status Otomasi Pembayaran &amp; Pencairan:</span> <span id="settlementModeBadge">UNAVAILABLE_PILOT_MODE</span></strong>
+            <div id="settlementPilotNotice" style="font-size:13px; margin-top:4px;" data-i18n="dashboard.settlementBannerDesc">
               Pencairan otomatis ke rekening bank belum diaktifkan pada mode pilot. Seluruh pelepasan dana penampungan diverifikasi melalui konfirmasi gate masuk acara dan ditindaklanjuti secara manual oleh tim operasional.
             </div>
           </div>
@@ -587,20 +587,20 @@
 
         <div class="kpi-grid">
           <div class="kpi-card">
-            <div class="kpi-label"><span>Dana Tertahan di Sistem Penampungan</span> <i class="fa-solid fa-lock" style="color:var(--warning);"></i></div>
+            <div class="kpi-label"><span data-i18n="dashboard.escrowHeldKpiTitle">Dana Tertahan di Sistem Penampungan</span> <i class="fa-solid fa-lock" style="color:var(--warning);"></i></div>
             <div class="kpi-value" id="settlementEscrowedIdr">Rp 0</div>
-            <div class="kpi-foot">Dari pesanan aktif yang sudah dibayar</div>
+            <div class="kpi-foot" data-i18n="dashboard.escrowHeldKpiFoot">Dari pesanan aktif yang sudah dibayar</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label"><span>Total Settlement Tercatat</span> <i class="fa-solid fa-check-double" style="color:var(--primary);"></i></div>
+            <div class="kpi-label"><span data-i18n="dashboard.settledKpiTitle">Total Settlement Tercatat</span> <i class="fa-solid fa-check-double" style="color:var(--primary);"></i></div>
             <div class="kpi-value" id="settlementReleasedIdr">Rp 0</div>
-            <div class="kpi-foot">Riwayat settlement terverifikasi</div>
+            <div class="kpi-foot" data-i18n="dashboard.settledKpiFoot">Riwayat settlement terverifikasi</div>
           </div>
         </div>
 
         <div class="section-card">
           <div class="section-header">
-            <h2 class="section-title"><i class="fa-solid fa-file-invoice-dollar" style="color:var(--primary);"></i> Riwayat Catatan Settlement (Read-Only)</h2>
+            <h2 class="section-title"><i class="fa-solid fa-file-invoice-dollar" style="color:var(--primary);"></i> <span data-i18n="dashboard.settlementHistoryTitle">Riwayat Catatan Settlement (Read-Only)</span></h2>
           </div>
           <div id="settlementsListContainer" class="item-list"></div>
         </div>
@@ -608,17 +608,26 @@
     </div>
   </main>
 
+  <script src="/js/i18n.js"></script>
   <script>
+    const _t = (k, f) => (window.TikumI18n ? window.TikumI18n.t(k, f) : f);
+    const _trStatus = (s) => (window.TikumI18n ? window.TikumI18n.translateStatus(s) : s);
+    let lastSellerPayload = null;
+
     function formatIdr(amount) {
       const num = Number(amount) || 0;
-      return 'Rp ' + num.toLocaleString('id-ID');
+      return (window.TikumI18n && typeof window.TikumI18n.formatCurrency === 'function')
+        ? window.TikumI18n.formatCurrency(num, 'IDR')
+        : ('Rp ' + num.toLocaleString('id-ID'));
     }
 
     function formatDate(iso) {
       if (!iso) return '-';
       const d = new Date(iso);
       if (isNaN(d.getTime())) return iso;
-      return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+      const l = window.TikumI18n ? window.TikumI18n.getLang() : 'id';
+      const tag = l === 'id' ? 'id-ID' : (l === 'th' ? 'th-TH' : (l === 'ms' ? 'ms-MY' : (l === 'tl' ? 'en-PH' : 'en-US')));
+      return d.toLocaleString(tag, { dateStyle: 'medium', timeStyle: 'short' });
     }
 
     function escapeHtml(str) {
@@ -727,7 +736,7 @@
       const fb = document.getElementById('onboardingFeedback');
       btn.disabled = true;
       fb.style.color = 'var(--text-muted)';
-      fb.textContent = 'Mengirim pengajuan...';
+      fb.textContent = _t('dashboard.onboardingSubmitting', 'Mengirim pengajuan...');
 
       try {
         const res = await fetch('/api/dashboard/seller/onboarding', {
@@ -745,15 +754,15 @@
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
           fb.style.color = 'var(--danger)';
-          fb.textContent = data.message || data.error || 'Gagal mengajukan onboarding penjual.';
+          fb.textContent = data.message || data.error || _t('dashboard.onboardingFail', 'Gagal mengajukan onboarding penjual.');
           return;
         }
         fb.style.color = 'var(--primary)';
-        fb.textContent = data.message || 'Pengajuan onboarding diterima (PENDING_REVIEW).';
+        fb.textContent = data.message || _t('dashboard.onboardingSubmitted', 'Pengajuan onboarding diterima (PENDING_REVIEW).');
         await loadSellerDashboard();
       } catch (err) {
         fb.style.color = 'var(--danger)';
-        fb.textContent = 'Kesalahan jaringan saat mengajukan onboarding.';
+        fb.textContent = _t('dashboard.networkErrMsg', 'Kesalahan jaringan.');
       } finally {
         btn.disabled = false;
       }
@@ -763,7 +772,6 @@
       const loadingView = document.getElementById('loadingView');
       const dashboardContent = document.getElementById('dashboardContent');
       const unavailableBanner = document.getElementById('unavailableBanner');
-      const onboardingBanner = document.getElementById('sellerOnboardingBanner');
 
       unavailableBanner.style.display = 'none';
 
@@ -785,7 +793,7 @@
           dashboardContent.style.display = 'none';
           unavailableBanner.style.display = 'flex';
           document.getElementById('unavailableMessage').textContent =
-            payload.error || 'Layanan penyimpanan utama sedang tidak tersedia.';
+            payload.error || _t('dashboard.primaryStorageUnavailable', 'Layanan penyimpanan utama sedang tidak tersedia.');
           document.getElementById('dataStateBadge').textContent = 'UNAVAILABLE (503)';
           document.getElementById('dataStateBadge').style.color = 'var(--danger)';
           return;
@@ -795,240 +803,258 @@
           loadingView.style.display = 'none';
           unavailableBanner.style.display = 'flex';
           document.getElementById('unavailableMessage').textContent =
-            payload.error || 'Gagal memuat dashboard penjual.';
+            payload.error || _t('dashboard.sellerLoadFail', 'Gagal memuat dashboard penjual.');
           return;
         }
 
-        const user = payload.user || {};
-        const ov = payload.overview || {};
-        const listings = (payload.listings && payload.listings.items) || [];
-        const orders = (payload.orders && payload.orders.items) || [];
-        const offers = (payload.offers && payload.offers.items) || [];
-        const readiness = payload.trust_and_readiness || {};
-        const settlement = payload.earnings_and_settlement || {};
-
-        document.getElementById('headerUserEmail').textContent = user.email || user.id;
-        document.getElementById('headerRoleBadge').textContent = user.role || 'SELLER';
-        if (user.role === 'ADMIN') {
-          document.getElementById('adminConsoleLink').style.display = 'inline-flex';
-        }
-
-        document.getElementById('dataStateBadge').textContent = (payload.meta && payload.meta.dataState) || 'OK';
-        document.getElementById('dataStateBadge').style.color = 'var(--primary)';
-        document.getElementById('dataTimestamp').textContent = formatDate(payload.meta && payload.meta.generatedAt);
-
-        const kycStatus = (user.kyc_status || 'UNVERIFIED').toUpperCase();
-        const onboardingFormEl = document.getElementById('sellerOnboardingForm');
-        const onboardingBadgeEl = document.getElementById('onboardingStatusBadge');
-        const onboardingTextEl = document.getElementById('onboardingBannerText');
-        onboardingBadgeEl.textContent = kycStatus;
-
-        if (user.full_name && !document.getElementById('onboardName').value) {
-          document.getElementById('onboardName').value = user.full_name;
-        }
-        if (user.phone && !document.getElementById('onboardPhone').value) {
-          document.getElementById('onboardPhone').value = user.phone;
-        }
-
-        if (kycStatus !== 'VERIFIED') {
-          onboardingBanner.style.display = 'flex';
-          if (kycStatus === 'PENDING_REVIEW') {
-            onboardingFormEl.style.display = 'none';
-            onboardingTextEl.innerHTML = 'Pengajuan onboarding penjual Anda sedang ditinjau oleh tim Trust &amp; Safety TIKUM (<code>PENDING_REVIEW</code>). Pembuatan listing akan aktif otomatis setelah KYC disetujui.';
-          } else if (kycStatus === 'SUSPENDED') {
-            onboardingFormEl.style.display = 'none';
-            onboardingTextEl.innerHTML = 'Akun penjual Anda sedang ditangguhkan (<code>SUSPENDED</code>) dan tidak dapat membuat listing baru.';
-          } else {
-            onboardingFormEl.style.display = 'block';
-            onboardingTextEl.innerHTML = 'Pembuatan listing mewajibkan profil penjual terverifikasi (<code>KYC: VERIFIED</code>). Lengkapi formulir onboarding di bawah ini untuk mengajukan verifikasi penjual.';
-          }
-        } else if (!user.is_registered_seller && listings.length === 0) {
-          onboardingBanner.style.display = 'flex';
-          onboardingFormEl.style.display = 'none';
-        } else {
-          onboardingBanner.style.display = 'none';
-        }
-
-        // KPIs
-        document.getElementById('kpiActiveListings').textContent = ov.active_listings_count ?? 0;
-        document.getElementById('kpiQuotaFoot').textContent = `Kuota aktif: ${ov.active_listings_count ?? 0} / ${ov.max_active_listings ?? 2}`;
-        document.getElementById('kpiPendingVerification').textContent = ov.pending_verification_count ?? 0;
-        document.getElementById('kpiReservedOrSold').textContent = ov.reserved_or_sold_count ?? 0;
-        document.getElementById('kpiPendingOffers').textContent = ov.pending_offers_count ?? 0;
-        document.getElementById('kpiActionRequired').textContent = ov.orders_requiring_action_count ?? 0;
-        document.getElementById('kpiTrustTier').textContent = ov.trust_tier || 'NEW';
-        document.getElementById('kpiKycFoot').textContent = `KYC: ${user.kyc_status || 'UNVERIFIED'}`;
-
-        document.getElementById('tabCountListings').textContent = payload.listings?.total ?? listings.length;
-        document.getElementById('tabCountOrders').textContent = payload.orders?.total ?? orders.length;
-        document.getElementById('tabCountOffers').textContent = payload.offers?.total ?? offers.length;
-
-        // Render Listings
-        const listingsEl = document.getElementById('listingsContainer');
-        if (listings.length === 0) {
-          listingsEl.innerHTML = `
-            <div class="empty-box">
-              <i class="fa-solid fa-tags"></i>
-              <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">Belum Ada Listing Tiket (0)</h3>
-              <p style="margin:0 0 16px; font-size:13px;">Anda belum mendaftarkan tiket untuk dijual. Buat listing baru dengan mengunggah bukti pembelian asli.</p>
-              <a href="/create" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Buat Listing Tiket</a>
-            </div>
-          `;
-        } else {
-          listingsEl.innerHTML = listings.map(l => `
-            <div class="item-row">
-              <div class="item-main">
-                <h4>
-                  ${escapeHtml(l.event_title)}
-                  <span class="badge ${statusBadgeClass(l.status)}">${escapeHtml(l.status)}</span>
-                  <span class="badge badge-info" style="background:rgba(56,189,248,0.15); color:var(--cyan); border:1px solid rgba(56,189,248,0.3);"><i class="fa-solid fa-ticket"></i> ${l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1)} / ${l.total_quantity || l.quantity || 1} Tiket</span>
-                  <span class="badge" style="background:${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)'}; color:${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? '#4ade80' : 'var(--text-muted)'}; border:1px solid ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.3)' : 'var(--border)'};"><i class="fa-solid ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'fa-person-military-pointing' : 'fa-handshake'}"></i> ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'PIC Venue' : 'Transfer Mandiri'}</span>
-                </h4>
-                <div class="item-meta">
-                  <span>Listing: <code>${escapeHtml(l.listing_id)}</code></span>
-                  <span>Kursi/Kat: ${escapeHtml(l.seat_info)}</span>
-                  <span>Harga Jual: <strong>${escapeHtml(formatIdr(l.price))}</strong> (Harga Asli: ${escapeHtml(formatIdr(l.face_value))})</span>
-                  <span>Verifikasi Tiket: <span class="badge ${statusBadgeClass(l.ticket_verification_status)}">${escapeHtml(l.ticket_verification_status)}</span></span>
-                  <span>Dibuat: ${escapeHtml(formatDate(l.created_at))}</span>
-                </div>
-              </div>
-              <div class="item-actions">
-                ${l.can_withdraw
-                  ? `<button class="btn btn-danger-outline" onclick="withdrawListing('${escapeHtml(l.listing_id)}')"><i class="fa-solid fa-ban"></i> Tarik Listing</button>`
-                  : ''}
-              </div>
-            </div>
-          `).join('');
-        }
-
-        // Render Orders
-        const ordersEl = document.getElementById('ordersContainer');
-        if (orders.length === 0) {
-          ordersEl.innerHTML = `
-            <div class="empty-box">
-              <i class="fa-solid fa-box-open"></i>
-              <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">Belum Ada Pesanan Penjualan (0)</h3>
-              <p style="margin:0; font-size:13px;">Pesanan dari pembeli akan muncul di sini segera setelah pembeli melakukan checkout pada listing Anda.</p>
-            </div>
-          `;
-        } else {
-          ordersEl.innerHTML = orders.map(o => `
-            <div class="item-row">
-              <div class="item-main">
-                <h4>
-                  ${escapeHtml(o.event_title)}
-                  <span class="badge ${statusBadgeClass(o.status)}">${escapeHtml(o.status)}</span>
-                  <span class="badge badge-info" style="background:rgba(56,189,248,0.15); color:var(--cyan); border:1px solid rgba(56,189,248,0.3);"><i class="fa-solid fa-ticket"></i> ${o.quantity || 1} Tiket</span>
-                  <span class="badge" style="background:${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)'}; color:${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? '#4ade80' : 'var(--text-muted)'}; border:1px solid ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.3)' : 'var(--border)'};"><i class="fa-solid ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'fa-person-military-pointing' : 'fa-handshake'}"></i> ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'PIC Venue' : 'Transfer Mandiri'}</span>
-                  ${o.requires_seller_action ? '<span class="badge badge-danger">PERLU TINDAKAN</span>' : ''}
-                </h4>
-                <div class="item-meta">
-                  <span>Order: <code>${escapeHtml(o.order_id)}</code></span>
-                  <span>Pembeli: <strong>${escapeHtml(o.buyer_masked_name)}</strong></span>
-                  <span>Kursi: ${escapeHtml(o.seat_info)}</span>
-                  <span>Escrow: <strong>${escapeHtml(o.escrow_status)}</strong></span>
-                  <span>Handoff: <strong>${escapeHtml(o.delivery_status)}</strong></span>
-                  <span>Gate: <strong>${escapeHtml(o.entry_verification_status)}</strong></span>
-                </div>
-              </div>
-              <div class="item-actions">
-                <div style="text-align:right; margin-right:8px;">
-                  <div style="font-weight:800; font-size:15px;">${escapeHtml(formatIdr(o.seller_net_estimate))}</div>
-                  <div style="font-size:11px; color:var(--text-muted);">Estimasi bersih penjual</div>
-                </div>
-                <a href="${escapeHtml(o.track_url)}" class="btn btn-primary"><i class="fa-solid fa-truck-fast"></i> Kelola Handoff</a>
-              </div>
-            </div>
-          `).join('');
-        }
-
-        // Render Offers
-        const offersEl = document.getElementById('offersContainer');
-        if (offers.length === 0) {
-          offersEl.innerHTML = `
-            <div class="empty-box">
-              <i class="fa-solid fa-handshake"></i>
-              <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">Belum Ada Tawaran Masuk (0)</h3>
-              <p style="margin:0; font-size:13px;">Tawaran negosiasi harga dari calon pembeli akan ditampilkan di sini.</p>
-            </div>
-          `;
-        } else {
-          offersEl.innerHTML = offers.map(of => `
-            <div class="item-row">
-              <div class="item-main">
-                <h4>${escapeHtml(of.event_title)} <span class="badge ${statusBadgeClass(of.status)}">${escapeHtml(of.status)}</span></h4>
-                <div class="item-meta">
-                  <span>Harga Ditawar: <strong>${escapeHtml(formatIdr(of.offered_price))}</strong> (Harga Listing: ${escapeHtml(formatIdr(of.listed_price))})</span>
-                  <span>Kursi: ${escapeHtml(of.seat_info)}</span>
-                  <span>Berakhir: ${escapeHtml(formatDate(of.expires_at))}</span>
-                </div>
-              </div>
-              <div class="item-actions">
-                ${of.can_respond ? `
-                  <button class="btn btn-primary" onclick="respondOffer('${escapeHtml(of.offer_id)}', 'accept')"><i class="fa-solid fa-check"></i> Terima</button>
-                  <button class="btn btn-outline" onclick="counterIncomingOffer('${escapeHtml(of.offer_id)}', ${Number(of.offered_price) || 0}, ${Number(of.listed_price) || 0})"><i class="fa-solid fa-arrows-left-right"></i> Counter</button>
-                  <button class="btn btn-danger-outline" onclick="respondOffer('${escapeHtml(of.offer_id)}', 'reject')"><i class="fa-solid fa-xmark"></i> Tolak</button>
-                ` : ''}
-              </div>
-            </div>
-          `).join('');
-        }
-
-        // Render Readiness Checklist
-        const checklist = readiness.event_day_readiness_checklist || [];
-        const readinessEl = document.getElementById('readinessChecklistContainer');
-        readinessEl.innerHTML = checklist.map(item => `
-          <div class="item-row">
-            <div class="item-main">
-              <h4>${escapeHtml(item.label)} <span class="badge ${statusBadgeClass(item.status)}">${escapeHtml(item.status)}</span></h4>
-              <div class="item-meta"><span>${escapeHtml(item.detail || '')}</span></div>
-            </div>
-          </div>
-        `).join('');
-
-        // Render Settlement (Read-Only)
-        document.getElementById('settlementModeBadge').textContent = settlement.payout_automation_status || 'UNAVAILABLE_PILOT_MODE';
-        if (settlement.pilot_notice) {
-          document.getElementById('settlementPilotNotice').textContent = settlement.pilot_notice;
-        }
-        document.getElementById('settlementEscrowedIdr').textContent = formatIdr(settlement.escrowed_gross_amount_idr || 0);
-        document.getElementById('settlementReleasedIdr').textContent = formatIdr(settlement.settled_net_amount_idr || 0);
-
-        const settlementsList = settlement.items || [];
-        const settlementsEl = document.getElementById('settlementsListContainer');
-        if (settlementsList.length === 0) {
-          settlementsEl.innerHTML = `
-            <div class="empty-box">
-              <i class="fa-solid fa-vault"></i>
-              <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">Belum Ada Catatan Settlement (0)</h3>
-              <p style="margin:0; font-size:13px;">Catatan settlement hanya dibuat setelah tiket pembeli terkonfirmasi masuk di gate acara dan masa sanggah selesai.</p>
-            </div>
-          `;
-        } else {
-          settlementsEl.innerHTML = settlementsList.map(s => `
-            <div class="item-row">
-              <div class="item-main">
-                <h4>Settlement #${escapeHtml(s.settlement_id)} <span class="badge ${statusBadgeClass(s.status)}">${escapeHtml(s.status)}</span></h4>
-                <div class="item-meta">
-                  <span>Order: <code>${escapeHtml(s.order_id)}</code></span>
-                  <span>Gross: ${escapeHtml(formatIdr(s.gross_amount))}</span>
-                  <span>Biaya Platform: ${escapeHtml(formatIdr(s.platform_fee))}</span>
-                  <span>Net Penjual: <strong>${escapeHtml(formatIdr(s.net_amount))}</strong></span>
-                  <span>Tanggal: ${escapeHtml(formatDate(s.created_at))}</span>
-                </div>
-              </div>
-            </div>
-          `).join('');
-        }
+        lastSellerPayload = payload;
+        renderSellerDashboardPayload(payload);
 
         loadingView.style.display = 'none';
         dashboardContent.style.display = 'block';
       } catch (err) {
         loadingView.style.display = 'none';
         unavailableBanner.style.display = 'flex';
-        document.getElementById('unavailableMessage').textContent = 'Gagal menghubungi server: ' + err.message;
+        document.getElementById('unavailableMessage').textContent = _t('dashboard.serverContactFail', 'Gagal menghubungi server:') + ' ' + err.message;
       }
     }
+
+    function renderSellerDashboardPayload(payload) {
+      if (!payload) return;
+      const onboardingBanner = document.getElementById('sellerOnboardingBanner');
+      const user = payload.user || {};
+      const ov = payload.overview || {};
+      const listings = (payload.listings && payload.listings.items) || [];
+      const orders = (payload.orders && payload.orders.items) || [];
+      const offers = (payload.offers && payload.offers.items) || [];
+      const readiness = payload.trust_and_readiness || {};
+      const settlement = payload.earnings_and_settlement || {};
+
+      document.getElementById('headerUserEmail').textContent = user.email || user.id;
+      document.getElementById('headerRoleBadge').textContent = user.role || 'SELLER';
+      if (user.role === 'ADMIN') {
+        document.getElementById('adminConsoleLink').style.display = 'inline-flex';
+      }
+
+      document.getElementById('dataStateBadge').textContent = (payload.meta && payload.meta.dataState) || 'OK';
+      document.getElementById('dataStateBadge').style.color = 'var(--primary)';
+      document.getElementById('dataTimestamp').textContent = formatDate(payload.meta && payload.meta.generatedAt);
+
+      const kycStatus = (user.kyc_status || 'UNVERIFIED').toUpperCase();
+      const onboardingFormEl = document.getElementById('sellerOnboardingForm');
+      const onboardingBadgeEl = document.getElementById('onboardingStatusBadge');
+      const onboardingTextEl = document.getElementById('onboardingBannerText');
+      onboardingBadgeEl.textContent = _trStatus(kycStatus);
+
+      if (user.full_name && !document.getElementById('onboardName').value) {
+        document.getElementById('onboardName').value = user.full_name;
+      }
+      if (user.phone && !document.getElementById('onboardPhone').value) {
+        document.getElementById('onboardPhone').value = user.phone;
+      }
+
+      if (kycStatus !== 'VERIFIED') {
+        onboardingBanner.style.display = 'flex';
+        if (kycStatus === 'PENDING_REVIEW') {
+          onboardingFormEl.style.display = 'none';
+          onboardingTextEl.innerHTML = _t('dashboard.onboardingPendingHtml', 'Pengajuan onboarding penjual Anda sedang ditinjau oleh tim Trust &amp; Safety TIKUM (<code>PENDING_REVIEW</code>). Pembuatan listing akan aktif otomatis setelah KYC disetujui.');
+        } else if (kycStatus === 'SUSPENDED') {
+          onboardingFormEl.style.display = 'none';
+          onboardingTextEl.innerHTML = _t('dashboard.onboardingSuspendedHtml', 'Akun penjual Anda sedang ditangguhkan (<code>SUSPENDED</code>) dan tidak dapat membuat listing baru.');
+        } else {
+          onboardingFormEl.style.display = 'block';
+          onboardingTextEl.innerHTML = _t('dashboard.onboardingUnverifiedHtml', 'Pembuatan listing mewajibkan profil penjual terverifikasi (<code>KYC: VERIFIED</code>). Lengkapi formulir onboarding di bawah ini untuk mengajukan verifikasi penjual.');
+        }
+      } else if (!user.is_registered_seller && listings.length === 0) {
+        onboardingBanner.style.display = 'flex';
+        onboardingFormEl.style.display = 'none';
+      } else {
+        onboardingBanner.style.display = 'none';
+      }
+
+      // KPIs
+      document.getElementById('kpiActiveListings').textContent = ov.active_listings_count ?? 0;
+      document.getElementById('kpiQuotaFoot').textContent = _t('dashboard.kpiQuotaTpl', 'Kuota aktif: {active} / {max}')
+        .replace('{active}', String(ov.active_listings_count ?? 0))
+        .replace('{max}', String(ov.max_active_listings ?? 2));
+      document.getElementById('kpiPendingVerification').textContent = ov.pending_verification_count ?? 0;
+      document.getElementById('kpiReservedOrSold').textContent = ov.reserved_or_sold_count ?? 0;
+      document.getElementById('kpiPendingOffers').textContent = ov.pending_offers_count ?? 0;
+      document.getElementById('kpiActionRequired').textContent = ov.orders_requiring_action_count ?? 0;
+      document.getElementById('kpiTrustTier').textContent = ov.trust_tier || 'NEW';
+      document.getElementById('kpiKycFoot').textContent = `${_t('dashboard.kpiKycPrefix', 'KYC:')} ${_trStatus(user.kyc_status || 'UNVERIFIED')}`;
+
+      document.getElementById('tabCountListings').textContent = payload.listings?.total ?? listings.length;
+      document.getElementById('tabCountOrders').textContent = payload.orders?.total ?? orders.length;
+      document.getElementById('tabCountOffers').textContent = payload.offers?.total ?? offers.length;
+
+      // Render Listings
+      const listingsEl = document.getElementById('listingsContainer');
+      if (listings.length === 0) {
+        listingsEl.innerHTML = `
+          <div class="empty-box">
+            <i class="fa-solid fa-tags"></i>
+            <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">${_t('dashboard.emptyListingsTitle', 'Belum Ada Listing Tiket (0)')}</h3>
+            <p style="margin:0 0 16px; font-size:13px;">${_t('dashboard.emptyListingsDesc', 'Anda belum mendaftarkan tiket untuk dijual. Buat listing baru dengan mengunggah bukti pembelian asli.')}</p>
+            <a href="/create" class="btn btn-primary"><i class="fa-solid fa-plus"></i> ${_t('dashboard.createListingCta', 'Buat Listing Tiket')}</a>
+          </div>
+        `;
+      } else {
+        listingsEl.innerHTML = listings.map(l => `
+          <div class="item-row">
+            <div class="item-main">
+              <h4>
+                ${escapeHtml(l.event_title)}
+                <span class="badge ${statusBadgeClass(l.status)}">${escapeHtml(_trStatus(l.status))}</span>
+                <span class="badge badge-info" style="background:rgba(56,189,248,0.15); color:var(--cyan); border:1px solid rgba(56,189,248,0.3);"><i class="fa-solid fa-ticket"></i> ${l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1)} / ${l.total_quantity || l.quantity || 1} ${_t('dashboard.ticketUnit', 'Tiket')}</span>
+                <span class="badge" style="background:${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)'}; color:${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? '#4ade80' : 'var(--text-muted)'}; border:1px solid ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.3)' : 'var(--border)'};"><i class="fa-solid ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'fa-person-military-pointing' : 'fa-handshake'}"></i> ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? _t('dashboard.tierPicShort', 'PIC Venue') : _t('dashboard.tierSelfShort', 'Transfer Mandiri')}</span>
+              </h4>
+              <div class="item-meta">
+                <span>${_t('dashboard.listingPrefix', 'Listing:')} <code>${escapeHtml(l.listing_id)}</code></span>
+                <span>${_t('dashboard.seatPrefix', 'Kursi/Kat:')} ${escapeHtml(l.seat_info)}</span>
+                <span>${_t('dashboard.sellPricePrefix', 'Harga Jual:')} <strong>${escapeHtml(formatIdr(l.price))}</strong> (${_t('dashboard.origPricePrefix', 'Harga Asli:')} ${escapeHtml(formatIdr(l.face_value))})</span>
+                <span>${_t('dashboard.ticketVerifPrefix', 'Verifikasi Tiket:')} <span class="badge ${statusBadgeClass(l.ticket_verification_status)}">${escapeHtml(_trStatus(l.ticket_verification_status))}</span></span>
+                <span>${_t('dashboard.createdPrefix', 'Dibuat:')} ${escapeHtml(formatDate(l.created_at))}</span>
+              </div>
+            </div>
+            <div class="item-actions">
+              ${l.can_withdraw
+                ? `<button class="btn btn-danger-outline" onclick="withdrawListing('${escapeHtml(l.listing_id)}')"><i class="fa-solid fa-ban"></i> ${_t('dashboard.withdrawListingBtn', 'Tarik Listing')}</button>`
+                : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Orders
+      const ordersEl = document.getElementById('ordersContainer');
+      if (orders.length === 0) {
+        ordersEl.innerHTML = `
+          <div class="empty-box">
+            <i class="fa-solid fa-box-open"></i>
+            <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">${_t('dashboard.emptySellerOrdersTitle', 'Belum Ada Pesanan Penjualan (0)')}</h3>
+            <p style="margin:0; font-size:13px;">${_t('dashboard.emptySellerOrdersDesc', 'Pesanan dari pembeli akan muncul di sini segera setelah pembeli melakukan checkout pada listing Anda.')}</p>
+          </div>
+        `;
+      } else {
+        ordersEl.innerHTML = orders.map(o => `
+          <div class="item-row">
+            <div class="item-main">
+              <h4>
+                ${escapeHtml(o.event_title)}
+                <span class="badge ${statusBadgeClass(o.status)}">${escapeHtml(_trStatus(o.status))}</span>
+                <span class="badge badge-info" style="background:rgba(56,189,248,0.15); color:var(--cyan); border:1px solid rgba(56,189,248,0.3);"><i class="fa-solid fa-ticket"></i> ${o.quantity || 1} ${_t('dashboard.ticketUnit', 'Tiket')}</span>
+                <span class="badge" style="background:${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)'}; color:${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? '#4ade80' : 'var(--text-muted)'}; border:1px solid ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.3)' : 'var(--border)'};"><i class="fa-solid ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'fa-person-military-pointing' : 'fa-handshake'}"></i> ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? _t('dashboard.tierPicBadge', 'PIC Venue (9%)') : _t('dashboard.tierSelfBadge', 'Transfer Mandiri (6%)')}</span>
+                ${o.fee_policy_version ? `<span class="badge badge-slate" style="font-size:10px;">${escapeHtml(o.fee_policy_version)}</span>` : ''}
+                ${o.requires_seller_action ? `<span class="badge badge-danger">${_t('dashboard.actionRequiredBadge', 'PERLU TINDAKAN')}</span>` : ''}
+              </h4>
+              <div class="item-meta">
+                <span>${_t('dashboard.orderIdPrefix', 'Order:')} <code>${escapeHtml(o.order_id)}</code></span>
+                ${o.invoice_number ? `<span>${_t('dashboard.dokuInvPrefix', 'DOKU Inv:')} <code>${escapeHtml(o.invoice_number)}</code></span>` : ''}
+                <span>${_t('dashboard.buyerPrefix', 'Pembeli:')} <strong>${escapeHtml(o.buyer_masked_name)}</strong></span>
+                <span>${_t('dashboard.seatShortPrefix', 'Kursi:')} ${escapeHtml(o.seat_info)}</span>
+                ${o.provider_settlement_status ? `<span>${_t('dashboard.providerSettlementLabel', 'Provider Settlement:')} <strong>${escapeHtml(_trStatus(o.provider_settlement_status))}</strong></span>` : ''}
+                <span>${_t('dashboard.internalVerifLabel', 'Verifikasi Internal:')} <strong>${escapeHtml(_trStatus(o.internal_settlement_status || o.escrow_status))}</strong></span>
+                <span>${_t('dashboard.handoffPrefix', 'Handoff:')} <strong>${escapeHtml(_trStatus(o.delivery_status))}</strong></span>
+                <span>${_t('dashboard.gatePrefix', 'Gate:')} <strong>${escapeHtml(_trStatus(o.entry_verification_status))}</strong></span>
+              </div>
+            </div>
+            <div class="item-actions">
+              <div style="text-align:right; margin-right:8px;">
+                <div style="font-weight:800; font-size:15px;">${escapeHtml(formatIdr(o.seller_net_estimate))}</div>
+                <div style="font-size:11px; color:var(--text-muted);">${_t('dashboard.sellerNetEstimate', 'Estimasi bersih penjual')}</div>
+              </div>
+              <a href="${escapeHtml(o.track_url)}" class="btn btn-primary"><i class="fa-solid fa-truck-fast"></i> ${_t('dashboard.btnManageHandoff', 'Kelola Handoff')}</a>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Offers
+      const offersEl = document.getElementById('offersContainer');
+      if (offers.length === 0) {
+        offersEl.innerHTML = `
+          <div class="empty-box">
+            <i class="fa-solid fa-handshake"></i>
+            <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">${_t('dashboard.emptySellerOffersTitle', 'Belum Ada Tawaran Masuk (0)')}</h3>
+            <p style="margin:0; font-size:13px;">${_t('dashboard.emptySellerOffersDesc', 'Tawaran negosiasi harga dari calon pembeli akan ditampilkan di sini.')}</p>
+          </div>
+        `;
+      } else {
+        offersEl.innerHTML = offers.map(of => `
+          <div class="item-row">
+            <div class="item-main">
+              <h4>${escapeHtml(of.event_title)} <span class="badge ${statusBadgeClass(of.status)}">${escapeHtml(_trStatus(of.status))}</span></h4>
+              <div class="item-meta">
+                <span>${_t('dashboard.offeredPriceInline', 'Harga Ditawar:')} <strong>${escapeHtml(formatIdr(of.offered_price))}</strong> (${_t('dashboard.listedPriceInline', 'Harga Listing:')} ${escapeHtml(formatIdr(of.listed_price))})</span>
+                <span>${_t('dashboard.seatShortPrefix', 'Kursi:')} ${escapeHtml(of.seat_info)}</span>
+                <span>${_t('dashboard.expiresPrefix', 'Berakhir:')} ${escapeHtml(formatDate(of.expires_at))}</span>
+              </div>
+            </div>
+            <div class="item-actions">
+              ${of.can_respond ? `
+                <button class="btn btn-primary" onclick="respondOffer('${escapeHtml(of.offer_id)}', 'accept')"><i class="fa-solid fa-check"></i> ${_t('dashboard.acceptOfferBtn', 'Terima')}</button>
+                <button class="btn btn-outline" onclick="counterIncomingOffer('${escapeHtml(of.offer_id)}', ${Number(of.offered_price) || 0}, ${Number(of.listed_price) || 0})"><i class="fa-solid fa-arrows-left-right"></i> ${_t('dashboard.counterOfferBtn', 'Counter')}</button>
+                <button class="btn btn-danger-outline" onclick="respondOffer('${escapeHtml(of.offer_id)}', 'reject')"><i class="fa-solid fa-xmark"></i> ${_t('dashboard.rejectOfferBtn', 'Tolak')}</button>
+              ` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Readiness Checklist
+      const checklist = readiness.event_day_readiness_checklist || [];
+      const readinessEl = document.getElementById('readinessChecklistContainer');
+      readinessEl.innerHTML = checklist.map(item => `
+        <div class="item-row">
+          <div class="item-main">
+            <h4>${escapeHtml(item.label)} <span class="badge ${statusBadgeClass(item.status)}">${escapeHtml(_trStatus(item.status))}</span></h4>
+            <div class="item-meta"><span>${escapeHtml(item.detail || '')}</span></div>
+          </div>
+        </div>
+      `).join('');
+
+      // Render Settlement (Read-Only)
+      document.getElementById('settlementModeBadge').textContent = settlement.payout_automation_status || 'UNAVAILABLE_PILOT_MODE';
+      if (settlement.pilot_notice) {
+        document.getElementById('settlementPilotNotice').textContent = settlement.pilot_notice;
+      }
+      document.getElementById('settlementEscrowedIdr').textContent = formatIdr(settlement.escrowed_gross_amount_idr || 0);
+      document.getElementById('settlementReleasedIdr').textContent = formatIdr(settlement.settled_net_amount_idr || 0);
+
+      const settlementsList = settlement.items || [];
+      const settlementsEl = document.getElementById('settlementsListContainer');
+      if (settlementsList.length === 0) {
+        settlementsEl.innerHTML = `
+          <div class="empty-box">
+            <i class="fa-solid fa-vault"></i>
+            <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">${_t('dashboard.emptySettlementsTitle', 'Belum Ada Catatan Settlement (0)')}</h3>
+            <p style="margin:0; font-size:13px;">${_t('dashboard.emptySettlementsDesc', 'Catatan settlement hanya dibuat setelah tiket pembeli terkonfirmasi masuk di gate acara dan masa sanggah selesai.')}</p>
+          </div>
+        `;
+      } else {
+        settlementsEl.innerHTML = settlementsList.map(s => `
+          <div class="item-row">
+            <div class="item-main">
+              <h4>${_t('dashboard.settlementHeadingPrefix', 'Settlement')} #${escapeHtml(s.settlement_id)} <span class="badge ${statusBadgeClass(s.status)}">${escapeHtml(_trStatus(s.status))}</span></h4>
+              <div class="item-meta">
+                <span>${_t('dashboard.orderIdPrefix', 'Order:')} <code>${escapeHtml(s.order_id)}</code></span>
+                <span>${_t('dashboard.grossPrefix', 'Gross:')} ${escapeHtml(formatIdr(s.gross_amount))}</span>
+                <span>${_t('dashboard.platformFeePrefix', 'Biaya Platform:')} ${escapeHtml(formatIdr(s.platform_fee))}</span>
+                <span>${_t('dashboard.sellerNetPrefix', 'Net Penjual:')} <strong>${escapeHtml(formatIdr(s.net_amount))}</strong></span>
+                <span>${_t('dashboard.datePrefix', 'Tanggal:')} ${escapeHtml(formatDate(s.created_at))}</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    ['tikum:langchange', 'tikum:locale-change', 'tikum:languageChanged'].forEach(evtName => {
+      window.addEventListener(evtName, () => {
+        if (lastSellerPayload) renderSellerDashboardPayload(lastSellerPayload);
+      });
+    });
 
     document.getElementById('btnLogout').addEventListener('click', async () => {
       try {
@@ -1062,7 +1088,6 @@
       </div>
     </div>
   </div>
-  <script src="/js/i18n.js"></script>
   <script src="/js/header-shared.js"></script>
 </body>
 </html>

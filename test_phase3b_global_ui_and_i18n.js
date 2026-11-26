@@ -167,7 +167,15 @@ async function httpGet(baseUrl, urlPath, headers = {}) {
       assert.ok(typeof clientLeaves[k] === 'string' && clientLeaves[k].trim().length > 0, `Empty client key ${loc}.${k}`);
     }
   }
-  console.log(`  [PASS] 6. 5-language (id/en/ms/tl/th) server+client dictionary parity verified (${idKeys.length} keys each).`);
+    for (const loc of ['id', 'en', 'ms', 'tl', 'th']) {
+      assert.ok(clientI18n.translations[loc].create?.calcFeeLabelV2, `Missing create.calcFeeLabelV2 in ${loc}`);
+      assert.ok(clientI18n.translations[loc].create?.tierLabelPic, `Missing create.tierLabelPic in ${loc}`);
+      assert.ok(clientI18n.translations[loc].create?.tierLabelSelf, `Missing create.tierLabelSelf in ${loc}`);
+      assert.ok(clientI18n.translations[loc].create?.ticketUnit, `Missing create.ticketUnit in ${loc}`);
+    }
+    assert.ok(/[\u0E00-\u0E7F]/.test(clientI18n.translations.th.create.calcFeeLabelV2), 'Thai calcFeeLabelV2 must use genuine Thai script');
+    assert.ok(!/Transfer Mandiri|Fee pembeli|\/tiket/i.test(clientI18n.translations.th.create.calcFeeLabelV2), 'Thai calcFeeLabelV2 must not leak Indonesian');
+    console.log(`  [PASS] 6. 5-language (id/en/ms/tl/th) server+client dictionary parity verified (${idKeys.length} keys each).`);
 
   // 7. Live HTTP route check (static, SSR, legacy SVGs, localized SSR query)
   const server = http.createServer(app);
@@ -227,6 +235,21 @@ async function httpGet(baseUrl, urlPath, headers = {}) {
       const loc = entityRoute.split('=')[1];
       assert.ok(res.body.includes(`<html lang="${loc}"`), `${entityRoute} must reflect locale ${loc}`);
       assert.ok(res.body.includes('/css/tikum-tokens.css') && res.body.includes('/js/theme.js'), `${entityRoute} must load dark design tokens`);
+    }
+
+    for (const loc of ['id', 'en', 'ms', 'tl', 'th']) {
+      const bpRes = await httpGet(baseUrl, `/buyer-protection?lang=${loc}`);
+      assert.strictEqual(bpRes.status, 200, `/buyer-protection?lang=${loc} must return HTTP 200`);
+      assert.ok(bpRes.body.includes(`<html lang="${loc}"`), `/buyer-protection?lang=${loc} must set html lang=${loc}`);
+      assert.ok(bpRes.body.includes('PT SHINERVA PRAJNA TEJAS'), `/buyer-protection?lang=${loc} must preserve legal entity`);
+      assert.ok(bpRes.body.includes('+62 812-9992-7378'), `/buyer-protection?lang=${loc} must include official WhatsApp`);
+      if (loc === 'th') {
+        assert.ok(bpRes.body.includes('คู่มือผู้ซื้อและการคุ้มครองธุรกรรมของแพลตฟอร์ม'), '/buyer-protection?lang=th must render Thai H1');
+        assert.ok(!bpRes.body.includes('Badan Usaha & Hubungan Brand'), '/buyer-protection?lang=th must not leak Indonesian entity heading');
+        assert.ok(!bpRes.body.includes('Struktur Harga & Biaya Resmi'), '/buyer-protection?lang=th must not leak Indonesian pricing heading');
+      } else if (loc !== 'id') {
+        assert.ok(!bpRes.body.includes('Kebijakan Perlindungan Pembeli & Jaminan Tiket'), `/buyer-protection?lang=${loc} must not leak Indonesian title`);
+      }
     }
     console.log('  [PASS] 7. All HTTP assets, legacy SVGs, static pages, and 5-locale SSR routes verified 200 OK.');
   } finally {

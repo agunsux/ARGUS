@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id" data-theme="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -8,7 +9,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Tikum — Verified Ticket Marketplace by Shinerva</title>
-  <meta name="description" content="Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli. Platform penemuan event berbayar dan bertiket di Indonesia dengan verifikasi sumber resmi.">
+  <meta name="description"
+    content="Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli. Platform penemuan event berbayar dan bertiket di Indonesia dengan verifikasi sumber resmi.">
   <link rel="canonical" href="https://tikum.app/">
   <link rel="alternate" hreflang="id" href="https://tikum.app/">
   <link rel="alternate" hreflang="en" href="https://tikum.app/?lang=en">
@@ -20,14 +22,16 @@
   <!-- OpenGraph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="TIKUM — Pasar Tiket Event Terverifikasi | by Shinerva">
-  <meta property="og:description" content="Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli. Dilengkapi verifikasi sumber resmi dan asistensi di venue.">
+  <meta property="og:description"
+    content="Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli. Dilengkapi verifikasi sumber resmi dan asistensi di venue.">
   <meta property="og:url" content="https://tikum.app/">
   <meta property="og:site_name" content="TIKUM">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="TIKUM — Pasar Tiket Event Terverifikasi | by Shinerva">
-  <meta name="twitter:description" content="Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli.">
+  <meta name="twitter:description"
+    content="Temukan event, periksa status tiket, dan ketahui ketersediaan resale sebelum membeli.">
 
   <link rel="icon" type="image/svg+xml" href="/images/tikum-brand-symbol.svg">
   <link rel="apple-touch-icon" href="/assets/tikum-maskable.svg">
@@ -172,6 +176,7 @@
   }
   </script>
 </head>
+
 <body class="dark-mode">
 
   <div id="appShell">
@@ -189,10 +194,12 @@
             <div class="sidebar-brand-sub">by PT Shinerva Prajna Tejas</div>
           </div>
         </a>
-        <button type="button" id="sidebarToggleDesktop" class="sidebar-toggle-btn" aria-label="Ciutkan / Lebarkan Sidebar" title="Ciutkan Sidebar">
+        <button type="button" id="sidebarToggleDesktop" class="sidebar-toggle-btn"
+          aria-label="Ciutkan / Lebarkan Sidebar" title="Ciutkan Sidebar">
           <i class="fa-solid fa-angles-left"></i>
         </button>
-        <button type="button" id="sidebarCloseMobile" class="sidebar-toggle-btn" style="display:none;" aria-label="Tutup Sidebar">
+        <button type="button" id="sidebarCloseMobile" class="sidebar-toggle-btn" style="display:none;"
+          aria-label="Tutup Sidebar">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -215,13 +222,15 @@
               </a>
             </li>
             <li>
-              <a href="/events?category=MUSIC" onclick="applyNavCategory('MUSIC'); return false;" class="sidebar-nav-item">
+              <a href="/events?category=MUSIC" onclick="applyNavCategory('MUSIC'); return false;"
+                class="sidebar-nav-item">
                 <span class="sidebar-nav-icon"><i class="fa-solid fa-music"></i></span>
                 <span class="sidebar-nav-label" data-i18n="nav.concerts">Konser &amp; K-Pop</span>
               </a>
             </li>
             <li>
-              <a href="/events?category=SPORT" onclick="applyNavCategory('SPORT'); return false;" class="sidebar-nav-item">
+              <a href="/events?category=SPORT" onclick="applyNavCategory('SPORT'); return false;"
+                class="sidebar-nav-item">
                 <span class="sidebar-nav-icon"><i class="fa-solid fa-futbol"></i></span>
                 <span class="sidebar-nav-label" data-i18n="nav.sports">Olahraga &amp; Stand-Up</span>
               </a>
@@ -258,7 +267,8 @@
               </a>
             </li>
             <li>
-              <a href="/deal/create" class="sidebar-nav-item" style="color:var(--color-brand-primary); font-weight:700;">
+              <a href="/deal/create" class="sidebar-nav-item"
+                style="color:var(--color-brand-primary); font-weight:700;">
                 <span class="sidebar-nav-icon"><i class="fa-solid fa-circle-plus"></i></span>
                 <span class="sidebar-nav-label" data-i18n="nav.submitListing">Jual Tiket / Buat Deal</span>
               </a>
@@ -291,19 +301,34 @@
             <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i>
           </summary>
           <ul class="sidebar-nav-list" style="margin-top:6px;">
-            <li><a href="/panduan-pembeli" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i class="fa-solid fa-book-open"></i></span><span class="sidebar-nav-label">Panduan Pembeli</span></a></li>
-            <li><a href="/ticket-verification" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i class="fa-solid fa-qrcode"></i></span><span class="sidebar-nav-label">Verifikasi &amp; PIC</span></a></li>
-            <li><a href="/faq" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i class="fa-solid fa-circle-question"></i></span><span class="sidebar-nav-label" data-i18n="footer.faq">FAQ</span></a></li>
-            <li><a href="/terms" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i class="fa-solid fa-file-contract"></i></span><span class="sidebar-nav-label" data-i18n="footer.terms">Syarat &amp; Ketentuan</span></a></li>
-            <li><a href="/privacy" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i class="fa-solid fa-user-shield"></i></span><span class="sidebar-nav-label" data-i18n="footer.privacyPolicy">Privasi (UU PDP)</span></a></li>
-            <li><a href="/refund-policy" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i class="fa-solid fa-rotate-left"></i></span><span class="sidebar-nav-label" data-i18n="footer.refundPolicy">Refund &amp; Sengketa</span></a></li>
-            <li><a href="/contact" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i class="fa-solid fa-address-book"></i></span><span class="sidebar-nav-label" data-i18n="footer.contactUs">Kontak Resmi</span></a></li>
+            <li><a href="/panduan-pembeli" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i
+                    class="fa-solid fa-book-open"></i></span><span class="sidebar-nav-label">Panduan Pembeli</span></a>
+            </li>
+            <li><a href="/ticket-verification" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i
+                    class="fa-solid fa-qrcode"></i></span><span class="sidebar-nav-label">Verifikasi &amp;
+                  PIC</span></a></li>
+            <li><a href="/faq" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i
+                    class="fa-solid fa-circle-question"></i></span><span class="sidebar-nav-label"
+                  data-i18n="footer.faq">FAQ</span></a></li>
+            <li><a href="/terms" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i
+                    class="fa-solid fa-file-contract"></i></span><span class="sidebar-nav-label"
+                  data-i18n="footer.terms">Syarat &amp; Ketentuan</span></a></li>
+            <li><a href="/privacy" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i
+                    class="fa-solid fa-user-shield"></i></span><span class="sidebar-nav-label"
+                  data-i18n="footer.privacyPolicy">Privasi (UU PDP)</span></a></li>
+            <li><a href="/refund-policy" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i
+                    class="fa-solid fa-rotate-left"></i></span><span class="sidebar-nav-label"
+                  data-i18n="footer.refundPolicy">Refund &amp; Sengketa</span></a></li>
+            <li><a href="/contact" class="sidebar-nav-item"><span class="sidebar-nav-icon"><i
+                    class="fa-solid fa-address-book"></i></span><span class="sidebar-nav-label"
+                  data-i18n="footer.contactUs">Kontak Resmi</span></a></li>
           </ul>
         </details>
       </div>
 
       <div class="sidebar-footer-info">
-        <div style="color:#10B981; font-weight:700; margin-bottom:2px;"><i class="fa-solid fa-circle-check"></i> Pra-Peluncuran</div>
+        <div style="color:#10B981; font-weight:700; margin-bottom:2px;"><i class="fa-solid fa-circle-check"></i>
+          Pra-Peluncuran</div>
         <div>Listing Only Mode Active</div>
       </div>
     </aside>
@@ -331,10 +356,12 @@
             <li><a href="/faq" class="topbar-nav-link" data-i18n="footer.faq">Bantuan</a></li>
             <li class="city-dropdown-wrap">
               <a href="javascript:void(0)" class="topbar-nav-link" aria-haspopup="true">
-                <span data-i18n="nav.cities">Kota</span> <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:2px;"></i>
+                <span data-i18n="nav.cities">Kota</span> <i class="fa-solid fa-chevron-down"
+                  style="font-size:10px; margin-left:2px;"></i>
               </a>
               <div class="city-dropdown-menu">
-                <a href="/offers?city=Jakarta" class="city-dropdown-item" data-i18n="events.jakartaJabodetabek">Jakarta (Jabodetabek)</a>
+                <a href="/offers?city=Jakarta" class="city-dropdown-item" data-i18n="events.jakartaJabodetabek">Jakarta
+                  (Jabodetabek)</a>
                 <a href="/offers?city=Bandung" class="city-dropdown-item" data-i18n="nav.bandung">Bandung</a>
                 <a href="/offers?city=Surabaya" class="city-dropdown-item" data-i18n="nav.surabaya">Surabaya</a>
                 <a href="/offers?city=Bali" class="city-dropdown-item" data-i18n="nav.bali">Bali</a>
@@ -342,358 +369,480 @@
               </div>
             </li>
           </ul>
-          <input type="search" id="topbarSearchInput" class="topbar-search-input" style="display:none;" placeholder="Cari event..." aria-label="Cari event" oninput="syncTopbarSearch(this.value)">
+          <input type="search" id="topbarSearchInput" class="topbar-search-input" style="display:none;"
+            placeholder="Cari event..." aria-label="Cari event" oninput="syncTopbarSearch(this.value)">
         </div>
 
         <div class="topbar-right">
-          <a href="/deal" class="btn-topbar-deal"><i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11.5px; opacity:0.85;"></i> <span data-i18n="nav.dealRoomLookup">Buka Deal</span></a>
-          <a href="/deal/create" class="btn-topbar-seller"><i class="fa-solid fa-plus"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
+          <a href="/deal" class="btn-topbar-deal"><i class="fa-solid fa-arrow-up-right-from-square"
+              style="font-size:11.5px; opacity:0.85;"></i> <span data-i18n="nav.dealRoomLookup">Buka Deal</span></a>
+          <a href="/deal/create" class="btn-topbar-seller"><i class="fa-solid fa-plus"></i> <span
+              data-i18n="nav.sellTicket">Jual Tiket</span></a>
           <div id="authHeaderContainer">
-            <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up" data-i18n="nav.signIn">Masuk</button>
+            <button id="btnLoginSignUp" class="btn-auth-header" onclick="openAuthModal()" aria-label="Login / Sign Up"
+              data-i18n="nav.signIn">Masuk</button>
           </div>
-          <button class="lang-toggle-btn lang-switcher-pill" onclick="toggleLang()" id="langToggle" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
-            <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>
+          <button class="lang-toggle-btn lang-switcher-pill" onclick="toggleLang()" id="langToggle"
+            aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
+            <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span
+              class="lang-divider text-slate-500 mx-1">|</span><span
+              class="lang-pill-item lang-inactive text-slate-400">EN</span>
           </button>
         </div>
       </header>
 
-  <!-- SECTION 1: Clean Centered Search-First Marketplace Hero -->
-  <section class="hero-teal-editorial" id="editorialHero">
-    <div class="hero-search-first-shell">
-      <div class="hero-eyebrow-pill">
-        <span style="color:#E36F45;">●</span> <span data-i18n="spotlight.eyebrow">TIKUM by PT SHINERVA PRAJNA TEJAS • Verified Ticket Marketplace</span>
-      </div>
-      <h1 class="hero-editorial-h1" data-i18n="landing.editorialHeroTitle">Beli &amp; Jual Tiket Konser Tanpa Was-Was.</h1>
-      <p class="hero-editorial-sub" data-i18n="landing.editorialHeroSubtitle">
-        Temukan event, jelajahi tiket, dan dapatkan dukungan saat dibutuhkan. Event PIC tersedia di venue yang berpartisipasi.
-      </p>
-
-      <!-- SeatGeek Large Search Bar -->
-      <div class="seatgeek-search-box">
-        <i class="fa-solid fa-magnifying-glass seatgeek-search-icon"></i>
-        <input type="search" id="searchInput" class="seatgeek-search-input" aria-label="Cari event, artis, venue, atau kota" placeholder="Cari konser, artis, GBK, JIS, atau kota..." data-i18n-placeholder="landing.searchPlaceholder" oninput="debounceSearch()">
-        <button type="button" class="seatgeek-search-submit-btn" onclick="debounceSearch()" aria-label="Cari">
-          <i class="fa-solid fa-arrow-right"></i>
-        </button>
-      </div>
-
-      <!-- Quick Filter Chips (Category & Popular Cities) -->
-      <div class="hero-quick-chips" role="group" aria-label="Filter Cepat Event">
-        <span class="hero-quick-chips__label" data-i18n="landing.heroQuickFilterLabel">Pencarian Cepat:</span>
-        <button type="button" class="hero-quick-chip is-active" onclick="applyHeroQuickFilter(this, { category: '', city: '' })" data-i18n="events.allEvents">Semua Event</button>
-        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'MUSIC' })" data-i18n="events.concerts">Konser</button>
-        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'FESTIVAL' })" data-i18n="events.festivals">Festival Musik</button>
-        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'SPORT' })" data-i18n="events.sports">Olahraga</button>
-        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Jakarta' })"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span data-i18n="landing.quickChipJakarta">Jakarta</span></button>
-        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Bandung' })"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span data-i18n="nav.bandung">Bandung</span></button>
-        <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Bali' })"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span data-i18n="nav.bali">Bali</span></button>
-      </div>
-
-      <!-- Compact Compliance-Safe Trust Strip -->
-      <div class="hero-trust-strip" role="list" aria-label="Keunggulan Verifikasi TIKUM">
-        <span class="hero-trust-item" role="listitem"><i class="fa-solid fa-file-shield" aria-hidden="true"></i> <span data-i18n="landing.heroTrustVerified">Verifikasi Bukti Kepemilikan</span></span>
-        <span class="hero-trust-item" role="listitem"><i class="fa-solid fa-user-check" aria-hidden="true"></i> <span data-i18n="landing.heroTrustPic">Dukungan Event PIC di Venue</span></span>
-        <span class="hero-trust-item" role="listitem"><i class="fa-solid fa-fingerprint" aria-hidden="true"></i> <span data-i18n="landing.heroTrustZeroFake">Zero Fake Inventory &amp; Anti-Duplikasi</span></span>
-      </div>
-
-      <!-- Redesigned Agency-Grade Deal-Link Dock -->
-      <div class="hero-deal-dock instant-deal-bar">
-        <div class="hero-deal-caption">
-          <span class="hero-deal-caption-text" data-i18n="landing.instantDealNotice">Sudah deal di X, TikTok, IG, atau FB? Amankan transaksinya di sini:</span>
-        </div>
-        <form class="hero-deal-form" id="heroDealForm" onsubmit="handleHeroDealSubmit(event)">
-          <div class="hero-deal-input-wrapper">
-            <svg class="hero-deal-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-            </svg>
-            <input type="text" id="heroDealInput" class="hero-deal-input" placeholder="Tempel link tikum.app/deal/... atau kode deal..." data-i18n-placeholder="landing.instantDealPlaceholder" autocomplete="off" spellcheck="false">
+      <!-- SECTION 1: Clean Centered Search-First Marketplace Hero -->
+      <section class="hero-teal-editorial" id="editorialHero">
+        <div class="hero-search-first-shell">
+          <div class="hero-eyebrow-pill">
+            <span style="color:#E36F45;">●</span> <span data-i18n="spotlight.eyebrow">TIKUM by PT SHINERVA PRAJNA TEJAS
+              • Verified Ticket Marketplace</span>
           </div>
-          <button type="submit" class="hero-deal-submit-btn">
-            <span data-i18n="landing.openDealRoomBtn">Buka Deal →</span>
-          </button>
-        </form>
-      </div>
-
-      <!-- Equal-Weight Dual Hero CTAs -->
-      <div class="hero-dual-cta-group">
-        <a href="#unifiedDiscovery" class="btn-hero-coral" data-i18n="landing.heroCtaExplore">
-          <i class="fa-solid fa-ticket"></i> <span data-i18n="nav.exploreTickets">Jelajah Tiket</span>
-        </a>
-        <a href="/deal/create" class="btn-hero-outline" data-i18n="landing.heroCtaSell">
-          <i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicketsNow">Jual Tiket Sekarang</span>
-        </a>
-      </div>
-
-      <div class="flow-marquee-wrapper" aria-label="Event highlights">
-        <div class="flow-marquee-track" id="eventMarquee">
-          <div class="flow-marquee-content"><span class="flow-marquee-item">Poster event mendatang belum tersedia.</span></div>
-        </div>
-      </div>
-      <button type="button" class="marquee-toggle" id="marqueeToggle" aria-pressed="false" aria-label="Pause event highlights">Pause</button>
-    </div>
-  </section>
-
-  <!-- SECTION 2: ONE Unified Event Discovery Grid (Dark Canvas Canonical) -->
-  <section class="unified-discovery-section" id="unifiedSection" style="background:var(--theme-canvas, #0B1220); padding:64px 24px 80px;">
-    <div style="max-width:1160px; margin:0 auto;">
-      <section id="heroFeature" class="ln-hero-feature" style="display:none;"></section>
-
-      <!-- Clean Filter Rail -->
-      <div class="filters-container" id="upcoming" style="margin-bottom:28px;">
-        <div class="filter-pills" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
-          <div class="pill active" data-category="" onclick="setCategory(this, '')" data-i18n="events.allEvents">Semua Event</div>
-          <div class="pill" data-category="MUSIC" onclick="setCategory(this, 'MUSIC')" data-i18n="events.concerts">Konser &amp; Musik</div>
-          <div class="pill" data-category="KPOP" onclick="setCategory(this, 'KPOP')" data-i18n="events.kpop">K-Pop</div>
-          <div class="pill" data-category="FESTIVAL" onclick="setCategory(this, 'FESTIVAL')" data-i18n="events.festivals">Festival</div>
-          <div class="pill" data-category="SPORT" onclick="setCategory(this, 'SPORT')" data-i18n="events.sports">Olahraga</div>
-          <div class="pill" data-category="COMEDY" onclick="setCategory(this, 'COMEDY')" data-i18n="events.comedy">Stand Up Comedy</div>
-          <a href="/past-events" class="pill" style="text-decoration:none; color:inherit; display:inline-flex; align-items:center; gap:4px;" data-i18n="events.pastEvents">Arsip Selesai <i class="fa-solid fa-arrow-right" style="font-size:11px;"></i></a>
-        </div>
-        <div class="filters-row-selects" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:12px;">
-          <select id="cityFilter" class="select-filter" onchange="renderAllSections()" style="background:var(--theme-card, #1B2A40); border:1px solid var(--theme-border, #344358); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:var(--theme-text, #F8FAFC);">
-            <option value="" data-i18n="events.allCities">Semua Kota</option>
-            <option value="Jakarta" data-i18n="events.jakartaJabodetabek">Jakarta (Jabodetabek)</option>
-            <option value="Bandung">Bandung</option>
-            <option value="Surabaya">Surabaya</option>
-            <option value="Bali">Bali</option>
-            <option value="Yogyakarta">Yogyakarta</option>
-            <option value="Semarang">Semarang</option>
-            <option value="Medan">Medan</option>
-            <option value="Makassar">Makassar</option>
-          </select>
-          <select id="dateFilter" class="select-filter" onchange="renderAllSections()" style="background:var(--theme-card, #1B2A40); border:1px solid var(--theme-border, #344358); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:var(--theme-text, #F8FAFC);">
-            <option value="" data-i18n="events.allDates">Semua Waktu</option>
-            <option value="week" data-i18n="events.thisWeek">Minggu Ini</option>
-            <option value="month" data-i18n="events.thisMonth">Bulan Ini</option>
-            <option value="3months" data-i18n="events.next3Months">3 Bulan Ke Depan</option>
-          </select>
-          <select id="sortFilter" class="select-filter" onchange="renderAllSections()" style="background:var(--theme-card, #1B2A40); border:1px solid var(--theme-border, #344358); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:var(--theme-text, #F8FAFC);">
-            <option value="hype" data-i18n="events.sortHype">Urutkan: Paling Hype</option>
-            <option value="date" data-i18n="events.sortDate">Urutkan: Tanggal Terdekat</option>
-            <option value="price_asc" data-i18n="events.sortPriceAsc">Harga: Terendah</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Dynamic Unified Grid Mount -->
-      <main id="mainContent"></main>
-    </div>
-  </section>
-
-  <!-- SECTION 3: "Perlindungan Dua Arah" Bento Showcase (Deep Teal Editorial Section) -->
-  <section class="two-way-protection-section" id="twoWayProtection" data-reveal>
-    <div style="max-width:1120px; margin:0 auto; text-align:center; margin-bottom:36px;">
-      <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(243,235,221,0.18); border-radius:999px; padding:6px 16px; font-size:12.5px; font-weight:700; color:#FFFFFF; margin-bottom:14px; text-transform:uppercase;">
-        <i class="fa-solid fa-shield-halved" style="color:#E36F45;"></i> <span data-i18n="landing.twoWayProtectionEyebrow">Standar Keamanan Transaksi Sekunder</span>
-      </div>
-      <h2 class="font-display" style="font-size:clamp(1.85rem, 3vw, 2.6rem); font-weight:700; color:#FFFFFF; margin:0 0 12px;" data-i18n="landing.twoWayHeadline">
-        Perlindungan Dua Arah — Adil untuk Pembeli &amp; Penjual Jujur.
-      </h2>
-      <p style="font-size:16px; color:#CBD5E1; max-width:720px; margin:0 auto;" data-i18n="landing.twoWaySubtitle">
-        Sistem resale yang berimbang tanpa spekulasi, dilengkapi saksi fisik dan bukti transaksi yang objektif.
-      </p>
-    </div>
-
-    <!-- Authentic Founder Origin Quote Card -->
-    <div class="founder-quote-glass" data-reveal>
-      <div style="font-size:24px; color:#E36F45; margin-bottom:12px;"><i class="fa-solid fa-quote-left"></i></div>
-      <blockquote style="margin:0 0 16px; font-size:16.5px; line-height:1.7; color:#F7FAFF; font-style:italic;" data-i18n="landing.founderQuoteText">
-        TIKUM lahir dari pengalaman nyata: menjual 2 tiket konser bersebelahan dari pembelian yang sama di platform resale global, namun hanya dibayar 1 karena klaim 'invalid' sepihak tanpa bukti lapangan, potongan biaya selangit, dan CS yang tidak membantu. Kami membangun TIKUM agar transaksi tiket sekunder punya saksi objektif dan bukti yang adil bagi kedua belah pihak.
-      </blockquote>
-      <div style="font-size:14px; font-weight:700; color:rgba(250,241,226,0.9);" data-i18n="landing.founderQuoteRole">
-        Founder TIKUM — PT Shinerva Prajna Tejas
-      </div>
-    </div>
-
-    <!-- 2 Balanced Flow Ninja Bento Cards -->
-    <div class="bento-grid-2col">
-      <!-- Card 1: Untuk Pembeli -->
-      <div class="bento-card-flow" data-reveal data-stagger="1">
-        <h3><i class="fa-solid fa-user-shield" style="color:#10B981;"></i> <span data-i18n="landing.twoWayBuyerTitle">Untuk Pembeli Tiket</span></h3>
-        <ul class="bento-feature-list">
-          <li class="bento-feature-item">
-            <i class="fa-solid fa-circle-check bento-check-icon"></i>
-            <span data-i18n="landing.twoWayBuyerF1">Peninjauan Bukti Kepemilikan Tahap A (Zero Fake Inventory)</span>
-          </li>
-          <li class="bento-feature-item">
-            <i class="fa-solid fa-circle-check bento-check-icon"></i>
-            <span data-i18n="landing.twoWayBuyerF2">Biaya Transparan di Awal — Tanpa Biaya Tersembunyi (No Drip Fees)</span>
-          </li>
-          <li class="bento-feature-item">
-            <i class="fa-solid fa-circle-check bento-check-icon"></i>
-            <span data-i18n="landing.twoWayBuyerF3">Pendampingan Event PIC Resmi saat Penukaran Wristband / Venue</span>
-          </li>
-          <li class="bento-feature-item">
-            <i class="fa-solid fa-circle-check bento-check-icon"></i>
-            <span data-i18n="landing.twoWayBuyerF4">Prosedur Sengketa Terstruktur &amp; Perlindungan Dana Mitra Pembayaran</span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Card 2: Untuk Penjual Jujur & Jastip -->
-      <div class="bento-card-flow" data-reveal data-stagger="2">
-        <h3><i class="fa-solid fa-store" style="color:#E36F45;"></i> <span data-i18n="landing.twoWaySellerTitle">Untuk Penjual Jujur &amp; Jastip</span></h3>
-        <ul class="bento-feature-list">
-          <li class="bento-feature-item">
-            <i class="fa-solid fa-circle-check bento-check-icon"></i>
-            <span data-i18n="landing.twoWaySellerF1">QR Tetap di Tangan Penjual saat Listing (Zero-QR Stage A)</span>
-          </li>
-          <li class="bento-feature-item">
-            <i class="fa-solid fa-circle-check bento-check-icon"></i>
-            <span data-i18n="landing.twoWaySellerF2">Anti Tuduhan Tiket Invalid Sepihak (Wajib Berita Acara Event PIC)</span>
-          </li>
-          <li class="bento-feature-item">
-            <i class="fa-solid fa-circle-check bento-check-icon"></i>
-            <span data-i18n="landing.twoWaySellerF3">Hak Jawab &amp; Investigasi Lapangan 7×24 Jam</span>
-          </li>
-          <li class="bento-feature-item">
-            <i class="fa-solid fa-circle-check bento-check-icon"></i>
-            <span data-i18n="landing.twoWaySellerF4">Bebas Chargeback Sepihak Kartu Kredit via Rail QRIS / VA Resmi</span>
-          </li>
-          <li class="bento-feature-item">
-            <i class="fa-solid fa-circle-check bento-check-icon"></i>
-            <span data-i18n="landing.twoWaySellerF5">Paket Bukti Digital Transaksi (Evidence Bundle 9 Artefak)</span>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <!-- SECTION 4: Cara Kerja 5 Langkah + Ringkasan Biaya Transparan (Warm Cream Canvas) -->
-  <section class="flow-rail-section" id="howItWorks" data-reveal>
-    <div style="max-width:1160px; margin:0 auto; text-align:center; margin-bottom:40px;">
-      <div style="display:inline-flex; align-items:center; gap:8px; background:var(--tikum-teal-100); border-radius:999px; padding:6px 16px; font-size:12.5px; font-weight:700; color:var(--tikum-teal-700); margin-bottom:12px; text-transform:uppercase;">
-        <i class="fa-solid fa-route"></i> <span data-i18n="landing.workflowBadge">Alur Transaksi Bertahap</span>
-      </div>
-      <h2 class="font-display" style="font-size:clamp(1.85rem, 3vw, 2.6rem); font-weight:700; color:var(--tikum-ink-900); margin:0 0 10px;" data-i18n="landing.flowRailHeading">
-        Alur 5 Langkah Transaksi Aman
-      </h2>
-      <p style="font-size:15.5px; color:var(--tikum-ink-600); max-width:640px; margin:0 auto;">
-        Dari pembuatan tautan transaksi hingga penyelesaian dengan bukti digital lengkap.
-      </p>
-    </div>
-
-    <!-- 5-Step Horizontal Grid -->
-    <div class="flow-rail-grid">
-      <div class="flow-step-box" data-reveal data-stagger="1">
-        <div class="flow-step-num">1</div>
-        <div class="flow-step-title" data-i18n="landing.step1Title">1. Buat Deal</div>
-        <p class="flow-step-desc" data-i18n="landing.step1Desc">Penjual mendaftarkan tiket tanpa menyerahkan QR code asli. Hash serial tersimpan aman.</p>
-      </div>
-      <div class="flow-step-box" data-reveal data-stagger="2">
-        <div class="flow-step-num">2</div>
-        <div class="flow-step-title" data-i18n="landing.step2Title">2. Verifikasi Bukti</div>
-        <p class="flow-step-desc" data-i18n="landing.step2Desc">Tim Trust meninjau bukti pembelian promotor sebelum deal dibuka untuk pembayaran.</p>
-      </div>
-      <div class="flow-step-box" data-reveal data-stagger="3">
-        <div class="flow-step-num">3</div>
-        <div class="flow-step-title" data-i18n="landing.step3Title">3. Bayar Transparan</div>
-        <p class="flow-step-desc" data-i18n="landing.step3Desc">Pembeli membayar via QRIS/VA berizin. Dana ditahan aman via mitra resmi platform.</p>
-      </div>
-      <div class="flow-step-box" data-reveal data-stagger="4">
-        <div class="flow-step-num">4</div>
-        <div class="flow-step-title" data-i18n="landing.step4Title">4. Serah Terima / PIC</div>
-        <p class="flow-step-desc" data-i18n="landing.step4Desc">Serah terima tiket didampingi Event PIC di titik kumpul venue pada hari acara.</p>
-      </div>
-      <div class="flow-step-box" data-reveal data-stagger="5">
-        <div class="flow-step-num">5</div>
-        <div class="flow-step-title" data-i18n="landing.step5Title">5. Selesai &amp; Evidence</div>
-        <p class="flow-step-desc" data-i18n="landing.step5Desc">Setelah tiket valid di venue, dana diteruskan ke penjual dan Evidence Bundle 9 artefak diterbitkan.</p>
-      </div>
-    </div>
-
-    <!-- Upfront Pilot Fee Bar -->
-    <div class="pilot-fee-bar" data-reveal>
-      <i class="fa-solid fa-receipt" style="font-size:24px; color:var(--tikum-teal-700); flex-shrink:0;"></i>
-      <div style="flex:1;">
-        <strong style="color:var(--tikum-ink-900); font-size:15px; display:block; margin-bottom:3px;" data-i18n="landing.feeSummaryBarTitle">Transparansi Biaya Pilot Layanan</strong>
-        <span style="font-size:13.5px; color:var(--tikum-ink-600); line-height:1.5;" data-i18n="landing.feeSummaryBarDesc">Tarif Pilot 6% sisi pembeli + 6% sisi penjual (min. Rp35.000, maks. Rp500.000 per sisi). Persentase efektif dapat berbeda untuk tiket dengan nominal lebih rendah.</span>
-      </div>
-      <a href="/pay" style="color:var(--tikum-coral-500); font-weight:700; text-decoration:none; font-size:13.5px; white-space:nowrap;" data-i18n="landing.feeDetailsLink">Detail Biaya →</a>
-    </div>
-  </section>
-
-  <!-- SECTION 5: 3 Panduan Konser Terbaru + Bold Closing CTA -->
-  <section class="landing-section" id="featuredBlog" style="background:var(--theme-canvas, #172333); padding:56px 24px 72px;" data-reveal>
-    <div style="max-width:1160px; margin:0 auto;">
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:28px; flex-wrap:wrap; gap:12px;">
-        <div>
-          <div style="font-size:12px; font-weight:800; text-transform:uppercase; color:var(--palette-warm-sand, #F3EBDD); letter-spacing:0.8px; margin-bottom:4px;" data-i18n="blog.kicker">EDUKASI &amp; TIPS</div>
-          <h2 class="font-display" style="font-size:26px; font-weight:700; color:var(--theme-text, #FFFFFF); margin:0;" data-i18n="landing.blogStripHeading">Panduan &amp; Edukasi Konser Terbaru</h2>
-        </div>
-        <a href="/blog" style="color:var(--palette-warm-sand, #F3EBDD); font-weight:700; text-decoration:none; font-size:14px;" data-i18n="blog.allArticles">Lihat Seluruh Artikel →</a>
-      </div>
-
-      <div class="featured-blog-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:24px; margin-bottom:56px;">
-        <article class="blog-preview-card" style="background:var(--theme-card, #24364D); border:1px solid var(--theme-border, rgba(243,235,221,0.16)); border-radius:18px; padding:24px; box-shadow:0 8px 24px rgba(0,0,0,0.22);">
-          <div style="font-size:11.5px; font-weight:700; color:#E36F45; text-transform:uppercase; margin-bottom:8px;" data-i18n="blog.buyerGuideKicker">PANDUAN PEMBELI</div>
-          <h3 style="font-size:18px; font-weight:700; color:var(--theme-text, #FFFFFF); margin:0 0 10px; line-height:1.35;">
-            <a href="/blog/panduan-serah-terima-tiket-aman-dua-tahap-perlindungan-escrow" style="color:inherit; text-decoration:none;" data-i18n="blog.post1Title">Panduan Serah Terima Tiket Aman Dua Tahap &amp; Bukti Lapangan</a>
-          </h3>
-          <p style="font-size:13.5px; color:var(--theme-muted, #CBD5E1); margin:0 0 16px; line-height:1.55;" data-i18n="blog.post1Snippet">
-            Memahami alur verifikasi bukti kepemilikan tahap A dan asistensi Event PIC di titik kumpul venue sebelum konser dimulai.
+          <h1 class="hero-editorial-h1" data-i18n="landing.editorialHeroTitle">Beli &amp; Jual Tiket Konser Tanpa
+            Was-Was.</h1>
+          <p class="hero-editorial-sub" data-i18n="landing.editorialHeroSubtitle">
+            Temukan event, jelajahi tiket, dan dapatkan dukungan saat dibutuhkan. Event PIC tersedia di venue yang
+            berpartisipasi.
           </p>
-          <a href="/blog/panduan-serah-terima-tiket-aman-dua-tahap-perlindungan-escrow" style="color:var(--palette-warm-sand, #F3EBDD); font-weight:700; font-size:13px; text-decoration:none;" data-i18n="blog.readGuide">Baca Panduan →</a>
-        </article>
 
-        <article class="blog-preview-card" style="background:var(--theme-card, #24364D); border:1px solid var(--theme-border, rgba(243,235,221,0.16)); border-radius:18px; padding:24px; box-shadow:0 8px 24px rgba(0,0,0,0.22);">
-          <div style="font-size:11.5px; font-weight:700; color:#E36F45; text-transform:uppercase; margin-bottom:8px;" data-i18n="blog.securityTipsKicker">TIPS KEAMANAN</div>
-          <h3 style="font-size:18px; font-weight:700; color:var(--theme-text, #FFFFFF); margin:0 0 10px; line-height:1.35;">
-            <a href="/blog/cara-aman-beli-tiket-konser-second-resale" style="color:inherit; text-decoration:none;" data-i18n="blog.post2Title">Cara Aman Jual Beli Tiket Konser di Medsos (X &amp; TikTok)</a>
-          </h3>
-          <p style="font-size:13.5px; color:var(--theme-muted, #CBD5E1); margin:0 0 16px; line-height:1.55;" data-i18n="blog.post2Snippet">
-            Menghindari penipuan tiket di media sosial dengan mengalihkan transaksi ke ruang deal terverifikasi TIKUM.
-          </p>
-          <a href="/blog/cara-aman-beli-tiket-konser-second-resale" style="color:var(--palette-warm-sand, #F3EBDD); font-weight:700; font-size:13px; text-decoration:none;" data-i18n="blog.readGuide">Baca Panduan →</a>
-        </article>
+          <!-- SeatGeek Large Search Bar -->
+          <div class="seatgeek-search-box">
+            <i class="fa-solid fa-magnifying-glass seatgeek-search-icon"></i>
+            <input type="search" id="searchInput" class="seatgeek-search-input"
+              aria-label="Cari event, artis, venue, atau kota" placeholder="Cari konser, artis, GBK, JIS, atau kota..."
+              data-i18n-placeholder="landing.searchPlaceholder" oninput="debounceSearch()">
+            <button type="button" class="seatgeek-search-submit-btn" onclick="debounceSearch()" aria-label="Cari">
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
 
-        <article class="blog-preview-card" style="background:var(--theme-card, #24364D); border:1px solid var(--theme-border, rgba(243,235,221,0.16)); border-radius:18px; padding:24px; box-shadow:0 8px 24px rgba(0,0,0,0.22);">
-          <div style="font-size:11.5px; font-weight:700; color:#E36F45; text-transform:uppercase; margin-bottom:8px;" data-i18n="blog.venueOpsKicker">OPERASIONAL VENUE</div>
-          <h3 style="font-size:18px; font-weight:700; color:var(--theme-text, #FFFFFF); margin:0 0 10px; line-height:1.35;">
-            <a href="/blog/panduan-penukaran-wristband-tiket-konser-jakarta" style="color:inherit; text-decoration:none;" data-i18n="blog.post3Title">Aturan Penukaran Wristband &amp; Bukti Resmi di GBK &amp; JIS</a>
-          </h3>
-          <p style="font-size:13.5px; color:var(--theme-muted, #CBD5E1); margin:0 0 16px; line-height:1.55;" data-i18n="blog.post3Snippet">
-            Prosedur penukaran gelang konser bertiket dengan pendampingan saksi fisik di venue acara.
-          </p>
-          <a href="/blog/panduan-penukaran-wristband-tiket-konser-jakarta" style="color:var(--palette-warm-sand, #F3EBDD); font-weight:700; font-size:13px; text-decoration:none;" data-i18n="blog.readGuide">Baca Panduan →</a>
-        </article>
-      </div>
+          <!-- Quick Filter Chips (Category & Popular Cities) -->
+          <div class="hero-quick-chips" role="group" aria-label="Filter Cepat Event">
+            <span class="hero-quick-chips__label" data-i18n="landing.heroQuickFilterLabel">Pencarian Cepat:</span>
+            <button type="button" class="hero-quick-chip is-active"
+              onclick="applyHeroQuickFilter(this, { category: '', city: '' })" data-i18n="events.allEvents">Semua
+              Event</button>
+            <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'MUSIC' })"
+              data-i18n="events.concerts">Konser</button>
+            <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'FESTIVAL' })"
+              data-i18n="events.festivals">Festival Musik</button>
+            <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { category: 'SPORT' })"
+              data-i18n="events.sports">Olahraga</button>
+            <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Jakarta' })"><i
+                class="fa-solid fa-location-dot" aria-hidden="true"></i> <span
+                data-i18n="landing.quickChipJakarta">Jakarta</span></button>
+            <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Bandung' })"><i
+                class="fa-solid fa-location-dot" aria-hidden="true"></i> <span
+                data-i18n="nav.bandung">Bandung</span></button>
+            <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Bali' })"><i
+                class="fa-solid fa-location-dot" aria-hidden="true"></i> <span data-i18n="nav.bali">Bali</span></button>
+          </div>
 
-      <!-- High-Impact Deep Blue Closing CTA Card -->
-      <div class="closing-cta-card" style="background:var(--palette-primary-blue, #15365B); background-image:radial-gradient(circle at 80% 20%, rgba(227,111,69,0.22) 0%, #172333 75%); border:1px solid rgba(243,235,221,0.16); border-radius:24px; padding:48px 36px; text-align:center; color:#FFFFFF;" data-reveal>
-        <h2 class="font-display" style="font-size:clamp(1.75rem, 3vw, 2.4rem); font-weight:700; color:#F7FAFF; margin:0 0 12px;" data-i18n="landing.closingCtaHeading">
-          Punya Tiket Nganggur atau Sudah Deal di X / TikTok?
-        </h2>
-        <p style="font-size:16px; color:rgba(250,241,226,0.85); max-width:620px; margin:0 auto 28px; line-height:1.6;" data-i18n="landing.closingCtaSub">
-          Gunakan TIKUM sebagai ruang transaksi aman dengan saksi fisik Event PIC dan perlindungan dua arah.
-        </p>
-        <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
-          <a href="/deal/create" class="btn-hero-coral" data-i18n="landing.closingCtaSellBtn">
-            <i class="fa-solid fa-plus-circle"></i> <span>Jual Tiket (Simpel 2 Menit)</span>
-          </a>
-          <a href="/deal" class="btn-hero-outline" data-i18n="landing.closingCtaDealBtn">
-            <i class="fa-solid fa-door-open"></i> <span>Buka Deal Room</span>
-          </a>
+          <!-- Compact Compliance-Safe Trust Strip -->
+          <div class="hero-trust-strip" role="list" aria-label="Keunggulan Verifikasi TIKUM">
+            <span class="hero-trust-item" role="listitem"><i class="fa-solid fa-file-shield" aria-hidden="true"></i>
+              <span data-i18n="landing.heroTrustVerified">Verifikasi Bukti Kepemilikan</span></span>
+            <span class="hero-trust-item" role="listitem"><i class="fa-solid fa-user-check" aria-hidden="true"></i>
+              <span data-i18n="landing.heroTrustPic">Dukungan Event PIC di Venue</span></span>
+            <span class="hero-trust-item" role="listitem"><i class="fa-solid fa-fingerprint" aria-hidden="true"></i>
+              <span data-i18n="landing.heroTrustZeroFake">Zero Fake Inventory &amp; Anti-Duplikasi</span></span>
+          </div>
+
+          <!-- Redesigned Agency-Grade Deal-Link Dock -->
+          <div class="hero-deal-dock instant-deal-bar">
+            <div class="hero-deal-caption">
+              <span class="hero-deal-caption-text" data-i18n="landing.instantDealNotice">Sudah deal di X, TikTok, IG,
+                atau FB? Amankan transaksinya di sini:</span>
+            </div>
+            <form class="hero-deal-form" id="heroDealForm" onsubmit="handleHeroDealSubmit(event)">
+              <div class="hero-deal-input-wrapper">
+                <svg class="hero-deal-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+                <input type="text" id="heroDealInput" class="hero-deal-input"
+                  placeholder="Tempel link tikum.app/deal/... atau kode deal..."
+                  data-i18n-placeholder="landing.instantDealPlaceholder" autocomplete="off" spellcheck="false">
+              </div>
+              <button type="submit" class="hero-deal-submit-btn">
+                <span data-i18n="landing.openDealRoomBtn">Buka Deal →</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Equal-Weight Dual Hero CTAs -->
+          <div class="hero-dual-cta-group">
+            <a href="#unifiedDiscovery" class="btn-hero-coral" data-i18n="landing.heroCtaExplore">
+              <i class="fa-solid fa-ticket"></i> <span data-i18n="nav.exploreTickets">Jelajah Tiket</span>
+            </a>
+            <a href="/deal/create" class="btn-hero-outline" data-i18n="landing.heroCtaSell">
+              <i class="fa-solid fa-plus-circle"></i> <span data-i18n="nav.sellTicketsNow">Jual Tiket Sekarang</span>
+            </a>
+          </div>
+
+          <div class="flow-marquee-wrapper" aria-label="Event highlights">
+            <div class="flow-marquee-track" id="eventMarquee">
+              <div class="flow-marquee-content"><span class="flow-marquee-item">Poster event mendatang belum
+                  tersedia.</span></div>
+            </div>
+          </div>
+          <button type="button" class="marquee-toggle" id="marqueeToggle" aria-pressed="false"
+            aria-label="Pause event highlights">Pause</button>
         </div>
-      </div>
-    </div>
-  </section>
+      </section>
 
-  <!-- Minimalist 2-Tier Footer (Eliminating 17-link stack) -->
+      <!-- SECTION 2: ONE Unified Event Discovery Grid (Dark Canvas Canonical) -->
+      <section class="unified-discovery-section" id="unifiedSection"
+        style="background:var(--theme-canvas, #0B1220); padding:64px 24px 80px;">
+        <div style="max-width:1160px; margin:0 auto;">
+          <section id="heroFeature" class="ln-hero-feature" style="display:none;"></section>
+
+          <!-- Clean Filter Rail -->
+          <div class="filters-container" id="upcoming" style="margin-bottom:28px;">
+            <div class="filter-pills" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+              <div class="pill active" data-category="" onclick="setCategory(this, '')" data-i18n="events.allEvents">
+                Semua Event</div>
+              <div class="pill" data-category="MUSIC" onclick="setCategory(this, 'MUSIC')" data-i18n="events.concerts">
+                Konser &amp; Musik</div>
+              <div class="pill" data-category="KPOP" onclick="setCategory(this, 'KPOP')" data-i18n="events.kpop">K-Pop
+              </div>
+              <div class="pill" data-category="FESTIVAL" onclick="setCategory(this, 'FESTIVAL')"
+                data-i18n="events.festivals">Festival</div>
+              <div class="pill" data-category="SPORT" onclick="setCategory(this, 'SPORT')" data-i18n="events.sports">
+                Olahraga</div>
+              <div class="pill" data-category="COMEDY" onclick="setCategory(this, 'COMEDY')" data-i18n="events.comedy">
+                Stand Up Comedy</div>
+              <a href="/past-events" class="pill"
+                style="text-decoration:none; color:inherit; display:inline-flex; align-items:center; gap:4px;"
+                data-i18n="events.pastEvents">Arsip Selesai <i class="fa-solid fa-arrow-right"
+                  style="font-size:11px;"></i></a>
+            </div>
+            <div class="filters-row-selects" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:12px;">
+              <select id="cityFilter" class="select-filter" onchange="renderAllSections()"
+                style="background:var(--theme-card, #1B2A40); border:1px solid var(--theme-border, #344358); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:var(--theme-text, #F8FAFC);">
+                <option value="" data-i18n="events.allCities">Semua Kota</option>
+                <option value="Jakarta" data-i18n="events.jakartaJabodetabek">Jakarta (Jabodetabek)</option>
+                <option value="Bandung">Bandung</option>
+                <option value="Surabaya">Surabaya</option>
+                <option value="Bali">Bali</option>
+                <option value="Yogyakarta">Yogyakarta</option>
+                <option value="Semarang">Semarang</option>
+                <option value="Medan">Medan</option>
+                <option value="Makassar">Makassar</option>
+              </select>
+              <select id="dateFilter" class="select-filter" onchange="renderAllSections()"
+                style="background:var(--theme-card, #1B2A40); border:1px solid var(--theme-border, #344358); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:var(--theme-text, #F8FAFC);">
+                <option value="" data-i18n="events.allDates">Semua Waktu</option>
+                <option value="week" data-i18n="events.thisWeek">Minggu Ini</option>
+                <option value="month" data-i18n="events.thisMonth">Bulan Ini</option>
+                <option value="3months" data-i18n="events.next3Months">3 Bulan Ke Depan</option>
+              </select>
+              <select id="sortFilter" class="select-filter" onchange="renderAllSections()"
+                style="background:var(--theme-card, #1B2A40); border:1px solid var(--theme-border, #344358); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:600; color:var(--theme-text, #F8FAFC);">
+                <option value="hype" data-i18n="events.sortHype">Urutkan: Paling Hype</option>
+                <option value="date" data-i18n="events.sortDate">Urutkan: Tanggal Terdekat</option>
+                <option value="price_asc" data-i18n="events.sortPriceAsc">Harga: Terendah</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dynamic Unified Grid Mount -->
+          <main id="mainContent"></main>
+        </div>
+      </section>
+
+      <!-- SECTION 3: "Perlindungan Dua Arah" Bento Showcase (Deep Teal Editorial Section) -->
+      <section class="two-way-protection-section" id="twoWayProtection" data-reveal>
+        <div style="max-width:1120px; margin:0 auto; text-align:center; margin-bottom:36px;">
+          <div
+            style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(243,235,221,0.18); border-radius:999px; padding:6px 16px; font-size:12.5px; font-weight:700; color:#FFFFFF; margin-bottom:14px; text-transform:uppercase;">
+            <i class="fa-solid fa-shield-halved" style="color:#E36F45;"></i> <span
+              data-i18n="landing.twoWayProtectionEyebrow">Standar Keamanan Transaksi Sekunder</span>
+          </div>
+          <h2 class="font-display"
+            style="font-size:clamp(1.85rem, 3vw, 2.6rem); font-weight:700; color:#FFFFFF; margin:0 0 12px;"
+            data-i18n="landing.twoWayHeadline">
+            Perlindungan Dua Arah — Adil untuk Pembeli &amp; Penjual Jujur.
+          </h2>
+          <p style="font-size:16px; color:#CBD5E1; max-width:720px; margin:0 auto;" data-i18n="landing.twoWaySubtitle">
+            Sistem resale yang berimbang tanpa spekulasi, dilengkapi saksi fisik dan bukti transaksi yang objektif.
+          </p>
+        </div>
+
+        <!-- Authentic Founder Origin Quote Card -->
+        <div class="founder-quote-glass" data-reveal>
+          <div style="font-size:24px; color:#E36F45; margin-bottom:12px;"><i class="fa-solid fa-quote-left"></i></div>
+          <blockquote style="margin:0 0 16px; font-size:16.5px; line-height:1.7; color:#F7FAFF; font-style:italic;"
+            data-i18n="landing.founderQuoteText">
+            TIKUM lahir dari pengalaman nyata: menjual 2 tiket konser bersebelahan dari pembelian yang sama di platform
+            resale global, namun hanya dibayar 1 karena klaim 'invalid' sepihak tanpa bukti lapangan, potongan biaya
+            selangit, dan CS yang tidak membantu. Kami membangun TIKUM agar transaksi tiket sekunder punya saksi
+            objektif dan bukti yang adil bagi kedua belah pihak.
+          </blockquote>
+          <div style="font-size:14px; font-weight:700; color:rgba(250,241,226,0.9);"
+            data-i18n="landing.founderQuoteRole">
+            Founder TIKUM — PT Shinerva Prajna Tejas
+          </div>
+        </div>
+
+        <!-- 2 Balanced Flow Ninja Bento Cards -->
+        <div class="bento-grid-2col">
+          <!-- Card 1: Untuk Pembeli -->
+          <div class="bento-card-flow" data-reveal data-stagger="1">
+            <h3><i class="fa-solid fa-user-shield" style="color:#10B981;"></i> <span
+                data-i18n="landing.twoWayBuyerTitle">Untuk Pembeli Tiket</span></h3>
+            <ul class="bento-feature-list">
+              <li class="bento-feature-item">
+                <i class="fa-solid fa-circle-check bento-check-icon"></i>
+                <span data-i18n="landing.twoWayBuyerF1">Peninjauan Bukti Kepemilikan Tahap A (Zero Fake
+                  Inventory)</span>
+              </li>
+              <li class="bento-feature-item">
+                <i class="fa-solid fa-circle-check bento-check-icon"></i>
+                <span data-i18n="landing.twoWayBuyerF2">Biaya Transparan di Awal — Tanpa Biaya Tersembunyi (No Drip
+                  Fees)</span>
+              </li>
+              <li class="bento-feature-item">
+                <i class="fa-solid fa-circle-check bento-check-icon"></i>
+                <span data-i18n="landing.twoWayBuyerF3">Pendampingan Event PIC Resmi saat Penukaran Wristband /
+                  Venue</span>
+              </li>
+              <li class="bento-feature-item">
+                <i class="fa-solid fa-circle-check bento-check-icon"></i>
+                <span data-i18n="landing.twoWayBuyerF4">Prosedur Sengketa Terstruktur &amp; Perlindungan Dana Mitra
+                  Pembayaran</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Card 2: Untuk Penjual Jujur & Jastip -->
+          <div class="bento-card-flow" data-reveal data-stagger="2">
+            <h3><i class="fa-solid fa-store" style="color:#E36F45;"></i> <span
+                data-i18n="landing.twoWaySellerTitle">Untuk Penjual Jujur &amp; Jastip</span></h3>
+            <ul class="bento-feature-list">
+              <li class="bento-feature-item">
+                <i class="fa-solid fa-circle-check bento-check-icon"></i>
+                <span data-i18n="landing.twoWaySellerF1">QR Tetap di Tangan Penjual saat Listing (Zero-QR Stage
+                  A)</span>
+              </li>
+              <li class="bento-feature-item">
+                <i class="fa-solid fa-circle-check bento-check-icon"></i>
+                <span data-i18n="landing.twoWaySellerF2">Anti Tuduhan Tiket Invalid Sepihak (Wajib Berita Acara Event
+                  PIC)</span>
+              </li>
+              <li class="bento-feature-item">
+                <i class="fa-solid fa-circle-check bento-check-icon"></i>
+                <span data-i18n="landing.twoWaySellerF3">Hak Jawab &amp; Investigasi Lapangan 7×24 Jam</span>
+              </li>
+              <li class="bento-feature-item">
+                <i class="fa-solid fa-circle-check bento-check-icon"></i>
+                <span data-i18n="landing.twoWaySellerF4">Bebas Chargeback Sepihak Kartu Kredit via Rail QRIS / VA
+                  Resmi</span>
+              </li>
+              <li class="bento-feature-item">
+                <i class="fa-solid fa-circle-check bento-check-icon"></i>
+                <span data-i18n="landing.twoWaySellerF5">Paket Bukti Digital Transaksi (Evidence Bundle 9
+                  Artefak)</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: Cara Kerja 5 Langkah + Ringkasan Biaya Transparan (Warm Cream Canvas) -->
+      <section class="flow-rail-section" id="howItWorks" data-reveal>
+        <div style="max-width:1160px; margin:0 auto; text-align:center; margin-bottom:40px;">
+          <div
+            style="display:inline-flex; align-items:center; gap:8px; background:var(--tikum-teal-100); border-radius:999px; padding:6px 16px; font-size:12.5px; font-weight:700; color:var(--tikum-teal-700); margin-bottom:12px; text-transform:uppercase;">
+            <i class="fa-solid fa-route"></i> <span data-i18n="landing.workflowBadge">Alur Transaksi Bertahap</span>
+          </div>
+          <h2 class="font-display"
+            style="font-size:clamp(1.85rem, 3vw, 2.6rem); font-weight:700; color:var(--tikum-ink-900); margin:0 0 10px;"
+            data-i18n="landing.flowRailHeading">
+            Alur 5 Langkah Transaksi Aman
+          </h2>
+          <p style="font-size:15.5px; color:var(--tikum-ink-600); max-width:640px; margin:0 auto;">
+            Dari pembuatan tautan transaksi hingga penyelesaian dengan bukti digital lengkap.
+          </p>
+        </div>
+
+        <!-- 5-Step Horizontal Grid -->
+        <div class="flow-rail-grid">
+          <div class="flow-step-box" data-reveal data-stagger="1">
+            <div class="flow-step-num">1</div>
+            <div class="flow-step-title" data-i18n="landing.step1Title">1. Buat Deal</div>
+            <p class="flow-step-desc" data-i18n="landing.step1Desc">Penjual mendaftarkan tiket tanpa menyerahkan QR code
+              asli. Hash serial tersimpan aman.</p>
+          </div>
+          <div class="flow-step-box" data-reveal data-stagger="2">
+            <div class="flow-step-num">2</div>
+            <div class="flow-step-title" data-i18n="landing.step2Title">2. Verifikasi Bukti</div>
+            <p class="flow-step-desc" data-i18n="landing.step2Desc">Tim Trust meninjau bukti pembelian promotor sebelum
+              deal dibuka untuk pembayaran.</p>
+          </div>
+          <div class="flow-step-box" data-reveal data-stagger="3">
+            <div class="flow-step-num">3</div>
+            <div class="flow-step-title" data-i18n="landing.step3Title">3. Bayar Transparan</div>
+            <p class="flow-step-desc" data-i18n="landing.step3Desc">Pembeli membayar via QRIS/VA berizin. Dana ditahan
+              aman via mitra resmi platform.</p>
+          </div>
+          <div class="flow-step-box" data-reveal data-stagger="4">
+            <div class="flow-step-num">4</div>
+            <div class="flow-step-title" data-i18n="landing.step4Title">4. Serah Terima / PIC</div>
+            <p class="flow-step-desc" data-i18n="landing.step4Desc">Serah terima tiket didampingi Event PIC di titik
+              kumpul venue pada hari acara.</p>
+          </div>
+          <div class="flow-step-box" data-reveal data-stagger="5">
+            <div class="flow-step-num">5</div>
+            <div class="flow-step-title" data-i18n="landing.step5Title">5. Selesai &amp; Evidence</div>
+            <p class="flow-step-desc" data-i18n="landing.step5Desc">Setelah tiket valid di venue, dana diteruskan ke
+              penjual dan Evidence Bundle 9 artefak diterbitkan.</p>
+          </div>
+        </div>
+
+        <!-- Upfront Dual-Tier Fee Transparency Bar -->
+        <div class="pilot-fee-bar" data-reveal>
+          <i class="fa-solid fa-receipt"
+            style="font-size:24px; color:var(--palette-terracotta, #E36F45); flex-shrink:0;"></i>
+          <div style="flex:1;">
+            <strong style="color:var(--palette-soft-white, #FFFFFF); font-size:15px; display:block; margin-bottom:3px;"
+              data-i18n="landing.feeSummaryBarV2Title">Transparansi Biaya Layanan Dual-Tier TIKUM</strong>
+            <span style="font-size:13.5px; color:var(--palette-secondary-text, #CBD5E1); line-height:1.5;"
+              data-i18n="landing.feeSummaryBarV2Desc">Transfer Mandiri: 6% pembeli + 6% penjual (maks. Rp300rb/tiket).
+              Dibantu PIC Venue: 9% pembeli + 9% penjual (maks. Rp450rb/tiket). Min. Rp35.000/tiket · Listing
+              Rp0.</span>
+          </div>
+          <a href="/buyer-protection#pricing-details"
+            style="color:var(--palette-terracotta, #E36F45); font-weight:700; text-decoration:none; font-size:13.5px; white-space:nowrap;"
+            data-i18n="landing.feeDetailsLink">Detail Biaya →</a>
+        </div>
+      </section>
+
+      <!-- SECTION 5: 3 Panduan Konser Terbaru + Bold Closing CTA -->
+      <section class="landing-section" id="featuredBlog"
+        style="background:var(--theme-canvas, #172333); padding:56px 24px 72px;" data-reveal>
+        <div style="max-width:1160px; margin:0 auto;">
+          <div
+            style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:28px; flex-wrap:wrap; gap:12px;">
+            <div>
+              <div
+                style="font-size:12px; font-weight:800; text-transform:uppercase; color:var(--palette-warm-sand, #F3EBDD); letter-spacing:0.8px; margin-bottom:4px;"
+                data-i18n="blog.kicker">EDUKASI &amp; TIPS</div>
+              <h2 class="font-display"
+                style="font-size:26px; font-weight:700; color:var(--theme-text, #FFFFFF); margin:0;"
+                data-i18n="landing.blogStripHeading">Panduan &amp; Edukasi Konser Terbaru</h2>
+            </div>
+            <a href="/blog"
+              style="color:var(--palette-warm-sand, #F3EBDD); font-weight:700; text-decoration:none; font-size:14px;"
+              data-i18n="blog.allArticles">Lihat Seluruh Artikel →</a>
+          </div>
+
+          <div class="featured-blog-grid"
+            style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:24px; margin-bottom:56px;">
+            <article class="blog-preview-card"
+              style="background:var(--theme-card, #24364D); border:1px solid var(--theme-border, rgba(243,235,221,0.16)); border-radius:18px; padding:24px; box-shadow:0 8px 24px rgba(0,0,0,0.22);">
+              <div
+                style="font-size:11.5px; font-weight:700; color:#E36F45; text-transform:uppercase; margin-bottom:8px;"
+                data-i18n="blog.buyerGuideKicker">PANDUAN PEMBELI</div>
+              <h3
+                style="font-size:18px; font-weight:700; color:var(--theme-text, #FFFFFF); margin:0 0 10px; line-height:1.35;">
+                <a href="/blog/panduan-serah-terima-tiket-aman-dua-tahap-perlindungan-escrow"
+                  style="color:inherit; text-decoration:none;" data-i18n="blog.post1Title">Panduan Serah Terima Tiket
+                  Aman Dua Tahap &amp; Bukti Lapangan</a>
+              </h3>
+              <p style="font-size:13.5px; color:var(--theme-muted, #CBD5E1); margin:0 0 16px; line-height:1.55;"
+                data-i18n="blog.post1Snippet">
+                Memahami alur verifikasi bukti kepemilikan tahap A dan asistensi Event PIC di titik kumpul venue sebelum
+                konser dimulai.
+              </p>
+              <a href="/blog/panduan-serah-terima-tiket-aman-dua-tahap-perlindungan-escrow"
+                style="color:var(--palette-warm-sand, #F3EBDD); font-weight:700; font-size:13px; text-decoration:none;"
+                data-i18n="blog.readGuide">Baca Panduan →</a>
+            </article>
+
+            <article class="blog-preview-card"
+              style="background:var(--theme-card, #24364D); border:1px solid var(--theme-border, rgba(243,235,221,0.16)); border-radius:18px; padding:24px; box-shadow:0 8px 24px rgba(0,0,0,0.22);">
+              <div
+                style="font-size:11.5px; font-weight:700; color:#E36F45; text-transform:uppercase; margin-bottom:8px;"
+                data-i18n="blog.securityTipsKicker">TIPS KEAMANAN</div>
+              <h3
+                style="font-size:18px; font-weight:700; color:var(--theme-text, #FFFFFF); margin:0 0 10px; line-height:1.35;">
+                <a href="/blog/cara-aman-beli-tiket-konser-second-resale" style="color:inherit; text-decoration:none;"
+                  data-i18n="blog.post2Title">Cara Aman Jual Beli Tiket Konser di Medsos (X &amp; TikTok)</a>
+              </h3>
+              <p style="font-size:13.5px; color:var(--theme-muted, #CBD5E1); margin:0 0 16px; line-height:1.55;"
+                data-i18n="blog.post2Snippet">
+                Menghindari penipuan tiket di media sosial dengan mengalihkan transaksi ke ruang deal terverifikasi
+                TIKUM.
+              </p>
+              <a href="/blog/cara-aman-beli-tiket-konser-second-resale"
+                style="color:var(--palette-warm-sand, #F3EBDD); font-weight:700; font-size:13px; text-decoration:none;"
+                data-i18n="blog.readGuide">Baca Panduan →</a>
+            </article>
+
+            <article class="blog-preview-card"
+              style="background:var(--theme-card, #24364D); border:1px solid var(--theme-border, rgba(243,235,221,0.16)); border-radius:18px; padding:24px; box-shadow:0 8px 24px rgba(0,0,0,0.22);">
+              <div
+                style="font-size:11.5px; font-weight:700; color:#E36F45; text-transform:uppercase; margin-bottom:8px;"
+                data-i18n="blog.venueOpsKicker">OPERASIONAL VENUE</div>
+              <h3
+                style="font-size:18px; font-weight:700; color:var(--theme-text, #FFFFFF); margin:0 0 10px; line-height:1.35;">
+                <a href="/blog/panduan-penukaran-wristband-tiket-konser-jakarta"
+                  style="color:inherit; text-decoration:none;" data-i18n="blog.post3Title">Aturan Penukaran Wristband
+                  &amp; Bukti Resmi di GBK &amp; JIS</a>
+              </h3>
+              <p style="font-size:13.5px; color:var(--theme-muted, #CBD5E1); margin:0 0 16px; line-height:1.55;"
+                data-i18n="blog.post3Snippet">
+                Prosedur penukaran gelang konser bertiket dengan pendampingan saksi fisik di venue acara.
+              </p>
+              <a href="/blog/panduan-penukaran-wristband-tiket-konser-jakarta"
+                style="color:var(--palette-warm-sand, #F3EBDD); font-weight:700; font-size:13px; text-decoration:none;"
+                data-i18n="blog.readGuide">Baca Panduan →</a>
+            </article>
+          </div>
+
+          <!-- High-Impact Deep Blue Closing CTA Card -->
+          <div class="closing-cta-card"
+            style="background:var(--palette-primary-blue, #15365B); background-image:radial-gradient(circle at 80% 20%, rgba(227,111,69,0.22) 0%, #172333 75%); border:1px solid rgba(243,235,221,0.16); border-radius:24px; padding:48px 36px; text-align:center; color:#FFFFFF;"
+            data-reveal>
+            <h2 class="font-display"
+              style="font-size:clamp(1.75rem, 3vw, 2.4rem); font-weight:700; color:#F7FAFF; margin:0 0 12px;"
+              data-i18n="landing.closingCtaHeading">
+              Punya Tiket Nganggur atau Sudah Deal di X / TikTok?
+            </h2>
+            <p style="font-size:16px; color:rgba(250,241,226,0.85); max-width:620px; margin:0 auto 28px; line-height:1.6;"
+              data-i18n="landing.closingCtaSub">
+              Gunakan TIKUM sebagai ruang transaksi aman dengan saksi fisik Event PIC dan perlindungan dua arah.
+            </p>
+            <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
+              <a href="/deal/create" class="btn-hero-coral" data-i18n="landing.closingCtaSellBtn">
+                <i class="fa-solid fa-plus-circle"></i> <span>Jual Tiket (Simpel 2 Menit)</span>
+              </a>
+              <a href="/deal" class="btn-hero-outline" data-i18n="landing.closingCtaDealBtn">
+                <i class="fa-solid fa-door-open"></i> <span>Buka Deal Room</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Minimalist 2-Tier Footer (Eliminating 17-link stack) -->
       <footer id="appFooter" class="app-footer site-footer">
         <div class="footer-tier-1">
           <div class="footer-col-brand">
             <div style="margin-bottom: 14px;">
               <span class="tikum-logo-slot tikum-logo-slot--footer">
-                <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" height="40" width="186" alt="TIKUM">
+                <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" height="40" width="186"
+                  alt="TIKUM">
               </span>
             </div>
             <h3>
               <span>TIKUM — by PT SHINERVA PRAJNA TEJAS</span>
             </h3>
             <p data-i18n="footer.aboutBrand">
-              Pasar tiket event terverifikasi yang dioperasikan di bawah naungan PT SHINERVA PRAJNA TEJAS. Dilengkapi verifikasi sumber resmi dan asistensi staf di venue acara terkonfirmasi.
+              Pasar tiket event terverifikasi yang dioperasikan di bawah naungan PT SHINERVA PRAJNA TEJAS. Dilengkapi
+              verifikasi sumber resmi dan asistensi staf di venue acara terkonfirmasi.
             </p>
             <address>
               <strong data-i18n="footer.operationalOffice">Kantor Operasional &amp; Surat:</strong><br>
@@ -726,7 +875,8 @@
             <div class="footer-essential-grid">
               <a href="/terms" class="footer-essential-link" data-i18n="footer.terms">Syarat &amp; Ketentuan</a>
               <a href="/privacy" class="footer-essential-link" data-i18n="footer.privacyPolicy">Privasi (UU PDP)</a>
-              <a href="/refund-policy" class="footer-essential-link" data-i18n="footer.refundPolicy">Refund &amp; Sengketa</a>
+              <a href="/refund-policy" class="footer-essential-link" data-i18n="footer.refundPolicy">Refund &amp;
+                Sengketa</a>
               <a href="/past-events" class="footer-essential-link" data-i18n="footer.pastEvents">Arsip Event</a>
               <a href="/faq" class="footer-essential-link" data-i18n="footer.faq">FAQ / Bantuan</a>
               <a href="/blog" class="footer-essential-link" data-i18n="footer.blog">Blog &amp; Panduan</a>
@@ -736,12 +886,18 @@
 
         <div class="footer-tier-2">
           <div class="footer-legal-uu">
-            <span data-i18n="footer.copyrightNotice">© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi undang-undang. TIKUM adalah platform marketplace tiket terverifikasi.</span>
-            <span style="display:block; font-size:11.5px; color:#64748b; margin-top:4px;">Bahasa Indonesia adalah bahasa pengendali hukum berdasarkan UU No. 24/2009.</span>
+            <span data-i18n="footer.copyrightNotice">© 2026 PT SHINERVA PRAJNA TEJAS. Seluruh hak cipta dilindungi
+              undang-undang. TIKUM adalah platform marketplace tiket terverifikasi.</span>
+            <span style="display:block; font-size:11.5px; color:#64748b; margin-top:4px;">Bahasa Indonesia adalah bahasa
+              pengendali hukum berdasarkan UU No. 24/2009.</span>
           </div>
           <div style="display:flex; align-items:center; gap:12px;">
-            <button id="footerLangToggle" class="footer-lang-toggle lang-switcher-pill lang-toggle-btn" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : toggleLang()" aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
-              <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span class="lang-divider text-slate-500 mx-1">|</span><span class="lang-pill-item lang-inactive text-slate-400">EN</span>
+            <button id="footerLangToggle" class="footer-lang-toggle lang-switcher-pill lang-toggle-btn"
+              onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : toggleLang()"
+              aria-label="Ganti Bahasa / Switch Language" title="Ganti Bahasa / Switch Language">
+              <span class="lang-pill-item lang-active font-bold text-emerald-400">ID</span><span
+                class="lang-divider text-slate-500 mx-1">|</span><span
+                class="lang-pill-item lang-inactive text-slate-400">EN</span>
             </button>
           </div>
         </div>
@@ -777,15 +933,20 @@
   <div class="modal-overlay" id="verifModal" onclick="closeModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <div class="modal-title"><i class="fa-solid fa-shield-check" style="color:#047857"></i> <span data-i18n="modals.provenanceTitle">Status Verifikasi Resmi</span></div>
+        <div class="modal-title"><i class="fa-solid fa-shield-check" style="color:#047857"></i> <span
+            data-i18n="modals.provenanceTitle">Status Verifikasi Resmi</span></div>
         <button class="btn-close" onclick="closeModal(event)">&times;</button>
       </div>
       <p id="modalVerifDate" style="margin-bottom: 16px; font-weight: 700; font-size: 13.5px;"></p>
       <ul class="provenance-list">
-        <li><i class="fa-solid fa-check-circle"></i> <span data-i18n="modals.prov1">Penyelenggara &amp; Promotor Resmi Dikonfirmasi</span></li>
-        <li><i class="fa-solid fa-check-circle"></i> <span data-i18n="modals.prov2">Lokasi &amp; Izin Penyelenggaraan Valid</span></li>
-        <li><i class="fa-solid fa-check-circle"></i> <span data-i18n="modals.prov3">Harga Tiket &amp; Struktur Kategori Resmi</span></li>
-        <li><i class="fa-solid fa-check-circle"></i> <span data-i18n="modals.prov4">Opsi Asistensi PIC di Venue untuk Event Terpilih</span></li>
+        <li><i class="fa-solid fa-check-circle"></i> <span data-i18n="modals.prov1">Penyelenggara &amp; Promotor Resmi
+            Dikonfirmasi</span></li>
+        <li><i class="fa-solid fa-check-circle"></i> <span data-i18n="modals.prov2">Lokasi &amp; Izin Penyelenggaraan
+            Valid</span></li>
+        <li><i class="fa-solid fa-check-circle"></i> <span data-i18n="modals.prov3">Harga Tiket &amp; Struktur Kategori
+            Resmi</span></li>
+        <li><i class="fa-solid fa-check-circle"></i> <span data-i18n="modals.prov4">Opsi Asistensi PIC di Venue untuk
+            Event Terpilih</span></li>
       </ul>
     </div>
   </div>
@@ -795,22 +956,27 @@
     <div class="modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title">
-          <i class="fa-solid fa-ticket" style="color:var(--primary);"></i> <span data-i18n="modals.authTitle">Masuk ke Tikum</span>
+          <i class="fa-solid fa-ticket" style="color:var(--primary);"></i> <span data-i18n="modals.authTitle">Masuk ke
+            Tikum</span>
         </div>
         <button class="btn-close" onclick="closeAuthModal()">&times;</button>
       </div>
 
       <!-- State 1: Input Email -->
       <div id="authModalInputView">
-        <p style="font-size:13.5px; margin-bottom:16px; line-height:1.5; color:inherit; opacity:0.85;" data-i18n="modals.authPrompt">
+        <p style="font-size:13.5px; margin-bottom:16px; line-height:1.5; color:inherit; opacity:0.85;"
+          data-i18n="modals.authPrompt">
           Masukkan email Anda untuk menerima tautan masuk instan (magic link).
         </p>
         <form id="authModalForm" onsubmit="submitMagicLink(event)">
           <div style="margin-bottom:16px;">
-            <label for="modalEmailInput" style="display:block; font-size:13px; font-weight:700; margin-bottom:6px;">Email</label>
-            <input type="email" id="modalEmailInput" class="auth-input-field" placeholder="nama@email.com" required autocomplete="email">
+            <label for="modalEmailInput"
+              style="display:block; font-size:13px; font-weight:700; margin-bottom:6px;">Email</label>
+            <input type="email" id="modalEmailInput" class="auth-input-field" placeholder="nama@email.com" required
+              autocomplete="email">
           </div>
-          <div id="modalAuthError" style="display:none; color:#DC2626; font-size:13px; margin-bottom:12px; line-height:1.4;"></div>
+          <div id="modalAuthError"
+            style="display:none; color:#DC2626; font-size:13px; margin-bottom:12px; line-height:1.4;"></div>
           <button type="submit" id="btnModalSubmit" class="btn-auth-primary">
             <span data-i18n="modals.sendMagicLinkBtn">Kirim Magic Link</span>
             <i class="fa-solid fa-paper-plane" style="font-size:13px;"></i>
@@ -820,17 +986,21 @@
 
       <!-- State 2: Confirmation Sent -->
       <div id="authModalSuccessView" style="display:none; text-align:center; padding:12px 0;">
-        <div style="width:48px; height:48px; border-radius:50%; background:rgba(4, 120, 87, 0.12); display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px;">
+        <div
+          style="width:48px; height:48px; border-radius:50%; background:rgba(4, 120, 87, 0.12); display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px;">
           <i class="fa-solid fa-envelope-circle-check" style="font-size:24px; color:#047857;"></i>
         </div>
         <h3 style="font-size:18px; font-weight:700; margin:0 0 8px;" data-i18n="modals.successTitle">Cek email Anda</h3>
         <p style="font-size:13.5px; line-height:1.5; margin:0 0 10px; color:inherit; opacity:0.85;">
-          <span data-i18n="modals.successSentTo">Kami telah mengirim magic link ke</span> <strong id="modalSentEmail">alamat email Anda</strong>.
+          <span data-i18n="modals.successSentTo">Kami telah mengirim magic link ke</span> <strong
+            id="modalSentEmail">alamat email Anda</strong>.
         </p>
-        <p style="font-size:12px; color:var(--color-text-muted, #6B7280); margin:0 0 20px; line-height:1.4;" data-i18n="modals.linkValidNote">
+        <p style="font-size:12px; color:var(--color-text-muted, #6B7280); margin:0 0 20px; line-height:1.4;"
+          data-i18n="modals.linkValidNote">
           Link berlaku selama 15 menit dan hanya dapat digunakan sekali.
         </p>
-        <button class="select-filter" style="width:100%; padding:10px;" onclick="closeAuthModal()" data-i18n="modals.closeBtn">Tutup</button>
+        <button class="select-filter" style="width:100%; padding:10px;" onclick="closeAuthModal()"
+          data-i18n="modals.closeBtn">Tutup</button>
       </div>
     </div>
   </div>
@@ -1121,7 +1291,7 @@
       }
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
       return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
     }
 
@@ -1334,10 +1504,22 @@
       let waitlistBtn = '';
 
       if (hasResale) {
-        const resalePrice = e.resale_price_min || e.price_min;
-        priceLabel = t('events.resaleFrom', 'Resale mulai');
-        priceDisplay = resalePrice ? fmtCur(resalePrice) : t('events.listedPrice', 'Harga tertera');
-        resaleCue = '';
+        const resaleAllIn = e.resale_all_in_price_min || (function () {
+          const base = Number(e.resale_price_min || e.price_min || 0);
+          if (!base || base <= 0) return null;
+          const isPic = String(e.resale_fulfillment_type || '').toUpperCase() === 'TIKUM_VENUE_PIC';
+          const rate = isPic ? 9 : 6;
+          const maxCap = isPic ? 450000 : 300000;
+          const unitFee = Math.max(35000, Math.min(maxCap, Math.round((base * rate) / 100)));
+          return base + Math.min(unitFee, base);
+        })();
+        const isPicTier = String(e.resale_fulfillment_type || '').toUpperCase() === 'TIKUM_VENUE_PIC';
+        const tierChip = isPicTier
+          ? `<span style="display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:700; color:#F3EBDD; background:rgba(21,54,91,0.9); border:1px solid rgba(203,213,225,0.28); border-radius:6px; padding:2px 7px;">${t('events.tierBadgePic', 'PIC Venue')}</span>`
+          : `<span style="display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:700; color:#CBD5E1; background:rgba(36,54,77,0.85); border:1px solid rgba(203,213,225,0.22); border-radius:6px; padding:2px 7px;">${t('events.tierBadgeSelf', 'Transfer Mandiri')}</span>`;
+        priceLabel = t('events.resaleAllInFrom', 'Harga All-in mulai');
+        priceDisplay = resaleAllIn ? fmtCur(resaleAllIn) : t('events.listedPrice', 'Harga tertera');
+        resaleCue = `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; margin-top:4px;"><span style="font-size:11px; color:var(--palette-secondary-text, #CBD5E1);">${t('events.inclServiceFee', 'Termasuk biaya layanan')}</span>${tierChip}</div>`;
         waitlistBtn = '';
       } else {
         const officialPrice = e.primary_price_min || e.min_price;
@@ -1552,7 +1734,7 @@
             return;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
       currentUser = null;
       renderAuthHeader(null);
     }
@@ -1605,7 +1787,7 @@
     async function handleHeaderLogout() {
       try {
         await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
-      } catch (e) {}
+      } catch (e) { }
       currentUser = null;
       renderAuthHeader(null);
       window.location.reload();
@@ -1688,7 +1870,7 @@
     }
 
     let _handlingHomeLocaleChange = false;
-    window.addEventListener('tikum:locale-change', function() {
+    window.addEventListener('tikum:locale-change', function () {
       if (_handlingHomeLocaleChange) return;
       _handlingHomeLocaleChange = true;
       try {
@@ -1734,7 +1916,7 @@
       }
 
       if (toggleDesktop) {
-        toggleDesktop.addEventListener('click', function() {
+        toggleDesktop.addEventListener('click', function () {
           if (!shell) return;
           const isCollapsed = shell.classList.toggle('sidebar-collapsed');
           localStorage.setItem('tikum_sidebar_collapsed', isCollapsed ? 'true' : 'false');
@@ -1757,7 +1939,7 @@
       if (closeMobile) closeMobile.addEventListener('click', closeSidebar);
       if (backdrop) backdrop.addEventListener('click', closeSidebar);
 
-      document.addEventListener('keydown', function(e) {
+      document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && shell && shell.classList.contains('sidebar-open')) {
           closeSidebar();
         }
@@ -1769,4 +1951,5 @@
 
   <script src="/js/motion.js"></script>
 </body>
+
 </html>

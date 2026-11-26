@@ -394,6 +394,16 @@
       </div>
 
       <div class="faq-item">
+        <div class="faq-question">Berapa biaya layanan Dual-Tier V2 &amp; bagaimana penahanan dananya?</div>
+        <div class="faq-answer">
+          Pemasangan listing tiket di Tikum adalah <strong>Rp 0 (Gratis)</strong> dengan batas harga minimum Rp 500.000/tiket dan batas markup maksimal +30% dari face value:<br>
+          &bull; <strong>Opsi B — Transfer Mandiri Penjual (SELLER_MANAGED):</strong> 6% pembeli + 6% penjual (Min. Rp35.000, Maks. Rp300.000/tiket).<br>
+          &bull; <strong>Opsi A — Dibantu PIC Venue (TIKUM_VENUE_PIC):</strong> 9% pembeli + 9% penjual (Min. Rp35.000, Maks. Rp450.000/tiket).<br>
+          Pembayaran diproses melalui DOKU Direct API (izin Bank Indonesia) dengan mekanisme platform-held settlement hold hingga verifikasi selesai.
+        </div>
+      </div>
+
+      <div class="faq-item">
         <div class="faq-question">Bagaimana jika seller gagal memenuhi transaksi?</div>
         <div class="faq-answer">
           Jika penjual tidak mengirimkan tiket, mangkir dari janji temu fisik di gerbang venue (seller no-show), atau memberikan tiket yang tidak dapat digunakan, transaksi dinyatakan gagal. Pengembalian dana diproses sesuai ketentuan Refund Policy, dan akun penjual akan dikenakan sanksi penangguhan (blacklist) permanen.
@@ -429,7 +439,7 @@
     </section>
 
     <!-- 7. CONTACT REFERENCE -->
-    <div class="card" style="padding: 24px; background: #0f172a; border-color: #1e293b; text-align: center;">
+    <div class="card" style="padding: 24px; background: var(--palette-midnight-navy, #172333); border-color: rgba(203, 213, 225, 0.22); text-align: center;">
       <h3 style="font-size: 16px; color: #fff; margin-bottom: 8px;">Kontak Layanan Operasional</h3>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
         Hubungi saluran resmi <strong>SHINERVA HQ</strong> melalui email atau WhatsApp. Tim operasional kami siap membantu kebutuhan transaksi Anda.
@@ -580,14 +590,18 @@
         <div class="faq-item">
           <div class="faq-question">What is the Platform Service Fee?</div>
           <div class="faq-answer">
-            Under Tikum Pilot Fee Policy V1, the platform service fee is 6% per side (minimum IDR 35,000, cap IDR 500,000 per side). Listing a ticket is completely free (IDR 0).
+            Under <strong>Tikum Dual-Tier Fee Policy V2</strong>, listing a ticket is completely free (IDR 0), with a minimum listing price of IDR 500,000/ticket and a maximum +30% markup cap above face value:
+            <ul style="margin-top:8px; padding-left:18px;">
+              <li><strong>Transfer Mandiri / Seller-Managed (Opsi B):</strong> 6% buyer + 6% seller (Min. IDR 35,000, Cap IDR 300,000 per ticket).</li>
+              <li><strong>Assisted by Event PIC at Venue (Opsi A):</strong> 9% buyer + 9% seller (Min. IDR 35,000, Cap IDR 450,000 per ticket).</li>
+            </ul>
           </div>
         </div>
 
         <div class="faq-item">
           <div class="faq-question">How are funds held and protected?</div>
           <div class="faq-answer">
-            Payments are processed through Bank Indonesia-licensed partners and held in platform-protected settlement accounts until venue entry or wristband exchange is confirmed.
+            Payments are processed via DOKU Direct API (Bank Indonesia-licensed payment gateway) with Hold &amp; Release platform settlement controls until ticket handover or venue entry verification is completed.
           </div>
         </div>
       </section>

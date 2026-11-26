@@ -239,7 +239,7 @@ test('5.2. public/index.html has full data-i18n coverage across all major sectio
     'landing.twoWayHeadline',
     'landing.founderQuoteText',
     'landing.flowRailHeading',
-    'landing.feeSummaryBarTitle',
+    'landing.feeSummaryBarV2Title',
     'landing.blogStripHeading',
     'landing.closingCtaHeading',
     'footer.operationalOffice',

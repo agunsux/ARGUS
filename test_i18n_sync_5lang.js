@@ -29,7 +29,7 @@ for (const code of CANONICAL_LOCALES) {
   assert.strictEqual(serverDict.footer.phoneAndWa, 'WhatsApp:');
   assert.strictEqual(serverDict.support.phoneLabel, 'WhatsApp:');
   assert.deepStrictEqual(clientI18n.translations[code], serverDict, `Client/server values must match for ${code}`);
-  assert.strictEqual(Object.keys(collectLeaves(clientI18n.translations[code])).length, 1676, `'${code}' must have 1676 keys`);
+  assert.strictEqual(Object.keys(collectLeaves(clientI18n.translations[code])).length, 2205, `'${code}' must have 2205 keys`);
 }
 assert(!clientI18n.translations.fil, 'Non-canonical fil key must not exist in translations');
 assert(!clientI18n.translations['zh-CN'], 'Stale zh-CN dictionary must be removed from client translations');

@@ -217,9 +217,9 @@
   <main class="container wizard-workspace-ticketswap" style="max-width: 740px;">
     
     <div style="margin-bottom: 24px;">
-      <div class="hero-pill"><i class="fa-solid fa-ticket"></i> REGISTRASI PENJUALAN TIKET</div>
-      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Daftarkan Tiket untuk Transfer Terverifikasi</h1>
-      <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;">
+      <div class="hero-pill"><i class="fa-solid fa-ticket"></i> <span data-i18n="create.heroPill">REGISTRASI PENJUALAN TIKET</span></div>
+      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;" data-i18n="create.heroHeading">Daftarkan Tiket untuk Transfer Terverifikasi</h1>
+      <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px;" data-i18n="create.heroSub">
         Setiap penawaran tiket wajib terikat pada event nyata dan melalui tahapan verifikasi barcode anti-duplikasi sebelum dapat dibeli.
       </p>
     </div>
@@ -231,53 +231,53 @@
           <i class="fa-solid fa-check"></i>
         </div>
         <div>
-          <h3 style="font-size: 18px; font-weight: 700; color: #34d399; margin-bottom: 2px;">Listing Berhasil Dibuat di Server Tikum</h3>
+          <h3 style="font-size: 18px; font-weight: 700; color: #34d399; margin-bottom: 2px;" data-i18n="create.successTitle">Listing Berhasil Dibuat di Server Tikum</h3>
           <div style="font-size: 13px; color: var(--text-muted);"><span data-i18n="create.successDesc">Data transaksi telah dicatat ke dalam database ledger kami.</span></div>
         </div>
       </div>
 
-      <div class="card" style="background: #FFFFFF; border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)); border-radius: 14px; margin-bottom: 16px;">
+      <div class="card" style="background: var(--theme-surface, #24364D); color: var(--theme-text, #FFFFFF); border: 1px solid var(--theme-border, rgba(203, 213, 225, 0.22)); border-radius: 14px; margin-bottom: 16px;">
         <div class="price-row">
-          <span>ID Listing Resmi:</span>
+          <span data-i18n="create.officialListingId">ID Listing Resmi:</span>
           <strong id="resListingId" class="mono" style="color: var(--cyan); font-size: 14px;">-</strong>
         </div>
         <div class="price-row">
-          <span>Status Sistem Saat Ini:</span>
+          <span data-i18n="create.currentSystemStatus">Status Sistem Saat Ini:</span>
           <span id="resListingStatus" class="badge badge-warning">PENDING_VERIFICATION</span>
         </div>
         <div class="price-row">
-          <span>Event Terikat:</span>
+          <span data-i18n="create.boundEvent">Event Terikat:</span>
           <span id="resListingEvent">-</span>
         </div>
         <div class="price-row">
-          <span>Harga Tiket:</span>
+          <span data-i18n="create.ticketPrice">Harga Tiket:</span>
           <span id="resListingPrice">-</span>
         </div>
       </div>
 
       <div id="resUserEventWarning" class="notice-box notice-warning" style="display: none;">
         <i class="fa-solid fa-triangle-exclamation"></i>
-        <div>
-          <strong>Catatan Event Komunitas:</strong> Event ini didaftarkan oleh pengguna dan belum diverifikasi resmi oleh kurator Tikum. Listing ini akan diberi tanda peringatan kepada calon pembeli.
+        <div data-i18n="create.communityWarning">
+          Event ini didaftarkan oleh komunitas dan belum diverifikasi resmi oleh tim kurasi Tikum.
         </div>
       </div>
 
       <div class="notice-box notice-info">
         <i class="fa-solid fa-circle-info"></i>
         <div>
-          <strong data-i18n="create.nextStepsLabel">Langkah Selanjutnya:</strong> Tim kurasi Tikum akan memvalidasi keaslian barcode tiket. Setelah status berubah menjadi <code class="mono">ACTIVE</code>, tiket siap dibeli oleh pembeli menggunakan tautan pembayaran terlindungi.
+          <strong data-i18n="create.nextStepsLabel">Langkah Selanjutnya:</strong> <span data-i18n="create.nextStepsDesc">Tim kurasi Tikum akan memvalidasi keaslian barcode tiket. Setelah status berubah menjadi ACTIVE, tiket siap dibeli oleh pembeli menggunakan tautan pembayaran terlindungi.</span>
         </div>
       </div>
 
       <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px;">
         <a id="btnViewPay" href="#" class="btn" style="flex: 1;">
-          <i class="fa-solid fa-link"></i> Buka Halaman Pembeli (/pay)
+          <i class="fa-solid fa-link"></i> <span data-i18n="create.successPayBtn">Buka Halaman Pembeli (/pay)</span>
         </a>
         <a id="btnViewTrack" href="#" class="btn btn-secondary" style="flex: 1;">
-          <i class="fa-solid fa-magnifying-glass"></i> Lacak Status Transaksi (/track)
+          <i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="create.successTrackBtn">Lacak Status Transaksi (/track)</span>
         </a>
         <button class="btn btn-outline" onclick="resetForm()">
-          <i class="fa-solid fa-plus"></i> Daftarkan Tiket Lain
+          <i class="fa-solid fa-plus"></i> <span data-i18n="create.successCreateAnother">Daftarkan Tiket Lain</span>
         </button>
       </div>
     </div>
@@ -314,12 +314,12 @@
         <div style="width:52px; height:52px; border-radius:50%; background:var(--sand-100); border:1px solid var(--line-300); display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--terra-600); margin:0 auto 16px;">
           <i class="fa-solid fa-user-lock"></i>
         </div>
-        <h2 style="font-size:20px; font-weight:800; margin-bottom:8px; color:var(--ink-900);">Masuk atau Buat Akun Penjual</h2>
-        <p style="font-size:14px; color:var(--text-muted); max-width:480px; margin:0 auto 24px; line-height:1.5;">
+        <h2 style="font-size:20px; font-weight:800; margin-bottom:8px; color:var(--ink-900);" data-i18n="create.step1Title">Masuk atau Buat Akun Penjual</h2>
+        <p style="font-size:14px; color:var(--text-muted); max-width:480px; margin:0 auto 24px; line-height:1.5;" data-i18n="create.step1Subtitle">
           Untuk menjaga keamanan transaksi sekunder dan perlindungan anti-penipuan, Anda wajib memiliki akun Tikum terverifikasi sebelum dapat membuat listing tiket.
         </p>
         <a href="/login?role=seller&next=/deal/create" class="btn btn-primary" style="background-color:var(--terra-600); color:#fff; border:none; text-decoration:none; padding:12px 28px; font-size:14px; font-weight:700; display:inline-flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-right-to-bracket"></i> Masuk / Daftar Akun Penjual
+          <i class="fa-solid fa-right-to-bracket"></i> <span data-i18n="create.step1Btn">Masuk / Daftar Akun Penjual</span>
         </a>
       </div>
 
@@ -328,13 +328,13 @@
         <div class="notice-box notice-warning" style="margin-bottom:16px;">
           <i class="fa-solid fa-triangle-exclamation" style="font-size:22px;"></i>
           <div style="flex:1;">
-            <strong style="font-size:14px; display:block; margin-bottom:4px;">Verifikasi Email Diperlukan</strong>
+            <strong style="font-size:14px; display:block; margin-bottom:4px;" data-i18n="create.step1UnverifiedTitle">Verifikasi Email Diperlukan</strong>
             <p style="font-size:13px; line-height:1.5; margin:0 0 10px 0;">
-              Tautan verifikasi telah dikirimkan ke email Anda (<span id="step1EmailText" class="mono" style="font-weight:700;">-</span>). Sesuai kebijakan keamanan Tikum, verifikasi email wajib diselesaikan sebelum Anda dapat menjual tiket.
+              <span id="step1EmailText" class="mono" style="font-weight:700;">-</span> — <span data-i18n="errors.profile.emailUnverified">Belum Terverifikasi Email</span>
             </p>
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
               <button type="button" id="btnStep1Resend" class="btn btn-secondary btn-sm" onclick="handleStep1ResendVerification()">
-                <i class="fa-solid fa-paper-plane"></i> Kirim Ulang Tautan Verifikasi
+                <i class="fa-solid fa-paper-plane"></i> <span data-i18n="create.step1ResendBtn">Kirim Ulang Tautan Verifikasi</span>
               </button>
               <span id="step1ResendCountdown" style="font-size:12px; color:var(--text-muted); display:none;"></span>
             </div>
@@ -351,46 +351,46 @@
           <i class="fa-solid fa-id-card"></i>
         </div>
         <div>
-          <h2 style="font-size:18px; font-weight:800; color:var(--ink-900); margin:0;">Lengkapi Profil &amp; Rekening Penjual Sekali Saja</h2>
-          <div style="font-size:13px; color:var(--text-muted); margin-top:2px;">Verifikasi Once, Auto-Fill Forever. Data ini disimpan aman sesuai UU PDP No. 27/2022.</div>
+          <h2 style="font-size:18px; font-weight:800; color:var(--ink-900); margin:0;" data-i18n="create.step2Title">Lengkapi Profil &amp; Rekening Penjual Sekali Saja</h2>
+          <div style="font-size:13px; color:var(--text-muted); margin-top:2px;" data-i18n="create.step2Subtitle">Verifikasi Once, Auto-Fill Forever. Data ini disimpan aman sesuai UU PDP No. 27/2022.</div>
         </div>
       </div>
 
       <p style="font-size:12.5px; color:var(--ink-700); line-height:1.6; margin-bottom:18px; background:var(--sand-50); padding:12px 14px; border-radius:var(--radius-card); border:1px solid var(--line-300);">
         <i class="fa-solid fa-shield-halved" style="color:var(--terra-600);"></i>
-        Data identitas dan rekening bank diperlukan untuk verifikasi keaslian kepemilikan tiket dan pencairan dana hasil penjualan tiket Anda. Cukup isi satu kali, formulir listing berikutnya akan langsung terisi otomatis.
+        <span data-i18n="create.step2InfoBox">Data identitas dan rekening bank diperlukan untuk verifikasi keaslian kepemilikan tiket dan pencairan dana hasil penjualan tiket Anda. Cukup isi satu kali, formulir listing berikutnya akan langsung terisi otomatis.</span>
       </p>
 
       <form id="step2ProfileForm" onsubmit="handleSaveStep2Profile(event)">
         <div class="grid-2" style="margin-bottom:12px;">
           <div class="form-group" style="margin-bottom:0;">
-            <label for="step2FullName" style="font-size:12px; font-weight:600; color:var(--ink-900);">Nama Lengkap Sesuai KTP *</label>
-            <input type="text" id="step2FullName" class="form-control" placeholder="Nama lengkap sesuai identitas resmi" required>
+            <label for="step2FullName" style="font-size:12px; font-weight:600; color:var(--ink-900);" data-i18n="create.labelFullName">Nama Lengkap Sesuai KTP *</label>
+            <input type="text" id="step2FullName" class="form-control" placeholder="Nama lengkap" required>
           </div>
           <div class="form-group" style="margin-bottom:0;">
-            <label for="step2Whatsapp" style="font-size:12px; font-weight:600; color:var(--ink-900);">Nomor WhatsApp Aktif *</label>
+            <label for="step2Whatsapp" style="font-size:12px; font-weight:600; color:var(--ink-900);" data-i18n="create.labelWhatsapp">Nomor WhatsApp Aktif *</label>
             <input type="tel" id="step2Whatsapp" class="form-control" placeholder="0812xxxxxxxx" required>
           </div>
         </div>
 
         <div class="grid-2" style="margin-bottom:12px;">
           <div class="form-group" style="margin-bottom:0;">
-            <label for="step2City" style="font-size:12px; font-weight:600; color:var(--ink-900);">Kota Domisili *</label>
-            <input type="text" id="step2City" class="form-control" placeholder="Contoh: Jakarta Selatan" required>
+            <label for="step2City" style="font-size:12px; font-weight:600; color:var(--ink-900);" data-i18n="create.labelCity">Kota Domisili *</label>
+            <input type="text" id="step2City" class="form-control" placeholder="Jakarta Selatan" required>
           </div>
           <div class="form-group" style="margin-bottom:0;">
-            <label for="step2Address" style="font-size:12px; font-weight:600; color:var(--ink-900);">Alamat Lengkap</label>
-            <input type="text" id="step2Address" class="form-control" placeholder="Alamat domisili">
+            <label for="step2Address" style="font-size:12px; font-weight:600; color:var(--ink-900);" data-i18n="create.labelAddress">Alamat Lengkap</label>
+            <input type="text" id="step2Address" class="form-control" placeholder="-">
           </div>
         </div>
 
         <div style="padding-top:14px; border-top:1px solid var(--line-300); margin-top:16px;">
           <h4 style="font-size:14px; font-weight:700; color:var(--ink-900); margin-bottom:10px;">
-            <i class="fa-solid fa-building-columns" style="color:var(--terra-600);"></i> Rekening Bank Pencairan Dana (Payout)
+            <i class="fa-solid fa-building-columns" style="color:var(--terra-600);"></i> <span data-i18n="create.step2BankSection">Rekening Bank Pencairan Dana (Payout)</span>
           </h4>
           <div class="grid-2" style="margin-bottom:12px;">
             <div class="form-group" style="margin-bottom:0;">
-              <label for="step2BankName" style="font-size:12px; font-weight:600; color:var(--ink-900);">Bank Pencairan *</label>
+              <label for="step2BankName" style="font-size:12px; font-weight:600; color:var(--ink-900);" data-i18n="create.labelBank">Bank Pencairan *</label>
               <select id="step2BankName" class="form-control" required>
                 <option value="" data-i18n="create.selectBankDefault">-- Pilih Bank Pencairan --</option>
                 <option value="BCA">BCA (Bank Central Asia)</option>
@@ -402,30 +402,30 @@
                 <option value="BSI">BSI (Bank Syariah Indonesia)</option>
                 <option value="JAGO">Bank Jago</option>
                 <option value="SEABANK">SeaBank</option>
-                <option value="LAINNYA">Bank Lainnya</option>
+                <option value="LAINNYA" data-i18n="create.otherBank">Bank Lainnya</option>
               </select>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-              <label for="step2AccountHolder" style="font-size:12px; font-weight:600; color:var(--ink-900);">Nama Pemilik Rekening *</label>
-              <input type="text" id="step2AccountHolder" class="form-control" placeholder="Nama pemilik rekening bank" required>
+              <label for="step2AccountHolder" style="font-size:12px; font-weight:600; color:var(--ink-900);" data-i18n="create.labelAccountHolder">Nama Pemilik Rekening *</label>
+              <input type="text" id="step2AccountHolder" class="form-control" placeholder="-" required>
             </div>
           </div>
 
           <div class="grid-2" style="margin-bottom:14px;">
             <div class="form-group" style="margin-bottom:0;">
-              <label for="step2AccountNumber" style="font-size:12px; font-weight:600; color:var(--ink-900);">Nomor Rekening Bank *</label>
-              <input type="text" id="step2AccountNumber" class="form-control mono" placeholder="Contoh: 1234567890" required>
+              <label for="step2AccountNumber" style="font-size:12px; font-weight:600; color:var(--ink-900);" data-i18n="create.labelAccountNumber">Nomor Rekening Bank *</label>
+              <input type="text" id="step2AccountNumber" class="form-control mono" placeholder="1234567890" required>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-              <label for="step2NikLast4" style="font-size:12px; font-weight:600; color:var(--ink-900);">4 Digit Terakhir NIK KTP *</label>
-              <input type="text" id="step2NikLast4" class="form-control mono" maxlength="4" pattern="[0-9]{4}" placeholder="Contoh: 4821" required>
+              <label for="step2NikLast4" style="font-size:12px; font-weight:600; color:var(--ink-900);" data-i18n="create.labelNikLast4">4 Digit Terakhir NIK KTP *</label>
+              <input type="text" id="step2NikLast4" class="form-control mono" maxlength="4" pattern="[0-9]{4}" placeholder="4821" required>
             </div>
           </div>
         </div>
 
         <div style="margin-top:10px; display:flex; align-items:flex-start; gap:8px;">
           <input type="checkbox" id="step2PdpConsent" required checked style="accent-color:var(--terra-600); width:16px; height:16px; margin-top:2px;">
-          <label for="step2PdpConsent" style="font-size:12px; color:var(--ink-700); cursor:pointer;">
+          <label for="step2PdpConsent" style="font-size:12px; color:var(--ink-700); cursor:pointer;" data-i18n="create.step2PdpConsent">
             Saya menyatakan data di atas adalah benar untuk verifikasi kepemilikan tiket dan persetujuan pencairan sesuai UU PDP No. 27/2022.
           </label>
         </div>
@@ -434,7 +434,7 @@
 
         <div style="margin-top:16px;">
           <button type="submit" id="btnSubmitStep2" class="btn btn-primary" style="background-color:var(--terra-600); color:#fff; border:none; padding:12px 24px; font-size:14px; font-weight:700;">
-            <i class="fa-solid fa-arrow-right"></i> Simpan Profil &amp; Lanjutkan ke Detail Tiket
+            <i class="fa-solid fa-arrow-right"></i> <span data-i18n="create.btnSaveProfile">Simpan Profil &amp; Lanjutkan ke Detail Tiket</span>
           </button>
         </div>
       </form>
@@ -454,7 +454,7 @@
             </div>
           </div>
           <a href="/profile" class="btn btn-secondary btn-sm" style="font-size:11px; padding:4px 10px; text-decoration:none;">
-            <i class="fa-solid fa-user-pen"></i> Ubah di Profil
+            <i class="fa-solid fa-user-pen"></i> <span data-i18n="create.editInProfile">Ubah di Profil</span>
           </a>
         </div>
 
@@ -462,21 +462,21 @@
         <div id="draftRestoredBanner" class="notice-box notice-warning" style="display:none; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:20px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <i class="fa-solid fa-clock-rotate-left" style="color:#f59e0b;"></i>
-            <span style="font-size:12.5px;">Draf isian tiket sebelumnya berhasil dipulihkan secara otomatis.</span>
+            <span style="font-size:12.5px;" data-i18n="create.draftRestoredMsg">Draf isian tiket sebelumnya berhasil dipulihkan secara otomatis.</span>
           </div>
           <button type="button" class="btn btn-secondary btn-sm" onclick="clearSavedDraft()" style="font-size:11px; padding:4px 8px;">
-            <i class="fa-solid fa-trash-can"></i> Hapus Draf
+            <i class="fa-solid fa-trash-can"></i> <span data-i18n="create.clearDraft">Hapus Draf</span>
           </button>
         </div>
         
         <!-- Section 1: Event Binding -->
         <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-            <label style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0B192C); text-transform: uppercase; letter-spacing: 0.5px;">
+            <label style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0B192C); text-transform: uppercase; letter-spacing: 0.5px;" data-i18n="create.step1SelectEventHeading">
               1. Pilih Event yang Sesuai *
             </label>
             <button type="button" class="btn btn-secondary btn-sm" onclick="toggleNewEventDrawer()">
-              <i class="fa-solid fa-plus"></i> Event Belum Ada? Daftarkan Event Baru
+              <i class="fa-solid fa-plus"></i> <span data-i18n="create.registerNewEventBtn">Event Belum Ada? Daftarkan Event Baru</span>
             </button>
           </div>
 
@@ -487,17 +487,17 @@
           </div>
 
           <!-- Event Details Preview Box -->
-          <div id="eventPreviewBox" class="card" style="display: none; background: var(--tikum-cream-50, #F6EBDD); border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); border-radius: 12px; padding: 14px; margin-top: 10px; margin-bottom: 0;">
+          <div id="eventPreviewBox" class="card" style="display: none; background: var(--theme-input, #172333); border: 1px solid var(--theme-border, rgba(203, 213, 225, 0.22)); border-radius: 12px; padding: 14px; margin-top: 10px; margin-bottom: 0;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
               <div>
-                <div id="prevEventName" style="font-weight: 700; color: var(--tikum-ink-900, #0B192C); font-size: 14px;">-</div>
+                <div id="prevEventName" style="font-weight: 700; color: var(--theme-text, #FFFFFF); font-size: 14px;">-</div>
                 <div id="prevEventMeta" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">-</div>
               </div>
               <div id="prevEventBadge"></div>
             </div>
             <div id="prevEventWarning" class="notice-box notice-warning" style="display: none; margin-top: 10px; margin-bottom: 0; padding: 8px 12px; font-size: 12px;">
               <i class="fa-solid fa-triangle-exclamation"></i>
-              <span>Event ini didaftarkan oleh komunitas dan belum diverifikasi resmi oleh tim kurasi Tikum.</span>
+              <span data-i18n="create.communityWarning">Event ini didaftarkan oleh komunitas dan belum diverifikasi resmi oleh tim kurasi Tikum.</span>
             </div>
           </div>
         </div>
@@ -510,7 +510,7 @@
 
           <div class="grid-2">
             <div class="form-group">
-              <label for="ticketQuantity">Jumlah Tiket yang Dijual (1 - 4 tiket) *</label>
+              <label for="ticketQuantity" data-i18n="create.labelQuantity">Jumlah Tiket yang Dijual (1 - 4 tiket) *</label>
               <input
                 type="number"
                 id="ticketQuantity"
@@ -525,12 +525,12 @@
             </div>
 
             <div class="form-group">
-              <label for="seatType">Tipe Tempat Duduk *</label>
+              <label for="seatType" data-i18n="create.labelSeatType">Tipe Tempat Duduk *</label>
               <select id="seatType" class="form-control" required>
-                <option value="GENERAL_ADMISSION">Festival / Standing / General Admission</option>
-                <option value="ASSIGNED">Numbered Seating (Nomor Kursi Tertentu)</option>
+                <option value="GENERAL_ADMISSION" data-i18n="create.optFestival">Festival / Standing / General Admission</option>
+                <option value="ASSIGNED" data-i18n="create.optNumbered">Numbered Seating (Nomor Kursi Tertentu)</option>
               </select>
-              <span style="font-size: 11px; color: var(--text-dim);">Pilih model penomoran tiket</span>
+              <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.seatTypeHint">Pilih model penomoran tiket</span>
             </div>
           </div>
 
@@ -546,30 +546,36 @@
           </div>
 
           <div class="form-group" style="margin-top: 14px; margin-bottom: 18px;">
-            <label style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0B192C); margin-bottom: 8px; display: block;">
+            <label style="font-size: 13px; font-weight: 700; color: var(--theme-text, #FFFFFF); margin-bottom: 8px; display: block;" data-i18n="create.labelFulfillment">
               Pilihan Penyerahan Tiket (Fulfillment Option) *
             </label>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
-              <label style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; background: var(--tikum-cream-50, #F6EBDD); border: 1.5px solid var(--tikum-border, rgba(18, 78, 97, 0.18)); border-radius: 12px; cursor: pointer;">
-                <input type="radio" name="fulfillmentType" value="TIKUM_VENUE_PIC" checked style="margin-top: 3px; accent-color: var(--cyan);">
-                <div>
-                  <div style="font-weight: 700; color: var(--tikum-ink-900, #0B192C); font-size: 13px;">
-                    <i class="fa-solid fa-person-military-pointing" style="color: var(--cyan);"></i> Opsi A: Dibantu PIC TIKUM di Venue
+              <label id="cardFulfillmentPic" style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; background: var(--theme-input, #172333); border: 1.5px solid var(--palette-terracotta, #E36F45); border-radius: 12px; cursor: pointer;">
+                <input type="radio" name="fulfillmentType" value="TIKUM_VENUE_PIC" checked style="margin-top: 3px; accent-color: var(--palette-terracotta, #E36F45);" onchange="calculateFeePreview(); saveFormDraft();">
+                <div style="flex:1;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span style="font-weight: 700; color: var(--theme-text, #FFFFFF); font-size: 13px;" data-i18n="create.optionATitle">
+                      <i class="fa-solid fa-person-military-pointing" style="color: var(--palette-terracotta, #E36F45);"></i> Opsi A: Dibantu PIC TIKUM di Venue
+                    </span>
+                    <span class="badge" style="background: rgba(227, 111, 69, 0.2); color: #F3EBDD; border: 1px solid rgba(227, 111, 69, 0.45); font-size: 10px; font-weight: 700;" data-i18n="create.feeBadge9">Fee 9% / sisi</span>
                   </div>
-                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
-                    Petugas lapangan TIKUM hadir di venue untuk mendampingi serah terima fisik/wristband dan verifikasi gate turnstile.
+                  <div style="font-size: 11px; color: var(--theme-muted, #CBD5E1); margin-top: 4px; line-height: 1.45;" data-i18n="create.descFulfillmentPic">
+                    Petugas lapangan TIKUM hadir di venue untuk mendampingi serah terima fisik/wristband dan verifikasi gate turnstile (Buyer 9% + Seller 9%, min. Rp35.000, maks. Rp450.000/tiket).
                   </div>
                 </div>
               </label>
 
-              <label style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; background: var(--tikum-cream-50, #F6EBDD); border: 1.5px solid var(--tikum-border, rgba(18, 78, 97, 0.18)); border-radius: 12px; cursor: pointer;">
-                <input type="radio" name="fulfillmentType" value="SELLER_MANAGED" style="margin-top: 3px; accent-color: var(--cyan);">
-                <div>
-                  <div style="font-weight: 700; color: var(--tikum-ink-900, #0B192C); font-size: 13px;">
-                    <i class="fa-solid fa-handshake" style="color: #fbbf24;"></i> Opsi B: Transfer Mandiri oleh Penjual
+              <label id="cardFulfillmentSelf" style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; background: var(--theme-input, #172333); border: 1.5px solid var(--theme-border, rgba(203, 213, 225, 0.22)); border-radius: 12px; cursor: pointer;">
+                <input type="radio" name="fulfillmentType" value="SELLER_MANAGED" style="margin-top: 3px; accent-color: var(--palette-terracotta, #E36F45);" onchange="calculateFeePreview(); saveFormDraft();">
+                <div style="flex:1;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span style="font-weight: 700; color: var(--theme-text, #FFFFFF); font-size: 13px;" data-i18n="create.optionBTitle">
+                      <i class="fa-solid fa-handshake" style="color: var(--palette-warm-sand, #F3EBDD);"></i> Opsi B: Transfer Mandiri oleh Penjual
+                    </span>
+                    <span class="badge" style="background: rgba(21, 54, 91, 0.85); color: #CBD5E1; border: 1px solid rgba(203, 213, 225, 0.35); font-size: 10px; font-weight: 700;" data-i18n="create.feeBadge6">Fee 6% / sisi</span>
                   </div>
-                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
-                    Penjual mentransfer e-tiket langsung ke pembeli. Dana tetap di escrow hingga verifikasi turnstile atau bukti serah terima valid.
+                  <div style="font-size: 11px; color: var(--theme-muted, #CBD5E1); margin-top: 4px; line-height: 1.45;" data-i18n="create.descFulfillmentDigital">
+                    Penjual mentransfer e-tiket langsung ke pembeli. Pembayaran platform-held / settlement ditahan hingga verifikasi selesai (Buyer 6% + Seller 6%, min. Rp35.000, maks. Rp300.000/tiket).
                   </div>
                 </div>
               </label>
@@ -583,9 +589,10 @@
                 type="number" 
                 id="faceValue" 
                 class="form-control mono" 
-                placeholder="Contoh: 1500000" 
+                placeholder="Contoh: 1500000" data-i18n-placeholder="create.faceValuePlaceholder"
                 min="10000" 
                 required
+                oninput="calculateFeePreview()"
               >
               <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.faceValueSub">Harga nominal pada tiket promotor per tiket</span>
             </div>
@@ -596,31 +603,42 @@
                 type="number" 
                 id="sellingPrice" 
                 class="form-control mono" 
-                placeholder="Contoh: 1500000" 
+                placeholder="Contoh: 1500000" data-i18n-placeholder="create.sellingPricePlaceholder"
                 min="500000" 
                 required
                 oninput="calculateFeePreview()"
               >
-              <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.sellingPriceSub">Harga jual yang Anda tetapkan per tiket (minimal Rp 500.000)</span>
+              <span style="font-size: 11px; color: var(--text-dim);" data-i18n="create.sellingPriceSub">Harga listing sebelum potongan Seller Fee (6% Transfer Mandiri atau 9% PIC Venue). Minimal Rp 500.000/tiket.</span>
             </div>
           </div>
 
-          <!-- Canonical Price Calculation Preview -->
+          <!-- Canonical V2 Dual-Tier Price Calculation Preview -->
           <div class="price-breakdown">
-            <div style="font-weight: 700; font-size: 12px; margin-bottom: 8px; color: var(--cyan); text-transform: uppercase;">
-              <i class="fa-solid fa-calculator"></i> <span data-i18n="create.calcTitle">Kalkulasi Transparan Sistem (Sesuai Backend)</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom: 10px;">
+              <div style="font-weight: 700; font-size: 12px; color: var(--palette-warm-sand, #F3EBDD); text-transform: uppercase;">
+                <i class="fa-solid fa-calculator"></i> <span data-i18n="create.calcTitle">Kalkulasi Transparan Sistem (Sesuai Backend)</span>
+              </div>
+              <span id="calcPolicyBadge" class="badge" style="background: rgba(21,54,91,0.9); color:#FFFFFF; border:1px solid rgba(203,213,225,0.28); font-size:10.5px;">V2_DUAL_TIER · PIC Venue 9%</span>
             </div>
+            <div id="priceCapValidationBadge" style="display:none; font-size:11.5px; padding:8px 10px; border-radius:8px; margin-bottom:10px;"></div>
             <div class="price-row">
-              <span data-i18n="create.calcSellerTitle">Total Nilai Tiket Kotor:</span>
+              <span data-i18n="create.calcSellerTitle">Harga Listing Penjual:</span>
               <span id="calcSellerAmount" class="mono">Rp 0</span>
             </div>
             <div class="price-row">
-              <span data-i18n="pricing.platformServiceFee">Biaya Layanan Platform (Tarif Pilot 6% + 6%, min. Rp35.000, maks. Rp500.000/sisi)</span>
+              <span id="calcFeeLabel" data-i18n="create.calcFeeTitle">Tikum Seller Fee (9% PIC Venue, min. Rp35.000, maks. Rp450.000/tiket):</span>
               <span id="calcFeeAmount" class="mono" style="color: var(--warning);">-Rp 0</span>
             </div>
             <div class="price-row total">
-              <span data-i18n="create.calcPayoutTitle">Estimasi Total Payout Bersih:</span>
+              <span data-i18n="create.calcPayoutTitle">Estimasi Payout Bersih Penjual:</span>
               <span id="calcTotalAmount" class="mono" style="color: var(--success);">Rp 0</span>
+            </div>
+            <div class="price-row" style="margin-top:8px; padding-top:8px; border-top:1px dashed rgba(203,213,225,0.22);">
+              <span data-i18n="create.calcBuyerAllInTitle">Estimasi Harga All-in Pembeli (sudah termasuk Buyer Fee):</span>
+              <span id="calcBuyerAllInAmount" class="mono" style="color: var(--palette-terracotta, #E36F45); font-weight:700;">Rp 0</span>
+            </div>
+            <div style="font-size:11px; color:var(--theme-muted, #CBD5E1); margin-top:6px;" data-i18n="create.calcFooterHtml" data-i18n-html>
+              Listing Fee: <strong>Rp 0 (Gratis)</strong> · Min. Rp 500.000 / tiket · Maks. markup +30% face value.
             </div>
           </div>
         </div>
@@ -628,14 +646,14 @@
         <!-- Section 3: Anti-Duplicate Security (Tahap A — Zero-QR) -->
         <div style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
           <div style="font-size: 13px; font-weight: 700; color: var(--tikum-ink-900, #0B192C); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
-            <span data-i18n="create.wizardStep3">3. Bukti Kepemilikan Tiket (Tahap A — Tanpa QR)</span>
+            <span data-i18n="create.stageAHeading">3. Bukti Kepemilikan Tiket (Tahap A — Tanpa QR)</span>
           </div>
 
           <div class="notice-box notice-info" style="margin-bottom: 16px; background: rgba(56, 189, 248, 0.08); border-color: rgba(56, 189, 248, 0.3);">
             <i class="fa-solid fa-qrcode" style="color: var(--cyan); font-size: 20px;"></i>
             <div>
-              <strong style="color: #38bdf8;">Tahap A — Tanpa QR Code Asli:</strong>
-              <p style="margin: 4px 0 0 0; font-size: 12px; line-height: 1.5; color: var(--text-muted);">
+              <strong style="color: #38bdf8;" data-i18n="create.stageANoQrHeading">Tahap A — Tanpa QR Code Asli:</strong>
+              <p style="margin: 4px 0 0 0; font-size: 12px; line-height: 1.5; color: var(--text-muted);" data-i18n="create.stageANoQrBodyHtml" data-i18n-html>
                 Untuk mencegah duplikasi atau penyalahgunaan tiket, Anda <strong>TIDAK</strong> diminta mengunggah QR Code atau Barcode asli saat membuat penawaran. Anda hanya perlu mengunggah bukti pembelian resmi promotor (PDF/tangkapan layar e-voucher) untuk ditinjau oleh tim kurasi Tikum. QR code asli baru diserahkan pada Tahap B setelah pesanan dibayar.
               </p>
             </div>
@@ -693,36 +711,36 @@
     <div id="newEventDrawer" class="card" style="display: none; border-color: var(--cyan); margin-top: 24px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h3 style="font-size: 18px; font-weight: 700; color: var(--cyan); margin: 0;">
-          <i class="fa-solid fa-calendar-plus"></i> Daftarkan Event Baru ke Sistem
+          <i class="fa-solid fa-calendar-plus"></i> <span data-i18n="create.newEventTitle">Daftarkan Event Baru ke Sistem</span>
         </h3>
         <button type="button" class="btn btn-secondary btn-sm" onclick="toggleNewEventDrawer()">
-          <i class="fa-solid fa-xmark"></i> Tutup
+          <i class="fa-solid fa-xmark"></i> <span data-i18n="create.newEventClose">Tutup</span>
         </button>
       </div>
 
-      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;" data-i18n="create.newEventDescHtml" data-i18n-html>
         Event baru akan tersimpan di database Tikum dengan status <strong>USER_CREATED</strong>. Listing yang dibuat pada event ini akan memiliki status awal unverified hingga dikurasi oleh tim kami.
       </p>
 
       <form id="newEventForm" onsubmit="handleCreateNewEvent(event)">
         <div class="form-group">
-          <label for="newEvName">Nama Lengkap Event *</label>
-          <input type="text" id="newEvName" class="form-control" placeholder="Contoh: Java Jazz Festival 2026" required>
+          <label for="newEvName" data-i18n="create.newEventNameLabel">Nama Lengkap Event *</label>
+          <input type="text" id="newEvName" class="form-control" placeholder="Contoh: Java Jazz Festival 2026" data-i18n-placeholder="create.newEventNamePlaceholder" required>
         </div>
 
         <div class="form-group">
-          <label for="newEvArtists">Artis / Penampil (Opsional)</label>
-          <input type="text" id="newEvArtists" class="form-control" placeholder="Contoh: Laufey, Jacob Collier, Maliq & D'Essentials">
+          <label for="newEvArtists" data-i18n="create.newEventArtistsLabel">Artis / Penampil (Opsional)</label>
+          <input type="text" id="newEvArtists" class="form-control" placeholder="Contoh: Laufey, Jacob Collier, Maliq &amp; D'Essentials" data-i18n-placeholder="create.newEventArtistsPlaceholder">
         </div>
 
         <div class="grid-2">
           <div class="form-group">
-            <label for="newEvVenue">Nama Venue / Gedung Acara *</label>
-            <input type="text" id="newEvVenue" class="form-control" placeholder="Contoh: JIExpo Kemayoran" required>
+            <label for="newEvVenue" data-i18n="create.newEventVenueLabel">Nama Venue / Gedung Acara *</label>
+            <input type="text" id="newEvVenue" class="form-control" placeholder="Contoh: JIExpo Kemayoran" data-i18n-placeholder="create.newEventVenuePlaceholder" required>
           </div>
 
           <div class="form-group">
-            <label for="newEvCity">Kota Lokasi *</label>
+            <label for="newEvCity" data-i18n="create.newEventCityLabel">Kota Lokasi *</label>
             <select id="newEvCity" class="form-control" required>
               <option value="Jakarta">Jakarta</option>
               <option value="Bandung">Bandung</option>
@@ -732,39 +750,39 @@
               <option value="Yogyakarta">Yogyakarta</option>
               <option value="Semarang">Semarang</option>
               <option value="Medan">Medan</option>
-              <option value="Lainnya">Lainnya</option>
+              <option value="Lainnya" data-i18n="create.otherCity">Lainnya</option>
             </select>
           </div>
         </div>
 
         <div class="grid-2">
           <div class="form-group">
-            <label for="newEvStartDate">Tanggal Mulai Acara *</label>
+            <label for="newEvStartDate" data-i18n="create.newEventDateLabel">Tanggal Mulai Acara *</label>
             <input type="date" id="newEvStartDate" class="form-control" required min="2026-01-01" max="2026-12-31">
           </div>
 
           <div class="form-group">
-            <label for="newEvCategory">Kategori Acara *</label>
+            <label for="newEvCategory" data-i18n="create.newEventCategoryLabel">Kategori Acara *</label>
             <select id="newEvCategory" class="form-control" required>
-              <option value="KONSER">Konser Musik</option>
+              <option value="KONSER">Concert / Music</option>
               <option value="STANDUP">Stand-up Comedy</option>
-              <option value="FESTIVAL">Festival Musik</option>
-              <option value="OLAHRAGA">Olahraga</option>
-              <option value="TEATER">Teater Seni</option>
-              <option value="LAINNYA">Lainnya</option>
+              <option value="FESTIVAL">Music Festival</option>
+              <option value="OLAHRAGA">Sports</option>
+              <option value="TEATER">Theater &amp; Arts</option>
+              <option value="LAINNYA" data-i18n="create.otherCity">Lainnya</option>
             </select>
           </div>
         </div>
 
         <div class="form-group">
-          <label for="newEvLink">Tautan Resmi Promotor (Opsional)</label>
+          <label for="newEvLink" data-i18n="create.newEventLinkLabel">Tautan Resmi Promotor (Opsional)</label>
           <input type="url" id="newEvLink" class="form-control" placeholder="https://promotor-resmi.com/event">
         </div>
 
         <div id="newEventError" class="notice-box notice-warning" style="display: none;"></div>
 
         <button type="submit" id="btnSubmitNewEvent" class="btn" style="width: 100%;">
-          <i class="fa-solid fa-plus"></i> Simpan Event Baru &amp; Lanjutkan Buat Listing
+          <i class="fa-solid fa-plus"></i> <span data-i18n="create.newEventSaveBtn">Simpan Event Baru &amp; Lanjutkan Buat Listing</span>
         </button>
       </form>
     </div>
@@ -858,11 +876,31 @@
     </div> <!-- /#appMainWrapper -->
   </div> <!-- /#appShell -->
 
+  <script src="/js/i18n.js"></script>
   <script>
+    const _t = (k, f) => (window.TikumI18n ? window.TikumI18n.t(k, f) : f);
+    const _fmtIdr = (amt) => (window.TikumI18n && typeof window.TikumI18n.formatCurrency === 'function')
+      ? window.TikumI18n.formatCurrency(amt, 'IDR')
+      : ('Rp ' + Number(amt || 0).toLocaleString('id-ID'));
+
     let eventsList = [];
     const urlParams = new URLSearchParams(window.location.search);
     const preselectedEventId = urlParams.get('eventId');
     const autoOpenNewEvent = urlParams.get('action') === 'newEvent';
+
+    function renderEventsSelectOptions() {
+      const select = document.getElementById('eventSelect');
+      if (!select) return;
+      const prevVal = select.value;
+      const officialTag = _t('create.verifiedTag', '✓ RESMI');
+      const communityTag = _t('create.communityTag', '⚠ KOMUNITAS');
+      select.innerHTML = `<option value="">${_t('create.selectEventOption', '-- Pilih Event Resmi atau Terdaftar --')}</option>` +
+        eventsList.map(ev => {
+          const isVerified = ev.is_verified ? officialTag : communityTag;
+          return `<option value="${ev.id}">${escapeHtml(ev.name)} (${ev.venue_city}, ${ev.start_date}) [${isVerified}]</option>`;
+        }).join('');
+      if (prevVal) select.value = prevVal;
+    }
 
     // Fetch real events from server
     async function initEvents() {
@@ -872,11 +910,7 @@
         const data = await res.json();
         eventsList = data.events || [];
 
-        select.innerHTML = '<option value="">-- Pilih Event Resmi atau Terdaftar --</option>' + 
-          eventsList.map(ev => {
-            const isVerified = ev.is_verified ? '✓ RESMI' : '⚠ KOMUNITAS';
-            return `<option value="${ev.id}">${escapeHtml(ev.name)} (${ev.venue_city}, ${ev.start_date}) [${isVerified}]</option>`;
-          }).join('');
+        renderEventsSelectOptions();
 
         if (preselectedEventId) {
           select.value = preselectedEventId;
@@ -887,7 +921,7 @@
           toggleNewEventDrawer(true);
         }
       } catch (e) {
-        select.innerHTML = '<option value="">Gagal memuat event dari server</option>';
+        select.innerHTML = `<option value="">${_t('create.selectEventFailed', 'Gagal memuat event dari server')}</option>`;
       }
     }
 
@@ -907,10 +941,10 @@
       
       const badge = document.getElementById('prevEventBadge');
       if (ev.is_verified) {
-        badge.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-check"></i> RESMI TERVERIFIKASI</span>';
+        badge.innerHTML = `<span class="badge badge-success"><i class="fa-solid fa-check"></i> ${_t('create.verifiedBadge', 'RESMI TERVERIFIKASI')}</span>`;
         warning.style.display = 'none';
       } else {
-        badge.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> EVENT KOMUNITAS</span>';
+        badge.innerHTML = `<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> ${_t('create.communityBadge', 'EVENT KOMUNITAS')}</span>`;
         warning.style.display = 'flex';
       }
 
@@ -931,40 +965,143 @@
     }
 
     function calculateFeePreview() {
-      const price = parseInt(document.getElementById('sellingPrice').value, 10) || 0;
-      const faceValue = parseInt(document.getElementById('faceValue').value, 10) || 0;
-      const qty = parseInt(document.getElementById('ticketQuantity')?.value || 1, 10) || 1;
+      const price = parseInt(document.getElementById('sellingPrice')?.value, 10) || 0;
+      const faceValue = parseInt(document.getElementById('faceValue')?.value, 10) || 0;
+      const qty = Math.max(1, parseInt(document.getElementById('ticketQuantity')?.value || 1, 10) || 1);
+      const fulfillmentType = document.querySelector('input[name="fulfillmentType"]:checked')?.value || 'TIKUM_VENUE_PIC';
       const errEl = document.getElementById('formError');
+      const feeLabelEl = document.getElementById('calcFeeLabel');
+      const policyBadgeEl = document.getElementById('calcPolicyBadge');
+      const capBadgeEl = document.getElementById('priceCapValidationBadge');
+      const buyerAllInEl = document.getElementById('calcBuyerAllInAmount');
+
+      const cardPic = document.getElementById('cardFulfillmentPic');
+      const cardSelf = document.getElementById('cardFulfillmentSelf');
+      if (cardPic && cardSelf) {
+        cardPic.style.borderColor = fulfillmentType === 'TIKUM_VENUE_PIC' ? 'var(--palette-terracotta, #E36F45)' : 'var(--theme-border, rgba(203, 213, 225, 0.22))';
+        cardSelf.style.borderColor = fulfillmentType === 'SELLER_MANAGED' ? 'var(--palette-terracotta, #E36F45)' : 'var(--theme-border, rgba(203, 213, 225, 0.22))';
+      }
+
+      const rule = window.TikumPricing && typeof window.TikumPricing.getTierRule === 'function'
+        ? window.TikumPricing.getTierRule(fulfillmentType)
+        : (fulfillmentType === 'TIKUM_VENUE_PIC'
+            ? { rate_percent: 9, minimum_fee: 35000, maximum_fee: 450000 }
+            : { rate_percent: 6, minimum_fee: 35000, maximum_fee: 300000 });
+      const runtimeState = window.TikumPricing?.getRuntimePolicyState?.() || { active_policy_version: 'V2_DUAL_TIER' };
+      const isV1Active = runtimeState.loaded && runtimeState.active_policy_version === 'TIKUM_FEE_POLICY_V1';
+      const tierTitle = fulfillmentType === 'TIKUM_VENUE_PIC'
+        ? _t('create.tierLabelPic', 'PIC Venue')
+        : _t('create.tierLabelSelf', 'Transfer Mandiri');
+      const perTicketUnit = _t('create.perTicketUnit', '/ tiket');
+      const ticketUnit = _t('create.ticketUnit', 'tiket');
+
+      if (policyBadgeEl) {
+        policyBadgeEl.innerText = isV1Active
+          ? 'TIKUM_FEE_POLICY_V1 · 6%'
+          : _t('create.calcPolicyBadgeV2', 'V2_DUAL_TIER · {tier} {rate}%')
+              .replace('{tier}', tierTitle)
+              .replace('{rate}', String(rule.rate_percent));
+      }
+      if (feeLabelEl) {
+        feeLabelEl.innerText = isV1Active
+          ? _t('create.calcFeeLabelV1', 'Tikum Seller Fee (6%, min. {min}, maks. {max}):')
+              .replace('{min}', _fmtIdr(35000))
+              .replace('{max}', _fmtIdr(300000))
+          : _t('create.calcFeeLabelV2', 'Tikum Seller Fee ({rate}% {tier}, min. {min}, maks. {max}{perTicket}):')
+              .replace('{rate}', String(rule.rate_percent))
+              .replace('{tier}', tierTitle)
+              .replace('{min}', _fmtIdr(rule.minimum_fee))
+              .replace('{max}', _fmtIdr(rule.maximum_fee))
+              .replace('{perTicket}', perTicketUnit);
+      }
+
+      if (capBadgeEl) {
+        if (price <= 0) {
+          capBadgeEl.style.display = 'none';
+        } else {
+          const val = window.TikumPricing?.validateListingPrice
+            ? window.TikumPricing.validateListingPrice(price, faceValue)
+            : { valid: price >= 500000 };
+          capBadgeEl.style.display = 'block';
+          if (val.valid) {
+            const maxMarkupNote = faceValue > 0
+              ? _t('create.priceMarkupNote', ' · Batas +30% face value: maks. {maxAllowed}').replace('{maxAllowed}', _fmtIdr(Math.floor(faceValue * 1.3)))
+              : '';
+            capBadgeEl.style.background = 'rgba(16, 185, 129, 0.12)';
+            capBadgeEl.style.border = '1px solid rgba(16, 185, 129, 0.35)';
+            capBadgeEl.style.color = '#34d399';
+            capBadgeEl.innerText = _t('create.priceValidPass', '✓ Validasi harga lolos (Min. {minPrice}{markupNote})')
+              .replace('{minPrice}', _fmtIdr(500000))
+              .replace('{markupNote}', maxMarkupNote);
+          } else {
+            capBadgeEl.style.background = 'rgba(239, 68, 68, 0.14)';
+            capBadgeEl.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+            capBadgeEl.style.color = '#fca5a5';
+            capBadgeEl.innerText = `⚠ ${val.error}`;
+          }
+        }
+      }
 
       if (price <= 0) {
-        document.getElementById('calcSellerAmount').innerText = 'Rp 0';
-        document.getElementById('calcFeeAmount').innerText = '-Rp 0';
-        document.getElementById('calcTotalAmount').innerText = 'Rp 0';
+        document.getElementById('calcSellerAmount').innerText = _fmtIdr(0);
+        document.getElementById('calcFeeAmount').innerText = '-' + _fmtIdr(0);
+        document.getElementById('calcTotalAmount').innerText = _fmtIdr(0);
+        if (buyerAllInEl) buyerAllInEl.innerText = _fmtIdr(0);
         return;
       }
 
-      if (window.TikumPricing) {
-        const pricing = window.TikumPricing.calculatePricing(price, qty, 0);
-        document.getElementById('calcSellerAmount').innerText = `Rp ${pricing.grossTicketPrice.toLocaleString('id-ID')} (${qty} tiket @ Rp ${pricing.unitPrice.toLocaleString('id-ID')})`;
-        document.getElementById('calcFeeAmount').innerText = `-Rp ${pricing.fee.toLocaleString('id-ID')} (Rp ${pricing.unitFee.toLocaleString('id-ID')} / tiket)`;
-        document.getElementById('calcTotalAmount').innerText = `Rp ${pricing.sellerPayout.toLocaleString('id-ID')} (Rp ${pricing.unitSellerPayout.toLocaleString('id-ID')} / tiket)`;
+      if (window.TikumPricing && typeof window.TikumPricing.calculateDualTierFees === 'function') {
+        const pricing = window.TikumPricing.calculateDualTierFees({
+          ticketPrice: price,
+          quantity: qty,
+          fulfillmentType: fulfillmentType
+        });
+        document.getElementById('calcSellerAmount').innerText = _t('create.calcGrossQtyDetail', '{total} ({qty} {unit} @ {unitPrice})')
+          .replace('{total}', _fmtIdr(pricing.grossTicketPrice))
+          .replace('{qty}', String(qty))
+          .replace('{unit}', ticketUnit)
+          .replace('{unitPrice}', _fmtIdr(pricing.unitPrice));
+        document.getElementById('calcFeeAmount').innerText = _t('create.calcFeeQtyDetail', '-{totalFee} ({unitFee} {perTicket})')
+          .replace('{totalFee}', _fmtIdr(pricing.sellerFee))
+          .replace('{unitFee}', _fmtIdr(pricing.seller_fee_per_ticket))
+          .replace('{perTicket}', perTicketUnit);
+        document.getElementById('calcTotalAmount').innerText = _t('create.calcPayoutQtyDetail', '{totalPayout} ({unitPayout} {perTicket})')
+          .replace('{totalPayout}', _fmtIdr(pricing.sellerPayout))
+          .replace('{unitPayout}', _fmtIdr(pricing.unitSellerPayout))
+          .replace('{perTicket}', perTicketUnit);
+        if (buyerAllInEl) {
+          buyerAllInEl.innerText = _t('create.calcBuyerAllInDetail', '{buyerTotal} (Fee pembeli {buyerFee})')
+            .replace('{buyerTotal}', _fmtIdr(pricing.buyerTotal))
+            .replace('{buyerFee}', _fmtIdr(pricing.buyerFee));
+        }
 
         const val = window.TikumPricing.validateListingPrice(price, faceValue);
-        if (!val.valid) {
-          errEl.innerText = val.error;
-          errEl.style.display = 'block';
-        } else {
-          errEl.style.display = 'none';
+        if (errEl) {
+          if (!val.valid) {
+            errEl.innerText = val.error;
+            errEl.style.display = 'block';
+          } else {
+            errEl.style.display = 'none';
+          }
         }
       } else {
-        const unitFeeRaw = Math.round((price * 6) / 100);
-        const unitFee = Math.max(35000, Math.min(unitFeeRaw, 300000));
+        const unitFeeRaw = Math.round((price * rule.rate_percent) / 100);
+        const unitFee = Math.max(rule.minimum_fee, Math.min(unitFeeRaw, rule.maximum_fee));
         const totalFee = unitFee * qty;
         const totalGross = price * qty;
         const totalPayout = totalGross - totalFee;
-        document.getElementById('calcSellerAmount').innerText = `Rp ${totalGross.toLocaleString('id-ID')} (${qty} tiket @ Rp ${price.toLocaleString('id-ID')})`;
-        document.getElementById('calcFeeAmount').innerText = `-Rp ${totalFee.toLocaleString('id-ID')} (Rp ${unitFee.toLocaleString('id-ID')} / tiket)`;
-        document.getElementById('calcTotalAmount').innerText = `Rp ${totalPayout.toLocaleString('id-ID')}`;
+        const buyerAllIn = totalGross + totalFee;
+        document.getElementById('calcSellerAmount').innerText = _t('create.calcGrossQtyDetail', '{total} ({qty} {unit} @ {unitPrice})')
+          .replace('{total}', _fmtIdr(totalGross))
+          .replace('{qty}', String(qty))
+          .replace('{unit}', ticketUnit)
+          .replace('{unitPrice}', _fmtIdr(price));
+        document.getElementById('calcFeeAmount').innerText = _t('create.calcFeeQtyDetail', '-{totalFee} ({unitFee} {perTicket})')
+          .replace('{totalFee}', _fmtIdr(totalFee))
+          .replace('{unitFee}', _fmtIdr(unitFee))
+          .replace('{perTicket}', perTicketUnit);
+        document.getElementById('calcTotalAmount').innerText = _fmtIdr(totalPayout);
+        if (buyerAllInEl) buyerAllInEl.innerText = _fmtIdr(buyerAllIn);
       }
     }
 
@@ -1148,7 +1285,7 @@
         if (profile) {
           const detailsEl = document.getElementById('sellerAutoFillDetails');
           if (detailsEl) {
-            const bankStr = profile.payout_bank_name ? `${profile.payout_bank_name} ${profile.payout_account_number || ''}` : 'Rekening Payout';
+            const bankStr = profile.payout_bank_name ? `${profile.payout_bank_name} ${profile.payout_account_number || ''}` : _t('create.payoutAccountFallback', 'Rekening Payout');
             detailsEl.innerText = `${profile.full_name || profile.email} • ${profile.whatsapp || '-'} • ${bankStr}`;
           }
         }
@@ -1199,7 +1336,7 @@
       btn.disabled = true;
       fb.style.display = 'block';
       fb.style.color = 'var(--text-muted)';
-      fb.innerText = 'Mengirim tautan verifikasi...';
+      fb.innerText = _t('create.step1Sending', 'Mengirim tautan verifikasi...');
 
       try {
         const res = await fetch('/api/auth/resend-verification', {
@@ -1211,16 +1348,16 @@
         if (res.status === 429) {
           startStep1Cooldown(data.cooldown_remaining || 60);
           fb.style.color = '#f59e0b';
-          fb.innerText = data.error || 'Harap tunggu sebelum meminta email baru.';
+          fb.innerText = data.error || _t('create.step1ResendWait', 'Harap tunggu sebelum meminta email baru.');
           return;
         }
 
         if (!res.ok) {
-          throw new Error(data.error || 'Gagal mengirim email verifikasi');
+          throw new Error(data.error || _t('create.step1ResendFail', 'Gagal mengirim email verifikasi'));
         }
 
         fb.style.color = '#10b981';
-        fb.innerText = data.message || 'Tautan verifikasi email berhasil dikirim!';
+        fb.innerText = data.message || _t('create.step1ResendSent', 'Tautan verifikasi email berhasil dikirim!');
         startStep1Cooldown(data.cooldown_seconds || 60);
 
       } catch (err) {
@@ -1241,7 +1378,7 @@
       if (step1ResendTimer) clearInterval(step1ResendTimer);
       step1ResendTimer = setInterval(() => {
         step1ResendCooldown--;
-        countdown.innerText = `(Kirim ulang dalam ${step1ResendCooldown}d)`;
+        countdown.innerText = _t('create.step1ResendCooldown', '(Kirim ulang dalam {sec}d)').replace('{sec}', String(step1ResendCooldown));
         if (step1ResendCooldown <= 0) {
           clearInterval(step1ResendTimer);
           btn.disabled = false;
@@ -1257,7 +1394,7 @@
 
       fb.style.display = 'none';
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan Profil...';
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${_t('create.step2Saving', 'Menyimpan Profil...')}`;
 
       const payload = {
         full_name: document.getElementById('step2FullName').value.trim(),
@@ -1281,7 +1418,7 @@
 
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data.message || data.error || 'Gagal menyimpan profil penjual');
+          throw new Error(data.message || data.error || _t('create.serverCreateErr', 'Gagal menyimpan profil penjual'));
         }
 
         // Advance to Step 3
@@ -1292,15 +1429,21 @@
         fb.innerText = err.message;
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> Simpan Profil &amp; Lanjutkan ke Detail Tiket';
+        btn.innerHTML = `<i class="fa-solid fa-arrow-right"></i> ${_t('create.btnSaveProfile', 'Simpan Profil & Lanjutkan ke Detail Tiket')}`;
       }
     }
 
-    // Attach draft autosave listeners
-    window.addEventListener('tikum:locale-change', () => { calculateFeePreview(); });
-    window.addEventListener('tikum:languageChanged', () => { calculateFeePreview(); });
+    // Attach draft autosave & locale listeners
+    ['tikum:langchange', 'tikum:locale-change', 'tikum:languageChanged'].forEach(evtName => {
+      window.addEventListener(evtName, () => {
+        if (eventsList.length) renderEventsSelectOptions();
+        handleEventSelected();
+        calculateFeePreview();
+      });
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
+      calculateFeePreview();
       const form = document.getElementById('listingForm');
       if (form) {
         ['input', 'change'].forEach(evt => {
@@ -1315,7 +1458,7 @@
       const btn = document.getElementById('btnSubmitNewEvent');
       errEl.style.display = 'none';
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan Event ke Server...';
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${_t('create.newEventSaving', 'Menyimpan Event ke Server...')}`;
 
       const payload = {
         name: document.getElementById('newEvName').value.trim(),
@@ -1339,14 +1482,14 @@
 
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data.message || data.error || 'Gagal membuat event baru');
+          throw new Error(data.message || data.error || _t('create.newEventErrFail', 'Gagal membuat event baru'));
         }
 
         eventsList.unshift(data.event);
         const select = document.getElementById('eventSelect');
         const opt = document.createElement('option');
         opt.value = data.event.id;
-        opt.innerText = `${data.event.name} (${data.event.venue_city}, ${data.event.start_date}) [⚠ KOMUNITAS]`;
+        opt.innerText = `${data.event.name} (${data.event.venue_city}, ${data.event.start_date}) [${_t('create.communityTag', '⚠ KOMUNITAS')}]`;
         select.prepend(opt);
         select.value = data.event.id;
         handleEventSelected();
@@ -1360,7 +1503,7 @@
         errEl.style.display = 'block';
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-plus"></i> Simpan Event Baru &amp; Lanjutkan Buat Listing';
+        btn.innerHTML = `<i class="fa-solid fa-plus"></i> ${_t('create.newEventSaveBtn', 'Simpan Event Baru & Lanjutkan Buat Listing')}`;
       }
     }
 
@@ -1372,7 +1515,7 @@
 
       const eventId = document.getElementById('eventSelect').value;
       if (!eventId) {
-        errEl.innerText = 'Pilih event terlebih dahulu.';
+        errEl.innerText = _t('create.selectEventErr', 'Pilih event terlebih dahulu.');
         errEl.style.display = 'block';
         return;
       }
@@ -1389,7 +1532,7 @@
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghubungi Server Tikum...';
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${_t('create.submittingServer', 'Menghubungi Server Tikum...')}`;
 
       const quantity = parseInt(document.getElementById('ticketQuantity')?.value || 1, 10) || 1;
       const seatType = document.getElementById('seatType')?.value || 'GENERAL_ADMISSION';
@@ -1428,7 +1571,7 @@
             window.location.href = '/login?role=seller&next=/deal/create';
             return;
           }
-          throw new Error(data.message || data.error || 'Gagal membuat listing di server');
+          throw new Error(data.message || data.error || _t('create.serverCreateErr', 'Gagal membuat listing di server'));
         }
 
         // Clear safe draft on success
@@ -1439,11 +1582,11 @@
         document.getElementById('formCard').style.display = 'none';
         
         document.getElementById('resListingId').innerText = listing.id;
-        document.getElementById('resListingStatus').innerText = listing.status;
+        document.getElementById('resListingStatus').innerText = window.TikumI18n ? window.TikumI18n.translateStatus(listing.status) : listing.status;
         
         const selEvent = eventsList.find(ev => ev.id === listing.event_id);
         document.getElementById('resListingEvent').innerText = selEvent ? selEvent.name : listing.event_id;
-        document.getElementById('resListingPrice').innerText = 'Rp ' + Number(listing.price || listing.selling_price || 0).toLocaleString('id-ID');
+        document.getElementById('resListingPrice').innerText = _fmtIdr(listing.price || listing.selling_price || 0);
 
         if (listing.user_created_event) {
           document.getElementById('resUserEventWarning').style.display = 'flex';
@@ -1463,7 +1606,7 @@
         errEl.style.display = 'block';
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-shield-check"></i> Daftarkan Tiket ke Tikum';
+        btn.innerHTML = `<i class="fa-solid fa-shield-check"></i> <span data-i18n="create.submitBtn">${_t('create.submitBtn', 'Daftarkan Tiket ke Tikum')}</span>`;
       }
     }
 
@@ -1486,16 +1629,18 @@
     }
 
     // Initialize
+    if (window.TikumPricing && typeof window.TikumPricing.loadFeePolicyConfig === 'function') {
+      window.TikumPricing.loadFeePolicyConfig().then(() => calculateFeePreview());
+    }
     initEvents().then(() => {
       restoreFormDraft();
+      calculateFeePreview();
     });
     initSellerSession();
 
     document.getElementById('listingForm')?.addEventListener('input', saveFormDraft);
     document.getElementById('listingForm')?.addEventListener('change', saveFormDraft);
   </script>
-  <script src="/js/draft-store.js"></script>
-  <script src="/js/i18n.js"></script>
 
   <script>
     function initAppShell() {

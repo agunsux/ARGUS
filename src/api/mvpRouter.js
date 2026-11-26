@@ -673,6 +673,36 @@ function hydrateListingFromDbRow(dbl) {
   };
 }
 
+function computeListingDisplayPricing(listing) {
+  const { calculateDualTierFees } = require('../pricing/DualTierFeePolicy');
+  const { PRICING_CONFIG } = require('../config/pricingConfig');
+  const ft = String(listing?.fulfillment_type || listing?.metadata?.fulfillment_type || '').trim().toUpperCase();
+  const hasValidV2Tier = ft === 'SELLER_MANAGED' || ft === 'TIKUM_VENUE_PIC';
+  const effectivePolicy = listing?.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION;
+  if (effectivePolicy === 'V2_DUAL_TIER' && hasValidV2Tier) {
+    const base = EscrowService.calculatePricing(listing.price, null, {
+      policyVersion: 'V2_DUAL_TIER',
+      fulfillmentType: ft
+    });
+    const v2 = calculateDualTierFees({ ticketPrice: listing.price, quantity: 1, fulfillmentType: ft });
+    return {
+      ...base,
+      policy_version: 'V2_DUAL_TIER',
+      fee_policy_version: 'V2_DUAL_TIER',
+      fulfillment_option: ft,
+      platformFee: v2.buyer_fee,
+      buyer_fee: v2.buyer_fee,
+      seller_fee: v2.seller_fee,
+      totalAmount: v2.buyer_total_amount,
+      buyer_total: v2.buyer_total_amount,
+      seller_net_payout: v2.seller_net_payout
+    };
+  }
+  return EscrowService.calculatePricing(listing.price, null, {
+    policyVersion: 'TIKUM_FEE_POLICY_V1'
+  });
+}
+
 /**
  * Browse active listings with full price transparency
  * GET /api/mvp/listings
@@ -709,28 +739,8 @@ router.get('/listings', async (req, res) => {
 
   const listings = ListingService.getActiveListings(eventId);
   // Add transparent pricing calculation to each listing
-  const { calculateDualTierFees } = require('../pricing/DualTierFeePolicy');
-  const { PRICING_CONFIG } = require('../config/pricingConfig');
   const listingsWithPricing = listings.map(l => {
-    const useV2 = (l.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION) === 'V2_DUAL_TIER' &&
-      (l.fulfillment_type === 'SELLER_MANAGED' || l.fulfillment_type === 'TIKUM_VENUE_PIC');
-    const pricing = useV2
-      ? (() => {
-          const v2 = calculateDualTierFees({ ticketPrice: l.price, quantity: 1, fulfillmentType: l.fulfillment_type });
-          return {
-            ...EscrowService.calculatePricing(l.price),
-            policy_version: 'V2_DUAL_TIER',
-            fee_policy_version: 'V2_DUAL_TIER',
-            fulfillment_option: l.fulfillment_type,
-            platformFee: v2.buyer_fee,
-            buyer_fee: v2.buyer_fee,
-            seller_fee: v2.seller_fee,
-            totalAmount: v2.buyer_total_amount,
-            buyer_total: v2.buyer_total_amount,
-            seller_net_payout: v2.seller_net_payout
-          };
-        })()
-      : EscrowService.calculatePricing(l.price);
+    const pricing = computeListingDisplayPricing(l);
     return {
       ...l,
       pricing,
@@ -825,27 +835,7 @@ router.get('/listings/:id', async (req, res) => {
   }
 
   const { PRELAUNCH_NOTICE_TEXT, getMarketplaceMode } = require('../config/marketplaceMode');
-  const { calculateDualTierFees } = require('../pricing/DualTierFeePolicy');
-  const { PRICING_CONFIG } = require('../config/pricingConfig');
-  const useV2ListingPrice = (listing.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION) === 'V2_DUAL_TIER' &&
-    (listing.fulfillment_type === 'SELLER_MANAGED' || listing.fulfillment_type === 'TIKUM_VENUE_PIC');
-  const detailPricing = useV2ListingPrice
-    ? (() => {
-        const v2 = calculateDualTierFees({ ticketPrice: listing.price, quantity: 1, fulfillmentType: listing.fulfillment_type });
-        return {
-          ...EscrowService.calculatePricing(listing.price),
-          policy_version: 'V2_DUAL_TIER',
-          fee_policy_version: 'V2_DUAL_TIER',
-          fulfillment_option: listing.fulfillment_type,
-          platformFee: v2.buyer_fee,
-          buyer_fee: v2.buyer_fee,
-          seller_fee: v2.seller_fee,
-          totalAmount: v2.buyer_total_amount,
-          buyer_total: v2.buyer_total_amount,
-          seller_net_payout: v2.seller_net_payout
-        };
-      })()
-    : EscrowService.calculatePricing(listing.price);
+  const detailPricing = computeListingDisplayPricing(listing);
   res.json({
     success: true,
     marketplace_mode: getMarketplaceMode(),
@@ -968,8 +958,20 @@ router.get('/track/:id', async (req, res) => {
     const venue = state.venues.find(v => v.id === event.venue_id) || {};
     const verification = state.entry_verifications.find(ev => ev.order_id === order.id) || null;
     const picAssign = state.event_pics.find(ep => ep.event_id === order.event_id && ep.status === 'ACTIVE');
+    const listing = state.listings.find(l => l.id === order.listing_id) || {};
+    let payment = (state.canonical_payments || []).find(p => p.order_id === order.id) || null;
+    if (!payment) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        payment = await getMoneyRepository().getPaymentByOrderId(order.id);
+      } catch (_) {}
+    }
     const callerId = resolveAuth(req);
     const isPartyToOrder = Boolean(callerId && (order.buyer_id === callerId || order.seller_id === callerId || isAdminRole(req.user?.role)));
+    const payMeta = (payment && typeof payment.metadata === 'object' && payment.metadata) ? payment.metadata : {};
+    const invoiceNum = payMeta.invoice_number || payMeta.invoiceNumber || payment?.provider_reference || null;
+    const providerSettlementStatus = payMeta.provider_settlement_status || payment?.provider_settlement_status || payMeta.doku_order_status || (payment ? payment.status : null);
+    const internalSettlementStatus = payMeta.internal_settlement_status || escrow.status || order.marketplace_status || order.status;
 
     return res.json({
       success: true,
@@ -978,12 +980,22 @@ router.get('/track/:id', async (req, res) => {
         type: 'ORDER',
         status: order.status,
         operational_stage: order.operational_stage || (verification ? verification.status : 'PENDING_ADMISSION'),
+        quote_id: order.quote_id || null,
+        fulfillment_type: order.fulfillment_type || listing.fulfillment_type || 'SELLER_MANAGED',
+        fee_policy_version: order.fee_policy_version || order.pricing_policy_version || listing.pricing_policy_version || null,
         ticket_price: order.ticket_price || order.total_amount,
+        buyer_fee: order.buyer_fee ?? order.service_fee ?? 0,
+        seller_fee: order.seller_fee ?? 0,
         platform_fee: order.platform_fee || order.service_fee || 0,
         total_amount: order.total_amount,
         created_at: order.created_at,
         escrow_status: escrow.status || 'UNKNOWN',
         entry_status: verification ? verification.status : 'PENDING_ENTRY',
+        provider: payment?.provider || 'doku',
+        provider_env: payment?.provider_env || (payMeta.is_sandbox === false ? 'production' : 'sandbox'),
+        invoice_number: isPartyToOrder ? invoiceNum : null,
+        provider_settlement_status: providerSettlementStatus,
+        internal_settlement_status: internalSettlementStatus,
         event: {
           title: event.title,
           date: event.date,
@@ -1053,7 +1065,7 @@ router.get('/track/:id', async (req, res) => {
         seat_info: listing.seat_info,
         face_value: listing.face_value,
         price: listing.price,
-        pricing: EscrowService.calculatePricing(listing.price),
+        pricing: computeListingDisplayPricing(listing),
         created_at: listing.created_at,
         rejection_reason: listing.rejection_reason || null,
         event: {
@@ -3075,6 +3087,8 @@ const { EconomicsEngine } = require('../pricing/EconomicsEngine');
  */
 router.post('/pricing/calculate', async (req, res) => {
   try {
+    resolveAuth(req);
+    const { PRICING_CONFIG } = require('../config/pricingConfig');
     const {
       ticketPrice,
       quantity = 1,
@@ -3082,7 +3096,9 @@ router.post('/pricing/calculate', async (req, res) => {
       buyerId = null,
       sellerId = null,
       paymentProcessingFee = 0,
-      policyVersion = 'TIKUM_FEE_POLICY_V1',
+      policyVersion = null,
+      fulfillmentType = null,
+      fulfillment_type = null,
       taxPolicyVersion = null,
       lockQuote = false,
       transactionDate = null
@@ -3095,34 +3111,45 @@ router.post('/pricing/calculate', async (req, res) => {
     const price = parseInt(ticketPrice, 10);
     const qty = parseInt(quantity || 1, 10);
     const pgFee = parseInt(paymentProcessingFee || 0, 10);
+    const effectivePolicyVersion = policyVersion || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION || 'TIKUM_FEE_POLICY_V1';
     const effectiveTaxPolicy = taxPolicyVersion || TaxEngine.getDefaultTaxPolicyVersion();
     const effectiveTxDate = transactionDate || req.body.transactionDate || null;
+    const effectiveBuyerId = (req.user && !isAdminRole(req.user.role)) ? req.user.id : (buyerId || req.user?.id || null);
 
     if (lockQuote) {
       const quote = await TransactionQuoteService.generateQuote({
         listingId,
         ticketPrice: price,
         quantity: qty,
-        buyerId,
+        buyerId: effectiveBuyerId,
         sellerId,
         paymentProcessingFee: pgFee,
-        pricingPolicyVersion: policyVersion,
+        pricingPolicyVersion: effectivePolicyVersion,
         taxPolicyVersion: effectiveTaxPolicy,
         transactionDate: effectiveTxDate
       });
       return res.json({
         success: true,
         quote_id: quote.id,
+        quoteId: quote.id,
         pricing: quote
       });
     }
 
-    // Resolve seller tax profile if sellerId or listingId is provided
+    // Resolve seller tax profile and fulfillment tier if listingId is provided
     let effectiveSellerId = sellerId;
-    if (!effectiveSellerId && listingId) {
-      const listing = state.listings.find(l => l.id === listingId);
-      if (listing) effectiveSellerId = listing.seller_id;
+    let resolvedListing = listingId ? state.listings.find(l => l.id === listingId) : null;
+    if (!resolvedListing && listingId) {
+      try {
+        const { getMarketplaceRepository } = require('../storage');
+        resolvedListing = await getMarketplaceRepository().getListingById(listingId);
+      } catch (_) {}
     }
+    if (!effectiveSellerId && resolvedListing) {
+      effectiveSellerId = resolvedListing.seller_id;
+    }
+    const effectiveFulfillment = fulfillmentType || fulfillment_type || resolvedListing?.fulfillment_type || 'SELLER_MANAGED';
+
     const sellerProfile = state.seller_profiles?.find(sp => sp.user_id === effectiveSellerId) || {};
     const sellerTaxProfile = {
       seller_type: sellerProfile.seller_type || 'INDIVIDUAL',
@@ -3135,7 +3162,8 @@ router.post('/pricing/calculate', async (req, res) => {
     const fees = MarketplacePricingEngine.calculateFees({
       ticketPrice: price,
       quantity: qty,
-      policyVersion
+      policyVersion: effectivePolicyVersion,
+      fulfillmentType: effectiveFulfillment
     });
 
     const grossTicketValue = fees.gross_ticket_value || (price * qty);
@@ -3176,6 +3204,60 @@ router.post('/pricing/calculate', async (req, res) => {
     });
   } catch (err) {
     res.status(400).json({ error: err.message, code: err.code || 'PRICING_CALCULATION_ERROR' });
+  }
+});
+
+/**
+ * Create an authoritative locked transaction quote
+ * POST /api/mvp/pricing/quote
+ */
+router.post('/pricing/quote', async (req, res) => {
+  try {
+    resolveAuth(req);
+    const { PRICING_CONFIG } = require('../config/pricingConfig');
+    const {
+      listingId,
+      ticketPrice = null,
+      quantity = 1,
+      buyerId = null,
+      sellerId = null,
+      offerId = null,
+      paymentProcessingFee = 0,
+      policyVersion = null,
+      taxPolicyVersion = null,
+      transactionDate = null
+    } = req.body || {};
+
+    const effectiveBuyerId = (req.user && !isAdminRole(req.user.role)) ? req.user.id : (buyerId || req.user?.id || null);
+    if (!listingId) {
+      return res.status(400).json({ error: 'listingId is required', code: 'VALIDATION_ERROR' });
+    }
+    if (!effectiveBuyerId) {
+      return res.status(401).json({ error: 'Authentication or buyerId required to lock quote', code: 'AUTH_REQUIRED' });
+    }
+
+    const quote = await TransactionQuoteService.generateQuote({
+      listingId,
+      ticketPrice: ticketPrice ? parseInt(ticketPrice, 10) : null,
+      quantity: parseInt(quantity || 1, 10),
+      buyerId: effectiveBuyerId,
+      sellerId,
+      offerId,
+      paymentProcessingFee: parseInt(paymentProcessingFee || 0, 10),
+      pricingPolicyVersion: policyVersion || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION || 'TIKUM_FEE_POLICY_V1',
+      taxPolicyVersion: taxPolicyVersion || TaxEngine.getDefaultTaxPolicyVersion(),
+      transactionDate: transactionDate || null
+    });
+
+    return res.status(201).json({
+      success: true,
+      quote_id: quote.id,
+      quoteId: quote.id,
+      quote,
+      pricing: quote
+    });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, code: err.code || 'QUOTE_CREATION_FAILED' });
   }
 });
 

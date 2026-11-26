@@ -275,7 +275,7 @@
 
         <div id="dealHubListingsLoading" style="text-align:center; padding:30px 10px;">
           <i class="fa-solid fa-spinner fa-spin" style="font-size:24px; color:var(--cyan); margin-bottom:8px;"></i>
-          <div style="font-size:13px; color:var(--text-muted);">Memuat listing publik...</div>
+          <div style="font-size:13px; color:var(--text-muted);" data-i18n="pay.loadingPublicListing">Memuat listing publik...</div>
         </div>
 
         <div id="dealHubListingsContainer" style="display:none; flex-direction:column; gap:12px;"></div>
@@ -315,13 +315,13 @@
       <div id="prelaunchPayBanner" class="notice-box notice-warning" style="background: #FFFBEB; border: 1.5px solid #F59E0B; padding: 16px 20px; margin-bottom: 20px; border-radius: var(--radius-card); display: flex; gap: 14px; align-items: flex-start;">
         <i class="fa-solid fa-triangle-exclamation" style="color: #D97706; font-size: 22px; margin-top: 2px; flex-shrink: 0;"></i>
         <div>
-          <strong style="color: #92400E; font-size: 14.5px; font-weight: 800; display: block; margin-bottom: 4px;">TIKUM sedang dalam tahap persiapan peluncuran.</strong>
-          <p style="color: #78350F; font-size: 13px; margin: 0; line-height: 1.5;">
+          <strong style="color: #92400E; font-size: 14.5px; font-weight: 800; display: block; margin-bottom: 4px;" data-i18n="pay.prelaunchTitle">TIKUM sedang dalam tahap persiapan peluncuran.</strong>
+          <p style="color: #78350F; font-size: 13px; margin: 0; line-height: 1.5;" data-i18n="pay.prelaunchBannerDesc">
             Calon penjual sudah dapat mengajukan listing tiket untuk ditinjau. Pembelian, checkout, dan pembayaran belum tersedia. Pengajuan listing tidak menjamin tiket telah terverifikasi atau transaksi dapat dilakukan.
           </p>
           <div style="margin-top: 10px;">
             <a href="/create" class="btn btn-sm btn-secondary" style="font-size: 12px; font-weight: 700; text-decoration: none;">
-              <i class="fa-solid fa-plus-circle"></i> Ajukan Listing Tiket Anda
+              <i class="fa-solid fa-plus-circle"></i> <span data-i18n="pay.prelaunchSubmitBtn">Ajukan Listing Tiket Anda</span>
             </a>
           </div>
         </div>
@@ -331,26 +331,29 @@
       <div id="demoNoticeBanner" class="notice-box notice-warning" style="display: none; background: #FEF3C7; border: 1.5px solid #D97706; padding: 14px 18px; margin-bottom: 20px; border-radius: var(--radius-card); gap: 12px; align-items: flex-start;">
         <i class="fa-solid fa-triangle-exclamation" style="color: #B45309; font-size: 20px; margin-top: 2px;"></i>
         <div>
-          <strong style="color: #92400E; font-size: 14px; text-transform: uppercase; letter-spacing: 0.03em; display: block; margin-bottom: 4px;">DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN</strong>
-          <p style="color: #78350F; font-size: 13px; margin: 0; line-height: 1.5;">
+          <strong style="color: #92400E; font-size: 14px; text-transform: uppercase; letter-spacing: 0.03em; display: block; margin-bottom: 4px;" data-i18n="pay.demoNotForPurchase">DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN</strong>
+          <p style="color: #78350F; font-size: 13px; margin: 0; line-height: 1.5;" data-i18n="pay.demoBannerDescHtml" data-i18n-html>
             Halaman ini menampilkan contoh demonstrasi checkout resmi TIKUM (PT SHINERVA PRAJNA TEJAS) untuk pengujian alur antarmuka dan transparansi rincian biaya. Tiket, harga, dan data acara ini merupakan data simulasi dan <strong>tidak dapat dibeli atau ditransaksikan secara riil</strong>.
           </p>
-          <div style="font-size: 12px; color: #92400E; margin-top: 6px; font-weight: 600;">
+          <div style="font-size: 12px; color: #92400E; margin-top: 6px; font-weight: 600;" data-i18n="pay.demoBannerFootnote">
             Harga ilustratif — bukan penawaran tiket aktif. Tidak ada pemotongan saldo atau penerbitan tiket riil.
           </div>
         </div>
       </div>
 
       <!-- Persistent Simulation / Demo Notice Banner -->
-      <div class="simulation-banner notice-box" style="background: #FFFBEB; border: 1.5px solid #F59E0B; border-radius: var(--radius-card); padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px;">
-        <i class="fa-solid fa-flask" style="color: #D97706; font-size: 20px; margin-top: 2px;"></i>
+      <div class="simulation-banner notice-box" style="background: rgba(245, 158, 11, 0.12); border: 1.5px solid rgba(245, 158, 11, 0.42); border-radius: var(--radius-card); padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px;">
+        <i class="fa-solid fa-flask" style="color: #fbbf24; font-size: 20px; margin-top: 2px;"></i>
         <div>
-          <strong style="color: #92400E; font-size: 13.5px; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px;" data-i18n="pay.simBannerTitle">MODE SIMULASI — BUKAN PEMBAYARAN LIVE</strong>
-          <p style="color: #B45309; font-size: 13px; margin: 0; line-height: 1.5;" data-i18n="pay.simBannerDesc">
+          <strong style="color: #F3EBDD; font-size: 13.5px; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px;" data-i18n="pay.simBannerTitle">MODE SIMULASI — BUKAN PEMBAYARAN LIVE</strong>
+          <p style="color: #CBD5E1; font-size: 13px; margin: 0; line-height: 1.5;" data-i18n="pay.simBannerDesc">
             Platform TIKUM saat ini beroperasi dalam tahap pilot uji coba internal. Tidak ada pemotongan atau penagihan dana riil. Kode QRIS, nomor Virtual Account, dan simulasi e-wallet di bawah ini merupakan data demonstrasi untuk memverifikasi alur pencatatan perlindungan transaksi internal.
           </p>
         </div>
       </div>
+
+      <!-- DOKU Return Reconciliation Status Banner -->
+      <div id="dokuReturnBanner" class="notice-box" style="display: none; margin-bottom: 18px; border-radius: var(--radius-card); padding: 14px 18px;"></div>
 
       <div style="margin-bottom: 24px;">
         <div class="hero-pill"><i class="fa-solid fa-shield-halved"></i> <span data-i18n="pay.pill">PERLINDUNGAN TRANSAKSI TIKUM</span></div>
@@ -411,7 +414,13 @@
 
       <!-- 100% Transparent Canonical Price Breakdown -->
       <div class="card">
-        <h3 class="card-title"><i class="fa-solid fa-receipt"></i> <span data-i18n="pay.breakdownTitle">Rincian Biaya Transparan (Tanpa Biaya Tersembunyi)</span></h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+          <h3 class="card-title" style="margin:0;"><i class="fa-solid fa-receipt"></i> <span data-i18n="pay.breakdownTitle">Rincian Biaya Transparan (Tanpa Biaya Tersembunyi)</span></h3>
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <span id="payTierBadge" class="badge badge-info" style="font-size:11px;">Transfer Mandiri (6%)</span>
+            <span id="dokuSandboxBadge" class="badge" style="display:none; background:rgba(227, 111, 69, 0.16); color:#F3EBDD; border:1px solid rgba(227, 111, 69, 0.45); font-size:10.5px; font-weight:700;"><i class="fa-solid fa-flask"></i> DOKU SANDBOX</span>
+          </div>
+        </div>
         
         <div class="price-breakdown">
           <div class="price-row">
@@ -419,7 +428,7 @@
             <strong id="priceTicket" class="mono">-</strong>
           </div>
           <div class="price-row">
-            <span data-i18n="pricing.platformServiceFee">Biaya Layanan Platform (Tarif Pilot 6% + 6%, min. Rp35.000, maks. Rp500.000/sisi)</span>
+            <span id="priceFeeLabel" data-i18n="pay.v2BuyerFeeLabel">Biaya Layanan Pembeli (6% Transfer Mandiri, min. Rp35.000, maks. Rp300.000/tiket):</span>
             <span id="pricePlatformFee" class="mono">-</span>
           </div>
           <div class="price-row" id="priceTaxRow" style="display: none;">
@@ -493,7 +502,7 @@
         <div id="qrisBox" style="margin-top:16px; padding:16px; background:var(--sand-50); border:1px solid var(--line-300); border-radius:var(--radius-card); text-align:center;">
           <div style="display:inline-block; font-size:11px; font-weight:700; color:#92400E; background:#FEF3C7; border:1px solid #FCD34D; border-radius:4px; padding:2px 8px; margin-bottom:8px;" data-i18n="pay.qrisDemoBadge">DATA DEMONSTRASI — BUKAN PENAGIHAN RIIL</div>
           <div style="font-size:12px; font-weight:700; color:var(--ink-700); margin-bottom:8px;">
-            <i class="fa-regular fa-clock" style="color:var(--amber-500);"></i> Selesaikan dalam: <span id="qrisCountdown" style="color:var(--terra-600); font-variant-numeric:tabular-nums; font-weight:700;">14:59</span>
+            <i class="fa-regular fa-clock" style="color:var(--amber-500);"></i> <span data-i18n="pay.completeWithin">Selesaikan dalam:</span> <span id="qrisCountdown" style="color:var(--terra-600); font-variant-numeric:tabular-nums; font-weight:700;">14:59</span>
           </div>
           <div style="width:130px; height:130px; background:#fff; border:1px solid var(--line-300); border-radius:8px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:8px;">
             <i class="fa-solid fa-qrcode" style="font-size:90px; color:var(--ink-900);"></i>
@@ -528,11 +537,11 @@
         <div id="authBuyerCard" style="display:none; background:var(--sand-50); border:1px solid var(--line-300); padding:14px 16px; border-radius:var(--radius-card); margin-bottom:14px;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
-              <div style="font-size:11px; text-transform:uppercase; color:var(--text-dim); font-weight:700;">Identitas Akun Pembeli Terautentikasi</div>
+              <div style="font-size:11px; text-transform:uppercase; color:var(--text-dim); font-weight:700;" data-i18n="pay.authBuyerIdentityLabel">Identitas Akun Pembeli Terautentikasi</div>
               <div id="authBuyerName" style="font-size:14px; font-weight:700; color:var(--ink-900); margin-top:2px;">-</div>
               <div id="authBuyerMeta" style="font-size:12px; color:var(--ink-700);">-</div>
             </div>
-            <span class="badge badge-success"><i class="fa-solid fa-user-check"></i> Sesi Aktif</span>
+            <span class="badge badge-success"><i class="fa-solid fa-user-check"></i> <span data-i18n="pay.activeSessionBadge">Sesi Aktif</span></span>
           </div>
         </div>
 
@@ -540,7 +549,7 @@
         <div id="unauthBuyerNotice" class="notice-box notice-info" style="display:none; margin-bottom:14px; font-size:12.5px;">
           <i class="fa-solid fa-user-lock"></i>
           <div style="flex:1;">
-            <strong>Belum Masuk Akun:</strong> Anda dapat <a id="loginRedirectLink" href="/login" style="color:var(--terra-600); font-weight:700; text-decoration:underline;" data-i18n="nav.signIn">Masuk</a> agar pesanan tercatat di dasbor akun Anda, atau lanjutkan menggunakan akun pengujian simulasi di bawah.
+            <strong data-i18n="pay.unauthLoginPrefix">Belum Masuk Akun:</strong> <span data-i18n="pay.unauthLoginSuffixHtml" data-i18n-html>Anda dapat <a id="loginRedirectLink" href="/login" style="color:var(--terra-600); font-weight:700; text-decoration:underline;">Masuk</a> agar pesanan tercatat di dasbor akun Anda, atau lanjutkan menggunakan akun pengujian simulasi di bawah.</span>
           </div>
         </div>
 
@@ -554,70 +563,69 @@
           </select>
         </div>
 
-        <div class="form-group" style="margin-top: 14px; margin-bottom: 14px; background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2); padding: 12px 14px; border-radius: var(--radius-card);">
-          <label for="paymentMethodSelect" style="font-weight: 700; font-size: 13px; color: var(--ink-900); display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <i class="fa-solid fa-credit-card" style="color: var(--cyan);"></i> Pilih Kanal Pembayaran Resmi (iPaymu / DOKU):
+        <div class="form-group" style="margin-top: 14px; margin-bottom: 14px; background: var(--theme-input, #172333); border: 1px solid var(--theme-border, rgba(203, 213, 225, 0.22)); padding: 12px 14px; border-radius: var(--radius-card);">
+          <label for="paymentMethodSelect" style="font-weight: 700; font-size: 13px; color: var(--theme-text, #FFFFFF); display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <i class="fa-solid fa-credit-card" style="color: var(--palette-terracotta, #E36F45);"></i> <span data-i18n="pay.selectPaymentChannel">Pilih Kanal Pembayaran Resmi (DOKU Direct API / Checkout):</span>
           </label>
           <select id="paymentMethodSelect" class="form-control" style="font-weight: 600; font-size: 13.5px;">
-            <option value="ipaymu:IPAYMU_REDIRECT" selected>iPaymu Hosted Checkout (Semua Metode: VA BCA/Mandiri/BNI/BRI, QRIS, Indomaret/Alfamart)</option>
-            <option value="ipaymu:BCA_VA">iPaymu Direct — BCA Virtual Account</option>
-            <option value="ipaymu:MANDIRI_VA">iPaymu Direct — Mandiri Virtual Account</option>
-            <option value="ipaymu:BNI_VA">iPaymu Direct — BNI Virtual Account</option>
-            <option value="ipaymu:BRI_VA">iPaymu Direct — BRI Virtual Account</option>
-            <option value="ipaymu:PERMATA_VA">iPaymu Direct — Permata Virtual Account</option>
-            <option value="ipaymu:QRIS">iPaymu Direct — QRIS Nasional</option>
-            <option value="doku:DOKU_CHECKOUT">DOKU Hosted Checkout</option>
+            <option value="doku:DOKU_CHECKOUT" selected>DOKU Hosted Checkout (VA BCA / Mandiri / BRI / BNI / Permata &amp; QRIS)</option>
+            <option value="doku:QRIS">DOKU Direct — QRIS Nasional</option>
+            <option value="doku:VA_BCA">DOKU Direct — BCA Virtual Account</option>
+            <option value="doku:VA_MANDIRI">DOKU Direct — Mandiri Virtual Account</option>
+            <option value="doku:VA_BRI">DOKU Direct — BRI Virtual Account</option>
+            <option value="doku:VA_BNI">DOKU Direct — BNI Virtual Account</option>
+            <option value="doku:VA_PERMATA">DOKU Direct — Permata Virtual Account</option>
           </select>
         </div>
 
         <div class="notice-box notice-info" style="font-size: 12px;">
           <i class="fa-solid fa-circle-info"></i>
           <div>
-            <strong data-i18n="pay.gatewayNoticeTitle">Keterbukaan Integrasi Gateway:</strong> <span data-i18n="pay.gatewayNoticeDesc">Pembayaran tiket diproses melalui payment gateway berizin resmi Bank Indonesia (iPaymu / DOKU). Dana pembelian ditampung dan dilindungi oleh sistem penampungan internal Tikum hingga serah terima tiket terverifikasi sah di gerbang venue.</span>
+            <strong data-i18n="pay.gatewayNoticeTitle">Keterbukaan Integrasi Gateway:</strong> <span data-i18n="pay.gatewayNoticeDescV2">Pembayaran tiket diproses melalui DOKU sebagai payment gateway berizin Bank Indonesia. Dana pembelian ditahan dalam mekanisme platform-held / settlement hold hingga serah terima tiket terverifikasi selesai.</span>
           </div>
         </div>
 
-        <div class="form-group" style="margin-top: 14px; margin-bottom: 10px; background: var(--sand-50); border: 1px solid var(--line-300); padding: 12px 14px; border-radius: var(--radius-card);">
-          <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: var(--ink-900); cursor: pointer; margin: 0;">
-            <input type="checkbox" id="checkAgreeTerms" style="margin-top: 2px; accent-color: var(--terra-600); width: 17px; height: 17px; flex-shrink: 0;">
-            <span style="line-height: 1.5;">
-              Saya telah membaca, memahami, dan menyetujui <a href="/terms" target="_blank" style="color: var(--terra-600); font-weight: 700; text-decoration: underline;">Syarat &amp; Ketentuan Layanan</a>, <a href="/fees" target="_blank" style="color: var(--terra-600); font-weight: 700; text-decoration: underline;">Rincian Biaya Platform</a>, serta <a href="/refund-policy" target="_blank" style="color: var(--terra-600); font-weight: 700; text-decoration: underline;">Kebijakan Pengembalian Dana (Refund)</a> TIKUM (PT SHINERVA PRAJNA TEJAS).
+        <div class="form-group" style="margin-top: 14px; margin-bottom: 10px; background: var(--theme-input, #172333); border: 1px solid var(--theme-border, rgba(203, 213, 225, 0.22)); padding: 12px 14px; border-radius: var(--radius-card);">
+          <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: var(--theme-text, #FFFFFF); cursor: pointer; margin: 0;">
+            <input type="checkbox" id="checkAgreeTerms" style="margin-top: 2px; accent-color: var(--palette-terracotta, #E36F45); width: 17px; height: 17px; flex-shrink: 0;">
+            <span style="line-height: 1.5;" data-i18n="pay.termsConsentHtml" data-i18n-html>
+              Saya telah membaca, memahami, dan menyetujui <a href="/terms" target="_blank" style="color: var(--palette-terracotta, #E36F45); font-weight: 700; text-decoration: underline;">Syarat &amp; Ketentuan Layanan</a>, <a href="/fees" target="_blank" style="color: var(--palette-terracotta, #E36F45); font-weight: 700; text-decoration: underline;">Rincian Biaya Platform</a>, serta <a href="/refund-policy" target="_blank" style="color: var(--palette-terracotta, #E36F45); font-weight: 700; text-decoration: underline;">Kebijakan Pengembalian Dana (Refund)</a> TIKUM (PT SHINERVA PRAJNA TEJAS).
             </span>
           </label>
         </div>
 
-        <div class="form-group" style="margin-top: 0; margin-bottom: 14px; background: #fffbeb; border: 1px solid #fef3c7; padding: 12px 14px; border-radius: var(--radius-card);">
-          <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: #92400e; cursor: pointer; margin: 0;">
-            <input type="checkbox" id="checkAgreeResalePolicy" style="margin-top: 2px; accent-color: var(--terra-600); width: 17px; height: 17px; flex-shrink: 0;">
-            <span style="line-height: 1.5;">
-              Saya memahami bahwa beberapa promotor/penyelenggara acara membatasi atau melarang pemindahtanganan tiket dalam syarat &amp; ketentuan mereka, dan saya menyetujui ketentuan pemindahtanganan sekunder pada <a href="/resale-policy" target="_blank" style="color: #b45309; font-weight: 700; text-decoration: underline;">Kebijakan Penjualan Kembali (Resale Policy)</a>.
+        <div class="form-group" style="margin-top: 0; margin-bottom: 14px; background: rgba(227, 111, 69, 0.12); border: 1px solid rgba(227, 111, 69, 0.35); padding: 12px 14px; border-radius: var(--radius-card);">
+          <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: var(--palette-warm-sand, #F3EBDD); cursor: pointer; margin: 0;">
+            <input type="checkbox" id="checkAgreeResalePolicy" style="margin-top: 2px; accent-color: var(--palette-terracotta, #E36F45); width: 17px; height: 17px; flex-shrink: 0;">
+            <span style="line-height: 1.5;" data-i18n="pay.resaleConsentHtml" data-i18n-html>
+              Saya memahami bahwa beberapa promotor/penyelenggara acara membatasi atau melarang pemindahtanganan tiket dalam syarat &amp; ketentuan mereka, dan saya menyetujui ketentuan pemindahtanganan sekunder pada <a href="/resale-policy" target="_blank" style="color: var(--palette-terracotta, #E36F45); font-weight: 700; text-decoration: underline;">Kebijakan Penjualan Kembali (Resale Policy)</a>.
             </span>
           </label>
         </div>
 
         <!-- Seller Mode Action Card (Shown when logged-in user is the seller of this listing) -->
-        <div id="sellerSelfListingCard" class="card" style="display:none; background:#FFFBEB; border:1.5px solid #F59E0B; padding:18px; border-radius:var(--radius-card); margin-bottom:16px;">
+        <div id="sellerSelfListingCard" class="card" style="display:none; background:rgba(245, 158, 11, 0.12); border:1.5px solid rgba(245, 158, 11, 0.45); padding:18px; border-radius:var(--radius-card); margin-bottom:16px;">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-            <span class="badge" style="background:#F59E0B; color:#78350F; font-size:12px; font-weight:800; padding:6px 12px; border-radius:6px;">
+            <span class="badge" style="background:#F59E0B; color:#172333; font-size:12px; font-weight:800; padding:6px 12px; border-radius:6px;">
               <i class="fa-solid fa-store"></i> <span data-i18n="dealRoom.sellerSelfListingBadge">Ini Listing Anda (Mode Penjual)</span>
             </span>
-            <span style="font-size:12px; color:#92400E; font-weight:600;">Status: Aktif untuk Calon Pembeli</span>
+            <span style="font-size:12px; color:#F3EBDD; font-weight:600;"><span data-i18n="pay.statusWord">Status:</span> <span data-i18n="pay.statusActiveForBuyers">Aktif untuk Calon Pembeli</span></span>
           </div>
-          <p style="font-size:13px; color:#78350F; line-height:1.5; margin:0 0 14px;">
+          <p style="font-size:13px; color:#CBD5E1; line-height:1.5; margin:0 0 14px;" data-i18n="pay.sellerSharePrompt">
             Anda terautentikasi sebagai penjual pemilik tiket ini. Bagikan tautan Deal Room ini langsung kepada calon pembeli Anda:
           </p>
           <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-            <button type="button" id="btnCopyDealLinkForBuyer" class="btn btn-primary" onclick="copyDealLinkForBuyer()" style="background:#D97706; border-color:#D97706; font-size:13px; font-weight:700;">
+            <button type="button" id="btnCopyDealLinkForBuyer" class="btn btn-primary" onclick="copyDealLinkForBuyer()" style="background:var(--palette-terracotta, #E36F45); border-color:var(--palette-terracotta, #E36F45); font-size:13px; font-weight:700;">
               <i class="fa-regular fa-copy"></i> <span id="copyDealLinkText" data-i18n="dealRoom.copyLinkForBuyer">Salin Link untuk Pembeli</span>
             </button>
             <a href="/deal/create" class="btn btn-secondary" style="font-size:13px; font-weight:600; text-decoration:none;">
-              <i class="fa-solid fa-plus-circle"></i> Buat Listing Lain
+              <i class="fa-solid fa-plus-circle"></i> <span data-i18n="pay.createAnotherListing">Buat Listing Lain</span>
             </a>
           </div>
         </div>
 
-        <div id="selfPurchaseNotice" class="notice-box notice-warning" style="display:none; background:#fff1f2; border:1px solid #fecdd3; color:#9f1239; margin-bottom:14px;">
-          <i class="fa-solid fa-ban" style="color:#e11d48; font-size:20px;"></i>
+        <div id="selfPurchaseNotice" class="notice-box notice-warning" style="display:none; background:rgba(239, 68, 68, 0.14); border:1px solid rgba(239, 68, 68, 0.45); color:#fecaca; margin-bottom:14px;">
+          <i class="fa-solid fa-ban" style="color:#f87171; font-size:20px;"></i>
           <div>
             <strong data-i18n="pay.selfPurchaseForbidden">Self-Purchase Dilarang:</strong> Anda teridentifikasi sebagai pemilik dari tiket listing ini. Sesuai aturan integritas Tikum, penjual dilarang membeli tiket dari listing miliknya sendiri.
           </div>
@@ -647,36 +655,46 @@
           </div>
         </div>
 
-        <div class="card" style="background: #FFFFFF; border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.12)); margin-bottom: 16px; border-radius: 14px;">
+        <div class="card" style="background: var(--theme-surface, #24364D); color: var(--theme-text, #FFFFFF); border: 1px solid var(--theme-border, rgba(203, 213, 225, 0.22)); margin-bottom: 16px; border-radius: 14px;">
           <div class="price-row">
             <span data-i18n="pay.orderIdLabel">ID Pesanan Resmi (Order ID):</span>
-            <strong id="resOrderId" class="mono" style="color: var(--cyan); font-size: 14px;">-</strong>
+            <strong id="resOrderId" class="mono" style="color: var(--palette-warm-sand, #F3EBDD); font-size: 14px;">-</strong>
           </div>
           <div class="price-row">
-            <span data-i18n="pay.orderStatusLabel">Status Pesanan:</span>
-            <span id="resOrderStatus" class="badge badge-warning">RESERVED</span>
+            <span data-i18n="pay.invoiceRefLabel">DOKU Invoice / Ref:</span>
+            <strong id="resInvoiceNumber" class="mono" style="color: #CBD5E1; font-size: 13px;">-</strong>
           </div>
           <div class="price-row">
-            <span data-i18n="pay.escrowStatusLabel">Status Perlindungan Dana:</span>
-            <span id="resEscrowStatus" class="badge badge-info">HELD</span>
+            <span data-i18n="pay.providerSettlementLabel">Status Settlement Provider (DOKU):</span>
+            <span id="resOrderStatus" class="badge badge-warning">PAYMENT_PENDING</span>
+          </div>
+          <div class="price-row">
+            <span data-i18n="pay.internalVerificationLabel">Status Verifikasi Internal TIKUM:</span>
+            <span id="resEscrowStatus" class="badge badge-info">PLATFORM_HELD</span>
           </div>
           <div id="resGatewayRow" class="price-row" style="display: none;">
-            <span>Payment Gateway:</span>
-            <span id="resGatewayName" class="badge" style="background:#06b6d4; color:#fff;">iPaymu</span>
+            <span data-i18n="pay.providerGatewayLabel">Payment Gateway:</span>
+            <span id="resGatewayName" class="badge" style="background:var(--palette-primary-blue, #15365B); color:#fff; border:1px solid rgba(203,213,225,0.28);">DOKU</span>
           </div>
           <div id="resVaRow" class="price-row" style="display: none; background: rgba(245, 158, 11, 0.1); padding: 8px 12px; border-radius: 6px;">
-            <span style="font-weight: 700; color: #f59e0b;">Nomor Virtual Account:</span>
+            <span style="font-weight: 700; color: #f59e0b;" data-i18n="pay.vaNumberHeading">Nomor Virtual Account:</span>
             <strong id="resVaNumber" class="mono" style="color: #fbbf24; font-size: 16px;">-</strong>
           </div>
           <div id="resExpiryRow" class="price-row" style="display: none;">
-            <span>Batas Waktu Pembayaran:</span>
+            <span data-i18n="pay.paymentDeadlineLabel">Batas Waktu Pembayaran:</span>
             <span id="resExpiryTime" class="mono" style="color: var(--text-muted); font-size: 12px;">-</span>
           </div>
         </div>
         <div id="resDirectPayContainer" style="display: none; margin-bottom: 14px;">
-          <a id="btnDirectPayUrl" href="#" target="_blank" class="btn" style="width: 100%; background: #06b6d4; color: #fff; font-weight: 700; padding: 12px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Halaman Pembayaran iPaymu
+          <a id="btnDirectPayUrl" href="#" target="_blank" rel="noopener noreferrer" class="btn" style="width: 100%; background: var(--palette-terracotta, #E36F45); color: #fff; font-weight: 700; padding: 12px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> <span data-i18n="pay.openDokuPayBtn">Buka Halaman Pembayaran DOKU</span>
           </a>
+        </div>
+        <div id="resCheckStatusContainer" style="margin-bottom: 14px;">
+          <button type="button" id="btnCheckDokuStatus" class="btn btn-secondary" onclick="checkReturnedDokuStatus()" style="width:100%; padding:10px; font-weight:700;">
+            <i class="fa-solid fa-rotate"></i> <span data-i18n="pay.checkDokuStatusBtn">Cek Status Pembayaran DOKU (Inquiry)</span>
+          </button>
+          <div id="resInquiryMessage" style="display:none; margin-top:8px; font-size:12px; padding:10px 12px; border-radius:8px;"></div>
         </div>
 
         <div class="notice-box notice-info">
@@ -698,64 +716,64 @@
 
     <!-- Modal Ajukan Tawaran (Epic 4.0) -->
     <div id="offerModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
-      <div class="card" style="max-width: 520px; width: 100%; border: 1.5px solid var(--tikum-teal-700, #006BB6); box-shadow: 0 25px 50px -12px rgba(14, 59, 74, 0.25); margin: 0; position: relative; background: #FFFFFF; border-radius: 20px;">
+      <div class="card" style="max-width: 520px; width: 100%; border: 1.5px solid rgba(203, 213, 225, 0.28); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45); margin: 0; position: relative; background: var(--theme-surface, #24364D); color: var(--theme-text, #FFFFFF); border-radius: 20px;">
         <button onclick="closeOfferModal()" style="position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">
           <i class="fa-solid fa-xmark"></i>
         </button>
 
-        <div class="hero-pill" style="margin-bottom: 12px;"><i class="fa-solid fa-handshake"></i> TAWAR HARGA RESMI</div>
-        <h2 style="font-size: 18px; font-weight: 800; color: var(--tikum-ink-900, #0B192C); margin-bottom: 6px;">Ajukan Tawaran Harga Tiket</h2>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        <div class="hero-pill" style="margin-bottom: 12px;"><i class="fa-solid fa-handshake"></i> <span data-i18n="pay.offerPill">TAWAR HARGA RESMI</span></div>
+        <h2 style="font-size: 18px; font-weight: 800; color: var(--theme-text, #FFFFFF); margin-bottom: 6px;" data-i18n="pay.modalMakeOfferTitle">Ajukan Tawaran Harga Tiket</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;" data-i18n="pay.modalMakeOfferDesc">
           Tawaran terikat aturan ketat Tikum. Minimal 50% dari harga listing dan harus di bawah harga normal.
         </p>
 
         <div class="notice-box notice-warning" style="font-size: 12px; margin-bottom: 16px; background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3);">
           <i class="fa-solid fa-shield-halved" style="color: #fbbf24;"></i>
-          <div>
-            <strong>Aturan Transaksi Tanpa Chat:</strong> Tikum meniadakan fitur pesan/chat bebas. Penjual hanya akan menerima nominal harga yang Anda tawarkan dan memilih <strong>Terima</strong> atau <strong>Tolak</strong>.
+          <div data-i18n="pay.modalOfferRules">
+            Aturan Transaksi Tanpa Chat: Penjual hanya dapat merespon dengan: Terima, Tolak, atau Tawar Balik (maks 5 ronde). Tidak ada chat bebas.
           </div>
         </div>
 
         <div class="form-group" style="margin-bottom: 14px;">
-          <label for="offerAmountInput" style="font-size: 13px; font-weight: 600; color: var(--tikum-ink-900, #0B192C); display: flex; justify-content: space-between; margin-bottom: 6px;">
-            <span>Nominal Tawaran (Rp):</span>
-            <span id="offerRangeHint" style="font-size: 11px; color: var(--cyan);">Min 50% &bull; Maks &lt; Harga Normal</span>
+          <label for="offerAmountInput" style="font-size: 13px; font-weight: 600; color: var(--theme-text, #FFFFFF); display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span data-i18n="pay.modalOfferAmount">Nominal Tawaran (Rp):</span>
+            <span id="offerRangeHint" style="font-size: 11px; color: var(--palette-warm-sand, #F3EBDD);" data-i18n="pay.modalOfferHint">Min 50% &bull; Maks &lt; Harga Normal</span>
           </label>
           <div style="position: relative;">
             <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-weight: 700; font-size: 14px;">Rp</span>
-            <input type="number" id="offerAmountInput" class="form-control mono" style="padding-left: 42px; font-size: 16px; font-weight: 700; color: var(--tikum-ink-900, #0B192C); width: 100%;" placeholder="Contoh: 1200000" oninput="updateOfferCalculations()">
+            <input type="number" id="offerAmountInput" class="form-control mono" style="padding-left: 42px; font-size: 16px; font-weight: 700; color: var(--theme-text, #FFFFFF); width: 100%;" placeholder="1200000" oninput="updateOfferCalculations()">
           </div>
         </div>
 
         <!-- Real-time calculation preview -->
-        <div class="card" style="background: var(--tikum-cream-50, #F6EBDD); border: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding: 14px; margin-bottom: 16px; border-radius: 12px;">
+        <div class="card" style="background: var(--theme-input, #172333); border: 1px solid var(--theme-border, rgba(203, 213, 225, 0.22)); padding: 14px; margin-bottom: 16px; border-radius: 12px;">
           <div class="price-row" style="font-size: 12px; margin-bottom: 6px; display: flex; justify-content: space-between;">
-            <span style="color: var(--text-muted);">Harga Listing Normal:</span>
+            <span style="color: var(--text-muted);" data-i18n="pay.modalNormalPrice">Harga Listing Normal:</span>
             <strong id="calcOriginalPrice" class="mono">-</strong>
           </div>
           <div class="price-row" style="font-size: 12px; margin-bottom: 6px; display: flex; justify-content: space-between;">
-            <span style="color: var(--text-muted);">Nominal Tawaran Anda:</span>
+            <span style="color: var(--text-muted);" data-i18n="pay.modalYourOffer">Nominal Tawaran Anda:</span>
             <strong id="calcOfferAmount" class="mono" style="color: #60a5fa;">-</strong>
           </div>
           <div class="price-row" style="font-size: 12px; margin-bottom: 6px; display: flex; justify-content: space-between;">
-            <span style="color: var(--text-muted);">Tikum Trust &amp; Protection Fee (6% (minimum Rp35.000 per tiket), maks Rp 300.000):</span>
+            <span style="color: var(--text-muted);" data-i18n="pay.trustProtectionFee">Tikum Trust &amp; Protection Fee (6% (minimum Rp35.000 per tiket), maks Rp 300.000):</span>
             <span id="calcPlatformFee" class="mono">-</span>
           </div>
           <div class="price-row total" style="font-size: 14px; border-top: 1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); padding-top: 8px; margin-top: 8px; display: flex; justify-content: space-between;">
-            <span style="font-weight: 700;">Total Pembayaran Pembeli:</span>
+            <span style="font-weight: 700;" data-i18n="pay.totalBuyerPayment">Total Pembayaran Pembeli:</span>
             <strong id="calcTotalPayment" class="mono" style="color: #34d399;">-</strong>
           </div>
           <div id="calcSavingsRow" style="display: none; margin-top: 8px; font-size: 12px; color: #34d399; text-align: right;">
-            <i class="fa-solid fa-tag"></i> Hemat: <strong id="calcSavingsText">-</strong>
+            <i class="fa-solid fa-tag"></i> <span data-i18n="pay.offerSavingsLabel">Hemat:</span> <strong id="calcSavingsText">-</strong>
           </div>
         </div>
 
         <div id="offerModalError" class="notice-box notice-warning" style="display: none; font-size: 12px; margin-bottom: 14px;"></div>
 
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
-          <button class="btn btn-secondary" onclick="closeOfferModal()">Batal</button>
+          <button class="btn btn-secondary" onclick="closeOfferModal()" data-i18n="pay.offerCancelBtn">Batal</button>
           <button id="btnSubmitOffer" class="btn" onclick="submitOffer()" style="background: #2563eb;">
-            <i class="fa-solid fa-paper-plane"></i> Kirim Tawaran Resmi
+            <i class="fa-solid fa-paper-plane"></i> <span data-i18n="pay.offerSendBtn">Kirim Tawaran Resmi</span>
           </button>
         </div>
       </div>
@@ -850,8 +868,22 @@
     </div> <!-- /#appMainWrapper -->
   </div> <!-- /#appShell -->
 
+  <script src="/js/i18n.js"></script>
+  <script src="/js/pricing.js"></script>
   <script>
+    const _t = (k, f) => (window.TikumI18n ? window.TikumI18n.t(k, f) : f);
+    const _fmtIdr = (amt) => (window.TikumI18n && typeof window.TikumI18n.formatCurrency === 'function')
+      ? window.TikumI18n.formatCurrency(amt, 'IDR')
+      : ('Rp ' + Number(amt || 0).toLocaleString('id-ID'));
+    const _fmtLocaleDate = (iso) => {
+      if (!iso) return '-';
+      const l = window.TikumI18n ? window.TikumI18n.getLang() : 'id';
+      const tag = l === 'id' ? 'id-ID' : (l === 'th' ? 'th-TH' : (l === 'ms' ? 'ms-MY' : (l === 'tl' ? 'en-PH' : 'en-US')));
+      return new Date(iso).toLocaleString(tag);
+    };
     let currentListing = null;
+    let lastHubListings = [];
+    let lastDokuStatusState = null;
 
     function getListingIdFromUrl() {
       // Check path /pay/:id or /deal/:id
@@ -872,14 +904,28 @@
       const hubEl = document.getElementById('buyerDealHub');
 
       try {
+        if (window.TikumPricing && typeof window.TikumPricing.loadFeePolicyConfig === 'function') {
+          await window.TikumPricing.loadFeePolicyConfig();
+        }
         const cfgRes = await fetch('/api/v1/payments/active-config');
         if (cfgRes.ok) {
           const cfg = await cfgRes.json();
           if (cfg.marketplace_mode === 'PRELAUNCH_LISTING_ONLY' || cfg.is_prelaunch) {
             window.isPrelaunchMode = true;
           }
+          const badge = document.getElementById('dokuSandboxBadge');
+          if (badge && String(cfg.active_provider || 'doku').toLowerCase() === 'doku' && (cfg.provider_env === 'sandbox' || cfg.is_sandbox !== false)) {
+            badge.style.display = 'inline-flex';
+          }
         }
       } catch (_) {}
+
+      const returnParams = new URLSearchParams(window.location.search);
+      const returnOrderId = returnParams.get('orderId') || returnParams.get('order_id') || null;
+      if (returnOrderId) {
+        window.lastCheckoutOrderId = returnOrderId;
+        checkReturnedDokuStatus(returnOrderId);
+      }
 
       if (!id) {
         // Buyer Deal Hub: When visiting /deal or /pay directly without ID, render Buyer Hub
@@ -896,7 +942,7 @@
       try {
         const res = await fetch(`/api/mvp/listings/${encodeURIComponent(id)}`);
         if (!res.ok) {
-          throw new Error('Listing tidak ditemukan di server.');
+          throw new Error(_t('pay.listingNotFoundServer', 'Listing tidak ditemukan di server.'));
         }
 
         const data = await res.json();
@@ -932,10 +978,10 @@
       // Status badge
       const statusBadge = document.getElementById('listingStatusBadge');
       if (isDemo) {
-        statusBadge.innerText = 'DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN';
+        statusBadge.innerText = _t('pay.demoNotForPurchase', 'DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN');
         statusBadge.className = 'badge badge-slate';
       } else {
-        statusBadge.innerText = listing.status;
+        statusBadge.innerText = window.TikumI18n ? window.TikumI18n.translateStatus(listing.status) : listing.status;
         if (listing.status === 'ACTIVE') {
           statusBadge.className = 'badge badge-success';
         } else {
@@ -945,7 +991,7 @@
 
       // Event details
       const ev = listing.event || {};
-      document.getElementById('eventTitle').innerText = ev.name || ev.title || 'Event Tanpa Judul';
+      document.getElementById('eventTitle').innerText = ev.name || ev.title || _t('pay.untitiledEvent', 'Event Tanpa Judul');
       if (document.getElementById('eventPosterImg')) document.getElementById('eventPosterImg').src = ev.image_url || '/images/events/concert-default.svg';
       document.getElementById('eventCategoryBadge').innerText = ev.category || 'EVENT';
       document.getElementById('eventDate').innerText = ev.date || ev.start_date || '-';
@@ -955,11 +1001,11 @@
       const isVerified = ev.is_verified === true;
       const verBadge = document.getElementById('eventVerificationBadge');
       if (isDemo) {
-        verBadge.innerHTML = '<span class="badge" style="background: #FEF3C7; color: #92400E; border: 1px solid #D97706;"><i class="fa-solid fa-flask"></i> CONTOH SIMULASI (BUKAN TIKET ASLI)</span>';
+        verBadge.innerHTML = `<span class="badge" style="background: #FEF3C7; color: #92400E; border: 1px solid #D97706;"><i class="fa-solid fa-flask"></i> ${_t('pay.simExampleBadge', 'CONTOH SIMULASI (BUKAN TIKET ASLI)')}</span>`;
       } else if (isVerified) {
-        verBadge.innerHTML = '<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> TERVERIFIKASI TIKUM</span>';
+        verBadge.innerHTML = `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> ${_t('pay.verifiedBadge', 'TERVERIFIKASI TIKUM')}</span>`;
       } else {
-        verBadge.innerHTML = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> EVENT KOMUNITAS</span>';
+        verBadge.innerHTML = `<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> ${_t('pay.communityBadge', 'EVENT KOMUNITAS')}</span>`;
       }
 
       // Community warning
@@ -972,53 +1018,80 @@
       // Seller KYC badge
       const kycStatus = listing.seller?.kyc_status || 'VERIFIED';
       const sellerKycEl = document.getElementById('sellerKycBadge');
-      sellerKycEl.innerText = kycStatus;
+      sellerKycEl.innerText = window.TikumI18n ? window.TikumI18n.translateStatus(kycStatus) : kycStatus;
       if (kycStatus === 'VERIFIED') {
         sellerKycEl.className = 'badge badge-success';
       } else {
         sellerKycEl.className = 'badge badge-warning';
       }
 
-      // Pricing
-      let defaultFee = 0;
-      if (listing.price > 0) {
-        const rawFee = Math.round((listing.price * 6) / 100);
-        defaultFee = Math.max(35000, Math.min(rawFee, 300000));
-      }
+      // Dual-Tier V2 Pricing Calculation (with V1 fallback when signaled by /api/config/fee-policy)
+      const tierType = String(listing.fulfillment_type || 'SELLER_MANAGED').toUpperCase() === 'TIKUM_VENUE_PIC'
+        ? 'TIKUM_VENUE_PIC'
+        : 'SELLER_MANAGED';
+      const tierCalc = window.TikumPricing && typeof window.TikumPricing.calculateDualTierFees === 'function'
+        ? window.TikumPricing.calculateDualTierFees({ ticketPrice: listing.price, quantity: 1, fulfillmentType: tierType })
+        : (() => {
+            const rate = tierType === 'TIKUM_VENUE_PIC' ? 9 : 6;
+            const maxCap = tierType === 'TIKUM_VENUE_PIC' ? 450000 : 300000;
+            const fee = Math.max(35000, Math.min(maxCap, Math.round((Number(listing.price || 0) * rate) / 100)));
+            return { rate_percent: rate, minimum_fee: 35000, maximum_fee: maxCap, buyer_fee: fee, buyerTotal: Number(listing.price || 0) + fee, policy_version: 'V2_DUAL_TIER' };
+          })();
       const pricing = listing.pricing || {
         ticketPrice: listing.price,
-        platformFee: defaultFee,
-        buyer_fee: defaultFee,
+        platformFee: tierCalc.buyer_fee,
+        buyer_fee: tierCalc.buyer_fee,
         buyer_tax: 0,
-        totalAmount: listing.price + defaultFee,
-        buyer_total: listing.price + defaultFee
+        totalAmount: tierCalc.buyerTotal,
+        buyer_total: tierCalc.buyerTotal,
+        policy_version: tierCalc.policy_version,
+        fulfillment_option: tierType
       };
 
+      const tierBadgeEl = document.getElementById('payTierBadge');
+      if (tierBadgeEl) {
+        tierBadgeEl.innerText = tierType === 'TIKUM_VENUE_PIC'
+          ? _t('pay.tierPicBadge', 'PIC TIKUM Venue (9%)')
+          : _t('pay.tierSelfBadge', 'Transfer Mandiri (6%)');
+      }
+      const feeLabelEl = document.getElementById('priceFeeLabel');
+      if (feeLabelEl) {
+        const isV1Order = pricing.fee_policy_version === 'TIKUM_FEE_POLICY_V1' || pricing.policy_version === 'TIKUM_FEE_POLICY_V1';
+        const minStr = _fmtIdr(tierCalc.minimum_fee || 35000);
+        const maxStr = _fmtIdr(tierType === 'TIKUM_VENUE_PIC' ? (tierCalc.maximum_fee || 450000) : (tierCalc.maximum_fee || 300000));
+        const perTicketStr = _t('create.perTicketUnit', '/ tiket');
+        feeLabelEl.innerText = isV1Order
+          ? _t('pay.v1BuyerFee', 'Biaya Layanan Pembeli (6%, min. {min}, maks. {max}):').replace('{min}', _fmtIdr(35000)).replace('{max}', _fmtIdr(300000))
+          : (tierType === 'TIKUM_VENUE_PIC'
+              ? _t('pay.v2BuyerFeePic', 'Biaya Layanan Pembeli (9% PIC Venue, min. {min}, maks. {max}{perTicket}):').replace('{min}', minStr).replace('{max}', maxStr).replace('{perTicket}', perTicketStr)
+              : _t('pay.v2BuyerFeeSelf', 'Biaya Layanan Pembeli (6% Transfer Mandiri, min. {min}, maks. {max}{perTicket}):').replace('{min}', minStr).replace('{max}', maxStr).replace('{perTicket}', perTicketStr));
+      }
+
+      const defaultFee = tierCalc.buyer_fee;
       const ticketAmount = pricing.ticketPrice || listing.price || 0;
       const buyerFeeAmount = pricing.buyer_fee !== undefined ? pricing.buyer_fee : (pricing.platformFee !== undefined ? pricing.platformFee : defaultFee);
       const taxAmount = pricing.buyer_tax || (pricing.tax_breakdown && pricing.tax_breakdown.total_buyer_tax) || (pricing.taxes && pricing.taxes.total_buyer_tax) || 0;
       const totalAmount = pricing.buyer_total !== undefined ? pricing.buyer_total : (pricing.totalAmount !== undefined ? pricing.totalAmount : (ticketAmount + buyerFeeAmount + taxAmount));
 
       const priceTicketEl = document.getElementById('priceTicket');
-      priceTicketEl.innerText = 'Rp ' + Number(ticketAmount).toLocaleString('id-ID');
+      priceTicketEl.innerText = _fmtIdr(ticketAmount);
       if (isDemo) {
-        const isEn = window.TikumI18n && window.TikumI18n.getLang() === 'en';
-      const illustrativeText = isEn ? '(Illustrative price — not an active ticket offer)' : '(Harga ilustratif — bukan penawaran tiket aktif)';
-      priceTicketEl.innerHTML += `<div style="font-size:11px; color:#d97706; font-weight:600; margin-top:2px;">${illustrativeText}</div>`;
+        const illustrativeText = _t('pay.illustrativeInline', '(Harga ilustratif — bukan penawaran tiket aktif)');
+        priceTicketEl.innerHTML += `<div style="font-size:11px; color:#d97706; font-weight:600; margin-top:2px;">${illustrativeText}</div>`;
       }
-      document.getElementById('pricePlatformFee').innerText = 'Rp ' + Number(buyerFeeAmount).toLocaleString('id-ID');
+      document.getElementById('pricePlatformFee').innerText = _fmtIdr(buyerFeeAmount);
 
       const taxRow = document.getElementById('priceTaxRow');
       if (taxRow) {
         if (taxAmount > 0) {
           taxRow.style.display = 'flex';
-          document.getElementById('priceTax').innerText = 'Rp ' + Number(taxAmount).toLocaleString('id-ID');
+          document.getElementById('priceTax').innerText = _fmtIdr(taxAmount);
         } else {
           taxRow.style.display = 'none';
         }
       }
 
-      document.getElementById('priceTotal').innerText = 'Rp ' + Number(totalAmount).toLocaleString('id-ID');
+      document.getElementById('priceTotal').innerText = _fmtIdr(totalAmount);
 
       // Check if purchase is possible
       const btn = document.getElementById('btnOrderSubmit');
@@ -1027,28 +1100,29 @@
 
       if (isPrelaunch) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-lock"></i> Belum Tersedia';
+        btn.innerHTML = `<i class="fa-solid fa-lock"></i> ${_t('pay.prelaunchBtnLocked', 'Belum Tersedia')}`;
         btn.style.opacity = '0.6';
         btn.style.cursor = 'not-allowed';
-        btn.title = 'TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.';
+        btn.title = _t('pay.prelaunchBtnTooltip', 'TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.');
         if (btnOffer) {
           btnOffer.disabled = true;
-          btnOffer.innerHTML = '<i class="fa-solid fa-lock"></i> Tawaran Belum Tersedia';
+          btnOffer.innerHTML = `<i class="fa-solid fa-lock"></i> ${_t('pay.prelaunchOfferLocked', 'Tawaran Belum Tersedia')}`;
           btnOffer.style.opacity = '0.6';
           btnOffer.style.cursor = 'not-allowed';
         }
       } else if (isDemo) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-ban"></i> Pembelian Dinonaktifkan (DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN)';
+        btn.innerHTML = `<i class="fa-solid fa-ban"></i> ${_t('pay.demoBtnDisabled', 'Pembelian Dinonaktifkan (DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN)')}`;
         btn.style.opacity = '0.6';
         btn.style.cursor = 'not-allowed';
         if (btnOffer) btnOffer.style.display = 'none';
       } else if (listing.status !== 'ACTIVE') {
         btn.disabled = true;
-        btn.innerText = `Listing Berstatus ${listing.status} — Tidak Dapat Dipesan`;
+        const stLabel = window.TikumI18n ? window.TikumI18n.translateStatus(listing.status) : listing.status;
+        btn.innerText = _t('pay.statusNotOrderable', 'Listing Berstatus {status} — Tidak Dapat Dipesan').replace('{status}', stLabel);
       } else {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-lock"></i> <span data-i18n="pay.realSubmit">Lanjutkan Pembayaran Resmi (iPaymu / DOKU)</span>';
+        btn.innerHTML = `<i class="fa-solid fa-lock"></i> <span data-i18n="pay.realSubmit">${_t('pay.realSubmit', 'Lanjutkan Pembayaran Resmi (DOKU)')}</span>`;
         if (btnOffer) btnOffer.style.display = 'inline-flex';
       }
     }
@@ -1196,9 +1270,10 @@
 
       try {
         const res = await fetch('/api/mvp/listings');
-        if (!res.ok) throw new Error('Gagal memuat listing');
+        if (!res.ok) throw new Error(_t('pay.loadingListingFail', 'Gagal memuat listing saat ini.'));
         const data = await res.json();
         const listings = (data.listings || []).filter(l => l.status === 'ACTIVE' || l.status === 'OWNERSHIP_EVIDENCE_REVIEWED');
+        lastHubListings = listings;
 
         if (loading) loading.style.display = 'none';
 
@@ -1209,52 +1284,60 @@
         }
 
         if (emptyNotice) emptyNotice.style.display = 'none';
-        container.style.display = 'flex';
-        container.innerHTML = listings.map(l => {
-          const ev = l.event || {};
-          const evTitle = ev.name || ev.title || 'Event Tikum';
-          const evDate = ev.date || ev.start_date || '-';
-          const evVenue = `${ev.venue || ev.venue_name || '-'}`;
-          const seat = l.seat_info || 'General Admission';
-          const price = l.price || l.face_value || 0;
-          const fmtPrice = (window.TikumI18n && typeof window.TikumI18n.formatCurrency === 'function')
-            ? window.TikumI18n.formatCurrency(price, 'IDR')
-            : ('Rp ' + price.toLocaleString('id-ID'));
-          const isSellerOfListing = currentBuyer && l.seller_id && currentBuyer.id === l.seller_id;
-
-          return `
-            <div style="background:var(--tikum-cream-50, #F6EBDD); border:1px solid var(--tikum-border, rgba(18, 78, 97, 0.14)); border-radius:12px; padding:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
-              <div>
-                <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">
-                  ${ev.category || 'EVENT'} &bull; <i class="fa-regular fa-calendar"></i> ${evDate}
-                </div>
-                <h4 style="font-size:16px; font-weight:800; color:var(--ink-900, #FFF); margin:4px 0;">${evTitle}</h4>
-                <div style="font-size:12.5px; color:var(--text-muted);">
-                  <i class="fa-solid fa-location-dot"></i> ${evVenue} &bull; <i class="fa-solid fa-chair"></i> ${seat}
-                </div>
-              </div>
-              <div style="text-align:right; min-width:160px;">
-                <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Harga Tiket</div>
-                <div style="font-size:17px; font-weight:800; color:var(--color-brand-primary, #E05A3A);">${fmtPrice}</div>
-                <div style="margin-top:6px;">
-                  ${isSellerOfListing ? `
-                    <span class="badge badge-warning" style="font-size:11px; margin-bottom:4px; display:inline-block;"><i class="fa-solid fa-store"></i> Listing Anda</span>
-                    <a href="/deal/${l.id}" class="btn btn-secondary btn-sm" style="font-size:12px;"><i class="fa-solid fa-share-nodes"></i> Buka Room</a>
-                  ` : `
-                    <a href="/deal/${l.id}" class="btn btn-primary btn-sm" style="font-size:12.5px; font-weight:700;"><i class="fa-solid fa-ticket"></i> Lihat &amp; Beli Tiket</a>
-                  `}
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
+        renderBuyerDealHubCards(listings);
       } catch (err) {
         if (loading) loading.style.display = 'none';
         if (emptyNotice) {
           emptyNotice.style.display = 'block';
-          emptyNotice.innerHTML = '<div style="color:var(--text-muted); font-size:13px;">Gagal memuat listing saat ini. Silakan kunjungi <a href="/events" style="color:var(--color-brand-primary);">Katalog Event</a>.</div>';
+          emptyNotice.innerHTML = `<div style="color:var(--text-muted); font-size:13px;">${_t('pay.loadingListingFail', 'Gagal memuat listing saat ini.')} <a href="/events" style="color:var(--color-brand-primary);">${_t('pay.viewCatalog', 'Lihat Katalog Event')}</a>.</div>`;
         }
       }
+    }
+
+    function renderBuyerDealHubCards(listings) {
+      const container = document.getElementById('dealHubListingsContainer');
+      if (!container || !listings || !listings.length) return;
+      container.style.display = 'flex';
+      container.innerHTML = listings.map(l => {
+        const ev = l.event || {};
+        const evTitle = ev.name || ev.title || 'Event Tikum';
+        const evDate = ev.date || ev.start_date || '-';
+        const evVenue = `${ev.venue || ev.venue_name || '-'}`;
+        const seat = l.seat_info || 'General Admission';
+        const basePrice = l.price || l.face_value || 0;
+        const allInPrice = l.buyer_total_price || l.pricing?.buyer_total || l.pricing?.totalAmount || basePrice;
+        const isPicTier = String(l.fulfillment_type || '').toUpperCase() === 'TIKUM_VENUE_PIC';
+        const fmtPrice = _fmtIdr(allInPrice);
+        const isSellerOfListing = currentBuyer && l.seller_id && currentBuyer.id === l.seller_id;
+        const tierLabel = isPicTier ? _t('dashboard.tierPicBadge', 'PIC Venue (9%)') : _t('dashboard.tierSelfBadge', 'Transfer Mandiri (6%)');
+
+        return `
+          <div style="background:var(--theme-input, #172333); border:1px solid var(--theme-border, rgba(203, 213, 225, 0.22)); border-radius:12px; padding:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+            <div>
+              <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">
+                ${ev.category || 'EVENT'} &bull; <i class="fa-regular fa-calendar"></i> ${evDate} &bull; <span class="badge" style="font-size:10px; padding:1px 6px; background:#15365B; color:#F3EBDD;">${tierLabel}</span>
+              </div>
+              <h4 style="font-size:16px; font-weight:800; color:var(--theme-text, #FFF); margin:4px 0;">${evTitle}</h4>
+              <div style="font-size:12.5px; color:var(--text-muted);">
+                <i class="fa-solid fa-location-dot"></i> ${evVenue} &bull; <i class="fa-solid fa-chair"></i> ${seat}
+              </div>
+            </div>
+            <div style="text-align:right; min-width:175px;">
+              <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">${_t('pay.buyerAllInLabel', 'Harga All-in Pembeli')}</div>
+              <div style="font-size:17px; font-weight:800; color:var(--palette-terracotta, #E36F45);">${fmtPrice}</div>
+              <div style="font-size:10.5px; color:#CBD5E1;">${_t('pay.inclServiceFee', 'Termasuk biaya layanan')}</div>
+              <div style="margin-top:6px;">
+                ${isSellerOfListing ? `
+                  <span class="badge badge-warning" style="font-size:11px; margin-bottom:4px; display:inline-block;"><i class="fa-solid fa-store"></i> ${_t('pay.yourListingTag', 'Listing Anda')}</span>
+                  <a href="/deal/${l.id}" class="btn btn-secondary btn-sm" style="font-size:12px;"><i class="fa-solid fa-share-nodes"></i> ${_t('pay.openRoomBtn', 'Buka Room')}</a>
+                ` : `
+                  <a href="/deal/${l.id}" class="btn btn-primary btn-sm" style="font-size:12.5px; font-weight:700;"><i class="fa-solid fa-ticket"></i> ${_t('pay.viewAndBuyBtn', 'Lihat & Beli Tiket')}</a>
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     async function saveInlineBuyerProfile() {
@@ -1347,17 +1430,17 @@
       const isPrelaunch = Boolean(window.isPrelaunchMode || currentListing.is_prelaunch || currentListing.is_purchasable === false || currentListing.status === 'APPROVED_PRELAUNCH');
       if (isPrelaunch) {
         if (errEl) {
-          errEl.innerText = 'TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.';
+          errEl.innerText = _t('pay.prelaunchBtnTooltip', 'TIKUM belum membuka transaksi. Anda dapat mengajukan listing, tetapi pembelian dan pembayaran belum tersedia.');
           errEl.style.display = 'block';
         }
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-lock"></i> Belum Tersedia';
+        btn.innerHTML = `<i class="fa-solid fa-lock"></i> ${_t('pay.prelaunchBtnLocked', 'Belum Tersedia')}`;
         return;
       }
 
       if (currentListing.is_demo || currentListing.id === 'list-pilot-preview' || currentListing.status === 'DEMO_NOT_FOR_SALE' || currentListing.status === 'DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN') {
         if (errEl) {
-          errEl.innerText = 'Item demonstrasi tidak dapat dibeli (DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN). Ini adalah simulasi antarmuka saja.';
+          errEl.innerText = _t('pay.demoBtnDisabled', 'Pembelian Dinonaktifkan (DEMO — TIDAK TERSEDIA UNTUK PEMBELIAN)');
           errEl.style.display = 'block';
         }
         return;
@@ -1367,10 +1450,31 @@
 
       errEl.style.display = 'none';
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses Pesanan di Ledger...';
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${_t('pay.dokuProcessingOrder', 'Memproses Pesanan di Ledger...')}`;
 
       try {
-        // Step 1: Create Order & Atomically Reserve Inventory
+        // Step 0: Acquire fresh server-authoritative bound quoteId
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengunci Quote Harga V2...';
+        const resQuote = await fetch('/api/mvp/pricing/quote', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': buyerId
+          },
+          body: JSON.stringify({
+            buyerId: buyerId,
+            listingId: currentListing.id,
+            ticketPrice: currentListing.price,
+            quantity: 1
+          })
+        });
+        const quoteData = await resQuote.json();
+        if (!resQuote.ok || !quoteData.quoteId) {
+          throw new Error(quoteData.error || _t('pay.orderCreateFail', 'Gagal membuat pesanan'));
+        }
+
+        // Step 1: Create Order & Atomically Reserve Inventory with bound quoteId
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${_t('pay.dokuProcessingOrder', 'Memproses Pesanan di Ledger...')}`;
         const resOrder = await fetch('/api/mvp/buyer/order', {
           method: 'POST',
           headers: { 
@@ -1379,25 +1483,29 @@
           },
           body: JSON.stringify({
             buyerId: buyerId,
-            listingId: currentListing.id
+            listingId: currentListing.id,
+            quantity: 1,
+            quoteId: quoteData.quoteId
           })
         });
 
         const orderData = await resOrder.json();
         if (!resOrder.ok) {
           if (resOrder.status === 409) {
-            throw new Error(orderData.error || 'Tiket sudah tidak tersedia (habis atau sedang dipesan pembeli lain).');
+            throw new Error(orderData.error || _t('pay.orderReserveConflict', 'Tiket sudah tidak tersedia (habis atau sedang dipesan pembeli lain).'));
           }
-          throw new Error(orderData.error || orderData.message || 'Gagal membuat pesanan');
+          throw new Error(orderData.error || orderData.message || _t('pay.orderCreateFail', 'Gagal membuat pesanan'));
         }
 
         const createdOrder = orderData.order;
+        window.lastCheckoutOrderId = createdOrder.id;
 
-        // Step 2: Initialize Payment via Selected Gateway
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghubungkan ke Gateway Pembayaran...';
+        // Step 2: Initialize Payment via DOKU
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${_t('pay.dokuConnecting', 'Menghubungkan ke DOKU Checkout...')}`;
 
-        const methodChoice = document.getElementById('paymentMethodSelect')?.value || 'ipaymu:IPAYMU_REDIRECT';
-        const [selectedProvider, selectedChannel] = methodChoice.split(':');
+        const methodChoice = document.getElementById('paymentMethodSelect')?.value || 'doku:DOKU_CHECKOUT';
+        const [selectedProviderRaw, selectedChannel] = methodChoice.split(':');
+        const selectedProvider = selectedProviderRaw === 'doku' ? 'doku' : 'doku';
 
         const resPay = await fetch('/api/v1/payments/create', {
           method: 'POST',
@@ -1408,7 +1516,7 @@
           body: JSON.stringify({
             orderId: createdOrder.id,
             providerName: selectedProvider,
-            channel: selectedChannel,
+            channel: selectedChannel || 'DOKU_CHECKOUT',
             buyer: {
               id: buyerId,
               name: currentBuyer?.name || (buyerId === 'buyer-1' ? 'Dewi Lestari' : 'Tikum Customer'),
@@ -1420,64 +1528,35 @@
 
         const payData = await resPay.json();
         if (!resPay.ok) {
-          throw new Error(payData.error || payData.message || 'Gagal menyiapkan gateway pembayaran');
+          throw new Error(payData.error || payData.message || _t('pay.payInitFail', 'Gagal menyiapkan gateway pembayaran'));
         }
 
         const payment = payData.payment || {};
         const snapToken = payment.paymentDetails?.token;
-        const redirectUrl = payment.paymentUrl || payment.paymentDetails?.redirect_url || payment.paymentDetails?.checkoutUrl;
+        const redirectUrl = payment.payment_url || payment.paymentUrl || payment.paymentDetails?.redirect_url || payment.paymentDetails?.checkoutUrl;
+        const invoiceNo = payment.invoice_number || payment.metadata?.invoice_number || payment.provider_reference || `INV-DOKU-${createdOrder.id}`;
+        window.lastCheckoutInvoice = invoiceNo;
 
-        // If backend resolved to Midtrans Snap modal
-        if (payment.provider === 'midtrans' && snapToken) {
-          let clientKeyConfig = null;
-          try {
-            const cfgRes = await fetch('/api/v1/payments/midtrans/client-key');
-            if (cfgRes.ok) clientKeyConfig = await cfgRes.json();
-          } catch (_) {}
-
-          if (clientKeyConfig?.snapUrl) {
-            const snapLoaded = await ensureSnapScript(clientKeyConfig);
-            if (snapLoaded && window.snap && typeof window.snap.pay === 'function') {
-              window.snap.pay(snapToken, {
-                onSuccess: function(result) {
-                  window.location.href = `/track?id=${createdOrder.id}`;
-                },
-                onPending: function(result) {
-                  window.location.href = `/track?id=${createdOrder.id}`;
-                },
-                onError: function(result) {
-                  errEl.innerText = result.status_message || 'Pembayaran gagal melalui gateway pembayaran.';
-                  errEl.style.display = 'block';
-                  btn.disabled = false;
-                  btn.innerHTML = '<i class="fa-solid fa-lock"></i> Coba Pembayaran Lagi';
-                },
-                onClose: function() {
-                  btn.disabled = false;
-                  btn.innerHTML = '<i class="fa-solid fa-lock"></i> Lanjutkan Pembayaran Tiket';
-                }
-              });
-              return;
-            }
-          }
-        }
-
-        // If gateway provided a hosted payment redirect URL (e.g. iPaymu Checkout or DOKU Checkout)
+        // If gateway provided a hosted payment redirect URL (DOKU Checkout)
         if (redirectUrl && !payment.simulated) {
           window.location.href = redirectUrl;
           return;
         }
 
-        // Display Success State (Simulation / Pending fallback / Direct VA)
+        // Display Success / Pending State
         document.getElementById('orderActionCard').style.display = 'none';
         document.getElementById('resOrderId').innerText = createdOrder.id;
-        document.getElementById('resOrderStatus').innerText = payment.status || 'PAYMENT_PENDING';
-        document.getElementById('resEscrowStatus').innerText = payment.escrowHoldStatus || payment.moneyState || 'PLATFORM_HELD';
+        if (document.getElementById('resInvoiceNumber')) {
+          document.getElementById('resInvoiceNumber').innerText = invoiceNo;
+        }
+        document.getElementById('resOrderStatus').innerText = payment.provider_settlement_status || payment.status || 'PAYMENT_PENDING';
+        document.getElementById('resEscrowStatus').innerText = payment.internal_settlement_status || payment.escrowHoldStatus || payment.moneyState || 'PLATFORM_HELD';
         document.getElementById('btnGoTrack').href = `/track?id=${createdOrder.id}`;
 
         const gatewayRow = document.getElementById('resGatewayRow');
         const gatewayName = document.getElementById('resGatewayName');
         if (gatewayRow && gatewayName) {
-          gatewayName.innerText = (payment.provider || selectedProvider).toUpperCase();
+          gatewayName.innerText = `${(payment.provider || 'DOKU').toUpperCase()}${payment.provider_env ? ' (' + payment.provider_env.toUpperCase() + ')' : ''}`;
           gatewayRow.style.display = 'flex';
         }
 
@@ -1491,7 +1570,7 @@
         const expRow = document.getElementById('resExpiryRow');
         const expTime = document.getElementById('resExpiryTime');
         if (payment.paymentDetails?.expiredAt && expRow && expTime) {
-          expTime.innerText = new Date(payment.paymentDetails.expiredAt).toLocaleString('id-ID');
+          expTime.innerText = _fmtLocaleDate(payment.paymentDetails.expiredAt);
           expRow.style.display = 'flex';
         }
 
@@ -1510,7 +1589,7 @@
         errEl.innerText = err.message;
         errEl.style.display = 'block';
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-lock"></i> Kunci Tiket &amp; Masuk Antrean Verifikasi Penampungan';
+        btn.innerHTML = `<i class="fa-solid fa-lock"></i> ${_t('pay.realSubmit', 'Lanjutkan Pembayaran Resmi (DOKU)')}`;
       }
     }
 
@@ -1523,9 +1602,8 @@
       const minAllowed = Math.round(currentListing.price * 0.5);
       const maxAllowed = currentListing.price - 1;
 
-      document.getElementById('offerRangeHint').innerText = 
-        `Min Rp ${minAllowed.toLocaleString('id-ID')} • Maks Rp ${maxAllowed.toLocaleString('id-ID')}`;
-      document.getElementById('calcOriginalPrice').innerText = `Rp ${currentListing.price.toLocaleString('id-ID')}`;
+      document.getElementById('offerRangeHint').innerText = `Min ${_fmtIdr(minAllowed)} • Max ${_fmtIdr(maxAllowed)}`;
+      document.getElementById('calcOriginalPrice').innerText = _fmtIdr(currentListing.price);
       
       const defaultOffer = Math.round(currentListing.price * 0.8 / 10000) * 10000;
       document.getElementById('offerAmountInput').value = defaultOffer;
@@ -1552,29 +1630,116 @@
         return;
       }
 
-      const rawFee = Math.round((val * 6) / 100);
-      const platformFee = Math.max(35000, Math.min(rawFee, 300000));
-      const total = val + platformFee;
+      const tierType = String(currentListing.fulfillment_type || 'SELLER_MANAGED').toUpperCase() === 'TIKUM_VENUE_PIC'
+        ? 'TIKUM_VENUE_PIC'
+        : 'SELLER_MANAGED';
+      const tierCalc = window.TikumPricing && typeof window.TikumPricing.calculateDualTierFees === 'function'
+        ? window.TikumPricing.calculateDualTierFees({ ticketPrice: val, quantity: 1, fulfillmentType: tierType })
+        : (() => {
+            const rate = tierType === 'TIKUM_VENUE_PIC' ? 9 : 6;
+            const maxCap = tierType === 'TIKUM_VENUE_PIC' ? 450000 : 300000;
+            const fee = Math.max(35000, Math.min(maxCap, Math.round((val * rate) / 100)));
+            return { buyer_fee: fee, buyerTotal: val + fee };
+          })();
+      const platformFee = tierCalc.buyer_fee;
+      const total = tierCalc.buyerTotal;
       const minAllowed = Math.round(currentListing.price * 0.5);
+      const maxAllowed = currentListing.price - 1;
 
-      document.getElementById('calcOfferAmount').innerText = `Rp ${val.toLocaleString('id-ID')}`;
-      document.getElementById('calcPlatformFee').innerText = `Rp ${platformFee.toLocaleString('id-ID')}`;
-      document.getElementById('calcTotalPayment').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+      document.getElementById('offerRangeHint').innerText = `Min ${_fmtIdr(minAllowed)} • Max ${_fmtIdr(maxAllowed)}`;
+      document.getElementById('calcOriginalPrice').innerText = _fmtIdr(currentListing.price);
+      document.getElementById('calcOfferAmount').innerText = _fmtIdr(val);
+      document.getElementById('calcPlatformFee').innerText = _fmtIdr(platformFee);
+      document.getElementById('calcTotalPayment').innerText = _fmtIdr(total);
 
       if (val < minAllowed) {
-        errEl.innerText = `Tawaran minimal adalah Rp ${minAllowed.toLocaleString('id-ID')} (50% harga listing).`;
+        errEl.innerText = _t('pay.offerMinErr', 'Tawaran minimal adalah {minPrice} (50% harga listing).').replace('{minPrice}', _fmtIdr(minAllowed));
         errEl.style.display = 'block';
         savingsRow.style.display = 'none';
       } else if (val >= currentListing.price) {
-        errEl.innerText = `Tawaran harus di bawah harga normal (Rp ${currentListing.price.toLocaleString('id-ID')}). Untuk harga normal silakan gunakan tombol Beli Langsung.`;
+        errEl.innerText = _t('pay.offerMaxErr', 'Tawaran harus di bawah harga normal ({maxPrice}). Untuk harga normal silakan gunakan tombol Beli Langsung.').replace('{maxPrice}', _fmtIdr(currentListing.price));
         errEl.style.display = 'block';
         savingsRow.style.display = 'none';
       } else {
         errEl.style.display = 'none';
         const savings = currentListing.price - val;
         const pct = Math.round((savings / currentListing.price) * 100);
-        document.getElementById('calcSavingsText').innerText = `Rp ${savings.toLocaleString('id-ID')} (${pct}% lebih murah)`;
+        document.getElementById('calcSavingsText').innerText = _t('pay.offerSavingsPct', '{amount} ({pct}% lebih murah)').replace('{amount}', _fmtIdr(savings)).replace('{pct}', String(pct));
         savingsRow.style.display = 'block';
+      }
+    }
+
+    async function checkReturnedDokuStatus(orderIdArg) {
+      const targetOrderId = orderIdArg || window.lastCheckoutOrderId || new URLSearchParams(window.location.search).get('orderId');
+      if (!targetOrderId) return;
+      const bannerEl = document.getElementById('dokuReturnBanner');
+      const inqMsgEl = document.getElementById('resInquiryMessage');
+      const buyerId = currentBuyer ? currentBuyer.id : (document.getElementById('buyerSelect')?.value || null);
+      try {
+        const res = await fetch('/api/v1/payments/doku/inquiry', {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, buyerId ? { 'x-user-id': buyerId } : {}),
+          body: JSON.stringify({ orderId: targetOrderId, invoiceNumber: window.lastCheckoutInvoice || null })
+        });
+        const data = await res.json();
+        lastDokuStatusState = { ok: res.ok, targetOrderId, data };
+        renderDokuStatusBanners(lastDokuStatusState);
+      } catch (err) {
+        if (inqMsgEl) {
+          inqMsgEl.style.display = 'block';
+          inqMsgEl.innerText = _t('pay.dokuInquiryFail', 'Gagal memeriksa status DOKU:') + ' ' + err.message;
+        }
+      }
+    }
+
+    function renderDokuStatusBanners(state) {
+      if (!state) return;
+      const { ok, targetOrderId, data } = state;
+      const bannerEl = document.getElementById('dokuReturnBanner');
+      const inqMsgEl = document.getElementById('resInquiryMessage');
+      const norm = String(data.normalizedStatus || data.status || '').toUpperCase();
+      let html = '';
+      let style = 'background: rgba(21,54,91,0.75); border:1px solid rgba(203,213,225,0.3); color:#FFFFFF;';
+      if (norm === 'SUCCESS' || norm === 'PAID') {
+        style = 'background: rgba(16,185,129,0.16); border:1px solid rgba(16,185,129,0.45); color:#d1fae5;';
+        const title = _t('pay.dokuConfirmedTitle', 'Pembayaran DOKU Terkonfirmasi ({status})').replace('{status}', norm);
+        const meta = _t('pay.dokuConfirmedMeta', 'Status Provider: {providerStatus} · Verifikasi Internal TIKUM: {internalStatus}.')
+          .replace('{providerStatus}', `<code>${data.provider_settlement_status || norm}</code>`)
+          .replace('{internalStatus}', `<code>${data.internal_settlement_status || 'PLATFORM_HELD'}</code>`);
+        const linkText = _t('pay.dokuTrackLink', 'Lacak Pesanan →');
+        html = `<i class="fa-solid fa-circle-check" style="color:#34d399; font-size:18px;"></i> <div><strong>${title}</strong> — ${meta} <a href="/track?id=${encodeURIComponent(targetOrderId)}" style="color:#F3EBDD; font-weight:700; text-decoration:underline; margin-left:6px;">${linkText}</a></div>`;
+      } else if (norm === 'ORDER_EXPIRED' || norm === 'PAYMENT_EXPIRED') {
+        style = 'background: rgba(239,68,68,0.16); border:1px solid rgba(239,68,68,0.45); color:#fecaca;';
+        const title = _t('pay.dokuExpiredTitle', 'Sesi Pembayaran Kedaluwarsa ({status})').replace('{status}', norm);
+        const desc = _t('pay.dokuExpiredDesc', 'Inventaris tiket telah dilepas kembali ke pasar. Silakan muat ulang dan kunci quote harga baru untuk checkout ulang.');
+        html = `<i class="fa-solid fa-hourglass-end" style="color:#f87171; font-size:18px;"></i> <div><strong>${title}</strong> — ${desc}</div>`;
+      } else if (norm === 'FAILED' || norm === 'PAYMENT_FAILED') {
+        style = 'background: rgba(245,158,11,0.16); border:1px solid rgba(245,158,11,0.45); color:#fde68a;';
+        const title = _t('pay.dokuFailedTitle', 'Pembayaran DOKU Gagal ({status})').replace('{status}', norm);
+        const desc = _t('pay.dokuFailedDesc', 'Anda dapat mencoba pembayaran ulang melalui DOKU untuk pesanan <code>{orderId}</code> sebelum batas waktu order berakhir.').replace('{orderId}', targetOrderId);
+        html = `<i class="fa-solid fa-triangle-exclamation" style="color:#fbbf24; font-size:18px;"></i> <div><strong>${title}</strong> — ${desc}</div>`;
+      } else if (ok) {
+        const title = _t('pay.dokuPendingTitle', 'Menunggu Konfirmasi DOKU ({status})').replace('{status}', norm || 'ORDER_GENERATED');
+        const meta = _t('pay.dokuPendingMeta', 'Provider: <code>{providerStatus}</code> · Verifikasi Internal: <code>{internalStatus}</code>.')
+          .replace('{providerStatus}', data.provider_settlement_status || 'PENDING')
+          .replace('{internalStatus}', data.internal_settlement_status || 'PENDING');
+        html = `<i class="fa-solid fa-clock" style="color:#F3EBDD; font-size:18px;"></i> <div><strong>${title}</strong> — ${meta}</div>`;
+      } else {
+        html = `<i class="fa-solid fa-circle-info" style="color:#F3EBDD; font-size:18px;"></i> <div>${data.error || _t('pay.dokuVerifyUnavailable', 'Status pembayaran belum dapat diverifikasi dari DOKU saat ini.')}</div>`;
+      }
+      if (bannerEl) {
+        bannerEl.setAttribute('style', `display:flex; align-items:flex-start; gap:12px; margin-bottom:18px; border-radius:12px; padding:14px 18px; ${style}`);
+        bannerEl.innerHTML = html;
+      }
+      if (inqMsgEl) {
+        inqMsgEl.setAttribute('style', `display:block; margin-top:8px; font-size:12px; padding:10px 12px; border-radius:8px; ${style}`);
+        inqMsgEl.innerHTML = html;
+      }
+      if (document.getElementById('resOrderStatus') && data.provider_settlement_status) {
+        document.getElementById('resOrderStatus').innerText = data.provider_settlement_status;
+      }
+      if (document.getElementById('resEscrowStatus') && data.internal_settlement_status) {
+        document.getElementById('resEscrowStatus').innerText = data.internal_settlement_status;
       }
     }
 
@@ -1588,13 +1753,13 @@
       errEl.style.display = 'none';
 
       if (isNaN(amount) || amount <= 0) {
-        errEl.innerText = 'Masukkan nominal tawaran yang valid.';
+        errEl.innerText = _t('pay.offerInvalidAmount', 'Masukkan nominal tawaran yang valid.');
         errEl.style.display = 'block';
         return;
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Tawaran...';
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${_t('pay.offerSubmitting', 'Mengirim Tawaran...')}`;
 
       try {
         const res = await fetch(`/api/listings/${currentListing.id}/offers`, {
@@ -1611,26 +1776,36 @@
 
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data.error || 'Gagal mengajukan tawaran.');
+          throw new Error(data.error || _t('pay.offerSentFail', 'Gagal mengajukan tawaran.'));
         }
 
         // Offer submitted successfully!
         closeOfferModal();
-        alert(`Tawaran resmi Rp ${amount.toLocaleString('id-ID')} berhasil diajukan ke penjual! Pantau statusnya di halaman Tawaran Saya.`);
+        alert(_t('pay.offerSentAlert', 'Tawaran resmi {amount} berhasil diajukan ke penjual! Pantau statusnya di halaman Tawaran Saya.').replace('{amount}', _fmtIdr(amount)));
         window.location.href = '/offers';
       } catch (err) {
         errEl.innerText = err.message;
         errEl.style.display = 'block';
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Kirim Tawaran Resmi';
+        btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> ${_t('pay.offerSendBtn', 'Kirim Tawaran Resmi')}`;
       }
     }
+
+    ['tikum:langchange', 'tikum:locale-change', 'tikum:languageChanged'].forEach(evtName => {
+      window.addEventListener(evtName, () => {
+        if (currentListing) renderListing(currentListing);
+        if (document.getElementById('offerModal')?.style.display === 'flex') updateOfferCalculations();
+        if (lastHubListings && lastHubListings.length && document.getElementById('buyerDealHub')?.style.display !== 'none') {
+          renderBuyerDealHubCards(lastHubListings);
+        }
+        if (lastDokuStatusState) renderDokuStatusBanners(lastDokuStatusState);
+      });
+    });
 
     // Initialize
     loadListingData();
     checkBuyerSession();
   </script>
-  <script src="/js/i18n.js"></script>
 
   <script>
     function initAppShell() {

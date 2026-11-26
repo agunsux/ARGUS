@@ -198,9 +198,9 @@
 
     <!-- Tracker Search Header -->
     <div style="margin-bottom: 24px; text-align: center;">
-      <div class="hero-pill"><i class="fa-solid fa-magnifying-glass"></i> AUDIT TRAIL PUBLIK AMAN PII</div>
-      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Lacak Status Transaksi &amp; Verifikasi Gerbang</h1>
-      <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px; max-width: 600px; margin-left: auto; margin-right: auto;">
+      <div class="hero-pill"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="track.heroPill">AUDIT TRAIL PUBLIK AMAN PII</span></div>
+      <h1 style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;" data-i18n="track.pageTitle">Lacak Status Transaksi &amp; Verifikasi Gerbang</h1>
+      <p style="font-size: 14px; color: var(--text-muted); margin-top: 6px; max-width: 600px; margin-left: auto; margin-right: auto;" data-i18n="track.pageSubtitle">
         Setiap perubahan status tiket diverifikasi secara kriptografis dan dicatat secara permanen di audit trail Tikum.
       </p>
 
@@ -210,12 +210,12 @@
           type="text" 
           id="trackInput" 
           class="tracker-input mono" 
-          placeholder="Masukkan ID Pesanan (ord-...) atau ID Listing (list-...)"
+          placeholder="Masukkan ID Pesanan (ord-...) atau ID Listing (list-...)" data-i18n-placeholder="track.searchPlaceholder"
           autocomplete="off"
           spellcheck="false"
         >
         <button id="trackBtn" class="btn" onclick="executeTrack()">
-          <i class="fa-solid fa-magnifying-glass"></i> Periksa Status
+          <i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="track.btnCheckStatus">Periksa Status</span>
         </button>
       </div>
     </div>
@@ -223,17 +223,17 @@
     <!-- Loading State -->
     <div id="trackLoading" style="display: none; text-align: center; padding: 40px 20px;">
       <i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--cyan); margin-bottom: 12px;"></i>
-      <div style="font-size: 14px; color: var(--text-muted);">Memverifikasi ID dengan database audit ledger Tikum...</div>
+      <div style="font-size: 14px; color: var(--text-muted);" data-i18n="track.verifyingId">Memverifikasi ID dengan database audit ledger Tikum...</div>
     </div>
 
     <!-- Error / Not Found State -->
     <div id="trackNotFound" class="card" style="display: none; text-align: center; padding: 40px 20px;">
       <i class="fa-solid fa-circle-xmark" style="font-size: 40px; color: var(--danger); margin-bottom: 14px;"></i>
-      <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Transaksi Tidak Ditemukan</h3>
-      <p id="trackNotFoundText" style="font-size: 14px; color: var(--text-muted); max-width: 500px; margin: 0 auto 20px;">
+      <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;" data-i18n="track.notFoundTitle">Transaksi Tidak Ditemukan</h3>
+      <p id="trackNotFoundText" style="font-size: 14px; color: var(--text-muted); max-width: 500px; margin: 0 auto 20px;" data-i18n="track.notFoundDesc">
         ID yang dimasukkan tidak cocok dengan transaksi atau listing tiket mana pun yang tercatat di server.
       </p>
-      <div style="font-size: 12px; color: var(--text-dim);">
+      <div style="font-size: 12px; color: var(--text-dim);" data-i18n="track.notFoundHintHtml" data-i18n-html>
         Pastikan format ID diawali dengan <code class="mono" style="color: var(--cyan);">ord-</code> atau <code class="mono" style="color: var(--cyan);">list-</code>.
       </div>
     </div>
@@ -244,7 +244,7 @@
       <div id="offlineBanner" class="notice-box notice-warning" style="display: none; margin-bottom: 16px; align-items: center; gap: 10px;">
         <i class="fa-solid fa-wifi" style="color: var(--amber-500); font-size: 16px;"></i>
         <div>
-          <strong>Mode Offline:</strong> Koneksi tidak stabil. Menampilkan status tersimpan terakhir dari perangkat Anda.
+          <strong data-i18n="track.offlinePrefix">Mode Offline:</strong> <span data-i18n="track.offlineBanner">Koneksi tidak stabil. Menampilkan status tersimpan terakhir dari perangkat Anda.</span>
         </div>
       </div>
 
@@ -265,7 +265,7 @@
           </div>
           </div>
           <div style="text-align: right;">
-            <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">ID Transaksi Ledger:</div>
+            <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;" data-i18n="track.txIdLabel">ID Transaksi Ledger:</div>
             <code id="transIdText" class="mono" style="font-size: 14px; color: var(--cyan); font-weight: 700;">-</code>
             <div id="transDateText" style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">-</div>
           </div>
@@ -274,11 +274,11 @@
         <div style="border-top: 1px solid var(--border); padding-top: 14px;">
           <div class="grid-3" style="font-size: 13px;">
             <div>
-              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;">Posisi / Kursi:</div>
+              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;" data-i18n="track.seatLabel">Posisi / Kursi:</div>
               <strong id="transSeatText" style="color: #fff;">-</strong>
             </div>
             <div>
-              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;">Total Transaksi:</div>
+              <div style="color: var(--text-dim); font-size: 11px; text-transform: uppercase;" data-i18n="track.totalAmountLabel">Total Transaksi:</div>
               <strong id="transPriceText" class="mono" style="color: var(--cyan);">-</strong>
             </div>
             <div>
@@ -286,12 +286,29 @@
               <span id="transProtocolText" class="badge badge-slate">-</span>
             </div>
           </div>
+
+          <!-- Separated Provider Settlement vs Internal Verification Status + V2 Tier -->
+          <div id="settlementSeparationPanel" style="display:none; margin-top: 14px; padding-top: 14px; border-top: 1px dashed rgba(203,213,225,0.22); grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; font-size: 12px;">
+            <div style="background: var(--theme-input, #172333); border: 1px solid rgba(203,213,225,0.22); border-radius: 10px; padding: 10px 12px;">
+              <div style="color: #CBD5E1; font-size: 10.5px; text-transform: uppercase; margin-bottom: 3px;" data-i18n="track.fulfillmentTierLabel">Tier Penyerahan &amp; Biaya</div>
+              <strong id="trackFulfillmentTier" style="color: #F3EBDD;">-</strong>
+              <div id="trackInvoiceRef" class="mono" style="color: #CBD5E1; font-size: 10.5px; margin-top: 3px;"></div>
+            </div>
+            <div style="background: var(--theme-input, #172333); border: 1px solid rgba(203,213,225,0.22); border-radius: 10px; padding: 10px 12px;">
+              <div style="color: #CBD5E1; font-size: 10.5px; text-transform: uppercase; margin-bottom: 3px;" data-i18n="track.providerSettlementLabel">Status Settlement Gateway (DOKU)</div>
+              <strong id="trackProviderSettlement" class="mono" style="color: #FFFFFF;">-</strong>
+            </div>
+            <div style="background: var(--theme-input, #172333); border: 1px solid rgba(203,213,225,0.22); border-radius: 10px; padding: 10px 12px;">
+              <div style="color: #CBD5E1; font-size: 10.5px; text-transform: uppercase; margin-bottom: 3px;" data-i18n="track.internalVerificationLabel">Status Verifikasi Internal TIKUM</div>
+              <strong id="trackInternalVerification" class="mono" style="color: #E36F45;">-</strong>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Lifecycle Progress Timeline Card -->
       <div class="card">
-        <h3 class="card-title"><i class="fa-solid fa-timeline"></i> Riwayat Verifikasi Siklus Transaksi</h3>
+        <h3 class="card-title"><i class="fa-solid fa-timeline"></i> <span data-i18n="track.timelineHeading">Riwayat Verifikasi Siklus Transaksi</span></h3>
         
         <div id="timelineContainer" class="timeline">
           <!-- Dynamically populated -->
@@ -300,40 +317,40 @@
 
       <!-- Safety & Protection Dossier Card -->
       <div class="card">
-        <h3 class="card-title"><i class="fa-solid fa-shield-halved"></i> Parameter Jaminan Keamanan Transaksi</h3>
+        <h3 class="card-title"><i class="fa-solid fa-shield-halved"></i> <span data-i18n="track.safetyHeading">Parameter Jaminan Keamanan Transaksi</span></h3>
         <div class="grid-2" style="font-size: 13px;">
           <div style="padding: 10px; background: #090d16; border-radius: var(--radius-sm); border: 1px solid var(--border);">
             <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">
-              <i class="fa-solid fa-fingerprint" style="color: var(--cyan);"></i> Barcode Anti-Duplikasi
+              <i class="fa-solid fa-fingerprint" style="color: var(--cyan);"></i> <span data-i18n="track.safetyBarcodeTitle">Barcode Anti-Duplikasi</span>
             </div>
-            <div style="color: var(--text-muted); font-size: 12px;">
+            <div style="color: var(--text-muted); font-size: 12px;" data-i18n="track.safetyBarcodeDesc">
               Hash SHA-256 tersimpan aman di database Tikum. Sistem memblokir secara otomatis jika nomor barcode tiket yang sama didaftarkan oleh pihak lain.
             </div>
           </div>
 
           <div style="padding: 10px; background: #090d16; border-radius: var(--radius-sm); border: 1px solid var(--border);">
             <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">
-              <i class="fa-solid fa-shield-halved" style="color: var(--warning);"></i> Status Perlindungan Pembayaran
+              <i class="fa-solid fa-shield-halved" style="color: var(--warning);"></i> <span data-i18n="track.safetyPaymentTitle">Status Perlindungan Pembayaran</span>
             </div>
-            <div id="escrowProtectionText" style="color: var(--text-muted); font-size: 12px;">
+            <div id="escrowProtectionText" style="color: var(--text-muted); font-size: 12px;" data-i18n="track.safetyPaymentDesc">
               Dana pembeli ditahan dalam sistem perlindungan transaksi platform Tikum (platform-held) hingga pembeli terverifikasi masuk ke dalam venue acara.
             </div>
           </div>
 
           <div style="padding: 10px; background: #090d16; border-radius: var(--radius-sm); border: 1px solid var(--border);">
             <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">
-              <i class="fa-solid fa-user-shield" style="color: var(--success);"></i> Kehadiran PIC di Venue
+              <i class="fa-solid fa-user-shield" style="color: var(--success);"></i> <span data-i18n="track.safetyPicTitle">Kehadiran PIC di Venue</span>
             </div>
-            <div id="picStatusText" style="color: var(--text-muted); font-size: 12px;">
+            <div id="picStatusText" style="color: var(--text-muted); font-size: 12px;" data-i18n="track.safetyPicDesc">
               Petugas TIKUM PIC bersiaga di pintu masuk acara untuk melakukan verifikasi fisik dan otentikasi dual-handshake OTP.
             </div>
           </div>
 
           <div style="padding: 10px; background: #090d16; border-radius: var(--radius-sm); border: 1px solid var(--border);">
             <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">
-              <i class="fa-solid fa-gavel" style="color: var(--cyan);"></i> Perlindungan Konsumen &amp; UU PDP
+              <i class="fa-solid fa-gavel" style="color: var(--cyan);"></i> <span data-i18n="track.safetyPdpTitle">Perlindungan Konsumen &amp; UU PDP</span>
             </div>
-            <div style="color: var(--text-muted); font-size: 12px;">
+            <div style="color: var(--text-muted); font-size: 12px;" data-i18n="track.safetyPdpDesc">
               Data pribadi (NIK, telepon) dilindungi sesuai UU PDP No. 27/2022. Dokumen bukti dienkripsi AES-256 dengan retensi otomatis 90 hari setelah penyelesaian.
             </div>
           </div>
@@ -463,6 +480,17 @@
   <script src="/js/i18n.js"></script>
 
   <script>
+    const _t = (k, f) => (window.TikumI18n ? window.TikumI18n.t(k, f) : f);
+    const _fmtIdr = (amt) => (window.TikumI18n && typeof window.TikumI18n.formatCurrency === 'function')
+      ? window.TikumI18n.formatCurrency(amt, 'IDR')
+      : ('Rp ' + Number(amt || 0).toLocaleString('id-ID'));
+    const _fmtLocaleDate = (iso) => {
+      if (!iso) return '-';
+      const l = window.TikumI18n ? window.TikumI18n.getLang() : 'id';
+      const tag = l === 'id' ? 'id-ID' : (l === 'th' ? 'th-TH' : (l === 'ms' ? 'ms-MY' : (l === 'tl' ? 'en-PH' : 'en-US')));
+      return new Date(iso).toLocaleString(tag);
+    };
+
     function getIdFromUrl() {
       // Check path /track/:id
       const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -478,7 +506,7 @@
       const input = document.getElementById('trackInput');
       const val = (input.value || '').trim();
       if (!val) {
-        alert('Harap masukkan ID transaksi atau listing.');
+        alert(_t('track.alertEnterId', 'Harap masukkan ID transaksi atau listing.'));
         return;
       }
       // Push state to clean URL or reload
@@ -506,14 +534,14 @@
       try {
         const res = await fetch(`/api/mvp/track/${encodeURIComponent(id)}`);
         if (!res.ok) {
-          throw new Error('ID Transaksi tidak ditemukan dalam sistem ledger.');
+          throw new Error(_t('track.notFoundServerErr', 'ID Transaksi tidak ditemukan dalam sistem ledger.'));
         }
 
         const data = await res.json();
         loadingEl.style.display = 'none';
 
         if (!data.success || !data.transaction) {
-          throw new Error('Format data transaksi tidak valid dari server.');
+          throw new Error(_t('track.invalidFormatErr', 'Format data transaksi tidak valid dari server.'));
         }
 
         // Cache for offline resilience
@@ -540,8 +568,8 @@
 
         loadingEl.style.display = 'none';
         notFoundEl.style.display = 'block';
-        document.getElementById('trackNotFoundText').innerText = 
-          `ID "${id}" tidak ditemukan dalam sistem Tikum. Periksa kembali ID yang Anda masukkan.`;
+        document.getElementById('trackNotFoundText').innerText =
+          _t('track.notFoundIdTpl', 'ID "{id}" tidak ditemukan dalam sistem Tikum. Periksa kembali ID yang Anda masukkan.').replace('{id}', id);
       }
     }
 
@@ -551,8 +579,9 @@
       document.getElementById('transIdText').innerText = tx.id;
       document.getElementById('transTypeBadge').innerText = tx.type;
       
+      const translateStatus = (s) => (window.TikumI18n ? window.TikumI18n.translateStatus(s) : s);
       const statusBadge = document.getElementById('transStatusBadge');
-      statusBadge.innerText = window.TikumI18n ? window.TikumI18n.translateStatus(tx.status) : tx.status;
+      statusBadge.innerText = translateStatus(tx.status);
       if (tx.status === 'ACTIVE' || tx.status === 'SETTLED' || tx.status === 'ENTRY_CONFIRMED') {
         statusBadge.className = 'badge badge-success';
       } else if (tx.status === 'DISPUTED' || tx.status === 'REJECTED' || tx.status === 'CANCELLED') {
@@ -563,17 +592,40 @@
 
       // Event meta
       const ev = tx.event || {};
-      document.getElementById('transEventTitle').innerText = ev.title || 'Event Terdaftar';
+      document.getElementById('transEventTitle').innerText = ev.title || _t('track.registeredEventFallback', 'Event Terdaftar');
       document.getElementById('transEventMeta').innerText = 
         `${ev.date || '-'} • ${ev.venue || '-'}, ${ev.city || 'Jakarta'}`;
 
       document.getElementById('transSeatText').innerText = tx.seat_info || '-';
       
       const priceVal = tx.total_amount || tx.price || 0;
-      document.getElementById('transPriceText').innerText = 'Rp ' + Number(priceVal).toLocaleString('id-ID');
+      document.getElementById('transPriceText').innerText = _fmtIdr(priceVal);
 
       document.getElementById('transProtocolText').innerText = ev.admission_protocol || 'QR_SCAN_ONLY';
-      document.getElementById('transDateText').innerText = tx.created_at ? new Date(tx.created_at).toLocaleString('id-ID') : '-';
+      document.getElementById('transDateText').innerText = _fmtLocaleDate(tx.created_at);
+
+      const sepPanel = document.getElementById('settlementSeparationPanel');
+      if (sepPanel) {
+        if (tx.type === 'ORDER') {
+          sepPanel.style.display = 'grid';
+          const isPic = String(tx.fulfillment_type || '').toUpperCase() === 'TIKUM_VENUE_PIC';
+          document.getElementById('trackFulfillmentTier').innerText = isPic
+            ? _t('track.tierPicLabel', 'PIC TIKUM Venue (9%)')
+            : _t('track.tierSelfLabel', 'Transfer Mandiri Penjual (6%)');
+          const invEl = document.getElementById('trackInvoiceRef');
+          if (invEl) {
+            invEl.innerText = tx.invoice_number
+              ? `${_t('track.dokuInvoicePrefix', 'DOKU Inv:')} ${tx.invoice_number}`
+              : `${_t('track.providerPrefix', 'Penyedia:')} ${(tx.provider || 'doku').toUpperCase()}${tx.provider_env ? ' (' + tx.provider_env.toUpperCase() + ')' : ''}`;
+          }
+          const provStatRaw = tx.provider_settlement_status || tx.status || 'PENDING';
+          const intStatRaw = tx.internal_settlement_status || tx.escrow_status || tx.status || 'PENDING_VERIFICATION';
+          document.getElementById('trackProviderSettlement').innerText = translateStatus(provStatRaw);
+          document.getElementById('trackInternalVerification').innerText = translateStatus(intStatRaw);
+        } else {
+          sepPanel.style.display = 'none';
+        }
+      }
 
       // Build real lifecycle timeline
       const timelineEl = document.getElementById('timelineContainer');
@@ -675,10 +727,12 @@
       container.innerHTML = html;
     }
 
-    window.addEventListener('tikum:languageChanged', function() {
-      if (lastFetchedTx) {
-        renderTracking(lastFetchedTx);
-      }
+    ['tikum:langchange', 'tikum:locale-change', 'tikum:languageChanged'].forEach(evtName => {
+      window.addEventListener(evtName, function() {
+        if (lastFetchedTx) {
+          renderTracking(lastFetchedTx);
+        }
+      });
     });
 
     // Initialize on page load

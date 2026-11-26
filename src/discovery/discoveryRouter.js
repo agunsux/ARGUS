@@ -646,9 +646,33 @@ router.get('/events', (req, res) => {
     return (a.start_date || '9999-99-99').localeCompare(b.start_date || '9999-99-99');
   });
 
+  const { calculateDualTierFees } = require('../pricing/DualTierFeePolicy');
+  const { PRICING_CONFIG } = require('../config/pricingConfig');
+
+  function resolveCheapestAllInListing(listings) {
+    if (!listings || listings.length === 0) return { minBasePrice: null, minAllInPrice: null, minFulfillmentType: null };
+    let best = null;
+    for (const l of listings) {
+      const base = Math.max(0, Math.round(l.price || 0));
+      if (!base) continue;
+      const tier = String(l.fulfillment_type || 'SELLER_MANAGED').toUpperCase() === 'TIKUM_VENUE_PIC' ? 'TIKUM_VENUE_PIC' : 'SELLER_MANAGED';
+      const useV2 = (l.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION) === 'V2_DUAL_TIER';
+      let buyerTotal = base;
+      if (useV2) {
+        buyerTotal = calculateDualTierFees({ ticketPrice: base, quantity: 1, fulfillmentType: tier }).buyer_total_amount;
+      } else {
+        buyerTotal = base + Math.min(base, Math.max(35000, Math.min(300000, Math.round((base * 6) / 100))));
+      }
+      if (!best || buyerTotal < best.minAllInPrice) {
+        best = { minBasePrice: base, minAllInPrice: buyerTotal, minFulfillmentType: tier };
+      }
+    }
+    return best || { minBasePrice: null, minAllInPrice: null, minFulfillmentType: null };
+  }
+
   const itemsHtml = allEvents.map(e => {
     const activeListings = getActiveResaleListings(e.event_id);
-    const minPrice = activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null;
+    const { minBasePrice: minPrice, minAllInPrice, minFulfillmentType } = resolveCheapestAllInListing(activeListings);
     const hasVerifiedImg = Boolean(e.image_url && e.is_fallback_image !== true && e.image_status !== 'FALLBACK' && e.image_status !== 'BROKEN');
     const altText = `${e.canonical_name} — ${e.venue_name}, ${e.city}`.replace(/"/g, '&quot;');
     const officialUrl = e.official_ticket_url || e.official_event_url || e.source_url || null;
@@ -663,9 +687,9 @@ router.get('/events', (req, res) => {
         : `<span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); font-size:11px; padding:3px 8px; font-weight:700;"><i class="fa-solid fa-circle-check"></i> <span data-i18n="discovery.badgeOnSale">${esc(t('discovery.badgeOnSale', locale))}</span></span>`);
 
     return `
-      <div class="event-card-item" data-event-id="${e.event_id}" data-ticket-status="${isSoldOut ? 'SOLD_OUT' : (isPresale ? 'PRESALE' : 'ON_SALE')}" style="background:#131d31; border:1px solid #1e293b; border-radius:12px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
+      <div class="event-card-item" data-event-id="${e.event_id}" data-ticket-status="${isSoldOut ? 'SOLD_OUT' : (isPresale ? 'PRESALE' : 'ON_SALE')}" style="background:var(--palette-surface, #24364D); border:1px solid rgba(203,213,225,0.22); border-radius:12px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
         <div>
-          <div class="catalog-card-media" style="position:relative; aspect-ratio:3/4; margin:-20px -20px 14px -20px; border-bottom:1px solid #1e293b; overflow:hidden; background:#0b1120;">
+          <div class="catalog-card-media" style="position:relative; aspect-ratio:3/4; margin:-20px -20px 14px -20px; border-bottom:1px solid rgba(203,213,225,0.22); overflow:hidden; background:var(--palette-midnight-navy, #172333);">
             ${hasVerifiedImg ? `
               <img src="${e.image_url}" alt="${altText}" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:contain; display:block;" onerror="this.onerror=null; this.src='/api/discovery/events/${e.event_id || e.id}/poster.svg';" />
             ` : `
@@ -674,23 +698,23 @@ router.get('/events', (req, res) => {
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
             <div style="display:flex; gap:6px; align-items:center;">
-              <span class="badge badge-sm" style="background:#1e293b; color:#94a3b8; border:1px solid #334155;">${e.event_type || e.category}</span>
-              <span style="font-size:12px; color:#38bdf8;"><i class="fa-solid fa-location-dot"></i> ${e.city}</span>
+              <span class="badge badge-sm" style="background:#15365B; color:#CBD5E1; border:1px solid rgba(203,213,225,0.22);">${e.event_type || e.category}</span>
+              <span style="font-size:12px; color:#F3EBDD;"><i class="fa-solid fa-location-dot"></i> ${e.city}</span>
             </div>
             ${statusBadge}
           </div>
-          <h3 style="font-size:17px; font-weight:700; margin:6px 0 10px 0; color:#f8fafc; line-height:1.3;"><a href="/events/${e.slug}" style="color:inherit; text-decoration:none;">${e.canonical_name}</a></h3>
-          <div style="font-size:13px; color:#94a3b8; margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
-            <div><i class="fa-solid fa-calendar-day" style="color:#64748b; width:16px;"></i> ${e.start_date || e.date}</div>
-            <div><i class="fa-solid fa-building" style="color:#64748b; width:16px;"></i> ${e.venue_name}</div>
-            <div style="color:#cbd5e1; font-weight:600;"><i class="fa-solid fa-tag" style="color:#38bdf8; width:16px;"></i> <span data-i18n="discovery.officialFrom">${esc(t('discovery.officialFrom', locale))}</span> ${formatCurrency(Number(e.min_price || 500000), locale)}</div>
+          <h3 style="font-size:17px; font-weight:700; margin:6px 0 10px 0; color:#FFFFFF; line-height:1.3;"><a href="/events/${e.slug}" style="color:inherit; text-decoration:none;">${e.canonical_name}</a></h3>
+          <div style="font-size:13px; color:#CBD5E1; margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
+            <div><i class="fa-solid fa-calendar-day" style="color:#F3EBDD; width:16px;"></i> ${e.start_date || e.date}</div>
+            <div><i class="fa-solid fa-building" style="color:#F3EBDD; width:16px;"></i> ${e.venue_name}</div>
+            <div style="color:#FFFFFF; font-weight:600;"><i class="fa-solid fa-tag" style="color:#E36F45; width:16px;"></i> <span data-i18n="discovery.officialFrom">${esc(t('discovery.officialFrom', locale))}</span> ${formatCurrency(Number(e.min_price || 500000), locale)}</div>
           </div>
         </div>
-        <div style="border-top:1px solid #1e293b; padding-top:14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+        <div style="border-top:1px solid rgba(203,213,225,0.22); padding-top:14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
           <div>
             ${activeListings.length > 0 ?
-              `<span style="color:#10b981; font-weight:700; font-size:12px;"><i class="fa-solid fa-ticket"></i> ${esc(t('discovery.resaleTicketsCount', locale).replace('{count}', activeListings.length).replace('{price}', formatCurrency(minPrice, locale)))}</span>` :
-              `<span style="color:#64748b; font-size:12px;"><i class="fa-solid fa-ticket"></i> <span data-i18n="discovery.noResaleYet">${esc(t('discovery.noResaleYet', locale))}</span></span>`}
+              `<div><span style="color:#34d399; font-weight:700; font-size:12px;"><i class="fa-solid fa-ticket"></i> ${esc(t('discovery.allInPrefix', locale))} ${formatCurrency(minAllInPrice || minPrice, locale)}</span> <span class="badge" style="font-size:10px; background:#15365B; color:#F3EBDD; border:1px solid rgba(203,213,225,0.25); padding:1px 6px;">${esc(minFulfillmentType === 'TIKUM_VENUE_PIC' ? t('discovery.tierPicShort', locale) : t('discovery.tierSelfShort', locale))}</span><div style="font-size:10.5px; color:#CBD5E1; margin-top:2px;">${esc(t('discovery.resaleTicketsSummary', locale).replace('{count}', String(activeListings.length)))}</div></div>` :
+              `<span style="color:#CBD5E1; font-size:12px;"><i class="fa-solid fa-ticket"></i> <span data-i18n="discovery.noResaleYet">${esc(t('discovery.noResaleYet', locale))}</span></span>`}
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
             ${officialUrl ? `<a href="${officialUrl}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-sm btn-secondary" style="font-size:11px; padding:5px 8px;" data-i18n="events.officialSource">${esc(t('events.officialSource', locale))}</a>` : ''}
@@ -1184,6 +1208,19 @@ function handleGetEvents(req, res) {
       }
     }
     const activeListings = getActiveResaleListings(e.event_id);
+    const { calculateDualTierFees } = require('../pricing/DualTierFeePolicy');
+    const { PRICING_CONFIG } = require('../config/pricingConfig');
+    let bestAllIn = null;
+    for (const al of activeListings) {
+      const base = Math.max(0, Math.round(al.price || 0));
+      if (!base) continue;
+      const tier = String(al.fulfillment_type || 'SELLER_MANAGED').toUpperCase() === 'TIKUM_VENUE_PIC' ? 'TIKUM_VENUE_PIC' : 'SELLER_MANAGED';
+      const useV2 = (al.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION) === 'V2_DUAL_TIER';
+      const total = useV2
+        ? calculateDualTierFees({ ticketPrice: base, quantity: 1, fulfillmentType: tier }).buyer_total_amount
+        : base + Math.min(base, Math.max(35000, Math.min(300000, Math.round((base * 6) / 100))));
+      if (!bestAllIn || total < bestAllIn.total) bestAllIn = { total, tier };
+    }
     return {
       ...e,
       distance_km: dist,
@@ -1192,6 +1229,8 @@ function handleGetEvents(req, res) {
       resale_listings_count: activeListings.length,
       resale_price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null,
       resale_price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : null,
+      resale_all_in_price_min: bestAllIn ? bestAllIn.total : null,
+      resale_fulfillment_type: bestAllIn ? bestAllIn.tier : null,
       primary_price_min: (e.min_price !== undefined && e.min_price !== null) ? Number(e.min_price) : null,
       primary_price_max: (e.max_price !== undefined && e.max_price !== null) ? Number(e.max_price) : null,
       price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : (e.min_price || null),
@@ -1726,6 +1765,19 @@ router.get('/api/events/home-feed', (req, res) => {
       resale_listings_count: activeListings.length,
       resale_price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : null,
       resale_price_max: activeListings.length > 0 ? Math.max(...activeListings.map(l => l.price)) : null,
+      resale_all_in_price_min: (() => {
+        if (!activeListings.length) return null;
+        const { calculateDualTierFees } = require('../pricing/DualTierFeePolicy');
+        const { PRICING_CONFIG } = require('../config/pricingConfig');
+        return Math.min(...activeListings.map(al => {
+          const base = Math.max(0, Math.round(al.price || 0));
+          const tier = String(al.fulfillment_type || 'SELLER_MANAGED').toUpperCase() === 'TIKUM_VENUE_PIC' ? 'TIKUM_VENUE_PIC' : 'SELLER_MANAGED';
+          return (al.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION) === 'V2_DUAL_TIER'
+            ? calculateDualTierFees({ ticketPrice: base, quantity: 1, fulfillmentType: tier }).buyer_total_amount
+            : base + Math.min(base, Math.max(35000, Math.min(300000, Math.round((base * 6) / 100))));
+        }));
+      })(),
+      resale_fulfillment_type: activeListings.length > 0 ? (activeListings[0].fulfillment_type || 'SELLER_MANAGED') : null,
       primary_price_min: (e.min_price !== undefined && e.min_price !== null) ? Number(e.min_price) : null,
       primary_price_max: (e.max_price !== undefined && e.max_price !== null) ? Number(e.max_price) : null,
       price_min: activeListings.length > 0 ? Math.min(...activeListings.map(l => l.price)) : (e.min_price || null),

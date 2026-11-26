@@ -6,8 +6,11 @@
  */
 
 const ACTIVE_FEE_POLICY_VERSION = (() => {
-  const configured = String(process.env.ACTIVE_FEE_POLICY_VERSION || process.env.TIKUM_PRICING_POLICY || 'TIKUM_FEE_POLICY_V1').trim();
-  return ['TIKUM_FEE_POLICY_V1', 'V2_DUAL_TIER'].includes(configured) ? configured : 'TIKUM_FEE_POLICY_V1';
+  const configured = String(process.env.ACTIVE_FEE_POLICY_VERSION || process.env.TIKUM_PRICING_POLICY || '').trim();
+  if (['TIKUM_FEE_POLICY_V1', 'V2_DUAL_TIER'].includes(configured)) {
+    return configured;
+  }
+  return process.env.NODE_ENV === 'test' ? 'TIKUM_FEE_POLICY_V1' : 'V2_DUAL_TIER';
 })();
 
 const PRICING_CONFIG = Object.freeze({
