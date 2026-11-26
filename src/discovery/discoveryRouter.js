@@ -169,7 +169,7 @@ async function ensureRegistryHydrated(req, res, next) {
     }
     try {
       await hydrationPromise;
-    } catch (_) {}
+    } catch (_) { }
   }
   next();
 }
@@ -207,7 +207,7 @@ router.get('/events/archive', (req, res) => {
 
   if (q && q.trim()) {
     const term = q.toLowerCase().trim();
-    allEvents = allEvents.filter(e => 
+    allEvents = allEvents.filter(e =>
       (e.canonical_name || '').toLowerCase().includes(term) ||
       (e.venue_name || '').toLowerCase().includes(term) ||
       (e.city || '').toLowerCase().includes(term)
@@ -452,8 +452,20 @@ function deduplicateAndEnrichPublicEvents(events) {
     const resolvedImg = EventVisualProvenanceService.resolveCatalogEventImageProvenance(rawCandidate, rawCandidate.metadata || {});
     const candidate = { ...rawCandidate, ...resolvedImg };
     const dupMatch = EventDeduplicationService.findDuplicateCandidate(candidate, dedupedPublicEvents);
-    if (dupMatch && dupMatch.isMatch && dupMatch.canonicalEvent) {
-      const existing = dupMatch.canonicalEvent;
+    const existing = dupMatch && dupMatch.isMatch ? dupMatch.canonicalEvent : null;
+    const candId = candidate.id || candidate.event_id;
+    const existId = existing ? (existing.id || existing.event_id) : null;
+    const candVenue = String(candidate.venue_name || candidate.venue || '').trim().toLowerCase();
+    const existVenue = existing ? String(existing.venue_name || existing.venue || '').trim().toLowerCase() : '';
+    const candSession = String(candidate.start_datetime || '').trim();
+    const existSession = existing ? String(existing.start_datetime || '').trim() : '';
+    const isDistinctVenueOrSession = Boolean(
+      existing && candId && existId && candId !== existId && (
+        (candVenue && existVenue && candVenue !== existVenue) ||
+        (candSession && existSession && candSession !== existSession)
+      )
+    );
+    if (existing && !isDistinctVenueOrSession) {
       const idx = dedupedPublicEvents.indexOf(existing);
       if (idx !== -1) {
         const merged = EventDeduplicationService.mergeCanonicalPair(existing, candidate);
@@ -472,6 +484,7 @@ function deduplicateAndEnrichPublicEvents(events) {
  * Main Event Discovery Catalog Hub
  */
 router.get('/events', (req, res) => {
+  const hygiene = require('./CatalogHygienePolicy');
   const { q, city, category, status, include_past, scope, price_range, ticket_status, date_range, date_from, date_to } = req.query;
   const locale = resolveRequestLocale(req);
   const isEn = locale === 'en';
@@ -488,7 +501,8 @@ router.get('/events', (req, res) => {
 
   // If canonicalRegistry is empty (e.g. serverless Vercel memory), fallback to verified eventPolicyRegistry
   if (allEvents.length === 0) {
-    const policyEvents = eventPolicyRegistry.getAllEvents({ publicOnly: true,
+    const policyEvents = eventPolicyRegistry.getAllEvents({
+      publicOnly: true,
       city,
       category,
       sort: 'hype'
@@ -520,10 +534,14 @@ router.get('/events', (req, res) => {
     }));
   }
 
+  if (!showAllOrPast) {
+    allEvents = hygiene.deduplicateEvents(allEvents.filter(event => hygiene.isEligibleForActiveResale(event, hygiene.getTodayWibIso(now))));
+  }
+
   const searchTerm = (q || req.query.search || '').trim();
   if (searchTerm) {
     const term = searchTerm.toLowerCase();
-    allEvents = allEvents.filter(e => 
+    allEvents = allEvents.filter(e =>
       (e.canonical_name || '').toLowerCase().includes(term) ||
       (e.title || '').toLowerCase().includes(term) ||
       (e.name || '').toLowerCase().includes(term) ||
@@ -539,8 +557,8 @@ router.get('/events', (req, res) => {
   }
 
   if (category && category.trim()) {
-    const catTerm = category.toUpperCase().trim();
-    allEvents = allEvents.filter(e => (e.event_type || e.category || '').toUpperCase() === catTerm);
+    const catTerm = hygiene.normalizeCategory(category);
+    allEvents = allEvents.filter(e => hygiene.normalizeCategory(e.category || e.event_type) === catTerm);
   }
 
   // Price range filter (Strict invariant: min >= 500k)
@@ -611,7 +629,7 @@ router.get('/events', (req, res) => {
       if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
       if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
       if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
-          ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
+        ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
       const isVerified = e.is_verified === true && e.public_visibility !== false &&
         ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(e.verification_status);
       const hasProvenance = Boolean(e.source_url && e.evidence_hash && e.verified_at);
@@ -619,8 +637,8 @@ router.get('/events', (req, res) => {
 
       // STRICT RP 500.000 PRICE FILTER: Events with lowest price < 500k are EXCLUDED from public catalog
       if (e.price_status === 'EXCLUDED_PRICE_TOO_LOW') return false;
-    const priceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(e);
-    if (priceEval && priceEval.status === 'EXCLUDED_PRICE_TOO_LOW') return false;
+      const priceEval = CuratedCatalogPolicy.evaluateOfficialPriceQualification(e);
+      if (priceEval && priceEval.status === 'EXCLUDED_PRICE_TOO_LOW') return false;
       if (e.price_status === 'PENDING_VERIFICATION') return false;
 
       return true;
@@ -713,8 +731,8 @@ router.get('/events', (req, res) => {
         <div style="border-top:1px solid rgba(203,213,225,0.22); padding-top:14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
           <div>
             ${activeListings.length > 0 ?
-              `<div><span style="color:#34d399; font-weight:700; font-size:12px;"><i class="fa-solid fa-ticket"></i> ${esc(t('discovery.allInPrefix', locale))} ${formatCurrency(minAllInPrice || minPrice, locale)}</span> <span class="badge" style="font-size:10px; background:#15365B; color:#F3EBDD; border:1px solid rgba(203,213,225,0.25); padding:1px 6px;">${esc(minFulfillmentType === 'TIKUM_VENUE_PIC' ? t('discovery.tierPicShort', locale) : t('discovery.tierSelfShort', locale))}</span><div style="font-size:10.5px; color:#CBD5E1; margin-top:2px;">${esc(t('discovery.resaleTicketsSummary', locale).replace('{count}', String(activeListings.length)))}</div></div>` :
-              `<span style="color:#CBD5E1; font-size:12px;"><i class="fa-solid fa-ticket"></i> <span data-i18n="discovery.noResaleYet">${esc(t('discovery.noResaleYet', locale))}</span></span>`}
+        `<div><span style="color:#34d399; font-weight:700; font-size:12px;"><i class="fa-solid fa-ticket"></i> ${esc(t('discovery.allInPrefix', locale))} ${formatCurrency(minAllInPrice || minPrice, locale)}</span> <span class="badge" style="font-size:10px; background:#15365B; color:#F3EBDD; border:1px solid rgba(203,213,225,0.25); padding:1px 6px;">${esc(minFulfillmentType === 'TIKUM_VENUE_PIC' ? t('discovery.tierPicShort', locale) : t('discovery.tierSelfShort', locale))}</span><div style="font-size:10.5px; color:#CBD5E1; margin-top:2px;">${esc(t('discovery.resaleTicketsSummary', locale).replace('{count}', String(activeListings.length)))}</div></div>` :
+        `<span style="color:#CBD5E1; font-size:12px;"><i class="fa-solid fa-ticket"></i> <span data-i18n="discovery.noResaleYet">${esc(t('discovery.noResaleYet', locale))}</span></span>`}
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
             ${officialUrl ? `<a href="${officialUrl}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-sm btn-secondary" style="font-size:11px; padding:5px 8px;" data-i18n="events.officialSource">${esc(t('events.officialSource', locale))}</a>` : ''}
@@ -1144,13 +1162,13 @@ function handleGetEvents(req, res) {
       const evLifecycle = (e.lifecycle_status || '').toUpperCase();
       if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
       if (evStatus === 'ARCHIVED' || evLifecycle === 'ARCHIVED' ||
-          evStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS' || evLifecycle === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
+        evStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS' || evLifecycle === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
       if (e.archive_status === 'ARCHIVED' || e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
       if (EventTemporalLifecycleEngine.isEventArchived(e, now)) return false;
       if (EventTemporalLifecycleEngine.isEventExpired(e, now)) return false;
       if (!EventTemporalLifecycleEngine.isEventUpcoming(e, now)) return false;
       if (['LIVE', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
-          ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
+        ['LIVE', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus)) return false;
       const isVerified = e.is_verified === true && e.public_visibility !== false &&
         ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(e.verification_status);
       const hasProvenance = Boolean(e.source_url && e.evidence_hash && e.verified_at);
@@ -1618,7 +1636,7 @@ router.get('/api/events/home-feed', (req, res) => {
     if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
     if (evStatus === 'EXPIRED' || evLifecycle === 'EXPIRED') return false;
     if (evStatus === 'ARCHIVED' || evLifecycle === 'ARCHIVED' ||
-        evStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS' || evLifecycle === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
+      evStatus === 'ARCHIVED_WITH_OPEN_OPERATIONS' || evLifecycle === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
     if (e.archive_status === 'ARCHIVED' || e.archive_status === 'ARCHIVED_WITH_OPEN_OPERATIONS') return false;
     if (EventTemporalLifecycleEngine.isEventArchived(e, now)) return false;
     if (e.homepage_visibility === false) return false;
@@ -1641,7 +1659,8 @@ router.get('/api/events/home-feed', (req, res) => {
 
   // If canonicalRegistry is empty (e.g. serverless Vercel memory), federate from verified eventPolicyRegistry
   if (allEvents.length === 0) {
-    const policyEvents = eventPolicyRegistry.getAllEvents({ publicOnly: true,
+    const policyEvents = eventPolicyRegistry.getAllEvents({
+      publicOnly: true,
       city,
       category,
       sort: 'hype'
@@ -1960,7 +1979,7 @@ router.get('/api/discovery/events/:slugOrId', (req, res) => {
     const isVerified = isPast
       ? (event.is_verified === true && event.verification_status !== 'REJECTED' && event.verification_status !== 'UNVERIFIED')
       : (event.is_verified === true && event.public_visibility !== false &&
-         ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status));
+        ['VERIFIED', 'PRIMARY_SOURCE_VERIFIED', 'PARTIALLY_VERIFIED'].includes(event.verification_status));
     const hasProvenance = isPast || Boolean(event.source_url || event.official_event_url || (event.sources && event.sources.length > 0) || (event.metadata && event.metadata.seeded_at));
 
     if (isCancelled || !isVerified || !hasProvenance) {
@@ -2064,9 +2083,9 @@ router.post('/api/discovery/demand', async (req, res) => {
     });
   } catch (err) {
     const status = err.code === 'RATE_LIMIT_EXCEEDED' ? 429 :
-                   (err.code === 'EVENT_NOT_FOUND' ? 404 :
-                   (err.code === 'DEMAND_STORAGE_UNAVAILABLE' ? 503 :
-                   (['INVALID_CONTACT', 'CONTACT_REQUIRED', 'INVALID_QTY', 'INVALID_MAX_PRICE', 'CONSENT_REQUIRED', 'EVENT_ID_REQUIRED'].includes(err.code) ? 400 : 500)));
+      (err.code === 'EVENT_NOT_FOUND' ? 404 :
+        (err.code === 'DEMAND_STORAGE_UNAVAILABLE' ? 503 :
+          (['INVALID_CONTACT', 'CONTACT_REQUIRED', 'INVALID_QTY', 'INVALID_MAX_PRICE', 'CONSENT_REQUIRED', 'EVENT_ID_REQUIRED'].includes(err.code) ? 400 : 500)));
     res.status(status).json({
       success: false,
       persisted: false,
@@ -2114,7 +2133,7 @@ router.post('/api/discovery/ingest', async (req, res) => {
     }
 
     const result = await ingestionPipeline.ingestEvent(payload, source_id);
-    
+
     // Sync canonical registry to state.events so marketplace immediately recognizes it
     canonicalRegistry.syncToState(state.events);
 
@@ -2433,9 +2452,9 @@ router.post('/api/discovery/promoters/import/confirm', requireDiscoveryAdmin, (r
  * Single promoter profile with provenance claims and linked canonical events
  */
 router.get('/api/discovery/promoters/:id', (req, res) => {
-  const promoter = promoterRegistry.getPromoterById(req.params.id) || 
-                   promoterRegistry.getPromoterBySlug(req.params.id) ||
-                   promoterRegistry.getPromoterByHandle(req.params.id);
+  const promoter = promoterRegistry.getPromoterById(req.params.id) ||
+    promoterRegistry.getPromoterBySlug(req.params.id) ||
+    promoterRegistry.getPromoterByHandle(req.params.id);
   if (!promoter) {
     return res.status(404).json({ error: `Promoter ${req.params.id} not found` });
   }
@@ -2443,7 +2462,7 @@ router.get('/api/discovery/promoters/:id', (req, res) => {
   // Find canonical events associated with this promoter
   const events = canonicalRegistry.getAllEvents().filter(e => {
     return (e.organizer_name && e.organizer_name.toLowerCase().includes(promoter.canonical_name.toLowerCase())) ||
-           (e.sources && e.sources.some(s => s.source_id && (promoter.source_ids || []).includes(s.source_id)));
+      (e.sources && e.sources.some(s => s.source_id && (promoter.source_ids || []).includes(s.source_id)));
   });
 
   res.json({ success: true, promoter, events });
@@ -2647,7 +2666,7 @@ router.get('/api/discovery/conflicts', (req, res) => {
 router.get('/api/discovery/source-audit', (req, res) => {
   try {
     const allEvents = canonicalRegistry.getAllEvents();
-    
+
     // Evaluate per-source statistics
     const sources = {
       'src-venue-love-gbk-instagram': {
@@ -2761,9 +2780,9 @@ router.get('/api/discovery/source-audit', (req, res) => {
 router.get('/api/discovery/audit-trail/:eventId', (req, res) => {
   try {
     const eventId = req.params.eventId;
-    const event = canonicalRegistry.getEventById(eventId) || 
-                  canonicalRegistry.getEventBySlug(eventId) ||
-                  (canonicalRegistry.getAllEvents() || []).find(e => e.id === eventId || e.event_id === eventId || e.slug === eventId);
+    const event = canonicalRegistry.getEventById(eventId) ||
+      canonicalRegistry.getEventBySlug(eventId) ||
+      (canonicalRegistry.getAllEvents() || []).find(e => e.id === eventId || e.event_id === eventId || e.slug === eventId);
 
     if (!event) {
       return res.status(404).json({ success: false, error: `Event not found: ${eventId}` });
@@ -3238,7 +3257,7 @@ async function handleDiscoverySyncCron(req, res) {
         duplicates_merged: report.counts?.duplicates_merged || 0,
         error_count: (report.errors || []).length,
         report
-      }).catch(() => {});
+      }).catch(() => { });
     }
 
     res.json({
@@ -3254,11 +3273,11 @@ async function handleDiscoverySyncCron(req, res) {
         status: 'FAILED',
         error_count: 1,
         report: { error: err.message }
-      }).catch(() => {});
+      }).catch(() => { });
     }
     res.status(500).json({ success: false, error: err.message });
   } finally {
-    await catalogRepo.releaseAdvisoryLock(lockId).catch(() => {});
+    await catalogRepo.releaseAdvisoryLock(lockId).catch(() => { });
   }
 }
 

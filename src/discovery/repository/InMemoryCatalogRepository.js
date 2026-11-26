@@ -11,6 +11,38 @@
 
 const { CatalogRepository } = require('./CatalogRepository');
 const { EventVisualProvenanceService } = require('../EventVisualProvenanceService');
+const hygiene = require('../CatalogHygienePolicy');
+
+function parseTimestampMs(value) {
+  if (!value) return null;
+  const ms = value instanceof Date ? value.getTime() : Date.parse(String(value));
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function isRowTerminal(record) {
+  if (!record) return false;
+  return hygiene.isTerminalEvent(record) || hygiene.isTerminalEvent({ status: record.metadata?.status });
+}
+
+function getIncomingTimestampIso(eventData) {
+  const raw = eventData?.source_updated_at ?? eventData?.metadata?.source_updated_at ?? eventData?.updated_at ?? null;
+  const ms = parseTimestampMs(raw);
+  return ms !== null ? new Date(ms).toISOString() : null;
+}
+
+function getExistingTimestampMs(existing, eventData) {
+  if (!existing) return null;
+  const hasIncomingSourceTs = parseTimestampMs(eventData?.source_updated_at ?? eventData?.metadata?.source_updated_at) !== null;
+  const existingSourceMs = parseTimestampMs(existing.source_updated_at ?? existing.metadata?.source_updated_at);
+  const existingUpdatedMs = parseTimestampMs(existing.updated_at);
+  if (hasIncomingSourceTs && existingSourceMs !== null) {
+    return existingSourceMs;
+  }
+  if (existingSourceMs !== null && existingUpdatedMs !== null) {
+    return Math.max(existingSourceMs, existingUpdatedMs);
+  }
+  return existingSourceMs !== null ? existingSourceMs : existingUpdatedMs;
+}
 
 class InMemoryCatalogRepository extends CatalogRepository {
   constructor() {
@@ -48,19 +80,16 @@ class InMemoryCatalogRepository extends CatalogRepository {
   }
 
   async getUpcomingEvents(now = new Date()) {
-    const nowDateStr = (now instanceof Date ? now : new Date(now)).toISOString().substring(0, 10);
+    const nowDateStr = hygiene.getTodayWibIso(now instanceof Date ? now : new Date(now));
     return Array.from(this.events.values()).filter(e => {
-      const isArchived = e.archive_status === 'ARCHIVED' || e.lifecycle_status === 'ARCHIVED';
-      if (isArchived) return false;
+      if (isRowTerminal(e)) return false;
       const eventDate = e.start_date || (e.start_datetime ? e.start_datetime.substring(0, 10) : null);
       return !eventDate || eventDate >= nowDateStr;
     });
   }
 
   async getArchivedEvents() {
-    return Array.from(this.events.values()).filter(e =>
-      e.archive_status === 'ARCHIVED' || e.lifecycle_status === 'ARCHIVED'
-    );
+    return Array.from(this.events.values()).filter(e => isRowTerminal(e));
   }
 
   async upsertCanonicalEvent(eventData, options = {}) {
@@ -69,32 +98,32 @@ class InMemoryCatalogRepository extends CatalogRepository {
     }
     const id = eventData.id || eventData.event_id;
     const existing = this.events.get(id);
+    const allowAdminOverride = Boolean(options.allowAdminOverride === true || options.isAdminOverride === true);
+
+    // 1. FULL TERMINAL PROTECTION:
+    // Never resurrect an existing row whose status, lifecycle_status, archive_status, or metadata.status
+    // is in CatalogHygienePolicy.TERMINAL_STATUSES unless allowAdminOverride === true.
+    if (existing && isRowTerminal(existing) && !allowAdminOverride) {
+      return existing;
+    }
+
+    // 2. STALE-SNAPSHOT GUARD:
+    // Ignore incoming updates whose source_updated_at / updated_at is older than the existing row's timestamp.
+    const incomingTsIso = getIncomingTimestampIso(eventData);
+    const incomingTsMs = parseTimestampMs(incomingTsIso);
+    const existingTsMs = getExistingTimestampMs(existing, eventData);
+    if (existing && !allowAdminOverride && incomingTsMs !== null && existingTsMs !== null && incomingTsMs < existingTsMs) {
+      return existing;
+    }
 
     // ADMIN LOCK CONFLICT RESOLUTION:
     // If fields are locked by an admin (admin_lock_mask), automated crawlers cannot overwrite them.
     const effectiveData = { ...eventData };
-    if (existing && Array.isArray(existing.admin_lock_mask) && existing.admin_lock_mask.length > 0 && !options.isAdminOverride) {
+    if (existing && Array.isArray(existing.admin_lock_mask) && existing.admin_lock_mask.length > 0 && !allowAdminOverride) {
       for (const lockedField of existing.admin_lock_mask) {
         if (effectiveData[lockedField] !== undefined) {
           effectiveData[lockedField] = existing[lockedField];
         }
-      }
-    }
-
-    // ANTI-RESURRECTION INVARIANT:
-    // If already ARCHIVED or COMPLETED, incoming UPCOMING updates must not resurrect it
-    if (existing) {
-      const isTerminal = (
-        existing.archive_status === 'ARCHIVED' ||
-        existing.lifecycle_status === 'ARCHIVED' ||
-        existing.lifecycle_status === 'COMPLETED' ||
-        existing.status === 'ARCHIVED'
-      );
-      if (isTerminal && (effectiveData.lifecycle_status === 'UPCOMING' || effectiveData.status === 'UPCOMING' || !effectiveData.lifecycle_status)) {
-        // Retain archived lifecycle
-        effectiveData.archive_status = 'ARCHIVED';
-        effectiveData.lifecycle_status = existing.lifecycle_status;
-        effectiveData.homepage_visibility = false;
       }
     }
 
@@ -112,7 +141,7 @@ class InMemoryCatalogRepository extends CatalogRepository {
             field_name: field,
             old_value: existing[field],
             new_value: effectiveData[field],
-            changed_by: options.changedBy || (options.isAdminOverride ? 'ADMIN' : 'CRAWLER'),
+            changed_by: options.changedBy || (allowAdminOverride ? 'ADMIN' : 'CRAWLER'),
             change_source: options.changeSource || 'INGESTION_PIPELINE',
             reason: options.reason || 'Continuous discovery state update'
           });
@@ -120,11 +149,19 @@ class InMemoryCatalogRepository extends CatalogRepository {
       }
     }
 
+    const incomingSourceTsMs = parseTimestampMs(effectiveData.source_updated_at ?? effectiveData.metadata?.source_updated_at);
+    const nextSourceUpdatedAt = incomingSourceTsMs !== null
+      ? new Date(incomingSourceTsMs).toISOString()
+      : (existing?.source_updated_at || existing?.metadata?.source_updated_at || null);
+    const nextStatus = effectiveData.status || effectiveData.metadata?.status || existing?.status || existing?.metadata?.status || null;
+
     const merged = {
       ...(existing || {}),
       ...effectiveData,
       id,
       ...preferredImg,
+      ...(nextStatus ? { status: nextStatus } : {}),
+      ...(nextSourceUpdatedAt ? { source_updated_at: nextSourceUpdatedAt } : {}),
       poster_url: effectiveData.poster_url || preferredImg.image_url,
       poster_thumbnail_url: effectiveData.poster_thumbnail_url || preferredImg.thumbnail_url || preferredImg.image_url,
       poster_source_url: effectiveData.poster_source_url || preferredImg.image_source_url,
@@ -136,12 +173,22 @@ class InMemoryCatalogRepository extends CatalogRepository {
       metadata: {
         ...(existing?.metadata || {}),
         ...(effectiveData.metadata || {}),
+        ...(nextStatus ? { status: nextStatus } : {}),
+        ...(nextSourceUpdatedAt ? { source_updated_at: nextSourceUpdatedAt } : {}),
         ...preferredImg
       },
-      updated_at: new Date().toISOString()
+      updated_at: incomingTsIso || new Date().toISOString()
     };
     if (!merged.created_at) {
       merged.created_at = new Date().toISOString();
+    }
+
+    // Re-verify atomic terminal/stale invariants immediately before commit
+    const latest = this.events.get(id);
+    if (latest && !allowAdminOverride) {
+      if (isRowTerminal(latest)) return latest;
+      const latestTsMs = getExistingTimestampMs(latest, eventData);
+      if (incomingTsMs !== null && latestTsMs !== null && incomingTsMs < latestTsMs) return latest;
     }
 
     this.events.set(id, merged);
@@ -172,8 +219,8 @@ class InMemoryCatalogRepository extends CatalogRepository {
     return this.changeHistory.filter(h => h.event_id === eventId);
   }
 
-  async upsertEvent(eventData) {
-    return this.upsertCanonicalEvent(eventData);
+  async upsertEvent(eventData, options = {}) {
+    return this.upsertCanonicalEvent(eventData, options);
   }
 
   async insertEventIfAbsent(eventData) {

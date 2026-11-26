@@ -335,6 +335,7 @@ router.get('/auth/me', (req, res) => {
  * GET /api/mvp/events
  */
 router.get('/events', (req, res) => {
+  const hygiene = require('../discovery/CatalogHygienePolicy');
   const { city, category, source, verified, startDate, endDate, include_past, scope } = req.query;
   const q = req.query.q || req.query.search;
 
@@ -364,6 +365,7 @@ router.get('/events', (req, res) => {
         if (evStatus !== qStatus && evLifecycle !== qStatus) return false;
       }
     } else {
+      if (!hygiene.isEligibleForActiveResale(event, hygiene.getTodayWibIso(now))) return false;
       // PUBLIC FAIL-CLOSED GATE (Provenance Gate + Temporal Gate + Lifecycle Gate)
       // 1. TEMPORAL GATE: event_end_at <= now is an absolute public Upcoming exclusion
       if (!EventTemporalLifecycleEngine.isEventUpcoming(event, now)) {
@@ -415,7 +417,7 @@ router.get('/events', (req, res) => {
 
     // Category filter (KONSER, STANDUP, FESTIVAL, OLAHRAGA, TEATER, LAINNYA)
     if (category && category.trim()) {
-      if ((event.category || '').toUpperCase() !== category.toUpperCase().trim()) return false;
+      if (hygiene.normalizeCategory(event.category) !== hygiene.normalizeCategory(category)) return false;
     }
 
     // Source filter (SEED, USER_CREATED)
@@ -452,6 +454,8 @@ router.get('/events', (req, res) => {
 
     return true;
   });
+
+  if (!showAllOrPast) filtered = hygiene.deduplicateEvents(filtered);
 
   // Sort upcoming events first (ascending by start_date / event_start_at)
   filtered.sort((a, b) => {
@@ -1411,6 +1415,7 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       'INVALID_FULFILLMENT_TYPE',
       'VALIDATION_ERROR',
       'EVENT_NOT_FOUND',
+      'EVENT_ALREADY_PASSED',
       'EVENT_CONCLUDED',
       'INVALID_EVENT_DATE',
       'LISTING_WINDOW_CLOSED',

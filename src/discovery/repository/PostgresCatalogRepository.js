@@ -19,6 +19,21 @@ const { CatalogRepository } = require('./CatalogRepository');
 const { InMemoryCatalogRepository } = require('./InMemoryCatalogRepository');
 const { EventVisualProvenanceService } = require('../EventVisualProvenanceService');
 const { CuratedCatalogPolicy, OFFICIAL_MIN_TICKET_PRICE } = require('../CuratedCatalogPolicy');
+const hygiene = require('../CatalogHygienePolicy');
+
+const TERMINAL_SQL_LIST = hygiene.TERMINAL_STATUSES.map(s => `'${s}'`).join(', ');
+
+function parseTimestampMs(value) {
+  if (!value) return null;
+  const ms = value instanceof Date ? value.getTime() : Date.parse(String(value));
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function getIncomingTimestampIso(eventData) {
+  const raw = eventData?.source_updated_at ?? eventData?.metadata?.source_updated_at ?? eventData?.updated_at ?? null;
+  const ms = parseTimestampMs(raw);
+  return ms !== null ? new Date(ms).toISOString() : null;
+}
 
 const CANONICAL_EVENT_SELECT_FIELDS = `
   id, slug, canonical_name, event_type, category,
@@ -173,21 +188,24 @@ class PostgresCatalogRepository extends CatalogRepository {
 
   async getUpcomingEvents(now = new Date()) {
     if (this.degraded || !this.pool) {
-      return this.fallbackRepo.getUpcomingEvents(now);
+      const events = await this.fallbackRepo.getUpcomingEvents(now);
+      return hygiene.deduplicateEvents(events.filter(event => hygiene.isEligibleForActiveResale(event, hygiene.getTodayWibIso(now))));
     }
     try {
-      const nowDateStr = (now instanceof Date ? now : new Date(now)).toISOString().substring(0, 10);
+      const nowDateStr = hygiene.getTodayWibIso(now instanceof Date ? now : new Date(now));
       const res = await this.query(
         `SELECT ${CANONICAL_EVENT_SELECT_FIELDS} FROM canonical_events
-         WHERE archive_status != 'ARCHIVED'
-           AND lifecycle_status != 'ARCHIVED'
+         WHERE UPPER(COALESCE(archive_status, '')) NOT IN (${TERMINAL_SQL_LIST})
+           AND UPPER(COALESCE(lifecycle_status, '')) NOT IN (${TERMINAL_SQL_LIST})
+           AND UPPER(COALESCE(metadata->>'status', '')) NOT IN (${TERMINAL_SQL_LIST})
            AND start_date >= $1
          ORDER BY start_date ASC`,
         [nowDateStr]
       );
-      return res.rows.map(r => this.mapRowToEvent(r));
+      return hygiene.deduplicateEvents(res.rows.map(r => this.mapRowToEvent(r)).filter(event => hygiene.isEligibleForActiveResale(event, nowDateStr)));
     } catch (_) {
-      return this.fallbackRepo.getUpcomingEvents(now);
+      const events = await this.fallbackRepo.getUpcomingEvents(now);
+      return hygiene.deduplicateEvents(events.filter(event => hygiene.isEligibleForActiveResale(event, hygiene.getTodayWibIso(now))));
     }
   }
 
@@ -219,15 +237,16 @@ class PostgresCatalogRepository extends CatalogRepository {
     }
   }
 
-  async upsertCanonicalEvent(eventData) {
+  async upsertCanonicalEvent(eventData, options = {}) {
     if (this.degraded || !this.pool) {
-      return this.fallbackRepo.upsertCanonicalEvent(eventData);
+      return this.fallbackRepo.upsertCanonicalEvent(eventData, options);
     }
 
+    const allowAdminOverride = Boolean(options.allowAdminOverride === true || options.isAdminOverride === true);
     let id = eventData.id || eventData.event_id;
     const slug = eventData.slug;
 
-    // Check anti-resurrection and retrieve existing event for preservation
+    // Retrieve existing event for provenance merging and slug/id resolution
     const existing = (id ? await this.getEventById(id) : null) || (slug ? await this.getEventBySlug(slug) : null);
     if (existing && existing.id) {
       id = existing.id;
@@ -255,26 +274,19 @@ class PostgresCatalogRepository extends CatalogRepository {
     const maxPrice = eventData.max_price || null;
     const isVerified = eventData.is_verified === true;
     const verificationStatus = eventData.verification_status || (isVerified ? 'VERIFIED' : 'UNVERIFIED');
-    let lifecycleStatus = eventData.lifecycle_status || 'UPCOMING';
-    let archiveStatus = eventData.archive_status || 'ACTIVE';
+    const lifecycleStatus = eventData.lifecycle_status || 'UPCOMING';
+    const archiveStatus = eventData.archive_status || 'ACTIVE';
     const archivedAt = eventData.archived_at || null;
     const publicVisibility = eventData.public_visibility !== false;
-    let homepageVisibility = eventData.homepage_visibility === true;
+    const homepageVisibility = eventData.homepage_visibility === true;
 
     const existingMeta = existing ? (existing.metadata || {}) : {};
-
-    if (existing) {
-      const isTerminal = (
-        existing.archive_status === 'ARCHIVED' ||
-        existing.lifecycle_status === 'ARCHIVED' ||
-        existing.lifecycle_status === 'COMPLETED'
-      );
-      if (isTerminal && (lifecycleStatus === 'UPCOMING' || !eventData.lifecycle_status)) {
-        archiveStatus = 'ARCHIVED';
-        lifecycleStatus = existing.lifecycle_status;
-        homepageVisibility = false;
-      }
-    }
+    const incomingTsIso = getIncomingTimestampIso(eventData);
+    const incomingSourceTsMs = parseTimestampMs(eventData.source_updated_at ?? eventData.metadata?.source_updated_at);
+    const nextSourceUpdatedAt = incomingSourceTsMs !== null
+      ? new Date(incomingSourceTsMs).toISOString()
+      : (existingMeta.source_updated_at || null);
+    const nextStatus = eventData.status || (eventData.metadata && eventData.metadata.status) || existing?.status || existingMeta.status || null;
 
     const resolvedIncomingImg = EventVisualProvenanceService.resolveCatalogEventImageProvenance(
       {
@@ -298,6 +310,8 @@ class PostgresCatalogRepository extends CatalogRepository {
     const metadataObj = {
       ...existingMeta,
       ...(eventData.metadata || {}),
+      ...(nextStatus ? { status: nextStatus } : {}),
+      ...(nextSourceUpdatedAt ? { source_updated_at: nextSourceUpdatedAt } : {}),
       artist: eventData.artist || (eventData.metadata && eventData.metadata.artist) || existingMeta.artist || null,
       artists: Array.isArray(eventData.artists) && eventData.artists.length > 0
         ? eventData.artists
@@ -332,6 +346,12 @@ class PostgresCatalogRepository extends CatalogRepository {
     };
     const metadata = JSON.stringify(metadataObj);
 
+    const terminalConditionSql = `(
+      UPPER(COALESCE(canonical_events.lifecycle_status, '')) IN (${TERMINAL_SQL_LIST})
+      OR UPPER(COALESCE(canonical_events.archive_status, '')) IN (${TERMINAL_SQL_LIST})
+      OR UPPER(COALESCE(canonical_events.metadata->>'status', '')) IN (${TERMINAL_SQL_LIST})
+    )`;
+
     const sql = `
       INSERT INTO canonical_events (
         id, slug, canonical_name, event_type, category,
@@ -348,7 +368,7 @@ class PostgresCatalogRepository extends CatalogRepository {
         $16, $17, $18, $19,
         $20, $21, $22, $23,
         $24, $25, $26,
-        $27, $28, $29, NOW()
+        $27, $28, $29, COALESCE($30::timestamptz, NOW())
       )
       ON CONFLICT (id) DO UPDATE SET
         slug = EXCLUDED.slug,
@@ -374,21 +394,36 @@ class PostgresCatalogRepository extends CatalogRepository {
         is_verified = EXCLUDED.is_verified,
         verification_status = EXCLUDED.verification_status,
         lifecycle_status = CASE
-          WHEN canonical_events.archive_status = 'ARCHIVED' THEN canonical_events.lifecycle_status
+          WHEN NOT $31::boolean AND ${terminalConditionSql} THEN canonical_events.lifecycle_status
           ELSE EXCLUDED.lifecycle_status
         END,
         archive_status = CASE
-          WHEN canonical_events.archive_status = 'ARCHIVED' THEN 'ARCHIVED'
+          WHEN NOT $31::boolean AND ${terminalConditionSql} THEN canonical_events.archive_status
           ELSE EXCLUDED.archive_status
         END,
         archived_at = COALESCE(EXCLUDED.archived_at, canonical_events.archived_at),
         public_visibility = EXCLUDED.public_visibility,
         homepage_visibility = CASE
-          WHEN canonical_events.archive_status = 'ARCHIVED' THEN FALSE
+          WHEN NOT $31::boolean AND ${terminalConditionSql} THEN FALSE
           ELSE EXCLUDED.homepage_visibility
         END,
         metadata = EXCLUDED.metadata,
-        updated_at = NOW()
+        updated_at = COALESCE($30::timestamptz, NOW())
+      WHERE (
+        $31::boolean = TRUE
+        OR (
+          UPPER(COALESCE(canonical_events.lifecycle_status, '')) NOT IN (${TERMINAL_SQL_LIST})
+          AND UPPER(COALESCE(canonical_events.archive_status, '')) NOT IN (${TERMINAL_SQL_LIST})
+          AND UPPER(COALESCE(canonical_events.metadata->>'status', '')) NOT IN (${TERMINAL_SQL_LIST})
+          AND (
+            $30::timestamptz IS NULL
+            OR GREATEST(
+                 COALESCE(canonical_events.updated_at, to_timestamp(0)),
+                 COALESCE(NULLIF(canonical_events.metadata->>'source_updated_at', '')::timestamptz, to_timestamp(0))
+               ) <= $30::timestamptz
+          )
+        )
+      )
       RETURNING ${CANONICAL_EVENT_SELECT_FIELDS};
     `;
 
@@ -399,24 +434,26 @@ class PostgresCatalogRepository extends CatalogRepository {
       organizer, officialEventUrl, officialTicketUrl, ticketingProvider,
       minPrice, maxPrice, isVerified, verificationStatus,
       lifecycleStatus, archiveStatus, archivedAt,
-      publicVisibility, homepageVisibility, metadata
+      publicVisibility, homepageVisibility, metadata,
+      incomingTsIso, allowAdminOverride
     ];
 
     try {
       const res = await this.query(sql, params);
-      const row = res.rows[0];
+      const row = res && res.rows ? res.rows[0] : null;
+      if (!row) return await this.getEventById(id);
       const event = this.mapRowToEvent(row);
       // also keep in-memory fallback in sync
-      this.fallbackRepo.upsertCanonicalEvent(event);
+      await this.fallbackRepo.upsertCanonicalEvent(event, options);
       return event;
     } catch (err) {
       console.warn(`[CatalogRepository] Database upsert failed: ${err.message}. Saving to fallback.`);
-      return this.fallbackRepo.upsertCanonicalEvent(eventData);
+      return this.fallbackRepo.upsertCanonicalEvent(eventData, options);
     }
   }
 
-  async upsertEvent(eventData) {
-    return this.upsertCanonicalEvent(eventData);
+  async upsertEvent(eventData, options = {}) {
+    return this.upsertCanonicalEvent(eventData, options);
   }
 
   async insertEventIfAbsent(eventData) {
@@ -927,6 +964,8 @@ class PostgresCatalogRepository extends CatalogRepository {
       verification_status: normalizedVerificationStatus,
       lifecycle_status: row.lifecycle_status,
       archive_status: row.archive_status,
+      ...((row.status || meta.status) ? { status: row.status || meta.status } : {}),
+      ...(meta.source_updated_at ? { source_updated_at: meta.source_updated_at } : {}),
       archived_at: row.archived_at ? (row.archived_at instanceof Date ? row.archived_at.toISOString() : row.archived_at) : null,
       public_visibility: row.public_visibility === true && isPriceQual,
       homepage_visibility: (row.homepage_visibility === true || (isVerifiedBool && row.public_visibility === true && row.archive_status !== 'ARCHIVED' && row.lifecycle_status !== 'ARCHIVED')) && isPriceQual,

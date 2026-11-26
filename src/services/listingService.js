@@ -271,6 +271,14 @@ class ListingService {
       throw err;
     }
 
+    const hygiene = require('../discovery/CatalogHygienePolicy');
+    if (!hygiene.isEligibleForActiveResale(event)) {
+      const err = new Error(`Event ${eventId} is not eligible for active resale`);
+      err.code = 'EVENT_ALREADY_PASSED';
+      err.status = 400;
+      throw err;
+    }
+
     // 2b. Validate Pilot Price Bounds & Markup Cap
     const { validateListingPrice } = require('../config/pricingConfig');
     let needsManualReview = false;
