@@ -11,39 +11,40 @@ class MarketplaceRepository {
   }
 
   // Tickets
-  async createTicket(ticketData) { throw new Error('Not implemented'); }
-  async getTicketById(ticketId) { throw new Error('Not implemented'); }
-  async updateTicketStatus(ticketId, status, lockedBy = null) { throw new Error('Not implemented'); }
+  async createTicket(ticketData, txContext = null) { throw new Error('Not implemented'); }
+  async getTicketById(ticketId, txContext = null) { throw new Error('Not implemented'); }
+  async updateTicketStatus(ticketId, status, lockedBy = null, txContext = null) { throw new Error('Not implemented'); }
   async listTicketsBySeller(sellerId) { throw new Error('Not implemented'); }
   async listAllTickets(limit = 200) { throw new Error('Not implemented'); }
 
   // Atomic Parent-First Ticket & Listing Creation
-  async createTicketAndListing({ ticketData, listingData }) { throw new Error('Not implemented'); }
+  async createTicketAndListing({ ticketData, listingData }, txContext = null) { throw new Error('Not implemented'); }
 
   // Listings
-  async createListing(listingData) { throw new Error('Not implemented'); }
-  async getListingById(listingId) { throw new Error('Not implemented'); }
-  async updateListingStatus(listingId, status) { throw new Error('Not implemented'); }
-  async updateListingInventory(listingId, updates) { throw new Error('Not implemented'); }
-  async atomicReserveInventory(listingId, requestedQty = 1) { throw new Error('Not implemented'); }
-  async atomicReleaseInventory(listingId, quantity = 1) { throw new Error('Not implemented'); }
+  async createListing(listingData, txContext = null) { throw new Error('Not implemented'); }
+  async getListingById(listingId, txContext = null) { throw new Error('Not implemented'); }
+  async updateListing(listingId, updates, txContext = null) { throw new Error('Not implemented'); }
+  async updateListingStatus(listingId, status, txContext = null) { throw new Error('Not implemented'); }
+  async updateListingInventory(listingId, updates, txContext = null) { throw new Error('Not implemented'); }
+  async atomicReserveInventory(listingId, requestedQty = 1, txContext = null) { throw new Error('Not implemented'); }
+  async atomicReleaseInventory(listingId, quantity = 1, txContext = null) { throw new Error('Not implemented'); }
   async listActiveListings(canonicalEventId = null) { throw new Error('Not implemented'); }
   async listListingsBySeller(sellerId) { throw new Error('Not implemented'); }
   async listAllListings(limit = 200) { throw new Error('Not implemented'); }
 
   // Reservations
   async createReservation(reservationData, ttlMs = 600000) { throw new Error('Not implemented'); }
-  async getReservationById(reservationId) { throw new Error('Not implemented'); }
-  async getActiveReservationForListing(listingId) { throw new Error('Not implemented'); }
+  async getReservationById(reservationId, txContext = null) { throw new Error('Not implemented'); }
+  async getActiveReservationForListing(listingId, txContext = null) { throw new Error('Not implemented'); }
   async expireReservation(reservationId) { throw new Error('Not implemented'); }
-  async convertReservation(reservationId) { throw new Error('Not implemented'); }
+  async convertReservation(reservationId, txContext = null) { throw new Error('Not implemented'); }
   async cancelReservation(reservationId) { throw new Error('Not implemented'); }
   async reconcileExpiredReservations() { throw new Error('Not implemented'); }
 
   // Deliveries
-  async createDelivery(deliveryData) { throw new Error('Not implemented'); }
-  async getDeliveryByOrderId(orderId) { throw new Error('Not implemented'); }
-  async updateDeliveryStatus(deliveryId, status, metadata = {}) { throw new Error('Not implemented'); }
+  async createDelivery(deliveryData, txContext = null) { throw new Error('Not implemented'); }
+  async getDeliveryByOrderId(orderId, txContext = null) { throw new Error('Not implemented'); }
+  async updateDeliveryStatus(deliveryId, status, metadata = {}, txContext = null) { throw new Error('Not implemented'); }
 
   // Offers & Negotiations (Epic 4.0 Durable Persistence)
   async createOfferWithNegotiation(offerRecord, negotiationRecord, auditEntry = null) { throw new Error('Not implemented'); }

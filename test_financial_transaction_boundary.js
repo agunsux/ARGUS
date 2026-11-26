@@ -12,45 +12,145 @@
 
 const assert = require('assert');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const { Client } = require('pg');
 
 process.env.NODE_ENV = 'test';
 
-// Set isolated test database URL from environment or preview connection
-const TEST_DB_URL = process.env.TEST_DATABASE_URL ||
-  'postgresql://neondb_owner:npg_kRMvQPcwfx35@ep-muddy-thunder-b4yvk29p-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require';
-process.env.TEST_DATABASE_URL = TEST_DB_URL;
-
 const {
-  UnitOfWork,
-  PostgresMoneyRepository,
-  PostgresMarketplaceRepository,
-  InMemoryMoneyRepository,
-  InMemoryMarketplaceRepository
-} = require('./src/storage');
-const { FinancialLedger, LEDGER_ACCOUNTS } = require('./src/settlement/FinancialLedger');
-const { outboxDispatcher, OutboxDispatcher } = require('./src/services/outbox/OutboxDispatcher');
-const { state } = require('./src/database');
+  applyTransactionSchema,
+  closeAllSharedPools,
+  normalizeConnectionString,
+  sanitizeSchemaName
+} = require('./src/storage/connectionPool');
+
+const MIGRATION_FILES = [
+  '000_user_and_auth_schema.sql',
+  '001_catalog_schema.sql',
+  '002_marketplace_and_money_schema.sql',
+  '006_compliance_and_dual_authorization.sql',
+  '008_transactional_outbox_schema.sql',
+  '033_tx_integrity_quote_order_binding.sql'
+];
+
+function parseCliArgs(argv) {
+  const opts = { setupOnly: false, schema: null, section: null, dropSchema: null, only: null };
+  for (const arg of argv) {
+    if (arg === '--setup-only') {
+      opts.setupOnly = true;
+    } else if (arg.startsWith('--schema=')) {
+      opts.schema = arg.slice('--schema='.length).trim();
+    } else if (arg.startsWith('--section=')) {
+      opts.section = arg.slice('--section='.length).trim();
+    } else if (arg.startsWith('--drop-schema=')) {
+      opts.dropSchema = arg.slice('--drop-schema='.length).trim();
+    } else if (arg.startsWith('--only=')) {
+      opts.only = arg.slice('--only='.length).split(',').map(id => id.trim());
+    } else {
+      throw new Error(`Unknown CLI argument: ${arg}`);
+    }
+  }
+  if (opts.setupOnly && (opts.schema || opts.section || opts.dropSchema || opts.only)) {
+    throw new Error('--setup-only cannot be combined with --schema, --section, or --drop-schema');
+  }
+  if (opts.dropSchema && (opts.setupOnly || opts.schema || opts.section || opts.only)) {
+    throw new Error('--drop-schema cannot be combined with --setup-only, --schema, or --section');
+  }
+  if (opts.section && !['1', '2a', '2b', '3', '4', '5'].includes(opts.section)) {
+    throw new Error(`Invalid --section='${opts.section}'. Expected one of: 1, 2a, 2b, 3, 4, 5`);
+  }
+  if (opts.section && !opts.schema) {
+    throw new Error('--section requires --schema=<name>');
+  }
+  if (opts.only) {
+    const validIds = ['1.1', ...Array.from({ length: 7 }, (_, i) => `2.${i + 1}`),
+      '3.1', '3.2', '3.3', '4.1', '4.2', '4.3', '5.1', '5.2'];
+    if (!opts.schema || opts.section || opts.only.some(id => !validIds.includes(id)) || new Set(opts.only).size !== opts.only.length) {
+      throw new Error('--only requires --schema, unique valid test IDs, and no --section');
+    }
+  }
+  return opts;
+}
+
+function assertIsolatedSchemaName(name) {
+  const safe = sanitizeSchemaName(name);
+  if (!safe) throw new Error('Schema name must be non-empty');
+  const lower = safe.toLowerCase();
+  if (lower === 'public' || lower === 'information_schema' || lower.startsWith('pg_')) {
+    throw new Error(`Refusing unsafe schema name: '${safe}'`);
+  }
+  return safe;
+}
+
+const CLI_OPTIONS = parseCliArgs(process.argv.slice(2));
+
+// The operator must explicitly provide a database; never embed credentials.
+const TEST_DB_URL = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL;
+if (!TEST_DB_URL) throw new Error('TEST_DATABASE_URL or DATABASE_URL is required');
+const TEST_SCHEMA = CLI_OPTIONS.dropSchema
+  ? assertIsolatedSchemaName(CLI_OPTIONS.dropSchema)
+  : (CLI_OPTIONS.schema
+    ? assertIsolatedSchemaName(CLI_OPTIONS.schema)
+    : `tx_boundary_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`);
+process.env.TEST_DATABASE_URL = TEST_DB_URL;
+process.env.TEST_DATABASE_SCHEMA = TEST_SCHEMA;
 
 async function getIndependentClient() {
-  const cleanConn = TEST_DB_URL.replace(/['"]/g, '');
+  const cleanConn = normalizeConnectionString(TEST_DB_URL);
   const client = new Client({
     connectionString: cleanConn,
     ssl: { rejectUnauthorized: false }
   });
   await client.connect();
-  return client;
+  // SET LOCAL must be applied on the same transaction as each query: Neon
+  // pooler connections do not preserve session-level search_path.
+  async function inTransaction(fn) {
+    await client.query('BEGIN');
+    try {
+      await applyTransactionSchema(client, TEST_SCHEMA);
+      const result = await fn((sql, params) => client.query(sql, params));
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      try { await client.query('ROLLBACK'); } catch (_) {}
+      throw error;
+    }
+  }
+  return {
+    query(sql, params) {
+      return inTransaction((q) => q(sql, params));
+    },
+    inTransaction,
+    end: () => client.end()
+  };
 }
 
-async function runTestSuite() {
+async function runTestSuite(selectedSection = null) {
+  const {
+    PostgresMoneyRepository,
+    PostgresMarketplaceRepository,
+    getMoneyRepository,
+    getMarketplaceRepository,
+    setMoneyRepository,
+    setMarketplaceRepository
+  } = require('./src/storage');
+  const { UnitOfWork } = require('./src/storage/UnitOfWork');
+  const { FinancialLedger, LEDGER_ACCOUNTS } = require('./src/settlement/FinancialLedger');
+  const { outboxDispatcher } = require('./src/services/outbox/OutboxDispatcher');
+  const { state } = require('./src/database');
+
+  const shouldRun = (sec) => !selectedSection || selectedSection === sec;
+
   console.log('================================================================');
-  console.log('  TIKUM FINANCIAL TRANSACTION BOUNDARY — P0 ACCEPTANCE SUITE');
+  console.log(`  TIKUM FINANCIAL TRANSACTION BOUNDARY — P0 ACCEPTANCE SUITE${selectedSection ? ` [${selectedSection}]` : ''}`);
   console.log('================================================================\n');
 
   let passed = 0;
   let failed = 0;
 
   async function test(name, fn) {
+    if (CLI_OPTIONS.only && !CLI_OPTIONS.only.includes(name.split(' ')[0])) return;
     try {
       await fn();
       console.log(`  ✓ [PASS] ${name}`);
@@ -66,10 +166,17 @@ async function runTestSuite() {
     }
   }
 
-  const moneyRepo = new PostgresMoneyRepository({ connectionString: TEST_DB_URL });
-  const mktRepo = new PostgresMarketplaceRepository({ connectionString: TEST_DB_URL });
-  await moneyRepo.init();
-  await mktRepo.init();
+  const moneyRepo = new PostgresMoneyRepository({ connectionString: TEST_DB_URL, schema: TEST_SCHEMA });
+  const mktRepo = new PostgresMarketplaceRepository({ connectionString: TEST_DB_URL, schema: TEST_SCHEMA });
+  const [, , suiteObserver] = await Promise.all([
+    moneyRepo.init(),
+    mktRepo.init(),
+    getIndependentClient()
+  ]);
+  setMoneyRepository(moneyRepo);
+  setMarketplaceRepository(mktRepo);
+
+  try {
 
   // Helper to create valid baseline seed entities in DB for testing
   async function createTestFixtures(suffix) {
@@ -80,44 +187,47 @@ async function runTestSuite() {
     const paymentId = `pay-uow-${suffix}`;
     const amount = 500000;
 
-    await mktRepo.createTicket({
-      id: ticketId,
-      seller_id: 'seller-1',
-      canonical_event_id: 'event-joyland-2026',
-      face_value: amount,
-      status: 'VERIFIED'
-    });
+    await UnitOfWork.execute(async (tx) => {
+      await mktRepo.createTicket({
+        id: ticketId,
+        seller_id: 'seller-1',
+        canonical_event_id: 'event-joyland-2026',
+        face_value: amount,
+        status: 'VERIFIED'
+      }, tx);
 
-    await mktRepo.createListing({
-      id: listingId,
-      ticket_id: ticketId,
-      seller_id: 'seller-1',
-      canonical_event_id: 'event-joyland-2026',
-      price: amount,
-      status: 'ACTIVE'
-    });
+      await mktRepo.createListing({
+        id: listingId,
+        ticket_id: ticketId,
+        seller_id: 'seller-1',
+        canonical_event_id: 'event-joyland-2026',
+        price: amount,
+        fulfillment_type: 'SELLER_MANAGED',
+        status: 'ACTIVE'
+      }, tx);
 
-    await moneyRepo.createOrder({
-      id: orderId,
-      buyer_id: 'buyer-1',
-      seller_id: 'seller-1',
-      listing_id: listingId,
-      ticket_id: ticketId,
-      canonical_event_id: 'event-joyland-2026',
-      status: 'CREATED',
-      total_amount: amount,
-      buyer_total: amount,
-      seller_payout: amount,
-      currency: 'IDR'
-    });
+      await moneyRepo.createOrder({
+        id: orderId,
+        buyer_id: 'buyer-1',
+        seller_id: 'seller-1',
+        listing_id: listingId,
+        ticket_id: ticketId,
+        canonical_event_id: 'event-joyland-2026',
+        status: 'CREATED',
+        total_amount: amount,
+        buyer_total: amount,
+        seller_payout: amount,
+        currency: 'IDR'
+      }, tx);
 
-    await moneyRepo.createEscrow({
-      id: escrowId,
-      order_id: orderId,
-      buyer_id: 'buyer-1',
-      seller_id: 'seller-1',
-      amount,
-      status: 'PENDING_PAYMENT'
+      await moneyRepo.createEscrow({
+        id: escrowId,
+        order_id: orderId,
+        buyer_id: 'buyer-1',
+        seller_id: 'seller-1',
+        amount,
+        status: 'PENDING_PAYMENT'
+      }, tx);
     });
 
     return { ticketId, listingId, orderId, escrowId, paymentId, amount };
@@ -125,39 +235,42 @@ async function runTestSuite() {
 
   // Cleanup helper
   async function cleanupFixtures(fixtures, txId = null, eventId = null) {
-    const observer = await getIndependentClient();
     try {
-      if (eventId) {
-        await observer.query('DELETE FROM financial_outbox WHERE event_id = $1', [eventId]);
-      }
-      if (txId) {
-        await observer.query('DELETE FROM financial_ledger_entries WHERE transaction_id = $1', [txId]);
-        await observer.query('DELETE FROM financial_ledger_transactions WHERE transaction_id = $1', [txId]);
-      }
-      if (fixtures.paymentId) {
-        await observer.query('DELETE FROM financial_payments WHERE id = $1', [fixtures.paymentId]);
-      }
-      if (fixtures.escrowId) {
-        await observer.query('DELETE FROM financial_escrows WHERE id = $1', [fixtures.escrowId]);
-      }
-      if (fixtures.orderId) {
-        await observer.query('DELETE FROM financial_orders WHERE id = $1', [fixtures.orderId]);
-      }
-      if (fixtures.listingId) {
-        await observer.query('DELETE FROM marketplace_listings WHERE id = $1', [fixtures.listingId]);
-      }
-      if (fixtures.ticketId) {
-        await observer.query('DELETE FROM marketplace_tickets WHERE id = $1', [fixtures.ticketId]);
-      }
-    } catch (_) {
-    } finally {
-      await observer.end();
-    }
+      await suiteObserver.inTransaction(async (q) => {
+        const ops = [];
+        if (eventId) {
+          ops.push(q('DELETE FROM financial_outbox WHERE event_id = $1', [eventId]));
+        }
+        if (txId) {
+          ops.push(q('DELETE FROM financial_ledger_entries WHERE transaction_id = $1', [txId]));
+          ops.push(q('DELETE FROM financial_ledger_transactions WHERE transaction_id = $1', [txId]));
+        }
+        if (fixtures.paymentId && fixtures.orderId) {
+          ops.push(q('DELETE FROM financial_payments WHERE id = $1 OR order_id = $2', [fixtures.paymentId, fixtures.orderId]));
+        } else if (fixtures.paymentId) {
+          ops.push(q('DELETE FROM financial_payments WHERE id = $1', [fixtures.paymentId]));
+        }
+        if (fixtures.escrowId) {
+          ops.push(q('DELETE FROM financial_escrows WHERE id = $1', [fixtures.escrowId]));
+        }
+        if (fixtures.orderId) {
+          ops.push(q('DELETE FROM financial_orders WHERE id = $1', [fixtures.orderId]));
+        }
+        if (fixtures.listingId) {
+          ops.push(q('DELETE FROM marketplace_listings WHERE id = $1', [fixtures.listingId]));
+        }
+        if (fixtures.ticketId) {
+          ops.push(q('DELETE FROM marketplace_tickets WHERE id = $1', [fixtures.ticketId]));
+        }
+        await Promise.all(ops);
+      });
+    } catch (_) {}
   }
 
   // ---------------------------------------------------------------------------
   // SECTION 1: UNIT OF WORK & TRANSACTION PROPAGATION
   // ---------------------------------------------------------------------------
+  if (shouldRun('1')) {
   console.log('── Section 1: Unit of Work & Transaction Boundary Propagation ──');
 
   await test('1.1 UnitOfWork executes atomic commit across payment, order, inventory, and ledger', async () => {
@@ -210,35 +323,34 @@ async function runTestSuite() {
     });
 
     // Verification via an independent database connection
-    const observer = await getIndependentClient();
     try {
-      const payRes = await observer.query('SELECT * FROM financial_payments WHERE id = $1', [f.paymentId]);
-      assert.strictEqual(payRes.rows.length, 1, 'Payment must be committed');
-      assert.strictEqual(payRes.rows[0].status, 'SETTLED');
-
-      const ordRes = await observer.query('SELECT * FROM financial_orders WHERE id = $1', [f.orderId]);
-      assert.strictEqual(ordRes.rows[0].status, 'PAID_ESCROWED');
-
-      const listRes = await observer.query('SELECT * FROM marketplace_listings WHERE id = $1', [f.listingId]);
-      assert.strictEqual(listRes.rows[0].status, 'SOLD');
-
-      const tktRes = await observer.query('SELECT * FROM marketplace_tickets WHERE id = $1', [f.ticketId]);
-      assert.strictEqual(tktRes.rows[0].status, 'ESCROWED');
-
-      const ledgerRes = await observer.query('SELECT * FROM financial_ledger_transactions WHERE order_id = $1', [f.orderId]);
-      assert.strictEqual(ledgerRes.rows.length, 1, 'Ledger transaction must be committed');
-
-      const outboxRes = await observer.query('SELECT * FROM financial_outbox WHERE event_id = $1', [eventId]);
-      assert.strictEqual(outboxRes.rows.length, 1, 'Outbox record must be committed');
+      await suiteObserver.inTransaction(async (q) => {
+        const [payRes, ordRes, listRes, tktRes, ledgerRes, outboxRes] = await Promise.all([
+          q('SELECT * FROM financial_payments WHERE id = $1', [f.paymentId]),
+          q('SELECT * FROM financial_orders WHERE id = $1', [f.orderId]),
+          q('SELECT * FROM marketplace_listings WHERE id = $1', [f.listingId]),
+          q('SELECT * FROM marketplace_tickets WHERE id = $1', [f.ticketId]),
+          q('SELECT * FROM financial_ledger_transactions WHERE order_id = $1', [f.orderId]),
+          q('SELECT * FROM financial_outbox WHERE event_id = $1', [eventId])
+        ]);
+        assert.strictEqual(payRes.rows.length, 1, 'Payment must be committed');
+        assert.strictEqual(payRes.rows[0].status, 'SETTLED');
+        assert.strictEqual(ordRes.rows[0].status, 'PAID_ESCROWED');
+        assert.strictEqual(listRes.rows[0].status, 'SOLD');
+        assert.strictEqual(tktRes.rows[0].status, 'ESCROWED');
+        assert.strictEqual(ledgerRes.rows.length, 1, 'Ledger transaction must be committed');
+        assert.strictEqual(outboxRes.rows.length, 1, 'Outbox record must be committed');
+      });
     } finally {
-      await observer.end();
       await cleanupFixtures(f, null, eventId);
     }
   });
+  }
 
   // ---------------------------------------------------------------------------
   // SECTION 2: FAILURE RECOVERY & ROLLBACK AT EVERY STAGE
   // ---------------------------------------------------------------------------
+  if (shouldRun('2a') || shouldRun('2b')) {
   console.log('\n── Section 2: Failure Recovery & Rollback at Every Transaction Stage ──');
 
   const failureStages = [
@@ -249,7 +361,12 @@ async function runTestSuite() {
     { stage: 5, name: 'after idempotency insertion' },
     { stage: 6, name: 'after outbox insertion' },
     { stage: 7, name: 'before commit' }
-  ];
+  ].filter(({ stage }) => {
+    if (!selectedSection) return true;
+    if (selectedSection === '2a') return stage >= 1 && stage <= 4;
+    if (selectedSection === '2b') return stage >= 5 && stage <= 7;
+    return false;
+  });
 
   for (const { stage, name } of failureStages) {
     await test(`2.${stage} Failure injected ${name} cleanly rolls back ALL mutations`, async () => {
@@ -319,38 +436,36 @@ async function runTestSuite() {
       assert.strictEqual(caught, true, 'Simulated failure must be caught');
 
       // VERIFY COMPLETE ROLLBACK VIA INDEPENDENT DATABASE CONNECTION
-      const observer = await getIndependentClient();
       try {
-        const payRes = await observer.query('SELECT * FROM financial_payments WHERE id = $1', [f.paymentId]);
-        assert.strictEqual(payRes.rows.length, 0, `Stage ${stage}: Rolled-back payment must NOT exist in DB`);
-
-        const ordRes = await observer.query('SELECT * FROM financial_orders WHERE id = $1', [f.orderId]);
-        assert.strictEqual(ordRes.rows[0].status, 'CREATED', `Stage ${stage}: Order status must remain CREATED`);
-
-        const listRes = await observer.query('SELECT * FROM marketplace_listings WHERE id = $1', [f.listingId]);
-        assert.strictEqual(listRes.rows[0].status, 'ACTIVE', `Stage ${stage}: Listing must remain ACTIVE`);
-
-        const tktRes = await observer.query('SELECT * FROM marketplace_tickets WHERE id = $1', [f.ticketId]);
-        assert.strictEqual(tktRes.rows[0].status, 'VERIFIED', `Stage ${stage}: Ticket must remain VERIFIED`);
-
-        const ledgerRes = await observer.query('SELECT * FROM financial_ledger_transactions WHERE order_id = $1', [f.orderId]);
-        assert.strictEqual(ledgerRes.rows.length, 0, `Stage ${stage}: Zero ledger transactions must exist`);
-
-        const idempRes = await observer.query('SELECT * FROM financial_idempotency_records WHERE key = $1', [idempKey]);
-        assert.strictEqual(idempRes.rows.length, 0, `Stage ${stage}: Idempotency record must be rolled back`);
-
-        const outboxRes = await observer.query('SELECT * FROM financial_outbox WHERE event_id = $1', [eventId]);
-        assert.strictEqual(outboxRes.rows.length, 0, `Stage ${stage}: Outbox event must be rolled back`);
+        await suiteObserver.inTransaction(async (q) => {
+          const [payRes, ordRes, listRes, tktRes, ledgerRes, idempRes, outboxRes] = await Promise.all([
+            q('SELECT * FROM financial_payments WHERE id = $1', [f.paymentId]),
+            q('SELECT * FROM financial_orders WHERE id = $1', [f.orderId]),
+            q('SELECT * FROM marketplace_listings WHERE id = $1', [f.listingId]),
+            q('SELECT * FROM marketplace_tickets WHERE id = $1', [f.ticketId]),
+            q('SELECT * FROM financial_ledger_transactions WHERE order_id = $1', [f.orderId]),
+            q('SELECT * FROM financial_idempotency_records WHERE key = $1', [idempKey]),
+            q('SELECT * FROM financial_outbox WHERE event_id = $1', [eventId])
+          ]);
+          assert.strictEqual(payRes.rows.length, 0, `Stage ${stage}: Rolled-back payment must NOT exist in DB`);
+          assert.strictEqual(ordRes.rows[0].status, 'CREATED', `Stage ${stage}: Order status must remain CREATED`);
+          assert.strictEqual(listRes.rows[0].status, 'ACTIVE', `Stage ${stage}: Listing must remain ACTIVE`);
+          assert.strictEqual(tktRes.rows[0].status, 'VERIFIED', `Stage ${stage}: Ticket must remain VERIFIED`);
+          assert.strictEqual(ledgerRes.rows.length, 0, `Stage ${stage}: Zero ledger transactions must exist`);
+          assert.strictEqual(idempRes.rows.length, 0, `Stage ${stage}: Idempotency record must be rolled back`);
+          assert.strictEqual(outboxRes.rows.length, 0, `Stage ${stage}: Outbox event must be rolled back`);
+        });
       } finally {
-        await observer.end();
         await cleanupFixtures(f);
       }
     });
+  }
   }
 
   // ---------------------------------------------------------------------------
   // SECTION 3: DURABLE IDEMPOTENCY & CONCURRENCY CONTROL
   // ---------------------------------------------------------------------------
+  if (shouldRun('3')) {
   console.log('\n── Section 3: Durable Idempotency & Multi-Connection Concurrency Control ──');
 
   await test('3.1 Two simultaneous identical SUCCESS callbacks across independent connections result in exactly one posting', async () => {
@@ -434,18 +549,18 @@ async function runTestSuite() {
     assert.strictEqual(duplicates.length, 1, 'The other worker must be recognized as idempotent duplicate');
 
     // Verify database counts
-    const observer = await getIndependentClient();
     try {
-      const payRes = await observer.query('SELECT * FROM financial_payments WHERE order_id = $1', [f.orderId]);
-      assert.strictEqual(payRes.rows.length, 1, 'Only ONE payment record must exist');
-
-      const ledgerRes = await observer.query('SELECT * FROM financial_ledger_transactions WHERE order_id = $1', [f.orderId]);
-      assert.strictEqual(ledgerRes.rows.length, 1, 'Only ONE ledger journal entry must exist');
-
-      const outboxRes = await observer.query('SELECT * FROM financial_outbox WHERE aggregate_id = $1', [f.orderId]);
-      assert.strictEqual(outboxRes.rows.length, 1, 'Only ONE outbox event must exist');
+      await suiteObserver.inTransaction(async (q) => {
+        const [payRes, ledgerRes, outboxRes] = await Promise.all([
+          q('SELECT * FROM financial_payments WHERE order_id = $1', [f.orderId]),
+          q('SELECT * FROM financial_ledger_transactions WHERE order_id = $1', [f.orderId]),
+          q('SELECT * FROM financial_outbox WHERE aggregate_id = $1', [f.orderId])
+        ]);
+        assert.strictEqual(payRes.rows.length, 1, 'Only ONE payment record must exist');
+        assert.strictEqual(ledgerRes.rows.length, 1, 'Only ONE ledger journal entry must exist');
+        assert.strictEqual(outboxRes.rows.length, 1, 'Only ONE outbox event must exist');
+      });
     } finally {
-      await observer.end();
       await cleanupFixtures(f, null, `evt-race-${f.orderId}`);
     }
   });
@@ -479,10 +594,8 @@ async function runTestSuite() {
     });
 
     // Verify intermediate state
-    const midObserver = await getIndependentClient();
-    const midPay = await midObserver.query('SELECT status FROM financial_payments WHERE id = $1', [f.paymentId]);
+    const midPay = await suiteObserver.query('SELECT status FROM financial_payments WHERE id = $1', [f.paymentId]);
     assert.strictEqual(midPay.rows[0].status, 'PAYMENT_PENDING');
-    await midObserver.end();
 
     // Step 2: SUCCESS webhook notification arrives
     await UnitOfWork.execute(async (tx) => {
@@ -510,18 +623,18 @@ async function runTestSuite() {
     });
 
     // Verify final state
-    const observer = await getIndependentClient();
     try {
-      const finalPay = await observer.query('SELECT status FROM financial_payments WHERE id = $1', [f.paymentId]);
-      assert.strictEqual(finalPay.rows[0].status, 'SETTLED');
-
-      const finalOrd = await observer.query('SELECT status FROM financial_orders WHERE id = $1', [f.orderId]);
-      assert.strictEqual(finalOrd.rows[0].status, 'PAID_ESCROWED');
-
-      const ledgerRes = await observer.query('SELECT * FROM financial_ledger_transactions WHERE order_id = $1', [f.orderId]);
-      assert.strictEqual(ledgerRes.rows.length, 1, 'Ledger posted once upon SUCCESS transition');
+      await suiteObserver.inTransaction(async (q) => {
+        const [finalPay, finalOrd, ledgerRes] = await Promise.all([
+          q('SELECT status FROM financial_payments WHERE id = $1', [f.paymentId]),
+          q('SELECT status FROM financial_orders WHERE id = $1', [f.orderId]),
+          q('SELECT * FROM financial_ledger_transactions WHERE order_id = $1', [f.orderId])
+        ]);
+        assert.strictEqual(finalPay.rows[0].status, 'SETTLED');
+        assert.strictEqual(finalOrd.rows[0].status, 'PAID_ESCROWED');
+        assert.strictEqual(ledgerRes.rows.length, 1, 'Ledger posted once upon SUCCESS transition');
+      });
     } finally {
-      await observer.end();
       await cleanupFixtures(f);
     }
   });
@@ -557,19 +670,19 @@ async function runTestSuite() {
       await moneyRepo.updateOrderStatus(f.orderId, 'PENDING_PAYMENT', {}, tx);
     });
 
-    const observer = await getIndependentClient();
     try {
-      const ordRes = await observer.query('SELECT status FROM financial_orders WHERE id = $1', [f.orderId]);
+      const ordRes = await suiteObserver.query('SELECT status FROM financial_orders WHERE id = $1', [f.orderId]);
       assert.strictEqual(ordRes.rows[0].status, 'PAID_ESCROWED', 'Order status must NOT regress from PAID to PENDING');
     } finally {
-      await observer.end();
       await cleanupFixtures(f);
     }
   });
+  }
 
   // ---------------------------------------------------------------------------
   // SECTION 4: TRANSACTIONAL OUTBOX & ARGUS ASYNCHRONOUS LIFECYCLE
   // ---------------------------------------------------------------------------
+  if (shouldRun('4')) {
   console.log('\n── Section 4: Transactional Outbox & ARGUS Asynchronous Delivery ──');
 
   await test('4.1 Outbox event is claimed, delivered to ARGUS, and marked PROCESSED', async () => {
@@ -589,10 +702,8 @@ async function runTestSuite() {
     });
 
     // Verify pending in DB
-    const observer = await getIndependentClient();
-    const pendingRes = await observer.query('SELECT * FROM financial_outbox WHERE event_id = $1', [eventId]);
+    const pendingRes = await suiteObserver.query('SELECT * FROM financial_outbox WHERE event_id = $1', [eventId]);
     assert.strictEqual(pendingRes.rows[0].status, 'PENDING');
-    await observer.end();
 
     // Dispatch outbox events
     const results = await outboxDispatcher.dispatchPendingEvents(5);
@@ -601,16 +712,12 @@ async function runTestSuite() {
     assert.strictEqual(delivered.status, 'PROCESSED');
 
     // Verify DB status is now PROCESSED
-    const observer2 = await getIndependentClient();
     try {
-      const processedRes = await observer2.query('SELECT * FROM financial_outbox WHERE event_id = $1', [eventId]);
+      const processedRes = await suiteObserver.query('SELECT * FROM financial_outbox WHERE event_id = $1', [eventId]);
       assert.strictEqual(processedRes.rows[0].status, 'PROCESSED');
       assert.ok(processedRes.rows[0].processed_at, 'processed_at must be populated');
     } finally {
-      await observer2.end();
-      const cleanObserver = await getIndependentClient();
-      await cleanObserver.query('DELETE FROM financial_outbox WHERE event_id = $1', [eventId]);
-      await cleanObserver.end();
+      await suiteObserver.query('DELETE FROM financial_outbox WHERE event_id = $1', [eventId]);
     }
   });
 
@@ -681,22 +788,20 @@ async function runTestSuite() {
     assert.ok(deliveryResult.error.includes('SIMULATED_TRANSIENT_DOWNSTREAM_OUTAGE'));
 
     // Verify DB reflects retry_count increment and future next_retry_at
-    const observer = await getIndependentClient();
     try {
-      const dbRes = await observer.query('SELECT * FROM financial_outbox WHERE event_id = $1', [eventId]);
+      const dbRes = await suiteObserver.query('SELECT * FROM financial_outbox WHERE event_id = $1', [eventId]);
       assert.strictEqual(dbRes.rows[0].retry_count, 1);
       assert.ok(dbRes.rows[0].last_error.includes('SIMULATED_TRANSIENT_DOWNSTREAM_OUTAGE'));
     } finally {
-      await observer.end();
-      const cleanObserver = await getIndependentClient();
-      await cleanObserver.query('DELETE FROM financial_outbox WHERE event_id = $1', [eventId]);
-      await cleanObserver.end();
+      await suiteObserver.query('DELETE FROM financial_outbox WHERE event_id = $1', [eventId]);
     }
   });
+  }
 
   // ---------------------------------------------------------------------------
   // SECTION 5: FINANCIAL LEDGER INTEGRITY & INVARIANTS
   // ---------------------------------------------------------------------------
+  if (shouldRun('5')) {
   console.log('\n── Section 5: Financial Ledger Invariants & Double-Entry Integrity ──');
 
   await test('5.1 Unbalanced ledger transaction throws LEDGER_UNBALANCED and aborts transaction', async () => {
@@ -722,13 +827,8 @@ async function runTestSuite() {
     }
     assert.strictEqual(threw, true, 'Unbalanced transaction must be rejected');
 
-    const observer = await getIndependentClient();
-    try {
-      const res = await observer.query('SELECT * FROM financial_ledger_transactions WHERE order_id = $1', [orderId]);
-      assert.strictEqual(res.rows.length, 0, 'Zero ledger entries must exist for unbalanced transaction');
-    } finally {
-      await observer.end();
-    }
+    const res = await suiteObserver.query('SELECT * FROM financial_ledger_transactions WHERE order_id = $1', [orderId]);
+    assert.strictEqual(res.rows.length, 0, 'Zero ledger entries must exist for unbalanced transaction');
   });
 
   await test('5.2 Capability gate verifyAtomicTransitionCapability returns valid status', () => {
@@ -738,17 +838,112 @@ async function runTestSuite() {
     assert.strictEqual(caps.supportsLedgerAtomicity, true);
     assert.strictEqual(caps.supportsOutboxAtomicity, true);
   });
+  }
 
   console.log('\n================================================================');
   console.log(`  SUITE SUMMARY: ${passed} PASSED, ${failed} FAILED`);
   console.log('================================================================\n');
 
   if (failed > 0) {
-    process.exit(1);
+    process.exitCode = 1;
+  }
+  } finally {
+    const activeMoney = getMoneyRepository();
+    const activeMkt = getMarketplaceRepository();
+    await Promise.allSettled([
+      suiteObserver && suiteObserver.end(),
+      moneyRepo.pool && moneyRepo.pool.end(),
+      mktRepo.pool && mktRepo.pool.end(),
+      activeMoney && activeMoney.pool && activeMoney.pool.end(),
+      activeMkt && activeMkt.pool && activeMkt.pool.end()
+    ]);
   }
 }
 
-runTestSuite().catch(err => {
+async function applySetupMigrations(admin, schemaName, onCreated) {
+  await admin.query(`CREATE SCHEMA "${schemaName}"`);
+  onCreated();
+  await admin.query('BEGIN');
+  try {
+    await applyTransactionSchema(admin, schemaName);
+    for (const file of MIGRATION_FILES) {
+      await admin.query(fs.readFileSync(path.join(__dirname, 'migrations', file), 'utf8'));
+    }
+    await admin.query('COMMIT');
+  } catch (error) {
+    await admin.query('ROLLBACK');
+    throw error;
+  }
+}
+
+async function main() {
+  const admin = new Client({ connectionString: normalizeConnectionString(TEST_DB_URL), ssl: { rejectUnauthorized: false } });
+
+  if (CLI_OPTIONS.dropSchema) {
+    try {
+      await admin.connect();
+      await admin.query(`DROP SCHEMA IF EXISTS "${TEST_SCHEMA}" CASCADE`);
+      const rem = await admin.query(
+        `SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE 'tx\\_boundary\\_%' ESCAPE '\\' ORDER BY schema_name`
+      );
+      console.log(`DROPPED_SCHEMA=${TEST_SCHEMA}`);
+      console.log(`REMAINING_TX_BOUNDARY_SCHEMAS=${rem.rows.length}`);
+      if (rem.rows.length > 0) {
+        throw new Error(`Remaining tx_boundary_% schemas detected: ${rem.rows.map(r => r.schema_name).join(', ')}`);
+      }
+    } finally {
+      await closeAllSharedPools();
+      await admin.end();
+    }
+    return;
+  }
+
+  if (CLI_OPTIONS.setupOnly) {
+    let created = false;
+    let setupOk = false;
+    try {
+      await admin.connect();
+      await applySetupMigrations(admin, TEST_SCHEMA, () => { created = true; });
+      setupOk = true;
+      console.log(`SCHEMA=${TEST_SCHEMA}`);
+    } finally {
+      await closeAllSharedPools();
+      try {
+        if (created && !setupOk) {
+          await admin.query(`DROP SCHEMA IF EXISTS "${TEST_SCHEMA}" CASCADE`);
+        }
+      } finally {
+        await admin.end();
+      }
+    }
+    return;
+  }
+
+  if (CLI_OPTIONS.schema) {
+    try {
+      await runTestSuite(CLI_OPTIONS.section);
+    } finally {
+      await closeAllSharedPools();
+    }
+    return;
+  }
+
+  let created = false;
+  try {
+    await admin.connect();
+    await applySetupMigrations(admin, TEST_SCHEMA, () => { created = true; });
+    await runTestSuite(null);
+  } finally {
+    await closeAllSharedPools();
+    try {
+      if (created) await admin.query(`DROP SCHEMA IF EXISTS "${TEST_SCHEMA}" CASCADE`);
+    } finally {
+      await admin.end();
+    }
+  }
+}
+
+main().catch(err => {
   console.error('FATAL TEST ERROR:', err);
-  process.exit(1);
+  process.exitCode = 1;
 });

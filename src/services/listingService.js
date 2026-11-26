@@ -2,6 +2,22 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const { state, recordAuditLog } = require('../database');
 
+const VALID_FULFILLMENT_TYPES = new Set(['SELLER_MANAGED', 'TIKUM_VENUE_PIC']);
+
+function requireValidFulfillmentType(rawValue) {
+  const normalized = typeof rawValue === 'string' ? rawValue.trim().toUpperCase() : '';
+  if (!VALID_FULFILLMENT_TYPES.has(normalized)) {
+    const err = new Error(
+      `Invalid or missing fulfillmentType '${rawValue}'. Must be explicitly 'SELLER_MANAGED' or 'TIKUM_VENUE_PIC'.`
+    );
+    err.code = 'INVALID_FULFILLMENT_TYPE';
+    err.status = 400;
+    err.statusCode = 400;
+    throw err;
+  }
+  return normalized;
+}
+
 const LISTING_STATUS = {
   DRAFT: 'DRAFT',
   PENDING_VERIFICATION: 'PENDING_VERIFICATION',
@@ -227,13 +243,15 @@ class ListingService {
     evidenceBundleId,
     bypassPilotBounds = false,
     quantity = 1,
-    fulfillmentType = 'SELLER_MANAGED',
+    fulfillmentType = null,
     picAssistanceStatus = null,
     seatType = null,
     isDraft = false,
     status = null,
     sellerNotes = null
   }) {
+    const normalizedFulfillment = requireValidFulfillmentType(fulfillmentType);
+
     // 1. Verify seller eligibility durably
     const eligibility = await this.validateSellerEligibilityAsync(sellerId);
     if (!eligibility.eligible) {
@@ -340,7 +358,6 @@ class ListingService {
     const sectionPart = seatInfo ? seatInfo.split(/[,\-–]/)[0].trim() : 'General';
 
     const qty = Math.min(4, Math.max(1, parseInt(quantity, 10) || 1));
-    const normalizedFulfillment = (fulfillmentType && fulfillmentType.toUpperCase() === 'TIKUM_VENUE_PIC') ? 'TIKUM_VENUE_PIC' : 'SELLER_MANAGED';
     let resolvedPicStatus = picAssistanceStatus;
     if (!resolvedPicStatus) {
       if (normalizedFulfillment === 'TIKUM_VENUE_PIC') {
@@ -359,10 +376,32 @@ class ListingService {
     const isEventUnverified = !event.is_verified;
 
     const { CanonicalFeeEngine } = require('../pricing/CanonicalFeeEngine');
-    const feeBreakdown = CanonicalFeeEngine.calculateTicketFees({
-      ticketPrice: parseInt(price, 10),
-      quantity: qty
-    });
+    const { PRICING_CONFIG } = require('../config/pricingConfig');
+    const { calculateDualTierFees } = require('../pricing/DualTierFeePolicy');
+    const activePolicy = PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION || 'TIKUM_FEE_POLICY_V1';
+    const feeBreakdown = activePolicy === 'V2_DUAL_TIER'
+      ? (() => {
+          const v2 = calculateDualTierFees({
+            ticketPrice: parseInt(price, 10),
+            quantity: qty,
+            fulfillmentType: normalizedFulfillment
+          });
+          return {
+            fee_policy_version: 'V2_DUAL_TIER',
+            ticket_price: v2.ticket_price,
+            gross_ticket_value: v2.ticket_subtotal,
+            buyer_fee: v2.buyer_fee,
+            seller_fee: v2.seller_fee,
+            seller_payout: v2.seller_net_payout,
+            buyer_subtotal: v2.buyer_total_amount,
+            buyer_total: v2.buyer_total_amount,
+            currency: 'IDR'
+          };
+        })()
+      : CanonicalFeeEngine.calculateTicketFees({
+          ticketPrice: parseInt(price, 10),
+          quantity: qty
+        });
 
     const initialStatus = (isDraft || status === LISTING_STATUS.DRAFT)
       ? LISTING_STATUS.DRAFT
@@ -428,6 +467,7 @@ class ListingService {
       available_quantity: qty,
       sold_quantity: 0,
       reserved_quantity: 0,
+      pricing_policy_version: feeBreakdown.fee_policy_version,
       fulfillment_type: normalizedFulfillment,
       pic_assistance_status: resolvedPicStatus,
       seat_type: normalizedSeatType,
@@ -864,9 +904,34 @@ class ListingService {
       listing.total_quantity = qty;
       listing.available_quantity = qty;
     }
-    if (updates.fulfillmentType || updates.fulfillment_type) {
-      listing.fulfillment_type = (updates.fulfillmentType || updates.fulfillment_type) === 'TIKUM_VENUE_PIC' ? 'TIKUM_VENUE_PIC' : 'SELLER_MANAGED';
+
+    const hasFulfillmentUpdate = Object.prototype.hasOwnProperty.call(updates, 'fulfillmentType') ||
+      Object.prototype.hasOwnProperty.call(updates, 'fulfillment_type');
+    if (hasFulfillmentUpdate) {
+      listing.fulfillment_type = requireValidFulfillmentType(updates.fulfillmentType ?? updates.fulfillment_type);
+    } else {
+      const existingFulfillment = listing.fulfillment_type || listing.metadata?.fulfillment_type || null;
+      listing.fulfillment_type = requireValidFulfillmentType(existingFulfillment);
     }
+
+    let resolvedPicStatus = listing.pic_assistance_status || listing.metadata?.pic_assistance_status || null;
+    if (listing.fulfillment_type === 'TIKUM_VENUE_PIC') {
+      const eventId = listing.event_id || listing.canonical_event_id;
+      const hasPic = (state.event_pics || []).some(ep => ep.event_id === eventId && ep.status === 'ACTIVE');
+      resolvedPicStatus = hasPic ? 'CONFIRMED' : 'REQUESTED_PENDING_ASSIGNMENT';
+    } else {
+      resolvedPicStatus = 'NONE';
+    }
+    listing.pic_assistance_status = resolvedPicStatus;
+    listing.metadata = {
+      ...(typeof listing.metadata === 'object' && listing.metadata ? listing.metadata : {}),
+      fulfillment_type: listing.fulfillment_type,
+      pic_assistance_status: resolvedPicStatus,
+      quantity: listing.quantity,
+      total_quantity: listing.total_quantity,
+      available_quantity: listing.available_quantity
+    };
+
     if (updates.sellerNotes !== undefined || updates.seller_notes !== undefined) {
       listing.seller_notes = updates.sellerNotes || updates.seller_notes;
     }
@@ -882,8 +947,30 @@ class ListingService {
     }
     listing.updated_at = new Date().toISOString();
 
-    if (marketplaceRepo && typeof marketplaceRepo.updateListingStatus === 'function') {
-      await marketplaceRepo.updateListingStatus(listingId, listing.status).catch(() => null);
+    if (marketplaceRepo) {
+      if (typeof marketplaceRepo.updateListing === 'function') {
+        const persisted = await marketplaceRepo.updateListing(listingId, {
+          price: listing.price,
+          face_value: listing.face_value,
+          seat_info: listing.seat_info,
+          quantity: listing.quantity,
+          total_quantity: listing.total_quantity,
+          available_quantity: listing.available_quantity,
+          fulfillment_type: listing.fulfillment_type,
+          pic_assistance_status: listing.pic_assistance_status,
+          seller_notes: listing.seller_notes,
+          evidence_bundle_id: listing.evidence_bundle_id,
+          status: listing.status
+        });
+        if (!persisted && (!marketplaceRepo.degraded || process.env.NODE_ENV === 'production' || process.env.VERCEL)) {
+          const err = new Error('Listing gagal diperbarui di repositori');
+          err.code = 'NOT_FOUND';
+          err.status = 404;
+          throw err;
+        }
+      } else if (typeof marketplaceRepo.updateListingStatus === 'function') {
+        await marketplaceRepo.updateListingStatus(listingId, listing.status);
+      }
     }
 
     await recordAuditLog('LISTING', listingId, (isSubmit || updates.action === 'SUBMIT') ? 'RESUBMITTED_FOR_VERIFICATION' : 'DRAFT_UPDATED', sellerId, {
@@ -970,7 +1057,7 @@ class ListingService {
         const totalQty = parseInt(listing.total_quantity || meta.total_quantity || listing.quantity || 1, 10);
         const availQty = parseInt(listing.available_quantity !== undefined ? listing.available_quantity : (meta.available_quantity !== undefined ? meta.available_quantity : totalQty), 10);
         const soldQty = parseInt(listing.sold_quantity !== undefined ? listing.sold_quantity : (meta.sold_quantity || 0), 10);
-        const fType = listing.fulfillment_type || meta.fulfillment_type || 'SELLER_MANAGED';
+        const fType = listing.fulfillment_type || meta.fulfillment_type || null;
         const pStatus = listing.pic_assistance_status || meta.pic_assistance_status || (picAssign ? 'CONFIRMED' : (fType === 'TIKUM_VENUE_PIC' ? 'REQUESTED_PENDING_ASSIGNMENT' : 'NONE'));
         const sType = listing.seat_type || meta.seat_type || 'GENERAL_ADMISSION';
 

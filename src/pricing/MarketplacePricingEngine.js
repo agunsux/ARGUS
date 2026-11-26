@@ -183,10 +183,44 @@ class MarketplacePricingEngine {
     ticketPrice,
     quantity = 1,
     policyVersion = 'TIKUM_FEE_POLICY_V1',
+    fulfillmentType = null,
     currency = 'IDR',
     countryCode = 'ID'
   }) {
     const targetPolicy = policyVersion || 'TIKUM_FEE_POLICY_V1';
+
+    if (targetPolicy === 'V2_DUAL_TIER') {
+      const { calculateDualTierFees, FEE_POLICY_V2 } = require('./DualTierFeePolicy');
+      const v2 = calculateDualTierFees({
+        ticketPrice,
+        quantity,
+        fulfillmentType: fulfillmentType || 'SELLER_MANAGED',
+        currency
+      });
+      return {
+        policy_version: FEE_POLICY_V2.version,
+        fulfillment_option: v2.fulfillment_option,
+        currency: v2.currency,
+        country_code: countryCode,
+        ticket_price: v2.unit_ticket_price,
+        quantity: v2.quantity,
+        gross_ticket_value: v2.gross_ticket_value,
+        buyer_fee: v2.buyer_fee,
+        seller_fee: v2.seller_fee,
+        raw_buyer_fee: v2.raw_buyer_fee,
+        raw_seller_fee: v2.raw_seller_fee,
+        buyer_rate: v2.buyer_rate,
+        seller_rate: v2.seller_rate,
+        buyer_min_fee: v2.buyer_min_fee_per_ticket,
+        buyer_max_fee: v2.buyer_max_fee_per_ticket,
+        seller_min_fee: v2.seller_min_fee_per_ticket,
+        seller_max_fee: v2.seller_max_fee_per_ticket,
+        total_platform_fee: v2.total_platform_fee,
+        seller_payout: v2.seller_net_payout,
+        buyer_subtotal: v2.buyer_total_amount,
+        buyer_total: v2.buyer_total_amount
+      };
+    }
 
     // If target is canonical V1, delegate directly to CanonicalFeeEngine
     if (targetPolicy === 'TIKUM_FEE_POLICY_V1') {

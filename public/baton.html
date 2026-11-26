@@ -1,11 +1,14 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id" class="dark" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BATON — We'll be at the gate | Jual Beli Tiket Resmi Terverifikasi</title>
   <meta name="description" content="BATON: Platform jual beli tiket sekunder terverifikasi fisik di gate. Pendampingan PIC di venue, verifikasi tiket, proteksi transaksi terpercaya.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2334d399'><circle cx='12' cy='12' r='10'/></svg>">
+  <link rel="icon" type="image/svg+xml" href="/images/tikum-brand-symbol.svg">
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/tikum-tokens.css">
+  <link rel="stylesheet" href="/css/header-shared.css">
   
   <!-- Inter & JetBrains Mono Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,8 +67,9 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="/js/i18n.js"></script>
+  <script src="/js/header-shared.js"></script>
 </head>
-<body class="bg-[#09090b] text-zinc-100 antialiased selection:bg-emerald-500 selection:text-black">
+<body class="bg-[#172333] text-white antialiased selection:bg-[#E36F45] selection:text-white">
   <div id="root" data-i18n="nav.home"></div>
 
   <script type="text/babel">
@@ -495,18 +499,12 @@
 
       useEffect(() => {
         const root = document.documentElement;
-        if (theme === 'dark') {
-          root.classList.add('dark');
-          root.classList.remove('light');
-        } else {
-          root.classList.remove('dark');
-          root.classList.add('light');
-        }
-      }, [theme]);
+        root.classList.add('dark');
+        root.classList.remove('light');
+        root.setAttribute('data-theme', 'dark');
+      }, []);
 
-      const toggleTheme = () => {
-        setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
-      };
+      const toggleTheme = () => {};
 
       const t = TRANSLATIONS.id;
 
@@ -635,20 +633,6 @@
                   {lang.toUpperCase()}
                 </button>
 
-                {/* Theme Toggle */}
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className={`p-2 rounded-xl border transition-colors focus:outline-none ${
-                    theme === 'dark'
-                      ? 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-zinc-100 hover:border-zinc-700'
-                      : 'bg-white border-zinc-200 text-zinc-700 hover:text-zinc-950 hover:border-zinc-300 shadow-sm'
-                  }`}
-                  aria-label={theme === 'dark' ? "Switch to light mode" : "Switch to dark mode"}
-                >
-                  {theme === 'dark' ? <SunIcon className="w-4 h-4 text-amber-400" /> : <MoonIcon className="w-4 h-4 text-zinc-700" />}
-                </button>
-
                 {/* Login Ghost Button */}
                 <button
                   type="button"
@@ -678,17 +662,6 @@
 
               {/* Mobile Hamburger Button */}
               <div className="flex items-center gap-2 md:hidden">
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className={`p-2 rounded-lg border ${
-                    theme === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-300' : 'bg-white border-zinc-200 text-zinc-700'
-                  }`}
-                  aria-label="Toggle theme"
-                >
-                  {theme === 'dark' ? <SunIcon className="w-4 h-4 text-amber-400" /> : <MoonIcon className="w-4 h-4" />}
-                </button>
-
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -1428,7 +1401,7 @@
                     <div>Jl. Pasirluyu No. 79</div>
                     <div>Bandung 40254, Indonesia</div>
                     <div>Email: <a href="mailto:support@tikum.app" className="text-emerald-400">support@tikum.app</a></div>
-                    <div>WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" className="text-emerald-400">081299927378</a></div>
+                    <div>WhatsApp: <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" className="text-emerald-400">+62 812-9992-7378</a></div>
                   </div>
                 </div>
               </div>

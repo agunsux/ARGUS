@@ -269,6 +269,19 @@ app.use(express.static(publicDir, sendFileOpts));
 app.use(trustApi);
 
 // Mount Canonical Payment & Webhook Router (DOKU Primary Escrow + Multi-Provider Rails)
+app.get('/api/config/fee-policy', (req, res) => {
+  const { CanonicalFeeEngine } = require('./pricing/CanonicalFeeEngine');
+  const { FEE_POLICY_V2 } = require('./pricing/DualTierFeePolicy');
+  const { PRICING_CONFIG } = require('./config/pricingConfig');
+  const activeVersion = PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION || 'TIKUM_FEE_POLICY_V1';
+  res.json({
+    active_policy_version: activeVersion,
+    version: activeVersion,
+    active_policy: activeVersion === FEE_POLICY_V2.version ? FEE_POLICY_V2 : CanonicalFeeEngine.getActivePolicy(),
+    v1_policy: CanonicalFeeEngine.getActivePolicy(),
+    v2_dual_tier: FEE_POLICY_V2
+  });
+});
 const paymentRouter = require('./api/paymentRouter');
 app.use('/api', paymentRouter);
 app.use('/webhooks', paymentRouter);

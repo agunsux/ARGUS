@@ -70,6 +70,13 @@ export interface NavDictionary {
   buyerGuide: string;
   signInSignUp: string;
   backToHome: string;
+  buyTickets?: string;
+  dealRoomLookup: string;
+  sellerDealLink?: string;
+  cities: string;
+  signIn: string;
+  groupDiscover?: string;
+  groupTransactions?: string;
 }
 
 export interface LandingDictionary {
@@ -98,6 +105,7 @@ export interface LandingDictionary {
   editorialHeroSubtitle: string;
   searchPlaceholder: string;
   instantDealNotice: string;
+  instantDealPlaceholder: string;
   openDealRoomBtn: string;
   heroCtaExplore: string;
   heroCtaSell: string;
@@ -430,6 +438,7 @@ export interface ErrorsDictionary {
 }
 
 export interface TikumDictionarySchema {
+  [key: string]: any;
   common: CommonDictionary;
   nav: NavDictionary;
   landing: LandingDictionary;
@@ -454,6 +463,9 @@ export interface TikumDictionarySchema {
 
 declare const id: TikumDictionarySchema;
 declare const en: TikumDictionarySchema;
+declare const ms: TikumDictionarySchema;
+declare const tl: TikumDictionarySchema;
+declare const th: TikumDictionarySchema;
 
-export { id, en };
+export { id, en, ms, tl, th };
 export default TikumDictionarySchema;

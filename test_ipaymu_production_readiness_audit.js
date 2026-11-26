@@ -403,7 +403,7 @@ async function runSuite() {
         assert.strictEqual(res.statusCode, 200, `Expected 200 on ${p}`);
         assert.ok(res.body.includes('PT SHINERVA PRAJNA TEJAS') || res.body.includes('Shinerva'), `Missing canonical entity on ${p}`);
         assert.ok(res.body.includes('support@tikum.app'), `Missing support@tikum.app on ${p}`);
-        assert.ok(res.body.includes('081299927378'), `Missing contact phone on ${p}`);
+        assert.ok(res.body.includes('+62 812-9992-7378'), `Missing contact phone on ${p}`);
       }
     });
 

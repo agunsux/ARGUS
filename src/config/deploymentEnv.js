@@ -212,6 +212,131 @@ function validateMidtransConfiguration(config = {}) {
   };
 }
 
+/**
+ * Validates DOKU configuration against current deployment environment.
+ * Enforces:
+ * - Preview uses DOKU Sandbox exclusively (api-sandbox.doku.com)
+ * - Production uses DOKU Production exclusively (api.doku.com) with ENABLE_DOKU_PRODUCTION === 'true'
+ * - Fails closed on missing credentials, mixed credential families, or ambiguous/unknown environments
+ *
+ * @param {Object} config - { clientId, secretKey, apiBaseUrl, env }
+ * @returns {Object} { allowed: boolean, reason: string|null, isSandbox: boolean, isProduction: boolean, environment: string }
+ */
+function validateDokuConfiguration(config = {}) {
+  const depEnv = getDeploymentEnv();
+  const rawClientId = (config.clientId || process.env.DOKU_SANDBOX_CLIENT_ID || process.env.DOKU_CLIENT_ID || '').trim();
+  const rawSecretKey = (config.secretKey || process.env.DOKU_SANDBOX_SECRET_KEY || process.env.DOKU_SECRET_KEY || '').trim();
+  const rawBaseUrl = (config.apiBaseUrl || process.env.DOKU_SANDBOX_BASE_URL || process.env.DOKU_BASE_URL || 'https://api-sandbox.doku.com').trim().replace(/\/+$/, '');
+  const env = (config.env || process.env.DOKU_ENV || 'sandbox').toLowerCase().trim();
+  const enableProd = process.env.ENABLE_DOKU_PRODUCTION === 'true' || process.env.DOKU_PRODUCTION_ENABLED === 'true';
+
+  if (depEnv === DEPLOYMENT_ENV.UNKNOWN) {
+    return {
+      allowed: false,
+      reason: 'Ambiguous or unverified deployment environment. DOKU operations gated fail-closed.',
+      isSandbox: false,
+      isProduction: false,
+      environment: depEnv
+    };
+  }
+
+  let isLoopbackBase = false;
+  try {
+    const parsed = new URL(rawBaseUrl);
+    isLoopbackBase = (parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost');
+  } catch (_) {}
+
+  const isSandboxUrl = rawBaseUrl === 'https://api-sandbox.doku.com' || isLoopbackBase;
+  const isProdUrl = rawBaseUrl === 'https://api.doku.com';
+
+  // Detect credential/endpoint family mixing
+  if (env === 'sandbox' && isProdUrl) {
+    return {
+      allowed: false,
+      reason: 'CREDENTIAL_FAMILY_MIXED: DOKU Sandbox mode configured with live production endpoint (api.doku.com).',
+      isSandbox: false,
+      isProduction: false,
+      environment: depEnv
+    };
+  }
+  if (env === 'production' && isSandboxUrl && !isLoopbackBase) {
+    return {
+      allowed: false,
+      reason: 'CREDENTIAL_FAMILY_MIXED: DOKU Production mode configured with sandbox endpoint (api-sandbox.doku.com).',
+      isSandbox: false,
+      isProduction: false,
+      environment: depEnv
+    };
+  }
+
+  if (depEnv === DEPLOYMENT_ENV.PREVIEW) {
+    if (enableProd || isProdUrl || env === 'production') {
+      return {
+        allowed: false,
+        reason: 'Live DOKU production mode is strictly prohibited on Preview deployments. DOKU Sandbox required.',
+        isSandbox: false,
+        isProduction: false,
+        environment: depEnv
+      };
+    }
+    if (!isSandboxUrl) {
+      return {
+        allowed: false,
+        reason: 'Endpoint mismatch: Vercel Preview requires https://api-sandbox.doku.com.',
+        isSandbox: false,
+        isProduction: false,
+        environment: depEnv
+      };
+    }
+    const hasCreds = Boolean(rawClientId && rawSecretKey);
+    return {
+      allowed: hasCreds,
+      reason: hasCreds ? null : 'DOKU Sandbox credentials missing on Preview.',
+      isSandbox: true,
+      isProduction: false,
+      environment: depEnv
+    };
+  }
+
+  if (depEnv === DEPLOYMENT_ENV.PRODUCTION) {
+    if (isSandboxUrl || env === 'sandbox') {
+      return {
+        allowed: false,
+        reason: 'DOKU Sandbox credentials and sandbox URL are strictly prohibited in Production.',
+        isSandbox: false,
+        isProduction: false,
+        environment: depEnv
+      };
+    }
+    if (!enableProd) {
+      return {
+        allowed: false,
+        reason: 'Production payments gated: ENABLE_DOKU_PRODUCTION must be true.',
+        isSandbox: false,
+        isProduction: true,
+        environment: depEnv
+      };
+    }
+    const hasCreds = Boolean(rawClientId && rawSecretKey);
+    return {
+      allowed: hasCreds,
+      reason: hasCreds ? null : 'DOKU Production credentials missing in Production.',
+      isSandbox: false,
+      isProduction: true,
+      environment: depEnv
+    };
+  }
+
+  // Development / Test
+  return {
+    allowed: true,
+    reason: null,
+    isSandbox: env === 'sandbox' || isSandboxUrl,
+    isProduction: env === 'production' && isProdUrl,
+    environment: depEnv
+  };
+}
+
 function setDeploymentEnvForTesting(env) {
   testEnvOverride = env;
 }
@@ -224,5 +349,6 @@ module.exports = {
   isDevelopmentDeployment,
   isKnownDeployment,
   validateMidtransConfiguration,
+  validateDokuConfiguration,
   setDeploymentEnvForTesting
 };

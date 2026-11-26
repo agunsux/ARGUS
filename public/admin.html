@@ -4,8 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TIKUM Operations Console — ARGUS Trust Engine | SHINERVA HQ</title>
+  <link rel="icon" type="image/svg+xml" href="/images/tikum-brand-symbol.svg">
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/tikum-tokens.css">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard-dark.css">
+  <link rel="stylesheet" href="/css/header-shared.css">
   <style>
     /* Operational Control Center Layout ("Airport Operations Room") */
     body {
@@ -19,8 +24,8 @@
 
     /* Top Control Bar */
     .ops-header {
-      background: #0f172a;
-      border-bottom: 1px solid #1e293b;
+      background: var(--palette-primary-blue, #15365B);
+      border-bottom: 1px solid rgba(243, 235, 221, 0.16);
       padding: 10px 20px;
       display: flex;
       align-items: center;
@@ -116,8 +121,8 @@
     /* Sidebar */
     .ops-sidebar {
       width: 220px;
-      background: #0b1120;
-      border-right: 1px solid #1e293b;
+      background: var(--palette-midnight-navy, #172333);
+      border-right: 1px solid rgba(243, 235, 221, 0.14);
       flex-shrink: 0;
       padding: 16px 8px;
       display: flex;
@@ -438,12 +443,17 @@
 <body>
 
   <!-- Top Operations Bar -->
-  <header class="ops-header">
-    <div style="display: flex; align-items: center; gap: 20px;">
+  <header class="ops-header tikum-shared-header" data-header-variant="admin">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <button type="button" class="tikum-mobile-toggle" aria-controls="tikumAdminDrawer" aria-expanded="false" aria-label="Buka Menu Navigasi">
+        <i class="fa-solid fa-bars" aria-hidden="true"></i>
+      </button>
       <a href="/admin" class="ops-brand">
-        <div class="ops-brand-badge"><i class="fa-solid fa-shield-halved"></i></div>
+        <span class="tikum-logo-slot tikum-logo-slot--admin" aria-label="TIKUM">
+          <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="TIKUM">
+        </span>
         <div>
-          <div class="ops-title">TIKUM <span style="color: #38bdf8; font-weight: 400;">OPERATIONS CONTROL</span></div>
+          <div class="ops-title">TIKUM <span style="color: #F3EBDD; font-weight: 500;">OPERATIONS CONTROL</span></div>
           <div class="ops-subtitle">Powered by ARGUS Trust Engine &bull; SHINERVA HQ</div>
         </div>
       </a>
@@ -2881,7 +2891,7 @@
               <td>${l.seller_name}</td>
               <td class="mono" style="font-size: 11px;">${l.seat_info} (${l.seat_type || 'GA'})</td>
               <td><span class="tag tag-neutral">${l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1)} / ${l.total_quantity || l.quantity || 1}</span></td>
-              <td><span class="tag ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'tag-success' : 'tag-neutral'}">${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'PIC Venue' : 'Mandiri'}</span></td>
+              <td><span class="tag ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'tag-success' : 'tag-neutral'}">${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? (window.TikumI18n ? window.TikumI18n.t('admin.tierPicShort', 'PIC Venue') : 'PIC Venue') : (window.TikumI18n ? window.TikumI18n.t('admin.tierSelfShort', 'Transfer Mandiri') : 'Mandiri')}</span></td>
               <td class="mono">${formatRupiah(l.price)}</td>
               <td>${renderTag(l.status)}</td>
               <td>
@@ -3871,7 +3881,10 @@
               <td class="mono" style="color: #38bdf8; font-size: 11px;">${p.id || p.internal_payment_id}</td>
               <td class="mono">${p.order_id}</td>
               <td><span class="tag tag-neutral">${(p.provider || 'doku').toUpperCase()}</span></td>
-              <td class="mono" style="font-size: 11px;">${p.provider_reference || '-'}</td>
+              <td class="mono" style="font-size: 11px;">
+                ${p.provider_reference || '-'}
+                ${(p.provider || 'doku').toLowerCase() === 'doku' ? `<div style="margin-top:4px;"><button class="btn btn-secondary btn-sm" style="font-size:10px; padding:2px 6px;" onclick="inquireDokuOrderStatus('${p.order_id}', '${p.provider_reference || ''}')"><i class="fa-solid fa-magnifying-glass-dollar"></i> Cek Status DOKU</button></div>` : ''}
+              </td>
               <td><span class="badge badge-info">${p.payment_channel || 'QRIS'}</span></td>
               <td class="mono" style="font-weight: 700; color: #fff;">${formatRupiah(p.gross_amount)}</td>
               <td class="mono" style="color: #34d399;">${formatRupiah(p.platform_fee)}</td>
@@ -5058,17 +5071,20 @@
             ? tx.evaluationReasons.slice(0, 2).join('; ')
             : 'Operational normal';
 
+          const _at = (k, f) => (window.TikumI18n ? window.TikumI18n.t(k, f) : f);
           const actionHtml = tx.actionRequired
             ? ('<div style="font-size: 11px; color: #fca5a5;">' + tx.actionRequired + '</div>')
-            : '<div style="font-size: 11px; color: #94a3b8;">Siap diproses / tidak ada blocker</div>';
+            : ('<div style="font-size: 11px; color: #94a3b8;">' + _at('admin.readyNoBlocker', 'Siap diproses / tidak ada blocker') + '</div>');
+
+          const dokuInquiryBtn = '<button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 11px; color: #38bdf8;" onclick="inquireDokuOrderStatus(\'' + tx.orderId + '\')"><i class="fa-solid fa-magnifying-glass-dollar"></i> ' + _at('admin.btnDokuStatus', 'DOKU Status') + '</button>';
 
           const payoutBtn = tx.colorStatus === 'GREEN'
-            ? ('<button class="btn btn-sm" style="background: #10b981; color: #fff; padding: 3px 8px; font-size: 11px;" onclick="executeSellerPayout(\'' + tx.orderId + '\', ' + tx.netSellerPayout + ')"><i class="fa-solid fa-paper-plane"></i> Cairkan</button>')
-            : '';
+            ? ('<button class="btn btn-sm" style="background: #10b981; color: #fff; padding: 3px 8px; font-size: 11px;" onclick="requestMakerCheckerPayout(\'' + tx.orderId + '\', ' + tx.netSellerPayout + ')"><i class="fa-solid fa-paper-plane"></i> ' + _at('admin.btnRequestRelease', 'Ajukan/Cairkan') + '</button>')
+            : ('<button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 11px; opacity:0.45; cursor:not-allowed;" disabled title="' + _at('admin.releaseLockTooltip', 'Release dikunci: wajib verifikasi entry venue & bebas sengketa/hold') + '"><i class="fa-solid fa-shield-halved"></i> ' + _at('admin.btnReleaseLocked', 'Release Locked') + '</button>');
 
           const holdBtn = tx.hasAdminHold
-            ? ('<button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 11px; color: #38bdf8;" onclick="promptReleaseHold(\'' + tx.orderId + '\')"><i class="fa-solid fa-lock-open"></i> Buka Hold</button>')
-            : ('<button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 11px; color: #ef4444;" onclick="promptAdminHold(\'' + tx.orderId + '\')"><i class="fa-solid fa-lock"></i> Hold</button>');
+            ? ('<button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 11px; color: #38bdf8;" onclick="promptReleaseHold(\'' + tx.orderId + '\')"><i class="fa-solid fa-lock-open"></i> ' + _at('admin.btnReleaseHold', 'Buka Hold') + '</button>')
+            : ('<button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 11px; color: #ef4444;" onclick="promptAdminHold(\'' + tx.orderId + '\')"><i class="fa-solid fa-lock"></i> ' + _at('admin.btnHold', 'Hold') + '</button>');
 
           return '<tr>' +
             '<td style="padding: 10px 12px;"><div class="mono" style="font-weight: 600; color: #fff;">' + tx.orderId + '</div><div style="font-size: 11px; color: #94a3b8;">' + tx.eventTitle + '</div><div style="font-size: 10px; color: #64748b;">' + formatTs(tx.createdAt) + '</div></td>' +
@@ -5077,7 +5093,7 @@
             '<td style="padding: 10px 12px; text-align: center;">' + badgeHtml + '</td>' +
             '<td style="padding: 10px 12px; max-width: 200px;"><div style="font-size: 11px; color: #cbd5e1;">' + reasonsSummary + '</div>' + (tx.holdReason ? '<div style="font-size: 10px; color: #ef4444; margin-top: 2px;">Hold: ' + tx.holdReason + '</div>' : '') + '</td>' +
             '<td style="padding: 10px 12px; max-width: 180px;">' + actionHtml + '</td>' +
-            '<td style="padding: 10px 12px; text-align: center;"><div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;"><button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 11px;" onclick="openTransactionTimeline(\'' + tx.orderId + '\')"><i class="fa-solid fa-clock-rotate-left"></i> Timeline</button>' + holdBtn + payoutBtn + '</div></td>' +
+            '<td style="padding: 10px 12px; text-align: center;"><div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;"><button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 11px;" onclick="openTransactionTimeline(\'' + tx.orderId + '\')"><i class="fa-solid fa-clock-rotate-left"></i> Timeline</button>' + dokuInquiryBtn + holdBtn + payoutBtn + '</div></td>' +
           '</tr>';
         }).join('');
 
@@ -5095,9 +5111,10 @@
       const headerTitle = document.getElementById('txModalHeaderTitle');
       const actionsEl = document.getElementById('txModalActions');
 
+      const _at = (k, f) => (window.TikumI18n ? window.TikumI18n.t(k, f) : f);
       modal.style.display = 'flex';
-      body.innerHTML = '<div style="text-align: center; padding: 40px; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat detail & timeline transaksi ' + orderId + '...</div>';
-      headerTitle.innerText = 'Audit Timeline Transaksi — ' + orderId;
+      body.innerHTML = '<div style="text-align: center; padding: 40px; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> ' + _at('admin.loadingTimeline', 'Memuat detail & timeline transaksi {orderId}...').replace('{orderId}', orderId) + '</div>';
+      headerTitle.innerText = _at('admin.auditTimelineHeading', 'Audit Timeline Transaksi — {orderId}').replace('{orderId}', orderId);
       actionsEl.innerHTML = '';
 
       try {
@@ -5170,8 +5187,16 @@
           actionBtns += '<button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="promptAdminHold(\'' + orderId + '\')"><i class="fa-solid fa-lock"></i> Terapkan Administrative Hold</button>';
         }
 
-        if (ev.colorStatus === 'GREEN') {
-          actionBtns += '<button class="btn btn-sm" style="background: #10b981; color: #fff;" onclick="executeSellerPayout(\'' + orderId + '\', ' + ev.netSellerPayout + ')"><i class="fa-solid fa-paper-plane"></i> Eksekusi Payout Seller</button>';
+        actionBtns += '<button class="btn btn-secondary btn-sm" style="color: #38bdf8;" onclick="inquireDokuOrderStatus(\'' + orderId + '\')"><i class="fa-solid fa-magnifying-glass-dollar"></i> Cek Status DOKU</button>';
+
+        const canRelease = ev.colorStatus === 'GREEN' && !ev.hasAdminHold && !f.hasDisputes && f.eventConcludedOrEntryConfirmed;
+        if (canRelease) {
+          actionBtns += '<button class="btn btn-sm" style="background: #10b981; color: #fff;" onclick="requestMakerCheckerPayout(\'' + orderId + '\', ' + ev.netSellerPayout + ')"><i class="fa-solid fa-paper-plane"></i> Maker Request &amp; Release</button>';
+        } else {
+          const lockReason = f.hasDisputes
+            ? 'Terkunci: ada sengketa aktif'
+            : (!f.eventConcludedOrEntryConfirmed ? 'Terkunci: menunggu verifikasi entry venue' : (ev.hasAdminHold ? 'Terkunci: Admin Hold aktif' : 'Belum memenuhi syarat release'));
+          actionBtns += '<button class="btn btn-secondary btn-sm" style="opacity:0.5; cursor:not-allowed;" disabled title="' + lockReason + '"><i class="fa-solid fa-shield-halved"></i> Release Locked</button>';
         }
 
         actionsEl.innerHTML = actionBtns;
@@ -5232,19 +5257,74 @@
       }
     }
 
-    async function executeSellerPayout(orderId, netAmount) {
-      const confirmed = confirm('Konfirmasi pencairan payout seller untuk order ' + orderId + ' sebesar ' + formatRupiah(netAmount) + '?');
+    async function inquireDokuOrderStatus(orderId, invoiceNumber) {
+      try {
+        const res = await adminFetch('/api/admin/payments/doku/inquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, invoiceNumber: invoiceNumber || null })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal memeriksa status DOKU');
+        const msg = `DOKU Status Inquiry — ${orderId}\nStatus Gateway: ${data.provider_settlement_status || data.reconciliation?.normalizedStatus || '-'}\nStatus Internal: ${data.internal_settlement_status || '-'}\nAksi: ${data.reconciliation?.action || 'CHECKED'}`;
+        alert(msg);
+        loadPaymentsView();
+        loadControlCenterView(currentTxPage);
+      } catch (err) {
+        alert('DOKU Inquiry error: ' + err.message);
+      }
+    }
+
+    async function requestMakerCheckerPayout(orderId, netAmount) {
+      const confirmed = confirm('Ajukan Maker Request pencairan payout seller untuk order ' + orderId + ' sebesar ' + formatRupiah(netAmount) + '? (Checker terpisah diperlukan untuk otorisasi final.)');
       if (!confirmed) return;
 
-      const bankAccount = prompt('Konfirmasi rekening bank tujuan seller (atau tekan OK untuk rekening default):', 'BCA 1234567890 (a.n Budi Santoso)');
+      const reason = prompt('Catatan otorisasi pencairan (Maker Note, min. 5 karakter):', 'Gate verified & no active dispute — ready for settlement release');
+      if (!reason || reason.trim().length < 5) {
+        if (reason !== null) alert('Catatan otorisasi minimal 5 karakter!');
+        return;
+      }
+
+      try {
+        const res = await adminFetch('/api/admin/transactions/' + orderId + '/payout-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: reason.trim(), amount: netAmount })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal mengajukan otorisasi payout');
+
+        const authId = data.authorization?.id;
+        showToast('Maker Request berhasil dibuat (' + (authId || 'PENDING') + '). Menunggu Checker Approval.', 'success');
+        if (authId && confirm('Maker authorization ID: ' + authId + '.\nJika Anda login sebagai Checker berbeda, jalankan Checker Approve & Release sekarang?')) {
+          await executeSellerPayout(orderId, netAmount, authId);
+        } else {
+          loadControlCenterView(currentTxPage);
+        }
+      } catch (err) {
+        alert('Maker request ditolak: ' + err.message);
+      }
+    }
+
+    async function executeSellerPayout(orderId, netAmount, authorizationId) {
+      if (!authorizationId) {
+        authorizationId = prompt('Masukkan Approved Authorization ID (Maker-Checker) untuk order ' + orderId + ':');
+        if (!authorizationId || !authorizationId.trim()) return;
+      }
+
+      const confirmed = confirm('Konfirmasi Checker Approve & pencairan payout seller untuk order ' + orderId + ' sebesar ' + formatRupiah(netAmount) + '?');
+      if (!confirmed) return;
+
+      const bankAccount = prompt('Konfirmasi rekening bank tujuan seller:', 'BCA 1234567890 (a.n Seller Verified)');
       if (bankAccount === null) return;
 
       try {
-        const res = await adminFetch('/api/admin/transactions/' + orderId + '/execute-payout', {
+        const res = await adminFetch('/api/admin/transactions/' + orderId + '/payout-approve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            bankAccount: bankAccount.trim(),
+            authorizationId: authorizationId.trim(),
+            notes: 'Approved via Admin Console — ' + bankAccount.trim(),
             idempotencyKey: 'payout-' + orderId + '-' + Date.now()
           })
         });
@@ -5252,7 +5332,7 @@
         if (!res.ok) {
           throw new Error(data.error || (data.evaluationReasons ? data.evaluationReasons.join('; ') : 'Gagal eksekusi payout'));
         }
-        showToast('Payout seller berhasil dicairkan! Ref: ' + (data.settlement?.payout_ref || 'N/A'), 'success');
+        showToast('Payout seller berhasil dicairkan! Ref: ' + (data.settlement?.payout_ref || 'RELEASED'), 'success');
         closeTimelineModal();
         loadControlCenterView(currentTxPage);
       } catch (err) {
@@ -5472,5 +5552,27 @@
     }
 
   </script>
+  <div id="tikumAdminDrawer" class="tikum-mobile-drawer" aria-label="Admin Navigation">
+    <div class="tikum-mobile-drawer__backdrop"></div>
+    <div class="tikum-mobile-drawer__panel">
+      <div class="tikum-mobile-drawer__head">
+        <a href="/admin" class="ops-brand" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">
+          <span class="tikum-logo-slot tikum-logo-slot--admin" aria-label="TIKUM">
+            <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="TIKUM">
+          </span>
+        </a>
+        <button type="button" class="tikum-header-control" data-drawer-close aria-label="Tutup Menu">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="tikum-mobile-drawer__links">
+        <a href="/admin" class="tikum-mobile-drawer__link active"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> <span>Operations Console</span></a>
+        <a href="/events" class="tikum-mobile-drawer__link"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> <span data-i18n="nav.events">Katalog Event</span></a>
+        <a href="/offers" class="tikum-mobile-drawer__link"><i class="fa-solid fa-handshake" aria-hidden="true"></i> <span data-i18n="nav.offers">Tawaran Tiket</span></a>
+        <a href="/track" class="tikum-mobile-drawer__link"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> <span data-i18n="nav.track">Lacak</span></a>
+      </div>
+    </div>
+  </div>
+  <script src="/js/header-shared.js"></script>
 </body>
 </html>

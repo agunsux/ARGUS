@@ -47,15 +47,15 @@ const PAYMENT_ATTEMPT_STATUS = {
   SUPERSEDED: 'SUPERSEDED'
 };
 
-// Regional routing configuration matrix (Priority: DOKU -> iPaymu -> Midtrans -> Xendit)
+// Regional routing configuration matrix (Primary: DOKU, iPaymu FROZEN)
 const ROUTING_CONFIG = {
   ID: {
     primary: 'doku',
-    backup_1: 'ipaymu',
-    backup_2: 'midtrans',
-    backup_3: 'xendit',
-    secondary: 'ipaymu',
-    fallback: 'midtrans',
+    backup_1: null,
+    backup_2: null,
+    backup_3: null,
+    secondary: null,
+    fallback: null,
     allowedCurrencies: ['IDR']
   },
   SG: {
@@ -83,17 +83,17 @@ const circuitBreakers = {
   doku: { failures: 0, state: 'CLOSED', nextProbe: 0 },
   doku_direct: { failures: 0, state: 'CLOSED', nextProbe: 0 },
   doku_checkout: { failures: 0, state: 'CLOSED', nextProbe: 0 },
-  ipaymu: { failures: 0, state: 'CLOSED', nextProbe: 0 },
+  ipaymu: { failures: 0, state: 'OPEN', nextProbe: Infinity },
   midtrans: { failures: 0, state: 'CLOSED', nextProbe: 0 },
   xendit: { failures: 0, state: 'CLOSED', nextProbe: 0 }
 };
 
-// Ops kill-switches per provider (can be toggled at runtime or via environment)
+// Ops kill-switches per provider (iPaymu frozen by default)
 const opsKillSwitches = {
   doku: false,
   doku_direct: false,
   doku_checkout: false,
-  ipaymu: false,
+  ipaymu: true,
   midtrans: false,
   xendit: false
 };
@@ -220,19 +220,9 @@ class PaymentRoutingService {
       };
     }
 
-    // Rule F: Both DOKU integrations unavailable -> emergency fallback to iPaymu (if eligible)
-    if (this.isProviderAvailable('ipaymu')) {
-      return {
-        provider: 'ipaymu',
-        channel: isDirectVA ? 'IPAYMU_VA' : 'IPAYMU_REDIRECT',
-        integrationType: 'EMERGENCY_ALTERNATIVE',
-        fallbackApplied: true,
-        originalChannel: ch,
-        reason: 'ALL_DOKU_INTEGRATIONS_UNAVAILABLE_EMERGENCY_IPAYMU'
-      };
-    }
-
-    throw new Error('All configured payment providers (DOKU Direct API, DOKU Checkout, iPaymu) are currently unavailable or circuit-broken.');
+    // Rule F: iPaymu is FROZEN for new transactions. No automatic fallback to iPaymu.
+    // DOKU is the only active payment gateway for TIKUM.
+    throw new Error('All configured active payment providers (DOKU Direct API, DOKU Checkout) are currently unavailable or circuit-broken.');
   }
 
   static getCircuitBreakerStatus() {
@@ -271,7 +261,9 @@ class PaymentRoutingService {
 
     let targetName;
     const tUpper = (tier || 'PRIMARY').toUpperCase();
-    if (tUpper === 'TIER_1B' || tUpper === 'BACKUP_1' || tUpper === 'SECONDARY') {
+    if (tUpper === 'IPAYMU' || (channel && String(channel).toUpperCase().includes('IPAYMU'))) {
+      targetName = 'ipaymu';
+    } else if (tUpper === 'TIER_1B' || tUpper === 'BACKUP_1' || tUpper === 'SECONDARY') {
       targetName = marketConfig.backup_1 || marketConfig.secondary || marketConfig.primary;
     } else if (tUpper === 'TIER_2A' || tUpper === 'BACKUP_2' || tUpper === 'FALLBACK') {
       targetName = marketConfig.backup_2 || marketConfig.fallback || marketConfig.primary;
@@ -284,6 +276,13 @@ class PaymentRoutingService {
     // In test environment, allow deterministic test provider if explicitly registered
     if (process.env.NODE_ENV === 'test' && paymentManager.hasProvider('test')) {
       targetName = targetName || 'test';
+    }
+
+    if (targetName === 'ipaymu') {
+      const err = new Error("iPaymu payment gateway is FROZEN for new transactions. DOKU is the active gateway.");
+      err.code = 'PAYMENT_PROVIDER_FROZEN';
+      err.status = 400;
+      throw err;
     }
 
     const provider = paymentManager.getProvider(targetName);

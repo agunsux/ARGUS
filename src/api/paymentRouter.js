@@ -20,12 +20,28 @@ const { FinancialLedger } = require('../settlement/FinancialLedger');
 
 function getCallerUserId(req) {
   if (req.user && req.user.id) return req.user.id;
+  const { SessionStore } = require('../services/sessionStore');
+  let sessionToken = null;
   const authHeader = req.header ? (req.header('authorization') || req.header('x-session-token')) : null;
   if (authHeader) {
-    const { SessionStore } = require('../services/sessionStore');
-    const token = authHeader.replace(/^Bearer\s+/, '').trim();
-    const session = SessionStore.findSession(token);
-    if (session) return session.user_id;
+    sessionToken = authHeader.replace(/^Bearer\s+/, '').trim();
+  } else if (req.headers && req.headers.cookie) {
+    const { parseCookies } = require('../middleware/auth');
+    const cookies = parseCookies(req.headers.cookie);
+    if (cookies.session_token) {
+      sessionToken = cookies.session_token.trim();
+    }
+  }
+  if (sessionToken) {
+    const session = SessionStore.findSession(sessionToken);
+    if (session) {
+      const u = (state.users || []).find(usr => usr.id === session.user_id);
+      if (u) {
+        req.user = u;
+        return u.id;
+      }
+      return session.user_id;
+    }
   }
   if (process.env.NODE_ENV === 'test') {
     return req.header('x-user-id') || req.body?.buyerId || req.query?.buyerId || null;
@@ -191,6 +207,8 @@ router.get('/v1/payments/active-config', (req, res) => {
 
   res.json({
     active_provider: defaultProvider,
+    provider_env: status.environment || (status.is_sandbox === false ? 'production' : 'sandbox'),
+    is_sandbox: status.is_sandbox !== undefined ? Boolean(status.is_sandbox) : !isProductionDeployment(),
     status: status.status,
     is_verified: status.isVerified,
     is_production: isProductionDeployment(),
@@ -219,16 +237,18 @@ router.get(['/v1/payments/ipaymu/config', '/payments/ipaymu/config'], (req, res)
       success: true,
       provider: 'ipaymu',
       tier: 'TIER_1B',
-      is_available: true,
+      is_available: false,
+      is_frozen: true,
       is_configured: Boolean(process.env.IPAYMU_API_KEY && process.env.IPAYMU_VA),
       is_production: ipaymu.isProduction,
       mode: ipaymu.mode,
-      status: status.status,
+      status: 'FROZEN',
+      message: 'iPaymu payment gateway is FROZEN for new transactions; historical transactions remain readable.',
       virtual_account_configured: hasVa,
       virtual_account_masked: maskedVa,
       webhook_url: process.env.IPAYMU_WEBHOOK_URL || 'https://tikum.app/api/v1/payments/webhook/ipaymu',
-      supported_channels: ipaymu.getSupportedChannels(),
-      default_channel: 'IPAYMU_REDIRECT'
+      supported_channels: [],
+      default_channel: null
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -406,6 +426,12 @@ router.post('/v1/payments/create', async (req, res) => {
     }
 
     const targetProvider = (providerName || req.query.provider || paymentManager.defaultProvider || 'doku').toLowerCase();
+    if (targetProvider === 'ipaymu') {
+      return res.status(400).json({
+        error: 'iPaymu payment gateway is FROZEN for new transactions. DOKU is the active gateway.',
+        code: 'PAYMENT_PROVIDER_FROZEN'
+      });
+    }
     const providerInstance = paymentManager.getProvider(targetProvider);
     const providerSupportsHold = providerInstance ? Boolean(providerInstance.getCapabilities?.().hold) : false;
     const effectiveRequiresEscrow = (requiresEscrow !== undefined && requiresEscrow !== null)
@@ -1126,6 +1152,79 @@ router.post('/admin/payments/reconcile', requireAdmin, async (req, res) => {
 });
 
 /**
+ * POST /api/admin/payments/doku/inquiry
+ * Admin single-order DOKU Check Status Inquiry & Settlement Reconciliation
+ */
+router.post('/admin/payments/doku/inquiry', requireAdmin, async (req, res) => {
+  try {
+    const { orderId, invoiceNumber } = req.body || {};
+    if (!orderId && !invoiceNumber) {
+      return res.status(400).json({ error: 'orderId or invoiceNumber is required', code: 'VALIDATION_ERROR' });
+    }
+    const actorId = req.user?.id || 'admin-ops';
+    const result = await PaymentService.reconcileDokuOrderStatus({ orderId: orderId || null, invoiceNumber: invoiceNumber || null, actorId });
+    const pay = (state.canonical_payments || []).find(p => p.order_id === result.orderId) || null;
+    const esc = (state.escrows || []).find(e => e.order_id === result.orderId) || null;
+    return res.json({
+      success: true,
+      reconciliation: result,
+      provider_settlement_status: pay?.metadata?.provider_settlement_status || pay?.provider_settlement_status || result.normalizedStatus,
+      internal_settlement_status: pay?.metadata?.internal_settlement_status || esc?.status || result.status
+    });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, code: err.code || 'DOKU_INQUIRY_FAILED' });
+  }
+});
+
+async function handlePartyDokuInquiry(req, res) {
+  try {
+    const { isPrelaunchListingMode, PRELAUNCH_ERROR_RESPONSE } = require('../config/marketplaceMode');
+    if (isPrelaunchListingMode()) {
+      return res.status(403).json(PRELAUNCH_ERROR_RESPONSE);
+    }
+    const callerId = getCallerUserId(req);
+    const orderId = req.params.orderId || req.body?.orderId || req.query?.orderId || null;
+    const invoiceNumber = req.body?.invoiceNumber || req.query?.invoiceNumber || null;
+    if (!orderId && !invoiceNumber) {
+      return res.status(400).json({ error: 'orderId or invoiceNumber is required', code: 'VALIDATION_ERROR' });
+    }
+    let order = orderId ? (state.orders || []).find(o => o.id === orderId) : null;
+    if (!order && orderId) {
+      try {
+        const { getMoneyRepository } = require('../storage');
+        order = await getMoneyRepository().getOrderById(orderId);
+      } catch (_) {}
+    }
+    const isAdmin = req.user && ['admin', 'superadmin', 'super_admin', 'finance_admin'].includes(String(req.user.role || '').toLowerCase());
+    if (!callerId) {
+      return res.status(401).json({ error: 'Authentication required to verify payment status', code: 'AUTH_REQUIRED' });
+    }
+    if (order && order.buyer_id !== callerId && order.seller_id !== callerId && !isAdmin) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this order', code: 'FORBIDDEN' });
+    }
+    const result = await PaymentService.reconcileDokuOrderStatus({ orderId: orderId || null, invoiceNumber, actorId: callerId });
+    const pay = (state.canonical_payments || []).find(p => p.order_id === result.orderId) || null;
+    const esc = (state.escrows || []).find(e => e.order_id === result.orderId) || null;
+    return res.json({
+      success: true,
+      orderId: result.orderId,
+      invoiceNumber: result.invoiceNumber,
+      normalizedStatus: result.normalizedStatus,
+      status: result.status,
+      action: result.action,
+      provider_settlement_status: pay?.metadata?.provider_settlement_status || pay?.provider_settlement_status || result.normalizedStatus,
+      internal_settlement_status: pay?.metadata?.internal_settlement_status || esc?.status || result.status,
+      reconciliation: result
+    });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, code: err.code || 'DOKU_INQUIRY_FAILED' });
+  }
+}
+
+router.post('/v1/payments/doku/inquiry', handlePartyDokuInquiry);
+router.get('/v1/payments/doku/status/:orderId', handlePartyDokuInquiry);
+
+/**
  * GET /api/admin/payments/reconciliation
  * Admin inspects reconciliation logs (Requires Admin)
  */
@@ -1143,18 +1242,23 @@ router.get('/admin/payments/reconciliation', requireAdmin, (req, res) => {
  */
 router.post(['/admin/payments/release', '/v1/payments/release'], requireAdmin, async (req, res) => {
   try {
-    const { orderId } = req.body;
+    const { orderId, authorizationId, overrideSettlement, override_settlement } = req.body;
     if (!orderId) {
       return res.status(400).json({ success: false, error: 'orderId is required' });
     }
     const actorId = req.user?.id || req.body.actorId || 'admin-argus';
-    const result = await PaymentService.executeRelease({ orderId, actorId });
+    const result = await PaymentService.executeRelease({
+      orderId,
+      actorId,
+      authorizationId: authorizationId || null,
+      overrideSettlement: overrideSettlement ?? override_settlement ?? null
+    });
     res.json({
       success: true,
       release: result
     });
   } catch (err) {
-    const statusCode = err.message && err.message.includes('ARGUS_RELEASE_BLOCKED') ? 422 : 500;
+    const statusCode = err.status || err.statusCode || (err.message && err.message.includes('ARGUS_RELEASE_BLOCKED') ? 422 : 500);
     res.status(statusCode).json({
       success: false,
       error: err.message,

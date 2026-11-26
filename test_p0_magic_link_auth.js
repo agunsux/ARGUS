@@ -460,14 +460,15 @@ async function runTests() {
       );
     });
 
-    // 16. UI Verification: Header has Login / Sign Up adjacent to Dark Mode & Account Page exists
-    await test('Invariant 16: UI Header contains Login/Sign Up adjacent to Dark Mode; /account serves valid page', async () => {
+    // 16. UI Verification: Header has Login / Sign Up in Dark-Mode Only layout & Account Page exists
+    await test('Invariant 16: UI Header contains Login/Sign Up in Dark Mode only; /account serves valid page', async () => {
       // Check homepage HTML
       const homeRes = await makeRequest('/');
       assert.strictEqual(homeRes.statusCode, 200);
       assert.ok(homeRes.body.includes('id="authHeaderContainer"'));
       assert.ok(homeRes.body.includes('Login / Sign Up'));
-      assert.ok(homeRes.body.includes('id="themeToggle"'));
+      assert.ok(homeRes.body.includes('data-theme="dark"'));
+      assert.ok(!homeRes.body.includes('id="themeToggle"') && !homeRes.body.includes('data-theme-toggle'));
       assert.ok(homeRes.body.includes('id="authModal"'));
 
       // Verify Brand Boundary: Zero customer-facing ARGUS on homepage

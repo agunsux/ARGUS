@@ -111,6 +111,7 @@ class DokuPaymentProvider extends PaymentProvider {
    * Validates DOKU configuration and credential presence without leaking secrets
    */
   validateConfiguration() {
+    const { validateDokuConfiguration } = require('../../config/deploymentEnv');
     const issues = [];
     if (!this.clientId) issues.push('DOKU_CLIENT_ID is missing');
     if (!this.secretKey) issues.push('DOKU_SECRET_KEY is missing');
@@ -118,6 +119,17 @@ class DokuPaymentProvider extends PaymentProvider {
     if (!this.env) issues.push('DOKU_ENV is missing');
     if (this.productionHostRejected) {
       issues.push('PRODUCTION_HOST_REJECTED: https://api.doku.com cannot be selected while production payments are gated.');
+    }
+
+    const envValidation = validateDokuConfiguration({
+      clientId: this.clientId,
+      secretKey: this.secretKey,
+      apiBaseUrl: this.apiBaseUrl,
+      env: this.env
+    });
+
+    if (!envValidation.allowed && envValidation.reason) {
+      issues.push(envValidation.reason);
     }
 
     return {
@@ -129,7 +141,8 @@ class DokuPaymentProvider extends PaymentProvider {
       hasClientId: Boolean(this.clientId),
       hasSecretKey: Boolean(this.secretKey),
       hasWebhookSecret: Boolean(this.webhookSecret),
-      productionHostRejected: this.productionHostRejected
+      productionHostRejected: this.productionHostRejected,
+      deploymentCheck: envValidation
     };
   }
 
@@ -645,6 +658,7 @@ class DokuPaymentProvider extends PaymentProvider {
     return {
       provider: this.getName(),
       orderId,
+      invoiceNumber,
       providerReference: invoiceNumber,
       providerTransactionId: invoiceNumber,
       dokuRequestId: requestId,
@@ -687,13 +701,13 @@ class DokuPaymentProvider extends PaymentProvider {
     callbackUrl = null
   }) {
     const { v4: uuidv4 } = require('uuid');
-    const gross = parseInt(amount, 10);
+    const gross = Number(amount);
     const effIdempotency = idempotencyKey || `doku-pay-${orderId}-${Date.now()}`;
     const effCorrelation = correlationId || `corr-${orderId}`;
     const requestId = uuidv4();
     const requestTimestamp = new Date().toISOString().slice(0, 19) + 'Z';
     const invoiceNumber = metadata?.invoiceNumber || `INV-DOKU-${orderId}`;
-    const effCallbackUrl = callbackUrl || metadata?.callbackUrl || `https://tikum.app/track/${orderId}`;
+    const effCallbackUrl = callbackUrl || metadata?.callbackUrl || process.env.DOKU_CALLBACK_URL || `https://tikum.app/track/${orderId}`;
 
     // Strict Production Host Rejection: live production gate check runs FIRST
     if (this.productionHostRejected || (this.apiBaseUrl === 'https://api.doku.com' || (this.apiBaseUrl.includes('doku.com') && !this.apiBaseUrl.includes('sandbox'))) || (this.mode === 'production' && !this.enableProduction)) {
@@ -704,6 +718,38 @@ class DokuPaymentProvider extends PaymentProvider {
 
     const upperChannel = (channel || 'VA_DOKU').toUpperCase().trim();
     const isVaChannel = upperChannel.startsWith('VA') || upperChannel.includes('VIRTUAL_ACCOUNT');
+    const isCheckout = !isVaChannel && upperChannel !== 'QRIS' && upperChannel !== 'QRIS_DOKU';
+    let checkoutItems;
+    if (isCheckout) {
+      const quantity = Number(metadata.quantity);
+      const unitPrice = Number(metadata.unit_listing_price);
+      const unitFee = Number(metadata.buyer_fee_per_ticket);
+      const tier = metadata.fulfillment_type || metadata.fulfillmentType;
+      if (metadata.quantity == null || metadata.unit_listing_price == null || metadata.buyer_fee_per_ticket == null ||
+          String(currency).toUpperCase() !== 'IDR' || !Number.isSafeInteger(gross) || gross <= 0 ||
+          !Number.isSafeInteger(quantity) || quantity <= 0 || !Number.isSafeInteger(unitPrice) || unitPrice <= 0 ||
+          !Number.isSafeInteger(unitFee) || unitFee < 0 || !['SELLER_MANAGED', 'TIKUM_VENUE_PIC'].includes(tier) ||
+          !Number.isSafeInteger(quantity * (unitPrice + unitFee)) || quantity * (unitPrice + unitFee) !== gross) {
+        const err = new Error('Checkout requires IDR integer amount and explicit, matching ticket and fee itemization');
+        err.code = 'INVALID_CHECKOUT_ITEMIZATION';
+        throw err;
+      }
+      if (!/^[A-Za-z0-9-]{1,30}$/.test(invoiceNumber)) {
+        const err = new Error('Checkout invoice must contain at most 30 alphanumeric or dash characters');
+        err.code = 'INVALID_CHECKOUT_INVOICE';
+        throw err;
+      }
+      checkoutItems = [
+        { name: 'Ticket', quantity, price: unitPrice },
+        { name: `TIKUM Buyer Service Fee - ${tier}`, quantity, price: unitFee }
+      ];
+      const lineItemsTotal = checkoutItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+      if (lineItemsTotal !== gross) {
+        const err = new Error('Checkout line_items sum does not equal order.amount');
+        err.code = 'INVALID_CHECKOUT_ITEMIZATION';
+        throw err;
+      }
+    }
 
     // Strict pilot channel whitelist: Only QRIS and Virtual Accounts (BCA, Mandiri, BNI, BRI, CIMB, Permata, DOKU)
     if (['CREDIT_CARD', 'CC', 'PAYLATER', 'DIRECT_DEBIT', 'DEBIT'].includes(upperChannel)) {
@@ -772,7 +818,15 @@ class DokuPaymentProvider extends PaymentProvider {
         },
         idempotencyKey: effIdempotency,
         correlationId: effCorrelation,
-        simulated: true
+        simulated: true,
+        provider_env: this.env,
+        invoice_number: invoiceNumber,
+        doku_original_request_id: requestId,
+        payment_url: isVaChannel
+          ? `https://sandbox.doku.com/virtual-account/v1/how-to-pay-page/${simVa}`
+          : (upperChannel === 'QRIS' ? null : `https://checkout-sandbox.doku.com/payment/${invoiceNumber}`),
+        provider_settlement_status: 'SIMULATED',
+        internal_settlement_status: 'PAYMENT_PENDING'
       };
     }
 
@@ -841,15 +895,19 @@ class DokuPaymentProvider extends PaymentProvider {
       };
     } else {
       target = '/checkout/v1/payment';
+      const effReturnUrl = metadata?.returnUrl || process.env.DOKU_RETURN_URL || null;
       payload = {
         order: {
           invoice_number: invoiceNumber,
           amount: gross,
+          currency: 'IDR',
+          line_items: checkoutItems,
           callback_url: effCallbackUrl,
+          ...(effReturnUrl ? { callback_url_result: effReturnUrl } : {}),
           auto_redirect: true
         },
         payment: {
-          payment_due_date: 60,
+          payment_due_date: Number(process.env.DOKU_PAYMENT_DUE_MINUTES || 60),
           payment_method_types: ['VIRTUAL_ACCOUNT', 'QRIS']
         },
         customer: {
@@ -858,7 +916,7 @@ class DokuPaymentProvider extends PaymentProvider {
           email: buyer.email || 'customer@tikum.app'
         }
       };
-      if (requiresEscrow) {
+      if ((process.env.DOKU_HOLD_SETTLEMENT_ENABLED ?? 'true').toLowerCase() === 'true') {
         payload.additional_info = { hold_settlement: true };
       }
     }
@@ -877,7 +935,7 @@ class DokuPaymentProvider extends PaymentProvider {
       body: signedReq.body
     });
 
-    return this._handleCreatePaymentResponse({
+    const result = this._handleCreatePaymentResponse({
       orderId,
       gross,
       currency,
@@ -889,6 +947,17 @@ class DokuPaymentProvider extends PaymentProvider {
       requestId,
       response
     });
+    return {
+      ...result,
+      provider_env: this.env,
+      invoice_number: invoiceNumber,
+      doku_original_request_id: requestId,
+      payment_url: result.paymentUrl || null,
+      provider_settlement_status: 'UNKNOWN',
+      internal_settlement_status: 'PAYMENT_PENDING',
+      hold_settlement_diagnostic: isCheckout && payload.additional_info?.hold_settlement
+        ? 'REQUESTED_PROVIDER_ENABLEMENT_UNCONFIRMED' : 'NOT_REQUESTED'
+    };
   }
 
   /**
@@ -930,23 +999,44 @@ class DokuPaymentProvider extends PaymentProvider {
 
       const data = res.json || {};
       const transaction = data.transaction || {};
-      const rawStatus = (transaction.status || data.status || '').toUpperCase();
+      const orderInfo = data.order || {};
+      const txStatus = (transaction.status || data.status || '').toUpperCase().trim();
+      const orderStatus = (orderInfo.status || '').toUpperCase().trim();
+      const rawStatus = txStatus && !['PENDING', 'CREATED', 'INITIATED'].includes(txStatus)
+        ? txStatus
+        : (orderStatus || txStatus);
+
       let canonicalStatus = MONEY_STATE.PAYMENT_PENDING;
-      if (rawStatus === 'SUCCESS' || rawStatus === 'SETTLED' || rawStatus === 'PAID') {
+      let normalizedStatus = 'ORDER_GENERATED';
+      if (txStatus === 'SUCCESS' || txStatus === 'SETTLED' || txStatus === 'PAID' ||
+          orderStatus === 'SUCCESS' || orderStatus === 'SETTLED' || orderStatus === 'PAID') {
         canonicalStatus = MONEY_STATE.PAID;
-      } else if (rawStatus === 'FAILED') {
+        normalizedStatus = 'SUCCESS';
+      } else if (txStatus === 'FAILED') {
         canonicalStatus = MONEY_STATE.PAYMENT_FAILED;
-      } else if (rawStatus === 'EXPIRED') {
+        normalizedStatus = 'FAILED';
+      } else if (txStatus === 'EXPIRED' || txStatus === 'ORDER_EXPIRED' || orderStatus === 'ORDER_EXPIRED' || orderStatus === 'EXPIRED') {
         canonicalStatus = MONEY_STATE.PAYMENT_EXPIRED;
+        normalizedStatus = 'ORDER_EXPIRED';
+      } else if (orderStatus === 'ORDER_RECOVERED' || txStatus === 'ORDER_RECOVERED') {
+        canonicalStatus = MONEY_STATE.PAYMENT_PENDING;
+        normalizedStatus = 'ORDER_RECOVERED';
+      } else if (orderStatus === 'ORDER_GENERATED' || txStatus === 'ORDER_GENERATED') {
+        canonicalStatus = MONEY_STATE.PAYMENT_PENDING;
+        normalizedStatus = 'ORDER_GENERATED';
       }
 
       return {
         orderId,
-        providerRef: inv,
+        invoiceNumber: orderInfo.invoice_number || inv,
+        providerRef: transaction.transaction_id || orderInfo.invoice_number || inv,
         status: canonicalStatus,
+        normalizedStatus,
+        orderStatus: orderStatus || normalizedStatus,
+        transactionStatus: txStatus || null,
         rawStatus,
-        amount: parseInt(data.order?.amount || transaction.amount || 0, 10),
-        currency: data.order?.currency || 'IDR',
+        amount: parseInt(orderInfo.amount || transaction.amount || 0, 10),
+        currency: orderInfo.currency || data.currency || 'IDR',
         provider: this.getName(),
         rawResponse: data
       };
@@ -1033,34 +1123,64 @@ class DokuPaymentProvider extends PaymentProvider {
     const orderData = payload.order || payload;
     const transactionData = payload.transaction || payload;
 
-    const orderId = orderData.invoice_number
-      ? orderData.invoice_number.replace(/^INV-DOKU-/, '')
-      : (payload.order_id || payload.orderId || payload.order?.orderId);
+    const invoiceNumber = orderData.invoice_number || payload.invoice_number || null;
+    const explicitOrderId =
+      payload.order?.order_id ||
+      payload.order?.orderId ||
+      payload.order_id ||
+      payload.orderId ||
+      payload.additional_info?.order_id ||
+      null;
+    const orderId = explicitOrderId || (invoiceNumber ? String(invoiceNumber).replace(/^INV-DOKU-/, '') : undefined);
 
-    const providerRef = transactionData.transaction_id || payload.provider_ref || payload.providerRef || `doku-trx-${orderId}`;
+    const providerRef =
+      transactionData.transaction_id ||
+      payload.transaction_id ||
+      payload.provider_ref ||
+      payload.providerRef ||
+      transactionData.original_request_id ||
+      invoiceNumber ||
+      (orderId ? `doku-trx-${orderId}` : undefined);
     const providerEventId = headers['request-id'] || headers['Request-Id'] || payload.event_id || `evt-doku-${providerRef}`;
-    const rawStatus = (transactionData.status || payload.status || '').toUpperCase();
+    const txStatus = (transactionData.status || payload.status || '').toUpperCase().trim();
+    const orderStatus = (payload.order?.status || '').toUpperCase().trim();
+    const rawStatus = txStatus || orderStatus;
     const amount = parseInt(orderData.amount || payload.amount || 0, 10);
+    const currency = payload.order?.currency || orderData.currency || payload.currency || 'IDR';
     const paidAt = transactionData.date || payload.paid_at || new Date().toISOString();
 
     let canonicalStatus = MONEY_STATE.PAYMENT_PENDING;
-    if (rawStatus === 'SUCCESS' || rawStatus === 'SETTLED' || rawStatus === 'PAID') {
+    let normalizedStatus = orderStatus || txStatus || 'ORDER_GENERATED';
+    if (txStatus === 'SUCCESS' || txStatus === 'SETTLED' || txStatus === 'PAID' ||
+        orderStatus === 'SUCCESS' || orderStatus === 'SETTLED' || orderStatus === 'PAID') {
       canonicalStatus = MONEY_STATE.PAID;
-    } else if (rawStatus === 'FAILED') {
+      normalizedStatus = 'SUCCESS';
+    } else if (txStatus === 'FAILED') {
       canonicalStatus = MONEY_STATE.PAYMENT_FAILED;
-    } else if (rawStatus === 'EXPIRED') {
+      normalizedStatus = 'FAILED';
+    } else if (txStatus === 'EXPIRED' || txStatus === 'ORDER_EXPIRED' || orderStatus === 'ORDER_EXPIRED' || orderStatus === 'EXPIRED') {
       canonicalStatus = MONEY_STATE.PAYMENT_EXPIRED;
+      normalizedStatus = 'ORDER_EXPIRED';
+    } else if (orderStatus === 'ORDER_RECOVERED' || txStatus === 'ORDER_RECOVERED') {
+      canonicalStatus = MONEY_STATE.PAYMENT_PENDING;
+      normalizedStatus = 'ORDER_RECOVERED';
+    } else if (orderStatus === 'ORDER_GENERATED' || txStatus === 'ORDER_GENERATED') {
+      canonicalStatus = MONEY_STATE.PAYMENT_PENDING;
+      normalizedStatus = 'ORDER_GENERATED';
     }
 
     return {
       provider: this.getName(),
       orderId,
+      invoiceNumber,
       providerRef,
+      providerReference: providerRef,
       providerEventId,
       status: canonicalStatus,
+      normalizedStatus,
       rawStatus,
       amount,
-      currency: payload.currency || 'IDR',
+      currency,
       paidAt,
       providerFee: parseInt(payload.fee || 0, 10),
       rawPayload: payload
@@ -1137,8 +1257,13 @@ class DokuPaymentProvider extends PaymentProvider {
     amount,
     currency = 'IDR',
     originalRequestId,
-    orderId = null
+    orderId = null,
+    overrideSettlement = null,
+    override_settlement = null
   }) {
+    const effOverrideSettlement = overrideSettlement !== null && overrideSettlement !== undefined
+      ? overrideSettlement
+      : override_settlement;
     if (!invoiceNumber) {
       const err = new Error('DOKU Release API requires order.invoice_number');
       err.code = 'INVALID_RELEASE_INVOICE';
@@ -1182,6 +1307,14 @@ class DokuPaymentProvider extends PaymentProvider {
         original_request_id: originalRequestId
       }
     };
+    if (effOverrideSettlement !== null && effOverrideSettlement !== undefined) {
+      if (typeof effOverrideSettlement !== 'object' || Array.isArray(effOverrideSettlement)) {
+        const err = new Error('overrideSettlement must be a split configuration object');
+        err.code = 'INVALID_OVERRIDE_SETTLEMENT';
+        throw err;
+      }
+      payload.override_settlement = effOverrideSettlement;
+    }
 
     // Strict Production Host Rejection
     if (this.productionHostRejected || (this.apiBaseUrl === 'https://api.doku.com' || (this.apiBaseUrl.includes('doku.com') && !this.apiBaseUrl.includes('sandbox')))) {
@@ -1213,8 +1346,10 @@ class DokuPaymentProvider extends PaymentProvider {
         originalRequestId,
         settlementDate,
         settlementAmount: numAmount,
-        status: 'RELEASE_CONFIRMED',
-        moneyState: MONEY_STATE.RELEASED,
+        status: 'RELEASE_SIMULATED',
+        moneyState: MONEY_STATE.RELEASE_REQUESTED,
+        provider_settlement_status: 'SIMULATED',
+        internal_settlement_status: 'UNSPECIFIED',
         simulated: true,
         releasedAt: new Date().toISOString()
       };
@@ -1275,8 +1410,10 @@ class DokuPaymentProvider extends PaymentProvider {
       originalRequestId: trxData.original_request_id || originalRequestId,
       settlementDate: trxData.settlement_date || new Date().toISOString().split('T')[0],
       settlementAmount: parseInt(trxData.settlement_amount || numAmount, 10),
-      status: 'RELEASE_CONFIRMED',
-      moneyState: MONEY_STATE.RELEASED,
+      status: 'RELEASE_REQUESTED',
+      moneyState: MONEY_STATE.RELEASE_REQUESTED,
+      provider_settlement_status: 'REQUEST_ACCEPTED_UNCONFIRMED',
+      internal_settlement_status: 'UNSPECIFIED',
       simulated: false,
       releasedAt: new Date().toISOString(),
       rawResponse: data

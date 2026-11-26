@@ -695,11 +695,19 @@ class IPaymuProvider extends PaymentProvider {
     else if (isExpired) normalizedStatus = 'EXPIRED';
     else if (isFailed) normalizedStatus = 'FAILED';
 
+    const providerEventId = crypto.createHash('sha256').update(JSON.stringify({
+      orderId: payload.reference_id || payload.referenceId || payload.order_id || payload.sid || null,
+      transactionId: payload.trx_id || payload.transaction_id || payload.sid || null,
+      status: normalizedStatus
+    })).digest('hex');
+
     return {
       provider: 'ipaymu',
+      providerEventId: `ipaymu-${providerEventId}`,
       orderId: payload.reference_id || payload.referenceId || payload.order_id || payload.sid,
       providerRef: String(payload.trx_id || payload.transaction_id || payload.sid || `ipaymu-trx-${Date.now()}`),
       amount: parseInt(payload.amount || payload.total || 0, 10),
+      currency: payload.currency || 'IDR',
       status: normalizedStatus,
       rawStatus,
       isEscrowLocked: isPaid && isEscrow,

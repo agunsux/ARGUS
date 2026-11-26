@@ -7,6 +7,10 @@
 const { MarketplaceRepository } = require('./MarketplaceRepository');
 const crypto = require('crypto');
 
+function cloneMktVal(val) {
+  return val === undefined ? undefined : JSON.parse(JSON.stringify(val));
+}
+
 class InMemoryMarketplaceRepository extends MarketplaceRepository {
   constructor() {
     super();
@@ -17,6 +21,42 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     this.offers = new Map();
     this.negotiations = new Map();
     this.offerAuditLogs = [];
+    this.picAssignments = new Map();
+    this.buyerInquiries = new Map();
+  }
+
+  _createSnapshot() {
+    const snapMap = (map) => Array.from(map.entries()).map(([k, v]) => [k, cloneMktVal(v)]);
+    return {
+      tickets: snapMap(this.tickets),
+      listings: snapMap(this.listings),
+      reservations: snapMap(this.reservations),
+      deliveries: snapMap(this.deliveries),
+      offers: snapMap(this.offers),
+      negotiations: snapMap(this.negotiations),
+      offerAuditLogs: cloneMktVal(this.offerAuditLogs),
+      picAssignments: snapMap(this.picAssignments),
+      buyerInquiries: snapMap(this.buyerInquiries)
+    };
+  }
+
+  _restoreSnapshot(snap) {
+    if (!snap) return;
+    const restoreMap = (target, entries) => {
+      target.clear();
+      for (const [k, v] of (entries || [])) {
+        target.set(k, cloneMktVal(v));
+      }
+    };
+    restoreMap(this.tickets, snap.tickets);
+    restoreMap(this.listings, snap.listings);
+    restoreMap(this.reservations, snap.reservations);
+    restoreMap(this.deliveries, snap.deliveries);
+    restoreMap(this.offers, snap.offers);
+    restoreMap(this.negotiations, snap.negotiations);
+    this.offerAuditLogs = cloneMktVal(snap.offerAuditLogs || []);
+    restoreMap(this.picAssignments, snap.picAssignments);
+    restoreMap(this.buyerInquiries, snap.buyerInquiries);
   }
 
   reset() {
@@ -27,6 +67,8 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     this.offers.clear();
     this.negotiations.clear();
     this.offerAuditLogs = [];
+    this.picAssignments.clear();
+    this.buyerInquiries.clear();
   }
 
   async init() {
@@ -34,7 +76,7 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
   }
 
   // Tickets
-  async createTicket(ticketData) {
+  async createTicket(ticketData, txContext = null) {
     const id = ticketData.id || `tkt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const ticket = {
       ...ticketData,
@@ -50,11 +92,11 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     return ticket;
   }
 
-  async getTicketById(ticketId) {
+  async getTicketById(ticketId, txContext = null) {
     return this.tickets.get(ticketId) || null;
   }
 
-  async updateTicketStatus(ticketId, status, lockedBy = null) {
+  async updateTicketStatus(ticketId, status, lockedBy = null, txContext = null) {
     const ticket = this.tickets.get(ticketId);
     if (!ticket) return null;
     ticket.status = status;
@@ -76,13 +118,13 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
   }
 
   // Atomic Parent-First Ticket & Listing Creation
-  async createTicketAndListing({ ticketData, listingData }) {
-    const ticket = await this.createTicket(ticketData);
+  async createTicketAndListing({ ticketData, listingData }, txContext = null) {
+    const ticket = await this.createTicket(ticketData, txContext);
     try {
       const listing = await this.createListing({
         ...listingData,
         ticket_id: ticket.id
-      });
+      }, txContext);
       return { ticket, listing };
     } catch (err) {
       this.tickets.delete(ticket.id);
@@ -91,7 +133,7 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
   }
 
   // Listings
-  async createListing(listingData) {
+  async createListing(listingData, txContext = null) {
     const eventId = listingData.canonical_event_id || listingData.event_id;
     if (eventId) {
       let ev = null;
@@ -122,11 +164,26 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
       throw err;
     }
 
+    const explicitFulfillment = listingData.fulfillment_type ?? listingData.metadata?.fulfillment_type ?? listingData.metadata?.fulfillment_option ?? null;
+    if (explicitFulfillment !== null && !['SELLER_MANAGED', 'TIKUM_VENUE_PIC'].includes(explicitFulfillment)) {
+      const err = new Error(`Invalid fulfillment_type '${explicitFulfillment}'`);
+      err.code = 'INVALID_FULFILLMENT_TYPE';
+      err.statusCode = 400;
+      throw err;
+    }
+
     const id = listingData.id || `list-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const availQty = listingData.available_quantity ?? listingData.metadata?.available_quantity ?? listingData.quantity ?? 1;
+    const totalQty = listingData.total_quantity ?? listingData.metadata?.total_quantity ?? listingData.quantity ?? availQty;
     const listing = {
       ...listingData,
       id,
       listing_id: id,
+      available_quantity: Number(availQty),
+      reserved_quantity: Number(listingData.reserved_quantity ?? listingData.metadata?.reserved_quantity ?? 0),
+      sold_quantity: Number(listingData.sold_quantity ?? listingData.metadata?.sold_quantity ?? 0),
+      total_quantity: Number(totalQty),
+      fulfillment_type: explicitFulfillment,
       currency: listingData.currency || 'IDR',
       status: listingData.status || 'ACTIVE',
       created_at: listingData.created_at || new Date().toISOString(),
@@ -136,9 +193,9 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     return listing;
   }
 
-  async getListingById(listingId) {
+  async getListingById(listingId, txContext = null) {
     let listing = this.listings.get(listingId);
-    if (!listing) {
+    if (!listing && !(txContext && txContext.strictRepositoryOnly)) {
       try {
         const { state } = require('../database');
         const legacy = (state.listings || []).find(l => l.id === listingId || l.listing_id === listingId);
@@ -148,10 +205,50 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
         }
       } catch (_) {}
     }
-    return listing || null;
+    return listing ? { ...listing } : null;
   }
 
-  async updateListingStatus(listingId, status) {
+  async updateListing(listingId, updates = {}, txContext = null) {
+    const listing = this.listings.get(listingId);
+    if (!listing) return null;
+    if (updates.fulfillment_type !== undefined) {
+      if (!['SELLER_MANAGED', 'TIKUM_VENUE_PIC'].includes(updates.fulfillment_type)) {
+        const err = new Error(`Invalid fulfillment_type '${updates.fulfillment_type}'`);
+        err.code = 'INVALID_FULFILLMENT_TYPE';
+        err.statusCode = 400;
+        throw err;
+      }
+      listing.fulfillment_type = updates.fulfillment_type;
+      listing.metadata = { ...(listing.metadata || {}), fulfillment_type: updates.fulfillment_type };
+    }
+    if (updates.price !== undefined) listing.price = updates.price;
+    if (updates.face_value !== undefined) listing.face_value = updates.face_value;
+    if (updates.seat_info !== undefined) listing.seat_info = updates.seat_info;
+    if (updates.quantity !== undefined) listing.quantity = updates.quantity;
+    if (updates.total_quantity !== undefined) listing.total_quantity = updates.total_quantity;
+    if (updates.available_quantity !== undefined) listing.available_quantity = updates.available_quantity;
+    if (updates.status !== undefined) listing.status = updates.status;
+    if (updates.pricing_policy_version !== undefined) listing.pricing_policy_version = updates.pricing_policy_version;
+    if (updates.pic_assistance_status !== undefined) listing.pic_assistance_status = updates.pic_assistance_status;
+    if (updates.seller_notes !== undefined) listing.seller_notes = updates.seller_notes;
+    if (updates.evidence_bundle_id !== undefined) listing.evidence_bundle_id = updates.evidence_bundle_id;
+    listing.metadata = {
+      ...(listing.metadata || {}),
+      ...(updates.metadata || {}),
+      ...(updates.face_value !== undefined ? { face_value: updates.face_value } : {}),
+      ...(updates.seat_info !== undefined ? { seat_info: updates.seat_info } : {}),
+      ...(updates.quantity !== undefined ? { quantity: updates.quantity } : {}),
+      ...(updates.total_quantity !== undefined ? { total_quantity: updates.total_quantity } : {}),
+      ...(updates.available_quantity !== undefined ? { available_quantity: updates.available_quantity } : {}),
+      ...(updates.pic_assistance_status !== undefined ? { pic_assistance_status: updates.pic_assistance_status } : {}),
+      ...(updates.seller_notes !== undefined ? { seller_notes: updates.seller_notes } : {}),
+      ...(updates.evidence_bundle_id !== undefined ? { evidence_bundle_id: updates.evidence_bundle_id } : {})
+    };
+    listing.updated_at = new Date().toISOString();
+    return { ...listing };
+  }
+
+  async updateListingStatus(listingId, status, txContext = null) {
     const listing = this.listings.get(listingId);
     if (!listing) return null;
     listing.status = status;
@@ -159,7 +256,7 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     return listing;
   }
 
-  async updateListingInventory(listingId, updates = {}) {
+  async updateListingInventory(listingId, updates = {}, txContext = null) {
     const listing = this.listings.get(listingId);
     if (!listing) return null;
     if (updates.available_quantity !== undefined) listing.available_quantity = updates.available_quantity;
@@ -173,7 +270,7 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     return listing;
   }
 
-  async atomicReserveInventory(listingId, requestedQty = 1) {
+  async atomicReserveInventory(listingId, requestedQty = 1, txContext = null) {
     let listing = this.listings.get(listingId);
     if (!listing) {
       try {
@@ -245,7 +342,7 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     return listing;
   }
 
-  async atomicReleaseInventory(listingId, quantity = 1) {
+  async atomicReleaseInventory(listingId, quantity = 1, txContext = null) {
     const listing = this.listings.get(listingId);
     if (!listing) return null;
     const qty = Math.max(1, parseInt(quantity, 10) || 1);
@@ -370,11 +467,11 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     return r;
   }
 
-  async getReservationById(reservationId) {
+  async getReservationById(reservationId, txContext = null) {
     return this.reservations.get(reservationId) || null;
   }
 
-  async getActiveReservationForListing(listingId) {
+  async getActiveReservationForListing(listingId, txContext = null) {
     const now = new Date();
     for (const r of this.reservations.values()) {
       if (r.listing_id === listingId && r.status === 'PENDING' && new Date(r.expires_at) > now) {
@@ -401,7 +498,7 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     return r;
   }
 
-  async convertReservation(reservationId) {
+  async convertReservation(reservationId, txContext = null) {
     const r = this.reservations.get(reservationId);
     if (!r) return null;
     r.status = 'CONVERTED';
@@ -426,7 +523,7 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
   }
 
   // Deliveries
-  async createDelivery(deliveryData) {
+  async createDelivery(deliveryData, txContext = null) {
     const id = deliveryData.id || `dlv-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const delivery = {
       ...deliveryData,
@@ -439,18 +536,18 @@ class InMemoryMarketplaceRepository extends MarketplaceRepository {
     return delivery;
   }
 
-  async getDeliveryById(deliveryId) {
+  async getDeliveryById(deliveryId, txContext = null) {
     return this.deliveries.get(deliveryId) || null;
   }
 
-  async getDeliveryByOrderId(orderId) {
+  async getDeliveryByOrderId(orderId, txContext = null) {
     for (const d of this.deliveries.values()) {
       if (d.order_id === orderId) return d;
     }
     return null;
   }
 
-  async updateDeliveryStatus(deliveryId, status, metadata = {}) {
+  async updateDeliveryStatus(deliveryId, status, metadata = {}, txContext = null) {
     const d = this.deliveries.get(deliveryId);
     if (!d) return null;
     d.status = status;

@@ -44,6 +44,7 @@ class TransactionControlCenterService {
     let repoEscrows = [];
     let repoSettlements = [];
     let repoDisputes = [];
+    let repoSellerProfiles = [];
 
     try {
       [

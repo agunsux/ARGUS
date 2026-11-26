@@ -33,6 +33,7 @@ const {
   VALID_CATEGORIES
 } = require('./EventPolicyRegistry');
 const { EventLifecycleService } = require('./EventLifecycleService');
+const { isUnverifiedLead, checkCatalogBatch, normalizeProviderKey } = require('./CatalogSafety');
 
 class PrimaryEventScannerService {
   /**
@@ -394,7 +395,7 @@ class PrimaryEventScannerService {
    * @param {Date|string} [options.now]
    * @returns {Object} Structured scan report
    */
-  static scanAllSources({ force = false, now = null } = {}) {
+  static scanAllSources({ force = false, now = null, fullCatalog = false } = {}) {
     const effectiveNow = EventLifecycleService.getJakartaTime(now);
     const todayJakarta = EventLifecycleService.getJakartaDateString(effectiveNow);
     const catalog = this.getPrimarySourcesCatalog();
@@ -409,6 +410,50 @@ class PrimaryEventScannerService {
 
     // Map existing events by deduplication key
     const existingEvents = eventPolicyRegistry.getAllEvents();
+    const activeExisting = EventLifecycleService.filterActiveEvents(existingEvents.filter(e => !isUnverifiedLead(e)), effectiveNow);
+    const incomingKeys = new Set();
+    for (const source of catalog) {
+      for (const event of source.events || []) {
+        const date = String(event.event_date || '').split('T')[0].trim();
+        if (!isUnverifiedLead(event) && date && !EventLifecycleService.isPastEvent(date, null, effectiveNow) &&
+            Number(event.starting_price_idr) >= MINIMUM_PRICE_THRESHOLD && VALID_CATEGORIES.includes((event.category || 'CONCERT').toUpperCase().trim())) {
+          incomingKeys.add(this.generateDeduplicationKey(event.event_name, event.venue, date));
+        }
+      }
+    }
+    if (fullCatalog) {
+      const safety = checkCatalogBatch(activeExisting.length, incomingKeys.size, 'primary_full_catalog');
+      if (safety.circuit_breaker_tripped) return { success: false, ...safety, inserted_count: 0, updated_count: 0 };
+    }
+    const blocked = new Set();
+    const providerReports = [];
+    if (!fullCatalog) for (const source of catalog) {
+      const provider = normalizeProviderKey(source.source);
+      const previous = activeExisting.filter(e => normalizeProviderKey(e.official_ticketing_partner) === provider &&
+        e.event_date && !EventLifecycleService.isPastEvent(String(e.event_date).split('T')[0], null, effectiveNow) &&
+        Number(e.starting_price_idr) >= MINIMUM_PRICE_THRESHOLD && VALID_CATEGORIES.includes((e.category || 'CONCERT').toUpperCase().trim())).length;
+      const events = Array.isArray(source.events) ? source.events : [];
+      const ids = new Set();
+      const keys = new Set();
+      for (const event of events) {
+        const date = String(event.event_date || '').split('T')[0].trim();
+        if (isUnverifiedLead(event) || !date || EventLifecycleService.isPastEvent(date, null, effectiveNow) ||
+          Number(event.starting_price_idr) < MINIMUM_PRICE_THRESHOLD || !Number.isFinite(Number(event.starting_price_idr)) ||
+          !VALID_CATEGORIES.includes((event.category || 'CONCERT').toUpperCase().trim())) continue;
+        const key = this.generateDeduplicationKey(event.event_name, event.venue, date);
+        const id = String(event.id || event.slug || '').trim().toLowerCase();
+        if ((id && ids.has(id)) || keys.has(key)) continue;
+        if (id) ids.add(id);
+        keys.add(key);
+      }
+      const tripped = provider === 'unknown' || source.failed === true || !Array.isArray(source.events) ||
+        (previous > 0 && (events.length === 0 || (source.snapshotComplete === true && keys.size < previous * 0.5)));
+      const report = { provider, source: source.source, raw_fetched_count: events.length, qualified_count: keys.size,
+        previous_window_active: previous, snapshot_complete: source.snapshotComplete === true,
+        circuit_breaker_tripped: tripped, admin_alert: tripped };
+      providerReports.push(report);
+      if (tripped) { blocked.add(source); console.warn('[CATALOG_CIRCUIT_BREAKER]', JSON.stringify(report)); }
+    }
     const existingKeys = new Map();
     for (const ev of existingEvents) {
       const key = this.generateDeduplicationKey(ev.event_name, ev.venue, ev.event_date);
@@ -419,11 +464,13 @@ class PrimaryEventScannerService {
     for (const sourceItem of catalog) {
       const sourceName = sourceItem.source;
       scannedSources.push(sourceName);
+      if (blocked.has(sourceItem)) continue;
 
       try {
         const events = sourceItem.events || [];
         for (const rawEv of events) {
           discoveredCount++;
+          if (isUnverifiedLead(rawEv)) continue;
 
           // Ingestion Filter 1: Price threshold >= 300,000 IDR
           const price = parseInt(rawEv.starting_price_idr, 10);
@@ -456,6 +503,7 @@ class PrimaryEventScannerService {
           const existing = existingKeys.get(dedupKey) || existingKeys.get(generatedId);
 
           if (existing) {
+            if (normalizeProviderKey(existing.official_ticketing_partner) !== normalizeProviderKey(sourceName)) continue;
             // Update existing record if needed
             existing.official_ticketing_partner = sourceName;
             existing.last_scanned_at = effectiveNow.toISOString();
@@ -500,7 +548,10 @@ class PrimaryEventScannerService {
     }
 
     return {
-      success: errors.length === 0,
+      success: errors.length === 0 && blocked.size === 0,
+      circuit_breaker_tripped: blocked.size > 0,
+      admin_alert: blocked.size > 0,
+      provider_reports: providerReports,
       scanned_sources: scannedSources,
       discovered_count: discoveredCount,
       inserted_count: insertedCount,

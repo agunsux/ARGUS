@@ -1,29 +1,33 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Pembeli — TIKUM</title>
   <meta name="description" content="Kelola tiket, pesanan, tawaran harga, sengketa, dan keamanan akun pembeli Anda di TIKUM.">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="/images/tikum-brand-symbol.svg">
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/tikum-tokens.css">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard-dark.css">
+  <link rel="stylesheet" href="/css/header-shared.css">
   <style>
     :root {
-      --bg-page: #F7F6F2;
-      --card-bg: #FFFFFF;
-      --text-main: #18181B;
-      --text-muted: #52525B;
-      --border-color: #E4E4E7;
-      --primary: #059669;
-      --primary-hover: #047857;
-      --primary-soft: #ECFDF5;
+      --bg-page: #172333;
+      --card-bg: #24364D;
+      --text-main: #FFFFFF;
+      --text-muted: #CBD5E1;
+      --border-color: rgba(243, 235, 221, 0.16);
+      --primary: #E36F45;
+      --primary-hover: #15365B;
+      --primary-soft: rgba(21, 54, 91, 0.45);
       --warning: #D97706;
-      --warning-soft: #FFFBEB;
+      --warning-soft: rgba(217, 119, 6, 0.16);
       --danger: #DC2626;
-      --danger-soft: #FEF2F2;
-      --info: #2563EB;
-      --info-soft: #EFF6FF;
+      --danger-soft: rgba(220, 38, 38, 0.16);
+      --info: #38BDF8;
+      --info-soft: rgba(21, 54, 91, 0.55);
     }
 
     body {
@@ -67,7 +71,7 @@
 
     .role-switcher {
       display: inline-flex;
-      background: #F4F4F5;
+      background: #172333;
       padding: 4px;
       border-radius: 10px;
       border: 1px solid var(--border-color);
@@ -88,9 +92,9 @@
     }
 
     .role-switch-btn.active {
-      background: var(--card-bg);
-      color: var(--primary);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      background: #15365B;
+      color: #F3EBDD;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
 
     .header-right {
@@ -105,7 +109,8 @@
       align-items: center;
       gap: 8px;
       padding: 6px 12px;
-      background: #F4F4F5;
+      background: #15365B;
+      color: #FFFFFF;
       border-radius: 999px;
       font-size: 13px;
       font-weight: 600;
@@ -122,11 +127,11 @@
       text-transform: uppercase;
       letter-spacing: 0.4px;
     }
-    .badge-success { background: var(--primary-soft); color: var(--primary); border: 1px solid #A7F3D0; }
-    .badge-warning { background: var(--warning-soft); color: var(--warning); border: 1px solid #FDE68A; }
-    .badge-danger { background: var(--danger-soft); color: var(--danger); border: 1px solid #FECACA; }
-    .badge-info { background: var(--info-soft); color: var(--info); border: 1px solid #BFDBFE; }
-    .badge-neutral { background: #F4F4F5; color: #52525B; border: 1px solid #E4E4E7; }
+    .badge-success { background: rgba(16, 185, 129, 0.16); color: #6EE7B7; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .badge-warning { background: rgba(245, 158, 11, 0.16); color: #FCD34D; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .badge-danger { background: rgba(239, 68, 68, 0.16); color: #FCA5A5; border: 1px solid rgba(239, 68, 68, 0.35); }
+    .badge-info { background: rgba(56, 189, 248, 0.16); color: #7DD3FC; border: 1px solid rgba(56, 189, 248, 0.35); }
+    .badge-neutral { background: #15365B; color: #CBD5E1; border: 1px solid rgba(243, 235, 221, 0.16); }
 
     .dash-container {
       max-width: 1200px;
@@ -184,8 +189,8 @@
     }
 
     .nav-tab.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
+      color: #F3EBDD;
+      border-bottom-color: #E36F45;
     }
 
     .kpi-grid {
@@ -271,7 +276,7 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 14px;
-      background: #FAFAFA;
+      background: rgba(21, 54, 91, 0.45);
     }
 
     .item-main h4 {
@@ -308,13 +313,13 @@
       border: 1px solid transparent;
       transition: all 0.15s;
     }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-outline { background: #fff; color: var(--text-main); border-color: var(--border-color); }
-    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-primary { background: #E36F45; color: #172333; border-color: #E36F45; }
+    .btn-primary:hover { background: #F3EBDD; color: #172333; }
+    .btn-outline { background: #15365B; color: #FFFFFF; border-color: rgba(243, 235, 221, 0.25); }
+    .btn-outline:hover { background: #24364D; border-color: #E36F45; color: #F3EBDD; }
     .btn-danger { background: var(--danger); color: #fff; }
-    .btn-danger-outline { background: #fff; color: var(--danger); border-color: #FECACA; }
-    .btn-danger-outline:hover { background: var(--danger-soft); }
+    .btn-danger-outline { background: rgba(220, 38, 38, 0.14); color: #FCA5A5; border-color: rgba(248, 113, 113, 0.45); }
+    .btn-danger-outline:hover { background: rgba(220, 38, 38, 0.25); color: #FFFFFF; }
 
     .empty-box {
       text-align: center;
@@ -341,9 +346,9 @@
       flex-wrap: wrap;
     }
     .alert-unavailable {
-      background: var(--danger-soft);
-      border: 1px solid #FECACA;
-      color: #991B1B;
+      background: rgba(220, 38, 38, 0.16);
+      border: 1px solid rgba(248, 113, 113, 0.4);
+      color: #FCA5A5;
     }
 
     .form-grid {
@@ -386,22 +391,26 @@
 </head>
 <body>
 
-  <header class="dash-header">
+  <header class="site-header dash-header tikum-shared-header" data-header-variant="buyer-dashboard">
     <div class="dash-header-inner">
-      <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; min-width:0;">
+        <button type="button" class="tikum-mobile-toggle" aria-controls="tikumDashDrawer" aria-expanded="false" aria-label="Buka Menu Navigasi">
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
         <a href="/" class="brand-link">
-          <img src="/assets/tikum-mark-2color.svg" width="28" height="28" alt="TIKUM">
-          <span>TIKUM</span>
+          <span class="tikum-logo-slot tikum-logo-slot--dash" aria-label="TIKUM">
+            <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="TIKUM">
+          </span>
         </a>
         <div class="role-switcher" aria-label="Pengalih Mode Dashboard">
           <a href="/app/buyer" class="role-switch-btn active">
-            <i class="fa-solid fa-bag-shopping"></i> Mode Pembeli
+            <i class="fa-solid fa-bag-shopping"></i> <span data-i18n="dashboard.modeBuyer">Mode Pembeli</span>
           </a>
           <a href="/app/seller" class="role-switch-btn">
-            <i class="fa-solid fa-store"></i> Mode Penjual
+            <i class="fa-solid fa-store"></i> <span data-i18n="dashboard.modeSeller">Mode Penjual</span>
           </a>
           <a href="/admin" id="adminConsoleLink" class="role-switch-btn" style="display:none;">
-            <i class="fa-solid fa-shield-halved"></i> Admin Console
+            <i class="fa-solid fa-shield-halved"></i> <span data-i18n="dashboard.adminConsole">Admin Console</span>
           </a>
         </div>
       </div>
@@ -412,11 +421,11 @@
         <button id="btnLangToggle" class="btn btn-secondary btn-sm" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" style="padding: 6px 12px; font-size: 12px; font-weight: 700;">ID</button>
         <div class="user-pill">
           <i class="fa-regular fa-user"></i>
-          <span id="headerUserEmail">Memuat...</span>
+          <span id="headerUserEmail" data-i18n="dashboard.dataLoadingPill">Memuat...</span>
           <span id="headerRoleBadge" class="badge badge-neutral">BUYER</span>
         </div>
         <button id="btnLogout" class="btn btn-danger-outline" title="Keluar dari Sesi">
-          <i class="fa-solid fa-right-from-bracket"></i> Keluar
+          <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="dashboard.logoutBtn">Keluar</span>
         </button>
       </div>
     </div>
@@ -425,28 +434,28 @@
   <main class="dash-container">
     <div class="dash-hero">
       <div>
-        <h1 class="dash-title">Dashboard Pembeli</h1>
-        <p class="dash-subtitle">Pantau pesanan tiket berproteksi transaksi, negosiasi tawaran harga, sengketa, dan keamanan akun Anda secara real-time.</p>
+        <h1 class="dash-title" data-i18n="dashboard.buyerTitle">Dashboard Pembeli</h1>
+        <p class="dash-subtitle" data-i18n="dashboard.buyerSubtitle">Pantau pesanan tiket berproteksi transaksi, negosiasi tawaran harga, sengketa, dan keamanan akun Anda secara real-time.</p>
       </div>
       <div style="text-align:right; font-size:12px; color:var(--text-muted);">
-        <div>Status Data: <strong id="dataStateBadge">MEMUAT...</strong></div>
-        <div>Diperbarui: <span id="dataTimestamp">-</span></div>
+        <div><span data-i18n="dashboard.statusDataLabel">Status Data:</span> <strong id="dataStateBadge" data-i18n="dashboard.dataLoadingBadge">MEMUAT...</strong></div>
+        <div><span data-i18n="dashboard.updatedLabel">Diperbarui:</span> <span id="dataTimestamp">-</span></div>
       </div>
     </div>
 
     <!-- Error / Unavailable Banner -->
     <div id="unavailableBanner" class="alert-banner alert-unavailable" style="display:none;">
       <div>
-        <strong><i class="fa-solid fa-triangle-exclamation"></i> Data Tidak Tersedia (503)</strong>
-        <div id="unavailableMessage" style="font-size:13px; margin-top:4px;">Basis data utama sedang tidak dapat dijangkau. Sistem menolak menampilkan metrik palsu.</div>
+        <strong><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="dashboard.unavailable503Title">Data Tidak Tersedia (503)</span></strong>
+        <div id="unavailableMessage" style="font-size:13px; margin-top:4px;" data-i18n="dashboard.unavailable503Desc">Basis data utama sedang tidak dapat dijangkau. Sistem menolak menampilkan metrik palsu.</div>
       </div>
-      <button class="btn btn-outline" onclick="loadBuyerDashboard()"><i class="fa-solid fa-rotate"></i> Coba Lagi</button>
+      <button class="btn btn-outline" onclick="loadBuyerDashboard()"><i class="fa-solid fa-rotate"></i> <span data-i18n="dashboard.retryBtn">Coba Lagi</span></button>
     </div>
 
     <!-- Loading View -->
     <div id="loadingView" class="section-card" style="text-align:center; padding:48px 20px;">
       <i class="fa-solid fa-circle-notch fa-spin" style="font-size:28px; color:var(--primary); margin-bottom:12px;"></i>
-      <div style="font-weight:700;">Memuat data transaksi asli dari server...</div>
+      <div style="font-weight:700;" data-i18n="dashboard.loadingBuyerData">Memuat data transaksi asli dari server...</div>
     </div>
 
     <!-- Main Dashboard Content -->
@@ -454,45 +463,45 @@
       <!-- KPI Overview Cards -->
       <div class="kpi-grid">
         <div class="kpi-card">
-          <div class="kpi-label"><span>Pesanan Aktif</span> <i class="fa-solid fa-ticket" style="color:var(--primary);"></i></div>
+          <div class="kpi-label"><span data-i18n="dashboard.kpiActiveOrders">Pesanan Aktif</span> <i class="fa-solid fa-ticket" style="color:var(--primary);"></i></div>
           <div class="kpi-value" id="kpiActiveOrders">0</div>
-          <div class="kpi-foot">Perlindungan Transaksi TIKUM</div>
+          <div class="kpi-foot" data-i18n="dashboard.kpiTxProtection">Perlindungan Transaksi TIKUM</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label"><span>Menunggu Pembayaran</span> <i class="fa-solid fa-clock" style="color:var(--warning);"></i></div>
+          <div class="kpi-label"><span data-i18n="dashboard.kpiPendingPay">Menunggu Pembayaran</span> <i class="fa-solid fa-clock" style="color:var(--warning);"></i></div>
           <div class="kpi-value" id="kpiPendingPayments">0</div>
-          <div class="kpi-foot">Reservasi aktif</div>
+          <div class="kpi-foot" data-i18n="dashboard.kpiActiveReserve">Reservasi aktif</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label"><span>Tawaran Aktif</span> <i class="fa-solid fa-handshake" style="color:var(--info);"></i></div>
+          <div class="kpi-label"><span data-i18n="dashboard.kpiActiveOffers">Tawaran Aktif</span> <i class="fa-solid fa-handshake" style="color:var(--info);"></i></div>
           <div class="kpi-value" id="kpiActiveOffers">0</div>
-          <div class="kpi-foot">Menunggu respons penjual</div>
+          <div class="kpi-foot" data-i18n="dashboard.kpiWaitSeller">Menunggu respons penjual</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label"><span>Pembelian Selesai</span> <i class="fa-solid fa-circle-check" style="color:var(--primary);"></i></div>
+          <div class="kpi-label"><span data-i18n="dashboard.kpiCompletedBuy">Pembelian Selesai</span> <i class="fa-solid fa-circle-check" style="color:var(--primary);"></i></div>
           <div class="kpi-value" id="kpiCompletedPurchases">0</div>
-          <div class="kpi-foot">Tiket terkonfirmasi</div>
+          <div class="kpi-foot" data-i18n="dashboard.kpiConfirmedTickets">Tiket terkonfirmasi</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label"><span>Sengketa Terbuka</span> <i class="fa-solid fa-scale-balanced" style="color:var(--danger);"></i></div>
+          <div class="kpi-label"><span data-i18n="dashboard.kpiOpenDisputes">Sengketa Terbuka</span> <i class="fa-solid fa-scale-balanced" style="color:var(--danger);"></i></div>
           <div class="kpi-value" id="kpiOpenDisputes">0</div>
-          <div class="kpi-foot">Investigasi klaim</div>
+          <div class="kpi-foot" data-i18n="dashboard.kpiClaimInvestigate">Investigasi klaim</div>
         </div>
       </div>
 
       <!-- Navigation Tabs -->
       <div class="nav-tabs" role="tablist">
         <button class="nav-tab active" data-tab="orders" onclick="switchTab('orders')">
-          <i class="fa-solid fa-ticket"></i> Tiket & Pesanan Saya (<span id="tabCountOrders">0</span>)
+          <i class="fa-solid fa-ticket"></i> <span data-i18n="dashboard.tabOrdersLabel">Tiket &amp; Pesanan Saya</span> (<span id="tabCountOrders">0</span>)
         </button>
         <button class="nav-tab" data-tab="offers" onclick="switchTab('offers')">
-          <i class="fa-solid fa-handshake"></i> Tawaran Harga (<span id="tabCountOffers">0</span>)
+          <i class="fa-solid fa-handshake"></i> <span data-i18n="dashboard.tabOffersLabel">Tawaran Harga</span> (<span id="tabCountOffers">0</span>)
         </button>
         <button class="nav-tab" data-tab="disputes" onclick="switchTab('disputes')">
-          <i class="fa-solid fa-shield-halved"></i> Sengketa & Bantuan (<span id="tabCountDisputes">0</span>)
+          <i class="fa-solid fa-shield-halved"></i> <span data-i18n="dashboard.tabDisputesLabel">Sengketa &amp; Bantuan</span> (<span id="tabCountDisputes">0</span>)
         </button>
         <button class="nav-tab" data-tab="profile" onclick="switchTab('profile')">
-          <i class="fa-solid fa-user-shield"></i> Profil & Keamanan Sesi
+          <i class="fa-solid fa-user-shield"></i> <span data-i18n="dashboard.tabProfileLabel">Profil &amp; Keamanan Sesi</span>
         </button>
       </div>
 
@@ -500,8 +509,8 @@
       <section id="pane-orders" class="tab-pane active">
         <div class="section-card">
           <div class="section-header">
-            <h2 class="section-title"><i class="fa-solid fa-ticket" style="color:var(--primary);"></i> Tiket & Pesanan Saya</h2>
-            <a href="/" class="btn btn-outline"><i class="fa-solid fa-magnifying-glass"></i> Cari Tiket Event</a>
+            <h2 class="section-title"><i class="fa-solid fa-ticket" style="color:var(--primary);"></i> <span data-i18n="dashboard.sectionOrdersTitle">Tiket &amp; Pesanan Saya</span></h2>
+            <a href="/" class="btn btn-outline"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="dashboard.searchEventTicketsBtn">Cari Tiket Event</span></a>
           </div>
           <div id="ordersListContainer" class="item-list"></div>
         </div>
@@ -511,11 +520,11 @@
       <section id="pane-offers" class="tab-pane">
         <div class="section-card">
           <div class="section-header">
-            <h2 class="section-title"><i class="fa-solid fa-handshake" style="color:var(--info);"></i> Riwayat Tawaran Harga (Offers)</h2>
-            <a href="/offers" class="btn btn-outline">Halaman Negosiasi Lengkap</a>
+            <h2 class="section-title"><i class="fa-solid fa-handshake" style="color:var(--info);"></i> <span data-i18n="dashboard.sectionOffersTitle">Riwayat Tawaran Harga (Offers)</span></h2>
+            <a href="/offers" class="btn btn-outline" data-i18n="dashboard.fullNegoPageBtn">Halaman Negosiasi Lengkap</a>
           </div>
           <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
-            <i class="fa-solid fa-circle-info"></i> Catatan: Seluruh tawaran harga dan riwayat negosiasi tersimpan secara persisten di database utama (<code>POSTGRESQL</code>).
+            <i class="fa-solid fa-circle-info"></i> <span data-i18n="dashboard.offersPersistNote">Catatan: Seluruh tawaran harga dan riwayat negosiasi tersimpan secara persisten di database utama.</span>
           </div>
           <div id="offersListContainer" class="item-list"></div>
         </div>
@@ -525,10 +534,10 @@
       <section id="pane-disputes" class="tab-pane">
         <div class="section-card">
           <div class="section-header">
-            <h2 class="section-title"><i class="fa-solid fa-scale-balanced" style="color:var(--danger);"></i> Sengketa Escrow & Dukungan</h2>
+            <h2 class="section-title"><i class="fa-solid fa-scale-balanced" style="color:var(--danger);"></i> <span data-i18n="dashboard.sectionDisputesTitle">Sengketa Transaksi &amp; Dukungan</span></h2>
             <div style="display:flex; gap:8px;">
-              <a href="/disputes" class="btn btn-outline">Kebijakan Sengketa</a>
-              <a href="/contact" class="btn btn-outline">Hubungi Tim Trust</a>
+              <a href="/disputes" class="btn btn-outline" data-i18n="dashboard.disputePolicyBtn">Kebijakan Sengketa</a>
+              <a href="/contact" class="btn btn-outline" data-i18n="dashboard.contactTrustBtn">Hubungi Tim Trust</a>
             </div>
           </div>
           <div id="disputesListContainer" class="item-list"></div>
@@ -539,31 +548,31 @@
       <section id="pane-profile" class="tab-pane">
         <div class="section-card">
           <div class="section-header">
-            <h2 class="section-title"><i class="fa-solid fa-id-card" style="color:var(--primary);"></i> Profil Akun</h2>
+            <h2 class="section-title"><i class="fa-solid fa-id-card" style="color:var(--primary);"></i> <span data-i18n="dashboard.sectionProfileTitle">Profil Akun</span></h2>
             <span id="profileStatusBadge" class="badge badge-success">ACTIVE</span>
           </div>
           <form id="profileForm" onsubmit="saveProfile(event)">
             <div class="form-grid">
               <div class="form-group">
-                <label>Email Terdaftar (Tidak Dapat Diubah)</label>
+                <label data-i18n="dashboard.emailReadonlyLabel">Email Terdaftar (Tidak Dapat Diubah)</label>
                 <input type="email" id="profEmail" class="form-input" disabled>
               </div>
               <div class="form-group">
-                <label>Peran Akun</label>
+                <label data-i18n="dashboard.roleLabel">Peran Akun</label>
                 <input type="text" id="profRole" class="form-input" disabled>
               </div>
               <div class="form-group">
-                <label for="profName">Nama Lengkap</label>
+                <label for="profName" data-i18n="dashboard.fullNameLabel">Nama Lengkap</label>
                 <input type="text" id="profName" class="form-input" required maxlength="120">
               </div>
               <div class="form-group">
-                <label for="profPhone">Nomor WhatsApp / Telepon</label>
+                <label for="profPhone" data-i18n="dashboard.phoneLabel">Nomor WhatsApp / Telepon</label>
                 <input type="text" id="profPhone" class="form-input" maxlength="30" placeholder="0812xxxx">
               </div>
             </div>
             <div style="margin-top:16px; display:flex; align-items:center; gap:12px;">
               <button type="submit" class="btn btn-primary" id="btnSaveProfile">
-                <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan Profil
+                <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="dashboard.saveChangesBtn">Simpan Perubahan Profil</span>
               </button>
               <span id="profileSaveFeedback" style="font-size:13px; font-weight:600;"></span>
             </div>
@@ -572,14 +581,14 @@
 
         <div class="section-card">
           <div class="section-header">
-            <h2 class="section-title"><i class="fa-solid fa-laptop-medical" style="color:var(--info);"></i> Sesi Login Aktif</h2>
+            <h2 class="section-title"><i class="fa-solid fa-laptop-medical" style="color:var(--info);"></i> <span data-i18n="dashboard.sectionSessionsTitle">Sesi Login Aktif</span></h2>
           </div>
           <div id="sessionsListContainer" class="item-list"></div>
         </div>
 
         <div class="section-card">
           <div class="section-header">
-            <h2 class="section-title"><i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i> Log Audit Keamanan Terbaru</h2>
+            <h2 class="section-title"><i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i> <span data-i18n="dashboard.sectionAuditTitle">Log Audit Keamanan Terbaru</span></h2>
           </div>
           <div id="auditEventsContainer" class="item-list"></div>
         </div>
@@ -587,17 +596,26 @@
     </div>
   </main>
 
+  <script src="/js/i18n.js"></script>
   <script>
+    const _t = (k, f) => (window.TikumI18n ? window.TikumI18n.t(k, f) : f);
+    const _trStatus = (s) => (window.TikumI18n ? window.TikumI18n.translateStatus(s) : s);
+    let lastBuyerPayload = null;
+
     function formatIdr(amount) {
       const num = Number(amount) || 0;
-      return 'Rp ' + num.toLocaleString('id-ID');
+      return (window.TikumI18n && typeof window.TikumI18n.formatCurrency === 'function')
+        ? window.TikumI18n.formatCurrency(num, 'IDR')
+        : ('Rp ' + num.toLocaleString('id-ID'));
     }
 
     function formatDate(iso) {
       if (!iso) return '-';
       const d = new Date(iso);
       if (isNaN(d.getTime())) return iso;
-      return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+      const l = window.TikumI18n ? window.TikumI18n.getLang() : 'id';
+      const tag = l === 'id' ? 'id-ID' : (l === 'th' ? 'th-TH' : (l === 'ms' ? 'ms-MY' : (l === 'tl' ? 'en-PH' : 'en-US')));
+      return d.toLocaleString(tag, { dateStyle: 'medium', timeStyle: 'short' });
     }
 
     function escapeHtml(str) {
@@ -698,7 +716,7 @@
     async function saveProfile(e) {
       e.preventDefault();
       const feedback = document.getElementById('profileSaveFeedback');
-      feedback.textContent = 'Menyimpan...';
+      feedback.textContent = _t('dashboard.savingBtn', 'Menyimpan...');
       feedback.style.color = 'var(--text-muted)';
       try {
         const name = document.getElementById('profName').value.trim();
@@ -711,15 +729,15 @@
         });
         const data = await res.json();
         if (!res.ok) {
-          feedback.textContent = data.error || 'Gagal memperbarui profil.';
+          feedback.textContent = data.error || _t('dashboard.profileUpdateFail', 'Gagal memperbarui profil.');
           feedback.style.color = 'var(--danger)';
           return;
         }
-        feedback.textContent = 'Profil berhasil diperbarui.';
+        feedback.textContent = _t('dashboard.profileUpdatedMsg', 'Profil berhasil diperbarui.');
         feedback.style.color = 'var(--primary)';
         await loadBuyerDashboard();
       } catch (err) {
-        feedback.textContent = 'Kesalahan jaringan.';
+        feedback.textContent = _t('dashboard.networkErrMsg', 'Kesalahan jaringan.');
         feedback.style.color = 'var(--danger)';
       }
     }
@@ -749,7 +767,7 @@
           dashboardContent.style.display = 'none';
           unavailableBanner.style.display = 'flex';
           document.getElementById('unavailableMessage').textContent =
-            payload.error || 'Layanan penyimpanan utama sedang tidak tersedia.';
+            payload.error || _t('dashboard.primaryStorageUnavailable', 'Layanan penyimpanan utama sedang tidak tersedia.');
           document.getElementById('dataStateBadge').textContent = 'UNAVAILABLE (503)';
           document.getElementById('dataStateBadge').style.color = 'var(--danger)';
           return;
@@ -759,199 +777,214 @@
           loadingView.style.display = 'none';
           unavailableBanner.style.display = 'flex';
           document.getElementById('unavailableMessage').textContent =
-            payload.error || 'Gagal memuat dashboard pembeli.';
+            payload.error || _t('dashboard.buyerLoadFail', 'Gagal memuat dashboard pembeli.');
           return;
         }
 
-        const user = payload.user || {};
-        const ov = payload.overview || {};
-        const orders = (payload.orders && payload.orders.items) || [];
-        const offers = (payload.offers && payload.offers.items) || [];
-        const disputes = (payload.disputes && payload.disputes.items) || [];
-        const security = payload.security || {};
-
-        document.getElementById('headerUserEmail').textContent = user.email || user.id;
-        document.getElementById('headerRoleBadge').textContent = user.role || 'BUYER';
-        if (user.role === 'ADMIN') {
-          document.getElementById('adminConsoleLink').style.display = 'inline-flex';
-        }
-
-        document.getElementById('dataStateBadge').textContent = (payload.meta && payload.meta.dataState) || 'OK';
-        document.getElementById('dataStateBadge').style.color = 'var(--primary)';
-        document.getElementById('dataTimestamp').textContent = formatDate(payload.meta && payload.meta.generatedAt);
-
-        // KPIs
-        document.getElementById('kpiActiveOrders').textContent = ov.active_orders_count ?? 0;
-        document.getElementById('kpiPendingPayments').textContent = ov.pending_payments_count ?? 0;
-        document.getElementById('kpiActiveOffers').textContent = ov.active_offers_count ?? 0;
-        document.getElementById('kpiCompletedPurchases').textContent = ov.completed_purchases_count ?? 0;
-        document.getElementById('kpiOpenDisputes').textContent = ov.open_disputes_count ?? 0;
-
-        document.getElementById('tabCountOrders').textContent = payload.orders?.total ?? orders.length;
-        document.getElementById('tabCountOffers').textContent = payload.offers?.total ?? offers.length;
-        document.getElementById('tabCountDisputes').textContent = payload.disputes?.total ?? disputes.length;
-
-        // Render Orders
-        const ordersEl = document.getElementById('ordersListContainer');
-        if (orders.length === 0) {
-          ordersEl.innerHTML = `
-            <div class="empty-box">
-              <i class="fa-solid fa-ticket"></i>
-              <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">Belum Ada Pesanan Tiket (0)</h3>
-              <p style="margin:0 0 16px; font-size:13px;">Anda belum memiliki transaksi pembelian tiket. Semua pembelian di TIKUM dilindungi prosedur pemeriksaan transaksi.</p>
-              <a href="/" class="btn btn-primary"><i class="fa-solid fa-compass"></i> Jelajahi Event Terverifikasi</a>
-            </div>
-          `;
-        } else {
-          ordersEl.innerHTML = orders.map(o => `
-            <div class="item-row">
-              <div class="item-main">
-                <h4>
-                  ${escapeHtml(o.event_title)}
-                  <span class="badge ${statusBadgeClass(o.status)}">${escapeHtml(o.status)}</span>
-                  <span class="badge badge-info" style="background:rgba(56,189,248,0.15); color:var(--cyan); border:1px solid rgba(56,189,248,0.3);"><i class="fa-solid fa-ticket"></i> ${o.quantity || 1} Tiket</span>
-                  <span class="badge" style="background:${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)'}; color:${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? '#4ade80' : 'var(--text-muted)'}; border:1px solid ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.3)' : 'var(--border)'};"><i class="fa-solid ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'fa-person-military-pointing' : 'fa-handshake'}"></i> ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'PIC Venue' : 'Transfer Mandiri'}</span>
-                </h4>
-                <div class="item-meta">
-                  <span><i class="fa-solid fa-hashtag"></i> Order: <code>${escapeHtml(o.order_id)}</code></span>
-                  <span><i class="fa-solid fa-chair"></i> Kursi/Kat: ${escapeHtml(o.seat_info)}</span>
-                  <span><i class="fa-solid fa-location-dot"></i> ${escapeHtml(o.event_venue)}</span>
-                  <span><i class="fa-solid fa-shield-halved"></i> Verifikasi: <strong>${escapeHtml(o.escrow_status)}</strong></span>
-                  <span><i class="fa-solid fa-door-open"></i> Gate: <strong>${escapeHtml(o.entry_verification_status)}</strong></span>
-                  <span><i class="fa-regular fa-clock"></i> ${escapeHtml(formatDate(o.created_at))}</span>
-                </div>
-              </div>
-              <div class="item-actions">
-                <div style="text-align:right; margin-right:8px;">
-                  <div style="font-weight:800; font-size:15px;">${escapeHtml(formatIdr(o.total_amount))}</div>
-                  <div style="font-size:11px; color:var(--text-muted);">Tiket ${escapeHtml(formatIdr(o.ticket_price))}</div>
-                </div>
-                ${(o.status === 'PENDING_PAYMENT' || o.status === 'RESERVED' || o.status === 'CREATED')
-                  ? `<a href="${escapeHtml(o.pay_url)}" class="btn btn-primary"><i class="fa-solid fa-credit-card"></i> Bayar</a>`
-                  : ''}
-                <a href="${escapeHtml(o.track_url)}" class="btn btn-outline"><i class="fa-solid fa-route"></i> Lacak Tiket</a>
-              </div>
-            </div>
-          `).join('');
-        }
-
-        // Render Offers
-        const offersEl = document.getElementById('offersListContainer');
-        if (offers.length === 0) {
-          offersEl.innerHTML = `
-            <div class="empty-box">
-              <i class="fa-solid fa-handshake"></i>
-              <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">Belum Ada Tawaran Harga (0)</h3>
-              <p style="margin:0 0 16px; font-size:13px;">Anda dapat mengajukan tawaran harga pada listing tiket aktif di halaman event.</p>
-              <a href="/" class="btn btn-outline">Cari Listing Tiket</a>
-            </div>
-          `;
-        } else {
-          offersEl.innerHTML = offers.map(of => `
-            <div class="item-row">
-              <div class="item-main">
-                <h4>${escapeHtml(of.event_title)} <span class="badge ${statusBadgeClass(of.status)}">${escapeHtml(of.status)}</span></h4>
-                <div class="item-meta">
-                  <span>Tawaran Anda: <strong>${escapeHtml(formatIdr(of.offered_price))}</strong> (Harga Listing: ${escapeHtml(formatIdr(of.listed_price))})</span>
-                  ${of.counter_amount ? `<span>Counter Penjual: <strong>${escapeHtml(formatIdr(of.counter_amount))}</strong></span>` : ''}
-                  <span>Kursi: ${escapeHtml(of.seat_info)}</span>
-                  <span>Kedaluwarsa: ${escapeHtml(formatDate(of.expires_at))}</span>
-                </div>
-              </div>
-              <div class="item-actions">
-                ${of.status === 'COUNTERED' && of.counter_amount ? `
-                  <button class="btn btn-primary" onclick="acceptSellerCounter('${escapeHtml(of.offer_id)}')"><i class="fa-solid fa-check"></i> Terima Counter</button>
-                  <button class="btn btn-outline" onclick="buyerCounterOffer('${escapeHtml(of.offer_id)}', ${Number(of.offered_price) || 0}, ${Number(of.counter_amount) || 0})"><i class="fa-solid fa-arrows-left-right"></i> Balas Counter</button>
-                ` : ''}
-                ${of.can_withdraw ? `<button class="btn btn-danger-outline" onclick="withdrawOffer('${escapeHtml(of.offer_id)}')"><i class="fa-solid fa-xmark"></i> Tarik Tawaran</button>` : ''}
-                ${of.checkout_url ? `<a href="${escapeHtml(of.checkout_url)}" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Lanjut Checkout</a>` : ''}
-              </div>
-            </div>
-          `).join('');
-        }
-
-        // Render Disputes
-        const disputesEl = document.getElementById('disputesListContainer');
-        if (disputes.length === 0) {
-          disputesEl.innerHTML = `
-            <div class="empty-box">
-              <i class="fa-solid fa-shield-check"></i>
-              <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">Tidak Ada Sengketa Aktif (0)</h3>
-              <p style="margin:0; font-size:13px;">Seluruh transaksi Anda berjalan normal tanpa klaim sengketa terbuka.</p>
-            </div>
-          `;
-        } else {
-          disputesEl.innerHTML = disputes.map(d => `
-            <div class="item-row">
-              <div class="item-main">
-                <h4>Sengketa #${escapeHtml(d.dispute_id)} — ${escapeHtml(d.event_title)} <span class="badge ${statusBadgeClass(d.status)}">${escapeHtml(d.status)}</span></h4>
-                <div class="item-meta">
-                  <span>Order: <code>${escapeHtml(d.order_id)}</code></span>
-                  <span>Alasan: ${escapeHtml(d.reason || '-')}</span>
-                  <span>Keputusan: <strong>${escapeHtml(d.outcome || 'MENUNGGU INVESTIGASI')}</strong></span>
-                  <span>Dibuka: ${escapeHtml(formatDate(d.created_at))}</span>
-                </div>
-              </div>
-              <div class="item-actions">
-                <a href="/track/${encodeURIComponent(d.order_id)}" class="btn btn-outline">Detail Order</a>
-              </div>
-            </div>
-          `).join('');
-        }
-
-        // Render Profile & Security
-        document.getElementById('profEmail').value = user.email || '';
-        document.getElementById('profRole').value = user.role || 'BUYER';
-        document.getElementById('profName').value = user.name || '';
-        document.getElementById('profPhone').value = user.phone || '';
-        document.getElementById('profileStatusBadge').textContent = user.status || 'ACTIVE';
-
-        const sessions = security.active_sessions || [];
-        const sessionsEl = document.getElementById('sessionsListContainer');
-        if (sessions.length === 0) {
-          sessionsEl.innerHTML = `<div class="empty-box">Tidak ada catatan sesi tambahan.</div>`;
-        } else {
-          sessionsEl.innerHTML = sessions.map(s => `
-            <div class="item-row">
-              <div class="item-main">
-                <h4>Sesi ${escapeHtml(s.id)} ${s.is_current ? '<span class="badge badge-success">SESI SAAT INI</span>' : ''}</h4>
-                <div class="item-meta">
-                  <span>IP: ${escapeHtml(s.ip_address || '-')}</span>
-                  <span>Perangkat: ${escapeHtml((s.user_agent || 'Browser').slice(0, 60))}</span>
-                  <span>Dibuat: ${escapeHtml(formatDate(s.created_at))}</span>
-                  <span>Berakhir: ${escapeHtml(formatDate(s.expires_at))}</span>
-                </div>
-              </div>
-            </div>
-          `).join('');
-        }
-
-        const auditEvents = security.recent_auth_events || [];
-        const auditEl = document.getElementById('auditEventsContainer');
-        if (auditEvents.length === 0) {
-          auditEl.innerHTML = `<div class="empty-box">Belum ada riwayat event autentikasi.</div>`;
-        } else {
-          auditEl.innerHTML = auditEvents.map(ev => `
-            <div class="item-row">
-              <div class="item-main">
-                <h4>${escapeHtml(ev.event_type)} <span class="badge ${ev.outcome === 'SUCCESS' ? 'badge-success' : 'badge-warning'}">${escapeHtml(ev.outcome)}</span></h4>
-                <div class="item-meta">
-                  <span>Waktu: ${escapeHtml(formatDate(ev.created_at))}</span>
-                  <span>IP: ${escapeHtml(ev.ip_address || '-')}</span>
-                </div>
-              </div>
-            </div>
-          `).join('');
-        }
+        lastBuyerPayload = payload;
+        renderBuyerDashboardPayload(payload);
 
         loadingView.style.display = 'none';
         dashboardContent.style.display = 'block';
       } catch (err) {
         loadingView.style.display = 'none';
         unavailableBanner.style.display = 'flex';
-        document.getElementById('unavailableMessage').textContent = 'Gagal menghubungi server: ' + err.message;
+        document.getElementById('unavailableMessage').textContent = _t('dashboard.serverContactFail', 'Gagal menghubungi server:') + ' ' + err.message;
       }
     }
+
+    function renderBuyerDashboardPayload(payload) {
+      if (!payload) return;
+      const user = payload.user || {};
+      const ov = payload.overview || {};
+      const orders = (payload.orders && payload.orders.items) || [];
+      const offers = (payload.offers && payload.offers.items) || [];
+      const disputes = (payload.disputes && payload.disputes.items) || [];
+      const security = payload.security || {};
+
+      document.getElementById('headerUserEmail').textContent = user.email || user.id;
+      document.getElementById('headerRoleBadge').textContent = user.role || 'BUYER';
+      if (user.role === 'ADMIN') {
+        document.getElementById('adminConsoleLink').style.display = 'inline-flex';
+      }
+
+      document.getElementById('dataStateBadge').textContent = (payload.meta && payload.meta.dataState) || 'OK';
+      document.getElementById('dataStateBadge').style.color = 'var(--primary)';
+      document.getElementById('dataTimestamp').textContent = formatDate(payload.meta && payload.meta.generatedAt);
+
+      // KPIs
+      document.getElementById('kpiActiveOrders').textContent = ov.active_orders_count ?? 0;
+      document.getElementById('kpiPendingPayments').textContent = ov.pending_payments_count ?? 0;
+      document.getElementById('kpiActiveOffers').textContent = ov.active_offers_count ?? 0;
+      document.getElementById('kpiCompletedPurchases').textContent = ov.completed_purchases_count ?? 0;
+      document.getElementById('kpiOpenDisputes').textContent = ov.open_disputes_count ?? 0;
+
+      document.getElementById('tabCountOrders').textContent = payload.orders?.total ?? orders.length;
+      document.getElementById('tabCountOffers').textContent = payload.offers?.total ?? offers.length;
+      document.getElementById('tabCountDisputes').textContent = payload.disputes?.total ?? disputes.length;
+
+      // Render Orders
+      const ordersEl = document.getElementById('ordersListContainer');
+      if (orders.length === 0) {
+        ordersEl.innerHTML = `
+          <div class="empty-box">
+            <i class="fa-solid fa-ticket"></i>
+            <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">${_t('dashboard.emptyOrdersTitle', 'Belum Ada Pesanan Tiket (0)')}</h3>
+            <p style="margin:0 0 16px; font-size:13px;">${_t('dashboard.emptyOrdersDesc', 'Anda belum memiliki transaksi pembelian tiket. Semua pembelian di TIKUM dilindungi prosedur pemeriksaan transaksi.')}</p>
+            <a href="/" class="btn btn-primary"><i class="fa-solid fa-compass"></i> ${_t('dashboard.exploreVerifiedEvents', 'Jelajahi Event Terverifikasi')}</a>
+          </div>
+        `;
+      } else {
+        ordersEl.innerHTML = orders.map(o => `
+          <div class="item-row">
+            <div class="item-main">
+              <h4>
+                ${escapeHtml(o.event_title)}
+                <span class="badge ${statusBadgeClass(o.status)}">${escapeHtml(_trStatus(o.status))}</span>
+                <span class="badge badge-info" style="background:rgba(56,189,248,0.15); color:var(--cyan); border:1px solid rgba(56,189,248,0.3);"><i class="fa-solid fa-ticket"></i> ${o.quantity || 1} ${_t('dashboard.ticketUnit', 'Tiket')}</span>
+                <span class="badge" style="background:${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)'}; color:${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? '#4ade80' : 'var(--text-muted)'}; border:1px solid ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'rgba(34,197,94,0.3)' : 'var(--border)'};"><i class="fa-solid ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'fa-person-military-pointing' : 'fa-handshake'}"></i> ${o.fulfillment_type === 'TIKUM_VENUE_PIC' ? _t('dashboard.tierPicBadge', 'PIC Venue (9%)') : _t('dashboard.tierSelfBadge', 'Transfer Mandiri (6%)')}</span>
+                ${o.fee_policy_version ? `<span class="badge badge-slate" style="font-size:10px;">${escapeHtml(o.fee_policy_version)}</span>` : ''}
+              </h4>
+              <div class="item-meta">
+                <span><i class="fa-solid fa-hashtag"></i> ${_t('dashboard.orderIdPrefix', 'Order:')} <code>${escapeHtml(o.order_id)}</code></span>
+                ${o.invoice_number ? `<span><i class="fa-solid fa-file-invoice"></i> ${_t('dashboard.dokuInvPrefix', 'DOKU Inv:')} <code>${escapeHtml(o.invoice_number)}</code></span>` : ''}
+                <span><i class="fa-solid fa-chair"></i> ${_t('dashboard.seatPrefix', 'Kursi/Kat:')} ${escapeHtml(o.seat_info)}</span>
+                <span><i class="fa-solid fa-location-dot"></i> ${escapeHtml(o.event_venue)}</span>
+                ${o.provider_settlement_status ? `<span><i class="fa-solid fa-building-columns"></i> ${_t('dashboard.providerSettlementLabel', 'Provider Settlement:')} <strong>${escapeHtml(_trStatus(o.provider_settlement_status))}</strong></span>` : ''}
+                <span><i class="fa-solid fa-shield-halved"></i> ${_t('dashboard.internalVerifLabel', 'Verifikasi Internal:')} <strong>${escapeHtml(_trStatus(o.internal_settlement_status || o.escrow_status))}</strong></span>
+                <span><i class="fa-solid fa-door-open"></i> ${_t('dashboard.gatePrefix', 'Gate:')} <strong>${escapeHtml(_trStatus(o.entry_verification_status))}</strong></span>
+                <span><i class="fa-regular fa-clock"></i> ${escapeHtml(formatDate(o.created_at))}</span>
+              </div>
+            </div>
+            <div class="item-actions">
+              <div style="text-align:right; margin-right:8px;">
+                <div style="font-weight:800; font-size:15px;">${escapeHtml(formatIdr(o.total_amount))}</div>
+                <div style="font-size:11px; color:var(--text-muted);">${_t('dashboard.ticketUnit', 'Tiket')} ${escapeHtml(formatIdr(o.ticket_price))}</div>
+              </div>
+              ${(o.status === 'PENDING_PAYMENT' || o.status === 'RESERVED' || o.status === 'CREATED')
+                ? `<a href="${escapeHtml(o.pay_url)}" class="btn btn-primary"><i class="fa-solid fa-credit-card"></i> ${_t('dashboard.btnPay', 'Bayar')}</a>`
+                : ''}
+              <a href="${escapeHtml(o.track_url)}" class="btn btn-outline"><i class="fa-solid fa-route"></i> ${_t('dashboard.btnTrack', 'Lacak Tiket')}</a>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Offers
+      const offersEl = document.getElementById('offersListContainer');
+      if (offers.length === 0) {
+        offersEl.innerHTML = `
+          <div class="empty-box">
+            <i class="fa-solid fa-handshake"></i>
+            <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">${_t('dashboard.emptyOffersTitle', 'Belum Ada Tawaran Harga (0)')}</h3>
+            <p style="margin:0 0 16px; font-size:13px;">${_t('dashboard.emptyOffersDesc', 'Anda dapat mengajukan tawaran harga pada listing tiket aktif di halaman event.')}</p>
+            <a href="/" class="btn btn-outline">${_t('dashboard.findListingsBtn', 'Cari Listing Tiket')}</a>
+          </div>
+        `;
+      } else {
+        offersEl.innerHTML = offers.map(of => `
+          <div class="item-row">
+            <div class="item-main">
+              <h4>${escapeHtml(of.event_title)} <span class="badge ${statusBadgeClass(of.status)}">${escapeHtml(_trStatus(of.status))}</span></h4>
+              <div class="item-meta">
+                <span>${_t('dashboard.yourOfferInline', 'Tawaran Anda:')} <strong>${escapeHtml(formatIdr(of.offered_price))}</strong> (${_t('dashboard.listedPriceInline', 'Harga Listing:')} ${escapeHtml(formatIdr(of.listed_price))})</span>
+                ${of.counter_amount ? `<span>${_t('dashboard.sellerCounterInline', 'Counter Penjual:')} <strong>${escapeHtml(formatIdr(of.counter_amount))}</strong></span>` : ''}
+                <span>${_t('dashboard.seatShortPrefix', 'Kursi:')} ${escapeHtml(of.seat_info)}</span>
+                <span>${_t('dashboard.expiresAltPrefix', 'Kedaluwarsa:')} ${escapeHtml(formatDate(of.expires_at))}</span>
+              </div>
+            </div>
+            <div class="item-actions">
+              ${of.status === 'COUNTERED' && of.counter_amount ? `
+                <button class="btn btn-primary" onclick="acceptSellerCounter('${escapeHtml(of.offer_id)}')"><i class="fa-solid fa-check"></i> ${_t('dashboard.acceptCounterBtn', 'Terima Counter')}</button>
+                <button class="btn btn-outline" onclick="buyerCounterOffer('${escapeHtml(of.offer_id)}', ${Number(of.offered_price) || 0}, ${Number(of.counter_amount) || 0})"><i class="fa-solid fa-arrows-left-right"></i> ${_t('dashboard.replyCounterBtn', 'Balas Counter')}</button>
+              ` : ''}
+              ${of.can_withdraw ? `<button class="btn btn-danger-outline" onclick="withdrawOffer('${escapeHtml(of.offer_id)}')"><i class="fa-solid fa-xmark"></i> ${_t('dashboard.withdrawOfferBtn', 'Tarik Tawaran')}</button>` : ''}
+              ${of.checkout_url ? `<a href="${escapeHtml(of.checkout_url)}" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> ${_t('dashboard.continueCheckoutBtn', 'Lanjut Checkout')}</a>` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Disputes
+      const disputesEl = document.getElementById('disputesListContainer');
+      if (disputes.length === 0) {
+        disputesEl.innerHTML = `
+          <div class="empty-box">
+            <i class="fa-solid fa-shield-check"></i>
+            <h3 style="margin:0 0 6px; color:var(--text-main); font-size:16px;">${_t('dashboard.emptyDisputesTitle', 'Tidak Ada Sengketa Aktif (0)')}</h3>
+            <p style="margin:0; font-size:13px;">${_t('dashboard.emptyDisputesDesc', 'Seluruh transaksi Anda berjalan normal tanpa klaim sengketa terbuka.')}</p>
+          </div>
+        `;
+      } else {
+        disputesEl.innerHTML = disputes.map(d => `
+          <div class="item-row">
+            <div class="item-main">
+              <h4>${_t('dashboard.disputeHeadingPrefix', 'Sengketa')} #${escapeHtml(d.dispute_id)} — ${escapeHtml(d.event_title)} <span class="badge ${statusBadgeClass(d.status)}">${escapeHtml(_trStatus(d.status))}</span></h4>
+              <div class="item-meta">
+                <span>${_t('dashboard.orderIdPrefix', 'Order:')} <code>${escapeHtml(d.order_id)}</code></span>
+                <span>${_t('dashboard.reasonPrefix', 'Alasan:')} ${escapeHtml(d.reason || '-')}</span>
+                <span>${_t('dashboard.decisionPrefix', 'Keputusan:')} <strong>${escapeHtml(_trStatus(d.outcome || '') || _t('dashboard.pendingInvestigation', 'MENUNGGU INVESTIGASI'))}</strong></span>
+                <span>${_t('dashboard.openedPrefix', 'Dibuka:')} ${escapeHtml(formatDate(d.created_at))}</span>
+              </div>
+            </div>
+            <div class="item-actions">
+              <a href="/track/${encodeURIComponent(d.order_id)}" class="btn btn-outline">${_t('dashboard.orderDetailBtn', 'Detail Order')}</a>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Profile & Security
+      document.getElementById('profEmail').value = user.email || '';
+      document.getElementById('profRole').value = user.role || 'BUYER';
+      document.getElementById('profName').value = user.name || '';
+      document.getElementById('profPhone').value = user.phone || '';
+      document.getElementById('profileStatusBadge').textContent = _trStatus(user.status || 'ACTIVE');
+
+      const sessions = security.active_sessions || [];
+      const sessionsEl = document.getElementById('sessionsListContainer');
+      if (sessions.length === 0) {
+        sessionsEl.innerHTML = `<div class="empty-box">${_t('dashboard.emptySessions', 'Tidak ada catatan sesi tambahan.')}</div>`;
+      } else {
+        sessionsEl.innerHTML = sessions.map(s => `
+          <div class="item-row">
+            <div class="item-main">
+              <h4>${_t('dashboard.sessionPrefix', 'Sesi')} ${escapeHtml(s.id)} ${s.is_current ? `<span class="badge badge-success">${_t('dashboard.sessionCurrentBadge', 'SESI SAAT INI')}</span>` : ''}</h4>
+              <div class="item-meta">
+                <span>IP: ${escapeHtml(s.ip_address || '-')}</span>
+                <span>${_t('dashboard.devicePrefix', 'Perangkat:')} ${escapeHtml((s.user_agent || 'Browser').slice(0, 60))}</span>
+                <span>${_t('dashboard.createdPrefix', 'Dibuat:')} ${escapeHtml(formatDate(s.created_at))}</span>
+                <span>${_t('dashboard.expiresPrefix', 'Berakhir:')} ${escapeHtml(formatDate(s.expires_at))}</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const auditEvents = security.recent_auth_events || [];
+      const auditEl = document.getElementById('auditEventsContainer');
+      if (auditEvents.length === 0) {
+        auditEl.innerHTML = `<div class="empty-box">${_t('dashboard.emptyAudit', 'Belum ada riwayat event autentikasi.')}</div>`;
+      } else {
+        auditEl.innerHTML = auditEvents.map(ev => `
+          <div class="item-row">
+            <div class="item-main">
+              <h4>${escapeHtml(ev.event_type)} <span class="badge ${ev.outcome === 'SUCCESS' ? 'badge-success' : 'badge-warning'}">${escapeHtml(_trStatus(ev.outcome))}</span></h4>
+              <div class="item-meta">
+                <span>${_t('dashboard.timePrefix', 'Waktu:')} ${escapeHtml(formatDate(ev.created_at))}</span>
+                <span>IP: ${escapeHtml(ev.ip_address || '-')}</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    ['tikum:langchange', 'tikum:locale-change', 'tikum:languageChanged'].forEach(evtName => {
+      window.addEventListener(evtName, () => {
+        if (lastBuyerPayload) renderBuyerDashboardPayload(lastBuyerPayload);
+      });
+    });
 
     document.getElementById('btnLogout').addEventListener('click', async () => {
       try {
@@ -962,6 +995,29 @@
 
     loadBuyerDashboard();
   </script>
-  <script src="/js/i18n.js"></script>
+  <div id="tikumDashDrawer" class="tikum-mobile-drawer" aria-label="Mobile Navigation">
+    <div class="tikum-mobile-drawer__backdrop"></div>
+    <div class="tikum-mobile-drawer__panel">
+      <div class="tikum-mobile-drawer__head">
+        <a href="/" class="brand-link" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">
+          <span class="tikum-logo-slot tikum-logo-slot--dash" aria-label="TIKUM">
+            <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="TIKUM">
+          </span>
+        </a>
+        <button type="button" class="tikum-header-control" data-drawer-close aria-label="Tutup Menu">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="tikum-mobile-drawer__links">
+        <a href="/events" class="tikum-mobile-drawer__link"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> <span data-i18n="nav.events">Katalog Event</span></a>
+        <a href="/offers" class="tikum-mobile-drawer__link"><i class="fa-solid fa-handshake" aria-hidden="true"></i> <span data-i18n="nav.offers">Tawaran Tiket</span></a>
+        <a href="/track" class="tikum-mobile-drawer__link"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> <span data-i18n="nav.track">Lacak</span></a>
+        <a href="/app/buyer" class="tikum-mobile-drawer__link active"><i class="fa-solid fa-ticket" aria-hidden="true"></i> <span data-i18n="nav.buyerDashboard">Dasbor Pembeli</span></a>
+        <a href="/app/seller" class="tikum-mobile-drawer__link"><i class="fa-solid fa-store" aria-hidden="true"></i> <span data-i18n="nav.sellerDashboard">Dasbor Penjual</span></a>
+        <a href="/create" class="tikum-mobile-drawer__link"><i class="fa-solid fa-plus-circle" aria-hidden="true"></i> <span data-i18n="nav.sellTicket">Jual Tiket</span></a>
+      </div>
+    </div>
+  </div>
+  <script src="/js/header-shared.js"></script>
 </body>
 </html>

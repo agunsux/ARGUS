@@ -8,8 +8,11 @@
   <link rel="canonical" href="https://tikum.app/account">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/tikum-tokens.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/header-shared.css">
   <style>
     :root {
       --bg-page: #F7F6F2;
@@ -47,6 +50,17 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+    :root, html[data-theme="dark"], body.dark-mode {
+      --bg-page: #172333;
+      --card-bg: #24364D;
+      --text-main: #FFFFFF;
+      --text-muted: #CBD5E1;
+      --border-color: rgba(243, 235, 221, 0.16);
+      --primary: #E36F45;
+      --primary-hover: #15365B;
+      background-color: #172333 !important;
+      color: #FFFFFF !important;
     }
 
     .account-header {
@@ -131,7 +145,7 @@
       width: 64px;
       height: 64px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #059669, #0d9488);
+      background: linear-gradient(135deg, #15365B, #E36F45);
       color: #ffffff;
       font-size: 24px;
       font-weight: 700;
@@ -139,7 +153,7 @@
       align-items: center;
       justify-content: center;
       text-transform: uppercase;
-      box-shadow: 0 4px 10px rgba(5, 150, 105, 0.25);
+      box-shadow: 0 4px 10px rgba(21, 54, 91, 0.35);
     }
 
     .profile-meta h1 {
@@ -264,23 +278,48 @@
 <body>
 
   <!-- Header -->
-  <header class="account-header">
+  <header class="account-header tikum-shared-header" data-header-variant="auth">
     <div class="header-container">
-      <a href="/" class="brand-logo" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
-        <img src="/assets/tikum-mark-2color.svg" width="30" height="30" alt="Tikum">
-        <span style="font-weight:800; font-size:18px; color:inherit;">Tikum</span>
-      </a>
-      <div class="header-actions">
-        <button id="langToggle" class="theme-toggle-btn" onclick="window.TikumI18n ? window.TikumI18n.toggleLang() : null" title="Ganti Bahasa"><i class="fa-solid fa-globe"></i> <span id="langLabel">ID</span></button>
-        <a href="/" style="font-size: 14px; color: var(--text-muted); text-decoration: none; margin-right: 8px;">
-          <i class="fa-solid fa-house"></i> Beranda
-        </a>
-        <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle Theme">
-          <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
+      <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+        <button type="button" class="tikum-mobile-toggle" aria-controls="tikumAccountDrawer" aria-expanded="false" aria-label="Buka Menu Navigasi">
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
         </button>
+        <a href="/" class="brand-logo" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
+          <span class="tikum-logo-slot tikum-logo-slot--auth" aria-label="TIKUM">
+            <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="Tikum">
+          </span>
+        </a>
+      </div>
+      <nav class="main-nav" aria-label="Navigasi Akun">
+        <a href="/offers" class="nav-link" data-i18n="nav.offers">Tawaran Tiket</a>
+        <a href="/app/buyer" class="nav-link" data-i18n="nav.buyerDashboard">Dasbor Pembeli</a>
+        <a href="/" class="nav-link" data-i18n="nav.home">Beranda</a>
+      </nav>
+      <div class="header-actions nav-controls">
+        <button id="langToggle" type="button" class="lang-toggle-btn tikum-lang-btn" title="Ganti Bahasa" aria-label="Pilih Bahasa">ID</button>
       </div>
     </div>
   </header>
+  <div id="tikumAccountDrawer" class="tikum-mobile-drawer" aria-label="Mobile Navigation">
+    <div class="tikum-mobile-drawer__backdrop"></div>
+    <div class="tikum-mobile-drawer__panel">
+      <div class="tikum-mobile-drawer__head">
+        <a href="/" class="brand-logo" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">
+          <span class="tikum-logo-slot tikum-logo-slot--auth" aria-label="TIKUM">
+            <img src="/images/tikum-brand-horizontal.svg" class="tikum-logo-img" width="196" height="42" alt="Tikum">
+          </span>
+        </a>
+        <button type="button" class="tikum-header-control" data-drawer-close aria-label="Tutup Menu">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="tikum-mobile-drawer__links">
+        <a href="/offers" class="tikum-mobile-drawer__link"><i class="fa-solid fa-handshake" aria-hidden="true"></i> <span data-i18n="nav.offers">Tawaran Tiket</span></a>
+        <a href="/app/buyer" class="tikum-mobile-drawer__link"><i class="fa-solid fa-ticket" aria-hidden="true"></i> <span data-i18n="nav.buyerDashboard">Dasbor Pembeli</span></a>
+        <a href="/" class="tikum-mobile-drawer__link"><i class="fa-solid fa-house" aria-hidden="true"></i> <span data-i18n="nav.home">Beranda</span></a>
+      </div>
+    </div>
+  </div>
 
   <!-- Main Content -->
   <main class="account-main">
@@ -396,25 +435,6 @@
   </nav>
 
   <script>
-    // Theme Toggle
-    const themeToggle = document.getElementById('themeToggle');
-    const isDark = localStorage.getItem('tikum_theme') === 'dark';
-    if (isDark) {
-      document.body.classList.add('dark-mode');
-      if (themeToggle) themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>';
-    }
-
-    if (themeToggle) {
-      themeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const activeDark = document.body.classList.contains('dark-mode');
-        localStorage.setItem('tikum_theme', activeDark ? 'dark' : 'light');
-        themeToggle.innerHTML = activeDark 
-          ? '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>' 
-          : '<i class="fa-solid fa-moon"></i> <span>Dark Mode</span>';
-      });
-    }
-
     // Fetch Session
     async function loadAccount() {
       const loadingView = document.getElementById('loadingView');
@@ -478,5 +498,6 @@
     loadAccount();
   </script>
   <script src="/js/i18n.js"></script>
+  <script src="/js/header-shared.js"></script>
 </body>
 </html>

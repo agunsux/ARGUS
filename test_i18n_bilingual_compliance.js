@@ -149,9 +149,9 @@ const REQUIRED_TERMINOLOGY = [
   {
     name: 'Platform Service Fee',
     id: idDict.pricing.platformServiceFee,
-    expectedId: 'Biaya Layanan Platform (Tarif Pilot 6% + 6%, min. Rp35.000, maks. Rp500.000/sisi)',
+    expectedId: 'Biaya Layanan Platform (Transfer Mandiri 6% per sisi, maks. Rp300.000/tiket; PIC Venue 9% per sisi, maks. Rp450.000/tiket; min. Rp35.000/tiket)',
     en: enDict.pricing.platformServiceFee,
-    expectedEn: 'Platform Service Fee (Pilot Rate 6% + 6%, min. IDR 35,000, cap IDR 500,000/side)'
+    expectedEn: 'Platform Service Fee (Seller Transfer 6% per side, cap IDR 300,000/ticket; Venue PIC 9% per side, cap IDR 450,000/ticket; min. IDR 35,000/ticket)'
   },
   {
     name: 'Tier A Handover',

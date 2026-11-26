@@ -1,0 +1,52 @@
+/* Scoped dark surfaces for buyer and seller dashboards (aligned with tikum-tokens.css). */
+html,
+html[data-theme="dark"],
+body,
+body.dark-mode {
+  --bg-page: var(--theme-canvas, #172333);
+  --card-bg: var(--theme-card, #24364D);
+  --text-main: var(--theme-text, #FFFFFF);
+  --text-muted: var(--theme-muted, #CBD5E1);
+  --border-color: var(--theme-border, rgba(203, 213, 225, 0.22));
+  --primary: var(--palette-primary-blue, #15365B);
+  --primary-hover: var(--palette-surface, #24364D);
+  --primary-soft: rgba(21, 54, 91, 0.35);
+  --warning: #FDE68A;
+  --warning-soft: rgba(245, 158, 11, 0.18);
+  --danger: #FCA5A5;
+  --danger-soft: rgba(239, 68, 68, 0.18);
+  --info: #F3EBDD;
+  --info-soft: rgba(21, 54, 91, 0.45);
+  background-color: var(--theme-canvas, #172333) !important;
+  color: var(--theme-text, #FFFFFF) !important;
+}
+
+.role-switcher,
+.user-pill,
+.badge-neutral {
+  background: var(--theme-secondary, #15365B);
+  color: var(--theme-muted, #CBD5E1);
+  border-color: var(--theme-border, rgba(203, 213, 225, 0.22));
+}
+
+.role-switch-btn.active {
+  background: var(--theme-card-elevated, #24364D);
+  color: var(--theme-text-warm, #F3EBDD);
+}
+
+.btn-outline,
+.btn-danger-outline {
+  background: var(--theme-canvas, #172333);
+  color: var(--theme-text-warm, #F3EBDD);
+  border-color: rgba(203, 213, 225, 0.35);
+}
+
+.btn-outline:hover,
+.btn-danger-outline:hover {
+  background: var(--theme-card-elevated, #24364D);
+}
+
+.dash-header img { max-width: 100%; }
+.alert-unavailable { color: #FCA5A5; border-color: rgba(239, 68, 68, 0.5); }
+.btn-primary { background: var(--palette-primary-blue, #15365B); color: #FFFFFF; border: 1px solid rgba(203, 213, 225, 0.25); }
+.btn-primary:hover { background: var(--palette-terracotta, #E36F45); color: #172333; }

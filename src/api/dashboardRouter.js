@@ -339,6 +339,11 @@ router.get(['/buyer', '/buyer/summary'], requireAuth, async (req, res) => {
       const dispute = disputeMap.get(ord.id) || null;
       const verification = (state.entry_verifications || []).find(v => v.order_id === ord.id) || null;
       const picAssign = (state.event_pics || []).find(ep => ep.event_id === ord.event_id && ep.status === 'ACTIVE') || null;
+      let linkedPay = (state.canonical_payments || []).find(p => p.order_id === ord.id) || null;
+      if (!linkedPay && moneyRepo && typeof moneyRepo.getPaymentByOrderId === 'function') {
+        linkedPay = await moneyRepo.getPaymentByOrderId(ord.id).catch(() => null);
+      }
+      const payMeta = (linkedPay && typeof linkedPay.metadata === 'object' && linkedPay.metadata) ? linkedPay.metadata : {};
 
       const isPaidOrActive = ['PAID_ESCROWED', 'PAID_PLATFORM_HELD', 'PAID', 'ESCROWED', 'TICKET_VERIFIED', 'HANDOFF_READY', 'ENTRY_CONFIRMED', 'SETTLED'].includes((ord.status || '').toUpperCase());
       const seatParts = ticket ? [ticket.section, ticket.row_id ? `Row ${ticket.row_id}` : null, ticket.seat ? `Seat ${ticket.seat}` : null].filter(Boolean) : [];
@@ -359,6 +364,7 @@ router.get(['/buyer', '/buyer/summary'], requireAuth, async (req, res) => {
         seat_info: seatInfo,
         quantity: ord.quantity || parseInt(listing.quantity || 1, 10),
         fulfillment_type: ord.fulfillment_type || listing.fulfillment_type || 'SELLER_MANAGED',
+        fee_policy_version: ord.fee_policy_version || ord.pricing_policy_version || listing.pricing_policy_version || null,
         pic_assistance_status: ord.pic_assistance_status || listing.pic_assistance_status || (picAssign ? 'CONFIRMED' : 'NONE'),
         ticket_price: ord.ticket_price,
         buyer_fee: ord.buyer_fee,
@@ -367,6 +373,11 @@ router.get(['/buyer', '/buyer/summary'], requireAuth, async (req, res) => {
         currency: ord.currency,
         status: ord.status,
         escrow_status: escrow ? escrow.status : 'NONE',
+        provider: linkedPay?.provider || null,
+        provider_env: linkedPay?.provider_env || (payMeta.is_sandbox ? 'sandbox' : null),
+        invoice_number: payMeta.invoice_number || payMeta.invoiceNumber || linkedPay?.provider_reference || null,
+        provider_settlement_status: payMeta.provider_settlement_status || linkedPay?.provider_settlement_status || payMeta.doku_order_status || (linkedPay ? linkedPay.status : null),
+        internal_settlement_status: payMeta.internal_settlement_status || (escrow ? escrow.status : null) || ord.status,
         payment_deadline: ord.payment_deadline,
         verification_status: verification ? verification.status : (ord.status === 'ENTRY_CONFIRMED' || ord.status === 'SETTLED' ? 'CONFIRMED' : 'PENDING'),
         entry_verification_status: verification ? verification.status : (ord.status === 'ENTRY_CONFIRMED' || ord.status === 'SETTLED' ? 'CONFIRMED' : 'PENDING'),
@@ -698,9 +709,19 @@ router.get(['/seller', '/seller/summary'], requireAuth, async (req, res) => {
       const faceValueInt = parseInt(l.face_value || ticket.face_value || priceInt, 10);
 
       let netPayout = priceInt;
+      const { calculateDualTierFees } = require('../pricing/DualTierFeePolicy');
+      const { PRICING_CONFIG } = require('../config/pricingConfig');
+      const fTypePreview = l.fulfillment_type || (typeof l.metadata === 'object' && l.metadata ? l.metadata.fulfillment_type : null) || 'SELLER_MANAGED';
+      const useV2Listing = (l.pricing_policy_version || PRICING_CONFIG.ACTIVE_FEE_POLICY_VERSION) === 'V2_DUAL_TIER' &&
+        (fTypePreview === 'SELLER_MANAGED' || fTypePreview === 'TIKUM_VENUE_PIC');
       try {
-        const feeCalc = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: priceInt, quantity: 1 });
-        netPayout = feeCalc.seller_payout;
+        if (useV2Listing) {
+          const v2 = calculateDualTierFees({ ticketPrice: priceInt, quantity: 1, fulfillmentType: fTypePreview });
+          netPayout = v2.seller_net_payout;
+        } else {
+          const feeCalc = CanonicalFeeEngine.calculateTicketFees({ ticketPrice: priceInt, quantity: 1 });
+          netPayout = feeCalc.seller_payout;
+        }
       } catch (_) {}
 
       const linkedOrder = allSellerOrders.find(o => o.listing_id === l.id || o.ticket_id === l.ticket_id) || null;
@@ -782,6 +803,8 @@ router.get(['/seller', '/seller/summary'], requireAuth, async (req, res) => {
       const orderQty = parseInt(o.quantity || o.order_quantity || 1, 10);
       const fType = o.fulfillment_type || listing.fulfillment_type || 'SELLER_MANAGED';
       const pStatus = o.pic_assistance_status || listing.pic_assistance_status || (picAssign ? 'CONFIRMED' : 'NONE');
+      const linkedPay = (state.canonical_payments || []).find(p => p.order_id === o.id) || null;
+      const payMeta = (linkedPay && typeof linkedPay.metadata === 'object' && linkedPay.metadata) ? linkedPay.metadata : {};
 
       return {
         id: o.id,
@@ -796,6 +819,7 @@ router.get(['/seller', '/seller/summary'], requireAuth, async (req, res) => {
         seat_info: seatInfo,
         quantity: orderQty,
         fulfillment_type: fType,
+        fee_policy_version: o.fee_policy_version || o.pricing_policy_version || listing.pricing_policy_version || null,
         pic_assistance_status: pStatus,
         buyer_masked_name: maskBuyerName(buyerUser ? buyerUser.name : 'Pembeli'),
         ticket_price: parseInt(o.gross_amount || o.ticket_price || o.total_amount || 0, 10),
@@ -806,6 +830,11 @@ router.get(['/seller', '/seller/summary'], requireAuth, async (req, res) => {
         currency: o.currency || 'IDR',
         status: statusUpper,
         escrow_status: escrow ? escrow.status : 'NONE',
+        provider: linkedPay?.provider || null,
+        provider_env: linkedPay?.provider_env || (payMeta.is_sandbox ? 'sandbox' : null),
+        invoice_number: payMeta.invoice_number || payMeta.invoiceNumber || linkedPay?.provider_reference || null,
+        provider_settlement_status: payMeta.provider_settlement_status || linkedPay?.provider_settlement_status || payMeta.doku_order_status || (linkedPay ? linkedPay.status : null),
+        internal_settlement_status: payMeta.internal_settlement_status || (settlement ? settlement.status : (escrow ? escrow.status : statusUpper)),
         delivery_status: handoffReady ? 'DELIVERED' : 'PENDING_HANDOFF',
         entry_verification_status: entryConfirmed ? 'CONFIRMED' : 'PENDING_GATE',
         settlement_status: settlement ? settlement.status : (statusUpper === 'SETTLED' ? 'SETTLED' : 'PENDING_ADMISSION'),
