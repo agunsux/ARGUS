@@ -157,18 +157,13 @@ function getActiveResaleListings(eventId) {
 }
 
 // Ensure in-memory canonical registry is hydrated from repository (Postgres or fallback)
-let hydrationPromise = null;
+const { ensureCatalogHydrated } = require('./ensureCatalogHydrated');
 async function ensureRegistryHydrated(req, res, next) {
   const needsHydration = canonicalRegistry.getAllEvents().length === 0 ||
     (!canonicalRegistry._hydratedFromRepo && Boolean(process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL) && process.env.NODE_ENV !== 'test');
   if (needsHydration) {
-    if (!hydrationPromise) {
-      hydrationPromise = canonicalRegistry.hydrateFromRepository().finally(() => {
-        hydrationPromise = null;
-      });
-    }
     try {
-      await hydrationPromise;
+      await ensureCatalogHydrated();
     } catch (_) { }
   }
   next();
@@ -1659,14 +1654,10 @@ router.get('/api/discovery/events/past', handleGetArchivedEvents);
  * - festivals
  */
 router.get('/api/events/home-feed', (req, res) => {
-  if (req.headers['accept'] === 'application/json' || req.headers['pragma'] === 'no-cache') {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-  } else {
-    // Edge Cache: Absorb high-frequency homepage visits and bot crawls
-    res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
-  }
+  // Do not serve yesterday's catalog (or a simulated clock response) from the edge.
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
 
   const now = (req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)
     ? new Date(req.query.now || req.headers['x-simulate-clock'] || process.env.SIMULATE_NOW)

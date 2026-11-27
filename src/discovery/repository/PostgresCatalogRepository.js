@@ -20,6 +20,7 @@ const { InMemoryCatalogRepository } = require('./InMemoryCatalogRepository');
 const { EventVisualProvenanceService } = require('../EventVisualProvenanceService');
 const { CuratedCatalogPolicy, OFFICIAL_MIN_TICKET_PRICE } = require('../CuratedCatalogPolicy');
 const hygiene = require('../CatalogHygienePolicy');
+const { CatalogReadCache } = require('../CatalogReadCache');
 
 const TERMINAL_SQL_LIST = hygiene.TERMINAL_STATUSES.map(s => `'${s}'`).join(', ');
 
@@ -60,9 +61,22 @@ class PostgresCatalogRepository extends CatalogRepository {
     this.fallbackRepo = new InMemoryCatalogRepository();
     this.degraded = false;
     this.initialized = false;
+    this.initPromise = null;
+    this.catalogReads = new CatalogReadCache(async () => {
+      const res = await this.query(`SELECT ${CANONICAL_EVENT_SELECT_FIELDS} FROM canonical_events ORDER BY start_date ASC`);
+      return res.rows.map(r => this.mapRowToEvent(r));
+    });
   }
 
   async init() {
+    if (this.initialized && !this.degraded) return true;
+    if (!this.initPromise) {
+      this.initPromise = this.initializePool().finally(() => { this.initPromise = null; });
+    }
+    return this.initPromise;
+  }
+
+  async initializePool() {
     if (!this.connectionString) {
       this.degraded = true;
       await this.fallbackRepo.init();
@@ -109,6 +123,8 @@ class PostgresCatalogRepository extends CatalogRepository {
       this.degraded = false;
       return true;
     } catch (err) {
+      if (this.pool) await this.pool.end().catch(() => {});
+      this.pool = null;
       console.warn(`[CatalogRepository] PostgreSQL connection/migration failed: ${err.message}. Falling back to in-memory mode.`);
       this.degraded = true;
       await this.fallbackRepo.init();
@@ -179,8 +195,7 @@ class PostgresCatalogRepository extends CatalogRepository {
       return this.fallbackRepo.getAllEvents();
     }
     try {
-      const res = await this.query(`SELECT ${CANONICAL_EVENT_SELECT_FIELDS} FROM canonical_events ORDER BY start_date ASC`);
-      return res.rows.map(r => this.mapRowToEvent(r));
+      return await this.catalogReads.get();
     } catch (_) {
       return this.fallbackRepo.getAllEvents();
     }
@@ -226,6 +241,16 @@ class PostgresCatalogRepository extends CatalogRepository {
   }
 
   async archivePastEvents({ todayWib = hygiene.getTodayWibIso(), dryRun = false } = {}) {
+    if (dryRun) return this.archivePastEventsUncached({ todayWib, dryRun });
+    this.catalogReads.invalidate();
+    try {
+      return await this.archivePastEventsUncached({ todayWib, dryRun });
+    } finally {
+      this.catalogReads.invalidate();
+    }
+  }
+
+  async archivePastEventsUncached({ todayWib, dryRun }) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(todayWib || ''))) {
       throw new Error(`Invalid todayWib date: ${todayWib}`);
     }
@@ -362,7 +387,17 @@ class PostgresCatalogRepository extends CatalogRepository {
   }
 
   async upsertCanonicalEvent(eventData, options = {}) {
+    this.catalogReads.invalidate();
+    try {
+      return await this.upsertCanonicalEventUncached(eventData, options);
+    } finally {
+      this.catalogReads.invalidate();
+    }
+  }
+
+  async upsertCanonicalEventUncached(eventData, options) {
     if (this.degraded || !this.pool) {
+      if (options.strict) throw new Error('Catalog database unavailable');
       return this.fallbackRepo.upsertCanonicalEvent(eventData, options);
     }
 
@@ -565,12 +600,17 @@ class PostgresCatalogRepository extends CatalogRepository {
     try {
       const res = await this.query(sql, params);
       const row = res && res.rows ? res.rows[0] : null;
+      if (options.strict) {
+        if (!row) throw new Error('Catalog upsert was not applied');
+        return this.mapRowToEvent(row);
+      }
       if (!row) return await this.getEventById(id);
       const event = this.mapRowToEvent(row);
       // also keep in-memory fallback in sync
       await this.fallbackRepo.upsertCanonicalEvent(event, options);
       return event;
     } catch (err) {
+      if (options.strict) throw err;
       console.warn(`[CatalogRepository] Database upsert failed: ${err.message}. Saving to fallback.`);
       return this.fallbackRepo.upsertCanonicalEvent(eventData, options);
     }

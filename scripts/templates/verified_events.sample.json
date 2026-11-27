@@ -1,0 +1,18 @@
+[
+  {
+    "id": "replace-with-stable-event-id",
+    "canonical_name": "Replace with official event title",
+    "category": "SPORTS",
+    "venue": "Replace with official venue",
+    "city": "Jakarta",
+    "start_date": "YYYY-MM-DD",
+    "min_price": 500000,
+    "source_url": "https://promoter.example/event-page",
+    "provenance": {
+      "type": "PROMOTER",
+      "reviewer": "Replace with reviewer name or audit ID",
+      "verified_at": "YYYY-MM-DDTHH:MM:SSZ",
+      "evidence_sha256": "Replace with SHA-256 of retained official source evidence"
+    }
+  }
+]

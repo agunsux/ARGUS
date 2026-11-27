@@ -53,8 +53,10 @@ function canTransitionStatus(currentStatus, nextStatus, { allowAdminOverride = f
   return allowAdminOverride || !TERMINAL_STATUSES.includes(String(currentStatus || '').toUpperCase()) || TERMINAL_STATUSES.includes(String(nextStatus || '').toUpperCase());
 }
 
+const wibDateFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' });
+
 function getTodayWibIso(now = new Date()) {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  return wibDateFormatter.format(now);
 }
 
 function getEffectiveEventDateWib(event) {
