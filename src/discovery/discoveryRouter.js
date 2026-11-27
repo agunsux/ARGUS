@@ -1673,7 +1673,7 @@ router.get('/api/events/home-feed', (req, res) => {
     : new Date();
 
   // Evaluate temporal and freshness transitions for all canonical events
-  canonicalRegistry.refreshFreshness(now);
+  require('./CatalogHygienePolicy').preserveTerminalStates([canonicalRegistry, state.events], () => canonicalRegistry.refreshFreshness(now));
 
   const { city, lat, lng, country, category } = req.query;
 

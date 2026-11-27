@@ -23,8 +23,29 @@ const SUPPRESSED_FALLBACK_IDS = Object.freeze(new Set([
   'ev-can-odyssey-nye-2027'
 ]));
 function isTerminalEvent(event) {
-  return ['status', 'lifecycle_status', 'archive_status'].some(key => TERMINAL_STATUSES.includes(String(event?.[key] || '').toUpperCase())) ||
-    TERMINAL_STATUSES.includes(String(event?.metadata?.status || '').toUpperCase());
+  return Boolean(event?.metadata?.merged_into || event?.merged_into) ||
+    ['status', 'lifecycle_status', 'archive_status'].some(key => EXCLUDED.has(String(event?.[key] || '').toUpperCase())) ||
+    EXCLUDED.has(String(event?.metadata?.status || '').toUpperCase());
+}
+function preserveTerminalStates(collections, fn) {
+  const fields = ['status', 'lifecycle_status', 'archive_status', 'public_visibility', 'homepage_visibility', 'public_upcoming', 'resale_enabled'];
+  const lists = collections.map(collection => collection instanceof Map ? Array.from(collection.values()) : Array.isArray(collection) ? collection : Array.from(collection?.events?.values() || []));
+  const records = lists.flat().filter(event => event && typeof event === 'object');
+  const terminalIds = new Set(records.filter(isTerminalEvent).map(event => event.id || event.event_id).filter(Boolean));
+  const snapshots = records.filter(event => isTerminalEvent(event) || terminalIds.has(event.id || event.event_id)).map(event => ({
+    event,
+    fields: fields.map(key => ({ key, present: Object.prototype.hasOwnProperty.call(event, key), value: event[key] }))
+  }));
+  try {
+    return fn();
+  } finally {
+    for (const snapshot of snapshots) {
+      for (const { key, present, value } of snapshot.fields) {
+        if (present) snapshot.event[key] = value;
+        else delete snapshot.event[key];
+      }
+    }
+  }
 }
 function canTransitionStatus(currentStatus, nextStatus, { allowAdminOverride = false } = {}) {
   return allowAdminOverride || !TERMINAL_STATUSES.includes(String(currentStatus || '').toUpperCase()) || TERMINAL_STATUSES.includes(String(nextStatus || '').toUpperCase());
@@ -68,6 +89,7 @@ function normalizeEventForCatalog(event) {
 
 function isEligibleForActiveResale(event, todayWib = getTodayWibIso()) {
   const e = normalizeEventForCatalog(event);
+  if (isTerminalEvent(e)) return false;
   const id = String(e.id || e.event_id || '');
   if (id && SUPPRESSED_FALLBACK_IDS.has(id)) return false;
   const statuses = [e.status, e.lifecycle_status, e.archive_status, e.metadata?.status].filter(Boolean).map(s => String(s).toUpperCase());
@@ -92,4 +114,4 @@ function deduplicateEvents(events) {
   return Array.from(result.values(), entry => entry.event);
 }
 
-module.exports = { TERMINAL_STATUSES, isTerminalEvent, canTransitionStatus, CANONICAL_DATE_OVERRIDES, SUPPRESSED_FALLBACK_IDS, getTodayWibIso, normalizeCategory, normalizeEventForCatalog, isEligibleForActiveResale, deduplicateEvents };
+module.exports = { TERMINAL_STATUSES, isTerminalEvent, preserveTerminalStates, canTransitionStatus, CANONICAL_DATE_OVERRIDES, SUPPRESSED_FALLBACK_IDS, getTodayWibIso, normalizeCategory, normalizeEventForCatalog, isEligibleForActiveResale, deduplicateEvents };

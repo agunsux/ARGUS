@@ -481,7 +481,7 @@ class EventAggregationEngine {
    * 5. Exclude events without verified matching image if image is invalid.
    */
   getHomepageCanonicalEvents(now = new Date()) {
-    canonicalRegistry.refreshFreshness(now);
+    require('./CatalogHygienePolicy').preserveTerminalStates([canonicalRegistry, require('../database').state.events], () => canonicalRegistry.refreshFreshness(now));
 
     const allEvents = canonicalRegistry.getAllEvents();
     const seenIds = new Set();

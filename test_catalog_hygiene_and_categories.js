@@ -168,6 +168,56 @@ function httpReq(port, method, reqPath, { headers = {}, body = null } = {}) {
   const authHeaders = { authorization: `Bearer ${session.session_token}`, 'x-user-id': sellerId };
 
   try {
+    await check('Warm home-feed preserves terminal registry and state projections', async () => {
+      const ids = ['ev-can-cc1f95f7', 'evt_dwp-2026_wVb9', 'evt_edp1690841', 'stage3-archived-future'];
+      const fields = ['status', 'lifecycle_status', 'archive_status', 'public_visibility', 'homepage_visibility', 'public_upcoming', 'resale_enabled'];
+      const originals = [];
+      const priorRows = seeded.map(row => [row, { ...row }]);
+      for (const [index, id] of ids.entries()) {
+        const row = { ...verifiedBase, id, event_id: id, slug: id, title: `Warm terminal ${index}`, name: `Warm terminal ${index}`, canonical_name: `Warm terminal ${index}`, start_date: '2099-04-01', date: '2099-04-01', venue_name: 'Jakarta', status: index < 3 ? 'DUPLICATE_MERGED' : 'ARCHIVED', lifecycle_status: index < 3 ? 'DUPLICATE_MERGED' : 'ARCHIVED', archive_status: 'ARCHIVED', public_visibility: false, homepage_visibility: false, public_upcoming: false, resale_enabled: false, metadata: index < 3 ? { merged_into: 'survivor' } : {} };
+        const projection = { ...row, metadata: { ...row.metadata } };
+        canonicalRegistry.events.set(id, row);
+        state.events.push(projection);
+        originals.push([row, projection, fields.map(key => row[key])]);
+      }
+      try {
+        assert.strictEqual((await httpReq(port, 'GET', '/api/events/home-feed')).status, 200);
+        for (const [row, projection, values] of originals) {
+          assert.deepStrictEqual(fields.map(key => row[key]), values, `registry ${row.id}`);
+          assert.deepStrictEqual(fields.map(key => projection[key]), values, `state ${row.id}`);
+        }
+        const api = await httpReq(port, 'GET', '/api/mvp/events');
+        assert.strictEqual(api.status, 200);
+        const events = api.json.events;
+        assert(Array.isArray(events));
+        assert(events.every(event => policy.isEligibleForActiveResale(event)));
+        assert(events.every(event => !ids.includes(event.id)));
+        const titles = events.map(event => (event.title || event.name || event.canonical_name || '').toLowerCase());
+        assert.strictEqual(new Set(titles).size, titles.length);
+        const page = await httpReq(port, 'GET', '/events');
+        assert.strictEqual(page.status, 200);
+        for (const id of ids) assert(!page.text.includes(id));
+      } finally {
+        for (const id of ids) canonicalRegistry.events.delete(id);
+        state.events = state.events.filter(event => !ids.includes(event.id));
+        for (const [row, saved] of priorRows) {
+          for (const key of Object.keys(row)) delete row[key];
+          Object.assign(row, saved);
+        }
+      }
+    });
+
+    await check('Merged markers and exceptional refresh preserve exact fields', () => {
+      for (const marker of [{ merged_into: 'survivor' }, { metadata: { merged_into: 'survivor' } }]) {
+        const row = { id: 'merged-marker', status: 'UPCOMING', start_date: '2099-01-01', ...marker };
+        assert(policy.isTerminalEvent(row));
+        assert(!policy.isEligibleForActiveResale(row));
+        assert.throws(() => policy.preserveTerminalStates([[row]], () => { row.status = 'ACTIVE'; row.public_visibility = true; throw new Error('refresh failed'); }), /refresh failed/);
+        assert.strictEqual(row.status, 'UPCOMING');
+        assert(!Object.hasOwn(row, 'public_visibility'));
+      }
+    });
+
     await check('MIN_LISTING_PRICE_IDR === 500000 invariant preserved', () => {
       assert.strictEqual(PRICING_CONFIG.MIN_LISTING_PRICE_IDR, 500000);
     });
