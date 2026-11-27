@@ -14,6 +14,9 @@
  */
 
 process.env.NODE_ENV = 'test';
+delete process.env.TEST_DATABASE_URL;
+delete process.env.TEST_DATABASE_SCHEMA;
+delete process.env.VERCEL;
 process.env.MARKETPLACE_MODE = 'LIVE';
 process.env.DEFAULT_PAYMENT_PROVIDER = 'doku';
 process.env.DOKU_HOLD_RELEASE_ENABLED = 'true';
@@ -88,6 +91,15 @@ async function runAuditSuite() {
   console.log('================================================================\n');
 
   resetDatabase();
+  const seller = state.users.find(user => user.id === 'seller-1');
+  seller.email_verified = true;
+  seller.phone = '+620000000000';
+  seller.metadata = { ...seller.metadata, city: 'Jakarta', payout_bank_name: 'BCA', payout_account_number: '0000000000', identity_doc_ref: 'fixture-identity' };
+  await require('./src/storage').getUserRepository().updateUser(seller.id, { email_verified: true, phone: seller.phone, metadata: seller.metadata });
+  const fixtureDate = require('./src/discovery/CatalogHygienePolicy').getTodayWibIso(new Date(Date.now() + 30 * 86400000));
+  const { venue_id } = state.events.find(event => event.id === 'event-joyland-2026');
+  state.events.push({ id: 'doku-audit-fixture', name: 'DOKU Audit Fixture', venue_id, date: fixtureDate,
+    start_date: fixtureDate, end_date: fixtureDate, status: 'UPCOMING', lifecycle_status: 'UPCOMING', is_pilot: true });
 
   await new Promise((resolve) => {
     server = app.listen(0, () => {
@@ -298,6 +310,7 @@ async function runAuditSuite() {
         amount: 350000,
         currency: 'IDR',
         channel: 'DOKU_CHECKOUT',
+        metadata: { quantity: 1, unit_listing_price: 330189, buyer_fee_per_ticket: 19811, fulfillment_type: 'SELLER_MANAGED' },
         buyer: { id: 'usr-buyer-99', name: 'Budi Santoso', email: 'budi@example.com' }
       });
 
@@ -312,6 +325,7 @@ async function runAuditSuite() {
       // Verify request body format
       assert.strictEqual(interceptedRequest.json.order.invoice_number, `INV-DOKU-${orderId}`);
       assert.strictEqual(interceptedRequest.json.order.amount, 350000);
+      assert.deepStrictEqual(interceptedRequest.json.order.line_items.map(({ quantity, price }) => [quantity, price]), [[1, 330189], [1, 19811]]);
       assert.strictEqual(interceptedRequest.json.payment.payment_due_date, 60);
       assert.strictEqual(interceptedRequest.json.customer.id, 'usr-buyer-99');
       assert.strictEqual(interceptedRequest.json.customer.name, 'Budi Santoso');
@@ -325,6 +339,7 @@ async function runAuditSuite() {
         amount: 750000,
         currency: 'IDR',
         channel: 'DOKU_CHECKOUT',
+        metadata: { quantity: 1, unit_listing_price: 707547, buyer_fee_per_ticket: 42453, fulfillment_type: 'SELLER_MANAGED' },
         buyer: { id: 'usr-buyer-88' }
       });
 
@@ -424,7 +439,8 @@ async function runAuditSuite() {
     await check('6.1 Setup verified ticket listing and order for webhook testing', async () => {
       const listRes = await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-joyland-2026',
+        eventId: 'doku-audit-fixture',
+        fulfillmentType: 'SELLER_MANAGED',
         seatInfo: 'VIP Row 1',
         faceValue: 500000,
         price: 500000,
@@ -505,7 +521,8 @@ async function runAuditSuite() {
     await check('7.1 Setup second order to test gateway payment failure', async () => {
       const listRes = await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-joyland-2026',
+        eventId: 'doku-audit-fixture',
+        fulfillmentType: 'SELLER_MANAGED',
         seatInfo: 'VIP Row 2',
         faceValue: 500000,
         price: 500000,
@@ -518,7 +535,7 @@ async function runAuditSuite() {
       assert.ok(failedOrder);
     });
 
-    await check('7.2 Failed webhook updates order to CANCELLED and marks marketplace PAYMENT_FAILED', async () => {
+    await check('7.2 Failed webhook keeps the order pending without marking it paid or cancelling it', async () => {
       const timestamp = new Date().toISOString();
       const body = {
         order: { invoice_number: `INV-DOKU-${failedOrder.id}`, amount: failedOrder.buyer_total },
@@ -545,8 +562,8 @@ async function runAuditSuite() {
       assert.strictEqual(res.statusCode, 200);
 
       const dbOrder = state.orders.find(o => o.id === failedOrder.id);
-      assert.strictEqual(dbOrder.status, 'CANCELLED');
-      assert.strictEqual(dbOrder.marketplace_status, 'PAYMENT_FAILED');
+      assert.strictEqual(dbOrder.status, 'PENDING_PAYMENT');
+      assert.notStrictEqual(dbOrder.marketplace_status, 'PAID');
     });
 
     // -------------------------------------------------------------------------

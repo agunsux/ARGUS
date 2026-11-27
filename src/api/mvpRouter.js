@@ -330,25 +330,13 @@ router.get('/auth/me', (req, res) => {
 // PUBLIC & MARKETPLACE ENDPOINTS
 // =============================================================================
 
-let mvpRegistryHydrationPromise = null;
 async function ensureMvpEventsHydrated() {
   if (process.env.NODE_ENV === 'test') return;
   if (!Boolean(process.env.TARGET_DATABASE_URL || process.env.DATABASE_URL)) return;
   try {
     const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
-    if (!canonicalRegistry._hydratedFromRepo) {
-      if (!mvpRegistryHydrationPromise) {
-        mvpRegistryHydrationPromise = canonicalRegistry.hydrateFromRepository()
-          .then(() => {
-            canonicalRegistry.syncToState(state.events);
-          })
-          .catch(() => {})
-          .finally(() => {
-            mvpRegistryHydrationPromise = null;
-          });
-      }
-      await mvpRegistryHydrationPromise;
-    } else if (canonicalRegistry.getAllEvents().length > 0) {
+    await require('../discovery/ensureCatalogHydrated').ensureCatalogHydrated();
+    if (canonicalRegistry.getAllEvents().length > 0) {
       canonicalRegistry.syncToState(state.events);
     }
   } catch (_) {}
@@ -373,6 +361,7 @@ router.get('/events', async (req, res) => {
   const now = (req.query?.now || req.headers?.['x-simulate-clock'] || (process.env.NODE_ENV === 'test' && process.env.SIMULATE_NOW))
     ? new Date(req.query?.now || req.headers?.['x-simulate-clock'] || process.env.SIMULATE_NOW)
     : new Date();
+  const todayWib = hygiene.getTodayWibIso(now);
 
   let filtered = state.events.filter(event => {
     const evStatus = (event.status || '').toUpperCase();
@@ -390,7 +379,7 @@ router.get('/events', async (req, res) => {
         if (evStatus !== qStatus && evLifecycle !== qStatus) return false;
       }
     } else {
-      if (!hygiene.isEligibleForActiveResale(event, hygiene.getTodayWibIso(now))) return false;
+      if (!hygiene.isEligibleForActiveResale(event, todayWib)) return false;
       // PUBLIC FAIL-CLOSED GATE (Provenance Gate + Temporal Gate + Lifecycle Gate)
       // 1. TEMPORAL GATE: event_end_at <= now is an absolute public Upcoming exclusion
       if (!EventTemporalLifecycleEngine.isEventUpcoming(event, now)) {

@@ -717,6 +717,12 @@ class DokuPaymentProvider extends PaymentProvider {
     }
 
     const upperChannel = (channel || 'VA_DOKU').toUpperCase().trim();
+    if (['CREDIT_CARD', 'CC', 'PAYLATER', 'DIRECT_DEBIT', 'DEBIT'].includes(upperChannel)) {
+      const err = new Error(`UNSUPPORTED_PILOT_CHANNEL: Channel '${channel}' is explicitly disabled for pilot testing. Only QRIS and Virtual Account (BCA, Mandiri, BNI, BRI, CIMB, Permata) are allowed.`);
+      err.code = 'UNSUPPORTED_PILOT_CHANNEL';
+      err.status = 400;
+      throw err;
+    }
     const isVaChannel = upperChannel.startsWith('VA') || upperChannel.includes('VIRTUAL_ACCOUNT');
     const isCheckout = !isVaChannel && upperChannel !== 'QRIS' && upperChannel !== 'QRIS_DOKU';
     let checkoutItems;
@@ -751,14 +757,6 @@ class DokuPaymentProvider extends PaymentProvider {
       }
     }
 
-    // Strict pilot channel whitelist: Only QRIS and Virtual Accounts (BCA, Mandiri, BNI, BRI, CIMB, Permata, DOKU)
-    if (['CREDIT_CARD', 'CC', 'PAYLATER', 'DIRECT_DEBIT', 'DEBIT'].includes(upperChannel)) {
-      const err = new Error(`UNSUPPORTED_PILOT_CHANNEL: Channel '${channel}' is explicitly disabled for pilot testing. Only QRIS and Virtual Account (BCA, Mandiri, BNI, BRI, CIMB, Permata) are allowed.`);
-      err.code = 'UNSUPPORTED_PILOT_CHANNEL';
-      err.status = 400;
-      throw err;
-    }
-
     // Strict safety guard: Non-VA Direct API channels must NOT assume hold_settlement
     if (requiresEscrow && !this.isEscrowSupported(upperChannel)) {
       throw new CapabilityUnsupportedError(
@@ -781,9 +779,8 @@ class DokuPaymentProvider extends PaymentProvider {
       }
     }
 
-    // Local Sandbox Simulator Helper (active when DOKU_ENV === 'sandbox' and NODE_ENV !== 'production' when credentials are unset or allowSimulation is enabled)
-    const canUseSandboxSimulator = !this.enableProduction && this.isSandbox && this.nodeMode !== 'production';
-    if (canUseSandboxSimulator && (this.allowSimulation || !this.secretKey || !this.clientId)) {
+    // Missing credentials do not override an explicit simulation opt-out.
+    if (!this.enableProduction && this.isSandbox && this.allowSimulation) {
       const providerRef = `doku-trx-${orderId}-${Date.now()}`;
       const simVa = isVaChannel ? `8899${Math.floor(1000000000 + Math.random() * 9000000000)}` : null;
       return {
