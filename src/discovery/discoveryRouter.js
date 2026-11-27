@@ -199,8 +199,8 @@ router.get('/events/archive', (req, res) => {
     const evLifecycle = (e.lifecycle_status || '').toUpperCase();
     if (evStatus === 'CANCELLED' || evStatus === 'DIBATALKAN' || evLifecycle === 'CANCELLED') return false;
     const isPast = EventTemporalLifecycleEngine.isEventExpired(e, now) ||
-      ['COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
-      ['COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus) ||
+      ['PAST', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evLifecycle) ||
+      ['PAST', 'COMPLETED', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS'].includes(evStatus) ||
       e.archive_status === 'ARCHIVED';
     return isPast;
   });

@@ -48,6 +48,10 @@
     {
       "path": "/api/cron/catalog-refresh",
       "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/cron/archive-past-events",
+      "schedule": "5 17 * * *"
     }
   ]
 }

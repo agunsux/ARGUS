@@ -92,6 +92,87 @@ class InMemoryCatalogRepository extends CatalogRepository {
     return Array.from(this.events.values()).filter(e => isRowTerminal(e));
   }
 
+  async archivePastEvents({ todayWib = hygiene.getTodayWibIso(), dryRun = false } = {}) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(todayWib || ''))) {
+      throw new Error(`Invalid todayWib date: ${todayWib}`);
+    }
+    const terminalSet = new Set(hygiene.TERMINAL_STATUSES);
+    const candidates = [];
+
+    for (const row of this.events.values()) {
+      const effectiveDate = hygiene.getEffectiveEventDateWib(row);
+      if (!effectiveDate || effectiveDate >= todayWib) continue;
+
+      const archiveUpper = String(row.archive_status || '').toUpperCase();
+      const lifecycleUpper = String(row.lifecycle_status || '').toUpperCase();
+      const needsArchive =
+        archiveUpper !== 'ARCHIVED' ||
+        row.public_visibility === true ||
+        row.homepage_visibility === true ||
+        !terminalSet.has(lifecycleUpper);
+
+      if (needsArchive) {
+        candidates.push({ row, effectiveDate });
+      }
+    }
+
+    candidates.sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate) || String(a.row.id).localeCompare(String(b.row.id)));
+
+    if (dryRun) {
+      return {
+        todayWib,
+        dryRun: true,
+        candidateCount: candidates.length,
+        candidateIds: candidates.map(c => c.row.id),
+        archivedCount: 0,
+        archivedIds: []
+      };
+    }
+
+    const nowIso = new Date().toISOString();
+    const archivedRecords = [];
+    for (const { row } of candidates) {
+      const preservedReason = hygiene.resolvePreservedTerminalReason(row);
+      const nextLifecycle = preservedReason || 'PAST';
+      const updated = {
+        ...row,
+        lifecycle_status: nextLifecycle,
+        status: nextLifecycle,
+        archive_status: 'ARCHIVED',
+        archived_at: row.archived_at || nowIso,
+        public_visibility: false,
+        homepage_visibility: false,
+        public_upcoming: false,
+        resale_enabled: false,
+        updated_at: nowIso,
+        source_updated_at: nowIso,
+        metadata: {
+          ...(row.metadata && typeof row.metadata === 'object' ? row.metadata : {}),
+          status: nextLifecycle,
+          auto_archived_at: nowIso,
+          auto_archive_reason: 'WIB_DATE_PASSED',
+          source_updated_at: nowIso
+        }
+      };
+      this.events.set(updated.id, updated);
+      archivedRecords.push({
+        id: updated.id,
+        canonical_name: updated.canonical_name || updated.title || updated.name || updated.id,
+        start_date: updated.start_date || null,
+        lifecycle_status: updated.lifecycle_status,
+        archive_status: updated.archive_status
+      });
+    }
+
+    return {
+      todayWib,
+      dryRun: false,
+      archivedCount: archivedRecords.length,
+      archivedIds: archivedRecords.map(r => r.id),
+      archivedRecords
+    };
+  }
+
   async upsertCanonicalEvent(eventData, options = {}) {
     if (!eventData || (!eventData.id && !eventData.event_id)) {
       throw new Error('Canonical event must have an id or event_id');

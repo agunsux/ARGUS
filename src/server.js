@@ -299,6 +299,10 @@ app.use('/api/mvp', offerRouter);
 const partnerRouter = require('./api/partnerRouter');
 app.use(partnerRouter);
 
+// Mount Authenticated Cron APIs (Daily 00:05 WIB Past-Event Archival)
+const cronRouter = require('./api/cronRouter');
+app.use('/api/cron', cronRouter);
+
 // Mount Epic: Event Discovery & SEO Engine
 const discoveryRouter = require('./discovery/discoveryRouter');
 app.use(discoveryRouter);

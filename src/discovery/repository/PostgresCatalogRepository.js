@@ -216,13 +216,137 @@ class PostgresCatalogRepository extends CatalogRepository {
     try {
       const res = await this.query(
         `SELECT ${CANONICAL_EVENT_SELECT_FIELDS} FROM canonical_events
-         WHERE archive_status = 'ARCHIVED' OR lifecycle_status = 'ARCHIVED'
+         WHERE archive_status = 'ARCHIVED' OR lifecycle_status IN ('ARCHIVED', 'PAST')
          ORDER BY start_date DESC`
       );
       return res.rows.map(r => this.mapRowToEvent(r));
     } catch (_) {
       return this.fallbackRepo.getArchivedEvents();
     }
+  }
+
+  async archivePastEvents({ todayWib = hygiene.getTodayWibIso(), dryRun = false } = {}) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(todayWib || ''))) {
+      throw new Error(`Invalid todayWib date: ${todayWib}`);
+    }
+    if (this.degraded || !this.pool) {
+      return this.fallbackRepo.archivePastEvents({ todayWib, dryRun });
+    }
+
+    const preservedSqlList = hygiene.PRESERVED_TERMINAL_REASONS.map(s => `'${s}'`).join(', ');
+    const effectiveDateExpr = `COALESCE(start_date, (start_datetime AT TIME ZONE 'Asia/Jakarta')::date)`;
+    const wherePredicate = `
+      WHERE ${effectiveDateExpr} < $1::date
+        AND (
+          archive_status IS DISTINCT FROM 'ARCHIVED'
+          OR public_visibility IS TRUE
+          OR homepage_visibility IS TRUE
+          OR UPPER(COALESCE(lifecycle_status, '')) NOT IN (${TERMINAL_SQL_LIST})
+        )
+    `;
+
+    if (dryRun) {
+      const selectSql = `
+        SELECT id, canonical_name, start_date, lifecycle_status, archive_status
+        FROM canonical_events
+        ${wherePredicate}
+        ORDER BY ${effectiveDateExpr} ASC, id ASC
+      `;
+      const res = await this.query(selectSql, [todayWib]);
+      const rows = (res && Array.isArray(res.rows)) ? res.rows : [];
+      return {
+        todayWib,
+        dryRun: true,
+        candidateCount: rows.length,
+        candidateIds: rows.map(r => r.id),
+        archivedCount: 0,
+        archivedIds: []
+      };
+    }
+
+    if (this.readOnly) {
+      throw new Error('[CatalogRepository] Write query blocked by ARGUS_DB_READ_ONLY safety gate');
+    }
+
+    const resolvedLifecycleCase = `
+      CASE
+        WHEN UPPER(COALESCE(lifecycle_status, '')) IN (${preservedSqlList})
+          THEN UPPER(lifecycle_status)
+        WHEN UPPER(COALESCE(metadata->>'status', '')) IN (${preservedSqlList})
+          THEN UPPER(metadata->>'status')
+        WHEN NULLIF(COALESCE(metadata->>'merged_into', ''), '') IS NOT NULL
+          THEN 'DUPLICATE_MERGED'
+        ELSE 'PAST'
+      END
+    `;
+
+    const updateSql = `
+      UPDATE canonical_events
+      SET
+        lifecycle_status = ${resolvedLifecycleCase},
+        archive_status = 'ARCHIVED',
+        archived_at = COALESCE(archived_at, NOW()),
+        public_visibility = FALSE,
+        homepage_visibility = FALSE,
+        updated_at = NOW(),
+        metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+          'status', ${resolvedLifecycleCase},
+          'auto_archived_at', NOW()::text,
+          'auto_archive_reason', 'WIB_DATE_PASSED',
+          'source_updated_at', NOW()::text
+        )
+      ${wherePredicate}
+      RETURNING id, canonical_name, start_date, lifecycle_status, archive_status, archived_at, updated_at
+    `;
+
+    let rows = [];
+    if (typeof this.pool.connect === 'function') {
+      const client = await this.pool.connect();
+      try {
+        await client.query('BEGIN');
+        const res = await client.query(updateSql, [todayWib]);
+        await client.query('COMMIT');
+        rows = (res && Array.isArray(res.rows)) ? res.rows : [];
+      } catch (err) {
+        try { await client.query('ROLLBACK'); } catch (_) {}
+        throw err;
+      } finally {
+        if (typeof client.release === 'function') client.release();
+      }
+    } else {
+      const res = await this.query(updateSql, [todayWib]);
+      rows = (res && Array.isArray(res.rows)) ? res.rows : [];
+    }
+
+    // Keep fallback repository synchronized for warm-instance parity
+    await this.fallbackRepo.archivePastEvents({ todayWib, dryRun: false }).catch(() => {});
+
+    const formatArchiveDate = (val) => {
+      if (!val) return null;
+      if (val instanceof Date) {
+        const y = val.getFullYear();
+        const m = String(val.getMonth() + 1).padStart(2, '0');
+        const d = String(val.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+      return String(val).slice(0, 10);
+    };
+
+    const archivedRecords = rows.map(r => ({
+      id: r.id,
+      canonical_name: r.canonical_name || r.id,
+      start_date: formatArchiveDate(r.start_date),
+      lifecycle_status: r.lifecycle_status,
+      archive_status: r.archive_status
+    }));
+
+    return {
+      todayWib,
+      dryRun: false,
+      archivedCount: archivedRecords.length,
+      archivedIds: archivedRecords.map(r => r.id),
+      archivedRecords
+    };
   }
 
   async getEventWithObservations(id) {
