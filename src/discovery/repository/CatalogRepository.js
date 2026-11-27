@@ -32,6 +32,10 @@ class CatalogRepository {
     throw new Error('getArchivedEvents() must be implemented');
   }
 
+  async archivePastEvents(options = {}) {
+    throw new Error('archivePastEvents() must be implemented');
+  }
+
   async upsertCanonicalEvent(eventData) {
     throw new Error('upsertCanonicalEvent() must be implemented');
   }

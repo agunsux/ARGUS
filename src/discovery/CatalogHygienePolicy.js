@@ -2,6 +2,8 @@
 
 const EXCLUDED = new Set(['PAST', 'COMPLETED', 'CANCELLED', 'DIBATALKAN', 'ARCHIVED', 'ARCHIVED_WITH_OPEN_OPERATIONS', 'DUPLICATE_MERGED', 'EXPIRED']);
 const TERMINAL_STATUSES = Object.freeze(['PAST', 'ARCHIVED', 'DUPLICATE_MERGED', 'CANCELLED', 'COMPLETED']);
+const PRESERVED_TERMINAL_REASONS = Object.freeze(['DUPLICATE_MERGED', 'CANCELLED', 'COMPLETED']);
+const PRESERVED_TERMINAL_REASON_SET = new Set(PRESERVED_TERMINAL_REASONS);
 const ACTIVE = new Set(['UPCOMING', 'PUBLISHED', 'ON_SALE', 'ACTIVE', 'VERIFIED_ACTIVE']);
 const CANONICAL_DATE_OVERRIDES = Object.freeze({
   'event-mcr-jakarta-2026': '2026-11-22',
@@ -53,6 +55,101 @@ function canTransitionStatus(currentStatus, nextStatus, { allowAdminOverride = f
 
 function getTodayWibIso(now = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+}
+
+function getEffectiveEventDateWib(event) {
+  if (!event || typeof event !== 'object') return null;
+  for (const candidate of [event.start_date, event.event_date, event.date]) {
+    if (!candidate) continue;
+    if (candidate instanceof Date && !Number.isNaN(candidate.getTime())) {
+      return getTodayWibIso(candidate);
+    }
+    const raw = String(candidate).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+      const parsed = new Date(raw);
+      if (!Number.isNaN(parsed.getTime())) return getTodayWibIso(parsed);
+      return raw.slice(0, 10);
+    }
+  }
+  if (event.start_datetime) {
+    const parsed = event.start_datetime instanceof Date ? event.start_datetime : new Date(event.start_datetime);
+    if (!Number.isNaN(parsed.getTime())) return getTodayWibIso(parsed);
+  }
+  return null;
+}
+
+function resolvePreservedTerminalReason(event) {
+  if (!event || typeof event !== 'object') return null;
+  for (const candidate of [event.lifecycle_status, event.status, event.metadata?.status]) {
+    const upper = String(candidate || '').trim().toUpperCase();
+    if (PRESERVED_TERMINAL_REASON_SET.has(upper)) return upper;
+  }
+  if (event.merged_into || event.metadata?.merged_into) {
+    return 'DUPLICATE_MERGED';
+  }
+  return null;
+}
+
+function applyPastArchiveFieldsToRecord(record, { nowIso = new Date().toISOString(), archivedLifecycle = null } = {}) {
+  if (!record || typeof record !== 'object') return record;
+  const resolvedLifecycle = (archivedLifecycle && PRESERVED_TERMINAL_REASON_SET.has(String(archivedLifecycle).toUpperCase()))
+    ? String(archivedLifecycle).toUpperCase()
+    : (resolvePreservedTerminalReason(record) || 'PAST');
+  const nextMeta = {
+    ...(record.metadata && typeof record.metadata === 'object' ? record.metadata : {}),
+    status: resolvedLifecycle,
+    auto_archived_at: nowIso,
+    auto_archive_reason: 'WIB_DATE_PASSED',
+    source_updated_at: nowIso
+  };
+  record.lifecycle_status = resolvedLifecycle;
+  record.status = resolvedLifecycle;
+  record.archive_status = 'ARCHIVED';
+  record.archived_at = record.archived_at || nowIso;
+  record.public_visibility = false;
+  record.homepage_visibility = false;
+  record.public_upcoming = false;
+  record.resale_enabled = false;
+  record.updated_at = nowIso;
+  record.source_updated_at = nowIso;
+  record.metadata = nextMeta;
+  return record;
+}
+
+function syncArchivedEventsInMemory(archivedEntries, { canonicalRegistry = null, stateEvents = null, nowIso = new Date().toISOString() } = {}) {
+  if (!Array.isArray(archivedEntries) || archivedEntries.length === 0) return 0;
+  const lifecycleById = new Map();
+  for (const entry of archivedEntries) {
+    if (typeof entry === 'string' && entry) {
+      lifecycleById.set(entry, null);
+    } else if (entry && (entry.id || entry.event_id)) {
+      lifecycleById.set(entry.id || entry.event_id, entry.lifecycle_status || null);
+    }
+  }
+  if (lifecycleById.size === 0) return 0;
+
+  let synced = 0;
+  const registryEvents = canonicalRegistry?.events instanceof Map ? canonicalRegistry.events : null;
+  if (registryEvents) {
+    for (const [id, archivedLifecycle] of lifecycleById.entries()) {
+      const existing = registryEvents.get(id);
+      if (existing) {
+        applyPastArchiveFieldsToRecord(existing, { nowIso, archivedLifecycle });
+        synced++;
+      }
+    }
+  }
+  if (Array.isArray(stateEvents)) {
+    for (const ev of stateEvents) {
+      const id = ev?.id || ev?.event_id;
+      if (id && lifecycleById.has(id)) {
+        applyPastArchiveFieldsToRecord(ev, { nowIso, archivedLifecycle: lifecycleById.get(id) });
+        synced++;
+      }
+    }
+  }
+  return synced;
 }
 
 function normalizeCategory(raw) {
@@ -114,4 +211,21 @@ function deduplicateEvents(events) {
   return Array.from(result.values(), entry => entry.event);
 }
 
-module.exports = { TERMINAL_STATUSES, isTerminalEvent, preserveTerminalStates, canTransitionStatus, CANONICAL_DATE_OVERRIDES, SUPPRESSED_FALLBACK_IDS, getTodayWibIso, normalizeCategory, normalizeEventForCatalog, isEligibleForActiveResale, deduplicateEvents };
+module.exports = {
+  TERMINAL_STATUSES,
+  PRESERVED_TERMINAL_REASONS,
+  isTerminalEvent,
+  preserveTerminalStates,
+  canTransitionStatus,
+  CANONICAL_DATE_OVERRIDES,
+  SUPPRESSED_FALLBACK_IDS,
+  getTodayWibIso,
+  getEffectiveEventDateWib,
+  resolvePreservedTerminalReason,
+  applyPastArchiveFieldsToRecord,
+  syncArchivedEventsInMemory,
+  normalizeCategory,
+  normalizeEventForCatalog,
+  isEligibleForActiveResale,
+  deduplicateEvents
+};
