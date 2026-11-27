@@ -1438,7 +1438,8 @@ module.exports = {
     "step1ResendCooldown": "(Kirim ulang dalam {sec}d)",
     "step2PdpConsent": "Saya menyatakan data di atas adalah benar untuk verifikasi kepemilikan tiket dan persetujuan pencairan sesuai UU PDP No. 27/2022.",
     "otherBank": "Bank Lainnya",
-    "serverCreateErr": "Gagal membuat listing di server"
+    "serverCreateErr": "Gagal membuat listing di server",
+    "errEventAlreadyPassed": "Event ini sudah lewat atau diarsipkan sehingga tidak dapat menerima listing tiket baru."
   },
   "offers": {
     "loading": "Mengambil daftar tawaran resmi dari server Tikum...",
@@ -1591,7 +1592,16 @@ module.exports = {
     "allInPrefix": "All-in",
     "tierPicShort": "PIC Venue",
     "tierSelfShort": "Transfer Mandiri",
-    "resaleTicketsSummary": "{count} tiket · Termasuk biaya layanan"
+    "resaleTicketsSummary": "{count} tiket · Termasuk biaya layanan",
+    "sportsHeading": "Tiket Olahraga & Pertandingan Resmi",
+    "sportsSubtitle": "Temukan jadwal pertandingan basket, bulu tangkis, sepak bola, dan ajang olahraga terverifikasi di Indonesia.",
+    "comedyHeading": "Tiket Stand-Up Comedy & Pertunjukan Spesial",
+    "comedySubtitle": "Jelajahi tur komika nasional dan jadwal pertunjukan stand-up comedy terverifikasi dengan proteksi transaksi.",
+    "emptySportsTitle": "Belum Ada Event Olahraga Mendatang",
+    "emptySportsDesc": "Event olahraga baru akan tampil setelah tanggal dan sumber promotor resmi terkonfirmasi. Anda juga dapat mendaftarkan event olahraga mendatang secara mandiri.",
+    "emptyComedyTitle": "Belum Ada Event Stand-Up Comedy Mendatang",
+    "emptyComedyDesc": "Jadwal tur stand-up comedy baru akan tampil setelah tanggal promotor resmi terkonfirmasi. Anda juga dapat mendaftarkan event mendatang secara mandiri.",
+    "emptyRegisterCta": "Daftarkan Event Mendatang"
   },
   "prelaunch": {
     "title": "TIKUM sedang dalam tahap persiapan peluncuran.",

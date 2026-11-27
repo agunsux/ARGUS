@@ -12,6 +12,44 @@
 const fs = require('fs');
 const { Pool } = require('pg');
 const { EventDateForensicsEngine, AUDIT_WINDOW } = require('../src/discovery/EventDateForensicsEngine');
+const hygiene = require('../src/discovery/CatalogHygienePolicy');
+
+const TERMINAL_SQL_LIST = hygiene.TERMINAL_STATUSES.map(s => `'${s}'`).join(', ');
+
+function buildTerminalNotInClause(availableCols, tablePrefix = '') {
+  const prefix = tablePrefix ? `${tablePrefix}.` : '';
+  const clauses = [
+    `UPPER(COALESCE(${prefix}archive_status, '')) NOT IN (${TERMINAL_SQL_LIST})`,
+    `UPPER(COALESCE(${prefix}lifecycle_status, '')) NOT IN (${TERMINAL_SQL_LIST})`
+  ];
+  if (availableCols.has('status')) {
+    clauses.push(`UPPER(COALESCE(${prefix}status, '')) NOT IN (${TERMINAL_SQL_LIST})`);
+  }
+  if (availableCols.has('metadata')) {
+    clauses.push(`UPPER(COALESCE(${prefix}metadata->>'status', '')) NOT IN (${TERMINAL_SQL_LIST})`);
+  }
+  return clauses.join('\n          AND ');
+}
+
+function buildTerminalMatchCondition(availableCols, tablePrefix = '') {
+  const prefix = tablePrefix ? `${tablePrefix}.` : '';
+  const clauses = [
+    `UPPER(COALESCE(${prefix}archive_status, '')) IN (${TERMINAL_SQL_LIST})`,
+    `UPPER(COALESCE(${prefix}lifecycle_status, '')) IN (${TERMINAL_SQL_LIST})`
+  ];
+  if (availableCols.has('status')) {
+    clauses.push(`UPPER(COALESCE(${prefix}status, '')) IN (${TERMINAL_SQL_LIST})`);
+  }
+  if (availableCols.has('metadata')) {
+    clauses.push(`UPPER(COALESCE(${prefix}metadata->>'status', '')) IN (${TERMINAL_SQL_LIST})`);
+  }
+  return `(${clauses.join(' OR ')})`;
+}
+
+function isExistingRowTerminal(row) {
+  if (!row) return false;
+  return hygiene.isTerminalEvent(row) || hygiene.isTerminalEvent({ status: row.meta_status || row.metadata?.status });
+}
 
 // Read environment
 function getEnv() {
@@ -401,24 +439,26 @@ const VERIFIED_CANDIDATE_EVENTS = [
   }
 ];
 
-async function reconcileDatabase(dbName, connectionString) {
-  if (!connectionString) {
+async function reconcileDatabase(dbName, connectionString, injectedPool = null) {
+  if (!connectionString && !injectedPool) {
     console.log(`[SKIP] ${dbName}: No connection string provided.`);
     return;
   }
 
   let clean = connectionString;
-  try {
-    const u = new URL(clean);
-    u.searchParams.delete('channel_binding');
-    clean = u.toString();
-  } catch (_) {}
+  if (clean) {
+    try {
+      const u = new URL(clean);
+      u.searchParams.delete('channel_binding');
+      clean = u.toString();
+    } catch (_) {}
+  }
 
   console.log(`\n================================================================`);
   console.log(`  RECONCILING DATABASE: ${dbName}`);
   console.log(`================================================================`);
 
-  const pool = new Pool({ connectionString: clean, ssl: { rejectUnauthorized: false } });
+  const pool = injectedPool || new Pool({ connectionString: clean, ssl: { rejectUnauthorized: false } });
 
   try {
     // 1. Inspect table columns
@@ -430,21 +470,48 @@ async function reconcileDatabase(dbName, connectionString) {
     const availableCols = new Set(colRes.rows.map(r => r.column_name));
     console.log(`  [INFO] Available columns in ${dbName}: ${colRes.rows.length} columns found`);
 
+    const directUpdateTerminalGuard = buildTerminalNotInClause(availableCols);
+    const conflictTerminalNotIn = buildTerminalNotInClause(availableCols, 'canonical_events');
+    const conflictTerminalMatch = buildTerminalMatchCondition(availableCols, 'canonical_events');
+
     // 2. Permanently archive phantom Sheila on 7 and unverified Coldplay records
+    // Anti-resurrection & terminal preservation guard: never mutate rows already in TERMINAL_STATUSES.
     console.log(`\n── Step 1: Archiving Phantom & Unverified Historical Records ──`);
-    const archiveResult = await pool.query(`
-      UPDATE canonical_events 
-      SET archive_status = 'ARCHIVED',
-          lifecycle_status = 'ARCHIVED',
-          public_visibility = false,
-          homepage_visibility = false,
-          archived_at = COALESCE(archived_at, NOW()),
-          updated_at = NOW()
+    const selectCols = [
+      'id',
+      'canonical_name',
+      'start_date',
+      'archive_status',
+      'lifecycle_status',
+      ...(availableCols.has('status') ? ['status'] : []),
+      ...(availableCols.has('metadata') ? ["metadata->>'status' AS meta_status"] : [])
+    ].join(', ');
+    const phantomCandidatesRes = await pool.query(`
+      SELECT ${selectCols}
+      FROM canonical_events
       WHERE (canonical_name ILIKE '%sheila%' AND (official_event_url IS NULL OR official_event_url NOT LIKE 'http%') AND start_date >= '2026-11-01')
          OR (canonical_name ILIKE '%coldplay%' AND start_date >= '2026-01-01')
-         OR id IN ('ev-can-4263d6ff', 'ev-can-8c07f8fe', 'ev-can-e0cbcd02', 'ev-can-841c75d0', 'event-sheila-2026-bandung')
-      RETURNING id, canonical_name, start_date, archive_status;
+         OR id IN ('ev-can-4263d6ff', 'ev-can-8c07f8fe', 'ev-can-e0cbcd02', 'ev-can-841c75d0', 'event-sheila-2026-bandung');
     `);
+    const eligiblePhantomIds = (phantomCandidatesRes.rows || [])
+      .filter(row => !isExistingRowTerminal(row))
+      .map(row => row.id);
+
+    let archiveResult = { rowCount: 0, rows: [] };
+    if (eligiblePhantomIds.length > 0) {
+      archiveResult = await pool.query(`
+        UPDATE canonical_events
+        SET archive_status = 'ARCHIVED',
+            lifecycle_status = 'ARCHIVED',
+            public_visibility = false,
+            homepage_visibility = false,
+            archived_at = COALESCE(archived_at, NOW()),
+            updated_at = NOW()
+        WHERE id = ANY($1::text[])
+          AND ${directUpdateTerminalGuard}
+        RETURNING id, canonical_name, start_date, archive_status;
+      `, [eligiblePhantomIds]);
+    }
 
     console.log(`  [OK] Archived ${archiveResult.rowCount} phantom/historical record(s):`);
     for (const r of archiveResult.rows) {
@@ -488,12 +555,18 @@ async function reconcileDatabase(dbName, connectionString) {
 
       // Check if existing record exists by ID or Slug
       const existingRes = await pool.query(
-        'SELECT id, slug, archive_status FROM canonical_events WHERE id = $1 OR slug = $2 LIMIT 1',
+        `SELECT id, slug, archive_status, lifecycle_status${availableCols.has('status') ? ', status' : ''}${availableCols.has('metadata') ? ", metadata->>'status' AS meta_status" : ''} FROM canonical_events WHERE id = $1 OR slug = $2 LIMIT 1`,
         [ev.id, ev.slug]
       );
 
-      const targetId = existingRes.rows.length > 0 ? existingRes.rows[0].id : ev.id;
-      const targetSlug = existingRes.rows.length > 0 ? existingRes.rows[0].slug : ev.slug;
+      const existingRow = existingRes.rows.length > 0 ? existingRes.rows[0] : null;
+      if (existingRow && isExistingRowTerminal(existingRow)) {
+        console.log(`  [SKIP:TERMINAL] ${existingRow.id} is in terminal state (${existingRow.lifecycle_status}/${existingRow.archive_status}); anti-resurrection guard preserved row.`);
+        continue;
+      }
+
+      const targetId = existingRow ? existingRow.id : ev.id;
+      const targetSlug = existingRow ? existingRow.slug : ev.slug;
 
       // Build column mapping based on available columns in table
       const fields = [];
@@ -569,22 +642,23 @@ async function reconcileDatabase(dbName, connectionString) {
           is_verified = TRUE,
           verification_status = 'PRIMARY_SOURCE_VERIFIED',
           lifecycle_status = CASE 
-            WHEN canonical_events.archive_status = 'ARCHIVED' THEN canonical_events.lifecycle_status
+            WHEN ${conflictTerminalMatch} THEN canonical_events.lifecycle_status
             ELSE 'UPCOMING'
           END,
           archive_status = CASE
-            WHEN canonical_events.archive_status = 'ARCHIVED' THEN 'ARCHIVED'
+            WHEN ${conflictTerminalMatch} THEN canonical_events.archive_status
             ELSE 'ACTIVE'
           END,
           public_visibility = CASE
-            WHEN canonical_events.archive_status = 'ARCHIVED' THEN FALSE
+            WHEN ${conflictTerminalMatch} THEN FALSE
             ELSE TRUE
           END,
           homepage_visibility = CASE
-            WHEN canonical_events.archive_status = 'ARCHIVED' THEN FALSE
+            WHEN ${conflictTerminalMatch} THEN FALSE
             ELSE TRUE
           END,
           updated_at = NOW()
+        WHERE ${conflictTerminalNotIn}
         RETURNING id, canonical_name, start_date, archive_status, lifecycle_status, public_visibility;
       `;
 
@@ -626,7 +700,9 @@ async function reconcileDatabase(dbName, connectionString) {
   } catch (err) {
     console.error(`[ERROR] Reconciliation failed on ${dbName}:`, err.message);
   } finally {
-    await pool.end();
+    if (!injectedPool) {
+      await pool.end();
+    }
   }
 }
 
@@ -647,4 +723,14 @@ async function main() {
   console.log(`================================================================\n`);
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  reconcileDatabase,
+  buildTerminalNotInClause,
+  buildTerminalMatchCondition,
+  isExistingRowTerminal,
+  VERIFIED_CANDIDATE_EVENTS
+};

@@ -100,6 +100,32 @@ async function runFeeTestSuite() {
   console.log('╚══════════════════════════════════════════════════════════════════╝\n');
 
   resetDatabase();
+  if (!state.events.some(e => e.id === 'ev-can-joyland-sessions-2026')) {
+    state.events.push({
+      id: 'ev-can-joyland-sessions-2026',
+      event_id: 'ev-can-joyland-sessions-2026',
+      name: 'Joyland Sessions / Festival Jakarta 2026',
+      title: 'Joyland Sessions / Festival Jakarta 2026',
+      canonical_name: 'Joyland Sessions / Festival Jakarta 2026',
+      date: '2027-01-20',
+      start_date: '2027-01-20',
+      start_datetime: '2027-01-20T14:00:00+07:00',
+      venue: 'GBK City Park / Baseball Stadium',
+      venue_name: 'GBK City Park / Baseball Stadium',
+      venue_city: 'Jakarta',
+      city: 'Jakarta',
+      category: 'FESTIVAL',
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
+      is_verified: true,
+      verification_status: 'PRIMARY_SOURCE_VERIFIED',
+      source_url: 'https://joylandfest.com',
+      evidence_hash: 'sha256-joyland-sessions-2026',
+      verified_at: new Date().toISOString(),
+      last_verified_at: new Date().toISOString()
+    });
+  }
   const seller = state.users.find(user => user.id === 'seller-1');
   if (!seller) throw new Error('Expected seller-1 fixture');
   seller.email_verified = true;
@@ -304,7 +330,7 @@ async function runFeeTestSuite() {
       // Setup seller and listing
       const listingRes = await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-joyland-2026',
+        eventId: 'ev-can-joyland-sessions-2026',
         seatInfo: 'CAT 1 - Row 5',
         faceValue: 1000000,
         price: 1000000,
@@ -333,7 +359,7 @@ async function runFeeTestSuite() {
     await asyncTest('16. Checkout amount tampering is rejected with AMOUNT_MISMATCH', async () => {
       const listingRes = await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-joyland-2026',
+        eventId: 'ev-can-joyland-sessions-2026',
         seatInfo: 'CAT 2 - Row 10',
         faceValue: 500000,
         price: 500000,
@@ -389,7 +415,7 @@ async function runFeeTestSuite() {
     await asyncTest('18. Refund consumes the original order fee snapshot rather than recalculating today', async () => {
       const listingRes = await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-joyland-2026',
+        eventId: 'ev-can-joyland-sessions-2026',
         seatInfo: 'VIP - Row 1',
         faceValue: 2000000,
         price: 2000000,
@@ -430,7 +456,7 @@ async function runFeeTestSuite() {
     await asyncTest('19. Admin financial overview reconciles with FinancialLedger double-entry accounts', async () => {
       const listingRes = await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-joyland-2026',
+        eventId: 'ev-can-joyland-sessions-2026',
         seatInfo: 'CAT 1 - Row 2',
         faceValue: 1000000,
         price: 1000000,
@@ -473,7 +499,7 @@ async function runFeeTestSuite() {
       // 1. Listing creation with explicit fulfillment tier
       const listingRes = await ListingService.createListing({
         sellerId: 'seller-1',
-        eventId: 'event-joyland-2026',
+        eventId: 'ev-can-joyland-sessions-2026',
         seatInfo: 'CAT 1 - Row 9',
         faceValue: 1000000,
         price: 1000000,

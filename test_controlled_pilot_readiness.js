@@ -74,6 +74,32 @@ async function runSuite() {
   console.log('================================================================\n');
 
   resetDatabase();
+  if (!state.events.some(e => e.id === 'ev-can-joyland-sessions-2026')) {
+    state.events.push({
+      id: 'ev-can-joyland-sessions-2026',
+      event_id: 'ev-can-joyland-sessions-2026',
+      name: 'Joyland Sessions / Festival Jakarta 2026',
+      title: 'Joyland Sessions / Festival Jakarta 2026',
+      canonical_name: 'Joyland Sessions / Festival Jakarta 2026',
+      date: '2027-01-20',
+      start_date: '2027-01-20',
+      start_datetime: '2027-01-20T14:00:00+07:00',
+      venue: 'GBK City Park / Baseball Stadium',
+      venue_name: 'GBK City Park / Baseball Stadium',
+      venue_city: 'Jakarta',
+      city: 'Jakarta',
+      category: 'FESTIVAL',
+      status: 'UPCOMING',
+      lifecycle_status: 'UPCOMING',
+      archive_status: 'ACTIVE',
+      is_verified: true,
+      verification_status: 'PRIMARY_SOURCE_VERIFIED',
+      source_url: 'https://joylandfest.com',
+      evidence_hash: 'sha256-joyland-sessions-2026',
+      verified_at: new Date().toISOString(),
+      last_verified_at: new Date().toISOString()
+    });
+  }
   const pilotSeller = state.users.find(u => u.id === 'seller-1');
   if (pilotSeller) {
     pilotSeller.email_verified = true;
@@ -137,7 +163,7 @@ async function runSuite() {
     // Register inventory on upcoming simulated event
     const batch = await PartnerValidationService.registerConsignedInventory({
       partnerId: partner.id,
-      eventId: 'event-joyland-2026',
+      eventId: 'ev-can-joyland-sessions-2026',
       ticketCategory: 'Regular Pass',
       quantity: 6,
       faceValue: 1250000,
@@ -198,7 +224,7 @@ async function runSuite() {
     // Setup verified listing for simulated pilot
     const listRes = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-joyland-2026',
+      eventId: 'ev-can-joyland-sessions-2026',
       seatInfo: 'VIP Section A, Row 1, Seat 1',
       faceValue: 1250000,
       price: 1500000,
@@ -249,7 +275,7 @@ async function runSuite() {
 
   await testAsync('2.4 Turnstile admission confirmed by PIC: order ENTRY_CONFIRMED, escrow RELEASE_PENDING', async () => {
     EventPicService.assignPic({
-      eventId: 'event-joyland-2026',
+      eventId: 'ev-can-joyland-sessions-2026',
       venueId: 'venue-gbk',
       picUserId: 'pic-1',
       contactPhone: '081299927378'
@@ -317,7 +343,7 @@ async function runSuite() {
   await testAsync('3.1 Payment failure: transitions order to PAYMENT_FAILED and releases listing to ACTIVE', async () => {
     const listResB = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-joyland-2026',
+      eventId: 'ev-can-joyland-sessions-2026',
       seatInfo: 'VIP Section A, Row 1, Seat 2',
       faceValue: 1250000,
       price: 1500000,
@@ -344,7 +370,7 @@ async function runSuite() {
   await testAsync('3.2 Pre-payment order cancellation / timeout: inventory safely restored', async () => {
     const listResC = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-joyland-2026',
+      eventId: 'ev-can-joyland-sessions-2026',
       seatInfo: 'VIP Section A, Row 1, Seat 3',
       faceValue: 1250000,
       price: 1500000,
@@ -378,7 +404,7 @@ async function runSuite() {
   await testAsync('4.1 Setup paid order for turnstile scan failure test', async () => {
     const listResD = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-joyland-2026',
+      eventId: 'ev-can-joyland-sessions-2026',
       seatInfo: 'VIP Section A, Row 1, Seat 4',
       faceValue: 1250000,
       price: 1500000,
@@ -494,7 +520,7 @@ async function runSuite() {
   await testAsync('5.1 Seller no-show: PIC flags NO_SHOW_SELLER, dispute opened, 100% buyer refund', async () => {
     const listResE = await ListingService.createListing({
       sellerId: 'seller-1',
-      eventId: 'event-joyland-2026',
+      eventId: 'ev-can-joyland-sessions-2026',
       seatInfo: 'VIP Section A, Row 1, Seat 5',
       faceValue: 1250000,
       price: 1500000,

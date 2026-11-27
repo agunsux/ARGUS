@@ -1438,7 +1438,8 @@ module.exports = {
     "step1ResendCooldown": "(Hantar semula dalam {sec}s)",
     "step2PdpConsent": "Saya mengesahkan data di atas benar bagi pengesahan pemilikan tiket dan persetujuan pembayaran mengikut Akta PDP No. 27/2022.",
     "otherBank": "Bank Lain",
-    "serverCreateErr": "Gagal mencipta penyenaraian di pelayan"
+    "serverCreateErr": "Gagal mencipta penyenaraian di pelayan",
+    "errEventAlreadyPassed": "Acara ini telah berlalu atau diarkibkan dan tidak boleh menerima penyenaraian tiket baharu."
   },
   "offers": {
     "loading": "Mengambil senarai tawaran rasmi dari pelayan Tikum...",
@@ -1591,7 +1592,16 @@ module.exports = {
     "allInPrefix": "All-in",
     "tierPicShort": "PIC Lokasi",
     "tierSelfShort": "Pindahan Penjual",
-    "resaleTicketsSummary": "{count} tiket · Termasuk yuran perkhidmatan"
+    "resaleTicketsSummary": "{count} tiket · Termasuk yuran perkhidmatan",
+    "sportsHeading": "Tiket Sukan & Perlawanan Rasmi",
+    "sportsSubtitle": "Temui jadual perlawanan bola keranjang, badminton, bola sepak dan kejohanan sukan yang disahkan.",
+    "comedyHeading": "Tiket Stand-Up Comedy & Persembahan Khas",
+    "comedySubtitle": "Terokai jelajah stand-up comedy dan persembahan komedi yang disahkan dengan perlindungan transaksi.",
+    "emptySportsTitle": "Tiada Acara Sukan Akan Datang Lagi",
+    "emptySportsDesc": "Acara sukan akan datang akan dipaparkan selepas tarikh rasmi penganjur disahkan. Anda juga boleh mendaftarkan acara sukan secara manual.",
+    "emptyComedyTitle": "Tiada Acara Stand-Up Comedy Akan Datang Lagi",
+    "emptyComedyDesc": "Jadual stand-up comedy akan dipaparkan selepas tarikh rasmi penganjur disahkan. Anda juga boleh mendaftarkan acara secara manual.",
+    "emptyRegisterCta": "Daftar Acara Akan Datang"
   },
   "prelaunch": {
     "title": "TIKUM sedang dalam persiapan prapelancaran.",

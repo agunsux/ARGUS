@@ -200,6 +200,9 @@ async function seedCatalog() {
           homepage_visibility = EXCLUDED.homepage_visibility,
           metadata = EXCLUDED.metadata,
           updated_at = NOW()
+        WHERE UPPER(COALESCE(canonical_events.archive_status, '')) NOT IN ('PAST', 'ARCHIVED', 'DUPLICATE_MERGED', 'CANCELLED', 'COMPLETED')
+          AND UPPER(COALESCE(canonical_events.lifecycle_status, '')) NOT IN ('PAST', 'ARCHIVED', 'DUPLICATE_MERGED', 'CANCELLED', 'COMPLETED')
+          AND UPPER(COALESCE(canonical_events.metadata->>'status', '')) NOT IN ('PAST', 'ARCHIVED', 'DUPLICATE_MERGED', 'CANCELLED', 'COMPLETED')
         RETURNING (xmax = 0) AS is_inserted;
       `, [
         id, slug, canonicalName, eventType, category,
@@ -211,6 +214,7 @@ async function seedCatalog() {
         JSON.stringify(metadata)
       ]);
 
+      if (!res.rows.length) continue;
       if (res.rows[0].is_inserted) {
         inserted++;
       } else {
