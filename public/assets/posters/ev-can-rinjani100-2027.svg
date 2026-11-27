@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="Rinjani 100 Marvelous Trail 2027 - Lombok Timur">
+  <defs>
+    <linearGradient id="bgRinjani" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#172333" />
+      <stop offset="55%" stop-color="#15365B" />
+      <stop offset="100%" stop-color="#172333" />
+    </linearGradient>
+    <radialGradient id="glowRinjani" cx="50%" cy="36%" r="58%">
+      <stop offset="0%" stop-color="#E36F45" stop-opacity="0.26" />
+      <stop offset="50%" stop-color="#24364D" stop-opacity="0.22" />
+      <stop offset="100%" stop-color="#172333" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="ruleRinjani" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F3EBDD" stop-opacity="0.15" />
+      <stop offset="50%" stop-color="#E36F45" stop-opacity="1" />
+      <stop offset="100%" stop-color="#F3EBDD" stop-opacity="0.15" />
+    </linearGradient>
+    <pattern id="gridRinjani" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#CBD5E1" stroke-opacity="0.06" stroke-width="1" />
+    </pattern>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bgRinjani)" />
+  <rect width="800" height="450" fill="url(#glowRinjani)" />
+  <rect width="800" height="450" fill="url(#gridRinjani)" />
+
+  <!-- Mountain ridge silhouette -->
+  <path d="M 40 310 L 210 200 L 315 245 L 400 135 L 495 235 L 590 185 L 760 310 Z" fill="#24364D" fill-opacity="0.45" stroke="#E36F45" stroke-opacity="0.28" stroke-width="1.25" />
+  <path d="M 110 310 L 265 225 L 400 165 L 545 245 L 690 310" fill="none" stroke="#F3EBDD" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="4 6" />
+
+  <rect x="20" y="20" width="760" height="410" rx="14" fill="none" stroke="#CBD5E1" stroke-opacity="0.16" stroke-width="1" />
+
+  <g transform="translate(46, 44)">
+    <rect x="0" y="0" width="128" height="28" rx="14" fill="#24364D" stroke="#E36F45" stroke-width="1.25" />
+    <text x="64" y="18" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="800" fill="#F3EBDD" text-anchor="middle" letter-spacing="1.6">SPORTS</text>
+  </g>
+  <g transform="translate(598, 44)">
+    <rect x="0" y="0" width="156" height="28" rx="14" fill="#24364D" stroke="#CBD5E1" stroke-opacity="0.35" stroke-width="1" />
+    <text x="78" y="18" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10.5" font-weight="700" fill="#CBD5E1" text-anchor="middle" letter-spacing="1.2">LOMBOK · 2027</text>
+  </g>
+
+  <g transform="translate(400, 124)">
+    <circle cx="0" cy="0" r="30" fill="#24364D" fill-opacity="0.9" stroke="#E36F45" stroke-width="1.5" />
+    <text x="0" y="7" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="900" fill="#F3EBDD" text-anchor="middle" letter-spacing="1.5">100</text>
+  </g>
+
+  <text x="400" y="206" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="38" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="4">RINJANI 100</text>
+  <text x="400" y="238" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="800" fill="#E36F45" text-anchor="middle" letter-spacing="4.5">MARVELOUS TRAIL 2027</text>
+  <text x="400" y="264" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="12.5" font-weight="700" fill="#F3EBDD" text-anchor="middle" letter-spacing="3">12K · 27K · 36K · 60K · 100K · 162K</text>
+
+  <line x1="180" y1="286" x2="620" y2="286" stroke="url(#ruleRinjani)" stroke-width="1.5" />
+
+  <text x="400" y="318" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">07–09 MEI 2027</text>
+  <text x="400" y="342" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="500" fill="#CBD5E1" text-anchor="middle">Mount Rinjani National Park (TNGR) · Lombok Timur</text>
+
+  <g transform="translate(225, 374)">
+    <rect x="0" y="0" width="350" height="32" rx="8" fill="#24364D" stroke="#CBD5E1" stroke-opacity="0.22" stroke-width="1" />
+    <text x="175" y="20" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#F3EBDD" text-anchor="middle" letter-spacing="1.4">TIKUM.APP · VERIFIED SPORTS EVENT</text>
+  </g>
+</svg>
