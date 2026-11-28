@@ -1,4 +1,15 @@
 module.exports = {
+  "picCoverage": {
+    "heading": "Cakupan PIC Venue: Jabodetabek & Bandung",
+    "regular": "Pendampingan fisik PIC TIKUM di venue (Opsi A) saat ini tersedia secara reguler di Jabodetabek (Jakarta, Bogor, Depok, Tangerang, Bekasi) dan Bandung.",
+    "other": "Untuk kota lain di Indonesia dan Asia Tenggara, konfirmasikan ketersediaan PIC melalui WhatsApp Support resmi sebelum membuat listing atau pesanan, atau pilih Opsi B (Transfer Mandiri oleh Penjual) dengan perlindungan pembayaran yang ditahan oleh platform.",
+    "operation": "TIKUM berhak menyesuaikan permintaan PIC di luar cakupan reguler atau mengalihkannya ke Opsi B jika penempatan PIC belum dikonfirmasi oleh Support.",
+    "baseline": "Cakupan reguler PIC venue: Jabodetabek & Bandung. Kota lain perlu konfirmasi WhatsApp Support terlebih dahulu.",
+    "covered": "✓ Event ini berada dalam cakupan reguler PIC TIKUM (Jabodetabek & Bandung).",
+    "warning": "PIC di venue tidak otomatis tersedia untuk kota ini. Konfirmasikan dengan WhatsApp Support sebelum membuat listing, atau pilih Opsi B.",
+    "switch": "Pilih Opsi B: Transfer Mandiri",
+    "eventNote": "PIC Venue: konfirmasikan ketersediaan melalui WhatsApp Support untuk event di luar Jabodetabek & Bandung."
+  },
   "domain": {
     "payment": "Pembayaran",
     "refund": "Pengembalian Dana",

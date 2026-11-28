@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="/css/header-shared.css">
   <script src="/js/pricing.js"></script>
   <script src="/js/draft-store.js"></script>
+  <link rel="stylesheet" href="/css/pic-coverage.css">
 </head>
 <body>
 
@@ -549,7 +550,7 @@
             <label style="font-size: 13px; font-weight: 700; color: var(--theme-text, #FFFFFF); margin-bottom: 8px; display: block;" data-i18n="create.labelFulfillment">
               Pilihan Penyerahan Tiket (Fulfillment Option) *
             </label>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px;">
               <label id="cardFulfillmentPic" style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; background: var(--theme-input, #172333); border: 1.5px solid var(--palette-terracotta, #E36F45); border-radius: 12px; cursor: pointer;">
                 <input type="radio" name="fulfillmentType" value="TIKUM_VENUE_PIC" checked style="margin-top: 3px; accent-color: var(--palette-terracotta, #E36F45);" onchange="calculateFeePreview(); saveFormDraft();">
                 <div style="flex:1;">
@@ -562,6 +563,7 @@
                   <div style="font-size: 11px; color: var(--theme-muted, #CBD5E1); margin-top: 4px; line-height: 1.45;" data-i18n="create.descFulfillmentPic">
                     Petugas lapangan TIKUM hadir di venue untuk mendampingi serah terima fisik/wristband dan verifikasi gate turnstile (Buyer 9% + Seller 9%, min. Rp35.000, maks. Rp450.000/tiket).
                   </div>
+                  <p style="font-size:12px; margin:8px 0 0; color:#F3EBDD;" data-i18n="picCoverage.baseline">Cakupan reguler PIC venue: Jabodetabek &amp; Bandung. Kota lain perlu konfirmasi WhatsApp Support terlebih dahulu.</p>
                 </div>
               </label>
 
@@ -579,6 +581,16 @@
                   </div>
                 </div>
               </label>
+            </div>
+          </div>
+
+          <div class="pic-coverage" id="listingPicCoverage">
+            <div role="status" aria-atomic="true">
+              <p id="picCoverageRegular" data-i18n="picCoverage.covered" hidden>✓ Event ini berada dalam cakupan reguler PIC TIKUM (Jabodetabek &amp; Bandung).</p>
+              <p id="picCoverageOutside" data-i18n="picCoverage.warning" hidden>PIC di venue tidak otomatis tersedia untuk kota ini. Konfirmasikan dengan WhatsApp Support sebelum membuat listing, atau pilih Opsi B.</p>
+            </div>
+            <div class="pic-coverage__actions" id="picCoverageActions">
+              <button type="button" id="picCoverageSwitch" data-i18n="picCoverage.switch" hidden>Pilih Opsi B: Transfer Mandiri</button>
             </div>
           </div>
 
@@ -752,6 +764,7 @@
               <option value="Medan">Medan</option>
               <option value="Lainnya" data-i18n="create.otherCity">Lainnya</option>
             </select>
+            <p class="pic-coverage" id="customPicCoverage" hidden><span role="status" data-i18n="picCoverage.warning">PIC di venue tidak otomatis tersedia untuk kota ini. Konfirmasikan dengan WhatsApp Support sebelum membuat listing, atau pilih Opsi B.</span> <span id="customPicContact"></span></p>
           </div>
         </div>
 
@@ -836,8 +849,7 @@
               <a href="mailto:support@tikum.app">support@tikum.app</a>
             </div>
             <div class="footer-contact-item">
-              <strong data-i18n="footer.phoneAndWa">WhatsApp:</strong>
-              <a href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer">+62 812-9992-7378</a>
+              <span id="footerPicContact"><a id="picCoverageWhatsApp" href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer">WhatsApp: +62 812-9992-7378</a></span>
             </div>
             <div class="footer-contact-item">
               <span data-i18n="footer.supportHours">Jam Layanan:</span>
@@ -877,6 +889,7 @@
   </div> <!-- /#appShell -->
 
   <script src="/js/i18n.js"></script>
+  <script src="/js/pic-coverage.js"></script>
   <script>
     const _t = (k, f) => (window.TikumI18n ? window.TikumI18n.t(k, f) : f);
     const _fmtIdr = (amt) => (window.TikumI18n && typeof window.TikumI18n.formatCurrency === 'function')
@@ -897,7 +910,7 @@
       select.innerHTML = `<option value="">${_t('create.selectEventOption', '-- Pilih Event Resmi atau Terdaftar --')}</option>` +
         eventsList.map(ev => {
           const isVerified = ev.is_verified ? officialTag : communityTag;
-          return `<option value="${ev.id}">${escapeHtml(ev.name)} (${ev.venue_city}, ${ev.start_date}) [${isVerified}]</option>`;
+          return new Option(`${ev.name} (${ev.venue_city || ev.city || ''}, ${ev.start_date}) [${isVerified}]`, ev.id).outerHTML;
         }).join('');
       if (prevVal) select.value = prevVal;
     }
@@ -936,6 +949,7 @@
       const box = document.getElementById('eventPreviewBox');
       const warning = document.getElementById('prevEventWarning');
       const ev = eventsList.find(e => e.id === select.value);
+      updatePicCoverage();
 
       if (!ev) {
         box.style.display = 'none';
@@ -957,6 +971,26 @@
       box.style.display = 'block';
     }
 
+    function updatePicCoverage() {
+      const event = eventsList.find(e => e.id === document.getElementById('eventSelect').value);
+      const city = String(event?.venue_city || event?.city || '').trim();
+      const matcher = window.TikumPicCoverage?.isRegularCity;
+      if (!matcher) return;
+      const pic = document.querySelector('input[name="fulfillmentType"]:checked')?.value === 'TIKUM_VENUE_PIC';
+      const covered = pic && Boolean(city) && window.TikumPicCoverage.isRegularPicArea(event);
+      const outside = pic && Boolean(city) && !covered;
+      const customOutside = pic && !matcher(document.getElementById('newEvCity').value);
+      document.getElementById('listingPicCoverage').hidden = !covered && !outside;
+      document.getElementById('picCoverageRegular').hidden = !covered;
+      document.getElementById('picCoverageOutside').hidden = !outside;
+      document.getElementById('picCoverageSwitch').hidden = !outside;
+      document.getElementById('customPicCoverage').hidden = !customOutside;
+      const customOpen = document.getElementById('newEventDrawer').style.display !== 'none';
+      const destination = document.getElementById(customOpen && customOutside ? 'customPicContact' : outside ? 'picCoverageActions' : 'footerPicContact');
+      const link = document.getElementById('picCoverageWhatsApp');
+      if (link.parentElement !== destination) destination.prepend(link);
+    }
+
     function toggleNewEventDrawer(forceOpen) {
       const drawer = document.getElementById('newEventDrawer');
       if (forceOpen === true) {
@@ -968,9 +1002,11 @@
           drawer.scrollIntoView({ behavior: 'smooth' });
         }
       }
+      updatePicCoverage();
     }
 
     function calculateFeePreview() {
+      updatePicCoverage();
       const price = parseInt(document.getElementById('sellingPrice')?.value, 10) || 0;
       const faceValue = parseInt(document.getElementById('faceValue')?.value, 10) || 0;
       const qty = Math.max(1, parseInt(document.getElementById('ticketQuantity')?.value || 1, 10) || 1);
@@ -1450,6 +1486,12 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       calculateFeePreview();
+      document.getElementById('newEvCity').addEventListener('change', updatePicCoverage);
+      document.getElementById('picCoverageSwitch').addEventListener('click', () => {
+        const self = document.querySelector('input[name="fulfillmentType"][value="SELLER_MANAGED"]');
+        self.click();
+        self.focus();
+      });
       const form = document.getElementById('listingForm');
       if (form) {
         ['input', 'change'].forEach(evt => {

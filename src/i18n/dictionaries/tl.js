@@ -1,4 +1,15 @@
 module.exports = {
+  "picCoverage": {
+    "heading": "Saklaw ng Venue PIC: Jabodetabek at Bandung",
+    "regular": "Ang personal na tulong ng TIKUM PIC sa venue (Opsyon A) ay kasalukuyang regular na available sa Jabodetabek (Jakarta, Bogor, Depok, Tangerang, Bekasi) at Bandung.",
+    "other": "Para sa ibang lungsod sa Indonesia at Timog-Silangang Asya, kumpirmahin sa opisyal na WhatsApp Support kung may available na PIC bago gumawa ng listing o order, o piliin ang Opsyon B (Direktang Paglipat ng Nagbebenta), na may proteksiyon sa bayad na hawak ng platform.",
+    "operation": "May karapatan ang TIKUM na baguhin ang kahilingan para sa PIC sa labas ng regular na saklaw o ilipat ito sa Opsyon B kung hindi pa nakumpirma ng Support ang pagtatalaga ng PIC.",
+    "baseline": "Regular na saklaw ng Venue PIC: Jabodetabek at Bandung. Para sa ibang lungsod, magpakumpirma muna sa WhatsApp Support.",
+    "covered": "✓ Sakop ang event na ito ng regular na serbisyo ng TIKUM PIC (Jabodetabek at Bandung).",
+    "warning": "Hindi awtomatikong available ang PIC sa venue sa lungsod na ito. Magpakumpirma sa WhatsApp Support bago gumawa ng listing, o piliin ang Opsyon B.",
+    "switch": "Lumipat sa Opsyon B: Direktang Paglipat ng Nagbebenta",
+    "eventNote": "Venue PIC: Magpakumpirma sa WhatsApp Support para sa mga event sa labas ng Jabodetabek at Bandung."
+  },
   "domain": {
     "payment": "Pagbabayad",
     "refund": "Refund",

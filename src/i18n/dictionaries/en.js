@@ -1,4 +1,15 @@
 module.exports = {
+  "picCoverage": {
+    "heading": "Venue PIC coverage: Jabodetabek & Bandung",
+    "regular": "In-person TIKUM Venue PIC assistance (Option A) is currently available as a regular service in Jabodetabek (Jakarta, Bogor, Depok, Tangerang, Bekasi) and Bandung.",
+    "other": "For other cities in Indonesia and Southeast Asia, confirm PIC availability with official WhatsApp Support before creating a listing or order, or choose Option B (Seller-Managed Transfer) with platform-held payment protection.",
+    "operation": "TIKUM reserves the right to adjust an out-of-area PIC request or switch it to Option B if Support has not confirmed on-site staffing.",
+    "baseline": "Regular Venue PIC coverage: Jabodetabek & Bandung. For other cities, confirm with WhatsApp Support first.",
+    "covered": "✓ This event is within regular TIKUM PIC coverage (Jabodetabek & Bandung).",
+    "warning": "On-site PIC assistance is not automatically available in this city. Confirm with WhatsApp Support before creating a listing, or choose Option B.",
+    "switch": "Switch to Option B: Seller-Managed Transfer",
+    "eventNote": "Venue PIC: Confirm availability with WhatsApp Support for events outside Jabodetabek & Bandung."
+  },
   "domain": {
     "payment": "Payment",
     "refund": "Refund",

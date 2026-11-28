@@ -178,7 +178,7 @@ async function httpGet(baseUrl, urlPath, headers = {}) {
       assert.ok(clientI18n.translations[loc].discovery?.emptySportsTitle, `Missing discovery.emptySportsTitle in ${loc}`);
       assert.ok(clientI18n.translations[loc].discovery?.emptyComedyTitle, `Missing discovery.emptyComedyTitle in ${loc}`);
     }
-    assert.strictEqual(idKeys.length, 2236, `Expected exact 2236 i18n keys per locale, got ${idKeys.length}`);
+    assert.strictEqual(idKeys.length, 2245, `Expected exact 2245 i18n keys per locale, got ${idKeys.length}`);
     assert.ok(/[\u0E00-\u0E7F]/.test(clientI18n.translations.th.create.calcFeeLabelV2), 'Thai calcFeeLabelV2 must use genuine Thai script');
     assert.ok(/[\u0E00-\u0E7F]/.test(clientI18n.translations.th.create.errEventAlreadyPassed), 'Thai errEventAlreadyPassed must use genuine Thai script');
     assert.ok(/[\u0E00-\u0E7F]/.test(clientI18n.translations.th.discovery.sportsHeading), 'Thai sportsHeading must use genuine Thai script');

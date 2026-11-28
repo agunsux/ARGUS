@@ -9,6 +9,8 @@
  */
 
 const { renderFooterHtml } = require('../config/businessProfile');
+const { t } = require('../i18n');
+const { isRegularPicArea } = require('../../public/js/pic-coverage');
 const { HEADER_VARIANTS, renderSharedHeadAssets, renderSharedFooterScripts, renderSharedHeader } = require('../ui/sharedHeader');
 const { EventTemporalLifecycleEngine } = require('./EventTemporalLifecycleEngine');
 const { CanonicalFeeEngine } = require('../pricing/CanonicalFeeEngine');
@@ -676,6 +678,9 @@ class EventSEOService {
         <em>${(event.admission_protocol && event.admission_protocol.verification_disclaimer) || (event.metadata && event.metadata.admission_protocol && event.metadata.admission_protocol.verification_disclaimer) || (hasEventPic ? (isEn ? 'Physical gate verification validates ticket authenticity and possession, but does not replace direct promoter cryptographic validation.' : 'Verifikasi fisik gerbang memvalidasi kepemilikan dan integritas tiket, namun tidak menggantikan validasi kriptografis langsung dari promotor penerbit tiket.') : (isEn ? 'Tikum on-site PIC service is not currently scheduled for this event. Transfer and resale terms remain subject to official promoter policies.' : 'Layanan PIC lapangan TIKUM belum dijadwalkan untuk event ini. Ketentuan pemindahtanganan/resale sepenuhnya tunduk pada kebijakan promotor dan penyedia tiket resmi.'))}</em>
       </div>
     </section>
+
+    ${(hasEventPic || activeListings.some(l => String(l.fulfillment_type).toUpperCase() === 'TIKUM_VENUE_PIC')) && !isRegularPicArea(event)
+      ? `<p style="padding:12px; background:#24364D; border-inline-start:3px solid #E36F45;"><a href="/terms#pic-coverage-heading" style="color:#F3EBDD;" data-i18n="picCoverage.eventNote">${t('picCoverage.eventNote', locale).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</a></p>` : ''}
 
     <!-- FAQ Section -->
     <section style="margin-top: 30px;">

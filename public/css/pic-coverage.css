@@ -1,0 +1,21 @@
+.pic-coverage {
+  min-width: 0;
+  margin-block: 1rem;
+  padding: clamp(0.875rem, 3vw, 1.5rem);
+  background: #24364D;
+  border: 1px solid #15365B;
+  border-inline-start: 3px solid #E36F45;
+  border-radius: 0.75rem;
+  color: #CBD5E1;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.pic-coverage h2, .pic-coverage strong { color: #FFFFFF; }
+.pic-coverage h2 { margin: 0 0 0.5rem; font-size: 1.15rem; }
+.pic-coverage p { margin: 0.35rem 0; }
+.pic-coverage [hidden] { display: none !important; }
+.pic-coverage a, .pic-coverage button { color: #F3EBDD; }
+.pic-coverage__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; }
+.pic-coverage__actions a, .pic-coverage__actions button { min-height: 44px; display: inline-flex; align-items: center; }
+.pic-coverage__actions button { background: #172333; border: 1px solid #CBD5E1; border-radius: 0.5rem; padding: 0.4rem 0.75rem; font: inherit; cursor: pointer; }
+.pic-coverage :is(a, button):focus-visible { outline: 2px solid #F3EBDD; outline-offset: 3px; }
