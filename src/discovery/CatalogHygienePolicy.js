@@ -213,6 +213,8 @@ function deduplicateEvents(events) {
   return Array.from(result.values(), entry => entry.event);
 }
 
+const picCoverage = require('../../public/js/pic-coverage');
+
 module.exports = {
   TERMINAL_STATUSES,
   PRESERVED_TERMINAL_REASONS,
@@ -229,5 +231,11 @@ module.exports = {
   normalizeCategory,
   normalizeEventForCatalog,
   isEligibleForActiveResale,
-  deduplicateEvents
+  deduplicateEvents,
+  COUNTRY_LABELS: picCoverage.COUNTRY_LABELS,
+  resolveCountryCode: picCoverage.resolveCountryCode,
+  isRegularCity: picCoverage.isRegularCity,
+  isRegularPicArea: picCoverage.isRegularPicArea,
+  classifyEventCoverage: picCoverage.classifyEventCoverage,
+  matchesRegionFilter: picCoverage.matchesRegionFilter
 };

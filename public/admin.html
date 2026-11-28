@@ -533,6 +533,10 @@
       <button class="nav-item" onclick="switchView('venue-pic', this)">
         <span class="nav-item-left"><i class="fa-solid fa-person-shelter"></i> <span data-i18n="admin.tabVenuePic">Venue / PIC</span></span>
       </button>
+      <button class="nav-item" id="navPicDispatch" onclick="switchView('pic-dispatch', this)">
+        <span class="nav-item-left"><i class="fa-solid fa-clipboard-user" style="color:#E36F45;"></i> <span>PIC Dispatch &amp; Waitlist</span></span>
+        <span id="sidebarWaitlistCount" class="nav-badge" style="display:none; background:#E36F45; color:#fff;">0</span>
+      </button>
       <button class="nav-item" onclick="switchView('event-supply', this)">
         <span class="nav-item-left"><i class="fa-solid fa-satellite-dish"></i> <span data-i18n="admin.tabSupply">Supply &amp; Coverage</span></span>
         <span id="sidebarSupplyAlertCount" class="nav-badge warning" style="display: none;">0</span>
@@ -680,7 +684,10 @@
         <div class="panel">
           <div class="panel-header">
             <div class="panel-title"><i class="fa-solid fa-person-shelter" style="color: #34d399;"></i> Venue &amp; PIC Operational Coverage</div>
-            <span class="tag tag-neutral">Ground Verification Status</span>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="btn btn-primary btn-sm" onclick="switchView('pic-dispatch', document.getElementById('navPicDispatch'))"><i class="fa-solid fa-clipboard-user"></i> Open PIC Dispatch &amp; Waitlist Board</button>
+              <span class="tag tag-neutral">Ground Verification Status</span>
+            </div>
           </div>
           <div style="overflow-x: auto;">
             <table class="ops-table">
@@ -841,6 +848,145 @@
           </div>
         </div>
         <div id="eventDetailPanel" style="display: none;"></div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- VIEW: PIC VENUE DISPATCH, ANTI-DUPLICATE HASH & WAITLIST DEMAND -->
+      <!-- ============================================================ -->
+      <div id="viewPicDispatch" style="display: none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+          <div>
+            <h2 style="margin:0; font-size:16px; font-weight:700; color:#FFFFFF;">
+              <i class="fa-solid fa-clipboard-user" style="color:#E36F45;"></i> PIC Venue Dispatch &amp; Waitlist Demand
+            </h2>
+            <div style="font-size:11.5px; color:#CBD5E1; margin-top:4px;">
+              Jabodetabek &amp; Bandung Regular PIC Roster, ASEAN/Out-of-Area Transfer Mandiri Monitor, Anti-Duplicate Booking Hash Checker, and Pre-Launch Waitlist Demand
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary btn-sm" onclick="loadPicDispatchView()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+            <button class="btn btn-secondary btn-sm" onclick="switchView('overview')"><i class="fa-solid fa-arrow-left"></i> Overview</button>
+          </div>
+        </div>
+
+        <div class="metrics-grid" style="margin-bottom:16px;">
+          <div class="metric-card">
+            <div class="metric-label"><i class="fa-solid fa-user-shield"></i> Regular PIC Events</div>
+            <div class="metric-value" id="picKpiRegularCount">-</div>
+            <div class="metric-footer">Jabodetabek &amp; Bandung Active</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label"><i class="fa-solid fa-circle-check"></i> Assigned / On-Site Ready</div>
+            <div class="metric-value" id="picKpiAssignedCount" style="color:#34d399;">-</div>
+            <div class="metric-footer" id="picKpiReadyBreakdown">On-Site Ready: -</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label"><i class="fa-solid fa-globe"></i> Out-of-Area / ASEAN</div>
+            <div class="metric-value" id="picKpiOutAreaCount" style="color:#F3EBDD;">-</div>
+            <div class="metric-footer">Transfer Mandiri (WA Confirm Required)</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label"><i class="fa-solid fa-bell"></i> Pre-Launch Waitlist</div>
+            <div class="metric-value" id="picKpiWaitlistCount" style="color:#E36F45;">-</div>
+            <div class="metric-footer" id="picKpiWaitlistEvents">0 Active Events Requested</div>
+          </div>
+        </div>
+
+        <!-- Anti-Duplicate Booking Code Hash Quick-Checker Widget -->
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-fingerprint" style="color:#E36F45;"></i> Anti-Duplicate Booking Code Hash Checker (SHA-256)</div>
+            <span class="tag tag-neutral">Zero Raw Code Stored</span>
+          </div>
+          <div class="panel-body">
+            <form id="dupHashCheckerForm" onsubmit="runDuplicateHashCheck(event)" style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;">
+              <div style="flex:1; min-width:200px;">
+                <label for="dupCheckEventId" style="display:block; font-size:11.5px; color:#CBD5E1; margin-bottom:4px;">Event ID</label>
+                <input id="dupCheckEventId" type="text" required placeholder="e.g. ev-can-bts-arirang-2026" style="width:100%; box-sizing:border-box; background:#172333; color:#FFFFFF; border:1px solid rgba(203,213,225,0.25); border-radius:6px; padding:8px 10px; font-size:12.5px;" />
+              </div>
+              <div style="flex:1; min-width:200px;">
+                <label for="dupCheckBookingCode" style="display:block; font-size:11.5px; color:#CBD5E1; margin-bottom:4px;">Booking Reference / Order Code</label>
+                <input id="dupCheckBookingCode" type="text" required placeholder="e.g. TKM-2026-AB12" autocomplete="off" style="width:100%; box-sizing:border-box; background:#172333; color:#FFFFFF; border:1px solid rgba(203,213,225,0.25); border-radius:6px; padding:8px 10px; font-size:12.5px;" />
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm" style="height:35px;"><i class="fa-solid fa-magnifying-glass"></i> Check SHA-256 Hash</button>
+            </form>
+            <div id="dupHashCheckResult" style="margin-top:10px; font-size:12.5px; color:#CBD5E1;"></div>
+          </div>
+        </div>
+
+        <!-- Regular PIC Events Dispatch Roster Table -->
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="panel-header">
+            <div class="panel-title"><i class="fa-solid fa-user-shield" style="color:#34d399;"></i> Jabodetabek &amp; Bandung — Regular PIC Dispatch Roster</div>
+            <span class="tag tag-success">PIC Venue Ready</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="ops-table">
+              <thead>
+                <tr>
+                  <th>Event</th>
+                  <th>Date &amp; Venue</th>
+                  <th>Listings / Orders / Waitlist</th>
+                  <th>PIC Officer &amp; WhatsApp</th>
+                  <th>Gate Meeting Point &amp; Standby WIB</th>
+                  <th>Status</th>
+                  <th>Save</th>
+                </tr>
+              </thead>
+              <tbody id="picRegularTableBody">
+                <tr><td colspan="7" style="text-align:center; padding:20px; color:#64748b;">Memuat roster PIC...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Split Grid: Waitlist Demand Leaderboard & Out-of-Area ASEAN Events -->
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title"><i class="fa-solid fa-fire" style="color:#E36F45;"></i> Pre-Launch Waitlist Demand Leaderboard</div>
+              <span class="tag tag-neutral">Masked PII</span>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="ops-table">
+                <thead>
+                  <tr>
+                    <th>Event</th>
+                    <th>Waitlist</th>
+                    <th>Tickets</th>
+                    <th>Latest Masked Requests</th>
+                  </tr>
+                </thead>
+                <tbody id="waitlistDemandTableBody">
+                  <tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">Memuat data waitlist...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title"><i class="fa-solid fa-earth-asia" style="color:#F3EBDD;"></i> Out-of-Area ID &amp; ASEAN Events</div>
+              <span class="tag tag-medium">Transfer Mandiri (WA Confirm Required)</span>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="ops-table">
+                <thead>
+                  <tr>
+                    <th>Event</th>
+                    <th>Country / City</th>
+                    <th>Date</th>
+                    <th>Fulfillment Policy</th>
+                    <th>Waitlist</th>
+                  </tr>
+                </thead>
+                <tbody id="picOutOfAreaTableBody">
+                  <tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">Memuat event luar area...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ============================================================ -->
@@ -2728,7 +2874,7 @@
     }
 
     // View Switching
-    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust', 'payments', 'editorial', 'inbox', 'partners', 'control-center', 'automation', 'settings'];
+    const DEDICATED_VIEWS = ['overview', 'search', 'event-supply', 'sources', 'trust', 'payments', 'editorial', 'inbox', 'partners', 'control-center', 'automation', 'settings', 'pic-dispatch'];
 
     function switchView(viewName, btn = null) {
       currentView = viewName;
@@ -2743,6 +2889,9 @@
       document.getElementById('viewPayments').style.display = viewName === 'payments' ? 'block' : 'none';
       document.getElementById('viewEditorial').style.display = viewName === 'editorial' ? 'block' : 'none';
       document.getElementById('viewInbox').style.display = viewName === 'inbox' ? 'block' : 'none';
+      const viewPicDispatchEl = document.getElementById('viewPicDispatch');
+      if (viewPicDispatchEl) viewPicDispatchEl.style.display = viewName === 'pic-dispatch' ? 'block' : 'none';
+      if (viewName === 'pic-dispatch') { loadPicDispatchView(); }
       const viewControlCenterEl = document.getElementById('viewControlCenter');
       if (viewControlCenterEl) viewControlCenterEl.style.display = viewName === 'control-center' ? 'block' : 'none';
       if (viewName === 'control-center') { loadControlCenterView(); }
@@ -2880,11 +3029,17 @@
           `).join('');
         }
       } else if (name === 'listings') {
-        th.innerHTML = `<tr><th>Listing ID</th><th>Event</th><th>Penjual</th><th>Seat / Tipe</th><th>Jumlah Tiket</th><th>Fulfillment</th><th>Harga</th><th>Status</th><th>Aksi Moderasi</th></tr>`;
+        th.innerHTML = `<tr><th>Listing ID</th><th>Event</th><th>Penjual</th><th>Seat / Tipe</th><th>Jumlah Tiket</th><th>Fulfillment</th><th>Booking Hash</th><th>Harga</th><th>Status</th><th>Aksi Moderasi</th></tr>`;
         if ((data.listings || []).length === 0) {
-          tb.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px; color: #64748b;">Belum ada listing pada filter ini.</td></tr>`;
+          tb.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 20px; color: #64748b;">Belum ada listing pada filter ini.</td></tr>`;
         } else {
-          tb.innerHTML = (data.listings || []).map(l => `
+          tb.innerHTML = (data.listings || []).map(l => {
+            const hashBadge = l.booking_hash_status === 'UNIQUE_VERIFIED'
+              ? `<span class="tag tag-success" title="SHA-256 Unique Reference"><i class="fa-solid fa-fingerprint"></i> ${l.booking_hash_short || 'VERIFIED'}</span>`
+              : (l.booking_hash_status === 'RELEASED'
+                ? `<span class="tag tag-neutral">RELEASED</span>`
+                : `<span class="tag tag-neutral" style="opacity:0.75;">NO REF</span>`);
+            return `
             <tr>
               <td class="mono" style="font-size: 11px;">${l.listing_id}</td>
               <td>${l.event_name}</td>
@@ -2892,6 +3047,7 @@
               <td class="mono" style="font-size: 11px;">${l.seat_info} (${l.seat_type || 'GA'})</td>
               <td><span class="tag tag-neutral">${l.available_quantity !== undefined ? l.available_quantity : (l.quantity || 1)} / ${l.total_quantity || l.quantity || 1}</span></td>
               <td><span class="tag ${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? 'tag-success' : 'tag-neutral'}">${l.fulfillment_type === 'TIKUM_VENUE_PIC' ? (window.TikumI18n ? window.TikumI18n.t('admin.tierPicShort', 'PIC Venue') : 'PIC Venue') : (window.TikumI18n ? window.TikumI18n.t('admin.tierSelfShort', 'Transfer Mandiri') : 'Mandiri')}</span></td>
+              <td>${hashBadge}</td>
               <td class="mono">${formatRupiah(l.price)}</td>
               <td>${renderTag(l.status)}</td>
               <td>
@@ -2906,8 +3062,8 @@
                   ` : ''}
                 </div>
               </td>
-            </tr>
-          `).join('');
+            </tr>`;
+          }).join('');
         }
       } else if (name === 'tickets') {
         th.innerHTML = `<tr><th>Listing ID</th><th>Ticket ID</th><th>Event</th><th>Penjual</th><th>Seat</th><th>Harga</th><th>Status</th></tr>`;
@@ -5548,6 +5704,177 @@
         }
       } catch (err) {
         showToast('Gagal memuat pengaturan: ' + err.message, 'danger');
+      }
+    }
+
+    // ============================================================
+    // PIC VENUE DISPATCH ROSTER, DUPLICATE HASH CHECKER & WAITLIST
+    // ============================================================
+    function escAdminHtml(str) {
+      return String(str === null || str === undefined ? '' : str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    async function loadPicDispatchView() {
+      const regBody = document.getElementById('picRegularTableBody');
+      const outBody = document.getElementById('picOutOfAreaTableBody');
+      const wlBody = document.getElementById('waitlistDemandTableBody');
+      if (regBody) regBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat roster PIC...</td></tr>';
+
+      try {
+        const res = await adminFetch('/api/admin/operations/pic-dispatch');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const totals = data.totals || {};
+
+        const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        setEl('picKpiRegularCount', String(totals.regular_pic_count || 0));
+        setEl('picKpiAssignedCount', String((totals.assigned_pic_count || 0) + (totals.on_site_ready_count || 0)));
+        setEl('picKpiReadyBreakdown', `Assigned: ${totals.assigned_pic_count || 0} | On-Site Ready: ${totals.on_site_ready_count || 0}`);
+        setEl('picKpiOutAreaCount', String(totals.out_of_area_count || 0));
+        setEl('picKpiWaitlistCount', String(totals.total_waitlist_requests || 0));
+        setEl('picKpiWaitlistEvents', `${totals.total_waitlist_events || 0} Active Events Requested`);
+
+        const badge = document.getElementById('sidebarWaitlistCount');
+        if (badge) {
+          const wlTotal = totals.total_waitlist_requests || 0;
+          badge.textContent = String(wlTotal);
+          badge.style.display = wlTotal > 0 ? 'inline-block' : 'none';
+        }
+
+        const regular = data.regular_pic_events || [];
+        if (regBody) {
+          if (!regular.length) {
+            regBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#64748b;">Tidak ada event Jabodetabek/Bandung aktif.</td></tr>';
+          } else {
+            regBody.innerHTML = regular.map((ev, idx) => {
+              const safeId = escAdminHtml(ev.event_id);
+              return `
+              <tr data-pic-event-row="${safeId}">
+                <td>
+                  <div style="font-weight:700; color:#FFFFFF;">${escAdminHtml(ev.title)}</div>
+                  <div class="mono" style="font-size:10.5px; color:#94a3b8;">${safeId}</div>
+                </td>
+                <td>
+                  <div class="mono" style="font-size:11.5px; color:#F3EBDD;">${escAdminHtml(ev.date || '-')}</div>
+                  <div style="font-size:11.5px; color:#CBD5E1;">${escAdminHtml(ev.venue)} (${escAdminHtml(ev.city)})</div>
+                </td>
+                <td class="mono" style="font-size:11.5px;">
+                  L:${ev.active_listings_count || 0} / O:${ev.confirmed_orders_count || 0} / W:${ev.waitlist_count || 0}
+                </td>
+                <td>
+                  <input id="picName_${idx}" type="text" value="${escAdminHtml(ev.pic_officer_name)}" placeholder="Nama PIC" style="width:130px; background:#172333; color:#fff; border:1px solid rgba(203,213,225,0.25); border-radius:4px; padding:4px 6px; font-size:11.5px; margin-bottom:4px; display:block;" />
+                  <input id="picWa_${idx}" type="text" value="${escAdminHtml(ev.pic_officer_whatsapp)}" placeholder="62812..." style="width:130px; background:#172333; color:#fff; border:1px solid rgba(203,213,225,0.25); border-radius:4px; padding:4px 6px; font-size:11.5px; display:block;" />
+                </td>
+                <td>
+                  <input id="picGate_${idx}" type="text" value="${escAdminHtml(ev.gate_meeting_point)}" placeholder="Gate / Pintu" style="width:140px; background:#172333; color:#fff; border:1px solid rgba(203,213,225,0.25); border-radius:4px; padding:4px 6px; font-size:11.5px; margin-bottom:4px; display:block;" />
+                  <input id="picStandby_${idx}" type="text" value="${escAdminHtml(ev.standby_time_wib)}" placeholder="15:00 WIB" style="width:140px; background:#172333; color:#fff; border:1px solid rgba(203,213,225,0.25); border-radius:4px; padding:4px 6px; font-size:11.5px; display:block;" />
+                </td>
+                <td>
+                  <select id="picStatus_${idx}" style="background:#172333; color:#fff; border:1px solid rgba(203,213,225,0.25); border-radius:4px; padding:5px 6px; font-size:11.5px;">
+                    <option value="UNASSIGNED" ${ev.dispatch_status === 'UNASSIGNED' ? 'selected' : ''}>UNASSIGNED</option>
+                    <option value="ASSIGNED" ${ev.dispatch_status === 'ASSIGNED' ? 'selected' : ''}>ASSIGNED</option>
+                    <option value="ON_SITE_READY" ${ev.dispatch_status === 'ON_SITE_READY' ? 'selected' : ''}>ON_SITE_READY</option>
+                  </select>
+                </td>
+                <td>
+                  <button type="button" class="btn btn-primary btn-sm" onclick="savePicDispatchRow('${safeId}', ${idx})"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+                </td>
+              </tr>`;
+            }).join('');
+          }
+        }
+
+        const outArea = data.out_of_area_events || [];
+        if (outBody) {
+          if (!outArea.length) {
+            outBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">Tidak ada event luar area saat ini.</td></tr>';
+          } else {
+            outBody.innerHTML = outArea.map(ev => `
+              <tr>
+                <td style="font-weight:600; color:#FFFFFF;">${escAdminHtml(ev.title)}</td>
+                <td>${escAdminHtml(ev.city)} <span class="tag tag-neutral">${escAdminHtml(ev.country_code)}</span></td>
+                <td class="mono" style="font-size:11.5px;">${escAdminHtml(ev.date || '-')}</td>
+                <td><span class="tag tag-medium">Transfer Mandiri (WA Confirm Required)</span></td>
+                <td class="mono">${ev.waitlist_count || 0}</td>
+              </tr>
+            `).join('');
+          }
+        }
+
+        const waitlist = data.waitlist_demand || [];
+        if (wlBody) {
+          if (!waitlist.length) {
+            wlBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">Belum ada permintaan waitlist aktif.</td></tr>';
+          } else {
+            wlBody.innerHTML = waitlist.map(w => {
+              const reqChips = (w.latest_requests || []).slice(0, 3).map(r =>
+                `<div class="mono" style="font-size:11px; color:#CBD5E1;">${escAdminHtml(r.contact_whatsapp_masked)} &middot; ${r.quantity}x${r.seat_preference ? ' (' + escAdminHtml(r.seat_preference) + ')' : ''}</div>`
+              ).join('');
+              return `
+              <tr>
+                <td>
+                  <div style="font-weight:700; color:#FFFFFF;">${escAdminHtml(w.event_title)}</div>
+                  <div class="mono" style="font-size:10px; color:#94a3b8;">${escAdminHtml(w.event_id)}</div>
+                </td>
+                <td class="mono" style="font-weight:700; color:#E36F45;">${w.waitlist_count}</td>
+                <td class="mono">${w.total_tickets_requested}</td>
+                <td>${reqChips || '-'}</td>
+              </tr>`;
+            }).join('');
+          }
+        }
+      } catch (err) {
+        if (regBody) regBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#f87171;">Gagal memuat PIC dispatch: ${escAdminHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    async function savePicDispatchRow(eventId, idx) {
+      try {
+        const payload = {
+          pic_officer_name: (document.getElementById(`picName_${idx}`)?.value || '').trim(),
+          pic_officer_whatsapp: (document.getElementById(`picWa_${idx}`)?.value || '').trim(),
+          gate_meeting_point: (document.getElementById(`picGate_${idx}`)?.value || '').trim(),
+          standby_time_wib: (document.getElementById(`picStandby_${idx}`)?.value || '').trim(),
+          dispatch_status: document.getElementById(`picStatus_${idx}`)?.value || 'UNASSIGNED'
+        };
+        const res = await adminFetch(`/api/admin/operations/pic-dispatch/${encodeURIComponent(eventId)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        showToast(`PIC dispatch disimpan untuk ${eventId} (${data.dispatch.dispatch_status})`, 'success');
+        loadPicDispatchView();
+      } catch (err) {
+        showToast('Gagal menyimpan PIC dispatch: ' + err.message, 'danger');
+      }
+    }
+
+    async function runDuplicateHashCheck(evt) {
+      evt.preventDefault();
+      const out = document.getElementById('dupHashCheckResult');
+      const eventId = (document.getElementById('dupCheckEventId')?.value || '').trim();
+      const bookingCode = (document.getElementById('dupCheckBookingCode')?.value || '').trim();
+      if (!out) return;
+      out.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghitung SHA-256 hash...';
+      try {
+        const res = await adminFetch('/api/admin/tickets/check-duplicate-hash', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event_id: eventId, booking_code: bookingCode })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        const shortHash = (data.hash_sha256 || '').slice(0, 16);
+        if (data.duplicate) {
+          out.innerHTML = `<span class="tag tag-critical"><i class="fa-solid fa-triangle-exclamation"></i> DUPLICATE DETECTED</span> <span class="mono" style="margin-left:8px;">SHA-256: ${escAdminHtml(shortHash)}...</span> &middot; Existing Listing: <strong class="mono">${escAdminHtml(data.existing?.listing_id || '-')}</strong>`;
+        } else {
+          out.innerHTML = `<span class="tag tag-success"><i class="fa-solid fa-circle-check"></i> UNIQUE / CLEAR</span> <span class="mono" style="margin-left:8px;">SHA-256: ${escAdminHtml(shortHash)}...</span> — Belum terdaftar untuk event ini.`;
+        }
+      } catch (err) {
+        out.innerHTML = `<span class="tag tag-critical">ERROR</span> ${escAdminHtml(err.message)}`;
       }
     }
 

@@ -2414,6 +2414,33 @@
       "counterOfferBtn": "Counter",
       "rejectOfferBtn": "Tolak",
       "settlementHeadingPrefix": "Settlement"
+    },
+    "regionFilter": {
+      "all": "Semua",
+      "picReady": "Jabodetabek & Bandung (PIC Ready)",
+      "id": "Indonesia",
+      "sg": "Singapore",
+      "my": "Malaysia",
+      "th": "Thailand",
+      "phVn": "Philippines & Vietnam"
+    },
+    "coverage": {
+      "picVenueReady": "PIC Venue Ready",
+      "transferMandiriBadge": "Transfer Mandiri",
+      "crossBorderTitle": "Pembayaran Lintas Negara & Settlement:",
+      "crossBorderDesc": "Pembeli internasional dapat membayar menggunakan kartu internasional atau metode lintas negara saat checkout dibuka; pencairan dana penjual memerlukan rekening bank domestik Indonesia (IDR)."
+    },
+    "waitlist": {
+      "cardCta": "Kabari Saat Tiket Tersedia",
+      "modalTitle": "Kabari Saat Tiket Tersedia",
+      "waLabel": "Nomor WhatsApp Aktif",
+      "qtyLabel": "Jumlah Tiket",
+      "budgetLabel": "Budget Maks (IDR, opsional)",
+      "seatLabel": "Preferensi Kursi / Kategori (opsional)",
+      "submitBtn": "Daftar Notifikasi Tiket",
+      "successTitle": "Permintaan Waitlist Tercatat",
+      "successDesc": "Kami akan menghubungi nomor WhatsApp Anda segera setelah tiket resale terverifikasi tersedia.",
+      "whatsappFollowup": "Chat Support WhatsApp"
     }
   },
     "en": {
@@ -4789,6 +4816,33 @@
       "counterOfferBtn": "Counter",
       "rejectOfferBtn": "Decline",
       "settlementHeadingPrefix": "Settlement"
+    },
+    "regionFilter": {
+      "all": "All",
+      "picReady": "Jabodetabek & Bandung (PIC Ready)",
+      "id": "Indonesia",
+      "sg": "Singapore",
+      "my": "Malaysia",
+      "th": "Thailand",
+      "phVn": "Philippines & Vietnam"
+    },
+    "coverage": {
+      "picVenueReady": "PIC Venue Ready",
+      "transferMandiriBadge": "Self-Transfer",
+      "crossBorderTitle": "Cross-Border Payments & Seller Payouts:",
+      "crossBorderDesc": "International buyers can pay using international cards and cross-border payment methods once live checkout opens; seller payouts require an Indonesian domestic bank account in IDR."
+    },
+    "waitlist": {
+      "cardCta": "Notify Me When Tickets Drop",
+      "modalTitle": "Notify Me When Tickets Are Available",
+      "waLabel": "Active WhatsApp Number",
+      "qtyLabel": "Ticket Quantity",
+      "budgetLabel": "Max Budget (IDR, optional)",
+      "seatLabel": "Seat / Section Preference (optional)",
+      "submitBtn": "Join Ticket Waitlist",
+      "successTitle": "Waitlist Request Saved",
+      "successDesc": "We will notify your WhatsApp number as soon as verified resale tickets become available.",
+      "whatsappFollowup": "Chat WhatsApp Support"
     }
   },
     "ms": {
@@ -7164,6 +7218,33 @@
       "counterOfferBtn": "Balas",
       "rejectOfferBtn": "Tolak",
       "settlementHeadingPrefix": "Penyelesaian"
+    },
+    "regionFilter": {
+      "all": "Semua",
+      "picReady": "Jabodetabek & Bandung (PIC Sedia)",
+      "id": "Indonesia",
+      "sg": "Singapura",
+      "my": "Malaysia",
+      "th": "Thailand",
+      "phVn": "Filipina & Vietnam"
+    },
+    "coverage": {
+      "picVenueReady": "PIC Venue Sedia",
+      "transferMandiriBadge": "Pindahan Kendiri",
+      "crossBorderTitle": "Pembayaran Rentas Sempadan & Penyelesaian:",
+      "crossBorderDesc": "Pembeli antarabangsa boleh membayar menggunakan kad antarabangsa atau kaedah rentas sempadan apabila pembayaran dibuka; penyelesaian penjual memerlukan akaun bank domestik Indonesia (IDR)."
+    },
+    "waitlist": {
+      "cardCta": "Maklumkan Bila Tiket Tersedia",
+      "modalTitle": "Maklumkan Bila Tiket Tersedia",
+      "waLabel": "Nombor WhatsApp Aktif",
+      "qtyLabel": "Bilangan Tiket",
+      "budgetLabel": "Bajet Maksimum (IDR, pilihan)",
+      "seatLabel": "Pilihan Tempat Duduk / Kategori (pilihan)",
+      "submitBtn": "Sertai Senarai Menunggu",
+      "successTitle": "Permintaan Senarai Menunggu Direkod",
+      "successDesc": "Kami akan menghubungi nombor WhatsApp anda sebaik sahaja tiket jualan semula yang disahkan tersedia.",
+      "whatsappFollowup": "Sembang Sokongan WhatsApp"
     }
   },
     "tl": {
@@ -9539,6 +9620,33 @@
       "counterOfferBtn": "Counter",
       "rejectOfferBtn": "Tanggihan",
       "settlementHeadingPrefix": "Settlement"
+    },
+    "regionFilter": {
+      "all": "Lahat",
+      "picReady": "Jabodetabek & Bandung (May PIC)",
+      "id": "Indonesia",
+      "sg": "Singapore",
+      "my": "Malaysia",
+      "th": "Thailand",
+      "phVn": "Pilipinas & Vietnam"
+    },
+    "coverage": {
+      "picVenueReady": "Handa ang PIC sa Venue",
+      "transferMandiriBadge": "Sariling Lipat",
+      "crossBorderTitle": "Cross-Border na Bayad at Payout ng Nagbebenta:",
+      "crossBorderDesc": "Maaaring magbayad ang mga international buyer gamit ang international card o cross-border payment kapag bukas na ang live checkout; ang payout ng nagbebenta ay nangangailangan ng domestic bank account sa Indonesia (IDR)."
+    },
+    "waitlist": {
+      "cardCta": "Ipaalam Kapag May Tiket Na",
+      "modalTitle": "Ipaalam Kapag May Available na Tiket",
+      "waLabel": "Aktibong Numero ng WhatsApp",
+      "qtyLabel": "Bilang ng Tiket",
+      "budgetLabel": "Max Budget (IDR, opsyonal)",
+      "seatLabel": "Nais na Upuan / Kategorya (opsiyonal)",
+      "submitBtn": "Sumali sa Ticket Waitlist",
+      "successTitle": "Naitala ang Waitlist Request",
+      "successDesc": "Kokontakin namin ang iyong WhatsApp sa sandaling magkaroon ng beripikadong resale na tiket.",
+      "whatsappFollowup": "Makipag-chat sa WhatsApp Support"
     }
   },
     "th": {
@@ -11914,6 +12022,33 @@
       "counterOfferBtn": "โต้กลับ",
       "rejectOfferBtn": "ปฏิเสธ",
       "settlementHeadingPrefix": "Settlement"
+    },
+    "regionFilter": {
+      "all": "ทั้งหมด",
+      "picReady": "จาการ์ตาและบันดุง (มีทีม PIC)",
+      "id": "อินโดนีเซีย",
+      "sg": "สิงคโปร์",
+      "my": "มาเลเซีย",
+      "th": "ไทย",
+      "phVn": "ฟิลิปปินส์ & เวียดนาม"
+    },
+    "coverage": {
+      "picVenueReady": "พร้อมทีม PIC หน้างาน",
+      "transferMandiriBadge": "โอนบัตรโดยตรง",
+      "crossBorderTitle": "การชำระเงินข้ามพรมแดนและการโอนเงินให้ผู้ขาย:",
+      "crossBorderDesc": "ผู้ซื้อจากต่างประเทศสามารถชำระเงินด้วยบัตรระหว่างประเทศหรือช่องทางข้ามพรมแดนเมื่อเปิดระบบชำระเงินจริง ส่วนการโอนเงินให้ผู้ขายต้องใช้บัญชีธนาคารในประเทศอินโดนีเซีย (IDR)"
+    },
+    "waitlist": {
+      "cardCta": "แจ้งเตือนเมื่อมีบัตรจำหน่าย",
+      "modalTitle": "รับการแจ้งเตือนเมื่อมีบัตรจำหน่าย",
+      "waLabel": "หมายเลข WhatsApp ที่ใช้งานได้",
+      "qtyLabel": "จำนวนบัตร",
+      "budgetLabel": "งบประมาณสูงสุด (IDR, ไม่บังคับ)",
+      "seatLabel": "โซนที่นั่ง / ประเภทบัตรที่ต้องการ (ไม่บังคับ)",
+      "submitBtn": "ลงทะเบียนรับแจ้งเตือนบัตร",
+      "successTitle": "บันทึกคำขอแจ้งเตือนเรียบร้อย",
+      "successDesc": "เราจะติดต่อทาง WhatsApp ทันทีที่มีบัตรรีเซลที่ผ่านการตรวจสอบเปิดขาย",
+      "whatsappFollowup": "แชทกับฝ่ายสนับสนุน WhatsApp"
     }
   }
   };

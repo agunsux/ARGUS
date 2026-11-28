@@ -2371,5 +2371,32 @@ module.exports = {
     "counterOfferBtn": "Balas",
     "rejectOfferBtn": "Tolak",
     "settlementHeadingPrefix": "Penyelesaian"
+  },
+  "regionFilter": {
+    "all": "Semua",
+    "picReady": "Jabodetabek & Bandung (PIC Sedia)",
+    "id": "Indonesia",
+    "sg": "Singapura",
+    "my": "Malaysia",
+    "th": "Thailand",
+    "phVn": "Filipina & Vietnam"
+  },
+  "coverage": {
+    "picVenueReady": "PIC Venue Sedia",
+    "transferMandiriBadge": "Pindahan Kendiri",
+    "crossBorderTitle": "Pembayaran Rentas Sempadan & Penyelesaian:",
+    "crossBorderDesc": "Pembeli antarabangsa boleh membayar menggunakan kad antarabangsa atau kaedah rentas sempadan apabila pembayaran dibuka; penyelesaian penjual memerlukan akaun bank domestik Indonesia (IDR)."
+  },
+  "waitlist": {
+    "cardCta": "Maklumkan Bila Tiket Tersedia",
+    "modalTitle": "Maklumkan Bila Tiket Tersedia",
+    "waLabel": "Nombor WhatsApp Aktif",
+    "qtyLabel": "Bilangan Tiket",
+    "budgetLabel": "Bajet Maksimum (IDR, pilihan)",
+    "seatLabel": "Pilihan Tempat Duduk / Kategori (pilihan)",
+    "submitBtn": "Sertai Senarai Menunggu",
+    "successTitle": "Permintaan Senarai Menunggu Direkod",
+    "successDesc": "Kami akan menghubungi nombor WhatsApp anda sebaik sahaja tiket jualan semula yang disahkan tersedia.",
+    "whatsappFollowup": "Sembang Sokongan WhatsApp"
   }
 };

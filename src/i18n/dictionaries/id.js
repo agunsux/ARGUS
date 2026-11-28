@@ -2371,5 +2371,32 @@ module.exports = {
     "counterOfferBtn": "Counter",
     "rejectOfferBtn": "Tolak",
     "settlementHeadingPrefix": "Settlement"
+  },
+  "regionFilter": {
+    "all": "Semua",
+    "picReady": "Jabodetabek & Bandung (PIC Ready)",
+    "id": "Indonesia",
+    "sg": "Singapore",
+    "my": "Malaysia",
+    "th": "Thailand",
+    "phVn": "Philippines & Vietnam"
+  },
+  "coverage": {
+    "picVenueReady": "PIC Venue Ready",
+    "transferMandiriBadge": "Transfer Mandiri",
+    "crossBorderTitle": "Pembayaran Lintas Negara & Settlement:",
+    "crossBorderDesc": "Pembeli internasional dapat membayar menggunakan kartu internasional atau metode lintas negara saat checkout dibuka; pencairan dana penjual memerlukan rekening bank domestik Indonesia (IDR)."
+  },
+  "waitlist": {
+    "cardCta": "Kabari Saat Tiket Tersedia",
+    "modalTitle": "Kabari Saat Tiket Tersedia",
+    "waLabel": "Nomor WhatsApp Aktif",
+    "qtyLabel": "Jumlah Tiket",
+    "budgetLabel": "Budget Maks (IDR, opsional)",
+    "seatLabel": "Preferensi Kursi / Kategori (opsional)",
+    "submitBtn": "Daftar Notifikasi Tiket",
+    "successTitle": "Permintaan Waitlist Tercatat",
+    "successDesc": "Kami akan menghubungi nomor WhatsApp Anda segera setelah tiket resale terverifikasi tersedia.",
+    "whatsappFollowup": "Chat Support WhatsApp"
   }
 };
