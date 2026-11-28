@@ -96,7 +96,7 @@ function escFooter(str) {
     .replace(/"/g, '&quot;');
 }
 
-function renderFooterHtml(lang = 'id') {
+function renderFooterHtml(lang = 'id', { whatsappSectionId } = {}) {
   const { t, normalizeLocale } = require('../i18n');
   const loc = normalizeLocale(lang);
   const f = (key, idText, enText) => {
@@ -137,10 +137,10 @@ function renderFooterHtml(lang = 'id') {
             <span style="color: var(--palette-secondary-text, #CBD5E1);" data-i18n="footer.legalCorrespondence">${f('footer.legalCorrespondence', 'Korespondensi Legal:', 'Legal Correspondence:')}</span>
             <a href="${businessProfile.emailUrl}" style="color: var(--palette-warm-sand, #F3EBDD); text-decoration: none; margin-left: 6px;">${businessProfile.email}</a>
           </div>
-          <div>
+          ${whatsappSectionId ? `<div><a href="#${escFooter(whatsappSectionId)}">WhatsApp Support</a></div>` : `<div>
             <span style="color: var(--palette-secondary-text, #CBD5E1);">WhatsApp:</span>
             <a href="${businessProfile.whatsappUrl}" target="_blank" rel="noopener noreferrer" style="color: #34d399; text-decoration: none; margin-left: 6px;"><i class="fa-brands fa-whatsapp"></i> ${businessProfile.whatsappDisplayNumber}</a>
-          </div>
+          </div>`}
           <div style="color: var(--palette-secondary-text, #CBD5E1); font-size: 12px; margin-top: 4px;" data-i18n="footer.supportHoursValue">
             ${f('footer.supportHoursValue', 'Jam Operasional: Senin – Minggu: 09:00 – 21:00 WIB', 'Operating Hours: Monday – Sunday: 09:00 – 21:00 WIB')}
           </div>

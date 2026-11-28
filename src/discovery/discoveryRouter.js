@@ -743,6 +743,7 @@ router.get('/events', (req, res) => {
               ${activeListings.length > 0 ?
           `<div><span style="color:#34d399; font-weight:700; font-size:12px;"><i class="fa-solid fa-ticket"></i> ${esc(t('discovery.allInPrefix', locale))} ${formatCurrency(minAllInPrice || minPrice, locale)}</span> <span class="badge" style="font-size:10px; background:#15365B; color:#F3EBDD; border:1px solid rgba(203,213,225,0.25); padding:1px 6px;">${esc(minFulfillmentType === 'TIKUM_VENUE_PIC' ? t('discovery.tierPicShort', locale) : t('discovery.tierSelfShort', locale))}</span><div style="font-size:10.5px; color:#CBD5E1; margin-top:2px;">${esc(t('discovery.resaleTicketsSummary', locale).replace('{count}', String(activeListings.length)))}</div></div>` :
           `<span style="color:#CBD5E1; font-size:12px;"><i class="fa-solid fa-ticket"></i> <span data-i18n="discovery.noResaleYet">${esc(t('discovery.noResaleYet', locale))}</span></span>`}
+              ${minFulfillmentType === 'TIKUM_VENUE_PIC' && !cov.isRegularPicArea ? `<p style="color:#CBD5E1; font-size:12px;"><a href="/terms#pic-coverage-heading" style="color:#F3EBDD;" data-i18n="picCoverage.eventNote">${esc(t('picCoverage.eventNote', locale))}</a></p>` : ''}
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
               ${officialUrl ? `<a href="${officialUrl}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-sm btn-secondary" style="font-size:11px; padding:5px 8px;" data-i18n="events.officialSource">${esc(t('events.officialSource', locale))}</a>` : ''}

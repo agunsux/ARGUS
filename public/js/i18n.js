@@ -42,6 +42,17 @@
   // <I18N_DICTIONARIES_START>
   const translations = {
     "id": {
+    "picCoverage": {
+      "heading": "Cakupan PIC Venue: Jabodetabek & Bandung",
+      "regular": "Pendampingan fisik PIC TIKUM di venue (Opsi A) saat ini tersedia secara reguler di Jabodetabek (Jakarta, Bogor, Depok, Tangerang, Bekasi) dan Bandung.",
+      "other": "Untuk kota lain di Indonesia dan Asia Tenggara, konfirmasikan ketersediaan PIC melalui WhatsApp Support resmi sebelum membuat listing atau pesanan, atau pilih Opsi B (Transfer Mandiri oleh Penjual) dengan perlindungan pembayaran yang ditahan oleh platform.",
+      "operation": "TIKUM berhak menyesuaikan permintaan PIC di luar cakupan reguler atau mengalihkannya ke Opsi B jika penempatan PIC belum dikonfirmasi oleh Support.",
+      "baseline": "Cakupan reguler PIC venue: Jabodetabek & Bandung. Kota lain perlu konfirmasi WhatsApp Support terlebih dahulu.",
+      "covered": "✓ Event ini berada dalam cakupan reguler PIC TIKUM (Jabodetabek & Bandung).",
+      "warning": "PIC di venue tidak otomatis tersedia untuk kota ini. Konfirmasikan dengan WhatsApp Support sebelum membuat listing, atau pilih Opsi B.",
+      "switch": "Pilih Opsi B: Transfer Mandiri",
+      "eventNote": "PIC Venue: konfirmasikan ketersediaan melalui WhatsApp Support untuk event di luar Jabodetabek & Bandung."
+    },
     "domain": {
       "payment": "Pembayaran",
       "refund": "Pengembalian Dana",
@@ -2444,6 +2455,17 @@
     }
   },
     "en": {
+    "picCoverage": {
+      "heading": "Venue PIC coverage: Jabodetabek & Bandung",
+      "regular": "In-person TIKUM Venue PIC assistance (Option A) is currently available as a regular service in Jabodetabek (Jakarta, Bogor, Depok, Tangerang, Bekasi) and Bandung.",
+      "other": "For other cities in Indonesia and Southeast Asia, confirm PIC availability with official WhatsApp Support before creating a listing or order, or choose Option B (Seller-Managed Transfer) with platform-held payment protection.",
+      "operation": "TIKUM reserves the right to adjust an out-of-area PIC request or switch it to Option B if Support has not confirmed on-site staffing.",
+      "baseline": "Regular Venue PIC coverage: Jabodetabek & Bandung. For other cities, confirm with WhatsApp Support first.",
+      "covered": "✓ This event is within regular TIKUM PIC coverage (Jabodetabek & Bandung).",
+      "warning": "On-site PIC assistance is not automatically available in this city. Confirm with WhatsApp Support before creating a listing, or choose Option B.",
+      "switch": "Switch to Option B: Seller-Managed Transfer",
+      "eventNote": "Venue PIC: Confirm availability with WhatsApp Support for events outside Jabodetabek & Bandung."
+    },
     "domain": {
       "payment": "Payment",
       "refund": "Refund",
@@ -4846,6 +4868,17 @@
     }
   },
     "ms": {
+    "picCoverage": {
+      "heading": "Liputan PIC di venue: Jabodetabek & Bandung",
+      "regular": "Bantuan bersemuka daripada PIC TIKUM di venue (Pilihan A) kini tersedia secara tetap di Jabodetabek (Jakarta, Bogor, Depok, Tangerang, Bekasi) dan Bandung.",
+      "other": "Bagi bandar lain di Indonesia dan Asia Tenggara, sahkan ketersediaan PIC dengan Sokongan WhatsApp rasmi sebelum membuat penyenaraian atau pesanan, atau pilih Pilihan B (Pindahan oleh Penjual) dengan perlindungan pembayaran yang dipegang oleh platform.",
+      "operation": "TIKUM berhak melaraskan permintaan PIC di luar kawasan liputan tetap atau menukarnya kepada Pilihan B jika pihak Sokongan belum mengesahkan penempatan PIC.",
+      "baseline": "Liputan tetap PIC di venue: Jabodetabek & Bandung. Bagi bandar lain, dapatkan pengesahan Sokongan WhatsApp dahulu.",
+      "covered": "✓ Acara ini berada dalam liputan tetap PIC TIKUM (Jabodetabek & Bandung).",
+      "warning": "Bantuan PIC di venue tidak tersedia secara automatik di bandar ini. Sahkan dengan Sokongan WhatsApp sebelum membuat penyenaraian, atau pilih Pilihan B.",
+      "switch": "Tukar kepada Pilihan B: Pindahan oleh Penjual",
+      "eventNote": "PIC di venue: Sahkan ketersediaan melalui Sokongan WhatsApp bagi acara di luar Jabodetabek & Bandung."
+    },
     "domain": {
       "payment": "Pembayaran",
       "refund": "Bayaran Balik",
@@ -7248,6 +7281,17 @@
     }
   },
     "tl": {
+    "picCoverage": {
+      "heading": "Saklaw ng Venue PIC: Jabodetabek at Bandung",
+      "regular": "Ang personal na tulong ng TIKUM PIC sa venue (Opsyon A) ay kasalukuyang regular na available sa Jabodetabek (Jakarta, Bogor, Depok, Tangerang, Bekasi) at Bandung.",
+      "other": "Para sa ibang lungsod sa Indonesia at Timog-Silangang Asya, kumpirmahin sa opisyal na WhatsApp Support kung may available na PIC bago gumawa ng listing o order, o piliin ang Opsyon B (Direktang Paglipat ng Nagbebenta), na may proteksiyon sa bayad na hawak ng platform.",
+      "operation": "May karapatan ang TIKUM na baguhin ang kahilingan para sa PIC sa labas ng regular na saklaw o ilipat ito sa Opsyon B kung hindi pa nakumpirma ng Support ang pagtatalaga ng PIC.",
+      "baseline": "Regular na saklaw ng Venue PIC: Jabodetabek at Bandung. Para sa ibang lungsod, magpakumpirma muna sa WhatsApp Support.",
+      "covered": "✓ Sakop ang event na ito ng regular na serbisyo ng TIKUM PIC (Jabodetabek at Bandung).",
+      "warning": "Hindi awtomatikong available ang PIC sa venue sa lungsod na ito. Magpakumpirma sa WhatsApp Support bago gumawa ng listing, o piliin ang Opsyon B.",
+      "switch": "Lumipat sa Opsyon B: Direktang Paglipat ng Nagbebenta",
+      "eventNote": "Venue PIC: Magpakumpirma sa WhatsApp Support para sa mga event sa labas ng Jabodetabek at Bandung."
+    },
     "domain": {
       "payment": "Pagbabayad",
       "refund": "Refund",
@@ -9650,6 +9694,17 @@
     }
   },
     "th": {
+    "picCoverage": {
+      "heading": "พื้นที่ให้บริการ PIC ณ สถานที่จัดงาน: Jabodetabek และ Bandung",
+      "regular": "ปัจจุบันบริการเจ้าหน้าที่ PIC ของ TIKUM ประจำสถานที่จัดงาน (ตัวเลือก A) ให้บริการเป็นประจำใน Jabodetabek (Jakarta, Bogor, Depok, Tangerang, Bekasi) และ Bandung",
+      "other": "สำหรับเมืองอื่นในอินโดนีเซียและเอเชียตะวันออกเฉียงใต้ โปรดยืนยันความพร้อมของ PIC กับฝ่ายช่วยเหลือทาง WhatsApp อย่างเป็นทางการก่อนลงประกาศขายหรือสั่งซื้อ หรือเลือกตัวเลือก B (ผู้ขายโอนบัตรเอง) ซึ่งมีการคุ้มครองโดยแพลตฟอร์มจะพักเงินที่ชำระไว้",
+      "operation": "TIKUM ขอสงวนสิทธิ์ในการปรับคำขอใช้บริการ PIC นอกพื้นที่ให้บริการประจำ หรือเปลี่ยนเป็นตัวเลือก B หากฝ่ายช่วยเหลือยังไม่ได้ยืนยันการจัดเจ้าหน้าที่ประจำสถานที่",
+      "baseline": "พื้นที่ให้บริการ PIC เป็นประจำ: Jabodetabek และ Bandung สำหรับเมืองอื่น โปรดยืนยันกับฝ่ายช่วยเหลือทาง WhatsApp ก่อน",
+      "covered": "✓ งานนี้อยู่ในพื้นที่ให้บริการ PIC ประจำของ TIKUM (Jabodetabek และ Bandung)",
+      "warning": "เมืองนี้ไม่มีบริการ PIC ณ สถานที่จัดงานโดยอัตโนมัติ โปรดยืนยันกับฝ่ายช่วยเหลือทาง WhatsApp ก่อนลงประกาศขาย หรือเลือกตัวเลือก B",
+      "switch": "เปลี่ยนเป็นตัวเลือก B: ผู้ขายโอนบัตรเอง",
+      "eventNote": "PIC ณ สถานที่จัดงาน: โปรดยืนยันความพร้อมกับฝ่ายช่วยเหลือทาง WhatsApp สำหรับงานนอก Jabodetabek และ Bandung"
+    },
     "domain": {
       "payment": "การชำระเงิน",
       "refund": "การคืนเงิน",

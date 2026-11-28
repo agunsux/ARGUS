@@ -357,13 +357,11 @@ app.get('/verify-email', (req, res, next) => {
   require('./api/authRouter')(req, res, next);
 });
 app.get('/account', (req, res) => res.sendFile(path.join(publicDir, 'account.html'), sendFileOpts));
-app.get(['/deal/create', '/create'], (req, res) => res.sendFile(path.join(publicDir, 'create.html'), sendFileOpts));
 app.get(['/deal/:id', '/pay/:id'], (req, res) => res.sendFile(path.join(publicDir, 'pay.html'), sendFileOpts));
 app.get(['/deal', '/pay'], (req, res) => res.sendFile(path.join(publicDir, 'pay.html'), sendFileOpts));
 app.get('/offers', (req, res) => res.sendFile(path.join(publicDir, 'offers.html'), sendFileOpts));
 app.get('/track/:id', (req, res) => res.sendFile(path.join(publicDir, 'track.html'), sendFileOpts));
 app.get('/track', (req, res) => res.sendFile(path.join(publicDir, 'track.html'), sendFileOpts));
-app.get('/terms', (req, res) => res.sendFile(path.join(publicDir, 'terms.html'), sendFileOpts));
 app.get('/privacy', (req, res) => res.sendFile(path.join(publicDir, 'privacy.html'), sendFileOpts));
 app.get('/faq', (req, res) => res.sendFile(path.join(publicDir, 'faq.html'), sendFileOpts));
 app.get('/contact', (req, res) => res.sendFile(path.join(publicDir, 'contact.html'), sendFileOpts));

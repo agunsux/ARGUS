@@ -15,6 +15,8 @@
  */
 
 const express = require('express');
+const { readFileSync } = require('node:fs');
+const path = require('node:path');
 const router = express.Router();
 const { TechnicalSEOService } = require('../seo/TechnicalSEOService');
 const { StructuredDataFactory } = require('../seo/StructuredDataFactory');
@@ -40,6 +42,31 @@ function escHtml(str) {
 function resolveRequestLang(req) {
   return normalizeLocale(resolveRequestLocale(req));
 }
+
+function renderPicCoverage(lang) {
+  const copy = (tag, key, attrs = '') => `<${tag}${attrs} data-i18n="picCoverage.${key}">${escHtml(t(`picCoverage.${key}`, lang))}</${tag}>`;
+  return `<section class="pic-coverage" aria-labelledby="pic-coverage-heading">
+    ${copy('h2', 'heading', ' id="pic-coverage-heading"')}
+    ${['regular', 'other', 'operation'].map(key => copy('p', key)).join('\n')}
+    <a href="${businessProfile.whatsappUrl}" target="_blank" rel="noopener noreferrer">WhatsApp: ${businessProfile.whatsappDisplayNumber}</a>
+  </section>`;
+}
+
+const termsTemplate = readFileSync(path.join(__dirname, '../../public/terms.html'), 'utf8');
+const createTemplate = readFileSync(path.join(__dirname, '../../public/create.html'), 'utf8');
+router.get('/terms', (req, res) => {
+  const lang = resolveRequestLang(req);
+  res.vary('Cookie').type('html').send(termsTemplate
+    .replace('<html lang="id"', `<html lang="${lang}"`)
+    .replace(/<!-- PIC_COVERAGE_START -->[\s\S]*?<!-- PIC_COVERAGE_END -->/, () => renderPicCoverage(lang)));
+});
+
+router.get(['/create', '/deal/create'], (req, res) => {
+  const lang = resolveRequestLang(req);
+  res.vary('Cookie').type('html').send(createTemplate
+    .replace('<html lang="id"', `<html lang="${lang}"`)
+    .replace(/(data-i18n="picCoverage\.(\w+)"[^>]*>)[^<]*/g, (_, tag, key) => tag + escHtml(t(`picCoverage.${key}`, lang))));
+});
 
 function renderTrustNavHeader(activePath = '', lang = 'id') {
   const loc = normalizeLocale(lang);
@@ -94,6 +121,7 @@ function renderTrustLayout({ lang = 'id', title, description, canonicalPath, h1,
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   ${renderSharedHeadAssets()}
   <link rel="stylesheet" href="/css/style.css">
+  ${canonicalPath === '/buyer-protection' || canonicalPath === '/panduan-pembeli' ? '<link rel="stylesheet" href="/css/pic-coverage.css">' : ''}
 </head>
 <body class="dark-mode">
   ${renderTrustNavHeader(canonicalPath, loc)}
@@ -121,7 +149,7 @@ function renderTrustLayout({ lang = 'id', title, description, canonicalPath, h1,
       </div>
     </div>
   </main>
-  ${renderFooterHtml(loc)}
+  ${renderFooterHtml(loc, { whatsappSectionId: ['/buyer-protection', '/panduan-pembeli'].includes(canonicalPath) ? 'pic-coverage-heading' : undefined })}
   ${renderSharedFooterScripts()}
 </body>
 </html>`;
@@ -199,13 +227,14 @@ router.get(['/buyer-protection', '/panduan-pembeli', '/how-to-buy'], (req, res) 
             <div style="font-size:12px; color:#CBD5E1; font-weight:700; text-transform:uppercase; margin-bottom:4px;" data-i18n="buyerProtectionPage.supportLabel">${bpEsc('supportLabel')}</div>
             <div style="color:#CBD5E1; font-size:13px; line-height:1.6;">
               <span data-i18n="buyerProtectionPage.emailLabel">${bpEsc('emailLabel')}</span> <a href="mailto:support@tikum.app" style="color:#E36F45; text-decoration:none; font-weight:600;">support@tikum.app</a><br>
-              WhatsApp: <a href="${businessProfile.whatsappUrl}" target="_blank" rel="noopener noreferrer" style="color:#F3EBDD; text-decoration:none; font-weight:600;">${businessProfile.whatsappDisplayNumber}</a><br>
+              <a href="#pic-coverage-heading">WhatsApp Support</a><br>
               <span data-i18n="buyerProtectionPage.hoursLabel">${bpEsc('hoursLabel')}</span> <span data-i18n="buyerProtectionPage.hoursValue">${bpEsc('hoursValue')}</span>
             </div>
           </div>
         </div>
       </div>
 
+      ${renderPicCoverage(lang)}
       <!-- 2. Products & Services -->
       <div style="background:var(--palette-surface, #24364D); border:1px solid rgba(203,213,225,0.22); border-radius:14px; padding:28px;">
         <h2 style="color:#FFFFFF; font-size:20px; font-weight:800; margin:0 0 16px;"><i class="fa-solid fa-list-check" style="color:#E36F45;"></i> <span data-i18n="buyerProtectionPage.servicesHeading">${bpEsc('servicesHeading')}</span></h2>
