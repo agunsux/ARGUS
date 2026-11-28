@@ -480,9 +480,11 @@ function deduplicateAndEnrichPublicEvents(events) {
  */
 router.get('/events', (req, res) => {
   const hygiene = require('./CatalogHygienePolicy');
-  const { q, city, category, status, include_past, scope, price_range, ticket_status, date_range, date_from, date_to } = req.query;
+  const { q, city, category, region, country, status, include_past, scope, price_range, ticket_status, date_range, date_from, date_to } = req.query;
   const locale = resolveRequestLocale(req);
   const isEn = locale === 'en';
+  const rawRegionFilter = String(region || country || 'ALL').trim().toUpperCase();
+  const activeRegionFilter = (!rawRegionFilter || rawRegionFilter === 'ALL') ? 'ALL' : rawRegionFilter;
 
   // Edge Cache: Absorb high-frequency crawls and bot traffic while preserving fresh updates
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
@@ -554,6 +556,10 @@ router.get('/events', (req, res) => {
   const normalizedCategory = category && category.trim() ? hygiene.normalizeCategory(category) : '';
   if (normalizedCategory) {
     allEvents = allEvents.filter(e => hygiene.normalizeCategory(e.category || e.event_type) === normalizedCategory);
+  }
+
+  if (activeRegionFilter && activeRegionFilter !== 'ALL') {
+    allEvents = allEvents.filter(e => hygiene.matchesRegionFilter(e, activeRegionFilter));
   }
 
   // Price range filter (Strict invariant: min >= 500k)
@@ -699,8 +705,15 @@ router.get('/events', (req, res) => {
         ? `<span class="badge" style="background:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); font-size:11px; padding:3px 8px; font-weight:700;"><i class="fa-solid fa-bolt"></i> <span data-i18n="discovery.badgePresale">${esc(t('discovery.badgePresale', locale))}</span></span>`
         : `<span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); font-size:11px; padding:3px 8px; font-weight:700;"><i class="fa-solid fa-circle-check"></i> <span data-i18n="discovery.badgeOnSale">${esc(t('discovery.badgeOnSale', locale))}</span></span>`);
 
+    const cov = hygiene.classifyEventCoverage(e);
+    const coverageBadgeHtml = cov.isRegularPicArea
+      ? `<span class="badge pic-ready-badge" data-pic-coverage="regular" style="background:#15365B; color:#F3EBDD; border:1px solid rgba(227,111,69,0.55); font-size:11px; padding:3px 8px; font-weight:700; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-user-shield" style="color:#E36F45;"></i> <span data-i18n="coverage.picVenueReady">${esc(t('coverage.picVenueReady', locale))}</span></span>`
+      : `<span class="badge transfer-mandiri-badge" data-pic-coverage="transfer-mandiri" style="background:#172333; color:#CBD5E1; border:1px solid rgba(203,213,225,0.28); font-size:11px; padding:3px 8px; font-weight:600; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-globe" style="color:#F3EBDD;"></i> ${esc(cov.locationTag)} &middot; <span data-i18n="coverage.transferMandiriBadge">${esc(t('coverage.transferMandiriBadge', locale))}</span></span>`;
+    const safeEventIdAttr = esc(e.event_id || e.id || '');
+    const safeTitleAttr = esc(e.canonical_name || e.title || e.name || 'Event');
+
     return `
-      <div class="event-card-item" data-event-id="${e.event_id}" data-ticket-status="${isSoldOut ? 'SOLD_OUT' : (isPresale ? 'PRESALE' : 'ON_SALE')}" style="background:var(--palette-surface, #24364D); border:1px solid rgba(203,213,225,0.22); border-radius:12px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
+      <div class="event-card-item" data-event-id="${safeEventIdAttr}" data-country="${esc(cov.countryCode)}" data-pic-ready="${cov.isRegularPicArea ? 'true' : 'false'}" data-ticket-status="${isSoldOut ? 'SOLD_OUT' : (isPresale ? 'PRESALE' : 'ON_SALE')}" style="background:var(--palette-surface, #24364D); border:1px solid rgba(203,213,225,0.22); border-radius:12px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
         <div>
           <div class="catalog-card-media" style="position:relative; aspect-ratio:3/4; margin:-20px -20px 14px -20px; border-bottom:1px solid rgba(203,213,225,0.22); overflow:hidden; background:var(--palette-midnight-navy, #172333);">
             ${hasVerifiedImg ? `
@@ -709,13 +722,14 @@ router.get('/events', (req, res) => {
               <img src="/api/discovery/events/${e.event_id || e.id}/poster.svg" alt="${altText} — Tikum Verified Fallback" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover; display:block;" />
             `}
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
-            <div style="display:flex; gap:6px; align-items:center;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
+            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
               <span class="badge badge-sm" style="background:#15365B; color:#CBD5E1; border:1px solid rgba(203,213,225,0.22);">${e.event_type || e.category}</span>
-              <span style="font-size:12px; color:#F3EBDD;"><i class="fa-solid fa-location-dot"></i> ${e.city}</span>
+              <span style="font-size:12px; color:#F3EBDD;"><i class="fa-solid fa-location-dot"></i> ${esc(cov.locationTag)}</span>
             </div>
             ${statusBadge}
           </div>
+          <div style="margin-bottom:8px;">${coverageBadgeHtml}</div>
           <h3 style="font-size:17px; font-weight:700; margin:6px 0 10px 0; color:#FFFFFF; line-height:1.3;"><a href="/events/${e.slug}" style="color:inherit; text-decoration:none;">${e.canonical_name}</a></h3>
           <div style="font-size:13px; color:#CBD5E1; margin-bottom:12px; display:flex; flex-direction:column; gap:4px;">
             <div><i class="fa-solid fa-calendar-day" style="color:#F3EBDD; width:16px;"></i> ${e.start_date || e.date}</div>
@@ -723,16 +737,19 @@ router.get('/events', (req, res) => {
             <div style="color:#FFFFFF; font-weight:600;"><i class="fa-solid fa-tag" style="color:#E36F45; width:16px;"></i> <span data-i18n="discovery.officialFrom">${esc(t('discovery.officialFrom', locale))}</span> ${formatCurrency(Number(e.min_price || 500000), locale)}</div>
           </div>
         </div>
-        <div style="border-top:1px solid rgba(203,213,225,0.22); padding-top:14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-          <div>
-            ${activeListings.length > 0 ?
-        `<div><span style="color:#34d399; font-weight:700; font-size:12px;"><i class="fa-solid fa-ticket"></i> ${esc(t('discovery.allInPrefix', locale))} ${formatCurrency(minAllInPrice || minPrice, locale)}</span> <span class="badge" style="font-size:10px; background:#15365B; color:#F3EBDD; border:1px solid rgba(203,213,225,0.25); padding:1px 6px;">${esc(minFulfillmentType === 'TIKUM_VENUE_PIC' ? t('discovery.tierPicShort', locale) : t('discovery.tierSelfShort', locale))}</span><div style="font-size:10.5px; color:#CBD5E1; margin-top:2px;">${esc(t('discovery.resaleTicketsSummary', locale).replace('{count}', String(activeListings.length)))}</div></div>` :
-        `<span style="color:#CBD5E1; font-size:12px;"><i class="fa-solid fa-ticket"></i> <span data-i18n="discovery.noResaleYet">${esc(t('discovery.noResaleYet', locale))}</span></span>`}
+        <div style="border-top:1px solid rgba(203,213,225,0.22); padding-top:14px; margin-top:10px; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div>
+              ${activeListings.length > 0 ?
+          `<div><span style="color:#34d399; font-weight:700; font-size:12px;"><i class="fa-solid fa-ticket"></i> ${esc(t('discovery.allInPrefix', locale))} ${formatCurrency(minAllInPrice || minPrice, locale)}</span> <span class="badge" style="font-size:10px; background:#15365B; color:#F3EBDD; border:1px solid rgba(203,213,225,0.25); padding:1px 6px;">${esc(minFulfillmentType === 'TIKUM_VENUE_PIC' ? t('discovery.tierPicShort', locale) : t('discovery.tierSelfShort', locale))}</span><div style="font-size:10.5px; color:#CBD5E1; margin-top:2px;">${esc(t('discovery.resaleTicketsSummary', locale).replace('{count}', String(activeListings.length)))}</div></div>` :
+          `<span style="color:#CBD5E1; font-size:12px;"><i class="fa-solid fa-ticket"></i> <span data-i18n="discovery.noResaleYet">${esc(t('discovery.noResaleYet', locale))}</span></span>`}
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+              ${officialUrl ? `<a href="${officialUrl}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-sm btn-secondary" style="font-size:11px; padding:5px 8px;" data-i18n="events.officialSource">${esc(t('events.officialSource', locale))}</a>` : ''}
+              <a href="/events/${e.slug}" class="btn btn-sm btn-primary" data-i18n="discovery.viewEventCta">${esc(t('discovery.viewEventCta', locale))}</a>
+            </div>
           </div>
-          <div style="display:flex; gap:6px; align-items:center;">
-            ${officialUrl ? `<a href="${officialUrl}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn-sm btn-secondary" style="font-size:11px; padding:5px 8px;" data-i18n="events.officialSource">${esc(t('events.officialSource', locale))}</a>` : ''}
-            <a href="/events/${e.slug}" class="btn btn-sm btn-primary" data-i18n="discovery.viewEventCta">${esc(t('discovery.viewEventCta', locale))}</a>
-          </div>
+          ${activeListings.length === 0 ? `<button type="button" class="btn btn-sm btn-waitlist-trigger" data-waitlist-event-id="${safeEventIdAttr}" data-waitlist-event-title="${safeTitleAttr}" onclick="openDiscoveryWaitlistModal(this.dataset.waitlistEventId, this.dataset.waitlistEventTitle)" style="width:100%; background:#15365B; color:#F3EBDD; border:1px solid rgba(227,111,69,0.55); border-radius:8px; padding:8px 12px; font-size:12.5px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;"><i class="fa-solid fa-bell" style="color:#E36F45;"></i> <span data-i18n="waitlist.cardCta">${esc(t('waitlist.cardCta', locale))}</span></button>` : ''}
         </div>
       </div>
     `;
@@ -747,18 +764,44 @@ router.get('/events', (req, res) => {
     ? 'discovery.sportsSubtitle'
     : (normalizedCategory === 'COMEDY' ? 'discovery.comedySubtitle' : 'discovery.heroSubtitle');
 
+  const buildEventsUrl = ({ cat = normalizedCategory, reg = activeRegionFilter } = {}) => {
+    const params = [];
+    if (cat) params.push(`category=${encodeURIComponent(cat)}`);
+    if (reg && reg !== 'ALL') params.push(`region=${encodeURIComponent(reg)}`);
+    if (req.query.lang) params.push(`lang=${encodeURIComponent(locale)}`);
+    return params.length ? `/events?${params.join('&')}` : '/events';
+  };
+
   const categoryPills = [
-    { code: '', labelKey: 'discovery.allCategories', icon: 'fa-compass', href: `/events${langQueryOnly}` },
-    { code: 'CONCERT', labelKey: 'events.concerts', icon: 'fa-music', href: `/events?category=CONCERT${langSuffix}` },
-    { code: 'FESTIVAL', labelKey: 'discovery.catFestival', icon: 'fa-guitar', href: `/events?category=FESTIVAL${langSuffix}` },
-    { code: 'SPORTS', labelKey: 'events.sports', icon: 'fa-futbol', href: `/events?category=SPORTS${langSuffix}` },
-    { code: 'COMEDY', labelKey: 'discovery.catComedy', icon: 'fa-microphone', href: `/events?category=COMEDY${langSuffix}` }
+    { code: '', labelKey: 'discovery.allCategories', icon: 'fa-compass', href: buildEventsUrl({ cat: '' }) },
+    { code: 'CONCERT', labelKey: 'events.concerts', icon: 'fa-music', href: buildEventsUrl({ cat: 'CONCERT' }) },
+    { code: 'FESTIVAL', labelKey: 'discovery.catFestival', icon: 'fa-guitar', href: buildEventsUrl({ cat: 'FESTIVAL' }) },
+    { code: 'SPORTS', labelKey: 'events.sports', icon: 'fa-futbol', href: buildEventsUrl({ cat: 'SPORTS' }) },
+    { code: 'COMEDY', labelKey: 'discovery.catComedy', icon: 'fa-microphone', href: buildEventsUrl({ cat: 'COMEDY' }) }
   ].map(p => {
     const isActive = normalizedCategory === p.code;
     const style = isActive
       ? 'background:#E36F45; color:#FFFFFF; border:1px solid #E36F45; font-size:13px; font-weight:700; padding:7px 14px; border-radius:999px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;'
       : 'background:#24364D; color:#CBD5E1; border:1px solid rgba(203,213,225,0.22); font-size:13px; font-weight:600; padding:7px 14px; border-radius:999px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;';
     return `<a href="${p.href}" class="category-filter-pill${isActive ? ' active' : ''}" data-category="${p.code}" style="${style}"><i class="fa-solid ${p.icon}"></i> <span data-i18n="${p.labelKey}">${esc(t(p.labelKey, locale))}</span></a>`;
+  }).join('\n      ');
+
+  const regionPills = [
+    { code: 'ALL', labelKey: 'regionFilter.all', icon: 'fa-earth-asia' },
+    { code: 'PIC_READY', labelKey: 'regionFilter.picReady', icon: 'fa-user-shield' },
+    { code: 'ID', labelKey: 'regionFilter.id', icon: 'fa-location-dot' },
+    { code: 'SG', labelKey: 'regionFilter.sg', icon: 'fa-location-dot' },
+    { code: 'MY', labelKey: 'regionFilter.my', icon: 'fa-location-dot' },
+    { code: 'TH', labelKey: 'regionFilter.th', icon: 'fa-location-dot' },
+    { code: 'PH_VN', labelKey: 'regionFilter.phVn', icon: 'fa-location-dot' }
+  ].map(r => {
+    const isActive = activeRegionFilter === r.code;
+    const style = isActive
+      ? 'background:#E36F45; color:#FFFFFF; border:1px solid #E36F45; font-size:12.5px; font-weight:700; padding:6px 13px; border-radius:999px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;'
+      : (r.code === 'PIC_READY'
+        ? 'background:#15365B; color:#F3EBDD; border:1px solid rgba(227,111,69,0.5); font-size:12.5px; font-weight:700; padding:6px 13px; border-radius:999px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;'
+        : 'background:#172333; color:#CBD5E1; border:1px solid rgba(203,213,225,0.22); font-size:12.5px; font-weight:600; padding:6px 13px; border-radius:999px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;');
+    return `<a href="${buildEventsUrl({ reg: r.code })}" class="region-filter-pill${isActive ? ' active' : ''}" data-region="${r.code}" style="${style}"><i class="fa-solid ${r.icon}"></i> <span data-i18n="${r.labelKey}">${esc(t(r.labelKey, locale))}</span></a>`;
   }).join('\n      ');
 
   const emptyStateHtml = normalizedCategory === 'SPORTS'
@@ -820,13 +863,19 @@ router.get('/events', (req, res) => {
     </div>
 
     <!-- Localized Category Quick Pills -->
-    <div class="discovery-category-pills" style="display:flex; justify-content:center; gap:8px; margin-bottom:22px; flex-wrap:wrap;">
+    <div class="discovery-category-pills" style="display:flex; justify-content:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
       ${categoryPills}
+    </div>
+
+    <!-- ASEAN Regional & PIC Venue Coverage Filter Bar -->
+    <div class="discovery-region-pills" aria-label="ASEAN Region Filter" style="display:flex; justify-content:center; gap:8px; margin-bottom:22px; flex-wrap:wrap;">
+      ${regionPills}
     </div>
 
     <!-- Search & Filter Form -->
     <form method="GET" action="/events" style="background:#172333; border:1px solid rgba(203,213,225,0.22); border-radius:12px; padding:18px; margin-bottom:30px; display:flex; gap:12px; flex-wrap:wrap;">
       ${req.query.lang ? `<input type="hidden" name="lang" value="${esc(locale)}" />` : ''}
+      ${activeRegionFilter !== 'ALL' ? `<input type="hidden" name="region" value="${esc(activeRegionFilter)}" />` : ''}
       <input type="text" name="q" value="${esc(q || '')}" placeholder="${esc(t('discovery.searchPlaceholder', locale))}" data-i18n="discovery.searchPlaceholder" class="form-control" style="flex:2; min-width:200px;" />
       <select name="city" class="form-control" style="flex:1; min-width:130px;">
         <option value="" data-i18n="discovery.allCities">${esc(t('discovery.allCities', locale))}</option>
@@ -869,7 +918,113 @@ router.get('/events', (req, res) => {
     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">
       ${itemsHtml.length > 0 ? itemsHtml : emptyStateHtml}
     </div>
+
+    <div style="margin-top:28px; background:#15365B; border:1px solid rgba(203,213,225,0.22); border-radius:12px; padding:14px 18px; font-size:12.5px; color:#CBD5E1; line-height:1.55;">
+      <strong style="color:#F3EBDD;" data-i18n="coverage.crossBorderTitle">${esc(t('coverage.crossBorderTitle', locale))}</strong>
+      <span data-i18n="coverage.crossBorderDesc">${esc(t('coverage.crossBorderDesc', locale))}</span>
+    </div>
   </main>
+
+  <!-- Pre-Launch Ticket Waitlist Modal (Dark-Only) -->
+  <div id="discoveryWaitlistModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.78); align-items:center; justify-content:center; padding:16px;" onclick="if(event.target.id==='discoveryWaitlistModal') closeDiscoveryWaitlistModal();">
+    <div style="background:#172333; border:1px solid rgba(203,213,225,0.24); border-radius:14px; max-width:440px; width:100%; padding:22px; color:#FFFFFF; box-shadow:0 24px 60px rgba(0,0,0,0.55);" onclick="event.stopPropagation()">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+        <div style="font-size:17px; font-weight:800; color:#FFFFFF;"><i class="fa-solid fa-bell" style="color:#E36F45;"></i> <span data-i18n="waitlist.modalTitle">${esc(t('waitlist.modalTitle', locale))}</span></div>
+        <button type="button" onclick="closeDiscoveryWaitlistModal()" aria-label="Close" style="background:transparent; border:none; color:#CBD5E1; font-size:22px; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+      <div id="dwEventName" style="font-size:13.5px; font-weight:700; color:#F3EBDD; background:#24364D; border:1px solid rgba(203,213,225,0.2); border-radius:8px; padding:9px 12px; margin-bottom:14px;"></div>
+      <form id="discoveryWaitlistForm" onsubmit="submitDiscoveryWaitlist(event)">
+        <input type="hidden" id="dwEventId" value="" />
+        <div style="margin-bottom:12px;">
+          <label for="dwWhatsapp" style="display:block; font-size:12.5px; font-weight:700; color:#CBD5E1; margin-bottom:5px;" data-i18n="waitlist.waLabel">${esc(t('waitlist.waLabel', locale))}</label>
+          <input type="tel" id="dwWhatsapp" required placeholder="62812... / +65..." style="width:100%; box-sizing:border-box; background:#24364D; border:1px solid rgba(203,213,225,0.28); border-radius:8px; padding:10px 12px; color:#FFFFFF; font-size:14px;" />
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+          <div>
+            <label for="dwQty" style="display:block; font-size:12.5px; font-weight:700; color:#CBD5E1; margin-bottom:5px;" data-i18n="waitlist.qtyLabel">${esc(t('waitlist.qtyLabel', locale))}</label>
+            <select id="dwQty" style="width:100%; box-sizing:border-box; background:#24364D; border:1px solid rgba(203,213,225,0.28); border-radius:8px; padding:10px 12px; color:#FFFFFF; font-size:14px;">
+              <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+            </select>
+          </div>
+          <div>
+            <label for="dwBudget" style="display:block; font-size:12.5px; font-weight:700; color:#CBD5E1; margin-bottom:5px;" data-i18n="waitlist.budgetLabel">${esc(t('waitlist.budgetLabel', locale))}</label>
+            <input type="number" id="dwBudget" min="500000" step="50000" placeholder="1500000" style="width:100%; box-sizing:border-box; background:#24364D; border:1px solid rgba(203,213,225,0.28); border-radius:8px; padding:10px 12px; color:#FFFFFF; font-size:14px;" />
+          </div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <label for="dwSeat" style="display:block; font-size:12.5px; font-weight:700; color:#CBD5E1; margin-bottom:5px;" data-i18n="waitlist.seatLabel">${esc(t('waitlist.seatLabel', locale))}</label>
+          <input type="text" id="dwSeat" maxlength="100" placeholder="CAT 1 / Festival / VIP" style="width:100%; box-sizing:border-box; background:#24364D; border:1px solid rgba(203,213,225,0.28); border-radius:8px; padding:10px 12px; color:#FFFFFF; font-size:14px;" />
+        </div>
+        <div id="dwError" style="display:none; color:#FCA5A5; background:rgba(239,68,68,0.14); border:1px solid rgba(239,68,68,0.35); border-radius:8px; padding:8px 10px; font-size:12.5px; margin-bottom:12px;"></div>
+        <button type="submit" id="dwSubmitBtn" style="width:100%; background:#E36F45; color:#FFFFFF; border:none; border-radius:9px; padding:11px 16px; font-size:14px; font-weight:700; cursor:pointer;" data-i18n="waitlist.submitBtn">${esc(t('waitlist.submitBtn', locale))}</button>
+      </form>
+      <div id="dwSuccess" style="display:none; text-align:center; padding:8px 0;">
+        <div style="font-size:28px; color:#34D399; margin-bottom:8px;"><i class="fa-solid fa-circle-check"></i></div>
+        <div style="font-size:16px; font-weight:800; color:#FFFFFF; margin-bottom:6px;" data-i18n="waitlist.successTitle">${esc(t('waitlist.successTitle', locale))}</div>
+        <p style="font-size:13px; color:#CBD5E1; margin:0 0 14px;" data-i18n="waitlist.successDesc">${esc(t('waitlist.successDesc', locale))}</p>
+        <a id="dwWaFollowup" href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; justify-content:center; gap:7px; width:100%; box-sizing:border-box; background:#15365B; color:#F3EBDD; border:1px solid rgba(203,213,225,0.3); border-radius:9px; padding:10px 14px; font-size:13px; font-weight:700; text-decoration:none; margin-bottom:8px;"><i class="fa-brands fa-whatsapp"></i> <span data-i18n="waitlist.whatsappFollowup">${esc(t('waitlist.whatsappFollowup', locale))}</span></a>
+        <button type="button" onclick="closeDiscoveryWaitlistModal()" style="width:100%; background:#24364D; color:#CBD5E1; border:1px solid rgba(203,213,225,0.22); border-radius:9px; padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer;" data-i18n="modals.closeBtn">${esc(t('modals.closeBtn', locale))}</button>
+      </div>
+    </div>
+  </div>
+  <script src="/js/pic-coverage.js"></script>
+  <script>
+    function openDiscoveryWaitlistModal(eventId, eventTitle) {
+      var modal = document.getElementById('discoveryWaitlistModal');
+      if (!modal) return;
+      document.getElementById('dwEventId').value = eventId || '';
+      document.getElementById('dwEventName').textContent = eventTitle || eventId || '';
+      document.getElementById('dwError').style.display = 'none';
+      document.getElementById('dwSuccess').style.display = 'none';
+      document.getElementById('discoveryWaitlistForm').style.display = 'block';
+      document.getElementById('dwSubmitBtn').disabled = false;
+      modal.style.display = 'flex';
+    }
+    function closeDiscoveryWaitlistModal() {
+      var modal = document.getElementById('discoveryWaitlistModal');
+      if (modal) modal.style.display = 'none';
+    }
+    async function submitDiscoveryWaitlist(ev) {
+      ev.preventDefault();
+      var errEl = document.getElementById('dwError');
+      var btn = document.getElementById('dwSubmitBtn');
+      errEl.style.display = 'none';
+      btn.disabled = true;
+      try {
+        var eventId = document.getElementById('dwEventId').value;
+        var eventTitle = document.getElementById('dwEventName').textContent;
+        var whatsapp = document.getElementById('dwWhatsapp').value.trim();
+        var qty = parseInt(document.getElementById('dwQty').value, 10) || 1;
+        var seat = document.getElementById('dwSeat').value.trim();
+        var budgetRaw = document.getElementById('dwBudget').value.trim();
+        var payload = {
+          event_id: eventId,
+          contact_whatsapp: whatsapp,
+          quantity: qty,
+          seat_preference: seat || null,
+          max_budget_idr: budgetRaw ? Number(budgetRaw) : null,
+          locale: (window.TikumI18n && window.TikumI18n.getLang) ? window.TikumI18n.getLang() : '${esc(locale)}'
+        };
+        var res = await fetch('/api/mvp/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        var data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || 'Gagal mendaftar waitlist.');
+        }
+        var waMsg = 'Halo TIKUM, saya sudah mendaftar waitlist (' + (data.waitlistId || '') + ') untuk event: ' + eventTitle;
+        document.getElementById('dwWaFollowup').href = 'https://wa.me/6281299927378?text=' + encodeURIComponent(waMsg);
+        document.getElementById('discoveryWaitlistForm').style.display = 'none';
+        document.getElementById('dwSuccess').style.display = 'block';
+      } catch (err) {
+        errEl.textContent = err.message || 'Gagal mendaftar waitlist.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+      }
+    }
+  </script>
 
   ${renderFooterHtml(locale)}
   ${renderSharedFooterScripts()}
@@ -1666,7 +1821,7 @@ router.get('/api/events/home-feed', (req, res) => {
   // Evaluate temporal and freshness transitions for all canonical events
   require('./CatalogHygienePolicy').preserveTerminalStates([canonicalRegistry, state.events], () => canonicalRegistry.refreshFreshness(now));
 
-  const { city, lat, lng, country, category } = req.query;
+  const { city, lat, lng, country, region, category } = req.query;
 
   // Filter canonical events through strict temporal & verification gates (Zero Duplicates + H+2 Gate)
   const hygiene = require('./CatalogHygienePolicy');
@@ -1746,22 +1901,10 @@ router.get('/api/events/home-feed', (req, res) => {
     }));
   }
 
-  // Country filter if supplied
-  if (country && country.trim()) {
-    const cleanCountry = country.toLowerCase().trim();
-    const countryCodeMap = {
-      'id': 'indonesia',
-      'sg': 'singapore',
-      'my': 'malaysia',
-      'th': 'thailand',
-      'ph': 'philippines',
-      'vn': 'vietnam'
-    };
-    const targetCountry = countryCodeMap[cleanCountry] || cleanCountry;
-    allEvents = allEvents.filter(e => {
-      const eCountry = (e.country || 'Indonesia').toLowerCase().trim();
-      return eCountry === targetCountry || eCountry.includes(targetCountry);
-    });
+  // Region / Country filter if supplied
+  const feedRegionParam = (region || country || '').trim();
+  if (feedRegionParam && feedRegionParam.toUpperCase() !== 'ALL') {
+    allEvents = allEvents.filter(e => hygiene.matchesRegionFilter(e, feedRegionParam));
   }
 
   // Category filter if supplied
@@ -1801,6 +1944,8 @@ router.get('/api/events/home-feed', (req, res) => {
       imgConf = 'UNKNOWN';
     }
 
+    const cov = hygiene.classifyEventCoverage(e);
+
     return {
       ...e,
       ...resolvedImg,
@@ -1809,6 +1954,10 @@ router.get('/api/events/home-feed', (req, res) => {
       start_at: temporal.event_start_at,
       venue: e.venue_name || e.venue || 'Venue',
       city: e.city || e.venue_city || 'Jakarta',
+      country: e.country || cov.countryLabel,
+      country_code: cov.countryCode,
+      is_regular_pic_area: cov.isRegularPicArea,
+      fulfillment_coverage_mode: cov.fulfillmentMode,
       category: e.category || e.event_type || 'MUSIC',
       verification_status: e.verification_status || 'VERIFIED',
       verification_tier: e.verification_tier || 'TIER_A_DOUBLE_OFFICIAL',

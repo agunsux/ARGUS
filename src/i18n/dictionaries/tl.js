@@ -2371,5 +2371,32 @@ module.exports = {
     "counterOfferBtn": "Counter",
     "rejectOfferBtn": "Tanggihan",
     "settlementHeadingPrefix": "Settlement"
+  },
+  "regionFilter": {
+    "all": "Lahat",
+    "picReady": "Jabodetabek & Bandung (May PIC)",
+    "id": "Indonesia",
+    "sg": "Singapore",
+    "my": "Malaysia",
+    "th": "Thailand",
+    "phVn": "Pilipinas & Vietnam"
+  },
+  "coverage": {
+    "picVenueReady": "Handa ang PIC sa Venue",
+    "transferMandiriBadge": "Sariling Lipat",
+    "crossBorderTitle": "Cross-Border na Bayad at Payout ng Nagbebenta:",
+    "crossBorderDesc": "Maaaring magbayad ang mga international buyer gamit ang international card o cross-border payment kapag bukas na ang live checkout; ang payout ng nagbebenta ay nangangailangan ng domestic bank account sa Indonesia (IDR)."
+  },
+  "waitlist": {
+    "cardCta": "Ipaalam Kapag May Tiket Na",
+    "modalTitle": "Ipaalam Kapag May Available na Tiket",
+    "waLabel": "Aktibong Numero ng WhatsApp",
+    "qtyLabel": "Bilang ng Tiket",
+    "budgetLabel": "Max Budget (IDR, opsyonal)",
+    "seatLabel": "Nais na Upuan / Kategorya (opsiyonal)",
+    "submitBtn": "Sumali sa Ticket Waitlist",
+    "successTitle": "Naitala ang Waitlist Request",
+    "successDesc": "Kokontakin namin ang iyong WhatsApp sa sandaling magkaroon ng beripikadong resale na tiket.",
+    "whatsappFollowup": "Makipag-chat sa WhatsApp Support"
   }
 };

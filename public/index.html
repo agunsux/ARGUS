@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <script src="/js/theme.js"></script>
+  <script src="/js/pic-coverage.js"></script>
   <meta name="theme-color" content="#172333">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -430,17 +431,15 @@
               onclick="applyHeroQuickFilter(this, { category: '', city: '' })" data-i18n="events.allEvents">Semua
               Event</button>
             <button type="button" class="hero-quick-chip" data-category="CONCERT"
-              onclick="applyHeroQuickFilter(this, { category: 'CONCERT' })"
-              data-i18n="events.concerts">Konser</button>
+              onclick="applyHeroQuickFilter(this, { category: 'CONCERT' })" data-i18n="events.concerts">Konser</button>
             <button type="button" class="hero-quick-chip" data-category="FESTIVAL"
-              onclick="applyHeroQuickFilter(this, { category: 'FESTIVAL' })"
-              data-i18n="events.festivals">Festival Musik</button>
+              onclick="applyHeroQuickFilter(this, { category: 'FESTIVAL' })" data-i18n="events.festivals">Festival
+              Musik</button>
             <button type="button" class="hero-quick-chip" data-category="SPORTS"
-              onclick="applyHeroQuickFilter(this, { category: 'SPORTS' })"
-              data-i18n="events.sports">Olahraga</button>
+              onclick="applyHeroQuickFilter(this, { category: 'SPORTS' })" data-i18n="events.sports">Olahraga</button>
             <button type="button" class="hero-quick-chip" data-category="COMEDY"
-              onclick="applyHeroQuickFilter(this, { category: 'COMEDY' })"
-              data-i18n="events.comedy">Stand-Up Comedy</button>
+              onclick="applyHeroQuickFilter(this, { category: 'COMEDY' })" data-i18n="events.comedy">Stand-Up
+              Comedy</button>
             <button type="button" class="hero-quick-chip" onclick="applyHeroQuickFilter(this, { city: 'Jakarta' })"><i
                 class="fa-solid fa-location-dot" aria-hidden="true"></i> <span
                 data-i18n="landing.quickChipJakarta">Jakarta</span></button>
@@ -516,7 +515,8 @@
             <div class="filter-pills" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
               <div class="pill active" data-category="" onclick="setCategory(this, '')" data-i18n="events.allEvents">
                 Semua Event</div>
-              <div class="pill" data-category="CONCERT" onclick="setCategory(this, 'CONCERT')" data-i18n="events.concerts">
+              <div class="pill" data-category="CONCERT" onclick="setCategory(this, 'CONCERT')"
+                data-i18n="events.concerts">
                 Konser &amp; Musik</div>
               <div class="pill" data-category="KPOP" onclick="setCategory(this, 'KPOP')" data-i18n="events.kpop">K-Pop
               </div>
@@ -530,6 +530,25 @@
                 style="text-decoration:none; color:inherit; display:inline-flex; align-items:center; gap:4px;"
                 data-i18n="events.pastEvents">Arsip Selesai <i class="fa-solid fa-arrow-right"
                   style="font-size:11px;"></i></a>
+            </div>
+            <!-- Dark-Only ASEAN Region & PIC Coverage Filter Bar -->
+            <div class="region-filter-bar" role="group" aria-label="ASEAN Region Filter"
+              style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:10px;">
+              <button type="button" class="pill region-pill active" data-region="ALL" onclick="setRegionFilter(this, 'ALL')"
+                style="cursor:pointer; font-size:12.5px; font-weight:700;" data-i18n="regionFilter.all">Semua</button>
+              <button type="button" class="pill region-pill" data-region="PIC_READY" onclick="setRegionFilter(this, 'PIC_READY')"
+                style="cursor:pointer; font-size:12.5px; font-weight:700; border-color:rgba(227,111,69,0.55); color:#F3EBDD;"
+                data-i18n="regionFilter.picReady">Jabodetabek &amp; Bandung (PIC Ready)</button>
+              <button type="button" class="pill region-pill" data-region="ID" onclick="setRegionFilter(this, 'ID')"
+                style="cursor:pointer; font-size:12.5px;" data-i18n="regionFilter.id">Indonesia</button>
+              <button type="button" class="pill region-pill" data-region="SG" onclick="setRegionFilter(this, 'SG')"
+                style="cursor:pointer; font-size:12.5px;" data-i18n="regionFilter.sg">Singapore</button>
+              <button type="button" class="pill region-pill" data-region="MY" onclick="setRegionFilter(this, 'MY')"
+                style="cursor:pointer; font-size:12.5px;" data-i18n="regionFilter.my">Malaysia</button>
+              <button type="button" class="pill region-pill" data-region="TH" onclick="setRegionFilter(this, 'TH')"
+                style="cursor:pointer; font-size:12.5px;" data-i18n="regionFilter.th">Thailand</button>
+              <button type="button" class="pill region-pill" data-region="PH_VN" onclick="setRegionFilter(this, 'PH_VN')"
+                style="cursor:pointer; font-size:12.5px;" data-i18n="regionFilter.phVn">Philippines &amp; Vietnam</button>
             </div>
             <div class="filters-row-selects" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:12px;">
               <select id="cityFilter" class="select-filter" onchange="renderAllSections()"
@@ -1018,12 +1037,93 @@
     </div>
   </div>
 
+  <!-- Pre-Launch Ticket Waitlist Modal (Dark-Only) -->
+  <div id="waitlistModal" class="modal-overlay" onclick="if(event.target.id==='waitlistModal') closeWaitlistModal();">
+    <div class="modal-content" onclick="event.stopPropagation()"
+      style="background:#172333; border:1px solid rgba(203,213,225,0.24); color:#FFFFFF; max-width:440px;">
+      <div class="modal-header">
+        <div class="modal-title" style="color:#FFFFFF;">
+          <i class="fa-solid fa-bell" style="color:#E36F45;"></i>
+          <span data-i18n="waitlist.modalTitle">Kabari Saat Tiket Tersedia</span>
+        </div>
+        <button type="button" class="btn-close" onclick="closeWaitlistModal()">&times;</button>
+      </div>
+
+      <div id="waitlistEventLabel"
+        style="font-size:13.5px; font-weight:700; color:#F3EBDD; background:#24364D; border:1px solid rgba(203,213,225,0.2); border-radius:8px; padding:9px 12px; margin-bottom:14px;">
+      </div>
+
+      <div id="waitlistFormView">
+        <form id="waitlistForm" onsubmit="submitWaitlistForm(event)">
+          <input type="hidden" id="waitlistEventIdInput" value="">
+          <input type="hidden" id="waitlistEventSlugInput" value="">
+          <div style="margin-bottom:12px;">
+            <label for="waitlistWaInput" style="display:block; font-size:12.5px; font-weight:700; color:#CBD5E1; margin-bottom:5px;"
+              data-i18n="waitlist.waLabel">Nomor WhatsApp Aktif</label>
+            <input type="tel" id="waitlistWaInput" class="auth-input-field" placeholder="62812... / +65..." required
+              autocomplete="tel" style="background:#24364D; color:#FFFFFF; border-color:rgba(203,213,225,0.28);">
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+            <div>
+              <label for="waitlistQtyInput" style="display:block; font-size:12.5px; font-weight:700; color:#CBD5E1; margin-bottom:5px;"
+                data-i18n="waitlist.qtyLabel">Jumlah Tiket</label>
+              <select id="waitlistQtyInput" class="auth-input-field"
+                style="background:#24364D; color:#FFFFFF; border-color:rgba(203,213,225,0.28);">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+            <div>
+              <label for="waitlistBudgetInput" style="display:block; font-size:12.5px; font-weight:700; color:#CBD5E1; margin-bottom:5px;"
+                data-i18n="waitlist.budgetLabel">Budget Maks (IDR, opsional)</label>
+              <input type="number" id="waitlistBudgetInput" class="auth-input-field" min="500000" step="50000"
+                placeholder="1500000" style="background:#24364D; color:#FFFFFF; border-color:rgba(203,213,225,0.28);">
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label for="waitlistSeatInput" style="display:block; font-size:12.5px; font-weight:700; color:#CBD5E1; margin-bottom:5px;"
+              data-i18n="waitlist.seatLabel">Preferensi Kursi / Kategori (opsional)</label>
+            <input type="text" id="waitlistSeatInput" class="auth-input-field" maxlength="100"
+              placeholder="CAT 1 / Festival / VIP" style="background:#24364D; color:#FFFFFF; border-color:rgba(203,213,225,0.28);">
+          </div>
+          <div id="waitlistErrorBox"
+            style="display:none; color:#FCA5A5; background:rgba(239,68,68,0.14); border:1px solid rgba(239,68,68,0.35); border-radius:8px; padding:8px 10px; font-size:12.5px; margin-bottom:12px;">
+          </div>
+          <button type="submit" id="btnWaitlistSubmit" class="btn-auth-primary"
+            style="background:#E36F45; color:#FFFFFF; border:none;">
+            <i class="fa-solid fa-bell"></i> <span data-i18n="waitlist.submitBtn">Daftar Notifikasi Tiket</span>
+          </button>
+          <p style="font-size:11.5px; color:#CBD5E1; margin:10px 0 0; line-height:1.45;" data-i18n="coverage.crossBorderDesc">
+            Pembeli internasional dapat membayar dengan kartu internasional / lintas negara saat checkout dibuka; pencairan dana penjual memerlukan rekening bank domestik Indonesia (IDR).
+          </p>
+        </form>
+      </div>
+
+      <div id="waitlistSuccessView" style="display:none; text-align:center; padding:10px 0;">
+        <div style="font-size:30px; color:#34D399; margin-bottom:10px;"><i class="fa-solid fa-circle-check"></i></div>
+        <h3 style="font-size:17px; font-weight:800; color:#FFFFFF; margin:0 0 8px;" data-i18n="waitlist.successTitle">Permintaan Waitlist Tercatat</h3>
+        <p style="font-size:13px; color:#CBD5E1; margin:0 0 14px; line-height:1.5;" data-i18n="waitlist.successDesc">
+          Kami akan menghubungi nomor WhatsApp Anda segera setelah tiket resale terverifikasi tersedia.
+        </p>
+        <a id="waitlistWaSupportLink" href="https://wa.me/6281299927378" target="_blank" rel="noopener noreferrer"
+          style="display:inline-flex; align-items:center; justify-content:center; gap:7px; width:100%; box-sizing:border-box; background:#15365B; color:#F3EBDD; border:1px solid rgba(203,213,225,0.3); border-radius:9px; padding:10px 14px; font-size:13px; font-weight:700; text-decoration:none; margin-bottom:10px;">
+          <i class="fa-brands fa-whatsapp"></i> <span data-i18n="waitlist.whatsappFollowup">Chat Support WhatsApp</span>
+        </a>
+        <button type="button" class="select-filter" style="width:100%; padding:10px; background:#24364D; color:#CBD5E1;"
+          onclick="closeWaitlistModal()" data-i18n="modals.closeBtn">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const FEED_URL = '/api/events/home-feed';
     const CATALOG_URL = '/api/events';
     let allEvents = [];
     let homeFeed = null;
     let currentCategory = '';
+    let currentRegion = 'ALL';
     let searchTimeout = null;
 
     // Nav shortcut: apply a category filter and scroll to the listings.
@@ -1111,6 +1211,13 @@
       document.querySelectorAll('.filter-pills .pill').forEach(p => p.classList.remove('active'));
       el.classList.add('active');
       currentCategory = cat;
+      renderAllSections();
+    }
+
+    function setRegionFilter(el, regionCode) {
+      document.querySelectorAll('.region-filter-bar .region-pill').forEach(p => p.classList.remove('active'));
+      if (el) el.classList.add('active');
+      currentRegion = regionCode || 'ALL';
       renderAllSections();
     }
 
@@ -1262,6 +1369,13 @@
             if (!evCat.includes('SPORT') && !evCat.includes('OLAHRAGA') && !evCat.includes('BADMINTON') && !evCat.includes('BASKETBALL') && !evCat.includes('FOOTBALL')) return false;
           } else if (!evCat.includes(currentCategory)) {
             return false;
+          }
+        }
+
+        // Region / ASEAN Country & PIC Ready Filter
+        if (currentRegion && currentRegion !== 'ALL') {
+          if (window.TikumPicCoverage && typeof window.TikumPicCoverage.matchesRegionFilter === 'function') {
+            if (!window.TikumPicCoverage.matchesRegionFilter(e, currentRegion)) return false;
           }
         }
 
@@ -1467,25 +1581,91 @@
       return clean.startsWith('628') || clean.startsWith('08');
     }
 
-    function handleWaitlistClick(evt, eventTitle, eventSlug) {
+    function openWaitlistModal(evt, eventId, eventTitle, eventSlug) {
       if (evt) {
         evt.preventDefault();
         evt.stopPropagation();
       }
+      const modal = document.getElementById('waitlistModal');
+      if (!modal) return;
       const title = eventTitle || 'Event';
-      const eventUrl = window.location.origin + '/events/' + encodeURIComponent(eventSlug);
-      const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
-      if (isValidSupportPhone(TIKUM_WHATSAPP_NUMBER)) {
+      document.getElementById('waitlistEventIdInput').value = eventId || eventSlug || '';
+      document.getElementById('waitlistEventSlugInput').value = eventSlug || eventId || '';
+      document.getElementById('waitlistEventLabel').textContent = title;
+      const errBox = document.getElementById('waitlistErrorBox');
+      if (errBox) errBox.style.display = 'none';
+      const formView = document.getElementById('waitlistFormView');
+      const successView = document.getElementById('waitlistSuccessView');
+      if (formView) formView.style.display = 'block';
+      if (successView) successView.style.display = 'none';
+      const submitBtn = document.getElementById('btnWaitlistSubmit');
+      if (submitBtn) submitBtn.disabled = false;
+      modal.style.display = 'flex';
+      const waInput = document.getElementById('waitlistWaInput');
+      if (waInput) setTimeout(() => waInput.focus(), 80);
+    }
+
+    function closeWaitlistModal() {
+      const modal = document.getElementById('waitlistModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function submitWaitlistForm(evt) {
+      evt.preventDefault();
+      const errBox = document.getElementById('waitlistErrorBox');
+      const submitBtn = document.getElementById('btnWaitlistSubmit');
+      if (errBox) errBox.style.display = 'none';
+      if (submitBtn) submitBtn.disabled = true;
+
+      try {
+        const eventId = document.getElementById('waitlistEventIdInput').value;
+        const eventSlug = document.getElementById('waitlistEventSlugInput').value;
+        const eventTitle = document.getElementById('waitlistEventLabel').textContent;
+        const contactWhatsapp = document.getElementById('waitlistWaInput').value.trim();
+        const quantity = parseInt(document.getElementById('waitlistQtyInput').value, 10) || 1;
+        const seatPreference = document.getElementById('waitlistSeatInput').value.trim();
+        const budgetRaw = document.getElementById('waitlistBudgetInput').value.trim();
+        const locale = (window.TikumI18n && typeof window.TikumI18n.getLang === 'function') ? window.TikumI18n.getLang() : 'id';
+
+        const res = await fetch('/api/mvp/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_id: eventId,
+            contact_whatsapp: contactWhatsapp,
+            seat_preference: seatPreference || null,
+            quantity,
+            max_budget_idr: budgetRaw ? Number(budgetRaw) : null,
+            locale
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || 'Gagal mencatat permintaan waitlist.');
+        }
+
+        const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
+        const eventUrl = window.location.origin + '/events/' + encodeURIComponent(eventSlug || eventId);
         const template = t(
           'events.waitlistMessage',
           'Halo TIKUM, saya tertarik jika ada tiket resale terverifikasi untuk event: {title} ({url}). Mohon berkabar jika ada penjual terverifikasi.'
         );
-        const text = template.replace('{title}', title).replace('{url}', eventUrl);
-        const waUrl = `https://wa.me/${TIKUM_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
-        window.open(waUrl, '_blank', 'noopener,noreferrer');
-      } else {
-        window.location.href = `/contact?subject=waitlist&event=${encodeURIComponent(eventSlug)}`;
+        const waText = template.replace('{title}', eventTitle).replace('{url}', eventUrl) + (data.waitlistId ? ` [Ref: ${data.waitlistId}]` : '');
+        const waLink = document.getElementById('waitlistWaSupportLink');
+        if (waLink) waLink.href = `https://wa.me/${TIKUM_WHATSAPP_NUMBER}?text=${encodeURIComponent(waText)}`;
+        document.getElementById('waitlistFormView').style.display = 'none';
+        document.getElementById('waitlistSuccessView').style.display = 'block';
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = err.message || 'Gagal mencatat permintaan waitlist.';
+          errBox.style.display = 'block';
+        }
+        if (submitBtn) submitBtn.disabled = false;
       }
+    }
+
+    function handleWaitlistClick(evt, eventTitle, eventSlug, eventId) {
+      openWaitlistModal(evt, eventId || eventSlug, eventTitle, eventSlug);
     }
 
     /**
@@ -1539,7 +1719,8 @@
         priceLabel = t('events.officialPromoterPrice', 'Harga resmi promotor');
         priceDisplay = officialPrice ? `${t('events.fromPrice', 'Mulai')} ${fmtCur(officialPrice)}` : 'TBA';
         resaleCue = `<div class="card-resale-empty-cue" data-i18n="events.noResaleTickets"><i class="fa-solid fa-circle-info"></i> ${t('events.noResaleTickets', 'Belum ada tiket resale di TIKUM')}</div>`;
-        waitlistBtn = `<button type="button" class="btn-waitlist" onclick="handleWaitlistClick(event, '${escapeHtml(title)}', '${escapeHtml(slug)}')" data-i18n="events.notifyWhenAvailable"><i class="fa-brands fa-whatsapp"></i> ${t('events.notifyWhenAvailable', 'Kabari Saya Saat Tiket Ada')}</button>`;
+        const evIdSafe = escapeHtml(e.event_id || e.id || slug);
+        waitlistBtn = `<button type="button" class="btn-waitlist" data-waitlist-event-id="${evIdSafe}" onclick="handleWaitlistClick(event, '${escapeHtml(title)}', '${escapeHtml(slug)}', '${evIdSafe}')" data-i18n="waitlist.cardCta"><i class="fa-solid fa-bell"></i> ${t('waitlist.cardCta', 'Kabari Saat Tiket Tersedia')}</button>`;
       }
 
       let radarBadge = '';
@@ -1547,16 +1728,13 @@
         radarBadge = `<div class="ln-badge ln-badge--radar" data-i18n="events.radarVerified"><i class="fa-solid fa-satellite-dish"></i> ${t('events.radarVerified', 'Radar Terverifikasi')}</div>`;
       }
 
-      const hasPic = Boolean(
-        e.has_venue_assist ||
-        e.has_pic ||
-        e.venue_assist_status === 'PIC_AVAILABLE' ||
-        e.venue_assist_status === 'PIC_ON_SITE' ||
-        e.venue_pic_assigned === true
-      );
-      const picBadge = hasPic
-        ? `<div class="card-pic-cue" data-i18n="events.picAtVenue"><i class="fa-solid fa-user-check"></i> ${t('events.picAtVenue', 'TIKUM PIC di venue')}</div>`
-        : '';
+      const cov = (window.TikumPicCoverage && typeof window.TikumPicCoverage.classifyEventCoverage === 'function')
+        ? window.TikumPicCoverage.classifyEventCoverage(e)
+        : { countryCode: 'ID', locationTag: city || 'Indonesia', isRegularPicArea: Boolean(e.is_regular_pic_area) };
+
+      const picBadge = cov.isRegularPicArea
+        ? `<div class="card-pic-cue" data-pic-coverage="regular" style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:#F3EBDD; background:#15365B; border:1px solid rgba(227,111,69,0.55); border-radius:6px; padding:3px 8px; margin-top:6px;"><i class="fa-solid fa-user-shield" style="color:#E36F45;"></i> <span data-i18n="coverage.picVenueReady">${t('coverage.picVenueReady', 'PIC Venue Ready')}</span></div>`
+        : `<div class="card-pic-cue" data-pic-coverage="transfer-mandiri" style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; color:#CBD5E1; background:#172333; border:1px solid rgba(203,213,225,0.24); border-radius:6px; padding:3px 8px; margin-top:6px;"><i class="fa-solid fa-globe" style="color:#F3EBDD;"></i> ${escapeHtml(cov.locationTag)} &middot; <span data-i18n="coverage.transferMandiriBadge">${t('coverage.transferMandiriBadge', 'Transfer Mandiri')}</span></div>`;
 
       return `
         <a href="/events/${slug}" class="poster-card">
@@ -1685,7 +1863,7 @@
       const searchValue = (document.getElementById('searchInput').value || '').trim();
       const cityValue = document.getElementById('cityFilter').value;
       const dateValue = document.getElementById('dateFilter').value;
-      const filtersActive = Boolean(searchValue || currentCategory || cityValue || dateValue);
+      const filtersActive = Boolean(searchValue || currentCategory || cityValue || dateValue || (currentRegion && currentRegion !== 'ALL'));
 
       const t = (k, def) => (window.TikumI18n ? window.TikumI18n.t(k, def) : def);
 

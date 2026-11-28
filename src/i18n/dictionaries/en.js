@@ -2371,5 +2371,32 @@ module.exports = {
     "counterOfferBtn": "Counter",
     "rejectOfferBtn": "Decline",
     "settlementHeadingPrefix": "Settlement"
+  },
+  "regionFilter": {
+    "all": "All",
+    "picReady": "Jabodetabek & Bandung (PIC Ready)",
+    "id": "Indonesia",
+    "sg": "Singapore",
+    "my": "Malaysia",
+    "th": "Thailand",
+    "phVn": "Philippines & Vietnam"
+  },
+  "coverage": {
+    "picVenueReady": "PIC Venue Ready",
+    "transferMandiriBadge": "Self-Transfer",
+    "crossBorderTitle": "Cross-Border Payments & Seller Payouts:",
+    "crossBorderDesc": "International buyers can pay using international cards and cross-border payment methods once live checkout opens; seller payouts require an Indonesian domestic bank account in IDR."
+  },
+  "waitlist": {
+    "cardCta": "Notify Me When Tickets Drop",
+    "modalTitle": "Notify Me When Tickets Are Available",
+    "waLabel": "Active WhatsApp Number",
+    "qtyLabel": "Ticket Quantity",
+    "budgetLabel": "Max Budget (IDR, optional)",
+    "seatLabel": "Seat / Section Preference (optional)",
+    "submitBtn": "Join Ticket Waitlist",
+    "successTitle": "Waitlist Request Saved",
+    "successDesc": "We will notify your WhatsApp number as soon as verified resale tickets become available.",
+    "whatsappFollowup": "Chat WhatsApp Support"
   }
 };

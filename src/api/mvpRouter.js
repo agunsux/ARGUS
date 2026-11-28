@@ -450,20 +450,10 @@ router.get('/events', async (req, res) => {
     if (startDate && eDate && eDate < startDate) return false;
     if (endDate && eDate && eDate > endDate) return false;
 
-    // Country filter (supporting Indonesia, Singapore, Malaysia, Thailand, Philippines, Vietnam and ISO codes)
-    if (req.query.country && req.query.country.trim()) {
-      const cleanCountry = req.query.country.toLowerCase().trim();
-      const countryCodeMap = {
-        'id': 'indonesia',
-        'sg': 'singapore',
-        'my': 'malaysia',
-        'th': 'thailand',
-        'ph': 'philippines',
-        'vn': 'vietnam'
-      };
-      const targetCountry = countryCodeMap[cleanCountry] || cleanCountry;
-      const evCountry = (event.country || 'Indonesia').toLowerCase().trim();
-      if (!evCountry.includes(targetCountry) && evCountry !== targetCountry) return false;
+    // Region / Country filter (ALL, PIC_READY, ID, SG, MY, TH, PH_VN, PH, VN)
+    const regionFilterParam = (req.query.region || req.query.country || '').trim();
+    if (regionFilterParam) {
+      if (!hygiene.matchesRegionFilter(event, regionFilterParam)) return false;
     }
 
     return true;
@@ -508,6 +498,8 @@ router.get('/events', async (req, res) => {
       ...publicEventFields
     } = event;
 
+    const coverage = hygiene.classifyEventCoverage(event);
+
     return {
       ...publicEventFields,
       metadata: cleanMetadata,
@@ -523,6 +515,10 @@ router.get('/events', async (req, res) => {
       venue_name: event.venue_name || event.venue || venue.name,
       venue: event.venue || event.venue_name || venue.name,
       venue_city: event.venue_city || venue.city || 'Jakarta',
+      country: event.country || coverage.countryLabel,
+      country_code: coverage.countryCode,
+      is_regular_pic_area: coverage.isRegularPicArea,
+      fulfillment_coverage_mode: coverage.fulfillmentMode,
       venue_details: venue,
       pic_assigned: !!pic,
       pic_contact: null, // PII protected: disclosed only to authenticated buyers on confirmed orders
@@ -1215,8 +1211,9 @@ router.get('/orders/:id', async (req, res) => {
 /**
  * Seller creates a new listing with evidence files
  * POST /api/mvp/seller/listing
+ * POST /api/mvp/listings (canonical alias)
  */
-router.post('/seller/listing', upload.any(), async (req, res) => {
+async function handleCreateSellerListing(req, res) {
   try {
     const {
       sellerId: bodySellerId,
@@ -1225,6 +1222,10 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       faceValue,
       price,
       rawBarcode,
+      bookingCode,
+      booking_code,
+      ticketReference,
+      ticket_reference,
       quantity,
       totalQuantity,
       fulfillmentType,
@@ -1352,6 +1353,8 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       faceValue: effectiveFaceValue ? parseInt(effectiveFaceValue, 10) : 0,
       price: effectivePrice ? parseInt(effectivePrice, 10) : 0,
       rawBarcode: effectiveBarcode,
+      bookingCode: bookingCode || booking_code || rawTicket.bookingCode || rawTicket.booking_code || null,
+      ticketReference: ticketReference || ticket_reference || rawTicket.ticketReference || rawTicket.ticket_reference || null,
       evidenceBundleId,
       quantity: parsedQty,
       fulfillmentType: normalizedFulfillment,
@@ -1409,6 +1412,13 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
       });
     }
 
+    if (err.code === 'DUPLICATE_TICKET_DETECTED') {
+      return res.status(409).json({
+        error: 'Duplicate ticket booking reference detected for this event',
+        code: 'DUPLICATE_TICKET_DETECTED'
+      });
+    }
+
     if (err.code === 'DUPLICATE_RESOURCE' || err.code === '23505') {
       return res.status(409).json({
         error: 'Data sudah terdaftar sebelumnya.',
@@ -1443,6 +1453,163 @@ router.post('/seller/listing', upload.any(), async (req, res) => {
     ].includes(err.code);
     res.status(isClientError ? 400 : 500)
       .json({ error: err.message, code: err.code, eligibility_code: err.eligibilityCode || null });
+  }
+}
+
+router.post('/seller/listing', upload.any(), handleCreateSellerListing);
+router.post('/listings', upload.any(), handleCreateSellerListing);
+
+// =============================================================================
+// PRE-LAUNCH TICKET WAITLIST DEMAND CAPTURE (PUBLIC, RATE-LIMITED)
+// =============================================================================
+const waitlistRateLimitBuckets = new Map();
+const WAITLIST_RATE_WINDOW_MS = 15 * 60 * 1000;
+const WAITLIST_RATE_MAX = 25;
+
+function checkWaitlistRateLimit(ipKey) {
+  const now = Date.now();
+  const key = String(ipKey || 'unknown');
+  const existing = waitlistRateLimitBuckets.get(key) || [];
+  const recent = existing.filter(ts => now - ts < WAITLIST_RATE_WINDOW_MS);
+  if (recent.length >= WAITLIST_RATE_MAX) {
+    waitlistRateLimitBuckets.set(key, recent);
+    return false;
+  }
+  recent.push(now);
+  waitlistRateLimitBuckets.set(key, recent);
+  return true;
+}
+
+router._resetWaitlistRateLimitForTests = () => waitlistRateLimitBuckets.clear();
+
+/**
+ * POST /api/mvp/waitlist
+ * Captures pre-launch buyer ticket waitlist requests idempotently per (event_id, contact_whatsapp).
+ */
+router.post('/waitlist', async (req, res) => {
+  try {
+    const clientIp = (req.headers['x-forwarded-for'] || req.ip || req.socket?.remoteAddress || 'unknown').toString().split(',')[0].trim();
+    if (!checkWaitlistRateLimit(clientIp)) {
+      return res.status(429).json({
+        ok: false,
+        error: 'Too many waitlist requests. Please try again in a few minutes.',
+        code: 'RATE_LIMIT_EXCEEDED'
+      });
+    }
+
+    const body = req.body || {};
+    const eventId = String(body.event_id || body.eventId || '').trim();
+    const rawWa = body.contact_whatsapp !== undefined ? body.contact_whatsapp : body.whatsapp;
+    const seatPreference = body.seat_preference !== undefined ? body.seat_preference : (body.seatPreference || null);
+    const rawQty = body.quantity !== undefined ? body.quantity : 1;
+    const rawBudget = body.max_budget_idr !== undefined ? body.max_budget_idr : (body.maxBudgetIdr !== undefined ? body.maxBudgetIdr : null);
+    const locale = body.locale || 'id';
+
+    if (!eventId) {
+      return res.status(400).json({
+        ok: false,
+        error: 'event_id is required',
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    const WaitlistDispatchRepository = require('../storage/WaitlistDispatchRepository');
+    const normalizedWa = WaitlistDispatchRepository.normalizeWhatsApp(rawWa);
+    if (!normalizedWa) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Valid WhatsApp number is required (E.164 or 62/08 format, 8-16 digits)',
+        code: 'INVALID_WHATSAPP'
+      });
+    }
+
+    const qty = parseInt(rawQty, 10);
+    if (Number.isNaN(qty) || qty < 1 || qty > 6) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Quantity must be between 1 and 6 tickets',
+        code: 'INVALID_QUANTITY'
+      });
+    }
+
+    if (rawBudget !== null && rawBudget !== undefined && String(rawBudget).trim() !== '') {
+      const parsedBudget = Number(String(rawBudget).replace(/[^\d]/g, ''));
+      if (!Number.isFinite(parsedBudget) || parsedBudget < 500000) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Maximum budget must be at least Rp 500.000',
+          code: 'BUDGET_BELOW_MINIMUM'
+        });
+      }
+    }
+
+    await ensureMvpEventsHydrated();
+    const hygiene = require('../discovery/CatalogHygienePolicy');
+    const { canonicalRegistry } = require('../discovery/CanonicalEventRegistry');
+    const eventPolicyRegistry = require('../discovery/EventPolicyRegistry');
+
+    let matchedEvent = (state.events || []).find(e => e.id === eventId || e.event_id === eventId || e.slug === eventId) || null;
+    if (!matchedEvent && canonicalRegistry && typeof canonicalRegistry.getEventById === 'function') {
+      matchedEvent = canonicalRegistry.getEventById(eventId) || null;
+    }
+    if (!matchedEvent && canonicalRegistry && typeof canonicalRegistry.getAllEvents === 'function') {
+      matchedEvent = canonicalRegistry.getAllEvents().find(e => e.id === eventId || e.event_id === eventId || e.slug === eventId) || null;
+    }
+    if (!matchedEvent && eventPolicyRegistry && typeof eventPolicyRegistry.getAllEvents === 'function') {
+      const pe = eventPolicyRegistry.getAllEvents({ publicOnly: true }).find(p => p.id === eventId);
+      if (pe) {
+        matchedEvent = {
+          id: pe.id,
+          title: pe.event_name,
+          start_date: pe.event_date,
+          status: 'ON_SALE',
+          lifecycle_status: 'UPCOMING'
+        };
+      }
+    }
+
+    if (!matchedEvent) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Active event not found',
+        code: 'EVENT_NOT_FOUND'
+      });
+    }
+
+    if (!hygiene.isEligibleForActiveResale(matchedEvent)) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Waitlist is only available for active upcoming events',
+        code: 'EVENT_NOT_ELIGIBLE'
+      });
+    }
+
+    const canonicalId = matchedEvent.id || matchedEvent.event_id || eventId;
+    const eventTitle = matchedEvent.canonical_name || matchedEvent.title || matchedEvent.name || canonicalId;
+
+    const result = await WaitlistDispatchRepository.upsertWaitlistRequest({
+      eventId: canonicalId,
+      eventTitle,
+      contactWhatsApp: normalizedWa,
+      seatPreference,
+      quantity: qty,
+      maxBudgetIdr: rawBudget,
+      locale
+    });
+
+    return res.status(result.created ? 201 : 200).json({
+      ok: true,
+      waitlistId: result.record.id,
+      eventId: result.record.event_id,
+      status: 'ACTIVE'
+    });
+  } catch (err) {
+    const status = err.status || 500;
+    return res.status(status).json({
+      ok: false,
+      error: err.message || 'Failed to register waitlist request',
+      code: err.code || 'WAITLIST_ERROR'
+    });
   }
 });
 

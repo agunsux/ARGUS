@@ -248,7 +248,9 @@ class ListingService {
     seatType = null,
     isDraft = false,
     status = null,
-    sellerNotes = null
+    sellerNotes = null,
+    bookingCode = null,
+    ticketReference = null
   }) {
     const normalizedFulfillment = requireValidFulfillmentType(fulfillmentType);
 
@@ -360,6 +362,33 @@ class ListingService {
       }
     }
 
+    // 3b. Anti-duplicate booking code / ticket reference SHA-256 hash check
+    // Never store or log raw booking codes; hash sha256("${eventId}:${normalizedCode}") only.
+    const WaitlistDispatchRepository = require('../storage/WaitlistDispatchRepository');
+    const rawBookingRef = bookingCode || ticketReference;
+    const effectiveBookingRef = rawBookingRef !== null && rawBookingRef !== undefined && String(rawBookingRef).trim() !== ''
+      ? String(rawBookingRef).trim()
+      : null;
+    let bookingCodeHash = null;
+    if (effectiveBookingRef) {
+      bookingCodeHash = WaitlistDispatchRepository.computeBookingCodeHash(eventId, effectiveBookingRef);
+      if (!bookingCodeHash) {
+        const err = new Error('Invalid booking reference format (minimum 3 alphanumeric characters).');
+        err.code = 'VALIDATION_ERROR';
+        err.status = 400;
+        throw err;
+      }
+      if (!isDraft && status !== LISTING_STATUS.DRAFT) {
+        const dupRef = await WaitlistDispatchRepository.checkBookingCodeDuplicate(eventId, effectiveBookingRef);
+        if (dupRef && dupRef.duplicate) {
+          const err = new Error('Duplicate ticket booking reference detected for this event');
+          err.code = 'DUPLICATE_TICKET_DETECTED';
+          err.status = 409;
+          throw err;
+        }
+      }
+    }
+
     // 4. CANONICAL TICKET & LISTING DEFINITION
     const rowMatch = seatInfo ? seatInfo.match(/Row\s+(\w+)/i) : null;
     const seatMatch = seatInfo ? seatInfo.match(/Seat\s+(\w+)/i) : null;
@@ -444,7 +473,8 @@ class ListingService {
         evidence_bundle_id: evidenceBundleId || null,
         quantity: qty,
         seat_info: seatInfo,
-        seller_notes: sellerNotes || null
+        seller_notes: sellerNotes || null,
+        booking_code_hash_sha256: bookingCodeHash || null
       }
     };
 
@@ -491,7 +521,8 @@ class ListingService {
         reserved_quantity: 0,
         fulfillment_type: normalizedFulfillment,
         pic_assistance_status: resolvedPicStatus,
-        seat_type: normalizedSeatType
+        seat_type: normalizedSeatType,
+        booking_code_hash_sha256: bookingCodeHash || null
       }
     };
 
@@ -552,6 +583,16 @@ class ListingService {
     if (!state.listings) state.listings = [];
     state.listings.push(createdListing);
 
+    // 5b. Register active SHA-256 booking code hash (never stores raw booking code)
+    if (effectiveBookingRef && !isDraft && status !== LISTING_STATUS.DRAFT) {
+      await WaitlistDispatchRepository.registerBookingCodeHash({
+        eventId,
+        listingId: createdListing.id,
+        sellerId,
+        rawCode: effectiveBookingRef
+      });
+    }
+
     // 6. Audit log
     await recordAuditLog('LISTING', createdListing.id, 'SUBMITTED_FOR_VERIFICATION', sellerId, {
       ticket_id: createdTicket.id,
@@ -560,6 +601,7 @@ class ListingService {
       quantity: qty,
       fulfillment_type: normalizedFulfillment,
       barcode_hash: barcodeHash,
+      booking_code_hash_sha256: bookingCodeHash || null,
       canonical_delegation: true
     });
 

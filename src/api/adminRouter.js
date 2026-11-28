@@ -2384,6 +2384,8 @@ router.get('/listings', requireAdmin, async (req, res) => {
     const events = state.events || [];
     const tickets = hydrated.tickets;
     const users = hydrated.users;
+    const WaitlistDispatchRepository = require('../storage/WaitlistDispatchRepository');
+    const bookingHashMap = await WaitlistDispatchRepository.getBookingHashStatusMap(hydrated.listings.map(l => l.id));
 
     const rows = hydrated.listings.map(l => {
       const eventId = l.event_id || l.canonical_event_id;
@@ -2416,6 +2418,15 @@ router.get('/listings', requireAdmin, async (req, res) => {
       const eventName = event.canonical_name || event.name || event.title || eventId || 'Event TBA';
       const sellerName = seller.name || seller.display_name || seller.email || l.seller_id;
 
+      const hashRecord = bookingHashMap.get(l.id);
+      const metaHash = meta.booking_code_hash_sha256 || (ticket.metadata && ticket.metadata.booking_code_hash_sha256) || null;
+      const bookingHashStatus = hashRecord
+        ? hashRecord.booking_hash_status
+        : (metaHash ? 'UNIQUE_VERIFIED' : 'NO_REF');
+      const bookingHashShort = (hashRecord && hashRecord.booking_hash_short)
+        ? hashRecord.booking_hash_short
+        : (metaHash ? String(metaHash).slice(0, 12) : null);
+
       return {
         listing_id: l.id,
         ticket_id: l.ticket_id,
@@ -2426,6 +2437,8 @@ router.get('/listings', requireAdmin, async (req, res) => {
         seat_info: seatInfo,
         seat_type: sType,
         ticket_verification_status: ticket.verification_status || (bucket === 'PENDING' ? 'PENDING' : 'VERIFIED'),
+        booking_hash_status: bookingHashStatus,
+        booking_hash_short: bookingHashShort,
         face_value: l.face_value || ticket.face_value || 0,
         price: l.price || 0,
         quantity: totalQty,
@@ -4055,6 +4068,208 @@ router.post('/orders/:id/manual-release-escrow', requireAdmin, async (req, res) 
     return res.status(statusCode).json({
       error: err.message,
       code: err.code || 'MANUAL_ESCROW_RELEASE_FAILED'
+    });
+  }
+});
+
+// =============================================================================
+// ANTI-DUPLICATE BOOKING CODE HASH CHECKER & PIC FIELD DISPATCH BOARD
+// =============================================================================
+
+/**
+ * POST /api/admin/tickets/check-duplicate-hash
+ * Checks whether a normalized booking reference hash already exists for an event.
+ * Never logs or returns raw booking codes.
+ */
+router.post('/tickets/check-duplicate-hash', requireAdmin, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const eventId = String(body.event_id || body.eventId || '').trim();
+    const rawCode = body.booking_code !== undefined ? body.booking_code : body.bookingCode;
+    if (!eventId || !rawCode || String(rawCode).trim().length < 3) {
+      return res.status(400).json({
+        ok: false,
+        error: 'event_id and booking_code (min 3 characters) are required',
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    const WaitlistDispatchRepository = require('../storage/WaitlistDispatchRepository');
+    const result = await WaitlistDispatchRepository.checkBookingCodeDuplicate(eventId, rawCode);
+
+    return res.status(200).json({
+      ok: true,
+      event_id: eventId,
+      hash_sha256: result.hash_sha256,
+      duplicate: result.duplicate,
+      existing: result.existing
+    });
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      ok: false,
+      error: err.message || 'Failed to check booking code hash',
+      code: err.code || 'HASH_CHECK_ERROR'
+    });
+  }
+});
+
+/**
+ * GET /api/admin/operations/pic-dispatch
+ * Returns upcoming Jabodetabek & Bandung regular PIC events with dispatch roster,
+ * out-of-area / ASEAN events (Transfer Mandiri policy), and aggregated pre-launch waitlist demand.
+ */
+router.get('/operations/pic-dispatch', requireAdmin, async (req, res) => {
+  try {
+    const hydrated = await hydrateAdminDatasets();
+    const hygiene = require('../discovery/CatalogHygienePolicy');
+    const WaitlistDispatchRepository = require('../storage/WaitlistDispatchRepository');
+    const [dispatchMap, waitlistDemand] = await Promise.all([
+      WaitlistDispatchRepository.getPicDispatchMap(),
+      WaitlistDispatchRepository.listWaitlistSummaryByEvent()
+    ]);
+
+    const waitlistCountByEvent = new Map();
+    for (const w of waitlistDemand) {
+      waitlistCountByEvent.set(w.event_id, w.waitlist_count);
+    }
+
+    const todayWib = hygiene.getTodayWibIso();
+    const rawEvents = [
+      ...(canonicalRegistry && typeof canonicalRegistry.getAllEvents === 'function' ? canonicalRegistry.getAllEvents() : []),
+      ...(state.events || [])
+    ];
+
+    const deduped = new Map();
+    for (const ev of rawEvents) {
+      const eid = ev.id || ev.event_id;
+      if (!eid) continue;
+      if (!hygiene.isEligibleForActiveResale(ev, todayWib)) continue;
+      if (!deduped.has(eid)) {
+        deduped.set(eid, ev);
+      }
+    }
+
+    const listings = hydrated.listings || [];
+    const orders = hydrated.orders || [];
+    const regularPicEvents = [];
+    const outOfAreaEvents = [];
+
+    for (const [eid, ev] of deduped.entries()) {
+      const coverage = hygiene.classifyEventCoverage(ev);
+      const activeListingsCount = listings.filter(l =>
+        (l.event_id === eid || l.canonical_event_id === eid) &&
+        ['ACTIVE', 'APPROVED_PRELAUNCH', 'PENDING_VERIFICATION'].includes(String(l.status || '').toUpperCase())
+      ).length;
+      const confirmedOrdersCount = orders.filter(o =>
+        (o.event_id === eid || o.canonical_event_id === eid) &&
+        ['PAID', 'CONFIRMED', 'COMPLETED', 'SETTLED', 'ENTRY_CONFIRMED'].includes(String(o.status || '').toUpperCase())
+      ).length;
+
+      const metaDispatch = (ev.metadata && ev.metadata.pic_dispatch) ? ev.metadata.pic_dispatch : {};
+      const storedDispatch = dispatchMap[eid] || metaDispatch || {};
+      const dispatchStatus = WaitlistDispatchRepository.ALLOWED_DISPATCH_STATUSES.includes(String(storedDispatch.dispatch_status || '').toUpperCase())
+        ? String(storedDispatch.dispatch_status).toUpperCase()
+        : 'UNASSIGNED';
+
+      const row = {
+        event_id: eid,
+        title: ev.canonical_name || ev.title || ev.name || eid,
+        date: ev.start_date || ev.date || null,
+        city: coverage.cityDisplay,
+        venue: ev.venue_name || ev.venue || '-',
+        country_code: coverage.countryCode,
+        country_label: coverage.countryLabel,
+        is_regular_pic_area: coverage.isRegularPicArea,
+        fulfillment_policy: coverage.isRegularPicArea ? 'PIC Venue Ready' : 'Transfer Mandiri (WA Confirm Required)',
+        active_listings_count: activeListingsCount,
+        confirmed_orders_count: confirmedOrdersCount,
+        waitlist_count: waitlistCountByEvent.get(eid) || 0,
+        pic_officer_name: storedDispatch.pic_officer_name || '',
+        pic_officer_whatsapp: storedDispatch.pic_officer_whatsapp || '',
+        gate_meeting_point: storedDispatch.gate_meeting_point || '',
+        standby_time_wib: storedDispatch.standby_time_wib || '',
+        dispatch_status: dispatchStatus,
+        updated_at: storedDispatch.updated_at || null
+      };
+
+      if (coverage.isRegularPicArea) {
+        regularPicEvents.push(row);
+      } else {
+        outOfAreaEvents.push(row);
+      }
+    }
+
+    const byDateAsc = (a, b) => String(a.date || '9999-99-99').localeCompare(String(b.date || '9999-99-99'));
+    regularPicEvents.sort(byDateAsc);
+    outOfAreaEvents.sort(byDateAsc);
+
+    return res.status(200).json({
+      ok: true,
+      regular_pic_events: regularPicEvents,
+      out_of_area_events: outOfAreaEvents,
+      waitlist_demand: waitlistDemand,
+      totals: {
+        regular_pic_count: regularPicEvents.length,
+        assigned_pic_count: regularPicEvents.filter(e => e.dispatch_status === 'ASSIGNED').length,
+        on_site_ready_count: regularPicEvents.filter(e => e.dispatch_status === 'ON_SITE_READY').length,
+        out_of_area_count: outOfAreaEvents.length,
+        total_waitlist_requests: waitlistDemand.reduce((acc, item) => acc + item.waitlist_count, 0),
+        total_waitlist_events: waitlistDemand.length
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      error: err.message || 'Failed to load PIC dispatch board',
+      code: 'PIC_DISPATCH_LOAD_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/operations/pic-dispatch/:eventId
+ * Assigns or updates Event PIC field officer details, meeting point, standby time, and dispatch status.
+ */
+router.post('/operations/pic-dispatch/:eventId', requireAdmin, async (req, res) => {
+  try {
+    const adminUser = resolveUser(req) || req.user || req.adminUser || { id: 'admin-ops' };
+    const eventId = String(req.params.eventId || '').trim();
+    if (!eventId) {
+      return res.status(400).json({ ok: false, error: 'eventId is required', code: 'VALIDATION_ERROR' });
+    }
+
+    const WaitlistDispatchRepository = require('../storage/WaitlistDispatchRepository');
+    const saved = await WaitlistDispatchRepository.upsertPicDispatch(eventId, req.body || {}, adminUser.id);
+
+    // Mirror dispatch metadata into in-memory event records for fast local consistency
+    const mirrorTarget = ev => {
+      if (!ev) return;
+      if (!ev.metadata || typeof ev.metadata !== 'object') ev.metadata = {};
+      ev.metadata.pic_dispatch = { ...saved };
+    };
+    const stateEv = (state.events || []).find(e => e.id === eventId || e.event_id === eventId);
+    mirrorTarget(stateEv);
+    if (canonicalRegistry && typeof canonicalRegistry.getEventById === 'function') {
+      mirrorTarget(canonicalRegistry.getEventById(eventId));
+    }
+
+    await recordAuditLog('EVENT_PIC_DISPATCH', eventId, 'PIC_DISPATCH_UPDATED', adminUser.id, {
+      event_id: eventId,
+      dispatch_status: saved.dispatch_status,
+      gate_meeting_point: saved.gate_meeting_point || null,
+      standby_time_wib: saved.standby_time_wib || null
+    });
+
+    return res.status(200).json({
+      ok: true,
+      event_id: eventId,
+      dispatch: saved
+    });
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      ok: false,
+      error: err.message || 'Failed to update PIC dispatch assignment',
+      code: err.code || 'PIC_DISPATCH_UPDATE_ERROR'
     });
   }
 });
